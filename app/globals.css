@@ -1,0 +1,230 @@
+@import "tailwindcss";
+
+/* ============================================================
+   DarkPrint design system
+   Two poles: DARK (lights-off factory) and BLUEPRINT (cyanotype).
+   Dark is the default surface; blueprint sections opt in locally.
+   ============================================================ */
+
+@theme {
+  /* --- Dark / factory pole --- */
+  --color-void: #05060d;
+  --color-surface: #0a0c16;
+  --color-surface-2: #0f121e;
+  --color-surface-3: #151928;
+  --color-line: #222739;
+  --color-line-bright: #333a54;
+
+  /* --- Foreground --- */
+  --color-fg: #e9ebf5;
+  --color-muted: #9aa1ba;
+  --color-dim: #646b86;
+  --color-faint: #3b4058;
+
+  /* --- Blueprint / cyanotype pole --- */
+  --color-blueprint: #0b2f7a;
+  --color-blueprint-deep: #061c52;
+  --color-blueprint-line: #74b4ff;
+  --color-blueprint-ink: #cfe2ff;
+
+  /* --- Accents --- */
+  --color-cyan: #38bdf8;
+  --color-cyan-bright: #7dd3fc;
+  --color-amber: #ffb020;
+  --color-amber-bright: #ffcb5c;
+  --color-violet: #a78bfa;
+  --color-emerald: #34d399;
+  --color-signal: #ff5470;
+
+  /* --- Radii --- */
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 18px;
+
+  /* --- Fonts (values wired in @theme inline below) --- */
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-space-grotesk);
+}
+
+/* ------------------------------------------------------------ */
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background: var(--color-void);
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-void);
+  color: var(--color-fg);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-cyan) 35%, transparent);
+  color: #fff;
+}
+
+/* Scrollbar (dark) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-bright) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-line-bright);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* ============================================================
+   Reusable primitives / textures
+   ============================================================ */
+
+/* Blueprint grid — thin cyan graticule on transparent bg.
+   Layer over a blue surface for the cyanotype look. */
+.bp-grid {
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--color-blueprint-line) 22%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--color-blueprint-line) 22%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in oklab, var(--color-blueprint-line) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--color-blueprint-line) 10%, transparent) 1px, transparent 1px);
+  background-size: 96px 96px, 96px 96px, 16px 16px, 16px 16px;
+  background-position: -1px -1px;
+}
+
+/* Dark technical dot/line grid for factory + neutral sections */
+.tech-grid {
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--color-cyan) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--color-cyan) 6%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Fine dotted grid */
+.dot-grid {
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--color-fg) 8%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+}
+
+/* Subtle film grain overlay (use on ::after with pointer-events:none) */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+/* Hairline card */
+.panel {
+  background: color-mix(in oklab, var(--color-surface) 92%, transparent);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+}
+
+/* Mono label / eyebrow */
+.eyebrow {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-cyan);
+}
+
+/* Corner tick decoration (blueprint drawing frames) */
+.tick-frame {
+  position: relative;
+}
+.tick-frame::before,
+.tick-frame::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: currentColor;
+  opacity: 0.6;
+}
+.tick-frame::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid;
+  border-left: 1px solid;
+}
+.tick-frame::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1px solid;
+  border-right: 1px solid;
+}
+
+/* Page container */
+.container-page {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+
+/* Focus ring */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-cyan);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Utility animations */
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(200%); }
+}
+.anim-pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
+.anim-float { animation: float-y 5s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .anim-pulse-soft, .anim-float { animation: none; }
+}
+
+/* React Flow theming overrides (blueprint schematic look) */
+.react-flow__attribution { display: none; }
+.rf-blueprint .react-flow__edge-path {
+  stroke: var(--color-blueprint-line);
+}
+.rf-blueprint .react-flow__background {
+  color: color-mix(in oklab, var(--color-blueprint-line) 14%, transparent);
+}

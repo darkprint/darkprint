@@ -1,0 +1,51 @@
+import type { MetricSource, ContentKind } from "@/lib/types";
+import { METRIC_SOURCE_META, cx } from "@/lib/format";
+
+/** Generic pill with a colored dot. */
+export function Badge({
+  children,
+  color = "var(--color-muted)",
+  className,
+}: {
+  children: React.ReactNode;
+  color?: string;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cx(
+        "inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-[11px] font-medium text-muted",
+        className,
+      )}
+    >
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
+      {children}
+    </span>
+  );
+}
+
+/** How a metric was scored (auto / measured / community). */
+export function SourceBadge({ source }: { source: MetricSource }) {
+  const meta = METRIC_SOURCE_META[source];
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded font-mono text-[10px] uppercase tracking-[0.12em]"
+      style={{ color: meta.color }}
+      title={meta.blurb}
+    >
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: meta.color }} />
+      {meta.short}
+    </span>
+  );
+}
+
+const KIND_META: Record<ContentKind, { label: string; color: string }> = {
+  blueprint: { label: "Blueprint", color: "var(--color-cyan)" },
+  part: { label: "Part", color: "var(--color-amber)" },
+  ontology: { label: "Ontology", color: "var(--color-violet)" },
+};
+
+export function KindBadge({ kind }: { kind: ContentKind }) {
+  const meta = KIND_META[kind];
+  return <Badge color={meta.color}>{meta.label}</Badge>;
+}
