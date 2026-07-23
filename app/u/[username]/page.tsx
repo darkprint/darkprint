@@ -104,7 +104,7 @@ export default async function Page({ params }: PageProps<"/u/[username]">) {
               {author.displayName} hasn&apos;t shared any blueprints, parts or
               ontologies with the registry so far.
             </p>
-            <ButtonLink href="/blueprints" variant="outline" size="sm">
+            <ButtonLink href="/gallery" variant="outline" size="sm">
               Browse the registry
             </ButtonLink>
           </div>

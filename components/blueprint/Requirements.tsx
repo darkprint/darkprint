@@ -27,7 +27,7 @@ function ChipList({
         <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
           {label}
         </span>
-        <span className="font-mono text-[11px] text-faint">
+        <span className="font-mono text-[11px] text-dim">
           {items.length}
         </span>
       </div>

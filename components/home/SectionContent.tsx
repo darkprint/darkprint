@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import type { BlueprintGraph, OntologyNodeType } from "@/lib/types";
 import { SEED_BLUEPRINTS, PARTS, ONTOLOGIES, PLATFORM_STATS } from "@/lib/data";
@@ -103,8 +104,13 @@ export function SectionContent() {
             <Link
               key={panel.id}
               href={panel.href}
-              className="group flex flex-col overflow-hidden rounded-lg border border-line bg-surface-2 transition-all duration-200 hover:border-line-bright hover:shadow-[0_12px_40px_-24px_var(--color-cyan)]"
-              style={{ borderTop: `2px solid ${panel.color}` }}
+              className="group flex flex-col overflow-hidden rounded-lg border border-line bg-surface-2 transition-all duration-200 hover:border-line-bright hover:shadow-[0_12px_40px_-24px_var(--card-accent)]"
+              style={
+                {
+                  borderTop: `2px solid ${panel.color}`,
+                  "--card-accent": panel.color,
+                } as CSSProperties
+              }
             >
               <Preview panel={panel} />
               <div className="flex flex-1 flex-col gap-3 p-5">

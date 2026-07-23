@@ -126,7 +126,7 @@ export default async function Page({
           <section className="panel overflow-hidden">
             <div className="flex items-center justify-between border-b border-line px-5 py-3">
               <PanelLabel>Node types</PanelLabel>
-              <span className="font-mono text-[11px] text-faint">
+              <span className="font-mono text-[11px] text-dim">
                 {ontology.nodeTypes.length} kinds
               </span>
             </div>
@@ -139,7 +139,7 @@ export default async function Page({
           <section className="panel overflow-hidden">
             <div className="flex items-center justify-between border-b border-line px-5 py-3">
               <PanelLabel>Edge types</PanelLabel>
-              <span className="font-mono text-[11px] text-faint">
+              <span className="font-mono text-[11px] text-dim">
                 {ontology.edgeTypes.length} kinds
               </span>
             </div>

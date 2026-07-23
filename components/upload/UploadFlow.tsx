@@ -41,6 +41,13 @@ const KINDS: {
   { key: "ontology", label: "Ontology", hint: "Typed vocabulary", color: "var(--color-violet)" },
 ];
 
+/** Lower-case noun for a content kind, used across the flow's copy. */
+const KIND_NOUN: Record<ContentKind, string> = {
+  blueprint: "blueprint",
+  part: "part",
+  ontology: "ontology",
+};
+
 const inputCls =
   "w-full bg-surface-2 border border-line rounded-md px-3 py-2 text-sm text-fg placeholder:text-dim transition-colors focus:border-cyan focus:outline-none";
 
@@ -123,6 +130,7 @@ function ChipField({
           onBlur={() => {
             if (draft.trim()) commit();
           }}
+          aria-label={label}
           placeholder={values.length === 0 ? placeholder : ""}
           className="min-w-[8rem] flex-1 bg-transparent px-1 py-0.5 text-sm text-fg placeholder:text-dim focus:outline-none"
         />
@@ -152,6 +160,7 @@ function StepIndicator({
             <button
               type="button"
               onClick={() => onJump(s.id)}
+              aria-label={s.label}
               className="group flex items-center gap-2.5 text-left"
               aria-current={active ? "step" : undefined}
             >
@@ -365,7 +374,7 @@ export function UploadFlow() {
                   )}
                 </div>
                 <h3 className="font-display text-xl font-semibold leading-snug text-fg">
-                  {title || "Untitled blueprint"}
+                  {title || `Untitled ${KIND_NOUN[kind]}`}
                 </h3>
                 <p className="text-sm leading-relaxed text-muted">
                   {summary || "No summary yet — add one on the Details step."}
@@ -428,8 +437,9 @@ export function UploadFlow() {
                 </h3>
                 <p className="text-sm leading-relaxed text-muted">
                   <span className="font-mono text-amber">demo</span> — nothing was
-                  saved. In the real registry your blueprint would now be live with
-                  its static-analysis scores attached, awaiting community votes.
+                  saved. In the real registry your {KIND_NOUN[kind]} would now be
+                  live with its static-analysis scores attached, awaiting community
+                  votes.
                 </p>
               </div>
               <div className="flex flex-wrap justify-center gap-3">
@@ -439,6 +449,15 @@ export function UploadFlow() {
                   onClick={() => {
                     setSubmitted(false);
                     setStep(1);
+                    setKind("blueprint");
+                    setFileName(null);
+                    setTitle("");
+                    setSummary("");
+                    setDescription("");
+                    setCategory("");
+                    setTags([]);
+                    setAgents([]);
+                    setTools([]);
                   }}
                 >
                   Upload another
@@ -511,7 +530,7 @@ export function UploadFlow() {
 
               <div>
                 <Button size="lg" onClick={() => setSubmitted(true)}>
-                  Publish blueprint
+                  Publish {KIND_NOUN[kind]}
                 </Button>
                 <p className="mt-2 font-mono text-[11px] text-dim">
                   No backend — this is a UI demo, nothing is uploaded.

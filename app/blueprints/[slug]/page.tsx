@@ -110,7 +110,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           <section className="panel overflow-hidden">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
               <PanelLabel>Pipeline schematic</PanelLabel>
-              <span className="font-mono text-[11px] text-faint">
+              <span className="font-mono text-[11px] text-dim">
                 {bp.graph.nodes.length} nodes · {bp.graph.edges.length} edges
               </span>
             </div>
@@ -156,7 +156,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           <section className="panel p-5">
             <div className="mb-3 flex items-center justify-between">
               <PanelLabel>Score</PanelLabel>
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
                 6-metric card
               </span>
             </div>

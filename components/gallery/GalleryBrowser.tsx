@@ -47,13 +47,15 @@ export function GalleryBrowser({
   blueprints,
   tags,
   categories,
+  initialTag = null,
 }: {
   blueprints: Blueprint[];
   tags: string[];
   categories: string[];
+  initialTag?: string | null;
 }) {
   const [search, setSearch] = useState("");
-  const [tag, setTag] = useState<string | null>(null);
+  const [tag, setTag] = useState<string | null>(initialTag);
   const [category, setCategory] = useState<string | null>(null);
   const [sort, setSort] = useState<SortKey>("autonomy");
 

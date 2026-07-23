@@ -18,13 +18,19 @@ const draw = {
 };
 
 /** Animated technical elevation of a factory, cyanotype style. */
-export function BlueprintDrawing({ className }: { className?: string }) {
+export function BlueprintDrawing({
+  className,
+  reduced = false,
+}: {
+  className?: string;
+  reduced?: boolean;
+}) {
   return (
     <motion.svg
       viewBox="0 0 620 420"
       className={className}
       fill="none"
-      initial="hidden"
+      initial={reduced ? false : "hidden"}
       animate="show"
       role="img"
       aria-label="Technical blueprint of a factory"

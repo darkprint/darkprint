@@ -232,10 +232,17 @@ function Conveyor() {
   );
 }
 
-export default function FactoryScene({ scroll }: { scroll: MotionValue<number> }) {
+export default function FactoryScene({
+  scroll,
+  reduced = false,
+}: {
+  scroll: MotionValue<number>;
+  reduced?: boolean;
+}) {
   return (
     <Canvas
       dpr={[1, 1.8]}
+      frameloop={reduced ? "demand" : "always"}
       camera={{ position: [0, 5.2, 17], fov: 42 }}
       gl={{ antialias: true, powerPreference: "high-performance" }}
       onCreated={({ gl }) => {

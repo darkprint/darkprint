@@ -18,8 +18,8 @@
   /* --- Foreground --- */
   --color-fg: #e9ebf5;
   --color-muted: #9aa1ba;
-  --color-dim: #646b86;
-  --color-faint: #3b4058;
+  --color-dim: #828aa3; /* ≥4.5:1 on the dark surfaces (WCAG AA) */
+  --color-faint: #3b4058; /* decorative separators only */
 
   /* --- Blueprint / cyanotype pole --- */
   --color-blueprint: #0b2f7a;

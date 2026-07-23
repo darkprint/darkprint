@@ -7,6 +7,7 @@ import {
   AnimatePresence,
   useScroll,
   useTransform,
+  useReducedMotion,
 } from "framer-motion";
 import { ButtonLink } from "@/components/ui/Button";
 
@@ -26,6 +27,10 @@ export function Hero() {
     offset: ["start start", "end end"],
   });
   const [mode, setMode] = useState<"dark" | "blueprint">("dark");
+  const reduce = useReducedMotion();
+  const flipRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   // Scroll-driven morph (DarkPrint -> DarkFactory)
   // 3-stop with a flat tail: output is pinned to 0 for all progress >= the
@@ -55,24 +60,53 @@ export function Hero() {
     return () => window.removeEventListener("wheel", onWheel);
   }, [mode]);
 
-  // Lock scroll + reset to top while the BluePrint overlay is open.
+  // While the BluePrint overlay is open: lock scroll, reset to top, move focus
+  // into the dialog, close on Escape, and restore focus to the trigger on close.
   useEffect(() => {
-    if (mode === "blueprint") {
-      window.scrollTo(0, 0);
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = prev;
-      };
+    if (mode !== "blueprint") return;
+    const trigger = flipRef.current;
+    window.scrollTo(0, 0);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMode("dark");
     }
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", onKey);
+      trigger?.focus();
+    };
   }, [mode]);
+
+  // Trap Tab focus within the open dialog.
+  function trapFocus(e: React.KeyboardEvent) {
+    if (e.key !== "Tab" || !overlayRef.current) return;
+    const focusables = overlayRef.current.querySelectorAll<HTMLElement>(
+      "a[href], button:not([disabled])",
+    );
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
 
   return (
     <section ref={heroRef} className="relative h-[280vh]">
-      <div className="sticky top-0 h-screen overflow-hidden bg-void">
+      <div
+        className="sticky top-0 h-screen overflow-hidden bg-void"
+        inert={mode === "blueprint" ? true : undefined}
+      >
         {/* 3D factory scene */}
         <motion.div className="absolute inset-0" style={{ opacity: sceneOpacity }}>
-          <FactoryScene scroll={scrollYProgress} />
+          <FactoryScene scroll={scrollYProgress} reduced={!!reduce} />
         </motion.div>
 
         {/* legibility overlays */}
@@ -86,13 +120,19 @@ export function Hero() {
 
         {/* flip-up control */}
         <button
+          ref={flipRef}
           onClick={() => setMode("blueprint")}
+          aria-label="Flip to the BluePrint view"
           className="group absolute left-1/2 top-6 z-20 flex -translate-x-1/2 flex-col items-center gap-1 text-dim transition-colors hover:text-blueprint-line"
         >
           <motion.span
             className="text-lg"
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+            animate={reduce ? undefined : { y: [0, -4, 0] }}
+            transition={
+              reduce
+                ? undefined
+                : { duration: 1.8, repeat: Infinity, ease: "easeInOut" }
+            }
           >
             ↑
           </motion.span>
@@ -164,8 +204,12 @@ export function Hero() {
           <div className="mx-auto h-9 w-5 rounded-full border border-line-bright p-1">
             <motion.div
               className="h-2 w-full rounded-full bg-cyan"
-              animate={{ y: [0, 12, 0], opacity: [1, 0.3, 1] }}
-              transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+              animate={reduce ? undefined : { y: [0, 12, 0], opacity: [1, 0.3, 1] }}
+              transition={
+                reduce
+                  ? undefined
+                  : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+              }
             />
           </div>
           <span className="mt-2 block font-mono text-[10px] uppercase tracking-[0.2em] text-dim">
@@ -178,11 +222,20 @@ export function Hero() {
       <AnimatePresence>
         {mode === "blueprint" && (
           <motion.div
+            ref={overlayRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="BluePrint — share the plan"
+            onKeyDown={trapFocus}
             className="fixed inset-0 z-[60] overflow-hidden bg-blueprint-deep text-blueprint-ink"
-            initial={{ opacity: 0, rotateX: -28, y: -30 }}
-            animate={{ opacity: 1, rotateX: 0, y: 0 }}
-            exit={{ opacity: 0, rotateX: -20, y: -30 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, rotateX: -28, y: -30 }}
+            animate={reduce ? { opacity: 1 } : { opacity: 1, rotateX: 0, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, rotateX: -20, y: -30 }}
+            transition={
+              reduce
+                ? { duration: 0.2 }
+                : { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+            }
             style={{ transformOrigin: "top center", perspective: 1200 }}
           >
             <div className="absolute inset-0 bp-grid opacity-70" />
@@ -190,6 +243,7 @@ export function Hero() {
 
             {/* close / back */}
             <button
+              ref={closeRef}
               onClick={() => setMode("dark")}
               className="absolute right-5 top-5 z-10 flex items-center gap-2 rounded-md border border-blueprint-line/40 px-3 py-1.5 font-mono text-xs text-blueprint-ink/80 transition-colors hover:border-blueprint-line hover:text-blueprint-ink"
             >
@@ -221,7 +275,10 @@ export function Hero() {
               {/* drawing — the blueprint in the foreground */}
               <div className="w-full min-w-0 lg:w-[50%]">
                 <div className="tick-frame text-blueprint-line/60">
-                  <BlueprintDrawing className="mx-auto w-full max-w-2xl drop-shadow-[0_0_40px_rgba(116,180,255,0.15)]" />
+                  <BlueprintDrawing
+                    reduced={!!reduce}
+                    className="mx-auto w-full max-w-2xl drop-shadow-[0_0_40px_rgba(116,180,255,0.15)]"
+                  />
                 </div>
               </div>
             </div>

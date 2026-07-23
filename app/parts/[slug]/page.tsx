@@ -112,7 +112,7 @@ export default async function Page({ params }: PageProps<"/parts/[slug]">) {
           <section className="panel overflow-hidden">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
               <PanelLabel>Sub-graph schematic</PanelLabel>
-              <span className="font-mono text-[11px] text-faint">
+              <span className="font-mono text-[11px] text-dim">
                 {part.graph.nodes.length} nodes · {part.graph.edges.length} edges
               </span>
             </div>

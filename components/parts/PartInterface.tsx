@@ -32,7 +32,7 @@ function ChipList({
           ))}
         </div>
       ) : (
-        <span className="font-mono text-[11px] text-faint">{empty}</span>
+        <span className="font-mono text-[11px] text-dim">{empty}</span>
       )}
     </div>
   );
