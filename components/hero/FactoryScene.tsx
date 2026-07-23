@@ -2,7 +2,7 @@
 
 import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Grid, Sparkles, Float } from "@react-three/drei";
+import { Grid, Sparkles, Float, Edges } from "@react-three/drei";
 import * as THREE from "three";
 import type { MotionValue } from "framer-motion";
 
@@ -33,19 +33,23 @@ function Rig({ scroll }: { scroll: MotionValue<number> }) {
 function Lights() {
   return (
     <>
-      <ambientLight intensity={0.14} color={CYAN} />
+      {/* raised cool ambient + hemisphere so the structure reads in the dark */}
+      <ambientLight intensity={0.3} color={"#3f4d6b"} />
+      <hemisphereLight args={["#48597e", "#05060d", 0.55]} />
       {/* amber key from a machine */}
       <spotLight
         position={[6, 7, 6]}
         angle={0.5}
         penumbra={0.9}
-        intensity={70}
+        intensity={85}
         color={AMBER}
         distance={40}
       />
-      {/* cyan rim from behind */}
-      <pointLight position={[-8, 4, -6]} intensity={60} color={CYAN} distance={40} />
-      <pointLight position={[0, 2, 8]} intensity={16} color={"#7dd3fc"} distance={24} />
+      {/* cyan rim from behind sculpts the silhouette */}
+      <pointLight position={[-8, 4, -6]} intensity={75} color={CYAN} distance={44} />
+      {/* cool front fill so the faces aren't pure black */}
+      <pointLight position={[0, 4, 12]} intensity={42} color={"#8fd0ff"} distance={46} />
+      <pointLight position={[3, 1.5, 6]} intensity={20} color={"#7dd3fc"} distance={28} />
     </>
   );
 }
@@ -83,12 +87,14 @@ function Building() {
       {/* main hall */}
       <mesh position={[0, 1.5, 0]} castShadow>
         <boxGeometry args={[8.4, 3, 4.4]} />
-        <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.55} />
+        <meshStandardMaterial color={"#141d33"} metalness={0.5} roughness={0.5} />
+        <Edges threshold={15} color={"#4aa6e0"} />
       </mesh>
       {/* base plinth */}
       <mesh position={[0, 0.15, 0]}>
         <boxGeometry args={[8.9, 0.4, 4.9]} />
-        <meshStandardMaterial color={"#070a12"} metalness={0.4} roughness={0.7} />
+        <meshStandardMaterial color={"#0c1120"} metalness={0.4} roughness={0.7} />
+        <Edges threshold={20} color={"#356f9e"} />
       </mesh>
 
       {/* sawtooth roof: a slanted panel + a vertical north-light window per tooth */}
@@ -96,34 +102,39 @@ function Building() {
         <group key={x} position={[x, 3, 0]}>
           <mesh rotation={[0, 0, -0.5]} position={[0, 0.5, 0]}>
             <boxGeometry args={[1.9, 0.12, 4.4]} />
-            <meshStandardMaterial color={STEEL} metalness={0.5} roughness={0.5} />
+            <meshStandardMaterial color={"#1b2338"} metalness={0.5} roughness={0.5} />
+            <Edges threshold={15} color={"#3f8fca"} />
           </mesh>
           <LitStrip
             position={[-0.72, 0.55, 0]}
             args={[0.08, 0.9, 4.2]}
             color={CYAN}
-            intensity={1.6}
+            intensity={2.4}
           />
         </group>
       ))}
 
-      {/* window rows on the front face — a few lit, most dark */}
-      {[-3, -2, -1, 0, 1, 2, 3].map((x, i) => (
-        <LitStrip
-          key={x}
-          position={[x, 1.4, 2.23]}
-          args={[0.5, 0.5, 0.06]}
-          color={i % 3 === 0 ? AMBER : "#0e1a2e"}
-          intensity={i % 3 === 0 ? 2.4 : 0.2}
-        />
-      ))}
+      {/* window rows on the front face — some lit amber, the rest dim-cyan */}
+      {[-3, -2, -1, 0, 1, 2, 3].map((x, i) => {
+        const lit = i % 3 === 0;
+        return (
+          <LitStrip
+            key={x}
+            position={[x, 1.4, 2.23]}
+            args={[0.5, 0.5, 0.06]}
+            color={lit ? AMBER : "#16283f"}
+            intensity={lit ? 3 : 0.8}
+          />
+        );
+      })}
 
       {/* smokestacks */}
       {[-2.6, 2.6].map((x) => (
         <group key={x} position={[x, 4.4, -1.4]}>
           <mesh position={[0, 0.9, 0]}>
             <cylinderGeometry args={[0.28, 0.34, 2, 16]} />
-            <meshStandardMaterial color={"#0a0d15"} metalness={0.5} roughness={0.6} />
+            <meshStandardMaterial color={"#121a2a"} metalness={0.5} roughness={0.6} />
+            <Edges threshold={24} color={"#3f8fca"} />
           </mesh>
           <mesh position={[0, 1.95, 0]}>
             <torusGeometry args={[0.3, 0.05, 8, 20]} />
