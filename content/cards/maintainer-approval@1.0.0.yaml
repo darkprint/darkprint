@@ -1,0 +1,48 @@
+id: maintainer-approval
+name: Maintainer Approval
+type: human-gate
+phase: deployment
+
+action: >-
+  Hold the run at the merge boundary until a maintainer with write rights reads the green test
+  report and approves, and emit their verdict as the only thing the merge step will act on.
+spec: >-
+  Hold the run here and put the test report you are handed in front of a maintainer who holds
+  write access to this repository. Show them the suite results, the durations and the coverage
+  delta as they were reported, and let them open the drafted review themselves if they want the
+  findings; do not summarise the change for them and do not recommend an outcome. Wait for
+  exactly one such maintainer to approve or reject — there is no timeout, no default verdict and
+  no substitute approver without write access. Emit their verdict and nothing else on `approval`,
+  and on a rejection emit nothing at all, so the step after you has nothing to act on.
+tools:
+  - human-review
+params:
+  required_approvals: 1
+  approver_scope: write-access
+
+inputs:
+  - name: test_report
+    type: report
+    description: The green run the maintainer signs against — suites, durations, coverage delta.
+  - name: review
+    type: markdown
+    required: false
+    description: The drafted review, attached for context when the maintainer wants the findings.
+outputs:
+  - name: approval
+    type: status
+    description: The maintainer's verdict, and nothing else — the merge step reads no other input.
+dependencies:
+  - test-runner
+
+requires_human: true
+risk_markers: []
+notes: >-
+  `review` is optional because an edge carries a single value: the test runner wires its report,
+  and the maintainer pulls the draft from the PR thread. The `requires_human` flag is redundant
+  with the node type and set anyway — this gate is the whole point of the blueprint and should be
+  legible without an ontology lookup.
+
+version: 1.0.0
+author: sol-antczak
+ontology_version: 0.1.0

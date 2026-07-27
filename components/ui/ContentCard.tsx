@@ -6,6 +6,7 @@ import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
 import { Avatar } from "./Avatar";
 import { KindBadge } from "./Badge";
 import { AutonomyMeter } from "./AutonomyMeter";
+import { PhaseCoverageBadge } from "./PhaseCoverage";
 import { TagPill } from "./TagPill";
 
 function Meta({ downloads, votes }: { downloads: number; votes: number }) {
@@ -17,7 +18,7 @@ function Meta({ downloads, votes }: { downloads: number; votes: number }) {
   );
 }
 
-/** Gallery / profile card for any content kind. */
+/** Gallery / profile card for one blueprint: schematic, kind, autonomy and signals. */
 export function ContentCard({
   item,
   className,
@@ -35,34 +36,26 @@ export function ContentCard({
     >
       {/* preview */}
       <div className="relative h-40 overflow-hidden border-b border-line bg-blueprint-deep/40 bp-grid">
-        {item.kind !== "ontology" ? (
-          <GraphThumbnail
-            graph={item.graph}
-            className="h-full w-full p-2 opacity-90 transition-transform duration-300 group-hover:scale-[1.03]"
-            ariaLabel={`${item.title} pipeline preview`}
-          />
-        ) : (
-          <div className="flex h-full flex-wrap content-center items-center justify-center gap-1.5 p-4">
-            {item.nodeTypes.slice(0, 6).map((nt) => (
-              <span
-                key={nt.name}
-                className="rounded border border-blueprint-line/40 bg-blueprint/30 px-2 py-1 font-mono text-[11px] text-blueprint-ink"
-              >
-                {nt.name}
-              </span>
-            ))}
-          </div>
-        )}
+        <GraphThumbnail
+          graph={item.graph}
+          className="h-full w-full p-2 opacity-90 transition-transform duration-300 group-hover:scale-[1.03]"
+          ariaLabel={`${item.title} pipeline preview`}
+        />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-surface to-transparent" />
       </div>
 
       {/* body */}
       <div className="flex flex-1 flex-col gap-3 p-4">
-        <div className="flex items-center justify-between gap-2">
+        {/* The band is named, not drawn as a gauge (doc 2 §1.1), and it comes with the
+            engine's own per-node reading so the tile can say how many nodes hand control
+            back to a person instead of how far the graph is from running unattended. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
           <KindBadge kind={item.kind} />
-          {item.kind === "blueprint" && (
-            <AutonomyMeter autonomy={item.autonomy} size="sm" showLabel={false} />
-          )}
+          <AutonomyMeter
+            autonomy={item.autonomy}
+            contributions={item.analysis.autonomy.contributions}
+            size="sm"
+          />
         </div>
 
         <div className="flex-1">
@@ -73,6 +66,14 @@ export function ContentCard({
             {item.summary}
           </p>
         </div>
+
+        {/* Doc 2 §8's badge. Above the tags, not beside the autonomy meter: it says
+            what the factory covers, which belongs with the rest of the description
+            rather than with the scores. */}
+        <PhaseCoverageBadge
+          covered={item.analysis.phaseCoverage.covered}
+          missing={item.analysis.phaseCoverage.missing}
+        />
 
         <div className="flex flex-wrap gap-1.5">
           {item.tags.slice(0, 3).map((t) => (

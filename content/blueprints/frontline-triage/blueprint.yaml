@@ -1,0 +1,20 @@
+slug: frontline-triage
+title: Frontline Triage
+summary: >-
+  Classifies inbound tickets, auto-resolves the simple ones with a KB lookup, QAs its own reply,
+  and escalates only when confidence drops.
+description: >-
+  A support line that handles the long tail on its own and knows when it's out of its depth. The
+  router classifies each ticket, simple cases get an auto-resolution backed by a knowledge-base
+  lookup, and a QA step checks the drafted reply before it goes out. Low-confidence replies
+  escalate to a human instead of being sent — so the escalation is a safety valve, not the default.
+category: Operations
+tags:
+  - support
+  - routing
+  - escalation
+  - operations
+author: hachi
+ontologyVersion: "0.1.0"
+createdAt: "2026-04-25"
+updatedAt: "2026-07-01"

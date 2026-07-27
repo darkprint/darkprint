@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   ReactFlow,
   Background,
@@ -9,6 +9,7 @@ import {
   MarkerType,
   type Edge,
   type NodeTypes,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
 import { AgentNode, type AgentFlowNode } from "./AgentNode";
@@ -24,13 +25,20 @@ const EDGE_COLOR = {
 /**
  * Interactive schematic for detail pages and the upload preview.
  * Pan/drag enabled; scroll-zoom disabled so the page still scrolls.
+ *
+ * `highlighted` is the DOT id of the node a finding is pointing at. The schematic
+ * rings it and pans it into view — a highlight the reader has to hunt for explains
+ * nothing.
  */
 export function BlueprintGraph({
   graph,
+  highlighted,
   className,
   height = 460,
 }: {
   graph: BlueprintGraphData;
+  /** DOT node id to ring, from the explainability panel. */
+  highlighted?: string;
   className?: string;
   height?: number;
 }) {
@@ -40,9 +48,14 @@ export function BlueprintGraph({
         id: n.id,
         type: "agent",
         position: n.position,
-        data: { label: n.label, kind: n.kind, sub: n.sub },
+        data: {
+          label: n.label,
+          kind: n.kind,
+          sub: n.sub,
+          highlighted: n.id === highlighted,
+        },
       })),
-    [graph],
+    [graph, highlighted],
   );
 
   const edges: Edge[] = useMemo(
@@ -73,6 +86,23 @@ export function BlueprintGraph({
     [graph],
   );
 
+  const instance = useRef<ReactFlowInstance<AgentFlowNode, Edge> | null>(null);
+
+  useEffect(() => {
+    if (highlighted === undefined) return;
+    const flow = instance.current;
+    if (flow === null) return;
+    // Generous padding rather than a tight fit: the point is to place the node in
+    // its neighbourhood, not to fill the pane with one block. An id the graph does
+    // not carry matches nothing and the viewport stays where it was.
+    void flow.fitView({
+      nodes: [{ id: highlighted }],
+      padding: 2,
+      maxZoom: 1.1,
+      duration: 420,
+    });
+  }, [highlighted]);
+
   return (
     <div
       className={`rf-blueprint overflow-hidden rounded-lg border border-line bg-surface/60 ${className ?? ""}`}
@@ -82,6 +112,9 @@ export function BlueprintGraph({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        onInit={(flow) => {
+          instance.current = flow;
+        }}
         fitView
         fitViewOptions={{ padding: 0.18 }}
         minZoom={0.3}

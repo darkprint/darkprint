@@ -1,21 +1,31 @@
 "use client";
 
+import { useCallback, useMemo, useState } from "react";
+import type { ContentKind } from "@/lib/types";
 import {
-  useRef,
-  useState,
-  type Dispatch,
-  type SetStateAction,
-  type RefObject,
-} from "react";
-import type { ContentKind, AutonomyInfo } from "@/lib/types";
-import { cx, AUTONOMY_LABELS, METRIC_SOURCE_META } from "@/lib/format";
-import { BLUEPRINTS } from "@/lib/data";
+  CORE_ONTOLOGY,
+  hasErrors,
+  loadBundle,
+  ontologyView,
+  summarize,
+  type LoadBundleResult,
+} from "@/lib/core";
+import { cx, METRIC_SOURCE_META } from "@/lib/format";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { KindBadge, SourceBadge } from "@/components/ui/Badge";
+import { KindBadge } from "@/components/ui/Badge";
 import { TagPill } from "@/components/ui/TagPill";
-import { AutonomyMeter } from "@/components/ui/AutonomyMeter";
-import { BlueprintGraph } from "@/components/graph/BlueprintGraph";
-import { DotSource } from "@/components/graph/DotSource";
+import { PhaseCoverageBadge } from "@/components/ui/PhaseCoverage";
+import {
+  BundleDropzone,
+  assembleBundle,
+  classifyBundle,
+  detailsFromManifest,
+  slugify,
+  type BundleDetails,
+  type UploadFile,
+} from "./BundleDropzone";
+import { requiredAgents, requiredTools } from "@/lib/graph-seed";
+import { ValidationReport } from "./ValidationReport";
 
 /* ------------------------------------------------------------------ */
 /*  Static config                                                      */
@@ -30,21 +40,46 @@ const STEPS: { id: StepId; label: string }[] = [
   { id: 4, label: "Publish" },
 ];
 
+/**
+ * The three registry surfaces. Only the first has an upload path today: the wizard
+ * runs `resolveBundle`, which joins a DOT to the cards it pins, and a lone card or a
+ * vocabulary extension is a different validation entirely. Saying so beats a selector
+ * that quietly does nothing.
+ */
 const KINDS: {
   key: ContentKind;
   label: string;
   hint: string;
   color: string;
+  ready: boolean;
 }[] = [
-  { key: "blueprint", label: "Blueprint", hint: "Full factory graph", color: "var(--color-cyan)" },
-  { key: "part", label: "Part", hint: "Reusable sub-graph", color: "var(--color-amber)" },
-  { key: "ontology", label: "Ontology", hint: "Typed vocabulary", color: "var(--color-violet)" },
+  {
+    key: "blueprint",
+    label: "Blueprint",
+    hint: "Full factory graph",
+    color: "var(--color-cyan)",
+    ready: true,
+  },
+  {
+    key: "node",
+    label: "Node",
+    hint: "One reusable node card",
+    color: "var(--color-amber)",
+    ready: false,
+  },
+  {
+    key: "ontology",
+    label: "Ontology",
+    hint: "Typed vocabulary",
+    color: "var(--color-violet)",
+    ready: false,
+  },
 ];
 
 /** Lower-case noun for a content kind, used across the flow's copy. */
 const KIND_NOUN: Record<ContentKind, string> = {
   blueprint: "blueprint",
-  part: "part",
+  node: "node card",
   ontology: "ontology",
 };
 
@@ -54,21 +89,36 @@ const inputCls =
 const fieldLabelCls =
   "font-mono text-[11px] uppercase tracking-[0.14em] text-dim";
 
-/** Stand-in "parsed" graph — the platform would produce this from the .dot. */
-const PARSED_GRAPH = BLUEPRINTS[0].graph;
+/**
+ * One vocabulary view for the tab. `isA` memoizes per instance, so sharing it across
+ * every keystroke-triggered re-validation is both cheaper and the only way two runs of
+ * the validator are provably against identical terms — the same reason `lib/content`
+ * builds exactly one for the whole static build.
+ */
+const ONTOLOGY = ontologyView(CORE_ONTOLOGY);
 
-/** Fake but plausible static-analysis output for the Publish step. */
-const AUTO_AUTONOMY: AutonomyInfo = {
-  level: 4,
-  label: AUTONOMY_LABELS[4],
-  blurb: "No human-approval gates found on any control path.",
+const EMPTY_DETAILS: BundleDetails = {
+  title: "",
+  summary: "",
+  description: "",
+  category: "",
+  tags: [],
 };
 
+/** A real bundle out of the archive, handed down by the server page (§5 step 1). */
+export interface ExampleBundle {
+  /** The blueprint's title, named on the "load an example" button. */
+  title: string;
+  /** Manifest, topology and every pinned card, named the way the archive names them. */
+  files: UploadFile[];
+}
+
 /* ------------------------------------------------------------------ */
-/*  Chip field (tags / agents / tools)                                 */
+/*  Chip field (tags)                                                  */
 /* ------------------------------------------------------------------ */
 
 function ChipField({
+  id,
   label,
   placeholder,
   values,
@@ -76,6 +126,9 @@ function ChipField({
   onRemove,
   accent = "var(--color-cyan)",
 }: {
+  /** The input's id. The `<label>` sits outside the box the input lives in, so the
+      association has to be explicit — clicking the label focuses the field. */
+  id: string;
   label: string;
   placeholder: string;
   values: string[];
@@ -93,7 +146,9 @@ function ChipField({
 
   return (
     <div className="flex flex-col gap-2">
-      <label className={fieldLabelCls}>{label}</label>
+      <label className={fieldLabelCls} htmlFor={id}>
+        {label}
+      </label>
       <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-line bg-surface-2 px-2 py-2 focus-within:border-cyan">
         {values.map((v, i) => (
           <span
@@ -117,6 +172,7 @@ function ChipField({
           </span>
         ))}
         <input
+          id={id}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
@@ -130,10 +186,50 @@ function ChipField({
           onBlur={() => {
             if (draft.trim()) commit();
           }}
-          aria-label={label}
           placeholder={values.length === 0 ? placeholder : ""}
           className="min-w-[8rem] flex-1 bg-transparent px-1 py-0.5 text-sm text-fg placeholder:text-dim focus:outline-none"
         />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The same chip row, read-only. What the graph needs is a property of the cards it
+ * pins, not something an author types in — so it is shown, not asked for.
+ */
+function DerivedChips({
+  label,
+  values,
+  empty,
+  accent,
+}: {
+  label: string;
+  values: readonly string[];
+  empty: string;
+  accent: string;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <span className={fieldLabelCls}>{label}</span>
+      <div className="flex min-h-[2.75rem] flex-wrap items-center gap-1.5 rounded-md border border-dashed border-line bg-surface-2/40 px-2 py-2">
+        {values.length === 0 ? (
+          <span className="px-1 text-sm text-dim">{empty}</span>
+        ) : (
+          values.map((v) => (
+            <span
+              key={v}
+              className="inline-flex items-center gap-1 rounded-full border border-line bg-surface-3 px-2 py-0.5 font-mono text-[11px] text-fg"
+            >
+              <span
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ background: accent }}
+                aria-hidden
+              />
+              {v}
+            </span>
+          ))
+        )}
       </div>
     </div>
   );
@@ -143,11 +239,20 @@ function ChipField({
 /*  Step indicator                                                     */
 /* ------------------------------------------------------------------ */
 
+/**
+ * The four steps as a jump bar. A step ahead of the current one is unreachable until
+ * there is a topology to read, and it says so the same way the footer's Next button
+ * does — `disabled`, plus the reason in the accessible name. Two controls gating on
+ * one predicate must not disagree about how they express it.
+ */
 function StepIndicator({
   step,
+  canAdvance,
   onJump,
 }: {
   step: StepId;
+  /** Whether the selection carries a `.dot`; without one nothing downstream exists. */
+  canAdvance: boolean;
   onJump: (id: StepId) => void;
 }) {
   return (
@@ -155,13 +260,22 @@ function StepIndicator({
       {STEPS.map((s, i) => {
         const done = s.id < step;
         const active = s.id === step;
+        const locked = s.id > step && !canAdvance;
         return (
           <li key={s.id} className="flex flex-1 items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => onJump(s.id)}
-              aria-label={s.label}
-              className="group flex items-center gap-2.5 text-left"
+              disabled={locked}
+              aria-label={
+                locked
+                  ? `Step ${s.id} — ${s.label}. Not available yet: add a .dot topology on step 1 first.`
+                  : `Step ${s.id} — ${s.label}`
+              }
+              className={cx(
+                "group flex items-center gap-2.5 text-left",
+                locked && "cursor-not-allowed opacity-50",
+              )}
               aria-current={active ? "step" : undefined}
             >
               <span
@@ -169,7 +283,8 @@ function StepIndicator({
                   "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border font-mono text-xs transition-colors",
                   active && "border-cyan bg-cyan/10 text-cyan",
                   done && "border-emerald/50 bg-emerald/10 text-emerald",
-                  !active && !done && "border-line bg-surface-2 text-dim group-hover:border-line-bright",
+                  !active && !done && "border-line bg-surface-2 text-dim",
+                  !active && !done && !locked && "group-hover:border-line-bright",
                 )}
               >
                 {done ? "✓" : s.id}
@@ -177,7 +292,8 @@ function StepIndicator({
               <span
                 className={cx(
                   "hidden font-mono text-xs uppercase tracking-[0.12em] transition-colors sm:block",
-                  active ? "text-fg" : "text-dim group-hover:text-muted",
+                  active ? "text-fg" : "text-dim",
+                  !active && !locked && "group-hover:text-muted",
                 )}
               >
                 {s.label}
@@ -203,45 +319,83 @@ function StepIndicator({
 /*  Main flow                                                          */
 /* ------------------------------------------------------------------ */
 
-export function UploadFlow() {
+/**
+ * Four steps, and after the first one everything on screen is the engine's own answer:
+ * the files are read in this tab, `loadBundle` runs in this tab, and the schematic and
+ * the two computed scores are the ones the registry would store. Nothing is uploaded —
+ * step 4 says so in as many words.
+ */
+export function UploadFlow({ example }: { example: ExampleBundle }) {
   const [step, setStep] = useState<StepId>(1);
   const [kind, setKind] = useState<ContentKind>("blueprint");
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
-
-  const [title, setTitle] = useState("");
-  const [summary, setSummary] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [agents, setAgents] = useState<string[]>([]);
-  const [tools, setTools] = useState<string[]>([]);
-
+  const [files, setFiles] = useState<UploadFile[]>([]);
+  const [details, setDetails] = useState<BundleDetails>(EMPTY_DETAILS);
   const [submitted, setSubmitted] = useState(false);
 
-  const inputRef = useRef<HTMLInputElement>(null);
-  const canAdvance = fileName !== null;
+  /* ---------- the whole pipeline, derived ---------- */
 
-  function addUnique(
-    setter: Dispatch<SetStateAction<string[]>>,
-    value: string,
-  ) {
-    setter((prev) => (prev.includes(value) ? prev : [...prev, value]));
-  }
-  function removeAt(
-    setter: Dispatch<SetStateAction<string[]>>,
-    index: number,
-  ) {
-    setter((prev) => prev.filter((_, i) => i !== index));
+  const parts = useMemo(() => classifyBundle(files), [files]);
+  const bundle = useMemo(() => assembleBundle(parts, details), [parts, details]);
+  const result: LoadBundleResult | undefined = useMemo(
+    () => (bundle === undefined ? undefined : loadBundle(bundle, { ontology: ONTOLOGY })),
+    [bundle],
+  );
+
+  const errorCount = result === undefined ? 0 : summarize(result.diagnostics).error;
+  const blocked = result === undefined || hasErrors(result.diagnostics);
+  const canAdvance = parts.dot !== undefined;
+
+  // Resolution degrades rather than stopping (§8), so these are readable even while the
+  // bundle still carries errors — they just describe the part that did resolve.
+  const agents = useMemo(
+    () => (result?.blueprint === undefined ? [] : requiredAgents(result.blueprint)),
+    [result],
+  );
+  const tools = useMemo(
+    () => (result?.blueprint === undefined ? [] : requiredTools(result.blueprint)),
+    [result],
+  );
+
+  /* ---------- editing ---------- */
+
+  /* A dropped `blueprint.yaml` answers most of step 2, so the form is filled from it
+     the moment it lands — after which the form is the source of truth and wins. */
+  const takeFiles = useCallback((next: UploadFile[]) => {
+    setFiles(next);
+    const doc = classifyBundle(next).manifestDoc;
+    if (doc !== undefined) setDetails((d) => ({ ...d, ...detailsFromManifest(doc) }));
+  }, []);
+
+  const loadExample = useCallback(() => {
+    // Replaces rather than merges: an example dropped on top of a half-made selection
+    // is two bundles in a trench coat, and the validator would be right to say so.
+    setDetails(EMPTY_DETAILS);
+    takeFiles([...example.files]);
+  }, [example, takeFiles]);
+
+  function setField<K extends keyof BundleDetails>(key: K, value: BundleDetails[K]) {
+    setDetails((d) => ({ ...d, [key]: value }));
   }
 
-  function takeFiles(files: FileList | null) {
-    const f = files?.[0];
-    if (f) setFileName(f.name);
+  function addTag(value: string) {
+    setDetails((d) => (d.tags.includes(value) ? d : { ...d, tags: [...d.tags, value] }));
   }
+  function removeTag(index: number) {
+    setDetails((d) => ({ ...d, tags: d.tags.filter((_, i) => i !== index) }));
+  }
+
+  function reset() {
+    setSubmitted(false);
+    setStep(1);
+    setKind("blueprint");
+    setFiles([]);
+    setDetails(EMPTY_DETAILS);
+  }
+
+  /* ---------- navigation ---------- */
 
   function jump(target: StepId) {
-    // Can always step back; can only go forward once a file exists.
+    // Can always step back; can only go forward once there is a topology to read.
     if (target > step && !canAdvance) return;
     setStep(target);
   }
@@ -255,41 +409,114 @@ export function UploadFlow() {
     if (step > 1) setStep((s) => (s - 1) as StepId);
   }
 
+  // The slug the registry would key on. A dropped manifest owns its own — §4 makes it
+  // the blueprint's identity — so only a synthesised manifest gets one off the title.
+  const slug =
+    bundle?.manifest.slug ??
+    (details.title.trim() === "" ? "untitled-blueprint" : slugify(details.title));
+
   return (
     <div className="panel overflow-hidden">
       {/* Header: step indicator */}
       <div className="border-b border-line bg-surface-2/40 px-5 py-4 sm:px-8">
-        <StepIndicator step={step} onJump={jump} />
+        <StepIndicator step={step} canAdvance={canAdvance} onJump={jump} />
       </div>
 
       {/* Body */}
       <div className="px-5 py-8 sm:px-8">
         {step === 1 && (
-          <StepUpload
-            kind={kind}
-            setKind={setKind}
-            fileName={fileName}
-            setFileName={setFileName}
-            dragging={dragging}
-            setDragging={setDragging}
-            inputRef={inputRef}
-            takeFiles={takeFiles}
-          />
+          <div className="flex flex-col gap-8">
+            <BundleDropzone
+              files={files}
+              parts={parts}
+              onChange={takeFiles}
+              onLoadExample={loadExample}
+              exampleLabel={example.title}
+            />
+
+            {/* Content kind selector */}
+            <div className="flex flex-col gap-3">
+              <span className={fieldLabelCls} id="content-type-label">
+                Content type
+              </span>
+              <div
+                role="group"
+                aria-labelledby="content-type-label"
+                className="inline-flex flex-wrap gap-1 rounded-lg border border-line bg-surface-2 p-1"
+              >
+                {KINDS.map((k) => {
+                  const active = kind === k.key;
+                  return (
+                    <button
+                      key={k.key}
+                      type="button"
+                      onClick={() => setKind(k.key)}
+                      disabled={!k.ready}
+                      aria-pressed={active}
+                      aria-label={
+                        k.ready
+                          ? `${k.label} — ${k.hint}`
+                          : `${k.label} — ${k.hint}. This flow does not accept one yet.`
+                      }
+                      className={cx(
+                        "flex items-center gap-2 rounded-md px-3.5 py-2 text-sm transition-colors",
+                        active
+                          ? "bg-surface-3 text-fg shadow-[inset_0_0_0_1px_var(--color-line-bright)]"
+                          : "text-muted hover:text-fg",
+                        !k.ready && "cursor-not-allowed opacity-50 hover:text-muted",
+                      )}
+                    >
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{
+                          background: active ? k.color : "var(--color-line-bright)",
+                        }}
+                        aria-hidden
+                      />
+                      <span className="flex flex-col items-start leading-tight">
+                        <span className="font-medium">{k.label}</span>
+                        <span className="text-[11px] text-dim">
+                          {k.ready ? k.hint : `${k.hint} · not yet`}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="max-w-xl text-xs leading-relaxed text-dim">
+                The validator joins a DOT to the cards it pins, so a whole bundle is what
+                it knows how to read. A card on its own and a vocabulary extension each
+                need their own check, and neither is wired up yet.
+              </p>
+            </div>
+          </div>
         )}
 
         {step === 2 && (
           <div className="grid max-w-3xl gap-5">
+            <p className="max-w-xl text-sm leading-relaxed text-muted">
+              These fields become the bundle&rsquo;s manifest. A{" "}
+              <span className="font-mono text-cyan">blueprint.yaml</span> in the
+              selection fills them in for you;{" "}
+              {parts.manifest === undefined
+                ? "there is none here, so a minimal one is synthesised from what you type."
+                : `they were read from ${parts.manifest.name}.`}
+            </p>
+
             <div className="flex flex-col gap-2">
               <label className={fieldLabelCls} htmlFor="bp-title">
                 Title
               </label>
               <input
                 id="bp-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                value={details.title}
+                onChange={(e) => setField("title", e.target.value)}
                 placeholder="Consensus line — multi-agent conflict resolution"
                 className={inputCls}
               />
+              <p className="font-mono text-[11px] text-dim">
+                slug <span className="text-muted">{slug}</span>
+              </p>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -298,8 +525,8 @@ export function UploadFlow() {
               </label>
               <textarea
                 id="bp-summary"
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
+                value={details.summary}
+                onChange={(e) => setField("summary", e.target.value)}
                 rows={2}
                 placeholder="One sentence a reviewer sees in the gallery card."
                 className={cx(inputCls, "resize-y")}
@@ -312,8 +539,8 @@ export function UploadFlow() {
               </label>
               <textarea
                 id="bp-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                value={details.description}
+                onChange={(e) => setField("description", e.target.value)}
                 rows={5}
                 placeholder="What the factory does, its acceptance criteria, and where the closed loop makes its judgement calls."
                 className={cx(inputCls, "resize-y")}
@@ -326,101 +553,70 @@ export function UploadFlow() {
               </label>
               <input
                 id="bp-category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                value={details.category}
+                onChange={(e) => setField("category", e.target.value)}
                 placeholder="Coordination"
                 className={inputCls}
               />
             </div>
 
             <ChipField
+              id="bp-tags"
               label="Tags"
               placeholder="Type a tag, press Enter"
-              values={tags}
-              onAdd={(v) => addUnique(setTags, v)}
-              onRemove={(i) => removeAt(setTags, i)}
+              values={details.tags}
+              onAdd={addTag}
+              onRemove={removeTag}
               accent="var(--color-cyan)"
             />
 
-            <ChipField
-              label="Required agents"
-              placeholder="e.g. planner, negotiator — Enter to add"
-              values={agents}
-              onAdd={(v) => addUnique(setAgents, v)}
-              onRemove={(i) => removeAt(setAgents, i)}
-              accent="var(--color-violet)"
-            />
+            <div className="flex flex-col gap-5 border-t border-line pt-5">
+              <p className="max-w-xl text-sm leading-relaxed text-muted">
+                <span className="text-fg">Read off your cards.</span> What the graph
+                needs is a property of the nodes it instantiates, not something to
+                declare by hand — so the registry computes it instead of asking.
+              </p>
 
-            <ChipField
-              label="Required tools"
-              placeholder="e.g. http.fetch, sql.query — Enter to add"
-              values={tools}
-              onAdd={(v) => addUnique(setTools, v)}
-              onRemove={(i) => removeAt(setTools, i)}
-              accent="var(--color-amber)"
-            />
-          </div>
-        )}
+              <DerivedChips
+                label="Required agents"
+                values={agents}
+                empty={
+                  canAdvance
+                    ? "No card in this bundle names a model or an agent."
+                    : "Select a bundle on the first step."
+                }
+                accent="var(--color-violet)"
+              />
 
-        {step === 3 && (
-          <div className="flex flex-col gap-6">
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.35fr)]">
-              {/* Live summary card */}
-              <div className="panel flex flex-col gap-4 self-start bg-surface-2/40 p-5">
-                <div className="flex items-center justify-between gap-2">
-                  <KindBadge kind={kind} />
-                  {fileName && (
-                    <span className="font-mono text-[11px] text-dim">{fileName}</span>
-                  )}
-                </div>
-                <h3 className="font-display text-xl font-semibold leading-snug text-fg">
-                  {title || `Untitled ${KIND_NOUN[kind]}`}
-                </h3>
-                <p className="text-sm leading-relaxed text-muted">
-                  {summary || "No summary yet — add one on the Details step."}
-                </p>
-                {category && (
-                  <p className="font-mono text-xs text-dim">
-                    Category: <span className="text-muted">{category}</span>
-                  </p>
-                )}
-                {tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {tags.map((t) => (
-                      <TagPill key={t} label={t} />
-                    ))}
-                  </div>
-                )}
-                {(agents.length > 0 || tools.length > 0) && (
-                  <dl className="grid gap-2 border-t border-line pt-4 text-xs">
-                    {agents.length > 0 && (
-                      <div className="flex gap-2">
-                        <dt className="w-16 shrink-0 font-mono text-dim">agents</dt>
-                        <dd className="text-muted">{agents.join(", ")}</dd>
-                      </div>
-                    )}
-                    {tools.length > 0 && (
-                      <div className="flex gap-2">
-                        <dt className="w-16 shrink-0 font-mono text-dim">tools</dt>
-                        <dd className="text-muted">{tools.join(", ")}</dd>
-                      </div>
-                    )}
-                  </dl>
-                )}
-              </div>
-
-              {/* Interactive parsed graph */}
-              <div className="flex flex-col gap-2">
-                <BlueprintGraph graph={PARSED_GRAPH} height={360} />
-                <p className="font-mono text-[11px] text-dim">
-                  Parsed from your .dot — 8 nodes, 9 edges. Drag to inspect.
-                </p>
-              </div>
+              <DerivedChips
+                label="Required tools"
+                values={tools}
+                empty={
+                  canAdvance
+                    ? "No card in this bundle asks for a tool."
+                    : "Select a bundle on the first step."
+                }
+                accent="var(--color-amber)"
+              />
             </div>
-
-            <DotSource dot={PARSED_GRAPH.dot} defaultOpen />
           </div>
         )}
+
+        {step === 3 &&
+          (result === undefined ? (
+            <div className="rounded-lg border border-line bg-surface-2/40 p-5">
+              <h3 className="font-display text-lg font-semibold text-fg">
+                Nothing to validate
+              </h3>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+                A bundle without a <span className="font-mono text-cyan">.dot</span> is
+                not an incomplete bundle — it is not one at all. Go back to the first
+                step and add the topology.
+              </p>
+            </div>
+          ) : (
+            <ValidationReport result={result} />
+          ))}
 
         {step === 4 &&
           (submitted ? (
@@ -433,84 +629,80 @@ export function UploadFlow() {
               </span>
               <div className="flex flex-col gap-2">
                 <h3 className="font-display text-2xl font-semibold text-fg">
-                  Published to the registry
+                  This is where it would be published
                 </h3>
                 <p className="text-sm leading-relaxed text-muted">
-                  <span className="font-mono text-amber">demo</span> — nothing was
-                  saved. In the real registry your {KIND_NOUN[kind]} would now be
-                  live with its static-analysis scores attached, awaiting community
-                  votes.
+                  <span className="font-mono text-amber">demo</span> — nothing was sent
+                  and nothing was saved. There is no registry backend yet. In the real
+                  one your {KIND_NOUN[kind]} would now be live with the two
+                  static-analysis scores you just saw attached, awaiting community votes.
                 </p>
               </div>
               <div className="flex flex-wrap justify-center gap-3">
-                <ButtonLink href="/gallery">Browse the gallery</ButtonLink>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSubmitted(false);
-                    setStep(1);
-                    setKind("blueprint");
-                    setFileName(null);
-                    setTitle("");
-                    setSummary("");
-                    setDescription("");
-                    setCategory("");
-                    setTags([]);
-                    setAgents([]);
-                    setTools([]);
-                  }}
-                >
+                <ButtonLink href="/blueprints">Browse the blueprints</ButtonLink>
+                <Button variant="outline" onClick={reset}>
                   Upload another
                 </Button>
               </div>
             </div>
           ) : (
             <div className="flex flex-col gap-6">
-              <div>
-                <h3 className="font-display text-lg font-semibold text-fg">
-                  Auto-computed from your graph
+              {/* What the registry entry would say */}
+              <div className="panel flex flex-col gap-4 bg-surface-2/40 p-5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <KindBadge kind={kind} />
+                  <span className="font-mono text-[11px] text-dim">{slug}</span>
+                </div>
+                <h3 className="font-display text-xl font-semibold leading-snug text-fg">
+                  {details.title || `Untitled ${KIND_NOUN[kind]}`}
                 </h3>
-                <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted">
-                  Two of the six scores are produced by static analysis of the
-                  schematic the moment you upload — no run required.
+                <p className="text-sm leading-relaxed text-muted">
+                  {details.summary || "No summary yet — add one on the Details step."}
                 </p>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                {/* Autonomy */}
-                <div className="panel flex flex-col gap-3 bg-surface-2/40 p-5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs uppercase tracking-[0.14em] text-dim">
-                      Autonomy
-                    </span>
-                    <SourceBadge source="auto" />
-                  </div>
-                  <AutonomyMeter autonomy={AUTO_AUTONOMY} />
-                  <p className="text-xs leading-relaxed text-muted">
-                    No human-approval gate nodes on any control path — the loop
-                    closes end to end.
+                {details.category && (
+                  <p className="font-mono text-xs text-dim">
+                    Category: <span className="text-muted">{details.category}</span>
                   </p>
-                </div>
-
-                {/* Security */}
-                <div className="panel flex flex-col gap-3 bg-surface-2/40 p-5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs uppercase tracking-[0.14em] text-dim">
-                      Security
-                    </span>
-                    <SourceBadge source="auto" />
+                )}
+                {details.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {details.tags.map((t) => (
+                      <TagPill key={t} label={t} />
+                    ))}
                   </div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="font-display text-3xl font-semibold text-cyan">
-                      74
-                    </span>
-                    <span className="font-mono text-xs text-dim">/ 100</span>
+                )}
+                {result?.analysis !== undefined && !blocked && (
+                  <div className="flex flex-col gap-3 border-t border-line pt-4">
+                    <dl className="grid gap-2 text-xs">
+                      <div className="flex gap-2">
+                        <dt className="w-24 shrink-0 font-mono text-dim">autonomy</dt>
+                        <dd className="text-muted">
+                          A{result.analysis.autonomy.level} ·{" "}
+                          {result.analysis.autonomy.label} —{" "}
+                          {result.analysis.autonomy.autonomousNodes} of{" "}
+                          {result.analysis.autonomy.totalNodes} nodes unattended
+                        </dd>
+                      </div>
+                      <div className="flex gap-2">
+                        <dt className="w-24 shrink-0 font-mono text-dim">security</dt>
+                        <dd className="text-muted">
+                          level {result.analysis.security.level} ·{" "}
+                          {result.analysis.security.findings.length} finding
+                          {result.analysis.security.findings.length === 1 ? "" : "s"}
+                        </dd>
+                      </div>
+                    </dl>
+                    {/* The third thing the engine computes off a bundle (doc 2 §8), and
+                        the one an author most wants to see before publishing: which
+                        phases their factory acts in. Outside the `dl` because the strip
+                        carries its own label, and because it is not a metric — nothing
+                        here is scored, and a phase with no node is scope, not a gap. */}
+                    <PhaseCoverageBadge
+                      covered={result.analysis.phaseCoverage.covered}
+                      missing={result.analysis.phaseCoverage.missing}
+                    />
                   </div>
-                  <p className="text-xs leading-relaxed text-muted">
-                    Scored from the tool scopes the graph requests. Narrower
-                    permissions score higher.
-                  </p>
-                </div>
+                )}
               </div>
 
               <div className="rounded-lg border border-line bg-surface-2/40 p-4">
@@ -520,20 +712,45 @@ export function UploadFlow() {
                     Efficacy, Reliability and Transparency
                   </span>{" "}
                   come from weighted community &amp; validator votes;{" "}
-                  <span style={{ color: METRIC_SOURCE_META.measured.color }}>
+                  <span style={{ color: METRIC_SOURCE_META.reported.color }}>
                     Cost / time
                   </span>{" "}
-                  is measured objectively on the first real run with telemetry
-                  opted in.
+                  is reported by whoever runs it — the platform never sees the
+                  execution — and arrives with its run count, its spread and the
+                  model it was obtained on.
                 </p>
               </div>
 
               <div>
-                <Button size="lg" onClick={() => setSubmitted(true)}>
+                <Button
+                  size="lg"
+                  onClick={() => setSubmitted(true)}
+                  disabled={blocked}
+                  aria-describedby="publish-note"
+                >
                   Publish {KIND_NOUN[kind]}
                 </Button>
-                <p className="mt-2 font-mono text-[11px] text-dim">
-                  No backend — this is a UI demo, nothing is uploaded.
+                <p
+                  id="publish-note"
+                  className="mt-2 max-w-xl text-xs leading-relaxed text-muted"
+                >
+                  {blocked ? (
+                    <>
+                      <span className="font-mono text-signal">blocked</span> —{" "}
+                      {result === undefined
+                        ? "there is no bundle to publish yet."
+                        : `the validator reported ${errorCount} error${
+                            errorCount === 1 ? "" : "s"
+                          }. The registry does not accept a bundle it cannot resolve; fix them on the Preview step.`}
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-mono text-amber">not wired up</span> —
+                      publishing has no backend. This button ends the wizard and shows
+                      you what the registry entry would look like. Nothing leaves this
+                      tab.
+                    </>
+                  )}
                 </p>
               </div>
             </div>
@@ -552,156 +769,16 @@ export function UploadFlow() {
             </Button>
           ) : (
             <span className="font-mono text-[11px] text-dim">
-              Step 4 of 4 · ready to publish
+              Step 4 of 4 ·{" "}
+              {!blocked
+                ? "ready to publish"
+                : result === undefined
+                  ? "no bundle yet"
+                  : `blocked by ${errorCount} error${errorCount === 1 ? "" : "s"}`}
             </span>
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Step 1 body                                                        */
-/* ------------------------------------------------------------------ */
-
-function StepUpload({
-  kind,
-  setKind,
-  fileName,
-  setFileName,
-  dragging,
-  setDragging,
-  inputRef,
-  takeFiles,
-}: {
-  kind: ContentKind;
-  setKind: (k: ContentKind) => void;
-  fileName: string | null;
-  setFileName: (name: string | null) => void;
-  dragging: boolean;
-  setDragging: (v: boolean) => void;
-  inputRef: RefObject<HTMLInputElement | null>;
-  takeFiles: (files: FileList | null) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-8">
-      {/* Drop zone */}
-      <div className="flex flex-col gap-3">
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => inputRef.current?.click()}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              inputRef.current?.click();
-            }
-          }}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragging(false);
-            takeFiles(e.dataTransfer.files);
-          }}
-          className={cx(
-            "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed px-6 py-14 text-center transition-colors",
-            dragging
-              ? "border-cyan bg-cyan/5"
-              : "border-line-bright hover:border-cyan/60 hover:bg-surface-2/40",
-          )}
-        >
-          <span
-            className="flex h-12 w-12 items-center justify-center rounded-lg border border-line bg-surface-2 text-xl text-cyan"
-            aria-hidden
-          >
-            ⇪
-          </span>
-          <div className="flex flex-col gap-1">
-            <p className="text-sm text-fg">
-              Drop your{" "}
-              <span className="font-mono text-cyan">.dot</span> /{" "}
-              <span className="font-mono text-cyan">.gv</span> graph here
-            </p>
-            <p className="text-xs text-dim">
-              or click to browse — the schematic of your dark factory
-            </p>
-          </div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".dot,.gv"
-            className="hidden"
-            onChange={(e) => takeFiles(e.target.files)}
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          {fileName ? (
-            <span className="inline-flex items-center gap-2 rounded-full border border-cyan/40 bg-cyan/10 px-3 py-1 font-mono text-xs text-cyan-bright">
-              <span className="h-1.5 w-1.5 rounded-full bg-cyan" aria-hidden />
-              {fileName}
-              <button
-                type="button"
-                onClick={() => setFileName(null)}
-                aria-label="Remove file"
-                className="ml-0.5 text-cyan/70 transition-colors hover:text-signal"
-              >
-                ×
-              </button>
-            </span>
-          ) : (
-            <span className="font-mono text-xs text-dim">No file selected</span>
-          )}
-          <button
-            type="button"
-            onClick={() => setFileName("consensus-line.dot")}
-            className="font-mono text-xs text-cyan underline-offset-4 transition-colors hover:text-cyan-bright hover:underline"
-          >
-            use a sample →
-          </button>
-        </div>
-      </div>
-
-      {/* Content kind selector */}
-      <div className="flex flex-col gap-3">
-        <span className={fieldLabelCls}>Content type</span>
-        <div className="inline-flex flex-wrap gap-1 rounded-lg border border-line bg-surface-2 p-1">
-          {KINDS.map((k) => {
-            const active = kind === k.key;
-            return (
-              <button
-                key={k.key}
-                type="button"
-                onClick={() => setKind(k.key)}
-                aria-pressed={active}
-                className={cx(
-                  "flex items-center gap-2 rounded-md px-3.5 py-2 text-sm transition-colors",
-                  active
-                    ? "bg-surface-3 text-fg shadow-[inset_0_0_0_1px_var(--color-line-bright)]"
-                    : "text-muted hover:text-fg",
-                )}
-              >
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{
-                    background: active ? k.color : "var(--color-line-bright)",
-                  }}
-                  aria-hidden
-                />
-                <span className="flex flex-col items-start leading-tight">
-                  <span className="font-medium">{k.label}</span>
-                  <span className="text-[11px] text-dim">{k.hint}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }

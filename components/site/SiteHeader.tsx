@@ -8,10 +8,11 @@ import { Avatar } from "@/components/ui/Avatar";
 import { ButtonLink } from "@/components/ui/Button";
 import { cx } from "@/lib/format";
 
+/** The three surfaces of doc 1 §0, under their current names. */
 const NAV = [
-  { href: "/gallery", label: "Gallery" },
-  { href: "/parts", label: "Parts" },
-  { href: "/ontologies", label: "Ontologies" },
+  { href: "/blueprints", label: "Blueprints" },
+  { href: "/nodes", label: "Nodes" },
+  { href: "/ontology", label: "Ontology" },
 ];
 
 const currentUser = AUTHORS.mara;

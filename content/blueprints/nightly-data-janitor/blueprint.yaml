@@ -1,0 +1,20 @@
+slug: nightly-data-janitor
+title: Nightly Data Janitor
+summary: >-
+  An unattended overnight cleanup line: extract deltas, normalize, validate against schema, and
+  publish — repairing dirty rows in place.
+description: >-
+  A scheduled variant of the extract-validate pattern, tuned to run while nobody's watching. It
+  picks up the day's deltas, normalizes and validates them, repairs what it can, and quarantines
+  what it can't for a morning review queue. Built to be boring and dependable — the kind of
+  factory node you forget exists because it never pages you.
+category: Data
+tags:
+  - ETL
+  - scheduled
+  - data
+  - cleanup
+author: k0bra
+ontologyVersion: "0.1.0"
+createdAt: "2026-05-19"
+updatedAt: "2026-07-14"

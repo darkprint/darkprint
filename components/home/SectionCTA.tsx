@@ -24,16 +24,24 @@ export function SectionCTA() {
         </h2>
         <p className="max-w-xl text-lg leading-relaxed" style={{ color: "var(--color-blueprint-line)" }}>
           The blueprint registry for autonomous AI factories. Autonomy you can read as a graph —
-          publish your pipeline, get it scored, and pull proven parts from the registry.
+          open a whole factory, see exactly how its two computed scores were reached, and pull the
+          node cards it pins.
         </p>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row">
-          <ButtonLink href="/gallery" variant="primary" size="lg">
-            Explore the gallery
+          <ButtonLink href="/blueprints" variant="primary" size="lg">
+            Explore the blueprints
           </ButtonLink>
           <ButtonLink href="/upload" variant="outline" size="lg">
-            Share a blueprint
+            Validate a bundle
           </ButtonLink>
         </div>
+        <p
+          className="max-w-md font-mono text-[11px] leading-relaxed"
+          style={{ color: "var(--color-blueprint-ink)" }}
+        >
+          The upload wizard runs the real validator and the real analyzers, in your browser.
+          Publishing to the registry is not wired up yet.
+        </p>
       </div>
     </section>
   );

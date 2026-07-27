@@ -15,12 +15,20 @@ export function SectionHeading({
   title,
   lead,
   align = "left",
+  as: Title = "h2",
   className,
 }: {
   eyebrow?: string;
   title: React.ReactNode;
   lead?: React.ReactNode;
   align?: "left" | "center";
+  /**
+   * The element the title renders as. A section inside a page is an `h2` and that is
+   * the default; a route that uses this block *as* its page title passes `h1`, so the
+   * document has a level-one heading instead of starting the outline at two. Purely
+   * semantic — the type scale is the same either way.
+   */
+  as?: "h1" | "h2";
   className?: string;
 }) {
   return (
@@ -32,9 +40,9 @@ export function SectionHeading({
       )}
     >
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-      <h2 className="font-display text-3xl font-semibold leading-tight tracking-tight text-fg sm:text-4xl">
+      <Title className="font-display text-3xl font-semibold leading-tight tracking-tight text-fg sm:text-4xl">
         {title}
-      </h2>
+      </Title>
       {lead && (
         <p className="max-w-2xl text-base leading-relaxed text-muted">{lead}</p>
       )}

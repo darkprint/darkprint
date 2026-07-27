@@ -1,10 +1,28 @@
 /* ============================================================
    DarkPrint domain model
-   Shared contract for all mock data, pages and components.
+   Shared contract for the pages and components. The blueprints that
+   fill it are resolved off the archive by `lib/content`.
    ============================================================ */
 
-/** How a given metric score is produced. */
-export type MetricSource = "auto" | "measured" | "community";
+/* Type-only, so nothing here pulls the engine into a client bundle. The three
+   analysis shapes are the engine's own — restating them would let the two drift. */
+import type {
+  AutonomyResult,
+  Diagnostic,
+  PhaseCoverage,
+  SecurityResult,
+} from "@/lib/core";
+
+/**
+ * How a given metric score is produced.
+ *
+ * `reported`, not `measured`: doc 1 §8 corrects the earlier drafts on exactly this
+ * word. Execution happens on the user's machine (§0.1.3), so DarkPrint never observes
+ * a run — cost and time arrive from whoever ran the blueprint and the platform cannot
+ * verify them. Calling that "measured" would claim an authority the architecture rules
+ * out, so the union member, the badge and the blurb all say `reported`.
+ */
+export type MetricSource = "auto" | "reported" | "community";
 
 export type MetricKey =
   | "autonomy"
@@ -41,7 +59,11 @@ export interface AutonomyInfo {
 
 /**
  * Node roles in an agent pipeline. Drives icon + accent in the schematic.
- * `gate` = human-approval checkpoint (lowers autonomy);
+ *
+ * Two of them put a person in the graph, and doc 3 §3 separates them: `gate` is where
+ * "una persona deve approvare o rifiutare", `human-input` is where "una persona deve
+ * fornire dati o contenuti". They used to be one row, so a `human-input` node drew
+ * labelled *Human gate* and asserted an approval checkpoint that nobody had designed.
  * `ship` = final delivery/output.
  */
 export type AgentNodeKind =
@@ -55,6 +77,7 @@ export type AgentNodeKind =
   | "memory"
   | "tool"
   | "gate"
+  | "human-input"
   | "ship";
 
 export interface AgentNodeData {
@@ -115,7 +138,30 @@ export interface Comment {
 
 /* --------------------- Content types --------------------- */
 
-export type ContentKind = "blueprint" | "part" | "ontology";
+/**
+ * The three surfaces of the registry. `node` replaces the old `part`: the reusable
+ * unit is the node card (§3), not a hand-cut sub-graph.
+ */
+export type ContentKind = "blueprint" | "node" | "ontology";
+
+/**
+ * The explainable half of the scorecard: what the static analyzers found and why.
+ * Structurally the engine's `BlueprintAnalysis`, restated here so `lib/types` stays
+ * the single contract the components read and never imports `lib/core`.
+ */
+export interface BlueprintAnalysisView {
+  autonomy: AutonomyResult;
+  security: SecurityResult;
+  /**
+   * Doc 2 §8 — which of the five lifecycle phases this graph has nodes in, and which
+   * nodes those are. It sits beside the two metrics because it is computed the same
+   * way and off the same bundle, but it is not one of them: it carries no number, and
+   * doc 2 §1.1 puts it under the same rule as autonomy — a description of scope, never
+   * a score.
+   */
+  phaseCoverage: PhaseCoverage;
+  diagnostics: Diagnostic[];
+}
 
 export interface Blueprint {
   kind: "blueprint";
@@ -140,59 +186,21 @@ export interface Blueprint {
   featured?: boolean;
   /** Highlight in the note (the two seed examples). */
   seed?: boolean;
+
+  /* --- from the archive (§4, §5.1). Every blueprint the UI renders now comes out
+     of `lib/content`, so these are guaranteed rather than optional. --- */
+
+  /** Explainable static analysis, straight from the engine. */
+  analysis: BlueprintAnalysisView;
+  /** The archive identity of this exact bundle (§4). */
+  digest: string;
+  /** Card refs this blueprint pins, in graph order. */
+  cardRefs: string[];
 }
 
-export type PartKind =
-  | "retry"
-  | "validation"
-  | "negotiation"
-  | "routing"
-  | "memory"
-  | "escalation";
-
-export interface Part {
-  kind: "part";
-  slug: string;
-  title: string;
-  summary: string;
-  description: string;
-  partKind: PartKind;
-  tags: string[];
-  author: Author;
-  graph: BlueprintGraph;
-  /** Inputs/outputs the sub-graph exposes. */
-  interface: { inputs: string[]; outputs: string[] };
-  usedIn: number;
-  downloads: number;
-  votes: number;
-  createdAt: string;
-}
-
-export interface OntologyNodeType {
-  name: string;
-  description: string;
-}
-export interface OntologyEdgeType {
-  name: string;
-  from: string;
-  to: string;
-  description: string;
-}
-
-export interface Ontology {
-  kind: "ontology";
-  slug: string;
-  title: string;
-  summary: string;
-  description: string;
-  domain: string;
-  tags: string[];
-  author: Author;
-  nodeTypes: OntologyNodeType[];
-  edgeTypes: OntologyEdgeType[];
-  downloads: number;
-  votes: number;
-  createdAt: string;
-}
-
-export type AnyContent = Blueprint | Part | Ontology;
+/**
+ * Anything the gallery can render as a `ContentCard`. Only blueprints carry a
+ * schematic, a scorecard and community signals, so the union has one member —
+ * node cards and ontology terms have their own, much smaller, card shapes.
+ */
+export type AnyContent = Blueprint;

@@ -1,0 +1,51 @@
+id: claim-verifier
+name: Claim Verifier
+type: validation
+phase: testing
+
+action: >-
+  Check every claim in the draft against the passages it cites, release only the ones that hold,
+  and return the rest as a gap list the synthesizer can answer on another pass.
+spec: >-
+  For each asserted sentence in the document on `draft`, open the source its citation points at
+  and decide one thing only: whether that source, read on its own, carries that sentence. Do not
+  weigh how plausible the sentence is, and do not go looking for a different source that would
+  rescue it. Emit on `grounded` the same document reduced to the sentences that survived, their
+  citations untouched. Emit on `gaps` one entry per sentence that failed, quoting the sentence and
+  stating exactly why it failed — the source says something narrower, the source contradicts it,
+  the source does not mention it, or there was no citation at all. Never edit a sentence to make
+  it pass and never supply a citation of your own; your output is a verdict with the evidence
+  behind it, and the rewriting belongs to someone else. After the third pass over the same
+  document, release whatever is grounded and carry the outstanding gaps into the report as stated
+  gaps rather than sending it round again.
+agent: Fact-checker
+tools: []
+params:
+  min_citations_per_claim: 1
+  max_iterations: 3
+
+inputs:
+  - name: draft
+    type: report
+    description: The synthesized answer with its claims and the citations attached to each.
+outputs:
+  - name: grounded
+    type: report
+    description: The draft with every surviving claim tied to a passage that actually supports it.
+  - name: gaps
+    type: status
+    description: The claims that failed, with the reason each citation did not carry them.
+dependencies:
+  - evidence-synthesizer
+
+requires_human: false
+risk_markers: []
+notes: >-
+  `max_iterations` is what bounds the synthesize/verify loop: after three passes the run stops
+  and ships whatever is grounded, with the remaining gaps stated rather than quietly dropped.
+  It is the only declared iteration cap on the cycle synth -> factcheck -> synth, so removing it
+  fires the inferred `unbounded-loop` marker on the whole blueprint.
+
+version: 1.0.0
+author: orin
+ontology_version: 0.1.0

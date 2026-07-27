@@ -1,14 +1,30 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { Blueprint } from "@/lib/types";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import type { AutonomyLevel, Blueprint } from "@/lib/types";
 import { cx } from "@/lib/format";
 import { ContentCard } from "@/components/ui/ContentCard";
+import { PHASE_ORDER, phaseLabel } from "@/components/ui/PhaseCoverage";
 
-type SortKey = "autonomy" | "downloads" | "votes";
+/**
+ * How the grid is ordered.
+ *
+ * Autonomy is deliberately absent, and it used to be the default. Doc 2 §1.1: in the
+ * gallery autonomy is "un **filtro**, non un ordinamento di merito. Nessuna classifica
+ * implicita in cui 4 sta sopra 1." Ordering the registry by band put every blueprint
+ * with a person in it at the bottom of the page — a ranking nobody wrote down, applied
+ * before the reader had chosen anything. It is a filter now, further down this file.
+ *
+ * The default is recency, which orders by when something happened rather than by how
+ * good anything is. Downloads and votes stay available because doc 2 §1.1 endorses
+ * reputation earned "sulla qualità e sull'uso" — they are just no longer the only way
+ * in, and none of them is imposed.
+ */
+type SortKey = "recent" | "downloads" | "votes";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "autonomy", label: "Autonomy level" },
+  { value: "recent", label: "Recently updated" },
   { value: "downloads", label: "Most downloaded" },
   { value: "votes", label: "Most upvoted" },
 ];
@@ -43,27 +59,87 @@ function TagChip({
   );
 }
 
+/**
+ * Applies the `?tag=` deep link (a blueprint page links here with one of its tags).
+ *
+ * `useSearchParams` cannot be called while prerendering, so it lives in this leaf
+ * behind its own Suspense boundary: the bail-out to client rendering stops at that
+ * boundary and the browser above — controls, counts, card grid — still ships as
+ * static HTML. Renders nothing; it only seeds state.
+ */
+function TagFromQuery({
+  tags,
+  onTag,
+}: {
+  tags: readonly string[];
+  onTag: (tag: string) => void;
+}) {
+  const raw = useSearchParams().get("tag");
+
+  useEffect(() => {
+    // Ignore a tag that no blueprint carries, so a stale link cannot render an
+    // empty gallery with a filter the user never chose.
+    if (raw !== null && tags.includes(raw)) onTag(raw);
+  }, [raw, tags, onTag]);
+
+  return null;
+}
+
 export function GalleryBrowser({
   blueprints,
   tags,
   categories,
-  initialTag = null,
 }: {
-  blueprints: Blueprint[];
-  tags: string[];
-  categories: string[];
-  initialTag?: string | null;
+  /* Readonly throughout: these arrive frozen from the registry, and nothing here
+     needs to write to them. */
+  blueprints: readonly Blueprint[];
+  tags: readonly string[];
+  categories: readonly string[];
 }) {
   const [search, setSearch] = useState("");
-  const [tag, setTag] = useState<string | null>(initialTag);
+  const [tag, setTag] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
-  const [sort, setSort] = useState<SortKey>("autonomy");
+  const [phase, setPhase] = useState<string | null>(null);
+  const [level, setLevel] = useState<AutonomyLevel | null>(null);
+  const [sort, setSort] = useState<SortKey>("recent");
+
+  /*
+   * Doc 2 §1.1 — autonomy as a way in, not as a league table. The list offers only the
+   * bands the registry actually holds, in numeric order because that is the order of
+   * the labels and not an order of merit: picking `level 2 · Supervised` narrows the
+   * gallery to the factories that keep a person on the critical move, exactly as
+   * picking a category narrows it to a category. Nothing here sorts, scores or
+   * compares one band against another.
+   */
+  const levels = useMemo(() => {
+    const byLevel = new Map<AutonomyLevel, string>();
+    for (const bp of blueprints) byLevel.set(bp.autonomy.level, bp.autonomy.label);
+    return [...byLevel.entries()].sort((a, b) => a[0] - b[0]);
+  }, [blueprints]);
+
+  /*
+   * Doc 2 §8 — phase coverage as a way in. Only the phases some blueprint actually
+   * covers are offered, so no option in the list can return nothing, and they are
+   * offered in lifecycle order rather than sorted: the order is the shape of a
+   * factory. This is a filter and only a filter (doc 2 §1.1) — picking `debugging`
+   * narrows the gallery to the factories that debug, it does not rank anything, and
+   * nothing here counts phases or compares one blueprint's coverage to another's.
+   */
+  const phases = useMemo(() => {
+    const covered = new Set<string>();
+    for (const bp of blueprints) {
+      for (const id of bp.analysis.phaseCoverage.covered) covered.add(id);
+    }
+    return PHASE_ORDER.filter((id) => covered.has(id));
+  }, [blueprints]);
 
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
 
     const filtered = blueprints.filter((bp) => {
       if (category && bp.category !== category) return false;
+      if (phase && !bp.analysis.phaseCoverage.covered.includes(phase)) return false;
+      if (level !== null && bp.autonomy.level !== level) return false;
       if (tag && !bp.tags.includes(tag)) return false;
       if (q) {
         const haystack =
@@ -80,10 +156,14 @@ export function GalleryBrowser({
     const sorted = [...filtered];
     sorted.sort((a, b) => {
       switch (sort) {
-        case "autonomy":
-          return (
-            b.autonomy.level - a.autonomy.level || b.downloads - a.downloads
-          );
+        // Dates are stored as `YYYY-MM-DD`, so a string compare is a date compare.
+        // Title breaks the tie, which keeps a batch published on one day in a stable
+        // order instead of shuffling on every render.
+        case "recent": {
+          const at = a.updatedAt || a.createdAt;
+          const bt = b.updatedAt || b.createdAt;
+          return bt.localeCompare(at) || a.title.localeCompare(b.title);
+        }
         case "downloads":
           return b.downloads - a.downloads;
         case "votes":
@@ -93,22 +173,34 @@ export function GalleryBrowser({
       }
     });
     return sorted;
-  }, [blueprints, search, tag, category, sort]);
+  }, [blueprints, search, tag, category, phase, level, sort]);
 
-  const hasFilters = search.trim() !== "" || tag !== null || category !== null;
+  const hasFilters =
+    search.trim() !== "" ||
+    tag !== null ||
+    category !== null ||
+    phase !== null ||
+    level !== null;
 
   function clearFilters() {
     setSearch("");
     setTag(null);
     setCategory(null);
+    setPhase(null);
+    setLevel(null);
   }
 
   return (
     <div className="flex flex-col gap-6">
+      <Suspense fallback={null}>
+        <TagFromQuery tags={tags} onTag={setTag} />
+      </Suspense>
+
       {/* control bar */}
       <div className="panel flex flex-col gap-4 p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
+        {/* Four controls now, so the row wraps rather than crushing the selects. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="relative min-w-[14rem] flex-1">
             <span
               aria-hidden
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-sm text-dim"
@@ -137,6 +229,47 @@ export function GalleryBrowser({
               {categories.map((c) => (
                 <option key={c} value={c}>
                   {c}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex items-center gap-2">
+            <span className="sr-only">Filter by phase covered</span>
+            <select
+              value={phase ?? ""}
+              onChange={(e) => setPhase(e.target.value || null)}
+              aria-label="Filter by phase covered"
+              className={controlClass}
+            >
+              <option value="">All phases</option>
+              {phases.map((id) => (
+                <option key={id} value={id}>
+                  Covers {phaseLabel(id).toLowerCase()}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* Doc 2 §1.1: the band picks a subset, it never orders the page. */}
+          <label className="flex items-center gap-2">
+            <span className="sr-only">Filter by autonomy level</span>
+            <select
+              value={level === null ? "" : String(level)}
+              onChange={(e) =>
+                setLevel(
+                  e.target.value === ""
+                    ? null
+                    : (Number(e.target.value) as AutonomyLevel),
+                )
+              }
+              aria-label="Filter by autonomy level"
+              className={controlClass}
+            >
+              <option value="">All autonomy levels</option>
+              {levels.map(([value, label]) => (
+                <option key={value} value={value}>
+                  level {value} · {label}
                 </option>
               ))}
             </select>

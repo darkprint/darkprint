@@ -1,0 +1,50 @@
+id: episodic-memory
+name: Episodic Memory
+type: tool
+phase: implementation
+
+action: >-
+  Append each stage's inputs, outputs and decisions to the episode log as an immutable entry,
+  and return the k most relevant episodes whenever a later step asks for context.
+spec: >-
+  Append every event you are handed — a stage's inputs, its outputs and the decisions it took
+  — to the episode log as one new entry, stamped with its run id and stage id. Entries are
+  append-only: never rewrite or remove one, because the log is the record of what each stage
+  actually did. When a recall query arrives, answer on `context` with the five nearest
+  episodes scoring above 0.75 similarity; when no query arrives, answer with the five most
+  recent instead. Keep thirty runs of history and let anything older fall off the back.
+tools:
+  - vector-store
+  - file-io
+params:
+  k: 5
+  retention_runs: 30
+  similarity_threshold: 0.75
+
+inputs:
+  - name: event
+    type: json
+    description: What a stage did — its inputs, its outputs, and the decisions it took.
+  - name: query
+    type: text
+    required: false
+    description: A recall query; without one the store answers with the most recent episodes.
+outputs:
+  - name: context
+    type: json
+    description: The recalled episodes, newest or nearest first, with their run and stage ids.
+dependencies:
+  - ingest-stage
+  - transform-stage
+
+requires_human: false
+risk_markers: []
+notes: >-
+  Entries are append-only, which is what makes the log double as an audit trail of exactly what
+  each stage did. A recovery line reads it by recency — the newest valid entry — but `k` and
+  `similarity_threshold` stay declared because the same store answers semantic recall for lines
+  that query it that way.
+
+version: 1.0.0
+author: orin
+ontology_version: 0.1.0

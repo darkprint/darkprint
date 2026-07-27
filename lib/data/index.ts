@@ -1,48 +1,35 @@
-import type { AnyContent, Blueprint } from "@/lib/types";
-import { BLUEPRINTS, getBlueprint } from "./blueprints";
-import { PARTS, getPart } from "./parts";
-import { ONTOLOGIES, getOntology } from "./ontologies";
+/* ============================================================
+   DarkPrint data — the derived aggregates the marketing pages read
+   The hand-written blueprint / part / ontology mocks are gone: every
+   number below is counted off the real archive through `lib/content`,
+   so the homepage cannot drift from what the engine actually resolved.
+
+   SERVER ONLY — `@/lib/content` reaches the filesystem at build time.
+   The two leaf modules beside this one, `./users` and `./community`,
+   are plain data and stay importable from anywhere.
+   ============================================================ */
+
+import type { Blueprint } from "@/lib/types";
+import { allBlueprints, allNodeCards, getOntologyView } from "@/lib/content";
 import { AUTHOR_LIST, getAuthor } from "./users";
 
-export { BLUEPRINTS, PARTS, ONTOLOGIES, AUTHOR_LIST };
-export { getBlueprint, getPart, getOntology, getAuthor };
+export { AUTHOR_LIST, getAuthor };
 
-/** All content, any kind. */
-export const ALL_CONTENT: AnyContent[] = [...BLUEPRINTS, ...PARTS, ...ONTOLOGIES];
+/** The two seed examples the note highlights, in archive order. */
+export const SEED_BLUEPRINTS: Blueprint[] = allBlueprints().filter((b) => b.seed);
 
-/** Featured blueprints for the gallery hero strip. */
-export const FEATURED_BLUEPRINTS: Blueprint[] = BLUEPRINTS.filter((b) => b.featured);
+/** Curated picks for the gallery hero strip. */
+export const FEATURED_BLUEPRINTS: Blueprint[] = allBlueprints().filter((b) => b.featured);
 
-/** The two seed examples highlighted on the homepage. */
-export const SEED_BLUEPRINTS: Blueprint[] = BLUEPRINTS.filter((b) => b.seed);
-
-/** Distinct, sorted blueprint categories. */
-export const BLUEPRINT_CATEGORIES: string[] = Array.from(
-  new Set(BLUEPRINTS.map((b) => b.category)),
-).sort();
-
-/** Distinct, sorted tags across blueprints. */
-export const BLUEPRINT_TAGS: string[] = Array.from(
-  new Set(BLUEPRINTS.flatMap((b) => b.tags)),
-).sort();
-
-/** Blueprints sorted by autonomy level (desc) then downloads. */
-export function blueprintsByAutonomy(): Blueprint[] {
-  return [...BLUEPRINTS].sort(
-    (a, b) => b.autonomy.level - a.autonomy.level || b.downloads - a.downloads,
-  );
-}
-
-/** Everything a given author has published. */
-export function contentByAuthor(username: string): AnyContent[] {
-  return ALL_CONTENT.filter((c) => c.author.username === username);
-}
-
-/** Aggregate platform stats for the homepage counters. */
+/**
+ * The homepage counters. Every field counts a real thing:
+ * blueprints resolved off disk, distinct node-card ids in the index, terms in the
+ * core vocabulary, registered builders, and the downloads the index has recorded.
+ */
 export const PLATFORM_STATS = {
-  blueprints: BLUEPRINTS.length,
-  parts: PARTS.length,
-  ontologies: ONTOLOGIES.length,
+  blueprints: allBlueprints().length,
+  nodes: allNodeCards().length,
+  terms: getOntologyView().ontology.terms.length,
   builders: AUTHOR_LIST.length,
-  downloads: ALL_CONTENT.reduce((n, c) => n + c.downloads, 0),
+  downloads: allBlueprints().reduce((n, b) => n + b.downloads, 0),
 };

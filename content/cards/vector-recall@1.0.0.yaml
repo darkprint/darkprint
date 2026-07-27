@@ -1,0 +1,42 @@
+id: vector-recall
+name: Vector Recall
+type: tool
+phase: implementation
+
+action: >-
+  Embed the strand's query and return the k nearest passages from the internal store, each
+  carrying its document id and similarity score so the synthesizer can weigh how close it is.
+spec: >-
+  Embed the query in the internal-corpus strand you are given on `query`, apply that strand's
+  filters, and retrieve the twelve nearest passages from the vector store, discarding any whose
+  cosine similarity falls below 0.7. Emit them on `passages`, nearest first, each carrying its
+  stored text, its document id and its similarity score, so a reader downstream can weigh a close
+  match against a distant one. Read only: never embed or write this run's own text back into the
+  store. If fewer than twelve passages clear the threshold, emit the ones that do and stop —
+  padding the budget with weaker matches is worse than returning less.
+tools:
+  - vector-store
+params:
+  k: 12
+  similarity_threshold: 0.7
+
+inputs:
+  - name: query
+    type: plan
+    description: The internal-corpus strand of the retrieval plan, with its filters and budget.
+outputs:
+  - name: passages
+    type: json
+    description: The k nearest passages, nearest first, with document id and similarity score.
+dependencies:
+  - retrieval-planner
+
+requires_human: false
+risk_markers: []
+notes: >-
+  Read-only against the store: the desk recalls what has already been indexed and never writes
+  a run's own output back, so one bad answer cannot poison the corpus for the next question.
+
+version: 1.0.0
+author: orin
+ontology_version: 0.1.0

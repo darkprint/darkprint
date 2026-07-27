@@ -10,7 +10,6 @@ const VOID = "#05060d";
 const CYAN = "#38bdf8";
 const AMBER = "#ffb020";
 const EMERALD = "#34d399";
-const METAL = "#0b0e18";
 const STEEL = "#161a29";
 
 /* Camera dolly + gentle orbit driven by scroll progress (0..1). */

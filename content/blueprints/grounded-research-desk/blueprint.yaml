@@ -1,0 +1,21 @@
+slug: grounded-research-desk
+title: Grounded Research Desk
+summary: >-
+  Fans a question across web, vector and code search, synthesizes one answer, and loops back
+  through a fact-checker until every claim is grounded.
+description: >-
+  A research agent that won't ship an unsupported sentence. The planner splits the question into
+  retrieval strands that run in parallel — web, an internal vector store, and a code index — then
+  a synthesizer drafts a single grounded answer. The fact-checker verifies each claim against the
+  retrieved evidence and bounces anything unsupported back for another pass. Only a
+  fully-grounded report reaches the reader.
+category: Knowledge
+tags:
+  - research
+  - RAG
+  - synthesis
+  - grounding
+author: orin
+ontologyVersion: "0.1.0"
+createdAt: "2026-05-01"
+updatedAt: "2026-07-12"

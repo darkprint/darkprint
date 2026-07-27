@@ -1,0 +1,48 @@
+id: transform-stage
+name: Transform Stage
+type: agent
+phase: implementation
+
+action: >-
+  Apply the plan's transformation to the staged working set — or to the snapshot the resume
+  controller hands back — and emit the transformed set with the diff against what it started from.
+spec: >-
+  You are handed a working set on `staged` on a first run, or a re-issued attempt on `restore`
+  when a previous run of this stage failed and is being replayed; treat the two identically and
+  prefer `restore` when both arrive. Apply the transformation the stage plan specifies to every
+  record in that set, and abandon the stage if the work runs longer than 300 seconds rather than
+  emitting a partial set. Emit on `transformed` the transformed set together with the diff against
+  the input you started from, so the result can be replayed later without re-reading the sources.
+  Be idempotent over your own output: run twice on the same input you must produce the same
+  transformed set and the same diff, because a replayed attempt is exactly that.
+agent: Stage workers
+tools: []
+params:
+  timeout_s: 300
+  temperature: 0.1
+
+inputs:
+  - name: staged
+    type: json
+    description: The working set the ingest stage produced, on a first run.
+  - name: restore
+    type: json
+    required: false
+    description: The attempt the resume controller re-issued from the last valid checkpoint.
+outputs:
+  - name: transformed
+    type: json
+    description: The transformed working set, with the diff against its input so the checkpoint is replayable.
+dependencies:
+  - ingest-stage
+  - bounded-retry
+
+requires_human: false
+risk_markers: []
+notes: >-
+  This is the stage the recovery loop re-enters, so it must be idempotent over its own output:
+  a restored attempt has to produce the same result as the run that failed after it.
+
+version: 1.0.0
+author: k0bra
+ontology_version: 0.1.0

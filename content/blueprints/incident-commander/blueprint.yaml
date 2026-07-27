@@ -1,0 +1,21 @@
+slug: incident-commander
+title: Incident Commander
+summary: >-
+  Triages alerts, routes to the right runbook, drafts a mitigation, QAs it against blast-radius
+  rules, and escalates to on-call when risk is high.
+description: >-
+  A first-responder for production incidents. It classifies the alert, routes to the matching
+  runbook, and drafts a mitigation — but a QA step checks that mitigation against blast-radius
+  rules before anything runs. Anything risky escalates to on-call with a full context pack rather
+  than acting unilaterally. It buys your humans the ten minutes that matter without letting an
+  agent take down prod on a hunch.
+category: Operations
+tags:
+  - incident-response
+  - routing
+  - escalation
+  - operations
+author: mara-veil
+ontologyVersion: "0.1.0"
+createdAt: "2026-06-02"
+updatedAt: "2026-07-18"

@@ -1,0 +1,42 @@
+id: warehouse-publisher
+name: Warehouse Publisher
+type: tool
+phase: deployment
+
+action: >-
+  Advance the watermark to the end of the swept window, refresh the downstream views, and post
+  the night's counts — rows cleaned, rows repaired, rows quarantined — to the ops channel.
+spec: >-
+  Read the commit receipt on `dataset`, refresh the downstream views over the target table, and
+  only then advance the watermark to the end of the window this run swept. Keep that order: if
+  the refresh fails, leave the watermark exactly where it was, so the next night re-sweeps the
+  same window instead of stepping over it. Post one digest to the `nightly-ops` channel giving
+  the night's counts — rows cleaned, rows repaired, rows quarantined — and stay silent when
+  nothing was repaired and nothing was quarantined, because a message every night trains people
+  to ignore the one that matters. The run is done when the watermark has moved and, on any night
+  that was not clean, the digest has been posted.
+tools:
+  - messaging
+params:
+  refresh_views: true
+  digest_channel: nightly-ops
+  quiet_on_clean_run: true
+
+inputs:
+  - name: dataset
+    type: json
+    description: The store's commit receipt for the night, which the watermark is advanced from.
+outputs: []
+dependencies:
+  - record-store
+
+requires_human: false
+risk_markers:
+  - irreversible-action
+notes: >-
+  `quiet_on_clean_run` is the whole design brief: the line only speaks up when a night was not
+  boring, and the quarantine queue it names is read the next morning, not waited on.
+
+version: 1.0.0
+author: k0bra
+ontology_version: 0.1.0

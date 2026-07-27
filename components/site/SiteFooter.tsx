@@ -4,9 +4,9 @@ const COLS: { title: string; links: { href: string; label: string }[] }[] = [
   {
     title: "Registry",
     links: [
-      { href: "/gallery", label: "Blueprints" },
-      { href: "/parts", label: "Parts" },
-      { href: "/ontologies", label: "Ontologies" },
+      { href: "/blueprints", label: "Blueprints" },
+      { href: "/nodes", label: "Nodes" },
+      { href: "/ontology", label: "Ontology" },
       { href: "/upload", label: "Share a blueprint" },
     ],
   },
@@ -43,9 +43,12 @@ export function SiteFooter() {
         </div>
         {COLS.map((col) => (
           <div key={col.title}>
-            <h4 className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
+            {/* `h3`, not `h4`: the footer follows the page's own headings, and every
+                route tops out at an `h2` before it — a jump to level four skips a
+                level in the outline. The look is entirely in the classes. */}
+            <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
               {col.title}
-            </h4>
+            </h3>
             <ul className="mt-3 flex flex-col gap-2">
               {col.links.map((l) => (
                 <li key={l.href + l.label}>
@@ -64,7 +67,12 @@ export function SiteFooter() {
       <div className="border-t border-line/60">
         <div className="container-page flex flex-col items-center justify-between gap-2 py-5 text-xs text-dim sm:flex-row">
           <span>© 2026 DarkPrint · darkprint.io</span>
-          <span className="font-mono">a concept build · mock data</span>
+          {/* The archive, the ontology and the two computed scores are real and
+              parsed at build time; only the community and telemetry rows are seeded.
+              A blanket "mock data" contradicts what the homepage already separates. */}
+          <span className="font-mono">
+            a concept build · real archive · seeded community
+          </span>
         </div>
       </div>
     </footer>

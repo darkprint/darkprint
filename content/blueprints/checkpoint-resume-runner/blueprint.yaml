@@ -1,0 +1,19 @@
+slug: checkpoint-resume-runner
+title: Checkpoint & Resume Runner
+summary: >-
+  A staged pipeline that snapshots state after every stage, so a failure at stage 3 resumes from
+  the last good checkpoint instead of restarting the whole job.
+description: |-
+  Long agent jobs fail halfway — a tool times out, a rate limit hits, a stage produces garbage. The naive fix is to start over and burn the work already done. This blueprint writes an immutable checkpoint after each stage: inputs, outputs and the decisions taken. When a downstream stage fails, the resume node restores the most recent valid checkpoint and continues from there, not from zero.
+
+  It turns a brittle linear pipeline into something you can actually run unattended overnight. The verifier gates the final ship, and the checkpoint store doubles as an audit trail of exactly what each stage did.
+category: Reliability
+tags:
+  - reliability
+  - checkpointing
+  - recovery
+  - long-running
+author: k0bra
+ontologyVersion: "0.1.0"
+createdAt: "2026-03-21"
+updatedAt: "2026-07-05"

@@ -1,0 +1,45 @@
+id: delta-extractor
+name: Delta Extractor
+type: tool
+phase: implementation
+
+action: >-
+  Query the warehouse for every row changed inside the window and return them as a table, paging
+  at the row cap so one runaway night cannot pull the whole history.
+spec: >-
+  Query the warehouse for every row whose change timestamp falls inside the window you receive
+  on `window`, reading in pages of 5000 rows ordered by that timestamp so paging stays stable
+  across the run. Emit the rows on `rows` over a fixed set of columns, in the order the warehouse
+  returned them, with no reshaping or filtering of your own. Stop at 50000 rows and report the
+  timestamp you stopped at, so a runaway night comes back truncated and resumable instead of
+  pulling the whole history. Issue reads only: you must not write, update or delete anything in
+  the warehouse, whatever the window turns out to contain.
+agent: Delta extractor
+tools:
+  - sql
+params:
+  max_rows: 50000
+  page_size: 5000
+
+inputs:
+  - name: window
+    type: json
+    description: The bounded sweep window handed over by the trigger.
+outputs:
+  - name: rows
+    type: table
+    description: The changed rows over a fixed set of columns, in warehouse order.
+dependencies:
+  - delta-intake
+
+requires_human: false
+risk_markers: []
+notes: >-
+  This node only reads, but the vocabulary's `sql` capability does not distinguish a read from a
+  write and the analyzer cannot tell the difference. Under ontology v0.1 that shows up as an
+  inferred `unvalidated-external-access` on every `sql` node whose consumer is not a validation
+  node — here it is arguably fair, since the rows really do come from outside the graph.
+
+version: 1.0.0
+author: k0bra
+ontology_version: 0.1.0

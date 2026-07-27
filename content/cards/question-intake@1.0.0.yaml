@@ -1,0 +1,36 @@
+id: question-intake
+name: Question Intake
+type: tool
+phase: planning
+
+action: >-
+  Open a research run from an inbound question, carrying the asker's scope and deadline with it
+  so every downstream strand knows what it is allowed to go looking for.
+spec: >-
+  Take the oldest unhandled message from the `research-desk-inbox` source and turn it into one
+  research question. Keep the asker's own wording for the ask itself, drop greetings, signatures
+  and quoted reply chains, then append the scope they stated — date range, sources to prefer or
+  avoid, and the deadline — as a short `Scope:` line beneath the question. Trim the result to at
+  most 2000 characters, cutting at a sentence boundary rather than mid-word, and emit it as plain
+  text on `question`. If the message carries more than one ask, keep the first and list the others
+  verbatim under `Also asked:`; if it carries nothing that can be researched, emit nothing and end
+  the run. You are done the moment one question with its scope has been emitted — do not answer
+  it, rank it, or retrieve anything.
+tools: []
+params:
+  source: research-desk-inbox
+  max_question_chars: 2000
+
+inputs: []
+outputs:
+  - name: question
+    type: text
+    description: The question as asked, trimmed to a single stated ask with its scope attached.
+dependencies: []
+
+requires_human: false
+risk_markers: []
+
+version: 1.0.0
+author: orin
+ontology_version: 0.1.0

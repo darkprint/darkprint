@@ -1,0 +1,39 @@
+id: assemble-stage
+name: Assemble Stage
+type: agent
+phase: implementation
+
+action: >-
+  Assemble the transformed set into the artefact the job asked for and attach the stage-by-stage
+  trace, so the verifier judges the output and the path that produced it together.
+spec: >-
+  Assemble the transformed working set you are handed into the single bundle the job asked for,
+  and abandon the assembly rather than emit a half-built bundle if it runs longer than 240
+  seconds. Attach a stage-by-stage trace alongside it: for each part of the bundle, record which
+  stage produced it and from which input, so the output and the path that produced it can be read
+  together. Emit the bundle and its trace on `artifact`. You are done when every record in the
+  transformed set is either present in the bundle or listed in the trace as deliberately dropped,
+  with the reason it was dropped.
+agent: Stage workers
+tools: []
+params:
+  output_format: bundle
+  timeout_s: 240
+
+inputs:
+  - name: transformed
+    type: json
+    description: The transformed working set from the previous stage, diff included.
+outputs:
+  - name: artifact
+    type: json
+    description: The finished artefact plus the trace of which stages contributed which part of it.
+dependencies:
+  - transform-stage
+
+requires_human: false
+risk_markers: []
+
+version: 1.0.0
+author: k0bra
+ontology_version: 0.1.0

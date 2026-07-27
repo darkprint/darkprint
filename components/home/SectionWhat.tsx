@@ -43,8 +43,8 @@ type StatItem = { key: string; value: React.ReactNode; label: string; accent: st
 
 const STATS: StatItem[] = [
   { key: "blueprints", value: PLATFORM_STATS.blueprints, label: "Blueprints", accent: "var(--color-cyan)" },
-  { key: "parts", value: PLATFORM_STATS.parts, label: "Parts", accent: "var(--color-amber)" },
-  { key: "ontologies", value: PLATFORM_STATS.ontologies, label: "Ontologies", accent: "var(--color-violet)" },
+  { key: "nodes", value: PLATFORM_STATS.nodes, label: "Node cards", accent: "var(--color-amber)" },
+  { key: "terms", value: PLATFORM_STATS.terms, label: "Ontology terms", accent: "var(--color-violet)" },
   { key: "builders", value: PLATFORM_STATS.builders, label: "Builders", accent: "var(--color-emerald)" },
   { key: "downloads", value: compact(PLATFORM_STATS.downloads), label: "Pulls", accent: "var(--color-cyan-bright)" },
 ];
@@ -101,6 +101,12 @@ export function SectionWhat() {
             <Stat key={s.key} value={s.value} label={s.label} accent={s.accent} />
           ))}
         </div>
+        <p className="mt-5 max-w-3xl text-xs leading-relaxed text-dim">
+          Blueprints, node cards and ontology terms are counted off the archive at build
+          time — whatever resolved cleanly on the last deploy, nothing rounded up.
+          Builders and pulls come from the seeded index that stands in for a database
+          until there is one.
+        </p>
       </div>
     </section>
   );

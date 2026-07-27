@@ -1,0 +1,53 @@
+id: bounded-retry
+name: Bounded Retry
+type: tool
+phase: debugging
+
+action: >-
+  Restore the most recent valid checkpoint and re-fire the failed stage from there, backing
+  off between attempts until the cap is spent, then emit the last error.
+spec: >-
+  You may be handed a failure signal, a checkpoint snapshot, or both; either one on its own
+  is enough to act on. With a checkpoint in hand, restore state from it as far as the last
+  valid stage and re-fire that stage from the restored state; with only a failure signal,
+  re-issue the attempt exactly as it stood. Wait 800 ms before the first retry and double
+  the wait on every retry after it, emitting each re-issued attempt on `attempt` with its
+  attempt number. Give up after three retries: emit the error from the final attempt on
+  `last_error` and restore nothing further.
+agent: Resume controller
+tools: []
+params:
+  max_retries: 3
+  backoff_ms: 800
+  backoff_multiplier: 2
+  restore_scope: last-valid-stage
+
+inputs:
+  - name: failure
+    type: status
+    required: false
+    description: The failure signal from the step being wrapped, when the caller has one to hand.
+  - name: checkpoint
+    type: json
+    required: false
+    description: The snapshot to resume from; without it the node simply re-fires the last attempt.
+outputs:
+  - name: attempt
+    type: json
+    description: The re-issued attempt, numbered so the receiver can tell a retry from a first run.
+  - name: last_error
+    type: status
+    description: The final error, surfaced once the cap is spent instead of being swallowed.
+dependencies:
+  - episodic-memory
+
+requires_human: false
+risk_markers: []
+notes: >-
+  Both inputs are optional because either one is enough to act on: a failure signal alone
+  re-fires the attempt, a checkpoint alone restores and continues. `max_retries` is still the
+  declared bound the security analyzer reads for the cycle this node closes.
+
+version: 1.1.0
+author: k0bra
+ontology_version: 0.1.0

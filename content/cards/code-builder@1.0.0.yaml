@@ -1,0 +1,42 @@
+id: code-builder
+name: Code Builder
+type: agent
+phase: implementation
+
+action: >-
+  Work through the build brief and emit the source it describes, adding nothing the brief does
+  not ask for.
+spec: >-
+  A build brief arrives with the run: an ordered list of steps, each naming the file or module
+  it touches and what should exist once it is done. Work through the steps in order and write
+  the source they describe, staying inside the files each step names and adding no behaviour
+  nobody asked for. Emit the finished source on `build` as one complete, compiling change, with
+  no commentary and no summary of what you did. The brief is all you get, and that is the point
+  — do not go looking for a test suite, do not reason about how the result will be checked, and
+  do not tune anything toward a check you imagine exists.
+agent: Builder
+tools: []
+
+inputs:
+  - name: brief
+    type: plan
+    description: The ordered build steps the run was instantiated with — the only thing this node sees.
+outputs:
+  - name: build
+    type: code
+    description: One complete, compiling change implementing the brief, with no commentary attached.
+dependencies: []
+
+requires_human: false
+risk_markers: []
+notes: >-
+  Doc 1 §3.2: isolation is not only an absent edge, it is the absence of the content from the
+  spec. This card is the reference for what that looks like — the spec above names no criterion,
+  quotes no threshold and paraphrases nothing the planner wrote, so the similarity half of the
+  `criteria-leak` check stays quiet on it as well as the topological half. Measured against
+  `spec-planner@1.0.0`, the 3-gram Jaccard similarity is 0.0356, against a configured threshold
+  of 0.35.
+
+version: 1.0.0
+author: orin
+ontology_version: 0.1.0

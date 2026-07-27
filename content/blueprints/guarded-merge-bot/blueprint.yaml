@@ -1,0 +1,22 @@
+slug: guarded-merge-bot
+title: Guarded Merge Bot
+summary: >-
+  Triages a PR, drafts a review, runs the tests, then stops at a maintainer approval gate before
+  merging — a deliberately supervised line.
+description: >-
+  Not every factory should be lights-out. This blueprint is honest about its human gate: agents do
+  all the toil — triaging the diff, drafting the review, iterating until tests are green — but a
+  maintainer makes the final merge call. The static analyzer sees that gate and counts it against
+  the autonomy score: five of six nodes run unattended, and the one that doesn't is the only one
+  that matters. It's here as a reference for teams who want most of the leverage without handing
+  over the merge button.
+category: Software
+tags:
+  - code-review
+  - CI
+  - human-in-loop
+  - software
+author: sol-antczak
+ontologyVersion: "0.1.0"
+createdAt: "2026-02-17"
+updatedAt: "2026-06-20"

@@ -1,0 +1,39 @@
+id: ingest-stage
+name: Ingest Stage
+type: agent
+phase: implementation
+
+action: >-
+  Run the first stage of the plan: pull every source the job names, reject what the plan does not
+  ask for, and emit the staged working set together with the manifest of what was read.
+spec: >-
+  Execute the first stage of the plan you are handed and nothing further. Pull every source that
+  stage names, 250 records to a batch, and abandon the stage if any single batch takes longer
+  than 180 seconds; pull nothing the stage does not name, however relevant it looks. Record for
+  each named source what you read from it and when, or that it was unreachable and why. Emit on
+  `staged` the working set you assembled, that manifest, and the stages still to run, so the next
+  stage picks up where you stopped. You are done when every source the stage names appears in the
+  manifest under one of those two outcomes.
+agent: Stage workers
+tools: []
+params:
+  batch_size: 250
+  timeout_s: 180
+
+inputs:
+  - name: stages
+    type: plan
+    description: The full stage plan; this node executes the first stage and passes the rest along.
+outputs:
+  - name: staged
+    type: json
+    description: The staged working set plus the source manifest the later stages are checked against.
+dependencies:
+  - stage-planner
+
+requires_human: false
+risk_markers: []
+
+version: 1.0.0
+author: k0bra
+ontology_version: 0.1.0

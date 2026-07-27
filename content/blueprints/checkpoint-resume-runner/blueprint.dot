@@ -1,0 +1,25 @@
+digraph checkpoint_resume_runner {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  job        [card="job-intake@1.0.0"];
+  plan       [card="stage-planner@1.0.0"];
+  stage1     [card="ingest-stage@1.0.0"];
+  stage2     [card="transform-stage@1.0.0"];
+  stage3     [card="assemble-stage@1.0.0"];
+  checkpoint [card="episodic-memory@1.0.0"];
+  resume     [card="bounded-retry@1.1.0"];
+  verify     [card="acceptance-verifier@1.0.0"];
+  ship       [card="result-delivery@1.0.0"];
+
+  job -> plan;
+  plan -> stage1;
+  stage1 -> stage2 [out="staged", in="staged"];
+  stage2 -> stage3;
+  stage3 -> verify [in="candidate"];
+  verify -> ship;
+  stage1 -> checkpoint [style=dotted];
+  stage2 -> checkpoint [style=dotted];
+  checkpoint -> resume [style=dashed, label="on failure"];
+  resume -> stage2     [label="restore", out="attempt", in="restore"];
+}

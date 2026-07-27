@@ -1,4 +1,4 @@
-import type { MetricSource, AgentNodeKind, PartKind } from "./types";
+import type { MetricSource, AgentNodeKind } from "./types";
 
 /** Compact number formatting: 1200 -> "1.2k". */
 export function compact(n: number): string {
@@ -18,7 +18,16 @@ export function prettyDate(iso: string): string {
   return `${months[m - 1]} ${d}, ${y}`;
 }
 
-/** Colour + label metadata for the three scoring sources. */
+/**
+ * Colour + label metadata for the three scoring sources.
+ *
+ * The middle one is deliberately *not* called "measured". Doc 1 §8 flags that word as a
+ * correction to its own earlier drafts: blueprints execute on the user's machine
+ * (§0.1.3), so the platform never watches a run and cannot verify a cost or a duration.
+ * Those numbers are reported by whoever ran the thing. The label in the interface says
+ * so, and everything the label promises — how many runs, how spread out they were, on
+ * which model — travels with the figure rather than being averaged away.
+ */
 export const METRIC_SOURCE_META: Record<
   MetricSource,
   { label: string; short: string; color: string; blurb: string }
@@ -29,17 +38,19 @@ export const METRIC_SOURCE_META: Record<
     color: "var(--color-cyan)",
     blurb: "Computed automatically from the graph structure.",
   },
-  measured: {
-    label: "Measured on run",
-    short: "measured",
+  reported: {
+    label: "Reported by runners",
+    short: "reported",
     color: "var(--color-amber)",
-    blurb: "Recorded objectively when the blueprint is executed.",
+    blurb:
+      "Sent back by people who ran the blueprint on their own machine, never observed by DarkPrint. There is no runner and nothing has been reported, so the figure is seeded.",
   },
   community: {
     label: "Community vote",
     short: "voted",
     color: "var(--color-violet)",
-    blurb: "Aggregated from weighted community & validator votes.",
+    blurb:
+      "Meant to be aggregated from weighted community & validator votes. There is no ballot, so the figure is seeded.",
   },
 };
 
@@ -66,19 +77,12 @@ export const NODE_KIND_META: Record<
   memory: { label: "Memory", glyph: "▤", color: "var(--color-muted)" },
   tool: { label: "Tool", glyph: "⚙", color: "var(--color-muted)" },
   gate: { label: "Human gate", glyph: "⏸", color: "var(--color-signal)" },
+  /* Doc 3 §3's other human type: a person supplies data or content here, they do not
+     approve or reject. Same accent, because both are places a person stands and the
+     schematic's colour key is about who acts rather than about what they do — the label
+     and the glyph carry the difference, which is the rule anyway. */
+  "human-input": { label: "Human input", glyph: "✎", color: "var(--color-signal)" },
   ship: { label: "Ship", glyph: "⇥", color: "var(--color-emerald)" },
-};
-
-export const PART_KIND_META: Record<
-  PartKind,
-  { label: string; color: string }
-> = {
-  retry: { label: "Retry", color: "var(--color-amber)" },
-  validation: { label: "Validation", color: "var(--color-cyan)" },
-  negotiation: { label: "Negotiation", color: "var(--color-violet)" },
-  routing: { label: "Routing", color: "var(--color-cyan-bright)" },
-  memory: { label: "Memory", color: "var(--color-emerald)" },
-  escalation: { label: "Escalation", color: "var(--color-signal)" },
 };
 
 /** Deterministic gradient string for an avatar from a hue. */

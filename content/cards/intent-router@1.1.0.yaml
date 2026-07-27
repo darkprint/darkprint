@@ -1,0 +1,58 @@
+id: intent-router
+name: Intent Router
+type: decision
+phase: planning
+
+action: >-
+  Classify the inbound event against the label set — overridden by a taxonomy supplied for this
+  run, when there is one — and dispatch it down the matching lane, sending anything below the
+  confidence threshold to the escalation lane instead of guessing.
+spec: >-
+  Read the inbound alert as it arrived and decide which one of `outage`, `degradation`,
+  `capacity`, `security` or `noise` it is — unless a label set is supplied for this run, in
+  which case classify against that one instead and ignore the configured labels entirely.
+  Emit the lane you picked on `lane` with the confidence you had in it, and emit the alert on
+  `routed` with its label added and payload and metadata otherwise untouched. If your
+  confidence in the best label is below 0.75, route to the `on-call` lane: handing a misread
+  alert to a person costs far less than confidently sending it down the wrong runbook.
+agent: Alert classifier
+tools: []
+params:
+  labels:
+    - outage
+    - degradation
+    - capacity
+    - security
+    - noise
+  default_lane: triage
+  confidence_threshold: 0.75
+  escalation_lane: on-call
+
+inputs:
+  - name: event
+    type: json
+    description: The inbound event as it arrived, payload and metadata untouched.
+  - name: taxonomy
+    type: json
+    required: false
+    description: A label set supplied per run, which replaces the configured one when present.
+outputs:
+  - name: lane
+    type: status
+    description: The lane the event was routed to, with the classifier's confidence attached.
+  - name: routed
+    type: json
+    description: The event enriched with its label, ready for whichever branch picks it up.
+dependencies:
+  - ticket
+
+requires_human: false
+risk_markers: []
+notes: >-
+  A named `escalation_lane` and a higher threshold are the difference from 1.0.0: an incident
+  line would rather hand a misread alert to a person than route it confidently to the wrong
+  runbook. `taxonomy` is optional, so a deployment that never supplies one behaves as before.
+
+version: 1.1.0
+author: hachi
+ontology_version: 0.1.0

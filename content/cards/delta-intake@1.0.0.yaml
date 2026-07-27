@@ -1,0 +1,38 @@
+id: delta-intake
+name: Delta Intake
+type: tool
+phase: planning
+
+action: >-
+  Open the nightly run on the window since the last successful watermark and hand that window
+  downstream, so a missed night widens the next run rather than losing a day.
+spec: >-
+  Read the `last_successful_run` watermark and work out the window this run has to sweep: it
+  starts at the watermark and ends at the moment you run. Emit that window on `window` as an
+  explicit start and end timestamp in UTC, together with the watermark value you derived them
+  from. Never clip the window back to the nominal 24 hours when the watermark is older than
+  that — a night that did not run has to widen the next window, not quietly lose its rows. If
+  there is no watermark at all, emit a window covering the last 24 hours and mark it as a cold
+  start so the reader knows the bound was assumed rather than recorded.
+tools: []
+params:
+  schedule: "0 2 * * *"
+  window_hours: 24
+  watermark: last_successful_run
+
+inputs: []
+outputs:
+  - name: window
+    type: json
+    description: The time window to sweep — its bounds, and the watermark they were derived from.
+dependencies: []
+
+requires_human: false
+risk_markers: []
+notes: >-
+  The schedule lives here as a parameter because the core vocabulary has no scheduler capability
+  to declare; the trigger is a cron entry in every sense except the ontology's.
+
+version: 1.0.0
+author: k0bra
+ontology_version: 0.1.0

@@ -1,0 +1,52 @@
+id: acceptance-tester
+name: Acceptance Tester
+type: validation
+phase: testing
+
+action: >-
+  Run every criterion against the submitted build and split the outcome: the build itself when
+  all of them pass, the raw failure evidence when any of them does not.
+spec: >-
+  You are handed a set of criteria and a build. Run each criterion against that build in turn,
+  one at a time, and record whether it held. When every one of them holds, emit the build
+  unchanged on `approved` and emit nothing on `evidence`. When any of them does not, emit on
+  `evidence` only what the run itself produced — the assertion that failed, the stack trace
+  underneath it, and the expected value beside the value actually obtained — and nothing else:
+  do not quote the criterion, do not summarise the ones still outstanding, and do not say how
+  many there are in total. A criterion you were unable to evaluate has not held.
+agent: Acceptance tester
+tools: []
+params:
+  stop_on_first_failure: false
+
+inputs:
+  - name: criteria
+    type: acceptance-criteria
+    description: The conditions the build is judged against, as the planner wrote them.
+  - name: build
+    type: code
+    description: The submitted change — the builder's first pass, or the debugger's patched version.
+outputs:
+  - name: evidence
+    type: report
+    description: Raw failure output only — assertions, traces, expected beside obtained. No criteria.
+  - name: approved
+    type: artifact
+    description: The build unchanged, emitted only once every criterion has held.
+dependencies:
+  - spec-planner
+  - code-builder
+  - targeted-debugger
+
+requires_human: false
+risk_markers: []
+notes: >-
+  This is the only node that sees both halves, and the shape of `evidence` is what keeps that
+  safe. Doc 2 §5.5: seeing the criteria lets a node write work built to pass them, seeing the
+  evidence of a failure it caused only says what broke — the first is gaming, the second is
+  feedback. Emitting the criterion text alongside the trace would collapse that distinction and
+  hand the debugger the acceptance surface a line at a time.
+
+version: 1.0.0
+author: orin
+ontology_version: 0.1.0

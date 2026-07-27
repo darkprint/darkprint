@@ -1,0 +1,50 @@
+id: resolution-composer
+name: Resolution Composer
+type: agent
+phase: implementation
+
+action: >-
+  Draft a candidate resolution for the routed request, grounding every claim in the reference
+  document when one was retrieved and marking the gap when it was not.
+spec: >-
+  Read the routed request on `request` and write one candidate resolution for it. When a reference
+  document arrives on `reference`, ground every factual claim you make in that document and name
+  the passage each claim came from; when nothing arrives on `reference`, say in the draft which
+  claims are unsupported instead of filling the gap from memory. Emit the draft on `draft`
+  together with its citations and a confidence figure between 0 and 1 that reflects how well the
+  reference actually covered the request, not how well the prose reads. Do not present the draft
+  as approved, sent or applied, and do not act on it yourself — you are done the moment the draft,
+  its citations and that figure are on `draft`.
+agent: Resolver
+tools: []
+params:
+  temperature: 0.3
+  max_tokens: 900
+
+inputs:
+  - name: request
+    type: json
+    description: The routed event, carrying the label and the lane the router picked for it.
+  - name: reference
+    type: markdown
+    required: false
+    description: The retrieved article or runbook the draft is expected to lean on.
+outputs:
+  - name: draft
+    type: json
+    description: The proposed resolution, its citations, and a self-reported confidence.
+dependencies:
+  - classify
+  - kb
+
+requires_human: false
+risk_markers: []
+notes: >-
+  `reference` is optional because the router sends the simple lane straight here without a lookup.
+  A reply and a mitigation are the same operation over different corpora, which is what lets both
+  support lines pin this card; nothing downstream should read the draft as approved, because that
+  is the checking node's call and not this one's.
+
+version: 1.0.0
+author: hachi
+ontology_version: 0.1.0

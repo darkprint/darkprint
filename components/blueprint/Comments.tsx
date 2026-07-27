@@ -3,8 +3,10 @@ import { prettyDate } from "@/lib/format";
 import { Avatar } from "@/components/ui/Avatar";
 
 /**
- * Community notes on a blueprint. Validators are flagged inline — their votes
- * carry more weight, so it matters who is talking. Server-rendered; no state.
+ * Community notes on a blueprint. Validators are flagged inline — the design gives
+ * their votes more weight, so it matters who is talking — but the badge is a seeded
+ * boolean and no vote is weighted anywhere yet. Server-rendered; no state, and no
+ * form: every note here comes out of `lib/data/community.ts`.
  */
 export function Comments({ comments }: { comments: Comment[] }) {
   return (
@@ -22,8 +24,9 @@ export function Comments({ comments }: { comments: Comment[] }) {
       {comments.length === 0 ? (
         <div className="panel px-5 py-8 text-center">
           <p className="text-sm text-muted">No notes yet.</p>
-          <p className="mt-1 text-xs text-dim">
-            Run this blueprint and be the first to report how it behaves.
+          <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-dim">
+            Notes are seeded rows in the index, and this blueprint has none. There is
+            no form on this page and no runner behind it — posting is not built.
           </p>
         </div>
       ) : (

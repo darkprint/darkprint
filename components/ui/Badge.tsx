@@ -24,7 +24,16 @@ export function Badge({
   );
 }
 
-/** How a metric was scored (auto / measured / community). */
+/**
+ * How a metric was scored (auto / reported / community).
+ *
+ * The word is the badge — the dot only repeats it in colour — and for the middle source
+ * the word is *reported*, per doc 1 §8: DarkPrint never watches an execution, so a cost
+ * or a duration is what a runner sent back, not something the platform measured. The
+ * `title` is a hint for a mouse; the visually-hidden prefix is what makes "reported"
+ * parse as a provenance rather than as part of the metric name when the badge is read
+ * out next to its label and value.
+ */
 export function SourceBadge({ source }: { source: MetricSource }) {
   const meta = METRIC_SOURCE_META[source];
   return (
@@ -33,7 +42,8 @@ export function SourceBadge({ source }: { source: MetricSource }) {
       style={{ color: meta.color }}
       title={meta.blurb}
     >
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: meta.color }} />
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: meta.color }} aria-hidden />
+      <span className="sr-only">score source: </span>
       {meta.short}
     </span>
   );
@@ -41,7 +51,7 @@ export function SourceBadge({ source }: { source: MetricSource }) {
 
 const KIND_META: Record<ContentKind, { label: string; color: string }> = {
   blueprint: { label: "Blueprint", color: "var(--color-cyan)" },
-  part: { label: "Part", color: "var(--color-amber)" },
+  node: { label: "Node", color: "var(--color-amber)" },
   ontology: { label: "Ontology", color: "var(--color-violet)" },
 };
 

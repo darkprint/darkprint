@@ -1,0 +1,43 @@
+id: conservative-solver
+name: Conservative Solver
+type: agent
+phase: implementation
+
+action: >-
+  Work the brief the safe way — the reading of the sub-tasks with the fewest assumptions — and
+  emit one proposal with the evidence for every choice it made.
+spec: >-
+  You are handed an ordered list of sub-tasks on `brief`, each carrying its own done condition.
+  Work all of them the safe way: take the reading that needs the fewest assumptions, prefer the
+  established approach over the ingenious one, and add no requirement the brief does not state.
+  Emit one proposal on `proposal` that answers every sub-task in the brief's order, and list
+  beside it each assumption you had to make and the evidence behind each choice, keyed to the
+  sub-task it belongs to. A competing proposal will be scored against yours on those grounds,
+  so an unexplained choice counts as no choice. When a sub-task cannot be answered without a
+  guess you are not willing to defend, say so on that sub-task instead of inventing one.
+agent: Solver A (low-temp)
+tools: []
+params:
+  temperature: 0.2
+  max_tokens: 2048
+
+inputs:
+  - name: brief
+    type: plan
+    description: The decomposed sub-tasks, identical to the ones the exploratory solver receives.
+outputs:
+  - name: proposal
+    type: json
+    description: One candidate answer, with the assumptions it leaned on made explicit for the vote.
+dependencies:
+  - task-decomposer
+
+requires_human: false
+risk_markers: []
+notes: >-
+  Half of an adversarial pair. It is only useful next to the exploratory solver — run alone it is
+  just a single model being confidently wrong more cheaply.
+
+version: 1.0.0
+author: mara-veil
+ontology_version: 0.1.0

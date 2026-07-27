@@ -1,0 +1,49 @@
+id: review-drafter
+name: Review Drafter
+type: agent
+phase: implementation
+
+action: >-
+  Turn the triage record into a review a maintainer can act on — one comment per finding, anchored
+  to a file and a line — and fold the last test failure into the draft when the suite came back red.
+spec: >-
+  You are handed a triage record listing, per changed file, a risk band, the reasoning behind it,
+  and the test suites the change is expected to move. Write a review a maintainer can act on:
+  one comment per finding, each anchored to a file path and a line number, each stating what is
+  wrong and what would fix it. Cover every file banded `high` before you write about anything
+  else, and say nothing at all about files banded `mechanical`. A `failures` signal is attached
+  only when the previous run of the suites came back red; when it is there, open the review with
+  those failing cases and tie each one to the finding it belongs to. Emit the finished review as
+  Markdown on `review` with at most twenty-five comments, and repeat the suite names the record
+  selected so whoever runs them next knows what to execute.
+agent: Reviewer
+tools: []
+params:
+  temperature: 0.3
+  max_comments: 25
+
+inputs:
+  - name: triage
+    type: json
+    description: The triager's per-file risk bands and suite selection.
+  - name: failures
+    type: status
+    required: false
+    description: The verdict from the previous test run, present only on a red re-entry.
+outputs:
+  - name: review
+    type: markdown
+    description: The drafted review, findings anchored to files and lines, ready for the suite.
+dependencies:
+  - diff-triager
+  - test-runner
+
+requires_human: false
+risk_markers: []
+notes: >-
+  `failures` is optional because the first pass has nothing to fold in: it is fed only by the red
+  edge back from the test runner, which is what makes this pair a loop.
+
+version: 1.0.0
+author: sol-antczak
+ontology_version: 0.1.0

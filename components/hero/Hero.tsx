@@ -259,11 +259,11 @@ export function Hero() {
                 </div>
                 <p className="mx-auto max-w-md text-lg leading-relaxed text-blueprint-ink/85 lg:mx-0">
                   Every dark factory starts as a plan. Share the blueprint — the
-                  graph, its reusable parts, the ontology behind it — so others
-                  can run it, score it, and build on it.
+                  graph, the node cards it pins, the ontology behind it — so
+                  others can read it, see how it scores, and build on it.
                 </p>
                 <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-                  <ButtonLink href="/gallery" variant="primary">
+                  <ButtonLink href="/blueprints" variant="primary">
                     Browse blueprints
                   </ButtonLink>
                   <ButtonLink href="/upload" variant="outline">
