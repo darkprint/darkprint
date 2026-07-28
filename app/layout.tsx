@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import "@xyflow/react/dist/style.css";
 import { SiteHeader } from "@/components/site/SiteHeader";
@@ -59,6 +60,12 @@ export default function RootLayout({
         <SiteHeader />
         <main className="flex-1">{children}</main>
         <SiteFooter />
+        {/*
+          Page-view counting only, and only once deployed on Vercel — it no-ops
+          locally. Distinct from the blueprint telemetry of doc 1 §8, which runs
+          on the user's own machine (§0.1.3) and is not built.
+        */}
+        <Analytics />
       </body>
     </html>
   );
