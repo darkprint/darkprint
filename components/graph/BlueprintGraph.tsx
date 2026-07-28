@@ -33,12 +33,23 @@ const EDGE_COLOR = {
 export function BlueprintGraph({
   graph,
   highlighted,
+  id,
   className,
   height = 460,
 }: {
   graph: BlueprintGraphData;
   /** DOT node id to ring, from the explainability panel. */
   highlighted?: string;
+  /**
+   * Distinct instance name, required whenever a page mounts more than one of these.
+   *
+   * React Flow derives every DOM id it emits from this — the ARIA description targets
+   * each node points at, the live region, the background pattern, the arrow markers —
+   * and falls back to the literal `"1"` when it is absent. Two unnamed instances on one
+   * page therefore ship duplicated ids, and every node in the second graph ends up
+   * described by the first graph's description element.
+   */
+  id?: string;
   className?: string;
   height?: number;
 }) {
@@ -109,6 +120,7 @@ export function BlueprintGraph({
       style={{ height }}
     >
       <ReactFlow
+        id={id}
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
@@ -126,6 +138,12 @@ export function BlueprintGraph({
         proOptions={{ hideAttribution: true }}
       >
         <Background
+          /* Named separately from the flow. The grid's `<pattern>` id is built from the
+             store's copy of `rfId`, which `StoreUpdater` only writes in an effect, so on
+             the server-rendered pass every instance still calls its pattern `pattern-1`
+             and the second graph's grid resolves `url(#pattern-1)` to the first graph's.
+             This suffix is appended by the component and is there in the static HTML. */
+          id={id}
           variant={BackgroundVariant.Lines}
           gap={28}
           lineWidth={1}

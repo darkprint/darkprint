@@ -167,16 +167,18 @@ export function Hero() {
             </span>
           </div>
 
-          {/* intro tagline (DarkPrint) */}
+          {/* intro tagline (DarkPrint) — doc 2 §2.1 rung 1, the validated claim,
+              verbatim. It is the document's `h1` as well: §2.4 requires the hero's
+              heading to stay real indexable text, and the homepage had none. */}
           <motion.div
             style={{ opacity: introOpacity }}
             className="mt-8 max-w-xl"
           >
-            <p className="text-lg text-muted sm:text-xl">
-              The blueprint registry for autonomous AI factories.
-            </p>
+            <h1 className="text-lg text-muted sm:text-xl">
+              Specifications go in. Software comes out.
+            </h1>
             <p className="mt-1 font-mono text-sm text-dim">
-              Autonomy you can read as a graph.
+              A registry of the graphs that make that work.
             </p>
           </motion.div>
 
@@ -185,13 +187,15 @@ export function Hero() {
             style={{ opacity: copyOpacity, y: copyY }}
             className="pointer-events-none absolute bottom-28 max-w-2xl px-4"
           >
+            {/* Rung 2, in one line, where the wordmark has just become
+                DarkFactory. The em-dash pause and the four-verb list are gone:
+                doc 2 §2.5 rules out both. */}
             <p className="text-balance text-lg leading-relaxed text-fg/90 sm:text-xl">
-              A <span className="text-amber">dark factory</span> runs with the
-              lights off — no operators, only agents that plan, execute, verify
-              and ship on their own.
+              A <span className="text-amber">dark factory</span> keeps the lights
+              off. Nobody is on the floor who would need them.
             </p>
             <p className="mt-3 font-mono text-sm text-dim">
-              scroll on ↓ to see what we mean
+              same arrangement, applied to software ↓
             </p>
           </motion.div>
         </div>
@@ -225,7 +229,7 @@ export function Hero() {
             ref={overlayRef}
             role="dialog"
             aria-modal="true"
-            aria-label="BluePrint — share the plan"
+            aria-label="BluePrint: share the plan"
             onKeyDown={trapFocus}
             className="fixed inset-0 z-[60] overflow-hidden bg-blueprint-deep text-blueprint-ink"
             initial={reduce ? { opacity: 0 } : { opacity: 0, rotateX: -28, y: -30 }}
@@ -258,16 +262,20 @@ export function Hero() {
                   <span className={`${WORD} text-blueprint-ink`}>Print</span>
                 </div>
                 <p className="mx-auto max-w-md text-lg leading-relaxed text-blueprint-ink/85 lg:mx-0">
-                  Every dark factory starts as a plan. Share the blueprint — the
-                  graph, the node cards it pins, the ontology behind it — so
-                  others can read it, see how it scores, and build on it.
+                  Every dark factory starts as a plan. DarkPrint keeps those
+                  plans where other people can read them: the graph, and the card
+                  behind every node in it.
                 </p>
                 <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
                   <ButtonLink href="/blueprints" variant="primary">
                     Browse blueprints
                   </ButtonLink>
+                  {/* Publishing has no backend, so nothing on the landing may be
+                      labelled as it. `/upload` validates and scores a bundle in the
+                      tab and stops there, which is what the label says. Same wording
+                      as `SectionDoors` and `/what-it-isnt`. */}
                   <ButtonLink href="/upload" variant="outline">
-                    Share yours
+                    Validate a bundle
                   </ButtonLink>
                 </div>
               </div>

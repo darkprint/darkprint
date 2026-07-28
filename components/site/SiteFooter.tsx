@@ -1,5 +1,13 @@
 import Link from "next/link";
 
+/**
+ * Three columns, and the middle one is doc 2 §2.1's ladder in order.
+ *
+ * Every anchor points at a block that exists on the rebuilt landing. The old set did
+ * not survive the reorder: `/#what` and `/#content` were sections that are gone, and
+ * `/#telemetry` named a panel whose material now sits inside the example's scoring
+ * note. A footer link to a fragment nothing renders is a dead link that looks alive.
+ */
 const COLS: { title: string; links: { href: string; label: string }[] }[] = [
   {
     title: "Registry",
@@ -7,22 +15,26 @@ const COLS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/blueprints", label: "Blueprints" },
       { href: "/nodes", label: "Nodes" },
       { href: "/ontology", label: "Ontology" },
-      { href: "/upload", label: "Share a blueprint" },
+      // Not "Share a blueprint": publishing has no backend, and this link is rendered
+      // on the landing too. The header and both doors use the same wording.
+      { href: "/upload", label: "Validate a bundle" },
     ],
   },
   {
-    title: "Scoring",
+    title: "Start here",
     links: [
-      { href: "/#scoring", label: "The 6 metrics" },
-      { href: "/#autonomy", label: "Autonomy levels" },
-      { href: "/#telemetry", label: "Telemetry & validators" },
+      { href: "/#anchor", label: "What a dark factory is" },
+      { href: "/#levels", label: "Where you are today" },
+      { href: "/what-it-isnt", label: "What it isn't" },
+      { href: "/which-tasks", label: "Which tasks fit" },
     ],
   },
   {
-    title: "Project",
+    title: "How it is read",
     links: [
-      { href: "/#what", label: "What is a dark factory" },
-      { href: "/#content", label: "Content types" },
+      { href: "/#examples", label: "The starter factory" },
+      { href: "/#scoring", label: "How a factory is graded" },
+      { href: "/#autonomy", label: "Autonomy, and the levels" },
     ],
   },
 ];
@@ -37,8 +49,8 @@ export function SiteFooter() {
             <span className="text-cyan">Print</span>
           </Link>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-dim">
-            The blueprint registry for autonomous AI factories. Autonomy you can
-            read as a graph.
+            Specifications go in. Software comes out. This is where the graphs in
+            between are kept.
           </p>
         </div>
         {COLS.map((col) => (

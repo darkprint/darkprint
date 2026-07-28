@@ -1,0 +1,234 @@
+/* ============================================================
+   Rung 4 of doc 2 §2.1 — one concrete example.
+
+   "Un esempio concreto, singolo, visibile. Una dark factory vera,
+   il grafo mostrato, il blueprint aperto. **Uno, non tre.**"
+
+   The section this replaces showed two cards side by side and drew
+   neither graph large enough to read. Two examples is a gallery
+   preview; one example with its drawing open is the rung.
+
+   Why `starter-software-factory` and not one of the other eight:
+
+   - its defining feature is *visible in the drawing*. Planner and
+     builder both feed the tester and nothing runs between them, so
+     the reader can see the isolation rule instead of being told
+     about it. Every other blueprint's lesson lives in prose;
+   - it is the smallest complete factory in the archive: five nodes,
+     one per lifecycle phase, so it doubles as the legend for the
+     five phases rung 2 just introduced;
+   - the analyzer has a real, checkable consequence to show on it.
+     Adding `planner -> builder` fires `criteria-leak` on the builder
+     and the score moves, which is rung 5's argument demonstrated
+     rather than asserted;
+   - it is what the guided path (doc 2 §5) will be built on, so the
+     landing points at the same object the practical onboarding will.
+
+   The alternatives, and why not: `adversarial-consensus-line` (8
+   nodes) and `checkpoint-resume-runner` (9) are the two the note
+   used to feature, and both have their point in a behaviour rather
+   than in a shape — a debate that only happens on disagreement, a
+   resume that only happens after a crash. Neither is legible in a
+   still drawing. `guarded-merge-bot` puts a person in the graph,
+   which is a good §1.1 illustration and the wrong first impression
+   of what a dark factory is. `incident-commander` scores 0 on
+   security by design and would open the site with an alarm.
+   ============================================================ */
+
+import Link from "next/link";
+import { DARKPRINT_CONFIG, shortDigest } from "@/lib/core";
+import { getBlueprintBySlug } from "@/lib/content";
+import { contentHref } from "@/lib/href";
+import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
+import { SectionHeading } from "@/components/ui/SectionHeading";
+import { ButtonLink } from "@/components/ui/Button";
+import { MetricBars } from "@/components/ui/MetricBars";
+
+const SLUG = "starter-software-factory";
+
+/**
+ * What the analyzer charges for a leak, read out of the engine's frozen config.
+ *
+ * The prose says the score falls from four to two, and both numbers have to be the
+ * engine's rather than a pair typed into a marketing page — the weights are open and
+ * meant to be re-tuned after launch (doc 1 §11), and a landing quoting a stale drop
+ * would be caught by anyone who ran the check.
+ */
+const LEAK_WEIGHT = DARKPRINT_CONFIG.security.weights["criteria-leak"] ?? 0;
+const LEAKED_SCORE = 4 - LEAK_WEIGHT;
+
+/** Small mono heading, matching the blueprint page's panels. */
+function PanelLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
+      {children}
+    </span>
+  );
+}
+
+export function SectionExample() {
+  const bp = getBlueprintBySlug(SLUG);
+  if (bp === undefined) return null;
+
+  const href = contentHref(bp);
+
+  return (
+    <section id="examples" className="bg-void py-20 sm:py-28">
+      <div className="container-page">
+        <SectionHeading
+          eyebrow="One factory, drawn"
+          title="The starter software factory"
+          lead="Five nodes, one per phase. A request goes in at the planner and a release comes out at the far end. The thing worth studying is an arrow that is missing from the drawing."
+        />
+
+        <div className="mt-10 grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+          {/* ---------- the graph ---------- */}
+          <div className="panel flex flex-col overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
+              <PanelLabel>Pipeline schematic</PanelLabel>
+              <span className="font-mono text-[11px] text-dim">
+                {bp.graph.nodes.length} nodes · {bp.graph.edges.length} edges
+              </span>
+            </div>
+            {/* `flex-1` with a floor rather than a fixed height: the two panels are
+                grid siblings and stretch to the taller one, and without it the drawing
+                left a band of empty panel under itself on wide viewports. */}
+            <div className="bp-grid min-h-64 flex-1 bg-blueprint-deep/40 sm:min-h-80">
+              {/* Labels on, which is the exception rather than the gallery default: this
+                  is the one drawing on the site a reader is asked to study, and the panel
+                  beside it names edges by what they carry. */}
+              <GraphThumbnail
+                graph={bp.graph}
+                labels
+                className="h-full w-full p-4"
+                ariaLabel="The starter software factory: planner and builder both feed the tester, the tester loops through the debugger and hands an approved build to the release gate. No edge runs from the planner to the builder."
+              />
+            </div>
+            <p className="border-t border-line px-4 py-3 font-mono text-[11px] leading-relaxed text-dim">
+              {bp.cardRefs.length} pinned cards · {shortDigest(bp.digest)} · autonomy
+              level {bp.analysis.autonomy.level} · security level{" "}
+              {bp.analysis.security.level}
+            </p>
+          </div>
+
+          {/* ---------- the absent edge ---------- */}
+          <div className="panel flex flex-col gap-4 p-6">
+            <h3 className="font-display text-xl font-semibold text-fg">
+              The edge that is not there
+            </h3>
+            <p className="text-sm leading-relaxed text-muted">
+              The planner writes two artefacts: an ordered build brief, and the
+              acceptance criteria the finished work will be judged against. The criteria
+              go to the tester. Nothing at all goes to the builder, which is why no arrow
+              points into it in the drawing. Its brief arrives when the graph is
+              instantiated, and it never learns how its output will be checked.
+            </p>
+
+            <ul className="flex flex-col gap-2 font-mono text-[12px]">
+              <li className="flex items-center gap-3 rounded border border-line bg-surface-2 px-3 py-2">
+                <span className="text-emerald" aria-hidden>
+                  ✓
+                </span>
+                <span className="text-fg">planner → tester</span>
+                <span className="ml-auto text-dim">acceptance criteria</span>
+              </li>
+              <li className="flex items-center gap-3 rounded border border-dashed border-line px-3 py-2">
+                <span className="text-signal" aria-hidden>
+                  ✕
+                </span>
+                <span className="text-muted">planner → builder</span>
+                <span className="ml-auto text-dim">no such edge</span>
+              </li>
+            </ul>
+
+            <p className="text-sm leading-relaxed text-muted">
+              Add that missing edge to the DOT and the analyzer charges{" "}
+              <span className="font-mono text-signal">criteria-leak</span> against the
+              builder. Security falls from 4 to {LEAKED_SCORE}, and the finding says why.
+            </p>
+            {/* The engine's own hint for a `criteria-leak` finding, minus its internal
+                document citation. Quoted rather than paraphrased: what the analyzer
+                says is checkable, and prose written to sound like it is not. */}
+            <div className="rounded border border-line bg-surface-2 px-3 py-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
+                what the analyzer says
+              </span>
+              <p className="mt-1 font-mono text-[11px] leading-relaxed text-muted">
+                Remove the path from planner to builder. Whoever writes the code must
+                never see the acceptance tests, because if they see them they game them.
+              </p>
+            </div>
+            <p className="text-sm leading-relaxed text-muted">
+              No card states that rule. It lives in the wiring, and it is checkable
+              because the wiring is a file.
+            </p>
+          </div>
+        </div>
+
+        {/* ---------- the scorecard, and what is real about it ---------- */}
+        <div className="mt-5 grid gap-5 md:grid-cols-2">
+          <div className="panel p-6">
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <h3 className="font-display text-lg font-semibold text-fg">
+                Its scorecard
+              </h3>
+              <span className="font-mono text-[11px] text-dim">six axes</span>
+            </div>
+            <MetricBars metrics={bp.metrics} autonomy={bp.autonomy} />
+          </div>
+
+          {/* The blueprint pages link here by name, so the heading stays the one they
+              point at: "How a factory is graded". */}
+          <div id="scoring" className="panel scroll-mt-24 p-6">
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <h3 className="font-display text-lg font-semibold text-fg">
+                How a factory is graded
+              </h3>
+              <span className="font-mono text-[11px] text-dim">three ways of knowing</span>
+            </div>
+            <p className="text-sm leading-relaxed text-muted">
+              Two of the six fall out of the drawing. Autonomy is the share of nodes that
+              run unattended. Security starts at four and loses the weight of every risk
+              marker the graph carries. The scorecard prints that subtraction under the
+              Security row and rescales the result onto the 0–100 axis the other five rows
+              use, so four out of four reads there as 100.
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-muted">
+              Both are computed at build time off this exact bundle, and both name the
+              nodes behind the number. The DOT and the five cards it pins are published as
+              source on this site, so the arithmetic can be checked against them.
+            </p>
+            <p className="mt-4 border-t border-line pt-4 text-sm leading-relaxed text-muted">
+              The other four cannot be read off a graph. Cost and time need somebody to
+              run the factory, and that happens on their machine, so the platform can
+              only ever be told the result. Efficacy, reliability and transparency are
+              judgement calls that need a ballot.
+            </p>
+            <p className="mt-3 flex flex-wrap items-center gap-2 text-sm leading-relaxed text-dim">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-dim">
+                <span aria-hidden>○</span>
+                not built
+              </span>
+              <span>
+                There is no runner, no endpoint and no ballot. Those four numbers are
+                seeded rows, and every card that shows one says so.
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-8 flex flex-wrap items-center gap-4">
+          <ButtonLink href={href} size="lg">
+            Open the blueprint
+          </ButtonLink>
+          <Link
+            href="/blueprints"
+            className="font-mono text-sm text-muted underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan"
+          >
+            or all of them
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}

@@ -8,12 +8,25 @@ import { Avatar } from "@/components/ui/Avatar";
 import { ButtonLink } from "@/components/ui/Button";
 import { cx } from "@/lib/format";
 
-/** The three surfaces of doc 1 §0, under their current names. */
+/**
+ * Two groups, and the divider between them is doc 2 §0's distinction made navigable.
+ *
+ * `registry` is the three surfaces of doc 1 §0 — the things a convinced reader came for.
+ * `explain` is the conceptual onboarding: the two pages that answer "what is this" and
+ * "would it work on my problem" for somebody who does not yet know. Mixing them into one
+ * run of five reads as five equal destinations, which is the flattening §0 blames for the
+ * site being unreadable cold.
+ */
 const NAV = [
-  { href: "/blueprints", label: "Blueprints" },
-  { href: "/nodes", label: "Nodes" },
-  { href: "/ontology", label: "Ontology" },
-];
+  { href: "/blueprints", label: "Blueprints", group: "registry" },
+  { href: "/nodes", label: "Nodes", group: "registry" },
+  { href: "/ontology", label: "Ontology", group: "registry" },
+  { href: "/what-it-isnt", label: "What it isn't", group: "explain" },
+  { href: "/which-tasks", label: "Which tasks", group: "explain" },
+] as const;
+
+/** The first item of the second group, which is where the rule goes. */
+const FIRST_EXPLAIN = NAV.find((item) => item.group === "explain")?.href;
 
 const currentUser = AUTHORS.mara;
 
@@ -32,13 +45,14 @@ export function SiteHeader() {
           <span className="text-cyan">Print</span>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1 lg:flex">
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={cx(
                 "rounded-md px-3 py-2 text-sm transition-colors",
+                item.href === FIRST_EXPLAIN && "ml-2 border-l border-line pl-4",
                 isActive(item.href)
                   ? "text-cyan"
                   : "text-muted hover:text-fg",
@@ -49,18 +63,22 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">
+        {/* `/upload` validates and scores a bundle in the browser and stops there;
+            publishing has no backend. A "+ Share" label on every page of the site
+            would be the one promise the site cannot keep. */}
+        <div className="hidden items-center gap-3 lg:flex">
           <ButtonLink href="/upload" variant="outline" size="sm">
-            + Share
+            Validate
           </ButtonLink>
           <Link href={`/u/${currentUser.username}`} className="inline-flex">
             <Avatar author={currentUser} size="md" />
           </Link>
         </div>
 
-        {/* mobile toggle */}
+        {/* mobile toggle — the nav is five items now, so it collapses at `lg` rather
+            than at `md`: at 768px the row wrapped onto itself. */}
         <button
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted md:hidden"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted lg:hidden"
           onClick={() => setOpen((v) => !v)}
           aria-label="Toggle menu"
           aria-expanded={open}
@@ -70,7 +88,7 @@ export function SiteHeader() {
       </div>
 
       {open && (
-        <div className="border-t border-line bg-void md:hidden">
+        <div className="border-t border-line bg-void lg:hidden">
           <nav className="container-page flex flex-col py-3">
             {NAV.map((item) => (
               <Link
@@ -79,6 +97,7 @@ export function SiteHeader() {
                 onClick={() => setOpen(false)}
                 className={cx(
                   "rounded-md px-3 py-2.5 text-sm",
+                  item.href === FIRST_EXPLAIN && "mt-2 border-t border-line pt-4",
                   isActive(item.href) ? "text-cyan" : "text-muted",
                 )}
               >
@@ -90,7 +109,7 @@ export function SiteHeader() {
               onClick={() => setOpen(false)}
               className="rounded-md px-3 py-2.5 text-sm text-cyan"
             >
-              + Share a blueprint
+              Validate a bundle
             </Link>
           </nav>
         </div>

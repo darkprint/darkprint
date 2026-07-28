@@ -1,0 +1,176 @@
+import Link from "next/link";
+import { CORE_PHASE_IDS } from "@/lib/core";
+import { allNodeCards, getOntologyView, getRegistry } from "@/lib/content";
+import { kindHref, termHref } from "@/lib/href";
+import { SectionHeading } from "@/components/ui/SectionHeading";
+
+/* ============================================================
+   Doc 2 §3's closing ask: "Serve una pagina di recap delle
+   componenti (blueprint, nodo, ontologia, fase) che spieghi cosa
+   sono e come si distinguono tra loro."
+
+   Four entries, each linking at the surface where the thing
+   actually lives, and each carrying the count the archive
+   currently holds rather than a number typed into the copy.
+   The distinctions are the paragraph underneath, because the
+   confusable pairs are across entries and not inside one.
+   ============================================================ */
+
+type Entry = {
+  id: string;
+  label: string;
+  glyph: string;
+  color: string;
+  count: string;
+  title: string;
+  body: string;
+  href: string;
+  cta: string;
+};
+
+/** The five phase terms, with their labels read out of the vocabulary. */
+const PHASES = CORE_PHASE_IDS.map((id) => ({
+  id,
+  label: getOntologyView().get(id)?.label ?? id,
+}));
+
+function entries(): Entry[] {
+  const registry = getRegistry();
+  const terms = getOntologyView().ontology.terms.length;
+
+  return [
+    {
+      id: "blueprint",
+      label: "Blueprint",
+      glyph: "▧",
+      color: "var(--color-cyan)",
+      count: `${registry.blueprints().length} in the archive`,
+      title: "The whole factory, as one graph",
+      body: "A DOT file carrying the topology, plus one pinned card version for every node in it. Hashed and versioned as a unit, so a blueprint always names the exact cards it was scored against and a score can be reproduced years later. This is the unit you take away.",
+      href: kindHref("blueprint"),
+      cta: "Browse blueprints",
+    },
+    {
+      id: "node",
+      label: "Node",
+      glyph: "◫",
+      color: "var(--color-amber)",
+      count: `${allNodeCards().length} distinct cards`,
+      title: "One step, fully described",
+      body: "A card stating what the step does, which model or tool does it, the typed ports it reads and writes, whether a person acts there, and the natural-language spec the agent is handed when the graph is instantiated. It is versioned on its own, and the same version can be pinned by several blueprints without being copied.",
+      href: kindHref("node"),
+      cta: "Browse node cards",
+    },
+    {
+      id: "ontology",
+      label: "Ontology",
+      glyph: "⬡",
+      color: "var(--color-violet)",
+      count: `${terms} terms`,
+      title: "The vocabulary the cards are written in",
+      body: "Every structural field on a card points into it: the node's type, the data type on each port, the tools it needs, the risk markers it declares. It is what lets an analyzer read a graph it has never seen and reason about it, and what stops two authors from naming the same thing twice.",
+      href: kindHref("ontology"),
+      cta: "Read the ontology",
+    },
+    {
+      id: "phase",
+      label: "Phase",
+      glyph: "◷",
+      color: "var(--color-emerald)",
+      count: `${PHASES.length}, and no more`,
+      title: "Where a node stands in the lifecycle",
+      body: "A phase is a term in the ontology like any other, sitting on its own dimension: a card says what kind of thing the node is and, separately, where in the arc it acts. These five are the one closed set in the vocabulary, because a sixth would be a different definition of the word factory. Which of them a blueprint has nodes in is its phase coverage, and that states the scope of the graph. An empty phase is where this factory stops.",
+      href: "/ontology#phases-heading",
+      cta: "See the five phases",
+    },
+  ];
+}
+
+export function SectionComponentRecap() {
+  return (
+    <section id="components" className="bg-void py-20 sm:py-28">
+      <div className="container-page">
+        <SectionHeading
+          eyebrow="The vocabulary of this site"
+          title="Four words used precisely"
+          lead="They get used loosely everywhere else. Here each one names exactly one thing, and the pages are built on the difference between them."
+        />
+
+        <div className="mt-10 grid gap-5 md:grid-cols-2">
+          {entries().map((entry) => (
+            <article
+              key={entry.id}
+              className="panel flex flex-col gap-3 p-6"
+              style={{ borderTop: `2px solid ${entry.color}` }}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span
+                  className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em]"
+                  style={{ color: entry.color }}
+                >
+                  <span className="text-base leading-none" aria-hidden>
+                    {entry.glyph}
+                  </span>
+                  {entry.label}
+                </span>
+                <span className="font-mono text-[11px] text-dim">{entry.count}</span>
+              </div>
+
+              <h3 className="font-display text-xl font-semibold leading-snug text-fg">
+                {entry.title}
+              </h3>
+              <p className="flex-1 text-sm leading-relaxed text-muted">{entry.body}</p>
+
+              {entry.id === "phase" && (
+                <ul className="flex flex-wrap gap-1.5">
+                  {PHASES.map((phase) => (
+                    <li key={phase.id}>
+                      <Link
+                        href={termHref(phase.id)}
+                        className="inline-flex rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-muted transition-colors hover:border-line-bright hover:text-cyan"
+                      >
+                        {phase.id}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <Link
+                href={entry.href}
+                className="mt-1 inline-flex w-fit items-center gap-1.5 font-mono text-xs transition-transform hover:translate-x-0.5"
+                style={{ color: entry.color }}
+              >
+                {entry.cta}
+                <span aria-hidden>→</span>
+              </Link>
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-8 flex max-w-3xl flex-col gap-3 border-l-2 border-line-bright pl-4">
+          <p className="text-sm leading-relaxed text-muted">
+            Blueprint and node are the two structural levels, and nothing sits between
+            them. A reusable sub-graph would be a third, with an arbitrary line drawn
+            somewhere, so when the need becomes real it gets answered by letting one
+            blueprint reference another as a composite node. That composition is designed
+            for and nothing on the site does it today.
+          </p>
+          <p className="text-sm leading-relaxed text-muted">
+            The ontology sits underneath both of them: it is the vocabulary the other two
+            are written in. Which is why a term has no version of its own the way a card
+            does. There is one curated core, versioned as a whole, with room for terms
+            coined in somebody&apos;s own namespace.
+          </p>
+          <p className="text-sm leading-relaxed text-muted">
+            Phase and node type are two separate dimensions of the same card. A node
+            declares what kind of thing it is and where in the lifecycle it acts, and
+            neither answer implies the other. A card may name several phases or none. The
+            five describe the factory as a whole, so an intake step that stands outside all
+            of them is not a defect.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}

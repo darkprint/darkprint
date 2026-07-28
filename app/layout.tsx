@@ -22,14 +22,24 @@ const spaceGrotesk = Space_Grotesk({
   weight: ["400", "500", "600", "700"],
 });
 
+/**
+ * The landing exports no metadata of its own, so this default is what the homepage
+ * serves to a tab, a search result and a social card. It therefore has to carry the
+ * same claim the hero does — the previous default still announced the positioning line
+ * the landing retired, and the hero's `h1` was promoted to real text specifically so
+ * that claim would be the indexable one.
+ *
+ * Doc 2 §2.5 applies here as much as to anything on screen: no em-dash standing in for
+ * a pause, and no verb list padding out the description.
+ */
 export const metadata: Metadata = {
   metadataBase: new URL("https://darkprint.io"),
   title: {
-    default: "DarkPrint — the blueprint registry for autonomous AI factories",
+    default: "DarkPrint · specifications go in, software comes out",
     template: "%s · DarkPrint",
   },
   description:
-    "DarkPrint is where builders share the blueprints of their AI dark factories — autonomous agent pipelines that plan, execute, verify and ship without a human in the loop.",
+    "A registry of dark-factory blueprints: the DOT graph of an agent pipeline, one versioned card per node, and autonomy and security scored off the drawing without running anything.",
   keywords: [
     "AI agents",
     "dark factory",
@@ -41,7 +51,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "DarkPrint",
     description:
-      "Share the blueprint of your AI dark factory. Autonomy you can read as a graph.",
+      "Specifications go in. Software comes out. A registry of the graphs that make that work.",
     type: "website",
   },
 };
