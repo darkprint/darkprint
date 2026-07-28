@@ -1,0 +1,30 @@
+# ============================================================
+# DarkPrint content — local namespace extensions (doc 3 §7)
+# Terms this release adds outside the curated core, layered over
+# CORE_ONTOLOGY by `ontologyView(CORE_ONTOLOGY, terms)`.
+#
+# Doc 3 §7's three rules apply to everything in this file: `phase`
+# is closed and may not be extended here, every term must declare a
+# `broader` that reaches the core, and a risk marker without a
+# weight counts 0 and moves no score. `OntologyView.validate()`
+# enforces all three.
+#
+# `version` is this overlay's own semver (doc 3 §8). It does not
+# mint a new vocabulary version: the view keeps the core's, which
+# is what lets a card using a local term still declare the core
+# `ontology_version` it was written against.
+# ============================================================
+version: "0.1.0"
+terms:
+  # Doc 3 §4 has no marker for personal data, and inventing a core
+  # one would extend a curated set from the content side. Rooted at
+  # `isolation-breach`: handling PII is information crossing a
+  # boundary the topology was meant to hold, which is exactly what
+  # that category names.
+  - id: lupo/pii-handling
+    kind: risk-marker
+    label: PII handling
+    description: The node reads, stores or passes on personal data that identifies a real person.
+    broader: isolation-breach
+    defaultWeight: 0.5
+    since: "0.1.0"

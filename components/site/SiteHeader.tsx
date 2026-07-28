@@ -21,6 +21,11 @@ const NAV = [
   { href: "/blueprints", label: "Blueprints", group: "registry" },
   { href: "/nodes", label: "Nodes", group: "registry" },
   { href: "/ontology", label: "Ontology", group: "registry" },
+  // Doc 2 §0 splits the two onboardings. `/build` is the practical one: about an hour,
+  // ending with a factory the reader has downloaded. It sits with the explanatory pages
+  // rather than with the three registry surfaces, because it is something to do rather
+  // than something to browse.
+  { href: "/build", label: "Build one", group: "explain" },
   { href: "/what-it-isnt", label: "What it isn't", group: "explain" },
   { href: "/which-tasks", label: "Which tasks", group: "explain" },
 ] as const;
@@ -75,7 +80,7 @@ export function SiteHeader() {
           </Link>
         </div>
 
-        {/* mobile toggle — the nav is five items now, so it collapses at `lg` rather
+        {/* mobile toggle — the nav is six items now, so it collapses at `lg` rather
             than at `md`: at 768px the row wrapped onto itself. */}
         <button
           className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted lg:hidden"

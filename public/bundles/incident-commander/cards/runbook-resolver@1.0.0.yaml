@@ -1,0 +1,44 @@
+id: runbook-resolver
+name: Runbook Resolver
+type: tool
+
+action: >-
+  Match the routed alert to a runbook in the versioned store and return it as Markdown, pinned to
+  the revision that was current when the incident opened.
+spec: >-
+  Build a lookup key out of the routed alert on `query` — its label plus the affected service —
+  and pull the three closest runbooks from the versioned store. Drop anything scoring below 0.4
+  and emit the best of the rest on `runbook` as Markdown, with its preconditions and its steps
+  intact and in their original order. Resolve it at the store revision that was current when the
+  incident opened, not at the tip, and write that revision into the output: an edit landing
+  mid-incident must not change the runbook that is already being carried forward. If nothing
+  clears 0.4, emit nothing — no runbook is a better answer than a runbook that does not fit the
+  alert.
+tools:
+  - vector-store
+  - git
+params:
+  k: 3
+  min_score: 0.4
+
+inputs:
+  - name: query
+    type: json
+    description: The routed alert, whose label and affected service form the lookup key.
+outputs:
+  - name: runbook
+    type: markdown
+    description: The matched runbook at a pinned revision, preconditions and steps intact.
+dependencies:
+  - intent-router
+
+requires_human: false
+risk_markers: []
+notes: >-
+  Pinning the revision matters more than the match. A runbook that changes mid-incident is how the
+  mitigation that runs stops being the mitigation that was reviewed. `git` here reads the factory's
+  own versioned store, which is why no external-access marker is inferred from it.
+
+version: 1.0.0
+author: mara-veil
+ontology_version: 0.1.0

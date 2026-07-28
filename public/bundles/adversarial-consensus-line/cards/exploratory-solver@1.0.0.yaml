@@ -1,0 +1,43 @@
+id: exploratory-solver
+name: Exploratory Solver
+type: agent
+phase: implementation
+
+action: >-
+  Work the same brief from the least obvious angle, and emit one proposal that states where it
+  departs from the conservative reading and why that departure is worth the risk.
+spec: >-
+  You are handed an ordered list of sub-tasks on `brief`, each carrying its own done condition.
+  Work all of them from the angle that is not the obvious one: interrogate what the brief takes
+  for granted, and follow the approach that pays off most if the interrogation holds. Emit one
+  proposal on `proposal` that answers every sub-task in the brief's order, and for each point
+  where you left the cautious reading behind, state the departure, what it buys and what it
+  costs if you turn out to be wrong. A proposal that lands exactly where the careful route
+  would have landed has wasted its pass — but do not manufacture a difference where the brief
+  admits only one reading; record that the sub-task offered no room instead.
+agent: Solver B (high-temp)
+tools: []
+params:
+  temperature: 0.9
+  max_tokens: 2048
+
+inputs:
+  - name: brief
+    type: plan
+    description: The decomposed sub-tasks, identical to the ones the conservative solver receives.
+outputs:
+  - name: proposal
+    type: json
+    description: One candidate answer, with the divergences it took flagged for the vote to weigh.
+dependencies:
+  - task-decomposer
+
+requires_human: false
+risk_markers: []
+notes: >-
+  The temperature is the whole design. Drop it toward the conservative solver's and the two
+  proposals converge, the vote stops disagreeing, and the line degrades into a slow single agent.
+
+version: 1.0.0
+author: mara-veil
+ontology_version: 0.1.0

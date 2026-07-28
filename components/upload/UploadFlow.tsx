@@ -7,8 +7,10 @@ import {
   hasErrors,
   loadBundle,
   ontologyView,
+  sortDiagnostics,
   summarize,
   type LoadBundleResult,
+  type OntologyTerm,
 } from "@/lib/core";
 import { cx, METRIC_SOURCE_META } from "@/lib/format";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -90,12 +92,20 @@ const fieldLabelCls =
   "font-mono text-[11px] uppercase tracking-[0.14em] text-dim";
 
 /**
- * One vocabulary view for the tab. `isA` memoizes per instance, so sharing it across
- * every keystroke-triggered re-validation is both cheaper and the only way two runs of
- * the validator are provably against identical terms — the same reason `lib/content`
+ * One vocabulary view per selection. `isA` memoizes per instance, so keeping the same view
+ * across every keystroke-triggered re-validation is both cheaper and the only way two runs
+ * of the validator are provably against identical terms — the same reason `lib/content`
  * builds exactly one for the whole static build.
+ *
+ * It is rebuilt only when the dropped `extensions.yaml` changes. Doc 3 §7's local terms
+ * have to be layered over the core here for the same reason the loader layers them at
+ * build time: a bundle whose card declares `lupo/pii-handling` and is read against the
+ * core alone loses that card to `card/unknown-term` and comes out at different scores,
+ * which would mean this page rejecting the folder the blueprint pages hand out.
  */
-const ONTOLOGY = ontologyView(CORE_ONTOLOGY);
+function viewFor(terms: readonly OntologyTerm[]) {
+  return ontologyView(CORE_ONTOLOGY, terms);
+}
 
 const EMPTY_DETAILS: BundleDetails = {
   title: "",
@@ -336,10 +346,22 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
 
   const parts = useMemo(() => classifyBundle(files), [files]);
   const bundle = useMemo(() => assembleBundle(parts, details), [parts, details]);
-  const result: LoadBundleResult | undefined = useMemo(
-    () => (bundle === undefined ? undefined : loadBundle(bundle, { ontology: ONTOLOGY })),
-    [bundle],
-  );
+  const ontology = useMemo(() => viewFor(parts.terms), [parts.terms]);
+  const result: LoadBundleResult | undefined = useMemo(() => {
+    if (bundle === undefined) return undefined;
+    const loaded = loadBundle(bundle, { ontology });
+    // Doc 3 §7: a local term the core does not subsume is "ignorata silenziosamente, che è
+    // il peggior esito possibile" — every card using it validates and every score is
+    // quietly wrong. `loadBundle` deliberately leaves defects in the vocabulary to
+    // whoever built the view, so the caller that built it reports them, exactly as the
+    // build-time loader does with the archive's own.
+    const vocabulary = parts.vocabulary === undefined ? [] : ontology.validate();
+    if (vocabulary.length === 0) return loaded;
+    return {
+      ...loaded,
+      diagnostics: sortDiagnostics([...loaded.diagnostics, ...vocabulary]),
+    };
+  }, [bundle, ontology, parts.vocabulary]);
 
   const errorCount = result === undefined ? 0 : summarize(result.diagnostics).error;
   const blocked = result === undefined || hasErrors(result.diagnostics);

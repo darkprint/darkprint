@@ -328,9 +328,17 @@ export function SectionAbsentEdge({ demo }: { demo: IsolationDemo }) {
         </div>
 
         <p className="mt-6 max-w-3xl text-sm leading-relaxed text-muted">
-          The guided path is meant to turn this into a switch you can flip and watch break.
-          It is not built. What exists today is the archive and the analyzer that reads it,
-          so the two figures above are as close as the site currently gets.{" "}
+          The two figures above are one graph read twice. The{" "}
+          <Link
+            href="/build"
+            className="font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan"
+          >
+            guided path
+          </Link>{" "}
+          puts the same pair behind a switch on a factory you configure yourself: the
+          statement goes into the DOT, the analyzer reads the graph again in your tab and
+          prints what it found, and the switch goes back off when you leave the step. No
+          file the path hands over carries the edge.{" "}
           <Link
             href={contentHref(published)}
             className="font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan"

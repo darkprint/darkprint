@@ -20,13 +20,23 @@ import {
   type Registry,
 } from "@/lib/core";
 import { communityFor } from "@/lib/data/community";
-import { contentOntology, readContent } from "./read";
+import { BUNDLE_VOCABULARY, localTermsUsed } from "./bundle-export";
+import { contentOntology, contentVocabulary, readContent } from "./read";
 import { toBlueprintView } from "./view";
 
 /** The raw text behind a bundle, for the "source" panels. */
 export interface BundleSource {
   dot: string;
   cards: { file: string; text: string }[];
+}
+
+/** The local vocabulary a bundle carries, when its cards declare one (doc 3 §7). */
+export interface BundleVocabulary {
+  /** Bundle-relative name, which is also the name the download writes it under. */
+  file: string;
+  text: string;
+  /** The ids this bundle's cards actually declare, sorted. */
+  termIds: readonly string[];
 }
 
 /* --------------------- one derivation, memoized --------------------- */
@@ -37,6 +47,7 @@ interface Content {
   registry: Registry;
   ontology: OntologyView;
   sources: Map<string, BundleSource>;
+  vocabularies: Map<string, BundleVocabulary>;
   cardText: Map<CardRef, string>;
 }
 
@@ -61,12 +72,32 @@ function build(): Content {
     .sort((a, b) => (a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0));
 
   const sources = new Map<string, BundleSource>();
+  const vocabularies = new Map<string, BundleVocabulary>();
   const cardText = new Map<CardRef, string>();
+  // Doc 3 §7. The same question the exporter asks, asked once here so a page linking the
+  // file and the generator writing it cannot disagree about which bundles have one.
+  const vocabulary = contentVocabulary();
   for (const entry of loaded) {
     sources.set(entry.slug, {
       dot: entry.bundle.dot,
       cards: entry.cardFiles.map((card) => ({ file: card.path, text: card.text })),
     });
+
+    if (vocabulary !== undefined) {
+      const used = localTermsUsed({
+        blueprint: entry.blueprint,
+        analysis: entry.analysis,
+        cards: [],
+        vocabulary: { text: vocabulary.text, terms: vocabulary.terms },
+      });
+      if (used.length > 0) {
+        vocabularies.set(entry.slug, {
+          file: BUNDLE_VOCABULARY,
+          text: vocabulary.text,
+          termIds: used.map((term) => term.id),
+        });
+      }
+    }
     // A card shared by two blueprints is one file in the library, so the second write
     // is the same bytes as the first (§4: a published version is immutable).
     for (const card of entry.cardFiles) {
@@ -81,6 +112,7 @@ function build(): Content {
     registry: buildRegistry(loaded.map((entry) => entry.blueprint)),
     ontology: contentOntology(),
     sources,
+    vocabularies,
     cardText,
   };
 }
@@ -136,6 +168,17 @@ export function getOntologyView(): OntologyView {
 /** The DOT and every card document a blueprint pins, verbatim. */
 export function bundleSource(slug: string): BundleSource {
   return get().sources.get(slug) ?? { dot: "", cards: [] };
+}
+
+/**
+ * The local vocabulary this bundle's cards declare, or `undefined` when they declare none.
+ *
+ * The download carries this file whenever it is defined, because a folder holding a card
+ * that names `lupo/pii-handling` and no definition for it does not resolve to the numbers
+ * its own README prints.
+ */
+export function bundleVocabulary(slug: string): BundleVocabulary | undefined {
+  return get().vocabularies.get(slug);
 }
 
 /**

@@ -1,0 +1,20 @@
+digraph nightly_data_janitor {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  raw       [card="delta-intake@1.0.0"];
+  extract   [card="delta-extractor@1.0.0"];
+  normalize [card="field-normalizer@1.0.0"];
+  validate  [card="schema-gate@1.0.0"];
+  repair    [card="record-repairer@1.0.0"];
+  store     [card="record-store@1.0.0"];
+  publish   [card="warehouse-publisher@1.0.0"];
+
+  raw -> extract;
+  extract -> normalize;
+  normalize -> validate;
+  validate -> repair [label="invalid", style=dashed, out="violations", in="violations"];
+  repair -> normalize [in="repaired"];
+  validate -> store [label="valid", out="accepted"];
+  store -> publish;
+}

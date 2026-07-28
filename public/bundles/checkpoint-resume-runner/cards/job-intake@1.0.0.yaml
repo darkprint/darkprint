@@ -1,0 +1,36 @@
+id: job-intake
+name: Job Intake
+type: tool
+
+action: >-
+  Accept a long-running job submission, stamp it with a run id and the idempotency key the
+  checkpoint log will be keyed on, and hand it to the planner.
+spec: >-
+  Accept the incoming job submission and refuse it outright if its payload is larger than 512 KB,
+  reporting the size you measured. Mint a run id for an accepted submission and copy the
+  submitter's `job_id` onto it as the idempotency key: the checkpoint log is keyed on that value,
+  so a resubmission carrying a `job_id` already in flight must return the run already open rather
+  than starting a second one. Emit on `job` a single record holding the job's stated goal, the
+  references to its payload and the run id you minted, and nothing beyond those three. You are
+  done when that record is emitted — do not begin any of the work the job describes.
+tools: []
+params:
+  idempotency_key: job_id
+  max_payload_kb: 512
+
+inputs: []
+outputs:
+  - name: job
+    type: json
+    description: The submitted job — its goal, its payload references and the run id assigned here.
+dependencies: []
+
+requires_human: false
+risk_markers: []
+notes: >-
+  The run id is minted at intake rather than per stage so a resumed run keeps writing into the
+  same episode log instead of starting a fresh one.
+
+version: 1.0.0
+author: k0bra
+ontology_version: 0.1.0

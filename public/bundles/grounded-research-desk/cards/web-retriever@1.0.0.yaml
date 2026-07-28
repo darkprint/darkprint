@@ -1,0 +1,49 @@
+id: web-retriever
+name: Web Retriever
+type: tool
+
+action: >-
+  Run the strand's query against public search, fetch the pages worth reading, and return each
+  one as a passage stamped with its source URL and the time it was retrieved.
+spec: >-
+  Run the web strand of the retrieval plan you are given on `query`: issue its search terms with
+  its site filters applied, keep the top eight results, and fetch each of those pages, following
+  redirects. Emit one record per page you actually retrieved on `passages`, carrying the extracted
+  body text, the final URL after redirects, the ISO-8601 timestamp of the fetch, and the rank the
+  result held in the search listing. Give up on any single fetch that has not answered within
+  twenty seconds and move to the next result rather than retrying it. Do not summarise, rank for
+  truth, or drop a page because you disbelieve it — hand back what was served, so that whatever
+  reads these passages can still tell retrieved text from established fact. You are done when
+  every result you were able to fetch has a record, or the eight-result budget is exhausted.
+tools:
+  - web-search
+  - http-fetch
+params:
+  max_results: 8
+  timeout_s: 20
+  follow_redirects: true
+
+inputs:
+  - name: query
+    type: plan
+    description: The web strand of the retrieval plan — terms, site filters and result budget.
+outputs:
+  - name: passages
+    type: json
+    description: Retrieved passages, each with its URL, retrieval timestamp and rank.
+dependencies:
+  - retrieval-planner
+
+requires_human: false
+risk_markers: []
+notes: >-
+  This is the only node on the line that reaches outside the process, and nothing vets what it
+  pulls back before the synthesizer reads it — the fact-checker sits after synthesis, not between
+  the fetch and its consumer. Treat the passages as claims about the world rather than facts until
+  the verifier has cited them. The marker for that is deliberately not declared here: doc 3 §4.1
+  infers `unvalidated-external-access` from the graph, and declaring it would second-guess the
+  analyzer.
+
+version: 1.0.0
+author: orin
+ontology_version: 0.1.0

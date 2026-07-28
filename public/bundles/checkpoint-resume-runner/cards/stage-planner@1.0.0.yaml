@@ -1,0 +1,42 @@
+id: stage-planner
+name: Stage Planner
+type: agent
+phase: planning
+
+action: >-
+  Break the job into an ordered set of stages small enough to be re-run on their own, and mark
+  the checkpoint boundary after each one.
+spec: >-
+  Read the job record you are handed and break the work it describes into an ordered list of at
+  most eight stages. Size each stage so it can be re-run on its own: give it its own inputs, its
+  own exit condition and the checkpoint boundary that closes it, so a failure costs one stage of
+  work instead of the whole run. Emit the ordered list on `stages`, carrying the run id through
+  unchanged so every later stage and every checkpoint entry is written under the same run. You
+  are done when every unit of work the job names belongs to exactly one stage and no stage
+  depends on a stage that comes after it.
+agent: Planner
+tools: []
+params:
+  max_stages: 8
+  temperature: 0.2
+
+inputs:
+  - name: job
+    type: json
+    description: The submitted job as intake released it, run id included.
+outputs:
+  - name: stages
+    type: plan
+    description: The ordered stages, each with its inputs, its exit condition and its checkpoint boundary.
+dependencies:
+  - job-intake
+
+requires_human: false
+risk_markers: []
+notes: >-
+  Stage granularity is the knob that decides what a failure costs: coarse stages redo more work,
+  fine stages make the checkpoint writes dominate the run.
+
+version: 1.0.0
+author: k0bra
+ontology_version: 0.1.0

@@ -1,0 +1,36 @@
+id: pr-intake
+name: PR Intake
+type: tool
+
+action: >-
+  Open a run for every pull request the repository webhook reports, packaging the diff, the base
+  and head refs and the author's declared intent into one payload the rest of the line reads.
+spec: >-
+  A pull-request webhook event has just fired on the repository you watch. Accept it only when
+  its action is `opened`, `synchronize` or `ready_for_review`, and drop it without emitting
+  anything when the pull request is still a draft. For an accepted event, assemble one JSON
+  payload on `pull_request` carrying the base ref, the head ref, the changed-file list with
+  per-file diff stats, the unified diff itself, and the title and body the author wrote as their
+  declared intent. You are done the moment that payload is emitted — do not read the repository
+  beyond the two refs the event names, and do not form an opinion about the change.
+tools: []
+params:
+  events:
+    - opened
+    - synchronize
+    - ready_for_review
+  ignore_drafts: true
+
+inputs: []
+outputs:
+  - name: pull_request
+    type: json
+    description: The PR as the line sees it — refs, changed files, diff stats and the description.
+dependencies: []
+
+requires_human: false
+risk_markers: []
+
+version: 1.0.0
+author: sol-antczak
+ontology_version: 0.1.0

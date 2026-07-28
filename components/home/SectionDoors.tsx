@@ -3,13 +3,13 @@
 
    "Due porte. *Sfoglia i blueprint* oppure *costruisci il tuo*."
 
-   The second door points at the guided path (§5), which does not
-   exist. It says so, in the register `SectionTelemetry` established
-   for everything on this site that is designed and unbuilt: a status
-   token carrying a glyph and a word, then a plain sentence about what
-   a reader can actually do today. A door that promised a tutorial and
-   delivered a 404 would undo the honesty the rest of the page spends
-   its length on.
+   The second door points at the guided path (§5), which now exists
+   at `/build`. The status token stays, because the register is what
+   the rest of the site uses for the difference between designed and
+   built, and the door still has something to be honest about: the
+   path is live and it stops at the download, since accounts and
+   publishing (§6) are Fase 4. Saying so on the door beats letting a
+   reader find out an hour in.
 
    The counters are the three things counted off the real archive at
    build time. The seeded pair that used to sit beside them (builders,
@@ -128,21 +128,24 @@ export function SectionDoors() {
               <h3 className="font-display text-2xl font-semibold text-blueprint-ink">
                 Build your own
               </h3>
-              <Status glyph="○" word="not built" />
+              <Status glyph="✓" word="live" />
             </div>
             <p className="text-sm leading-relaxed text-blueprint-ink/85">
-              The guided path is the next thing to be built: an hour that ends with a dark
-              factory of your own, downloaded and runnable on your machine. It does not
-              exist yet, and there is nothing to click here that would take you to it.
+              The guided path takes about an hour and ends with a dark factory of your own,
+              downloaded and runnable on your machine. You start from the five-node starter,
+              take it apart, and make three choices that stay in the artefact. Both computed
+              scores move with the graph while you work, on the exact bytes you download.
             </p>
             <p className="border-l-2 border-blueprint-line/50 pl-4 text-sm leading-relaxed text-blueprint-ink/85">
-              What works today is smaller. Open the starter blueprint, copy its DOT and
-              change one edge. The score moves, and the report names the node that moved
-              it. The validator behind that report runs in your browser on files you drop
-              into it, so you can point it at a graph of your own before anything else
-              exists.
+              It ends at the download. There is nowhere to save a blueprint yet: accounts
+              and publishing are designed and neither is built, so nothing you make there
+              leaves your machine. The same validator runs on files you drop into it, if you
+              would rather point it at a graph you already have.
             </p>
             <div className="mt-auto flex flex-wrap gap-3 pt-2">
+              <ButtonLink href="/build" variant="primary" size="lg">
+                Start the guided path
+              </ButtonLink>
               <ButtonLink href={STARTER} variant="outline" size="lg">
                 Open the starter blueprint
               </ButtonLink>

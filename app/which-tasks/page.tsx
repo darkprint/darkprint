@@ -64,13 +64,20 @@ export default function WhichTasksPage() {
         <p className="max-w-3xl text-sm leading-relaxed text-muted">
           DarkPrint reads bundles, scores autonomy and security off the drawing without
           executing a line, and hands you the files. Execution happens on your own machine
-          through Claude Code or an agent that reads the same cards. The guided path that
-          would take you from a suitable task to a working graph is not built. Publishing
-          is not built either, and there is no MCP server to point a client at yet.
+          through Claude Code or an agent that reads the same cards. Publishing is not
+          built, and there is no MCP server to point a client at yet.
         </p>
         <p className="max-w-3xl text-sm leading-relaxed text-muted">
-          So the four questions are yours to apply, and what happens after a yes is your
-          own tooling. What you can do here today is{" "}
+          The four questions are yours to apply, and a yes now has somewhere to go. The{" "}
+          <Link
+            href="/build"
+            className="font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan"
+          >
+            guided path
+          </Link>{" "}
+          walks the choices that shape a starter factory, prints what each one does to the
+          two computed scores, and ends with a folder you download and run yourself. You
+          can also{" "}
           <Link
             href="/blueprints"
             className="font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan"

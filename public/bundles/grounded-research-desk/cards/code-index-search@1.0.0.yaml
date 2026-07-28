@@ -1,0 +1,43 @@
+id: code-index-search
+name: Code Index Search
+type: tool
+
+action: >-
+  Search the indexed repositories for the symbols and snippets the strand names, and return each
+  hit as a passage pinned to its file path, line range and commit.
+spec: >-
+  Search the indexed repositories for the symbols, paths and language filters named in the code
+  strand you are given on `query`, and keep at most twenty hits. Emit each hit on `passages` as a
+  snippet with six lines of context either side of the match, pinned to its repository, file path,
+  line range and the commit sha the file was read at. Include matches under test directories: a
+  test is often the clearest statement of what the code is meant to do. Check nothing out, run
+  nothing, and write nothing back — the index is read-only, and the commit sha is what keeps a hit
+  resolvable after the branch has moved on. You are done when every match you kept carries all
+  five of those coordinates.
+tools:
+  - git
+params:
+  max_hits: 20
+  context_lines: 6
+  include_tests: true
+
+inputs:
+  - name: query
+    type: plan
+    description: The code strand of the retrieval plan — symbols, paths and language filters.
+outputs:
+  - name: passages
+    type: json
+    description: Matching snippets, each pinned to a repository, path, line range and commit sha.
+dependencies:
+  - retrieval-planner
+
+requires_human: false
+risk_markers: []
+notes: >-
+  Read-only, and pinned: every hit names the commit it came from, so a claim grounded in code
+  still resolves after the branch has moved on. Nothing is checked out and nothing is written.
+
+version: 1.0.0
+author: orin
+ontology_version: 0.1.0

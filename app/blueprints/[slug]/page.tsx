@@ -1,6 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { allBlueprints, getBlueprintBySlug, getRegistry } from "@/lib/content";
+import {
+  allBlueprints,
+  bundleVocabulary,
+  cardSource,
+  getBlueprintBySlug,
+  getRegistry,
+} from "@/lib/content";
+import {
+  BUNDLE_README,
+  FACTORY_DOT,
+  TOPOLOGY_DOT,
+  bundleHref,
+  cardFilePath,
+} from "@/lib/content/bundle-export";
 import { parseCardRef } from "@/lib/core";
 import { compact, prettyDate } from "@/lib/format";
 import { AuthorChip } from "@/components/ui/Avatar";
@@ -11,9 +24,12 @@ import { TagPill } from "@/components/ui/TagPill";
 import { ScoreRadar } from "@/components/ui/ScoreRadar";
 import { MetricBars } from "@/components/ui/MetricBars";
 import { PhaseCoverageList } from "@/components/ui/PhaseCoverage";
-import { DotSource } from "@/components/graph/DotSource";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
+import { absencesFor } from "@/components/panes/absences";
+import { buildPaneModel, type PaneNodeInput } from "@/components/panes/build";
+import { SynchronisedPanes } from "@/components/panes/SynchronisedPanes";
 import { BundlePanel, type BundleNode } from "@/components/blueprint/BundlePanel";
+import { DownloadPanel, type DownloadCard } from "@/components/blueprint/DownloadPanel";
 import { Comments } from "@/components/blueprint/Comments";
 import { Requirements } from "@/components/blueprint/Requirements";
 
@@ -48,9 +64,18 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
   if (!bp) notFound();
 
   const paragraphs = bp.description.split("\n\n").filter((p) => p.trim().length);
-  const dotHref = `data:text/vnd.graphviz;charset=utf-8,${encodeURIComponent(
-    bp.graph.dot,
-  )}`;
+
+  // The download is a directory of real files under `public/bundles/<slug>/`, written by
+  // `scripts/generate-bundles.ts` before the build. The page only names them, and it
+  // names them through the same helpers the generator writes them with, so a link here
+  // and a file there cannot drift apart.
+  const factoryHref = bundleHref(bp.slug, FACTORY_DOT);
+  const downloadCards: DownloadCard[] = [...new Set(bp.cardRefs)]
+    .sort()
+    .map((ref) => ({ ref, href: bundleHref(bp.slug, cardFilePath(ref)) }));
+  // Doc 3 §7: present only for a bundle whose cards declare a local term, which is the
+  // same condition the generator writes the file under.
+  const vocabulary = bundleVocabulary(bp.slug);
 
   // The index row, for the two facts the view model does not carry: the vocabulary
   // version the manifest was written against, and how many distinct cards are pinned.
@@ -67,6 +92,32 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
       cardId: parsed?.id ?? ref,
       version: parsed?.version ?? "",
     };
+  });
+
+  // Doc 2 §5.1's four panes, assembled here because the parse that supplies their line
+  // numbers is build-time work: the client gets the finished, serializable model and
+  // none of the engine. Same join as `bundleNodes` above, plus the resolved card and the
+  // document behind it, which are what panes 2 and 4 read.
+  const registry = getRegistry();
+  const paneNodes: PaneNodeInput[] = bp.graph.nodes.map((node, i) => {
+    const ref = bp.cardRefs[i] ?? "";
+    const entry: PaneNodeInput = { nodeId: node.id, label: node.label };
+    if (ref !== "") entry.ref = ref;
+    const card = registry.card(ref)?.card;
+    if (card !== undefined) entry.card = card;
+    const yaml = cardSource(ref);
+    if (yaml !== undefined) entry.yaml = yaml;
+    return entry;
+  });
+  const paneModel = buildPaneModel({
+    slug: bp.slug,
+    title: bp.title,
+    dot: bp.graph.dot,
+    nodes: paneNodes,
+    absences: absencesFor(
+      bp.slug,
+      paneNodes.map((node) => node.nodeId),
+    ),
   });
 
   // An error-severity diagnostic never reaches this page — the loader refuses to
@@ -112,13 +163,16 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           <span className="font-mono text-xs text-dim">
             ↓ {compact(bp.downloads)} downloads
           </span>
+          {/* The runnable artefact, not a `data:` URI of the topology: doc 2 §11 item 10
+              asks for something that starts from a command line, and `factory.dot` is
+              that file. The rest of the bundle is in the sidebar panel it points at. */}
           <ButtonLink
-            href={dotHref}
-            download={`${bp.slug}.dot`}
+            href={factoryHref}
+            download={FACTORY_DOT}
             prefetch={false}
             className="ml-auto"
           >
-            Download .dot
+            Download factory.dot
           </ButtonLink>
         </div>
 
@@ -176,9 +230,22 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             </div>
           </section>
 
-          {/* DOT source */}
+          {/* Doc 2 §5.1's four-pane synchronised view, in the slot the standalone DOT
+              panel used to occupy. It carries the same document, line-numbered and
+              copyable, and puts the three representations the panel had no way to show
+              beside it: the drawing, the card template, and the card. The anchor moves
+              with it, so a link to `#dot-source` still lands on the DOT.
+
+              §5.1 is explicit that this is not a tutorial fixture — "lo stesso
+              componente si riusa poi nella pagina di dettaglio di ogni blueprint della
+              galleria" — so it is here on every blueprint and not only the starter. */}
           <section id="dot-source" className="scroll-mt-24">
-            <DotSource dot={bp.graph.dot} />
+            <SynchronisedPanes
+              model={paneModel}
+              graph={bp.graph}
+              heading="The same bundle, four ways"
+              headingId="four-pane-heading"
+            />
           </section>
 
           {/* Long description */}
@@ -268,6 +335,24 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               tools={bp.requiredTools}
             />
           </section>
+
+          {/* Doc 2 §11 item 10 — the bundle as files, generated at build time under
+              `public/bundles/<slug>/` and linked here. It sits directly above the panel
+              that states the digest, because the digest is what those files hash to. */}
+          <DownloadPanel
+            factoryHref={factoryHref}
+            topologyHref={bundleHref(bp.slug, TOPOLOGY_DOT)}
+            readmeHref={bundleHref(bp.slug, BUNDLE_README)}
+            {...(vocabulary === undefined
+              ? {}
+              : {
+                  vocabulary: {
+                    href: bundleHref(bp.slug, vocabulary.file),
+                    termIds: vocabulary.termIds,
+                  },
+                })}
+            cards={downloadCards}
+          />
 
           {/* What the bundle is, on disk */}
           <BundlePanel

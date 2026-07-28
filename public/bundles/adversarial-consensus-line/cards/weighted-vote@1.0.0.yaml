@@ -1,0 +1,51 @@
+id: weighted-vote
+name: Weighted Vote
+type: decision
+phase: implementation
+
+action: >-
+  Score every competing proposal under the weighting rule and emit the winner together with the
+  full tally, so the choice is auditable rather than a black box.
+spec: >-
+  Score each of the competing proposals you are handed, weighting every one by the reputation
+  of the validator behind it — or by the scoring rubric supplied for this run, when there is
+  one, which replaces the default weighting entirely. Emit the highest scorer on `chosen`,
+  tagged with the margin it won by, and settle an exact tie in favour of the more conservative
+  proposal rather than picking arbitrarily. Emit every proposal with its score and the weights
+  that produced it on `tally`: the disagreement is the part worth reading, so never report the
+  winner on its own.
+agent: Consensus judge
+tools: []
+params:
+  weighting: validator-reputation
+  tie_breaker: conservative-proposal
+
+inputs:
+  - name: proposals
+    type: json
+    description: The competing proposals, fanned in from every solver on the line.
+  - name: rubric
+    type: text
+    required: false
+    description: A scoring rubric to weigh against, when the default weighting is too blunt.
+outputs:
+  - name: chosen
+    type: json
+    description: The single winning proposal, tagged with the margin it won by.
+  - name: tally
+    type: json
+    description: Every proposal with its score and the weights that produced it.
+dependencies:
+  - conservative-solver
+  - exploratory-solver
+  - bounded-retry
+
+requires_human: false
+risk_markers: []
+notes: >-
+  The tally is the point. A vote that only emits the winner is a black box, and the whole reason
+  this node exists instead of a coin flip is that the disagreement is worth reading.
+
+version: 1.0.0
+author: mara-veil
+ontology_version: 0.1.0

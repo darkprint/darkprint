@@ -21,8 +21,8 @@
      Adding `planner -> builder` fires `criteria-leak` on the builder
      and the score moves, which is rung 5's argument demonstrated
      rather than asserted;
-   - it is what the guided path (doc 2 §5) will be built on, so the
-     landing points at the same object the practical onboarding will.
+   - it is what the guided path (doc 2 §5) is built on, so the
+     landing points at the same object the practical onboarding does.
 
    The alternatives, and why not: `adversarial-consensus-line` (8
    nodes) and `checkpoint-resume-runner` (9) are the two the note

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { stringify as stringifyYaml } from "yaml";
-import { allBlueprints, bundleSource, getRegistry } from "@/lib/content";
+import { allBlueprints, bundleSource, bundleVocabulary, getRegistry } from "@/lib/content";
 import { Eyebrow, SectionHeading } from "@/components/ui/SectionHeading";
 import { UploadFlow, type ExampleBundle } from "@/components/upload/UploadFlow";
 
@@ -34,6 +34,13 @@ function exampleBundle(): ExampleBundle {
     // `bundleSource` reports the repo-relative path; the bundle-relative name is what
     // diagnostics quote back, so the wizard shows the same locations the loader does.
     files.push({ name: card.file.replace(/^content\//, ""), text: card.text });
+  }
+  // Doc 3 §7. Carried for the same reason the download carries it: a card declaring a
+  // local term resolves against nothing without the file that defines it, and an example
+  // that arrives with two errors in it teaches the wrong thing about the validator.
+  const vocabulary = bundleVocabulary(bp.slug);
+  if (vocabulary !== undefined) {
+    files.push({ name: vocabulary.file, text: vocabulary.text });
   }
 
   return { title: bp.title, files };

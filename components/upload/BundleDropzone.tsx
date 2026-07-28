@@ -7,7 +7,9 @@ import {
   parseDocument,
   type Bundle,
   type BundleManifest,
+  type OntologyTerm,
 } from "@/lib/core";
+import { parseOntologyTerms } from "@/lib/content/ontology-file";
 import { cx } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 
@@ -27,7 +29,7 @@ export interface UploadFile {
 }
 
 /** What a selected file is taken to be. */
-export type FileRole = "topology" | "manifest" | "card" | "ignored";
+export type FileRole = "topology" | "manifest" | "vocabulary" | "card" | "ignored";
 
 /** One file with the role it was finally given, and why, when that needs saying. */
 export interface RoledFile {
@@ -36,7 +38,7 @@ export interface RoledFile {
   note?: string;
 }
 
-/** A selection split into the three things a bundle is made of. */
+/** A selection split into the things a bundle is made of. */
 export interface BundleParts {
   /** The `.dot` topology. Without it there is no bundle to resolve. */
   dot?: UploadFile;
@@ -45,6 +47,19 @@ export interface BundleParts {
   manifestDoc?: Record<string, unknown>;
   /** Why the manifest could not be read, when it could not. */
   manifestProblem?: string;
+  /**
+   * Doc 3 §7's local vocabulary, when the selection carries one.
+   *
+   * A bundle downloaded from this site ships `ontology/extensions.yaml` whenever one of
+   * its cards declares a local term, because without it those ids resolve against nothing.
+   * Reading it back is what makes the folder DarkPrint hands out a folder DarkPrint
+   * accepts.
+   */
+  vocabulary?: UploadFile;
+  /** What that file declares. Empty when it declares nothing or could not be read. */
+  terms: readonly OntologyTerm[];
+  /** Why the vocabulary could not be read, when it could not. */
+  vocabularyProblem?: string;
   cards: UploadFile[];
   /** Every selected file, in selection order, with its role. Drives the chip list. */
   roles: RoledFile[];
@@ -62,6 +77,8 @@ export interface BundleDetails {
 const TOPOLOGY_EXT = /\.(dot|gv)$/i;
 const DOCUMENT_EXT = /\.(ya?ml|json)$/i;
 const MANIFEST_NAME = /^blueprint\.(ya?ml|json)$/i;
+/** What the exporter writes the local vocabulary to, and what the archive calls it. */
+const VOCABULARY_NAME = /^extensions\.(ya?ml|json)$/i;
 /** A paste that opens like a graph is the topology; anything else is a card document. */
 const DOT_OPENING = /^\s*(strict\s+)?(di)?graph\b/i;
 
@@ -82,6 +99,7 @@ function roleFromName(name: string): FileRole {
   const base = baseName(name);
   if (TOPOLOGY_EXT.test(base)) return "topology";
   if (MANIFEST_NAME.test(base)) return "manifest";
+  if (VOCABULARY_NAME.test(base)) return "vocabulary";
   if (DOCUMENT_EXT.test(base)) return "card";
   return "ignored";
 }
@@ -98,6 +116,7 @@ export function classifyBundle(files: readonly UploadFile[]): BundleParts {
   const cards: UploadFile[] = [];
   let dot: UploadFile | undefined;
   let manifest: UploadFile | undefined;
+  let vocabulary: UploadFile | undefined;
 
   for (const file of files) {
     const role = roleFromName(file.name);
@@ -109,7 +128,11 @@ export function classifyBundle(files: readonly UploadFile[]): BundleParts {
         roles.push({
           file,
           role: "ignored",
-          note: "a bundle carries one topology — the first .dot wins",
+          // A downloaded folder carries two: `blueprint.dot` is the topology the registry
+          // stores and scores, `factory.dot` is that same graph prepared for a runner,
+          // with `__start` and `__exit` synthesised into it. Dropping the whole folder is
+          // the ordinary case, so the demoted one says which of the two it is.
+          note: derivedNote(file, dot) ?? "a bundle carries one topology, and the first .dot wins",
         });
       }
       continue;
@@ -123,6 +146,15 @@ export function classifyBundle(files: readonly UploadFile[]): BundleParts {
       }
       continue;
     }
+    if (role === "vocabulary") {
+      if (vocabulary === undefined) {
+        vocabulary = file;
+        roles.push({ file, role });
+      } else {
+        roles.push({ file, role: "ignored", note: "the first extensions.yaml wins" });
+      }
+      continue;
+    }
     if (role === "card") {
       cards.push(file);
       roles.push({ file, role });
@@ -131,7 +163,7 @@ export function classifyBundle(files: readonly UploadFile[]): BundleParts {
     roles.push({ file, role, note: "not a .dot, .yaml, .yml or .json document" });
   }
 
-  const parts: BundleParts = { cards, roles };
+  const parts: BundleParts = { cards, roles, terms: [] };
   if (dot !== undefined) parts.dot = dot;
   if (manifest !== undefined) {
     parts.manifest = manifest;
@@ -139,7 +171,26 @@ export function classifyBundle(files: readonly UploadFile[]): BundleParts {
     if (read.doc !== undefined) parts.manifestDoc = read.doc;
     if (read.problem !== undefined) parts.manifestProblem = read.problem;
   }
+  if (vocabulary !== undefined) {
+    parts.vocabulary = vocabulary;
+    const read = readVocabulary(vocabulary);
+    parts.terms = read.terms;
+    if (read.problem !== undefined) parts.vocabularyProblem = read.problem;
+  }
   return parts;
+}
+
+/**
+ * The note for a second `.dot` that is the runnable copy of the first.
+ *
+ * `undefined` when the two files are not that pair, so an author who dropped two unrelated
+ * graphs still gets the general answer rather than a guess about which is which.
+ */
+function derivedNote(ignored: UploadFile, kept: UploadFile): string | undefined {
+  const a = baseName(ignored.name).toLowerCase();
+  const b = baseName(kept.name).toLowerCase();
+  if (a !== "factory.dot" || b !== "blueprint.dot") return undefined;
+  return "factory.dot is the same graph prepared for a runner, with __start and __exit in it. The registry reads blueprint.dot, which is the one being validated here.";
 }
 
 /**
@@ -160,6 +211,30 @@ function readManifest(file: UploadFile): {
     return { problem: `${file.name} is not a mapping of fields, so it is not a manifest.` };
   }
   return { doc: value as Record<string, unknown> };
+}
+
+/**
+ * The local terms a dropped `extensions.yaml` declares (doc 3 §7).
+ *
+ * Parsed with the loader's own reader, so a vocabulary read here and the same file read at
+ * build time produce the same terms and the same complaint about a bad one. A file that
+ * cannot be read yields no terms and a note: the bundle then resolves against the core
+ * alone, which is a worse answer than refusing, so the reader is told.
+ */
+function readVocabulary(file: UploadFile): {
+  terms: readonly OntologyTerm[];
+  problem?: string;
+} {
+  const parsed = parseDocument(file.text, formatForFilename(file.name), file.name);
+  if (parsed.value === undefined) {
+    const first = parsed.diagnostics.length > 0 ? parsed.diagnostics[0].message : undefined;
+    return { terms: [], problem: first ?? `${file.name} could not be parsed.` };
+  }
+  try {
+    return { terms: parseOntologyTerms(parsed.value, file.name) };
+  } catch (e) {
+    return { terms: [], problem: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 /** A non-empty string field. YAML reads `1.0` as a number, and a version is a string. */
@@ -249,6 +324,7 @@ export function assembleBundle(
 const ROLE_META: Record<FileRole, { glyph: string; label: string; color: string }> = {
   topology: { glyph: "◆", label: "topology", color: "var(--color-cyan)" },
   manifest: { glyph: "▤", label: "manifest", color: "var(--color-violet)" },
+  vocabulary: { glyph: "◇", label: "vocabulary", color: "var(--color-emerald)" },
   card: { glyph: "▮", label: "card", color: "var(--color-amber)" },
   ignored: { glyph: "·", label: "ignored", color: "var(--color-dim)" },
 };
@@ -312,6 +388,11 @@ export function BundleDropzone({
   if (parts.manifestProblem !== undefined) {
     notes.push(
       `${parts.manifestProblem} The details you fill in on the next step are used instead.`,
+    );
+  }
+  if (parts.vocabularyProblem !== undefined) {
+    notes.push(
+      `${parts.vocabularyProblem} The bundle is read against the curated core alone, so a card declaring a local term will come back as an unknown one.`,
     );
   }
 
@@ -389,6 +470,11 @@ export function BundleDropzone({
           </p>
           <p className="text-xs text-dim">
             or click to browse — the files are read in this tab and nothing is uploaded
+          </p>
+          <p className="text-xs text-dim">
+            A folder downloaded from a blueprint page works as it stands. Bring{" "}
+            <span className="font-mono">extensions.yaml</span> along with it when it has
+            one: it defines the local terms its cards declare.
           </p>
         </div>
         <input

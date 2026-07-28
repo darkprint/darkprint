@@ -1,0 +1,37 @@
+id: dataset-publisher
+name: Dataset Publisher
+type: tool
+phase: deployment
+
+action: >-
+  Cut the committed batch into a dataset version, announce it on the release channel with its
+  row count and schema reference, and close the run.
+spec: >-
+  Read the commit receipt on `dataset` and cut it into a new immutable version of the
+  `forge-records` dataset, tagged with the last batch boundary the receipt reports. Post one
+  announcement to the `data-releases` channel naming that version, its row count and the schema
+  reference the records were checked against. Cut the version before you announce it, and
+  announce it exactly once — the channel has human subscribers and neither the published version
+  nor the message can be recalled once it lands. The run closes when the channel has accepted
+  the announcement; if the version cannot be cut, announce nothing and report the failure.
+tools:
+  - messaging
+params:
+  dataset: forge-records
+  announce_channel: data-releases
+
+inputs:
+  - name: dataset
+    type: json
+    description: The store's commit receipt, which is what a dataset version is cut from.
+outputs: []
+dependencies:
+  - record-store
+
+requires_human: false
+risk_markers:
+  - irreversible-action
+
+version: 1.0.0
+author: lupo
+ontology_version: 0.1.0

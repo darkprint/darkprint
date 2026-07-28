@@ -1,0 +1,23 @@
+digraph adversarial_consensus_line {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  task    [card="task-intake@1.0.0"];
+  plan    [card="task-decomposer@1.0.0"];
+  solverA [card="conservative-solver@1.0.0"];
+  solverB [card="exploratory-solver@1.0.0"];
+  vote    [card="weighted-vote@1.0.0"];
+  verify  [card="acceptance-verifier@1.1.0"];
+  reopen  [card="bounded-retry@1.0.0"];
+  deliver [card="result-delivery@1.0.0"];
+
+  task  -> plan;
+  plan  -> solverA;
+  plan  -> solverB;
+  solverA -> vote;
+  solverB -> vote;
+  vote  -> verify   [out="chosen", in="candidate"];
+  verify -> deliver [label="pass"];
+  verify -> reopen  [label="conflict", style=dashed];
+  reopen -> vote    [label="re-vote"];
+}

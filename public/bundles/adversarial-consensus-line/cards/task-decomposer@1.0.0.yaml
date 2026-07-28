@@ -1,0 +1,43 @@
+id: task-decomposer
+name: Task Decomposer
+type: agent
+phase: planning
+
+action: >-
+  Break the request into an ordered set of sub-tasks small enough for one solver pass each, and
+  carry the acceptance criteria down onto every one of them.
+spec: >-
+  Read the stamped brief on `request` and split its goal into an ordered list of sub-tasks, each
+  small enough that one pass can finish it and each stating its own done condition. Emit at most
+  six; when the goal will not fit in six, merge the smallest adjacent steps instead of emitting a
+  seventh. Onto every sub-task copy the slice of the run's criteria reference that sub-task
+  answers to, so each one can be judged on its own without re-reading the whole brief. Emit the
+  ordered list on `subtasks`, and decompose the same brief the same way every time: two solvers
+  work this plan in parallel, and their answers are only comparable if they started from an
+  identical plan.
+agent: Planner
+tools: []
+params:
+  max_subtasks: 6
+  temperature: 0.2
+
+inputs:
+  - name: request
+    type: json
+    description: The stamped task brief, straight from intake.
+outputs:
+  - name: subtasks
+    type: plan
+    description: The ordered sub-tasks, each carrying the slice of the acceptance criteria it answers to.
+dependencies:
+  - task-intake
+
+requires_human: false
+risk_markers: []
+notes: >-
+  Low temperature on purpose. The adversarial spread belongs downstream between the two solvers;
+  a plan that differs run to run makes their proposals incomparable.
+
+version: 1.0.0
+author: mara-veil
+ontology_version: 0.1.0

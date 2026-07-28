@@ -1,0 +1,56 @@
+id: evidence-synthesizer
+name: Evidence Synthesizer
+type: agent
+phase: [implementation, debugging]
+
+action: >-
+  Draft a single answer from the fanned-in passages, citing the passage behind every claim, and
+  on a return pass rewrite only the claims the fact-checker sent back as unsupported.
+spec: >-
+  You receive on `passages` one pool of retrieved text, fanned in from several corpora, where each
+  entry carries its own identifier — a URL, a document id, or a repository path and commit. Write
+  a single continuous answer to the research question drawing only on that pool, and attach an
+  inline citation to the identifier of the specific entry behind every sentence that asserts
+  something; if the pool will not carry a statement, leave the statement out rather than hedging
+  it into the text. Emit the finished answer on `draft`. On a second entry you will also receive
+  `gaps`, which names individual claims from your previous draft and what was found wrong with
+  each — rewrite exactly those claims against the same pool and leave every other sentence of the
+  draft untouched. You are done when every asserted sentence in `draft` carries a citation into
+  the pool and nothing named in `gaps` has been left as it was.
+agent: Synthesizer
+tools: []
+params:
+  temperature: 0.3
+  max_tokens: 2000
+  citation_style: inline
+
+inputs:
+  - name: passages
+    type: json
+    description: Retrieved passages from every strand, fanned in on one port and read as one pool.
+  - name: gaps
+    type: status
+    required: false
+    description: The unsupported claims from the previous pass; absent on the first draft.
+outputs:
+  - name: draft
+    type: report
+    description: The drafted answer, every claim carrying the citation that is meant to support it.
+dependencies:
+  - web-retriever
+  - vector-recall
+  - code-index-search
+  - claim-verifier
+
+requires_human: false
+risk_markers: []
+notes: >-
+  `gaps` is optional because the first pass has none — the node is written to be entered twice,
+  once cold and once with the verifier's complaints in hand, and a rewrite pass touches only the
+  claims named in `gaps` so the grounded parts of the draft stay stable across iterations. What
+  comes back is failure evidence, not the rule the verifier judges by: the spec deliberately does
+  not restate how a citation is tested, so the synthesizer cannot write to the test.
+
+version: 1.0.0
+author: orin
+ontology_version: 0.1.0

@@ -1,0 +1,45 @@
+id: bounded-retry
+name: Bounded Retry
+type: tool
+phase: debugging
+
+action: >-
+  Re-fire the wrapped step with exponential backoff until it succeeds or the attempt cap is
+  spent, then emit the last error rather than keep going round.
+spec: >-
+  You are handed the failure signal of a step that has just gone wrong, carrying the error
+  that caused it. Re-issue that step's attempt, waiting 800 ms before the first retry and
+  doubling the wait on every retry after it. Emit each re-issued attempt on `attempt` with
+  its attempt number, so whoever receives it can tell a retry from a first run. Give up
+  after three retries: emit the error from the final attempt on `last_error` and issue
+  nothing further — do not keep circling, and do not swallow the error.
+agent: Retry controller
+tools: []
+params:
+  max_retries: 3
+  backoff_ms: 800
+  backoff_multiplier: 2
+
+inputs:
+  - name: failure
+    type: status
+    description: The failure signal from the step being wrapped, carrying the error that caused it.
+outputs:
+  - name: attempt
+    type: json
+    description: The re-issued attempt, numbered so the receiver can tell a retry from a first run.
+  - name: last_error
+    type: status
+    description: The final error, surfaced once the cap is spent instead of being swallowed.
+dependencies:
+  - acceptance-verifier
+
+requires_human: false
+risk_markers: []
+notes: >-
+  `max_retries` is not decoration. The security analyzer reads it as the declared bound for
+  every cycle this node closes; drop it and the loop scores as unbounded iteration.
+
+version: 1.0.0
+author: k0bra
+ontology_version: 0.1.0

@@ -34,8 +34,8 @@ import {
   type OntologyTerm,
   type OntologyView,
   type ResolvedBlueprint,
-  type TermKind,
 } from "@/lib/core";
+import { parseOntologyTerms } from "./ontology-file";
 
 /*
  * The `server-only` package would be the idiomatic guard here, but it is not in the
@@ -108,6 +108,25 @@ interface ContentOntology {
   view: OntologyView;
   /** `view.validate()`, run once: defects in the vocabulary itself (doc 3 §7). */
   diagnostics: readonly Diagnostic[];
+  /** The file the local terms came from, when the archive has one. */
+  vocabulary?: ContentVocabulary;
+}
+
+/**
+ * The archive's own local vocabulary, as a file rather than as terms.
+ *
+ * The text is kept beside the parsed terms because a bundle whose cards use one of these
+ * terms has to *carry* it: a folder with `lupo/pii-handling` in a card and no definition
+ * for it resolves against the core alone, where that term is unknown, and the two scores
+ * printed in its README cannot be recomputed. `bundle-export.ts` puts this document in
+ * the download verbatim, for the same reason the cards go in verbatim.
+ */
+export interface ContentVocabulary {
+  /** Repo-relative path, which is also the bundle-relative name it is written under. */
+  file: string;
+  /** The document, byte for byte. */
+  text: string;
+  terms: readonly OntologyTerm[];
 }
 
 let ontologyCache: ContentOntology | undefined;
@@ -116,10 +135,24 @@ let cache: readonly LoadedBundle[] | undefined;
 
 function contentOntologyState(): ContentOntology {
   if (ontologyCache === undefined) {
-    const view = ontologyView(CORE_ONTOLOGY, readExtensions());
-    ontologyCache = { view, diagnostics: Object.freeze(sortDiagnostics(view.validate())) };
+    const vocabulary = readVocabulary();
+    const view = ontologyView(CORE_ONTOLOGY, vocabulary?.terms ?? []);
+    ontologyCache = {
+      view,
+      diagnostics: Object.freeze(sortDiagnostics(view.validate())),
+      ...(vocabulary === undefined ? {} : { vocabulary }),
+    };
   }
   return ontologyCache;
+}
+
+/**
+ * `content/ontology/extensions.yaml`, or `undefined` when the archive adds nothing to the
+ * curated core. The exporter asks for this so a downloaded bundle carries the vocabulary
+ * its cards were read against.
+ */
+export function contentVocabulary(): ContentVocabulary | undefined {
+  return contentOntologyState().vocabulary;
 }
 
 /** The ontology every bundle in `content/` was resolved against. */
@@ -142,84 +175,28 @@ export function contentOntologyDiagnostics(): readonly Diagnostic[] {
 
 /* --------------------- the local namespace (doc 3 §7) --------------------- */
 
-/** The five `TermKind`s, so a typo in `kind:` is rejected instead of silently ignored. */
-const TERM_KINDS: ReadonlySet<string> = new Set<TermKind>([
-  "phase",
-  "node-type",
-  "risk-marker",
-  "data-type",
-  "tool",
-]);
-
 /**
- * `content/ontology/extensions.yaml` as `OntologyTerm[]`.
+ * `content/ontology/extensions.yaml`, read and parsed.
  *
  * An absent file means "this archive adds nothing to the core" and is not an error: the
  * extension channel is optional, and the fixtures in `read.test.ts` exercise archives that
  * have no vocabulary of their own. A file that *is* present and ill-shaped throws, like a
  * malformed manifest: doc 3 §7's rules are checked by `OntologyView.validate()`, and it
- * cannot check terms this function silently dropped.
+ * cannot check terms `parseOntologyTerms` silently dropped.
+ *
+ * The text is kept alongside the terms so the exporter can put the same bytes in a
+ * download without reading the file a second time.
  */
-function readExtensions(): OntologyTerm[] {
+function readVocabulary(): ContentVocabulary | undefined {
   let text: string;
   try {
     text = readFileSync(EXTENSIONS_PATH, "utf8");
   } catch {
-    return [];
+    return undefined;
   }
 
-  const doc: unknown = parseYaml(text);
-  if (doc === null || doc === undefined) return [];
-  if (typeof doc !== "object" || Array.isArray(doc)) {
-    throw new Error(`${EXTENSIONS_FILE} is not a YAML mapping.`);
-  }
-  const raw = (doc as Record<string, unknown>).terms;
-  if (raw === undefined || raw === null) return [];
-  if (!Array.isArray(raw)) {
-    throw new Error(`${EXTENSIONS_FILE} has a \`terms\` that is not a list.`);
-  }
-  return raw.map((entry, i) => toTerm(entry, `${EXTENSIONS_FILE} terms[${i}]`));
-}
-
-function toTerm(value: unknown, where: string): OntologyTerm {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error(`${where} is not a mapping.`);
-  }
-  const doc = value as Record<string, unknown>;
-  const kind = requireString(doc, "kind", where);
-  if (!TERM_KINDS.has(kind)) {
-    throw new Error(
-      `${where} declares kind \`${kind}\`, which is not one of ${[...TERM_KINDS].join(", ")}.`,
-    );
-  }
-
-  const term: OntologyTerm = {
-    id: requireString(doc, "id", where),
-    kind: kind as TermKind,
-    label: requireString(doc, "label", where),
-    description: requireString(doc, "description", where),
-    since: requireString(doc, "since", where),
-  };
-  const broader = optionalString(doc, "broader", where);
-  if (broader !== undefined) term.broader = broader;
-
-  const weight = doc.defaultWeight;
-  if (weight !== undefined && weight !== null) {
-    if (typeof weight !== "number" || !Number.isFinite(weight)) {
-      throw new Error(`${where} has a \`defaultWeight\` that is not a finite number.`);
-    }
-    term.defaultWeight = weight;
-  }
-
-  const impliesHuman = doc.impliesHuman;
-  if (impliesHuman !== undefined && impliesHuman !== null) {
-    if (typeof impliesHuman !== "boolean") {
-      throw new Error(`${where} has an \`impliesHuman\` that is not a boolean.`);
-    }
-    term.impliesHuman = impliesHuman;
-  }
-
-  return term;
+  const terms = parseOntologyTerms(parseYaml(text) as unknown, EXTENSIONS_FILE);
+  return { file: EXTENSIONS_FILE, text, terms: Object.freeze(terms) };
 }
 
 /**
