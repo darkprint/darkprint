@@ -1,22 +1,32 @@
 import type { AutonomyContribution } from "@/lib/core";
 import type { AutonomyInfo } from "@/lib/types";
-import { cx } from "@/lib/format";
+import { HUMAN_PRESENCE_MARK, cx } from "@/lib/format";
 
 /**
- * The autonomy band, stated.
+ * The autonomy class, stated.
  *
- * Doc 2 §1.1 governs every pixel here. The number is a description of a design choice,
- * not a grade, so this component:
+ * Doc 2 §1.1 governs every pixel here. What the meter shows is a description of a design
+ * choice, so this component:
  *
- * - names the band ("level 2 · Supervised") instead of implying a quantity. There is no
- *   four-segment gauge, no fill, no greyed remainder — nothing that reads as *2 out of 4*
- *   with a gap left to close;
- * - carries no level → colour ramp. The old one went dim → amber → cyan → emerald, which
+ * - names the class ("Supervised") and prints no number at all. There is no four-segment
+ *   gauge, no fill, no greyed remainder, nothing that reads as *2 out of 4* with a gap
+ *   left to close. The band behind the class is an ordinal the engine keeps for sorting
+ *   and it is never rendered, so the only number a reader meets on this site stays the
+ *   1-to-5 organisational maturity ladder, which is a different scale about a different
+ *   subject;
+ * - carries no class → colour ramp. The old one went dim → amber → cyan → emerald, which
  *   is the visual grammar of a warning climbing to a pass, i.e. a verdict painted onto a
- *   description. Every band now renders identically;
+ *   description. Every class now renders identically;
  * - spends its remaining space on **where the people are**, which is the thing a reader
- *   evaluating the blueprint actually needs, rather than on how far the graph sits from
- *   full autonomy.
+ *   evaluating the blueprint actually needs.
+ *
+ * `isDarkFactory` is rendered here as a second classification and in the same chrome as
+ * the first. It says the graph has no human node, the way "acyclic" says a graph has no
+ * cycle. The token is deliberately the plainest thing on the row: same border, same
+ * surface, same type size as the class beside it, no gold, no ribbon, no rank. A graph
+ * where a person acts gets a statement of equal weight in its place, naming the nodes,
+ * which is more information rather than less. Neither reading is an award and nothing on
+ * this site sorts on either.
  *
  * Compact by construction: it appears in the gallery grid, in the blueprint header and in
  * the upload preview, so it is one line of text at `sm` and one short line at `md`.
@@ -58,19 +68,20 @@ export function AutonomyMeter({
   autonomy,
   contributions,
   size = "md",
-  showLabel = true,
   className,
 }: {
   autonomy: AutonomyInfo;
   /**
    * The engine's per-node reading, when the caller has it (`analysis.autonomy.contributions`).
    * With it the meter can say which nodes hand control back to a person, which is what
-   * doc 2 §1.1 asks the indicator to show. Without it the band still states itself.
+   * doc 2 §1.1 asks the indicator to show. Without it the class still states itself.
    */
   contributions?: readonly AutonomyContribution[];
   size?: "sm" | "md";
-  /** Show the band's name next to its number. Off only where the row is very tight. */
-  showLabel?: boolean;
+  /* `showLabel` is gone with the number it used to sit beside. It suppressed the class
+     name on a tight row and left the band standing on its own; with the band unrendered
+     that switch can only produce an empty token, and the class is the reading. No caller
+     ever passed it. */
   className?: string;
 }) {
   const { people, undescribed } = contributions
@@ -81,7 +92,10 @@ export function AutonomyMeter({
   // One string carries the whole reading for assistive tech and for a mouse, so the
   // compact variant can drop to a glyph and a count without dropping the meaning.
   const full = [
-    `Autonomy level ${autonomy.level}, ${autonomy.label}.`,
+    `Autonomy class ${autonomy.label}.`,
+    autonomy.isDarkFactory
+      ? "Classed a dark factory: no node in this graph waits for a person."
+      : undefined,
     contributions === undefined
       ? undefined
       : people.length === 0
@@ -103,19 +117,41 @@ export function AutonomyMeter({
       )}
       title={full}
     >
-      {/* The band. A bordered token, not a track: it has no empty half. */}
+      {/* The class. A bordered token, not a track: it has no empty half. */}
       <span className="inline-flex items-center gap-1 rounded border border-line bg-surface-2 px-2 py-0.5 text-fg">
-        <span className="sr-only">Autonomy </span>
-        level {autonomy.level}
-        {showLabel && <span className="text-muted">· {autonomy.label}</span>}
+        <span className="sr-only">Autonomy class </span>
+        {autonomy.label}
       </span>
 
-      {/* Where the people are. Glyph and word both, never colour alone — and the same
-          ⏸ the schematic legend and the explainability panel use for a human gate, so
-          the count points at something the reader can find in the graph. */}
+      {/* The other classification, in the same chrome as the first on purpose: it names
+          a shape the graph has, and the moment it is drawn as a prize the blueprint next
+          to it starts reading as a failed attempt at one. Glyph and words, no colour of
+          its own. */}
+      {autonomy.isDarkFactory && (
+        <span className="inline-flex items-center gap-1 rounded border border-line bg-surface-2 px-2 py-0.5 text-fg">
+          <span aria-hidden>◼</span>
+          dark factory
+          <span className="sr-only">
+            : no node in this graph waits for a person
+          </span>
+        </span>
+      )}
+
+      {/* Where the people are. Glyph and word both, never colour alone, and the same
+          glyph the explainability panel and the node pages use for a human gate, so the
+          count points at something the reader can find in the graph.
+
+          The colour comes from `HUMAN_PRESENCE_MARK` and it is violet. This row used to
+          be `text-signal`, the alarm colour the site spends on the criteria-leak marker
+          and the error count, on the one component that puts the reading on the gallery
+          grid and the blueprint header. A graph with nobody in it got a neutral token and
+          a graph with somebody in it got an alarm beside it: the pass/fail pair doc 2
+          §1.1 rules out, and the rule was already written down twice elsewhere. */}
       {contributions !== undefined && people.length > 0 && (
-        <span className="inline-flex items-center gap-1 text-signal">
-          <span aria-hidden>⏸</span>
+        <span
+          className={cx("inline-flex items-center gap-1", HUMAN_PRESENCE_MARK.className)}
+        >
+          <span aria-hidden>{HUMAN_PRESENCE_MARK.glyph}</span>
           {compactSize ? (
             <>
               <span aria-hidden>{people.length}</span>
@@ -132,9 +168,10 @@ export function AutonomyMeter({
         </span>
       )}
 
-      {/* A graph nobody has to attend says so in words at `md`; in a grid tile it says
-          it by having nothing to point at, and the sentence stays for a screen reader. */}
-      {contributions !== undefined && people.length === 0 && (
+      {/* A graph nobody has to attend says so in words at `md`, unless the dark factory
+          token above has already said it. In a grid tile it says it by having nothing to
+          point at, and the sentence stays for a screen reader. */}
+      {contributions !== undefined && people.length === 0 && !autonomy.isDarkFactory && (
         <span className={cx("text-dim", compactSize && "sr-only")}>
           no node waits for a person
         </span>

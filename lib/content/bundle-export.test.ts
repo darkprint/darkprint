@@ -21,11 +21,13 @@ import {
   cardFilePath,
   exportBundle,
   localTermsUsed,
+  skillPointers,
   type BundleExportInput,
   type ExportedFile,
 } from "./bundle-export";
 import { parseOntologyTerms } from "./ontology-file";
 import { contentVocabulary, readContent, type LoadedBundle } from "./read";
+import { autonomyStatement } from "@/lib/format";
 
 /* --------------------- the real archive --------------------- */
 
@@ -409,14 +411,77 @@ describe("the README", () => {
 
   // Doc 1 §8.3: the numbers show their working. Quoted rather than restated — a
   // paraphrase would be a second implementation of the analyzer inside a README.
+  //
+  // Autonomy is quoted through `autonomyStatement`, which is the whole engine sentence
+  // less the band ordinal it ends on (doc 2 §1.1). Still the engine's own wording and
+  // still its own arithmetic — the transform only drops the number, and the test below
+  // holds it to that.
   it("quotes both analyzers verbatim", () => {
     for (const { slug, entry, text } of readmes) {
-      expect([slug, text.includes(`> ${entry.analysis.autonomy.rationale}`)]).toEqual([slug, true]);
+      expect([
+        slug,
+        text.includes(`> ${autonomyStatement(entry.analysis.autonomy.rationale)}`),
+      ]).toEqual([slug, true]);
       expect([slug, text.includes(`> ${entry.analysis.security.rationale}`)]).toEqual([slug, true]);
-      expect([slug, text.includes(`Autonomy level ${entry.analysis.autonomy.level}.`)]).toEqual([
+      expect([slug, text.includes(`Autonomy: ${entry.analysis.autonomy.label}.`)]).toEqual([
         slug,
         true,
       ]);
+      expect([slug, text.includes(`Security level ${entry.analysis.security.level}.`)]).toEqual([
+        slug,
+        true,
+      ]);
+    }
+  });
+
+  /**
+   * Doc 2 §1.1, on the surface that outlives every other one.
+   *
+   * The README is the file that stays behind in somebody's repository long after they
+   * have left the site, so the rule that keeps the autonomy band off a page holds here
+   * too: the only number a reader is taught to read as a rung is the organisational
+   * maturity ladder, and a second small integer beside the word "autonomy" reads as the
+   * same scale. The class carries the reading instead, and it loses nothing — it is what
+   * the band is called.
+   *
+   * The security level is a different metric on a real 0-to-4 penalty scale, and it is
+   * deliberately untouched.
+   */
+  it("states the autonomy class and never the band behind it", () => {
+    for (const { slug, entry, text } of readmes) {
+      expect([slug, text.includes(`Autonomy: ${entry.analysis.autonomy.label}.`)]).toEqual([
+        slug,
+        true,
+      ]);
+      // No "autonomy level 4", no "→ level 4 (Closed-loop)", however it is spelled.
+      const ordinal = /autonomy[^.\n]{0,24}level\s*\d|→\s*level\s*\d/i;
+      expect([slug, ordinal.test(text)]).toEqual([slug, false]);
+    }
+  });
+
+  /**
+   * The ordinal's vocabulary, not only its digits.
+   *
+   * The regex above wants a number touching the word, so the closing paragraph — "The
+   * autonomy level says what this factory automates" — walked past it in all nine
+   * READMEs, as did "the same arithmetic on your side gives the same two numbers" beside a
+   * reading that is no longer a number. `level` belongs to the security scale and to the
+   * 1-to-5 organisational ladder; the README is the file that stays behind in somebody's
+   * repository, so it is the last place the two should be spelled alike.
+   *
+   * "Security level" stays, and this checks it stays: the fix is a distinction, not a
+   * search-and-replace, and a README that stopped naming the security scale would have
+   * lost a real reading.
+   */
+  it("keeps the ordinal vocabulary for the scale that has one", () => {
+    for (const { slug, entry, text } of readmes) {
+      const lower = text.toLowerCase();
+      for (const banned of ["autonomy level", "the same two numbers", "both numbers come"]) {
+        expect([slug, banned, lower.includes(banned)]).toEqual([slug, banned, false]);
+      }
+      expect([slug, text.includes("The autonomy class says what this factory automates")]).toEqual(
+        [slug, true],
+      );
       expect([slug, text.includes(`Security level ${entry.analysis.security.level}.`)]).toEqual([
         slug,
         true,
@@ -492,6 +557,72 @@ describe("the README", () => {
           [slug, node.nodeId, true],
         );
       }
+    }
+  });
+
+  /**
+   * The one kind of path in a bundle that resolves to nothing.
+   *
+   * 51 of the archive's 53 cards declare `skill: skills/<name>.md`, no `skills/` directory
+   * exists anywhere in the repo, and none is meant to: `skill` is a pointer and the engine
+   * reads nothing at the other end of it. What was wrong was the silence. The folder
+   * listing named four kinds of file, the reader opened `cards/intent-router@1.0.0.yaml`,
+   * found a path, went looking for it and found nothing, with no sentence anywhere saying
+   * the document was theirs to write.
+   *
+   * So the README names every one of them, and this checks it against the graph rather
+   * than against a count: every node whose card declares a skill is listed, with its path,
+   * in a bundle that has any.
+   */
+  it("names the skill documents the folder does not carry", () => {
+    const withSkills = readmes.filter(({ entry }) =>
+      entry.blueprint.nodes.some((node) => node.card.skill !== undefined),
+    );
+    // The point of the block is that most bundles hit it. If the archive ever stops
+    // declaring skills this test should be deleted with the block, not quietly pass.
+    expect(withSkills.length).toBeGreaterThan(0);
+
+    for (const { slug, entry, text } of withSkills) {
+      const pointers = skillPointers(toInput(entry));
+      expect([slug, pointers.length > 0]).toEqual([slug, true]);
+      expect([slug, text.includes("There is no `skills/` directory above")]).toEqual([
+        slug,
+        true,
+      ]);
+      for (const pointer of pointers) {
+        expect([slug, pointer.nodeId, text.includes(pointer.skill)]).toEqual([
+          slug,
+          pointer.nodeId,
+          true,
+        ]);
+        expect([slug, pointer.nodeId, text.includes(pointer.nodeId)]).toEqual([
+          slug,
+          pointer.nodeId,
+          true,
+        ]);
+      }
+    }
+
+    // Nothing is invented on the way out: no exported file is a skill document, and no
+    // card is rewritten to drop the pointer.
+    for (const { slug, files } of EXPORTS) {
+      for (const file of files) {
+        expect([slug, file.path, file.path.startsWith("skills/")]).toEqual([
+          slug,
+          file.path,
+          false,
+        ]);
+      }
+    }
+  });
+
+  it("reads every skill pointer off the graph, in node order", () => {
+    for (const { slug, entry, input } of EXPORTS) {
+      const pointers = skillPointers(input);
+      const expected = entry.blueprint.nodes
+        .filter((node) => node.card.skill !== undefined)
+        .map((node) => ({ nodeId: node.nodeId, ref: node.ref, skill: node.card.skill }));
+      expect([slug, pointers]).toEqual([slug, expected]);
     }
   });
 

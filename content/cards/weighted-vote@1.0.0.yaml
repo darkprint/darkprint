@@ -16,6 +16,8 @@ spec: >-
   winner on its own.
 agent: Consensus judge
 tools: []
+mcp: []
+skill: skills/weighted-vote.md
 params:
   weighting: validator-reputation
   tie_breaker: conservative-proposal
@@ -39,6 +41,8 @@ dependencies:
   - conservative-solver
   - exploratory-solver
   - bounded-retry
+cannot:
+  - report the winner without the tally
 
 requires_human: false
 risk_markers: []

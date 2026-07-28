@@ -292,6 +292,7 @@ function expectedNodeCard(card: StarterCardSpec): NodeCard {
     action: card.action,
     spec: card.spec,
     tools: [...card.tools],
+    mcp: [...card.mcp],
     params: { ...(card.params ?? {}) },
     inputs: card.inputs.map((port) => {
       const p: NodeCard["inputs"][number] = {
@@ -308,6 +309,7 @@ function expectedNodeCard(card: StarterCardSpec): NodeCard {
       description: port.description,
     })),
     dependencies: [...card.dependencies],
+    cannot: [...card.cannot],
     requiresHuman: card.requiresHuman,
     riskMarkers: [...card.riskMarkers],
     notes: card.notes,
@@ -316,6 +318,7 @@ function expectedNodeCard(card: StarterCardSpec): NodeCard {
     ontologyVersion: card.ontologyVersion,
   };
   if (card.agent !== undefined) out.agent = card.agent;
+  if (card.skill !== undefined) out.skill = card.skill;
   return out;
 }
 
@@ -440,6 +443,91 @@ describe("choice 2: who decides the work is finished", () => {
     }
   });
 
+  /**
+   * Spec part 2, on the surfaces the reader keeps.
+   *
+   * `notes` on the approval card is rendered in pane 4 of the guided path and written
+   * byte for byte into the downloaded bundle, and `manifest.description` is the field
+   * `toBlueprintView` reads as the body copy of a blueprint page. Both used to spell the
+   * autonomy reading as an ordinal — "the blueprint reads autonomy level 3. Without it,
+   * level 4" — which is the per-graph description wearing the 1-to-5 organisational
+   * ladder's clothes, on a card sitting beside a meter that says "Autonomy class
+   * Conditional".
+   *
+   * Two halves, because either one alone is weak. The first says no artefact surface
+   * carries a number next to the word autonomy. The second says the class the copy names
+   * is the class the engine computes for that exact bundle, so the sentence cannot drift
+   * away from the analyzer the way a hand-typed number did.
+   */
+  it("names the class in the artefact and never the band behind it", () => {
+    const ordinal = /autonomy[^.\n]{0,32}level\s*\d|\blevel\s*\d[^.\n]{0,32}autonomy|\bautonomy\s+\d/i;
+    for (const variant of STARTER_VARIANTS) {
+      const bundle = buildStarterBundle(AT_THREE(variant));
+      const surfaces: [string, string][] = [
+        ["dot", bundle.dot],
+        ["title", bundle.manifest.title],
+        ["summary", bundle.manifest.summary],
+        ["description", bundle.manifest.description ?? ""],
+        ...Object.entries(bundle.cardFiles),
+      ];
+      for (const [where, text] of surfaces) {
+        expect(ordinal.test(text), `${starterSlug(variant)} ${where} prints a band`).toBe(
+          false,
+        );
+      }
+    }
+  });
+
+  /**
+   * The DOT comments, which the band test above walks straight past.
+   *
+   * `starterDot` writes the teaching material into the file, and the file is read twice:
+   * `buildPaneModel` puts it in the DOT pane of `/build` verbatim, and `exportBundle`
+   * writes the same bytes as `blueprint.dot` in the downloaded folder. The approval branch
+   * said "the autonomy level changes with it, from 4 to 3", which the `ordinal` regex
+   * cannot see — it wants a digit touching the word "level", and that sentence put five
+   * words between them. So the phrase is banned by name, together with the transition it
+   * framed as a decrease, and the positive half checks the class names are the engine's
+   * rather than a hole where the sentence used to be.
+   */
+  it("writes the class into the DOT comments and never an ordinal", () => {
+    const banned = ["autonomy level", "from 4 to 3", "from 3 to 4", "autonomy drops"];
+    for (const variant of STARTER_VARIANTS) {
+      const dot = buildStarterBundle(AT_THREE(variant)).dot.toLowerCase();
+      for (const phrase of banned) {
+        expect(dot.includes(phrase), `${starterSlug(variant)} dot says "${phrase}"`).toBe(
+          false,
+        );
+      }
+    }
+
+    for (const output of STARTER_OUTPUTS) {
+      const gated = load({ output, approval: "human", maxIterations: 3 });
+      const alone = load({ output, approval: "tester", maxIterations: 3 });
+      // Both classes, in the branch that adds the person: the one this graph is and the
+      // one the other choice draws. Taken off the analyzer, so the comment cannot drift.
+      expect(gated.bundle.dot).toContain(gated.analysis.autonomy.autonomyClass);
+      expect(gated.bundle.dot).toContain(alone.analysis.autonomy.autonomyClass);
+    }
+  });
+
+  it("quotes the class the engine computes for the bundle the card ships in", () => {
+    for (const output of STARTER_OUTPUTS) {
+      const gated = load({ output, approval: "human", maxIterations: 3 });
+      const alone = load({ output, approval: "tester", maxIterations: 3 });
+      const file = Object.keys(gated.bundle.cardFiles).find((f) => f.includes("-approval@"));
+      expect(file, `${output}: no approval card in the bundle`).toBeDefined();
+      const document = gated.bundle.cardFiles[file ?? ""] ?? "";
+      // Both classes are named in the same sentence: the one this bundle is, and the one
+      // the other choice produces. Neither is phrased as the destination of the other.
+      expect(document).toContain(gated.analysis.autonomy.autonomyClass);
+      expect(document).toContain(alone.analysis.autonomy.autonomyClass);
+      expect(gated.bundle.manifest.description ?? "").toContain(
+        gated.analysis.autonomy.autonomyClass,
+      );
+    }
+  });
+
   it("keeps the two release cards apart so one ref never covers two behaviours", () => {
     // The deployer's `dependencies` differ between the two modes, and doc 1 §4 makes the ref
     // the key to the content. Two ids rather than one version of a card that means two things.
@@ -495,9 +583,31 @@ describe("the §5.4 switch: can the builder see the acceptance criteria", () => 
     expect(on.analysis.autonomy.level).toBe(off.analysis.autonomy.level);
     expect(on.analysis.autonomy.rationale).toBe(off.analysis.autonomy.rationale);
 
-    // Still no error: the point is a factory that runs and scores badly, not a broken file.
-    expect(errorsOf(on.diagnostics), describeDiagnostics(on.diagnostics)).toEqual([]);
+    // The builder's card declares `acceptance-criteria` under `cannot`, and that entry
+    // names a `data-type` in the vocabulary, so the resolver refuses the edge as well.
+    // The demonstration used to cost the security level alone; it now costs an error too,
+    // which is the point of writing the prohibition down. One diagnostic, on the edge the
+    // switch drew, naming the node doc 2 §3 is about.
+    const errors = errorsOf(on.diagnostics);
+    expect(errors.map((d) => d.code), describeDiagnostics(on.diagnostics)).toEqual([
+      "bundle/prohibition-violated",
+    ]);
+    expect(errors[0].location?.nodeId).toBe("builder");
+    expect(errors[0].location?.edge).toEqual({ source: "planner", target: "builder" });
+    expect(errors[0].message).toContain("acceptance-criteria");
   });
+
+  it.each(STARTER_VARIANTS)(
+    "resolves with no error at all while the switch is off ($output / $approval)",
+    (variant) => {
+      const off = load(AT_THREE(variant));
+      expect(errorsOf(off.diagnostics), describeDiagnostics(off.diagnostics)).toEqual([]);
+      // The prohibition is on the card in both states. What changes is whether an edge
+      // walks into it, so the artefact a reader downloads carries the rule and no error.
+      const builder = off.blueprint.nodes.find((n) => n.nodeId === "builder");
+      expect(builder?.card.cannot).toContain("acceptance-criteria");
+    },
+  );
 
   it("changes the DOT and nothing else, so it cannot be persisted by accident", () => {
     for (const variant of STARTER_VARIANTS) {
@@ -522,9 +632,12 @@ describe("the §5.4 switch: can the builder see the acceptance criteria", () => 
     expect(back.bundle).toEqual(buildStarterBundle(choices));
   });
 
-  it("also reports the undeclared dependency the demonstration creates", () => {
+  it("reports the refused prohibition and the undeclared dependency it creates", () => {
     // The builder's card does not list the planner, because the card must not learn
-    // anything from a switch that is meant to be turned back off. The engine says so.
+    // anything from a switch that is meant to be turned back off. The engine says so, and
+    // it says the prohibition was walked into as well: two readings of one edge, one at
+    // error severity because the author wrote the rule down and one at warning because
+    // the dependency list disagrees with the graph.
     const on = load({
       output: "python",
       approval: "tester",
@@ -534,6 +647,7 @@ describe("the §5.4 switch: can the builder see the acceptance criteria", () => 
     const codes = on.diagnostics.map((d) => d.code).sort();
     expect(codes).toEqual([
       "analysis/criteria-relayed-through-judge",
+      "bundle/prohibition-violated",
       "bundle/undeclared-dependency",
     ]);
   });

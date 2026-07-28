@@ -1,9 +1,15 @@
 "use client";
 
-import type { AutonomyResult, JsonValue, ResolvedBlueprint, SecurityResult } from "@/lib/core";
+import type {
+  AutonomyResult,
+  Diagnostic,
+  JsonValue,
+  ResolvedBlueprint,
+  SecurityResult,
+} from "@/lib/core";
 import { ITERATION_CAP_KEYS } from "@/lib/core";
 import type { StarterRunBudget } from "@/lib/starter/variants";
-import { cx } from "@/lib/format";
+import { autonomyStatement, cx } from "@/lib/format";
 import { LEAK_EDGE, STARTER_NODES } from "./choices";
 import type { UncappedReading } from "./state";
 
@@ -216,7 +222,9 @@ export function SwitchIntro({ on }: { on: boolean }) {
       </p>
       {!on && (
         <p className={P}>
-          The switch is in pane 1, on the builder. Turn it on and watch the security panel.
+          The switch is in pane 1, on the builder. Turn it on and watch the panel beside
+          you: the builder&rsquo;s card already names the acceptance criteria among the
+          types it refuses, so the engine answers twice.
         </p>
       )}
     </>
@@ -227,6 +235,7 @@ export function SwitchReading({
   on,
   before,
   after,
+  errors = [],
   dotLine,
   dotStatement,
 }: {
@@ -235,6 +244,17 @@ export function SwitchReading({
   before?: SecurityResult;
   /** The same factory with the edge written in. Only while the switch is on. */
   after?: SecurityResult;
+  /**
+   * What the engine refused about the graph with the edge in it, from `BuildState.errors`.
+   *
+   * The switch stopped being a demonstration about a score. `code-builder@1.0.0` declares
+   * `cannot: [acceptance-criteria]`, so the edge raises `bundle/prohibition-violated` and
+   * the bundle does not resolve — and pane 4 is showing that same card, whose `notes` tell
+   * the reader in as many words that an edge carrying the criteria into this node fails
+   * the bundle "whatever the prose says". Reporting the security drop and nothing else
+   * left the card and the panel contradicting each other on the same screen.
+   */
+  errors?: readonly Diagnostic[];
   /** Where the statement landed in the DOT, when it did. */
   dotLine?: number;
   /** That line, verbatim from the file the panes are showing. */
@@ -251,16 +271,45 @@ export function SwitchReading({
             , at line <span className="font-mono text-fg">{dotLine}</span>{" "}of the DOT
           </>
         )}
-        .{" "}
-        {before !== undefined && after !== undefined && (
-          <>
-            Security read level <span className="font-mono text-fg">{before.level}</span>{" "}a
-            moment ago and reads level{" "}
-            <span className="font-mono text-signal">{after.level}</span>{" "}now.
-          </>
-        )}
+        .
       </p>
       {dotStatement !== undefined && <Quote>{dotStatement}</Quote>}
+
+      {/* The refusal, before the reading. An error is the end of the matter everywhere
+          else on the site, and this is the step whose card says so. */}
+      {errors.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className="text-[13px] leading-relaxed text-fg">
+            The bundle does not resolve. The builder&rsquo;s card lists the acceptance
+            criteria among the types it will not accept, and an edge now carries them into
+            it.
+          </p>
+          <ul className="flex flex-col gap-2">
+            {errors.map((diagnostic) => (
+              <li
+                key={`${diagnostic.code} ${diagnostic.message}`}
+                className="flex flex-col gap-1 rounded border border-signal/40 bg-signal/5 px-2.5 py-1.5"
+              >
+                <code className="font-mono text-[11px] text-signal">{diagnostic.code}</code>
+                <span className="text-[13px] leading-relaxed text-muted">
+                  {diagnostic.message}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {before !== undefined && after !== undefined && (
+        <p className="text-[13px] leading-relaxed text-muted">
+          The security metric runs on it anyway, so there is a second answer to read:
+          it kept level <span className="font-mono text-fg">{before.level}</span>{" "}a moment
+          ago and reads level <span className="font-mono text-signal">{after.level}</span>
+          {" "}now. One author wrote a rule about their own node and the graph broke it;
+          the metric reads the topology and charges what it finds there. Both point at the
+          same edge.
+        </p>
+      )}
       {leak !== undefined && (
         <p className="text-[13px] leading-relaxed text-fg">{leak.explanation}</p>
       )}
@@ -288,13 +337,13 @@ export function ApprovalIntro() {
         the release boundary, read the report, and answer before anything ships.
       </p>
       <p className={P}>
-        Both are complete factories and both belong in the gallery. The autonomy level
-        records which one you drew, and the panel beside you shows the level for the graph
+        Both are complete factories and both belong in the gallery. The autonomy class
+        records which one you drew, and the panel beside you names the class for the graph
         on screen along with the arithmetic behind it. It describes the shape of the graph.
       </p>
       <p className={P}>
         If this factory touches something you cannot take back, the approver is the design
-        you want. A higher level describes a different factory. It does not describe a
+        you want. The other class describes a different factory. It does not describe a
         better one, and nothing on DarkPrint ranks the two.
       </p>
     </>
@@ -306,7 +355,8 @@ export function ApprovalReading({ autonomy }: { autonomy?: AutonomyResult }) {
   const people = autonomy.contributions.filter((c) => c.requiresHuman);
   return (
     <Aside title="What the analyzer counted">
-      <Quote>{autonomy.rationale}</Quote>
+      {/* Less the band ordinal (doc 2 §1.1); the counts and the threshold survive. */}
+      <Quote>{autonomyStatement(autonomy.rationale)}</Quote>
       {people.length === 0 ? (
         <p className="text-[13px] leading-relaxed text-muted">
           No node in this graph hands control to a person.

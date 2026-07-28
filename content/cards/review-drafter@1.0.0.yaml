@@ -18,6 +18,8 @@ spec: >-
   selected so whoever runs them next knows what to execute.
 agent: Reviewer
 tools: []
+mcp: []
+skill: skills/review-drafter.md
 params:
   temperature: 0.3
   max_comments: 25
@@ -37,6 +39,8 @@ outputs:
 dependencies:
   - diff-triager
   - test-runner
+cannot:
+  - write about a file banded mechanical
 
 requires_human: false
 risk_markers: []

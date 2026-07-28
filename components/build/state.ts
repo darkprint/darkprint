@@ -3,10 +3,11 @@
    ------------------------------------------------------------
    Everything the path shows about a factory comes out of this
    function, and everything it produces comes out of `loadBundle`.
-   No number on `/build` is animated, interpolated or written into
-   a string: the autonomy level, the security level, the findings,
-   the sentence under each one and the digest are the engine's,
-   computed on the exact bytes the download hands over.
+   No reading on `/build` is animated, interpolated or written into
+   a string: the autonomy class, the security level, the findings,
+   the diagnostics, the sentence under each one and the digest are
+   the engine's, computed on the exact bytes the download hands
+   over.
 
    ── Why it runs in the browser ──
    The site is static, so there is no request-time place to build a
@@ -70,6 +71,18 @@ export interface BuildState {
   blueprint?: ResolvedBlueprint;
   analysis?: BlueprintAnalysis;
   diagnostics: readonly Diagnostic[];
+  /**
+   * The error-severity half of `diagnostics`, which is the half that decides whether this
+   * bundle is a thing anybody could publish.
+   *
+   * Non-empty exactly while doc 2 §5.4's switch is on. The builder's card declares
+   * `cannot: [acceptance-criteria]` and the demonstration edge carries that type, so the
+   * bundle behind the switch does not resolve — and the builder card the reader is looking
+   * at in pane 4 says so in its own `notes`, which is why the panel beside it cannot
+   * report a security level and stop there. Empty for all eighty real combinations, and
+   * `path.test.ts` walks them to keep it that way.
+   */
+  errors: readonly Diagnostic[];
   graph?: BlueprintGraph;
   paneModel?: PaneModel;
   /** The files of the artefact. Empty while the switch is on, because that is not it. */
@@ -128,6 +141,7 @@ export function buildState(choices: StarterChoices, demo = false): BuildState {
   const state: BuildState = {
     bundle,
     diagnostics: result.diagnostics,
+    errors: result.diagnostics.filter((d) => d.severity === "error"),
     files: [],
     budget: starterRunBudget(choices),
     demo,

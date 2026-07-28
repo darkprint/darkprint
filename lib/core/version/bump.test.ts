@@ -11,10 +11,12 @@ const BASE: NodeCard = {
   action: "Draft a candidate solution for the sub-task",
   spec: "Read the sub-task on `task` and write one candidate solution to `draft`.",
   tools: ["web-search"],
+  mcp: ["filesystem"],
   params: { retries: 3 },
   inputs: [{ name: "task", type: "text" }],
   outputs: [{ name: "draft", type: "json" }],
   dependencies: ["planner"],
+  cannot: [],
   requiresHuman: false,
   riskMarkers: [],
   version: "1.0.0",
@@ -290,6 +292,137 @@ describe("inferBump — the phase set (the documented reversal)", () => {
   });
 });
 
+describe("inferBump — `cannot`, whose two directions are inverted", () => {
+  // Every other list on the card is a claim, so `compareList` makes growth minor and
+  // shrinkage patch. A prohibition constrains what may be wired *into* the node, so both
+  // directions turn over: adding narrows the contract and can start failing a graph
+  // nobody touched, withdrawing widens what the node accepts and fails nothing.
+  it("is major when a prohibition is declared", () => {
+    const analysis = inferBump(BASE, next({ cannot: ["acceptance-criteria"] }));
+    expect(analysis.level).toBe("major");
+    expect(analysis.reasons).toEqual([
+      "prohibition `acceptance-criteria` was declared, which narrows what the node accepts",
+    ]);
+  });
+
+  it("is major for a free-text prohibition too, not only an ontology term", () => {
+    // The bump level cannot depend on whether the vocabulary happens to define the entry
+    // today: a term added in a later ontology version would silently turn yesterday's
+    // free text into an enforced rule, and the published bump would already be wrong.
+    const analysis = inferBump(BASE, next({ cannot: ["never opens a shell"] }));
+    expect(analysis.level).toBe("major");
+    expect(analysis.reasons[0]).toContain("`never opens a shell` was declared");
+  });
+
+  it("is minor when a prohibition is withdrawn", () => {
+    const before = next({ cannot: ["acceptance-criteria"] });
+    const analysis = inferBump(before, BASE);
+    expect(analysis.level).toBe("minor");
+    expect(analysis.reasons).toEqual(["prohibition `acceptance-criteria` was withdrawn"]);
+  });
+
+  it("is not symmetric: declaring breaks a pinned blueprint, withdrawing does not", () => {
+    const strict = next({ cannot: ["acceptance-criteria"] });
+    expect(inferBump(BASE, strict).level).toBe("major");
+    expect(inferBump(strict, BASE).level).toBe("minor");
+  });
+
+  it("is patch for a pure reorder, which prohibits the same set", () => {
+    const before = next({ cannot: ["acceptance-criteria", "secret material"] });
+    const after = next({ cannot: ["secret material", "acceptance-criteria"] });
+    expect(inferBump(before, after)).toEqual({
+      level: "patch",
+      reasons: ["`cannot` entries were reordered"],
+    });
+  });
+
+  it("reports both halves of a swap and takes the stronger one", () => {
+    const before = next({ cannot: ["acceptance-criteria"] });
+    const after = next({ cannot: ["plan"] });
+    const analysis = inferBump(before, after);
+    expect(analysis.level).toBe("major");
+    expect(analysis.reasons).toEqual([
+      "prohibition `plan` was declared, which narrows what the node accepts",
+      "prohibition `acceptance-criteria` was withdrawn",
+    ]);
+  });
+
+  it("does not split entries on a space when deciding a reorder", () => {
+    // Entries are free text, so joining on a space to compare sequences would read
+    // ["a b"] and ["a", "b"] as the same list.
+    const before = next({ cannot: ["no shell"] });
+    const after = next({ cannot: ["no", "shell"] });
+    expect(inferBump(before, after).level).toBe("major");
+  });
+
+  it("is none when neither version prohibits anything", () => {
+    expect(inferBump(BASE, next({ cannot: [] }))).toEqual({ level: "none", reasons: [] });
+  });
+});
+
+describe("inferBump — `mcp` and `skill`", () => {
+  it("is minor when an MCP server is added, exactly as for a tool", () => {
+    const analysis = inferBump(BASE, next({ mcp: ["filesystem", "github"] }));
+    expect(analysis.level).toBe("minor");
+    expect(analysis.reasons).toEqual(["MCP server `github` was added"]);
+  });
+
+  it("is patch when an MCP server is removed — the card asks for less", () => {
+    const analysis = inferBump(BASE, next({ mcp: [] }));
+    expect(analysis.level).toBe("patch");
+    expect(analysis.reasons).toEqual(["MCP server `filesystem` was removed"]);
+  });
+
+  it("is patch when the MCP list is only reordered", () => {
+    const before = next({ mcp: ["filesystem", "github"] });
+    const after = next({ mcp: ["github", "filesystem"] });
+    expect(inferBump(before, after)).toEqual({
+      level: "patch",
+      reasons: ["`mcp` entries were reordered"],
+    });
+  });
+
+  it("is minor when a skill is pointed at for the first time", () => {
+    const analysis = inferBump(BASE, next({ skill: "skills/solver.md" }));
+    expect(analysis.level).toBe("minor");
+    expect(analysis.reasons).toEqual([
+      '`skill` changed: (none) → "skills/solver.md"',
+    ]);
+  });
+
+  it("is minor when the skill is repointed", () => {
+    const before = next({ skill: "skills/solver.md" });
+    const after = next({ skill: "skills/solver-v2.md" });
+    const analysis = inferBump(before, after);
+    expect(analysis.level).toBe("minor");
+    expect(analysis.reasons).toEqual([
+      '`skill` changed: "skills/solver.md" → "skills/solver-v2.md"',
+    ]);
+  });
+
+  it("is minor when the skill pointer is withdrawn", () => {
+    // Same size of edit in the other direction: the definition of the node's behaviour
+    // moved, and no port, type or param a blueprint declared against did.
+    const before = next({ skill: "skills/solver.md" });
+    const analysis = inferBump(before, BASE);
+    expect(analysis.level).toBe("minor");
+    expect(analysis.reasons).toEqual(['`skill` changed: "skills/solver.md" → (none)']);
+  });
+
+  it("ranks a declared prohibition above everything else in the same diff", () => {
+    const analysis = inferBump(
+      BASE,
+      next({ cannot: ["acceptance-criteria"], mcp: [], skill: "skills/solver.md" }),
+    );
+    expect(analysis.level).toBe("major");
+    expect(analysis.reasons).toEqual([
+      "prohibition `acceptance-criteria` was declared, which narrows what the node accepts",
+      '`skill` changed: (none) → "skills/solver.md"',
+      "MCP server `filesystem` was removed",
+    ]);
+  });
+});
+
 describe("inferBump — patch", () => {
   it.each<[string, NodeCard, string]>([
     ["the name changes", next({ name: "Solver B" }), '`name` changed: "Solver A" → "Solver B"'],
@@ -422,10 +555,12 @@ describe("inferBump — combinations and edge cases", () => {
       action: "",
       spec: "",
       tools: [],
+      mcp: [],
       params: {},
       inputs: [],
       outputs: [],
       dependencies: [],
+      cannot: [],
       requiresHuman: false,
       riskMarkers: [],
       version: "0.0.1",

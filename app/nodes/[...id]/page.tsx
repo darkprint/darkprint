@@ -121,6 +121,24 @@ function TermChip({ href, label, aria }: { href: string; label: string; aria: st
   );
 }
 
+/**
+ * One entry of `cannot`, with the vocabulary lookup already done.
+ *
+ * `term` set is the whole difference the reader needs. An entry naming a `data-type` is a
+ * rule the resolver holds the graph to: an incoming edge able to carry that type, meaning
+ * the type or a narrower kind of it, is `bundle/prohibition-violated` at error severity.
+ * An entry naming nothing in the vocabulary is a sentence addressed to a person, and the
+ * schema is explicit that writing one is legitimate. Two very different promises, so they
+ * are drawn as two different things.
+ *
+ * `entry` is what the card wrote and `term.id` is what it resolved to. A deprecated
+ * spelling still names its successor, so the two can differ, and both are shown.
+ */
+interface ProhibitionView {
+  entry: string;
+  term?: { id: string; label: string; description?: string };
+}
+
 /** A `params` value as JSON: scalars inline, anything nested as an indented block. */
 function ParamValue({ value }: { value: JsonValue }) {
   const nested = value !== null && typeof value === "object";
@@ -199,6 +217,24 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
     return { id: resolved?.term.id ?? tool, label: resolved?.term.label ?? tool };
   });
 
+  /* Only a `data-type` can be enforced, because a data type is the only thing an edge
+     carries. An entry naming a phase, a node type or a tool is read as free text, which
+     is why the lookup is pinned to one kind rather than asked of the vocabulary at
+     large. */
+  const prohibitions: ProhibitionView[] = card.cannot.map((entry) => {
+    const resolved = ontology.resolve(entry, "data-type");
+    if (resolved === undefined) return { entry };
+    return {
+      entry,
+      term: {
+        id: resolved.term.id,
+        label: resolved.term.label,
+        description: resolved.term.description,
+      },
+    };
+  });
+  const enforcedCount = prohibitions.filter((p) => p.term !== undefined).length;
+
   const risks = card.riskMarkers.map((marker) => {
     const resolved = ontology.resolve(marker, "risk-marker");
     return {
@@ -276,6 +312,16 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 <span aria-hidden>⏸</span> human in the loop
               </span>
             )}
+            {/* The negative half of the interface, named in the header so it is not
+                something a reader finds only by scrolling. It wears the same chip as the
+                dimensions beside it because it is the same kind of fact: something the
+                card states about itself. The panel below carries the entries. */}
+            {prohibitions.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-violet/10 px-2.5 py-0.5 font-mono text-[11px] text-violet">
+                <span className="text-muted">cannot ·</span>
+                {prohibitions.length} declared
+              </span>
+            )}
           </div>
           <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
             {card.name}
@@ -324,6 +370,214 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
               outputs={card.outputs.map(port)}
               dependencies={dependencies}
             />
+          </Panel>
+
+          {/* Directly under the interfaces, because it is the other half of the same
+              statement: those rows say what arrives on this node, and these say what may
+              not. It is also the field doc 2 §3's whole argument rests on — the rule that
+              a Skill cannot express, because it is a property of who is wired to whom —
+              so it gets a panel of its own rather than a line inside Behaviour. */}
+          <Panel
+            id="prohibitions"
+            label="Cannot receive"
+            meta={
+              prohibitions.length === 0
+                ? "none declared"
+                : `${enforcedCount} enforced · ${prohibitions.length - enforcedCount} free text`
+            }
+          >
+            {prohibitions.length === 0 ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-[15px] leading-relaxed text-muted">
+                  <span className="text-fg">None declared.</span>{" "}
+                  This card states no prohibition, which is the ordinary case. A node is
+                  normally isolated by
+                  the edges its graph does not draw, and writing the rule down here is
+                  what turns that into something the analyzer can hold a graph to.
+                </p>
+                <p className="text-xs leading-relaxed text-dim">
+                  An entry naming a data type from the vocabulary is checked against every
+                  incoming edge. An entry naming nothing in the vocabulary is a sentence
+                  for whoever reads the card, and both belong here.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <p className="text-[15px] leading-relaxed text-muted">
+                  What this node must never be handed. The interfaces above say what
+                  arrives; these say what may not, and the first kind below is a rule the
+                  resolver applies to the graph rather than a convention an author has to
+                  remember.
+                </p>
+
+                <ul className="flex flex-col gap-2.5">
+                  {prohibitions.map((p) =>
+                    p.term === undefined ? (
+                      /* Free text. Drawn plainly and drawn at full size: the schema
+                         calls writing one legitimate, so it is a second kind of entry
+                         and not a lesser one. What separates it is the promise, which
+                         the badge states in words. */
+                      <li
+                        key={p.entry}
+                        className="flex flex-col gap-1.5 rounded-md border border-line bg-surface-2 px-3 py-2.5"
+                      >
+                        <span className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-mono text-[12px] text-fg">{p.entry}</span>
+                          <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
+                            <span aria-hidden>◌</span> free text
+                          </span>
+                        </span>
+                        <span className="text-xs leading-relaxed text-dim">
+                          The vocabulary carries no data type by this name, so nothing
+                          checks it. It is addressed to whoever reads the card.
+                        </span>
+                      </li>
+                    ) : (
+                      <li
+                        key={p.entry}
+                        className="flex flex-col gap-1.5 rounded-md border border-violet/40 bg-violet/5 px-3 py-2.5"
+                      >
+                        <span className="flex flex-wrap items-center justify-between gap-2">
+                          <TermChip
+                            href={termHref(p.term.id)}
+                            label={p.entry}
+                            aria={`Ontology data type: ${p.term.label}`}
+                          />
+                          <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-violet">
+                            <span aria-hidden>⊘</span> enforced
+                          </span>
+                        </span>
+                        {p.term.description !== undefined && (
+                          <span className="text-xs leading-relaxed text-muted">
+                            {p.term.description}
+                          </span>
+                        )}
+                        <span className="text-xs leading-relaxed text-dim">
+                          An edge into this node able to carry{" "}
+                          <code className="font-mono text-muted">{p.term.id}</code>,
+                          meaning that type or a narrower kind of it, is reported as{" "}
+                          <code className="font-mono text-muted">
+                            bundle/prohibition-violated
+                          </code>{" "}
+                          and the bundle does not resolve.
+                          {p.entry !== p.term.id && (
+                            <>
+                              {" "}
+                              The card writes{" "}
+                              <code className="font-mono text-muted">{p.entry}</code>,
+                              which the vocabulary resolves to{" "}
+                              <code className="font-mono text-muted">{p.term.id}</code>.
+                            </>
+                          )}
+                        </span>
+                      </li>
+                    ),
+                  )}
+                </ul>
+
+                <p className="text-xs leading-relaxed text-dim">
+                  A data type is the only kind of term enforced here, because it is the
+                  only kind an edge carries. An entry naming any other kind of term reads
+                  as free text, and so does a sentence.
+                </p>
+              </div>
+            )}
+          </Panel>
+
+          {/* The two fields that say what has to exist on the machine before this node
+              can run. They sit above Behaviour rather than inside it because the card's
+              `tools` are in there and the pair is easy to conflate: `tools` is what the
+              node is permitted to do, `mcp` is which server supplies it, and merging them
+              loses the question each one answers. */}
+          <Panel
+            id="runtime"
+            label="Skill and servers"
+            meta={
+              card.mcp.length === 0
+                ? "no MCP servers"
+                : `${card.mcp.length} MCP server${card.mcp.length === 1 ? "" : "s"}`
+            }
+          >
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-2">
+                <span className={LABEL}>Skill</span>
+                {card.skill === undefined ? (
+                  <p className="text-xs leading-relaxed text-dim">
+                    No skill document named. The card&apos;s own{" "}
+                    <code className="font-mono text-muted">spec</code> is the whole of
+                    this node&apos;s instruction, which is the ordinary case.
+                  </p>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg">
+                        <span
+                          className="h-1 w-1 rounded-full"
+                          style={{ background: "var(--color-cyan)" }}
+                          aria-hidden
+                        />
+                        {card.skill}
+                      </span>
+                    </div>
+                    <p className="text-xs leading-relaxed text-dim">
+                      Where the document defining this agent&apos;s behaviour lives,
+                      relative to the repository you run the factory from. DarkPrint keeps
+                      the pointer and reads nothing at the other end of it: a skill hands
+                      one agent a capability, and the blueprint decides who is wired to
+                      whom.
+                    </p>
+                    {/* The pointer is dangling in every folder the site hands out, and
+                        saying so here is cheaper than letting somebody find out by
+                        opening the download. The bundle README lists the same paths under
+                        the folder listing for the same reason. */}
+                    <p className="text-xs leading-relaxed text-dim">
+                      No skill document travels in a DarkPrint bundle. Download this
+                      node&apos;s blueprint and you get the cards, the two DOT files and
+                      the vocabulary, with this path pointing at a file you write. Nothing
+                      needs it to run: <code className="font-mono text-muted">spec</code>{" "}
+                      is inlined into{" "}
+                      <code className="font-mono text-muted">factory.dot</code> as the
+                      prompt this node&apos;s agent receives.
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2 border-t border-line pt-5">
+                <span className={LABEL}>MCP servers</span>
+                {card.mcp.length === 0 ? (
+                  <p className="text-xs leading-relaxed text-dim">
+                    None. Nothing this node does needs a server registered on the machine
+                    that runs the graph.
+                  </p>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-1.5">
+                      {card.mcp.map((server) => (
+                        <span
+                          key={server}
+                          className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg"
+                        >
+                          <span
+                            className="h-1 w-1 rounded-full"
+                            style={{ background: "var(--color-emerald)" }}
+                            aria-hidden
+                          />
+                          {server}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-xs leading-relaxed text-dim">
+                      The names these servers are registered under on the machine that
+                      runs the graph. They are free text by design, since an MCP server is
+                      a process somebody installed and the vocabulary has no term for one.
+                      The tools below are vocabulary terms and answer a different
+                      question: what the node is permitted to do.
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
           </Panel>
 
           <Panel
@@ -424,9 +678,17 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                     </div>
                   ) : (
                     <p className="text-xs leading-relaxed text-dim">
-                      None — the node asks for no external capability.
+                      None. The node asks for no external capability.
                     </p>
                   )}
+                  {/* The distinction the two fields exist to keep. Stated on the one
+                      that is a vocabulary term, because that is the half a reader can
+                      click into and therefore the half they meet first. */}
+                  <p className="text-xs leading-relaxed text-dim">
+                    Capability terms from the vocabulary, saying what this node is
+                    permitted to do. Which server supplies them is a separate question,
+                    answered by the MCP list above.
+                  </p>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -447,7 +709,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                     </dl>
                   ) : (
                     <p className="text-xs leading-relaxed text-dim">
-                      None — the node is configured entirely by what arrives on its
+                      None. The node is configured entirely by what arrives on its
                       inputs.
                     </p>
                   )}

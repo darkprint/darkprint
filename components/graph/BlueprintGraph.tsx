@@ -29,6 +29,21 @@ const EDGE_COLOR = {
  * `highlighted` is the DOT id of the node a finding is pointing at. The schematic
  * rings it and pans it into view — a highlight the reader has to hunt for explains
  * nothing.
+ *
+ * A node whose seed carries a `cardId` draws its name as a link to `/nodes/<id>`, which
+ * is spec part 3. Nothing on this component switches that on: the seed carries the id
+ * only when the caller told `graphForBlueprint` the cards are in the registry, so the
+ * guided path's schematics and the upload wizard's carry none and the archive's do.
+ *
+ * That flag alone does **not** decide which mounted schematic shows links, and reading it
+ * that way was a bug. One graph object can be handed to more than one mount: the blueprint
+ * page passes the archive graph both to the canvas, where the links belong, and to the
+ * four-pane view, where a pane reads a click on a node as its selection and an anchor
+ * would navigate out of the page instead. A container that claims the click strips the
+ * ids with `withoutCardLinks` before drawing — see `components/panes/GraphPane` and
+ * `components/build/ChoiceGraphPane`. The explainability panel needs nothing: its
+ * highlight buttons live outside this canvas and only ever set the `highlighted` prop.
+ * See `AgentNode` for why the name and not the block.
  */
 export function BlueprintGraph({
   graph,
@@ -63,6 +78,7 @@ export function BlueprintGraph({
           label: n.label,
           kind: n.kind,
           sub: n.sub,
+          cardId: n.cardId,
           highlighted: n.id === highlighted,
         },
       })),

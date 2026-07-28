@@ -57,6 +57,19 @@ export type DiagnosticCode =
   | "bundle/no-exit"
   | "bundle/unreachable-node"
   | "bundle/ontology-mismatch"
+  // A card's `cannot` names an ontology `data-type` and an incoming edge can carry it.
+  //
+  // The one place doc 2 §3's isolation argument stops being prose. §3 claims isolation is
+  // a property of the topology rather than of a prompt, and a claim about topology can be
+  // checked on a topology: the card states what it must not receive, the resolver reads
+  // the edges, and an author who wires the two together is told at the point of the edge.
+  // An error rather than a warning, because the card and the graph state opposite things
+  // and only the author knows which one they meant.
+  //
+  // Entries in `cannot` that name no `data-type` reach nothing here. They are free text
+  // for a reader (see `NodeCard.cannot`), and a code that fired on them would report a
+  // legal card as broken.
+  | "bundle/prohibition-violated"
   // attractor/ — the DOT subset Attractor reads (doc 1 §0.1.1, doc 2 §11 item 0).
   // Every one of these is a `warning`: a bundle that breaks an Attractor rule is
   // still a valid DarkPrint bundle, it just will not run under Attractor, and the

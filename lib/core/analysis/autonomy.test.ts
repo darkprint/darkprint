@@ -23,6 +23,7 @@ import { ontologyView } from "../ontology/resolve";
 import type { OntologyView } from "../ontology/resolve";
 import type { Ontology, OntologyTerm } from "../ontology/types";
 import { computeAutonomy } from "./autonomy";
+import type { AutonomyClass } from "./autonomy";
 import { computePhaseCoverage } from "./phase-coverage";
 import { DARKPRINT_CONFIG } from "../config";
 import type { DarkprintConfig } from "../config";
@@ -46,10 +47,12 @@ function makeCard(over: Partial<NodeCard> & { id: string }): NodeCard {
     action: `Do the ${over.id} work`,
     spec: `Carry out the ${over.id} step exactly as the plan describes it, and stop there.`,
     tools: [],
+    mcp: [],
     params: {},
     inputs: [],
     outputs: [],
     dependencies: [],
+    cannot: [],
     requiresHuman: false,
     riskMarkers: [],
     version: "1.0.0",
@@ -203,6 +206,141 @@ describe("computeAutonomy — levels", () => {
       const result = computeAutonomy(makeBlueprint(withHumans(10, humans)));
       expect(result.level).toBe(level);
       expect(result.label).toBe(AUTONOMY_LABELS[level]);
+    }
+  });
+});
+
+/* --------------------- the class (what an interface shows) --------------------- */
+
+describe("computeAutonomy — the named class", () => {
+  // The class is the reading every surface renders. `level` stays for the arithmetic, and
+  // the two must never be able to disagree, so each band is pinned to its name here.
+  const bands: ReadonlyArray<{
+    total: number;
+    humans: number;
+    fraction: number;
+    level: 1 | 2 | 3 | 4;
+    autonomyClass: AutonomyClass;
+    label: string;
+  }> = [
+    { total: 10, humans: 0, fraction: 1, level: 4, autonomyClass: "closed-loop", label: "Closed-loop" },
+    { total: 1000, humans: 99, fraction: 0.901, level: 4, autonomyClass: "closed-loop", label: "Closed-loop" },
+    // exactly 0.90 is the top of the conditional band, not the bottom of closed-loop
+    { total: 10, humans: 1, fraction: 0.9, level: 3, autonomyClass: "conditional", label: "Conditional" },
+    { total: 10, humans: 3, fraction: 0.7, level: 3, autonomyClass: "conditional", label: "Conditional" },
+    { total: 100, humans: 31, fraction: 0.69, level: 2, autonomyClass: "supervised", label: "Supervised" },
+    { total: 10, humans: 5, fraction: 0.5, level: 2, autonomyClass: "supervised", label: "Supervised" },
+    { total: 100, humans: 51, fraction: 0.49, level: 1, autonomyClass: "assisted", label: "Assisted" },
+    { total: 4, humans: 4, fraction: 0, level: 1, autonomyClass: "assisted", label: "Assisted" },
+  ];
+
+  it.each(bands)(
+    "fraction $fraction maps to $autonomyClass",
+    ({ total, humans, fraction, level, autonomyClass, label }) => {
+      const result = computeAutonomy(makeBlueprint(withHumans(total, humans)));
+
+      expect(result.fraction).toBe(fraction);
+      expect(result.autonomyClass).toBe(autonomyClass);
+      expect(result.level).toBe(level);
+      expect(result.label).toBe(label);
+    },
+  );
+
+  it("covers all four classes and never invents a fifth", () => {
+    const seen = new Set(
+      [0, 1, 4, 6].map((humans) => computeAutonomy(makeBlueprint(withHumans(10, humans))).autonomyClass),
+    );
+    expect([...seen].sort()).toEqual(["assisted", "closed-loop", "conditional", "supervised"]);
+  });
+
+  it("gives an empty graph a class rather than leaving the field unset", () => {
+    // Nothing to classify is still a defined answer, and a surface reading the class must
+    // never receive `undefined` from a bundle that resolved.
+    const result = computeAutonomy(makeBlueprint([]));
+    expect(result.autonomyClass).toBe("assisted");
+    expect(result.label).toBe("Assisted");
+  });
+
+  it("keeps the class, the level and the label in agreement in every band", () => {
+    const byClass: Record<AutonomyClass, string> = {
+      assisted: "Assisted",
+      supervised: "Supervised",
+      conditional: "Conditional",
+      "closed-loop": "Closed-loop",
+    };
+    for (let humans = 0; humans <= 10; humans += 1) {
+      const result = computeAutonomy(makeBlueprint(withHumans(10, humans)));
+      expect(result.label).toBe(byClass[result.autonomyClass]);
+      expect(result.label).toBe(AUTONOMY_LABELS[result.level]);
+    }
+  });
+});
+
+/* --------------------- the dark factory classification --------------------- */
+
+describe("computeAutonomy — isDarkFactory", () => {
+  it("is true for a graph with no human node at all", () => {
+    const result = computeAutonomy(makeBlueprint(withHumans(5, 0)));
+    expect(result.isDarkFactory).toBe(true);
+  });
+
+  it("is false for a graph with exactly one human node", () => {
+    // The line the whole classification turns on. Twenty nodes and one gate is a
+    // supervised graph, which is a legitimate thing to be — it is not a dark factory that
+    // fell short of something, because there is nothing to fall short of.
+    const result = computeAutonomy(makeBlueprint(withHumans(20, 1)));
+    expect(result.isDarkFactory).toBe(false);
+    // And the graph is still in the top band, which is exactly why the two are separate
+    // fields: reading `level === 4` as "dark factory" would classify this one wrongly.
+    expect(result.level).toBe(4);
+    expect(result.autonomyClass).toBe("closed-loop");
+  });
+
+  it("is zero human nodes rather than a threshold, at every size", () => {
+    for (const total of [1, 2, 5, 11, 50]) {
+      expect(computeAutonomy(makeBlueprint(withHumans(total, 0))).isDarkFactory).toBe(true);
+      expect(computeAutonomy(makeBlueprint(withHumans(total, 1))).isDarkFactory).toBe(false);
+    }
+  });
+
+  it("is true for a single unattended node and false for a single human one", () => {
+    expect(computeAutonomy(makeBlueprint(withHumans(1, 0))).isDarkFactory).toBe(true);
+    expect(computeAutonomy(makeBlueprint(withHumans(1, 1))).isDarkFactory).toBe(false);
+  });
+
+  it("counts a human type, not only the flag", () => {
+    const gated = computeAutonomy(
+      makeBlueprint([
+        { id: "build" },
+        { id: "gate", card: { type: "human-gate", requiresHuman: true } },
+      ]),
+    );
+    expect(gated.isDarkFactory).toBe(false);
+  });
+
+  it("is false for an empty graph, which has no node running unattended either", () => {
+    const result = computeAutonomy(makeBlueprint([]));
+    expect(result.totalNodes).toBe(0);
+    expect(result.isDarkFactory).toBe(false);
+  });
+
+  it("is false when a node has no card, because nothing states how that node runs", () => {
+    // "No person is in this graph" is a claim about every node, and a bundle missing a
+    // card has not earned it. The fraction already treats the node as neither unattended
+    // nor staffed; the classification follows the same reading.
+    const result = computeAutonomy(
+      makeBlueprint([{ id: "a" }, { id: "b" }], { graphIds: ["a", "b", "ghost"] }),
+    );
+    expect(result.isDarkFactory).toBe(false);
+    expect(result.autonomousNodes).toBe(2);
+    expect(result.totalNodes).toBe(3);
+  });
+
+  it("agrees with the contributions, which are what a schematic draws", () => {
+    for (const humans of [0, 1, 4]) {
+      const result = computeAutonomy(makeBlueprint(withHumans(4, humans)));
+      const everyNodeUnattended = result.contributions.every((c) => c.resolved && !c.requiresHuman);
+      expect(result.isDarkFactory).toBe(result.totalNodes > 0 && everyNodeUnattended);
     }
   });
 });

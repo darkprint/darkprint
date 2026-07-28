@@ -131,10 +131,12 @@ export function SectionDoors() {
               <Status glyph="✓" word="live" />
             </div>
             <p className="text-sm leading-relaxed text-blueprint-ink/85">
-              The guided path takes about an hour and ends with a dark factory of your own,
+              The guided path takes about an hour and ends with a factory of your own,
               downloaded and runnable on your machine. You start from the five-node starter,
-              take it apart, and make three choices that stay in the artefact. Both computed
-              scores move with the graph while you work, on the exact bytes you download.
+              take it apart, and make three choices that stay in the artefact. One of those
+              choices decides whether a person stands at the release boundary, so the class
+              the analyzer reads off the graph is yours to pick. Both computed scores move
+              with the graph while you work, on the exact bytes you download.
             </p>
             <p className="border-l-2 border-blueprint-line/50 pl-4 text-sm leading-relaxed text-blueprint-ink/85">
               It ends at the download. There is nowhere to save a blueprint yet: accounts

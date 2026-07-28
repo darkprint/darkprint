@@ -8,7 +8,7 @@ import type {
   SecurityFinding,
   SecurityResult,
 } from "@/lib/core";
-import { cx } from "@/lib/format";
+import { HUMAN_PRESENCE_MARK, autonomyStatement, cx } from "@/lib/format";
 import {
   criteriaVerdict,
   CRITERIA_UNANCHORED_CODE,
@@ -25,10 +25,16 @@ import {
  *
  * **Doc 2 §1.1 — autonomy is a description, not a grade.** The panel says where the
  * people are. It never says how far the graph falls short of running without them:
- * no "N out of 4", no progress bar, no green tick rewarding a graph with nobody in
+ * no number at all, no progress bar, no green tick rewarding a graph with nobody in
  * it, and no red alarm on a node where somebody is. A blueprint with a human gate is
  * a blueprint that has decided where a person acts, and the surface has to read that
  * way or the barrier to publishing that §1.1 exists to remove comes straight back.
+ *
+ * The same rule covers the two classifications the panel prints. The autonomy class is
+ * a name for the shape of the graph, and `isDarkFactory` is a name for one property of
+ * that shape: no node in it waits for a person. Both are stated in the panel's plain
+ * chrome, and the dark factory line is written so the graph beside it that keeps a gate
+ * reads as a design and not as an attempt that fell short.
  *
  * **Doc 3 §5 — a marker counts once for the blueprint.** The ledger is one row per
  * `SecurityPenalty`, not one per occurrence: "un marcatore presente su più nodi conta
@@ -135,12 +141,14 @@ const AUTONOMY_GROUP = {
     color: "var(--color-cyan)",
   },
   staffed: {
-    glyph: "⏸",
+    glyph: HUMAN_PRESENCE_MARK.glyph,
     word: "a person acts",
-    // Violet, not the signal pink the schematic paints a gate in. Doc 2 §1.1: the
+    // Violet, unlike the signal pink the schematic paints a gate in. Doc 2 §1.1: the
     // indicator says where the people are, and an alarm colour on those rows is the
-    // evaluative reading the principle rules out.
-    color: "var(--color-violet)",
+    // evaluative reading the principle rules out. Taken from the shared constant rather
+    // than restated, because this comment is the rule and four other surfaces broke it
+    // while it sat here.
+    color: HUMAN_PRESENCE_MARK.color,
   },
   undescribed: {
     glyph: "▲",
@@ -266,14 +274,71 @@ function AutonomyPanel({
           Autonomy — who is in the loop
         </h3>
         <span className="font-mono text-[11px] text-dim">
-          autonomy level {autonomy.level} · {autonomy.label}
+          <span className="sr-only">Autonomy class </span>
+          {autonomy.label}
         </span>
       </div>
 
       <p className="text-sm leading-relaxed text-muted">
-        The level describes the shape of this graph. What the breakdown below says is
-        where the people are: which nodes run unattended, which ones a person acts in,
-        and which ones the bundle has nothing to say about.
+        The class names the shape of this graph. What the breakdown below says is where
+        the people are: which nodes run unattended, which ones a person acts in, and
+        which ones the bundle has nothing to say about.
+      </p>
+
+      {/* The second classification, stated where the counts behind it are on screen.
+          Three branches, because `isDarkFactory` is false for two quite different
+          reasons and collapsing them would print "a person stands in this graph" over a
+          graph where nobody does. Each branch says what this graph is. None of them says
+          what it is short of, and the second is written so a reader who put a gate in on
+          purpose finds their decision described rather than counted against them. */}
+      <p className="mt-3 flex items-start gap-2 rounded border border-line bg-surface-2 px-3 py-2 text-sm leading-relaxed text-muted">
+        {autonomy.isDarkFactory ? (
+          <>
+            <span className="mt-0.5 font-mono text-fg" aria-hidden>
+              ◼
+            </span>
+            <span>
+              <span className="text-fg">Classed a dark factory.</span>{" "}
+              No node in this graph waits for a person, which is the whole of what the
+              word classifies.
+              It describes the drawing the way &ldquo;acyclic&rdquo; does, so it carries
+              no rank and nothing on this site orders blueprints by it.
+            </span>
+          </>
+        ) : staffed.length > 0 ? (
+          <>
+            <span
+              className={cx("mt-0.5 font-mono", HUMAN_PRESENCE_MARK.className)}
+              aria-hidden
+            >
+              {HUMAN_PRESENCE_MARK.glyph}
+            </span>
+            <span>
+              <span className="text-fg">A person stands in this graph.</span>{" "}
+              The classification &ldquo;dark factory&rdquo; belongs to a graph where nobody
+              does, and it counts human nodes rather than measuring a share, so there is
+              no sense in which this graph is close to it or far from it. It has{" "}
+              {staffed.length === 1 ? "one" : staffed.length}, named below, and a factory
+              touching something irreversible is a factory whose author wanted a person
+              there.
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="mt-0.5 font-mono text-amber" aria-hidden>
+              ▲
+            </span>
+            <span>
+              <span className="text-fg">
+                Nothing here classifies this graph either way.
+              </span>{" "}
+              &ldquo;Dark factory&rdquo; is a claim about every node, and{" "}
+              {autonomy.totalNodes === 0
+                ? "this bundle draws no nodes for it to be about."
+                : "some of these nodes have no card in the bundle, so what runs them is unstated."}
+            </span>
+          </>
+        )}
       </p>
 
       <dl className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -304,7 +369,10 @@ function AutonomyPanel({
       </dl>
 
       <div className="mt-3">
-        <Rationale text={autonomy.rationale} />
+        {/* The engine's sentence, less the band ordinal it ends on (doc 2 §1.1). The
+            fraction and the threshold it is compared against survive, so the panel still
+            prints working a reader can check against the published bundle. */}
+        <Rationale text={autonomyStatement(autonomy.rationale)} />
       </div>
 
       <div className="mt-5 flex flex-col gap-3">

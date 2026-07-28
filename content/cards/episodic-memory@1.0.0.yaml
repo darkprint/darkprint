@@ -15,6 +15,10 @@ spec: >-
 tools:
   - vector-store
   - file-io
+mcp:
+  - qdrant
+  - filesystem
+skill: skills/episodic-memory.md
 params:
   k: 5
   retention_runs: 30
@@ -35,6 +39,8 @@ outputs:
 dependencies:
   - ingest-stage
   - transform-stage
+cannot:
+  - rewrite or remove an entry
 
 requires_human: false
 risk_markers: []

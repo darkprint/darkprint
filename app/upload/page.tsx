@@ -7,7 +7,7 @@ import { UploadFlow, type ExampleBundle } from "@/components/upload/UploadFlow";
 export const metadata: Metadata = {
   title: "Share a blueprint",
   description:
-    "Upload the DOT graph of your dark factory. DarkPrint parses it in your browser and scores its autonomy and security by static analysis. Publishing to the registry is not built yet — nothing leaves the tab.",
+    "Upload the DOT graph of your pipeline. DarkPrint parses it in your browser, names its autonomy class and scores its security by static analysis. Publishing to the registry is not built yet — nothing leaves the tab.",
 };
 
 /**
@@ -46,6 +46,18 @@ function exampleBundle(): ExampleBundle {
   return { title: bp.title, files };
 }
 
+/**
+ * The page a reader arrives at with their own graph in hand.
+ *
+ * The lead used to open "Upload the DOT graph of your dark factory", which made a
+ * classification into a condition of entry on the one surface where somebody is being
+ * asked to submit something. Doc 2 §1.1 names that exact reading as the barrier the
+ * principle exists to remove, and `app/blueprints/page.tsx` records the same rule for the
+ * index, where the identical construction was already dropped. Since `isDarkFactory` is a
+ * literal zero-human-node test, the sentence was also false about any graph with a gate
+ * in it, `guarded-merge-bot` included. What the page asks for is a pipeline; what the
+ * analyzer answers with is the class it belongs to.
+ */
 export default function UploadPage() {
   return (
     <div className="container-page py-12">
@@ -54,7 +66,7 @@ export default function UploadPage() {
         <SectionHeading
           className="mt-3"
           title="Share a blueprint"
-          lead="Upload the DOT graph of your dark factory. DarkPrint parses the schematic in this tab, then statically analyses it to score autonomy and security automatically — no forms to guess your way through. The other four axes stay empty: efficacy, reliability and transparency are meant to come from community votes and cost and time from a real run, and neither the ballot nor the runner is built. Nor is publishing — nothing here leaves your browser."
+          lead="Upload the DOT graph of your pipeline. DarkPrint parses the schematic in this tab and statically analyses it, naming the autonomy class and scoring the security with no forms to guess your way through. A graph with a person standing in it resolves like one without and names the node where they act. The other four axes stay empty: efficacy, reliability and transparency are meant to come from community votes and cost and time from a real run, and neither the ballot nor the runner is built. Nor is publishing — nothing here leaves your browser."
         />
       </header>
 

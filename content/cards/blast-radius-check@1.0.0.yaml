@@ -19,6 +19,9 @@ spec: >-
 agent: Blast-radius QA
 tools:
   - http-fetch
+mcp:
+  - fetch
+skill: skills/blast-radius-check.md
 params:
   max_affected_hosts: 12
   protected_tiers:
@@ -38,6 +41,9 @@ outputs:
     description: The risk verdict — what routes a mitigation to on-call instead of to the host.
 dependencies:
   - resolution-composer
+cannot:
+  - edit the mitigation it judges
+  - clear a target it could not resolve
 
 requires_human: false
 risk_markers: []

@@ -17,6 +17,9 @@ spec: >-
   out it cannot be recalled or amended, so an incomplete input is a reason to stop, not to send a
   partial report.
 tools: []
+mcp:
+  - filesystem
+skill: skills/report-delivery.md
 params:
   destination: research-desk
   include_citations: true
@@ -28,6 +31,9 @@ inputs:
 outputs: []
 dependencies:
   - claim-verifier
+cannot:
+  - edit the report it delivers
+  - publish before the reference list has arrived
 
 requires_human: false
 risk_markers:

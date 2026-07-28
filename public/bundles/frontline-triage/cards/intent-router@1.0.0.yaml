@@ -14,6 +14,8 @@ spec: >-
   lane, because anything unrouted falls on the floor.
 agent: Classifier
 tools: []
+mcp: []
+skill: skills/intent-router.md
 params:
   labels:
     - billing
@@ -36,6 +38,9 @@ outputs:
     description: The event enriched with its label, ready for whichever branch picks it up.
 dependencies:
   - ticket
+cannot:
+  - change the payload it routes
+  - leave an event unrouted
 
 requires_human: false
 risk_markers: []

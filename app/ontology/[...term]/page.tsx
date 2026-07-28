@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { OntologyTerm, OntologyView } from "@/lib/core";
 import { CORE_PHASE_IDS, DARKPRINT_CONFIG, INFERRED_MARKERS } from "@/lib/core";
 import { getOntologyView, getRegistry } from "@/lib/content";
+import { HUMAN_PRESENCE_MARK } from "@/lib/format";
 import { contentHref, nodeHref, termHref } from "@/lib/href";
 import {
   NO_USAGE,
@@ -644,10 +645,17 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   }
                 />
               )}
+              {/* Violet, from `HUMAN_PRESENCE_MARK`. Doc 2 §1.1 again: this row says a
+                  card carrying this term puts a person in the graph, which is a fact about
+                  the vocabulary and not a complaint about it. */}
               {term.impliesHuman === true && (
                 <StatRow
                   label="A person acts here"
-                  value={<span className="text-signal">⏸ yes</span>}
+                  value={
+                    <span className={HUMAN_PRESENCE_MARK.className}>
+                      {HUMAN_PRESENCE_MARK.glyph} yes
+                    </span>
+                  }
                 />
               )}
             </dl>

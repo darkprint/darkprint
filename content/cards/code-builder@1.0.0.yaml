@@ -16,6 +16,9 @@ spec: >-
   do not tune anything toward a check you imagine exists.
 agent: Builder
 tools: []
+mcp:
+  - filesystem
+skill: skills/code-builder.md
 
 inputs:
   - name: brief
@@ -26,6 +29,9 @@ outputs:
     type: code
     description: One complete, compiling change implementing the brief, with no commentary attached.
 dependencies: []
+cannot:
+  - acceptance-criteria
+  - read the checks the work will be run against
 
 requires_human: false
 risk_markers: []
@@ -35,7 +41,10 @@ notes: >-
   quotes no threshold and paraphrases nothing the planner wrote, so the similarity half of the
   `criteria-leak` check stays quiet on it as well as the topological half. Measured against
   `spec-planner@1.0.0`, the 3-gram Jaccard similarity is 0.0356, against a configured threshold
-  of 0.35.
+  of 0.35. `acceptance-criteria` in `cannot` names a data type in the ontology, so the resolver
+  enforces it: draw an edge that carries the criteria into this node and the bundle fails with
+  `bundle/prohibition-violated`. The absent edge is a rule the engine holds the graph to rather
+  than a convention the author remembered.
 
 version: 1.0.0
 author: orin

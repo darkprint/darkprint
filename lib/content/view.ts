@@ -10,10 +10,10 @@
    PURE — no filesystem, no clock.
    ============================================================ */
 
-import type { AutonomyLevel, Author, Blueprint, Metric } from "@/lib/types";
-import { AUTONOMY_LABELS } from "@/lib/format";
+import type { AutonomyClass, Author, Blueprint, Metric } from "@/lib/types";
 import type { BlueprintAnalysis, Diagnostic, ResolvedBlueprint } from "@/lib/core";
 import { DARKPRINT_CONFIG } from "@/lib/core";
+import { autonomyStatement } from "@/lib/format";
 import { getAuthor } from "@/lib/data/users";
 import type { CommunitySignals } from "@/lib/data/community";
 import { graphForBlueprint, requiredAgents, requiredTools } from "@/lib/graph-seed";
@@ -21,14 +21,25 @@ import { graphForBlueprint, requiredAgents, requiredTools } from "@/lib/graph-se
 /* --------------------- autonomy prose --------------------- */
 
 /**
- * What each level means, in the register the gallery already uses. The engine owns
- * the number and the label; this is the sentence that goes under them.
+ * What each class says about the design, in the register the gallery already uses. The
+ * engine owns the class and its label; this is the sentence that goes under them.
+ *
+ * Each one states a decision an author made. None of them states a shortfall, names a
+ * next class up, or reads as a step towards anything, because doc 2 §1.1 rules that out
+ * and because it is false: the four are co-ordinate readings of a graph's shape. The old
+ * table was keyed on the 1-to-4 band and its top row ("no human in the loop") also said
+ * something the band cannot promise, since the top band is a fraction above 0.90 and a
+ * graph of eleven nodes reaches it with a person still standing in it. That claim now
+ * belongs to `isDarkFactory` alone, which counts the human nodes rather than the share.
  */
-const AUTONOMY_BLURB: Record<AutonomyLevel, string> = {
-  1: "A human drives; agents assist step by step.",
-  2: "Agents act, but a human approves the critical move.",
-  3: "Self-directed within guardrails; escalates edge cases.",
-  4: "Plans, executes, verifies and ships with no human in the loop.",
+const AUTONOMY_BLURB: Record<AutonomyClass, string> = {
+  assisted: "A person acts at most of the nodes, and the agents work under that hand.",
+  supervised:
+    "Agents do the work, and a person approves the moves this graph treats as critical.",
+  conditional:
+    "The graph runs inside the guardrails its author drew and calls a person for the cases it names.",
+  "closed-loop":
+    "The line runs from the specification to the delivery without stopping for an approval.",
 };
 
 /* --------------------- the bridge --------------------- */
@@ -58,7 +69,7 @@ export function toBlueprintView(input: BlueprintViewInput): Blueprint {
   const { blueprint, analysis, community } = input;
   const { manifest } = blueprint;
 
-  const level = analysis.autonomy.level;
+  const { autonomyClass, isDarkFactory, level, label } = analysis.autonomy;
 
   return {
     kind: "blueprint",
@@ -69,9 +80,22 @@ export function toBlueprintView(input: BlueprintViewInput): Blueprint {
     tags: [...manifest.tags],
     category: manifest.category ?? "Uncategorised",
     author: authorFor(manifest.author),
-    autonomy: { level, label: AUTONOMY_LABELS[level], blurb: AUTONOMY_BLURB[level] },
+    /* Four fields, one source. The label is the engine's own rather than a second table
+       keyed on the band: `lib/format`'s `AUTONOMY_LABELS` still exists for the surfaces
+       that have nothing but a number, and a view model holding the whole result has no
+       reason to go through it and every reason to drift from it. */
+    autonomy: {
+      autonomyClass,
+      label,
+      isDarkFactory,
+      level,
+      blurb: AUTONOMY_BLURB[autonomyClass],
+    },
     metrics: metricsFor(analysis, community),
-    graph: graphForBlueprint(blueprint),
+    /* The one caller looking at the archive, so the one caller that can promise a page
+       exists behind every card ref. That promise is what lets the schematic link a node
+       to its card (spec part 3); see `GraphSeedOptions`. */
+    graph: graphForBlueprint(blueprint, { cardsInRegistry: true }),
     requiredAgents: requiredAgents(blueprint),
     requiredTools: requiredTools(blueprint),
     createdAt: manifest.createdAt ?? "",
@@ -82,7 +106,25 @@ export function toBlueprintView(input: BlueprintViewInput): Blueprint {
     featured: community.featured,
     seed: community.seed,
     analysis: {
-      autonomy: analysis.autonomy,
+      /* The engine's reading, with exactly one substitution: `rationale` arrives as the
+         sentence a surface may print, which is the engine's own less the band ordinal it
+         ends on (doc 2 §1.1). Everything else — the class, the counts, the fraction, the
+         per-node contributions, the ontology version — is passed through untouched.
+
+         Done here rather than at each call site because `Blueprint` crosses the
+         server/client boundary: `GalleryBrowser` and `BlueprintCanvas` are client
+         components, so this object is serialised into the RSC payload of every gallery
+         and blueprint page, and a raw rationale would put "→ level 4" in the shipped HTML
+         even on the pages that never print it. The band itself stays: `level` is what
+         `GalleryBrowser` orders its filter list by, and no surface renders it.
+
+         `autonomyStatement` is idempotent, so the components that also serve the upload
+         and guided-path routes — which hold a raw `BlueprintAnalysis` and must do their
+         own stripping — stay correct when handed one of these instead. */
+      autonomy: {
+        ...analysis.autonomy,
+        rationale: autonomyStatement(analysis.autonomy.rationale),
+      },
       security: analysis.security,
       // Passed through untouched, like the two metrics: doc 2 §8's coverage is the
       // engine's own grouping, and the view model has nothing to add to it.
@@ -110,11 +152,17 @@ function metricsFor(analysis: BlueprintAnalysis, community: CommunitySignals): M
     {
       key: "autonomy",
       label: "Autonomy",
-      // §8.1 scores the *share* of the graph that runs unattended; the discrete 1–4
-      // level is the same number bucketed, and both are shown.
+      // §8.1 scores the *share* of the graph that runs unattended. The class is that
+      // share bucketed and named, and the class is what a surface prints; this value
+      // exists so the six metrics sit on one axis, and the two autonomy renderers on
+      // the blueprint page both refuse to draw it as a length (doc 2 §1.1).
       value: Math.round(analysis.autonomy.fraction * 100),
       source: "auto",
-      detail: analysis.autonomy.rationale,
+      // The engine's sentence, less the band ordinal it ends on: this `detail` is printed
+      // verbatim under the row by `MetricBars` and inside the radar's caption, and doc 2
+      // §1.1 keeps that ordinal off every surface. `autonomyStatement` drops the number
+      // and keeps the arithmetic, so the row still shows its working.
+      detail: autonomyStatement(analysis.autonomy.rationale),
     },
     {
       key: "efficacy",

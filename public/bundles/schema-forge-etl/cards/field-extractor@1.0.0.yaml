@@ -17,6 +17,8 @@ spec: >-
   the next step can act on, and an invented one is a plausible record rather than a true one.
 agent: Extractor
 tools: []
+mcp: []
+skill: skills/field-extractor.md
 params:
   temperature: 0
   max_tokens: 2048
@@ -31,6 +33,9 @@ outputs:
     description: One object per document, field name to extracted value, with the source span.
 dependencies:
   - document-intake
+cannot:
+  - paraphrase a value it copies
+  - invent a field the document does not state
 
 requires_human: false
 risk_markers: []

@@ -16,6 +16,8 @@ spec: >-
   many there are in total. A criterion you were unable to evaluate has not held.
 agent: Acceptance tester
 tools: []
+mcp: []
+skill: skills/acceptance-tester.md
 params:
   stop_on_first_failure: false
 
@@ -37,6 +39,8 @@ dependencies:
   - spec-planner
   - code-builder
   - targeted-debugger
+cannot:
+  - quote a criterion in the evidence it emits
 
 requires_human: false
 risk_markers: []

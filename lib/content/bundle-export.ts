@@ -47,6 +47,7 @@ import {
   type OntologyTerm,
   type ResolvedBlueprint,
 } from "@/lib/core";
+import { autonomyStatement } from "@/lib/format";
 import { ONTOLOGY_EXTENSIONS_FILE } from "./ontology-file";
 
 /* --------------------- the layout --------------------- */
@@ -229,6 +230,38 @@ export function localTermsUsed(input: BundleExportInput): OntologyTerm[] {
   return [...found.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 
+/** One node and the skill document its card names. */
+export interface SkillPointer {
+  nodeId: string;
+  ref: CardRef;
+  skill: string;
+}
+
+/**
+ * Every `skill` a node of this blueprint points at, in graph order.
+ *
+ * The field is a pointer and the engine reads nothing at the other end of it
+ * (`lib/core/card/schema.ts`), so no skill document is part of a bundle and none is
+ * written here. That is the whole reason this function exists: 51 of the archive's cards
+ * name a path like `skills/planner.md`, the folder DarkPrint hands out carries no such
+ * file, and a README that lists the four files in the folder and says nothing about the
+ * fifth kind leaves the reader to discover a dangling path on their own. The README turns
+ * the list below into the set of documents they have to supply.
+ *
+ * Not deduplicated by ref: the interesting unit is the node, because that is what the
+ * reader has to write a document for, and two nodes pinning the same card are one file
+ * pointed at twice — which the list shows by repeating the path.
+ */
+export function skillPointers(input: BundleExportInput): SkillPointer[] {
+  const out: SkillPointer[] = [];
+  for (const node of input.blueprint.nodes) {
+    const skill = node.card.skill;
+    if (skill === undefined) continue;
+    out.push({ nodeId: node.nodeId, ref: node.ref, skill });
+  }
+  return out;
+}
+
 /**
  * The cards this blueprint pins, deduplicated and sorted by ref.
  *
@@ -266,8 +299,10 @@ function pinnedCards(input: BundleExportInput): ExportedCard[] {
  * collects anything. Everything numeric in it comes from the engine, and the two
  * scores are quoted rather than paraphrased (doc 1 §8.3).
  *
- * Doc 2 §1.1 governs the score section. An autonomy level is a description of what
- * this factory automates and where a person stands in it. The human nodes are named
+ * Doc 2 §1.1 governs the score section. The autonomy class is a description of what
+ * this factory automates and where a person stands in it, and it is a name rather than
+ * an ordinal: "level" belongs to the security scale and to the 1-to-5 organisational
+ * ladder, which are different scales about different subjects. The human nodes are named
  * because §8.3 requires the working to be visible, and named in the engine's own
  * neutral sentence.
  */
@@ -358,6 +393,40 @@ export function bundleReadme(input: BundleExportInput): string {
     "",
   );
 
+  /* ---- the pointers this folder does not resolve ---- */
+  const skills = skillPointers(input);
+  if (skills.length > 0) {
+    push(
+      ...wrap(
+        [
+          skills.length === 1
+            ? "One card in this bundle names a skill document."
+            : `${skills.length} of the nodes in this bundle name a skill document.`,
+          "There is no `skills/` directory above and there is not meant to be: DarkPrint stores the",
+          "pointer and reads nothing at the other end of it, so a skill document is never part of a",
+          "bundle. The paths are relative to the repository you run this factory from, and writing the",
+          "documents is yours to do.",
+        ].join(" "),
+      ),
+      "",
+    );
+    const skillColumn = Math.max(...skills.map((s) => s.nodeId.length)) + 3;
+    push("```");
+    for (const pointer of skills) push(`${pointer.nodeId.padEnd(skillColumn)}${pointer.skill}`);
+    push("```", "");
+    push(
+      ...wrap(
+        [
+          "Nothing here needs them to run. Every node in `factory.dot` carries its card's `spec` inline",
+          "as the prompt its agent receives, so a runner given this folder and nothing else has the",
+          "whole instruction for every node. A skill document adds a capability to one agent; what the",
+          "blueprint decides is who is wired to whom.",
+        ].join(" "),
+      ),
+      "",
+    );
+  }
+
   /* ---- the node table ---- */
   push("## The nodes", "");
   push("| node | card | phase |", "| --- | --- | --- |");
@@ -369,8 +438,13 @@ export function bundleReadme(input: BundleExportInput): string {
 
   /* ---- the two computed scores, quoted ---- */
   push("## What DarkPrint computed", "");
-  push(`Autonomy level ${analysis.autonomy.level}.`, "");
-  push(`> ${analysis.autonomy.rationale}`, "");
+  /* The class, and the engine's sentence without the band ordinal it ends on. The README
+     travels further than any page on the site — it is the file that stays behind in
+     somebody's repository — so doc 2 §1.1's rule about the ordinal holds here more than
+     anywhere, not less. The arithmetic survives, so the quote can still be checked
+     against a local re-run. */
+  push(`Autonomy: ${analysis.autonomy.label}.`, "");
+  push(`> ${autonomyStatement(analysis.autonomy.rationale)}`, "");
 
   const humans = analysis.autonomy.contributions.filter((c) => c.requiresHuman);
   if (humans.length > 0) {
@@ -409,14 +483,17 @@ export function bundleReadme(input: BundleExportInput): string {
     );
   }
   push(
-    "Both numbers come from the topology and the cards, with nothing executed. These are the files",
-    "that produced them, so the same arithmetic on your side gives the same two numbers.",
+    "Both readings come from the topology and the cards, with nothing executed. These are the files",
+    "that produced them, so the same arithmetic on your side gives the same class and the same",
+    "security level.",
     "",
   );
-  // Doc 2 §1.1, stated where the number is, in its own paragraph rather than as a
-  // qualifier tacked onto the arithmetic.
+  // Doc 2 §1.1, stated where the reading is, in its own paragraph rather than as a
+  // qualifier tacked onto the arithmetic. "Level" is not written of autonomy anywhere in
+  // this file: the class is a name, and the one ordinal a reader meets on DarkPrint is
+  // the 1-to-5 organisational ladder, which describes an organisation and not a graph.
   push(
-    "The autonomy level says what this factory automates and where a person stands in it.",
+    "The autonomy class says what this factory automates and where a person stands in it.",
     "Nothing here is a grade.",
     "",
   );

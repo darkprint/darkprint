@@ -6,7 +6,7 @@ import { ALL_COMBINATIONS } from "@/components/build/choices";
 import { GuidedPath } from "@/components/build/GuidedPath";
 
 export const metadata: Metadata = {
-  title: "Build a dark factory",
+  title: "Build your own factory",
   description:
     "The guided path. Start from the five-node starter, make three choices that stay in the artefact, and finish holding a factory that runs from your own command line. Every score on the page is computed by the same static analysis the registry uses. Nothing is uploaded and there is nowhere to save it yet.",
 };
@@ -32,6 +32,18 @@ export const metadata: Metadata = {
    through `loadBundle` here, and a single error-severity diagnostic
    fails the build, the same way `lib/content/read.ts` refuses to
    publish a broken archive bundle.
+
+   ── Why the page is not called "Build a dark factory" ──
+   Choice 2 offers a named approver at the release boundary, and
+   every combination that takes it resolves to a conditional graph
+   with a human node in it. A title promising a dark factory would
+   therefore be a promise one of the three choices breaks, and doc 2
+   §5.3 is explicit that the approver must not read as a penalty:
+   "chi sceglie l'approvazione umana non deve vedere niente che
+   somigli a una penalità". The deliverable of the hour is a factory
+   the reader owns and can run. Which class the analyzer reads off it
+   is the reader's design decision, stated in the panel beside the
+   graph and never set as the target of the page.
    ============================================================ */
 
 /** The same vocabulary the path builds in the browser, so the two agree by construction. */
@@ -95,7 +107,7 @@ export default function BuildPage() {
         <SectionHeading
           className="mt-3"
           as="h1"
-          title="Build a dark factory"
+          title="Build your own factory"
           lead="About an hour. You start from the five-node starter, take it apart, make three choices that stay in the artefact, and finish holding a factory that runs from your own command line."
         />
         <p className="mt-4 text-[15px] leading-relaxed text-muted">

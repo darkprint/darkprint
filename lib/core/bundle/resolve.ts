@@ -19,6 +19,13 @@
       cards the graph pins, so it is established here with the
       rest of the join rather than by a metric — and it is
       descriptive, never a score (doc 2 §1.1).
+
+   A third rule arrived with the card's `cannot` field:
+   **declared prohibitions** (doc 2 §3). A `cannot` entry naming an
+   ontology `data-type` is a statement that the node must not
+   receive it, and that statement is about edges, so this file is
+   the only place it can be held against anything. See
+   `checkProhibitions`.
    ============================================================ */
 
 import {
@@ -496,6 +503,68 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
     return wired;
   };
 
+  /**
+   * Doc 2 §3, made checkable. A `cannot` entry that names a `data-type` is a declared
+   * prohibition on receiving it, so an edge into this node that can carry the type puts
+   * the card and the graph in contradiction.
+   *
+   * **Which types the edge can carry.** When the author pinned the output with `out=`,
+   * that port alone: they have said what this edge is for, and the whole engine already
+   * treats a pin as authoritative. With no pin, every output the source card declares,
+   * because the pairing chosen a few lines above is this resolver's reading of an
+   * under-specified edge and not a statement by the author. The same edge would otherwise
+   * be a leak to doc 3 §4.1, which reads `criteria-leak` at node level, and clean to this
+   * check, and two isolation checks disagreeing about one edge is worse than either
+   * answer.
+   *
+   * **What counts as carrying it.** `isA(carried, prohibited)`, which is reflexive, so an
+   * exact match holds and a narrower type does too: a node refusing `structured` is
+   * refusing the `acceptance-criteria` that specialise it. The subsumption runs one way
+   * only. An output typed `any` asserts nothing about its contents and is not read as a
+   * violation of a narrower prohibition, since inventing one would fire on every
+   * permissive card in the archive.
+   *
+   * Entries naming no `data-type` are skipped in silence. They are free text addressed to
+   * a reader (`NodeCard.cannot`), and `card/unknown-term` deliberately does not fire on
+   * them either.
+   */
+  const checkProhibitions = (stmt: DotEdgeStmt, from: ResolvedNode, to: ResolvedNode): void => {
+    const prohibitions = to.card.cannot;
+    if (prohibitions.length === 0) return;
+
+    const pinnedOut = attr(stmt.attrs, "out");
+    // A pin that names nothing has already been reported as `bundle/port-mismatch`; it
+    // leaves no carrier here rather than falling back to every output, which would answer
+    // a question about a typo with a second, unrelated error.
+    const carriers =
+      pinnedOut === undefined
+        ? from.card.outputs
+        : from.card.outputs.filter((p) => p.name === pinnedOut.trim());
+    if (carriers.length === 0) return;
+
+    const seen = new Set<string>();
+    for (const entry of prohibitions) {
+      // Deprecated spellings resolve to their successor (§6.2), so an old id still names
+      // the prohibition it always named.
+      const term = ontology.resolve(entry, "data-type");
+      if (term === undefined) continue;
+      if (seen.has(term.term.id)) continue;
+      const carried = carriers.find((p) => ontology.isA(p.type, term.term.id));
+      if (carried === undefined) continue;
+      seen.add(term.term.id);
+      ds.push(
+        error(
+          "bundle/prohibition-violated",
+          `Card \`${to.ref}\` declares that \`${to.nodeId}\` cannot receive \`${entry}\`, and edge ${describeEdge(stmt)} carries that type.`,
+          {
+            hint: `\`${from.nodeId}\` declares the output \`${carried.name}\` (\`${carried.type}\`). Remove the edge, or take \`${entry}\` out of \`cannot\` on \`${to.card.id}\`.`,
+            location: { ...edgeLocation(stmt), nodeId: to.nodeId, cardRef: to.ref },
+          },
+        ),
+      );
+    }
+  };
+
   const edges: ResolvedEdge[] = [];
   for (const stmt of dot.edges) {
     const edge: ResolvedEdge = { source: stmt.source, target: stmt.target, attrs: stmt.attrs };
@@ -510,6 +579,7 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
       const wired = wirePorts(stmt, from, to);
       if (wired.fromPort !== undefined) edge.fromPort = wired.fromPort;
       if (wired.toPort !== undefined) edge.toPort = wired.toPort;
+      checkProhibitions(stmt, from, to);
     }
     edges.push(edge);
   }

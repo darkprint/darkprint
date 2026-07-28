@@ -16,6 +16,9 @@ spec: >-
   the announcement; if the version cannot be cut, announce nothing and report the failure.
 tools:
   - messaging
+mcp:
+  - slack
+skill: skills/dataset-publisher.md
 params:
   dataset: forge-records
   announce_channel: data-releases
@@ -27,6 +30,9 @@ inputs:
 outputs: []
 dependencies:
   - record-store
+cannot:
+  - announce a version it has not cut
+  - announce the same version twice
 
 requires_human: false
 risk_markers:

@@ -16,6 +16,8 @@ spec: >-
   depends on a stage that comes after it.
 agent: Planner
 tools: []
+mcp: []
+skill: skills/stage-planner.md
 params:
   max_stages: 8
   temperature: 0.2
@@ -30,6 +32,8 @@ outputs:
     description: The ordered stages, each with its inputs, its exit condition and its checkpoint boundary.
 dependencies:
   - job-intake
+cannot:
+  - order a stage before one it depends on
 
 requires_human: false
 risk_markers: []

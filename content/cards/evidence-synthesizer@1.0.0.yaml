@@ -19,6 +19,8 @@ spec: >-
   the pool and nothing named in `gaps` has been left as it was.
 agent: Synthesizer
 tools: []
+mcp: []
+skill: skills/evidence-synthesizer.md
 params:
   temperature: 0.3
   max_tokens: 2000
@@ -41,6 +43,9 @@ dependencies:
   - vector-recall
   - code-index-search
   - claim-verifier
+cannot:
+  - read the rule the fact-checker judges its citations by
+  - assert anything the retrieved pool will not carry
 
 requires_human: false
 risk_markers: []

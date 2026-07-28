@@ -1,9 +1,9 @@
 "use client";
 
-import type { AutonomyResult, SecurityResult } from "@/lib/core";
+import type { AutonomyResult, Diagnostic, SecurityResult } from "@/lib/core";
 import { shortDigest } from "@/lib/core";
 import type { StarterRunBudget } from "@/lib/starter/variants";
-import { cx } from "@/lib/format";
+import { autonomyStatement, cx } from "@/lib/format";
 
 /* ============================================================
    The panel that never leaves the screen.
@@ -16,9 +16,10 @@ import { cx } from "@/lib/format";
 
    Doc 2 §1.1 decides how the autonomy half is drawn, and it is the
    same reading `AutonomyMeter` and the explainability panel already
-   ship: a bordered token that states the band, no track with an
-   empty half, no colour ramp climbing towards 4, and the space
-   underneath spent on **where the people are**. This one adds the
+   ship: a bordered token that states the class by name, no band
+   ordinal, no track with an empty half, no colour ramp climbing
+   towards 4, and the space underneath spent on **where the people
+   are**. This one adds the
    thing the path needs and a static page does not: when a choice
    moves a number, the panel says what it was. Stated in the same
    type and colour as everything else, because a choice that moves a
@@ -42,15 +43,22 @@ function Band({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * What a number used to be, one choice ago.
+ * What a reading used to be, one choice ago.
  *
- * Neutral by construction: one word, one figure, muted, no arrow and no direction. An
- * arrow pointing down at an autonomy level would be the verdict doc 2 §1.1 rules out, and
- * an arrow pointing up would be the reward.
+ * Neutral by construction: one word, one reading, muted, no arrow and no direction. An
+ * arrow pointing down at an autonomy reading would be the verdict doc 2 §1.1 rules out,
+ * and an arrow pointing up would be the reward.
+ *
+ * `value` is a string for autonomy — the class, "was Closed-loop" — and a number for
+ * security, which is a scale with a top and prints as one. Autonomy's band never reaches
+ * this component: a marker reading "was level 4" beside a graph the reader has just put a
+ * person into is the standing reference to a rejected alternative that doc 2 §1.1 rules
+ * out, and it is the ordinal that makes it read that way rather than the marker.
  */
-function Was({ value }: { value: number | undefined }) {
+function Was({ value }: { value: string | number | undefined }) {
   if (value === undefined) return null;
-  return <span className="font-mono text-[11px] text-dim">was level {value}</span>;
+  const shown = typeof value === "number" ? `level ${value}` : value;
+  return <span className="font-mono text-[11px] text-dim">was {shown}</span>;
 }
 
 function Rationale({ text }: { text: string }) {
@@ -79,6 +87,7 @@ export function ScoreStrip({
   autonomy,
   security,
   budget,
+  errors = [],
   demo = false,
   className,
 }: Omit<ScorePanelProps, "digest" | "previous">) {
@@ -94,8 +103,7 @@ export function ScoreStrip({
       <span className="uppercase tracking-[0.16em] text-dim">Your factory</span>
       {autonomy !== undefined && (
         <span className="text-muted">
-          autonomy <span className="text-fg">level {autonomy.level}</span>
-          <span className="text-dim"> · {autonomy.label}</span>
+          autonomy <span className="text-fg">{autonomy.label}</span>
         </span>
       )}
       {security !== undefined && (
@@ -106,6 +114,7 @@ export function ScoreStrip({
       {budget !== undefined && (
         <span className="text-dim">{budget.modelCallsAtMost} model calls at most</span>
       )}
+      {errors.length > 0 && <span className="text-signal">does not resolve</span>}
       {demo && <span className="ml-auto text-signal">demonstration on</span>}
     </div>
   );
@@ -118,8 +127,24 @@ export interface ScorePanelProps {
   digest?: string;
   /** What the cap bounds, from `starterRunBudget`. Arithmetic, never an estimate. */
   budget?: StarterRunBudget;
-  /** The levels before the last choice, when they differ from the current ones. */
-  previous?: { autonomy?: number; security?: number };
+  /**
+   * The readings before the last choice, when they differ from the current ones.
+   *
+   * Autonomy arrives as its class and security as its level, which is the same split the
+   * two halves of the panel print — see `PathLevels`.
+   */
+  previous?: { autonomy?: string; security?: number };
+  /**
+   * What the engine refused about the graph on screen, from `BuildState.errors`.
+   *
+   * Empty for all eighty combinations the path offers. Non-empty while §5.4's switch is
+   * on, because the builder declares `cannot: [acceptance-criteria]` and the demonstration
+   * edge carries that type: `bundle/prohibition-violated`, and the bundle does not
+   * resolve. A panel that answered that with "security level 2" and nothing else would be
+   * putting a reading on a graph `/upload` refuses to score and `lib/content/read.ts`
+   * refuses to load, next to a card in pane 4 that says the bundle failed.
+   */
+  errors?: readonly Diagnostic[];
   /** True while doc 2 §5.4's switch is on, so the panel can say what it is describing. */
   demo?: boolean;
   className?: string;
@@ -131,6 +156,7 @@ export function ScorePanel({
   digest,
   budget,
   previous,
+  errors = [],
   demo = false,
   className,
 }: ScorePanelProps) {
@@ -157,10 +183,33 @@ export function ScorePanel({
           a report on the artefact the reader is about to download. */}
       {demo && (
         <p className="rounded border border-dashed border-signal/50 bg-signal/5 px-2.5 py-1.5 text-[11px] leading-relaxed text-muted">
-          <span className="font-mono text-signal">demonstration on</span>. The numbers below
-          describe the graph with the extra edge in it. Your factory is unchanged, and the
-          download does not carry the edge.
+          <span className="font-mono text-signal">demonstration on</span>. The readings
+          below describe the graph with the extra edge in it. Your factory is unchanged,
+          and the download does not carry the edge.
         </p>
+      )}
+
+      {/* What the engine refused, above what it computed. The security level under it is
+          a reading taken on a bundle that does not resolve, and a panel that printed the
+          reading alone would be the one surface on the site scoring a rejected graph. */}
+      {errors.length > 0 && (
+        <div className="flex flex-col gap-2 rounded border border-signal/40 bg-signal/5 px-2.5 py-2">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-signal">
+            <span aria-hidden>✕ </span>does not resolve
+          </span>
+          {errors.map((diagnostic) => (
+            <div key={`${diagnostic.code} ${diagnostic.message}`} className="flex flex-col gap-1">
+              <code className="font-mono text-[11px] text-signal">{diagnostic.code}</code>
+              <span className="text-[11px] leading-relaxed text-muted">
+                {diagnostic.message}
+              </span>
+            </div>
+          ))}
+          <p className="text-[11px] leading-relaxed text-dim">
+            An error is where DarkPrint stops. The readings below are what the analyzer
+            computed on the way there, and no bundle carrying this can be published.
+          </p>
+        </div>
       )}
 
       {/* ---------- autonomy ---------- */}
@@ -177,8 +226,8 @@ export function ScorePanel({
           <>
             <div className="flex flex-wrap items-center gap-2">
               <Band>
-                <span className="sr-only">Autonomy </span>level {autonomy.level}
-                <span className="text-muted">· {autonomy.label}</span>
+                <span className="sr-only">Autonomy class </span>
+                {autonomy.label}
               </Band>
             </div>
             <p className="text-[11px] leading-relaxed text-muted">
@@ -196,7 +245,9 @@ export function ScorePanel({
                 </>
               )}
             </p>
-            <Rationale text={autonomy.rationale} />
+            {/* Less the band ordinal the engine's sentence ends on (doc 2 §1.1); the
+                fraction and the threshold behind the class survive it. */}
+            <Rationale text={autonomyStatement(autonomy.rationale)} />
           </>
         )}
       </div>

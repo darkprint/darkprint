@@ -14,6 +14,8 @@ spec: >-
   the goal, the constraints and that criteria reference. You are the only step that reads the
   queue, so anything you drop or fail to copy across is gone for the remainder of the run.
 tools: []
+mcp: []
+skill: skills/task-intake.md
 params:
   source: task-queue
   request_schema: task-request@1
@@ -24,6 +26,8 @@ outputs:
     type: json
     description: The task as the line will see it — goal, constraints, and the criteria set it must clear.
 dependencies: []
+cannot:
+  - forward a request that failed the schema check
 
 requires_human: false
 risk_markers: []

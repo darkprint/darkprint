@@ -18,6 +18,10 @@ spec: >-
 tools:
   - web-search
   - http-fetch
+mcp:
+  - brave-search
+  - fetch
+skill: skills/web-retriever.md
 params:
   max_results: 8
   timeout_s: 20
@@ -33,6 +37,9 @@ outputs:
     description: Retrieved passages, each with its URL, retrieval timestamp and rank.
 dependencies:
   - retrieval-planner
+cannot:
+  - summarise or rank a page for truth
+  - drop a page it disbelieves
 
 requires_human: false
 risk_markers: []

@@ -16,6 +16,8 @@ spec: >-
   `last_error` and restore nothing further.
 agent: Resume controller
 tools: []
+mcp: []
+skill: skills/bounded-retry.md
 params:
   max_retries: 3
   backoff_ms: 800
@@ -40,6 +42,9 @@ outputs:
     description: The final error, surfaced once the cap is spent instead of being swallowed.
 dependencies:
   - episodic-memory
+cannot:
+  - retry past the declared cap
+  - restore past the last valid stage
 
 requires_human: false
 risk_markers: []

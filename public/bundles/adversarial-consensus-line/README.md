@@ -4,7 +4,7 @@ Two agents solve the same task from opposite temperatures, then a consensus node
 
 ```
 blueprint      adversarial-consensus-line
-bundle digest  sha256:87dfdacdc5f0af4eca81e56dd0e9d5f4eb82aa14bb206a31f13f713bf7ed7d3a
+bundle digest  sha256:644482b6a7c7d2fb1169097a819f5c29a17c4d6214cb5ff20042f4d2c1a5590f
 ontology       v0.1.0
 nodes          8
 cards pinned   8
@@ -48,6 +48,27 @@ stores and scores. `factory.dot` is that same graph prepared for a runner: a syn
 `__start` and `__exit` node, and the prompts inlined. Delete those two nodes and their edges
 and you are back to the topology.
 
+8 of the nodes in this bundle name a skill document. There is no `skills/` directory above and
+there is not meant to be: DarkPrint stores the pointer and reads nothing at the other end of
+it, so a skill document is never part of a bundle. The paths are relative to the repository
+you run this factory from, and writing the documents is yours to do.
+
+```
+task      skills/task-intake.md
+plan      skills/task-decomposer.md
+solverA   skills/conservative-solver.md
+solverB   skills/exploratory-solver.md
+vote      skills/weighted-vote.md
+verify    skills/acceptance-verifier.md
+reopen    skills/bounded-retry.md
+deliver   skills/result-delivery.md
+```
+
+Nothing here needs them to run. Every node in `factory.dot` carries its card's `spec` inline
+as the prompt its agent receives, so a runner given this folder and nothing else has the whole
+instruction for every node. A skill document adds a capability to one agent; what the
+blueprint decides is who is wired to whom.
+
 ## The nodes
 
 | node | card | phase |
@@ -63,18 +84,19 @@ and you are back to the topology.
 
 ## What DarkPrint computed
 
-Autonomy level 4.
+Autonomy: Closed-loop.
 
-> 8 of 8 nodes run unattended, none have a person in the loop — 1.00 > 0.90 → level 4 (Closed-loop).
+> 8 of 8 nodes run unattended, none have a person in the loop — 1.00 > 0.90 → Closed-loop.
 
 Security level 4.
 
 > 4 − 0.00 (no risk marker present across 8 nodes) → 4
 
-Both numbers come from the topology and the cards, with nothing executed. These are the files
-that produced them, so the same arithmetic on your side gives the same two numbers.
+Both readings come from the topology and the cards, with nothing executed. These are the files
+that produced them, so the same arithmetic on your side gives the same class and the same
+security level.
 
-The autonomy level says what this factory automates and where a person stands in it.
+The autonomy class says what this factory automates and where a person stands in it.
 Nothing here is a grade.
 
 ## What gets reported back

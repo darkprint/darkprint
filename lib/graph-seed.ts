@@ -23,6 +23,7 @@ import type {
   FlowNodeSeed,
 } from "@/lib/types";
 import type { NodeCard, OntologyView, ResolvedBlueprint } from "@/lib/core";
+import { parseCardRef } from "@/lib/core";
 import { layeredLayout, type LayoutEdge } from "@/lib/content/layout";
 
 /* --------------------- node kinds --------------------- */
@@ -167,12 +168,32 @@ export function subLabel(card: NodeCard, ontology: OntologyView): string | undef
 
 /* --------------------- the whole graph --------------------- */
 
+/** What the caller knows about the bundle that the bundle cannot say about itself. */
+export interface GraphSeedOptions {
+  /**
+   * True when the cards this bundle pins are published in this registry, so each of
+   * them has a page at `/nodes/<id>` and the schematic can link a node to its card.
+   *
+   * Off by default, and the default is the safe one. Three callers reach this function
+   * and only one of them is looking at the archive: the guided path resolves cards it
+   * generated a moment ago (`<variant>-planner` and friends, ids no page was built
+   * for), and the upload wizard resolves a bundle the reader dropped into the tab. The
+   * node page is statically generated with `dynamicParams = false`, so a link built for
+   * either of those lands on a 404. The resolver cannot tell the three apart, the
+   * caller can, and this is where the caller says so.
+   */
+  cardsInRegistry?: boolean;
+}
+
 /**
  * A resolved blueprint as React Flow wants it: the DOT topology with the layered
  * layout's coordinates bolted on, and the DOT source carried along for the
  * source panel.
  */
-export function graphForBlueprint(bp: ResolvedBlueprint): BlueprintGraphData {
+export function graphForBlueprint(
+  bp: ResolvedBlueprint,
+  options: GraphSeedOptions = {},
+): BlueprintGraphData {
   const { ontology } = bp;
   const layout = layeredLayout(
     bp.graph.ids,
@@ -194,6 +215,15 @@ export function graphForBlueprint(bp: ResolvedBlueprint): BlueprintGraphData {
     };
     const sub = subLabel(node.card, ontology);
     if (sub !== undefined) seed.sub = sub;
+    /* The version is deliberately dropped. `/nodes/<id>` is keyed on the bare id and
+       resolves it to the newest published version, which is the page a reader wants;
+       the exact pin this bundle holds is stated in the bundle panel beside the
+       schematic, where the digest that makes it meaningful also lives. A ref the
+       grammar does not parse leaves the node unlinked rather than guessing at an id. */
+    if (options.cardsInRegistry === true) {
+      const parsed = parseCardRef(node.ref);
+      if (parsed !== undefined) seed.cardId = parsed.id;
+    }
     return seed;
   });
 
@@ -221,6 +251,35 @@ export function graphForBlueprint(bp: ResolvedBlueprint): BlueprintGraphData {
     });
 
   return { nodes, edges, dot: bp.dot };
+}
+
+/**
+ * The same graph with the card links taken off its nodes.
+ *
+ * For a container that already reads a click on a node as something of its own.
+ * `graphForBlueprint` puts a `cardId` on every seed of an archive bundle, and
+ * `AgentNode` turns the name of a node carrying one into an anchor, so a pane that reads
+ * a click as doc 2 §5.1's synchronised selection would hand a pointer two answers to the
+ * same gesture: the anchor navigates to `/nodes/<id>` and the pane's own handler never
+ * runs, because the anchor stops the click from bubbling. The blueprint page passes one
+ * graph to both a canvas that wants the links and a four-pane view that cannot have
+ * them, which is how that happened.
+ *
+ * So the pane that claims the click says so here, in one place a test can reach, rather
+ * than the invariant resting on which caller happened to ask for the ids. Everything else
+ * about the graph is carried through unchanged: the same nodes in the same order, the
+ * same edges, the same DOT.
+ */
+export function withoutCardLinks(graph: BlueprintGraphData): BlueprintGraphData {
+  return {
+    ...graph,
+    nodes: graph.nodes.map((node) => {
+      if (node.cardId === undefined) return node;
+      const withoutLink = { ...node };
+      delete withoutLink.cardId;
+      return withoutLink;
+    }),
+  };
 }
 
 /* --------------------- requirements --------------------- */

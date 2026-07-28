@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { AUTONOMY_LABELS } from "@/lib/format";
+import { AUTONOMY_LABELS, autonomyStatement } from "@/lib/format";
 import { AUTHOR_LIST } from "@/lib/data/users";
 import { COMMUNITY } from "@/lib/data/community";
 import { parseCardRef } from "@/lib/core";
@@ -183,7 +183,12 @@ describe("derived metrics", () => {
       const autonomy = bp.metrics[0];
       expect(autonomy.source).toBe("auto");
       expect(autonomy.value).toBe(Math.round(analysis.autonomy.fraction * 100));
-      expect(autonomy.detail).toBe(analysis.autonomy.rationale);
+      // The engine's sentence, less the band ordinal it ends on. `MetricBars` and the
+      // radar's caption print this `detail` verbatim and doc 2 §1.1 keeps that ordinal
+      // off every surface; `format.test.ts` holds the transform to dropping the number
+      // and nothing else.
+      expect(autonomy.detail).toBe(autonomyStatement(analysis.autonomy.rationale));
+      expect(autonomy.detail).not.toMatch(/level\s*\d/);
 
       const security = bp.metrics[5];
       expect(security.source).toBe("auto");

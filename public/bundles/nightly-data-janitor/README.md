@@ -4,7 +4,7 @@ An unattended overnight cleanup line: extract deltas, normalize, validate agains
 
 ```
 blueprint      nightly-data-janitor
-bundle digest  sha256:315dd1e583da986dda9a508de8bf51b079b651e435460a816d131fc4edc1b52e
+bundle digest  sha256:843031b27c3764dcd7316ac441287466a68cbb69444475403761e2512020ded5
 ontology       v0.1.0
 nodes          7
 cards pinned   7
@@ -48,6 +48,26 @@ stores and scores. `factory.dot` is that same graph prepared for a runner: a syn
 `__start` and `__exit` node, and the prompts inlined. Delete those two nodes and their edges
 and you are back to the topology.
 
+7 of the nodes in this bundle name a skill document. There is no `skills/` directory above and
+there is not meant to be: DarkPrint stores the pointer and reads nothing at the other end of
+it, so a skill document is never part of a bundle. The paths are relative to the repository
+you run this factory from, and writing the documents is yours to do.
+
+```
+raw         skills/delta-intake.md
+extract     skills/delta-extractor.md
+normalize   skills/field-normalizer.md
+validate    skills/schema-gate.md
+repair      skills/record-repairer.md
+store       skills/record-store.md
+publish     skills/warehouse-publisher.md
+```
+
+Nothing here needs them to run. Every node in `factory.dot` carries its card's `spec` inline
+as the prompt its agent receives, so a runner given this folder and nothing else has the whole
+instruction for every node. A skill document adds a capability to one agent; what the
+blueprint decides is who is wired to whom.
+
 ## The nodes
 
 | node | card | phase |
@@ -62,9 +82,9 @@ and you are back to the topology.
 
 ## What DarkPrint computed
 
-Autonomy level 4.
+Autonomy: Closed-loop.
 
-> 7 of 7 nodes run unattended, none have a person in the loop — 1.00 > 0.90 → level 4 (Closed-loop).
+> 7 of 7 nodes run unattended, none have a person in the loop — 1.00 > 0.90 → Closed-loop.
 
 Security level 1.
 
@@ -77,10 +97,11 @@ What was charged:
 - Node "Delta Extractor" (extract) reaches outside the graph (tool "sql") and hands its output straight to "normalize" with no validation node in between.
 - Node "Record Store" (store) reaches outside the graph (tool "sql") and hands its output straight to "publish" with no validation node in between.
 
-Both numbers come from the topology and the cards, with nothing executed. These are the files
-that produced them, so the same arithmetic on your side gives the same two numbers.
+Both readings come from the topology and the cards, with nothing executed. These are the files
+that produced them, so the same arithmetic on your side gives the same class and the same
+security level.
 
-The autonomy level says what this factory automates and where a person stands in it.
+The autonomy class says what this factory automates and where a person stands in it.
 Nothing here is a grade.
 
 ## What gets reported back

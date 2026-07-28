@@ -18,6 +18,8 @@ spec: >-
   exactly one plan and none has two.
 agent: Search planner
 tools: []
+mcp: []
+skill: skills/retrieval-planner.md
 params:
   max_strands: 3
   temperature: 0.2
@@ -32,6 +34,8 @@ outputs:
     description: One query plan per corpus, each with its terms, filters and result budget.
 dependencies:
   - question-intake
+cannot:
+  - phrase a strand in terms of what another is expected to find
 
 requires_human: false
 risk_markers: []

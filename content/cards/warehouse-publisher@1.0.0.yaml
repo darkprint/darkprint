@@ -17,6 +17,10 @@ spec: >-
   that was not clean, the digest has been posted.
 tools:
   - messaging
+mcp:
+  - postgres
+  - slack
+skill: skills/warehouse-publisher.md
 params:
   refresh_views: true
   digest_channel: nightly-ops
@@ -29,6 +33,8 @@ inputs:
 outputs: []
 dependencies:
   - record-store
+cannot:
+  - advance the watermark before the views have refreshed
 
 requires_human: false
 risk_markers:

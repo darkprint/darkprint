@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { cx } from "@/lib/format";
+import { HUMAN_PRESENCE_MARK, cx } from "@/lib/format";
 import { nodeHref } from "@/lib/href";
 import { Badge } from "@/components/ui/Badge";
 import { TagPill } from "@/components/ui/TagPill";
@@ -125,9 +125,13 @@ export function NodeCardSummary({
           <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
           {risk === 0 ? "no risk markers" : `${risk} risk marker${risk === 1 ? "" : "s"}`}
         </span>
+        {/* Violet, from `HUMAN_PRESENCE_MARK`. Doc 2 §1.1: the row states where a person
+            acts, and the node page it links to says the same thing in the same colour. */}
         {node.requiresHuman && (
-          <span className="inline-flex items-center gap-1 text-signal">
-            <span aria-hidden>⏸</span> human in the loop
+          <span
+            className={cx("inline-flex items-center gap-1", HUMAN_PRESENCE_MARK.className)}
+          >
+            <span aria-hidden>{HUMAN_PRESENCE_MARK.glyph}</span> human in the loop
           </span>
         )}
       </div>

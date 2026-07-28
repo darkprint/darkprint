@@ -42,6 +42,13 @@ export const STARTER_SLUG = "starter-software-factory";
  * `criteria-leak` at node level rather than per port — any edge at all from the criteria
  * producer into a node whose work is judged establishes it — so this is the edge, whatever
  * it is labelled.
+ *
+ * Two checks answer for it, and the page quotes both. The builder's card declares
+ * `cannot: [acceptance-criteria]`, so the edge is a `bundle/prohibition-violated` error
+ * and the bundle is refused; and the security metric, run anyway, charges `criteria-leak`
+ * against the same node. The first is a rule the card's author wrote and the engine
+ * enforces, the second is what the analyzer reads off a topology nobody declared anything
+ * about.
  */
 export const ABSENT_EDGE = {
   source: "planner",
@@ -57,6 +64,24 @@ export interface ScoredGraph {
   graph: BlueprintGraph;
   security: SecurityResult;
   diagnostics: readonly Diagnostic[];
+}
+
+/**
+ * The error-severity half of what the engine said about a graph.
+ *
+ * Exists because the leaked variant stopped being a graph that merely scores badly.
+ * `code-builder@1.0.0` declares `cannot: [acceptance-criteria]`, the added edge carries
+ * that type, and `bundle/prohibition-violated` is an error: the bundle does not resolve.
+ * `loadBundle` still returns an analysis, because doc 1 §2 resolves as far as it can and a
+ * partial score with the missing pieces named is more use than nothing — but every other
+ * surface on this site treats an error as the end of the matter. `/upload` refuses to put
+ * a number on it, `lib/content/read.ts` throws on it, and the node page tells the reader
+ * in as many words that an edge violating a prohibition means the bundle does not resolve.
+ * A page arguing that isolation is checkable cannot be the one place that computes the
+ * check and prints the score instead.
+ */
+export function errorsOf(scored: ScoredGraph): readonly Diagnostic[] {
+  return scored.diagnostics.filter((d) => d.severity === "error");
 }
 
 export interface IsolationDemo {

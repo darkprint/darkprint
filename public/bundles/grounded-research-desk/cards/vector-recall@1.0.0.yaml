@@ -15,6 +15,9 @@ spec: >-
   padding the budget with weaker matches is worse than returning less.
 tools:
   - vector-store
+mcp:
+  - qdrant
+skill: skills/vector-recall.md
 params:
   k: 12
   similarity_threshold: 0.7
@@ -29,6 +32,8 @@ outputs:
     description: The k nearest passages, nearest first, with document id and similarity score.
 dependencies:
   - retrieval-planner
+cannot:
+  - write this run's own text back into the store
 
 requires_human: false
 risk_markers: []

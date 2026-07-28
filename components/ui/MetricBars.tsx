@@ -23,10 +23,11 @@ export function MetricBars({
 }: {
   metrics: Metric[];
   /**
-   * The band, when the caller has it (`blueprint.autonomy`). The autonomy row states
-   * "level 2 · Supervised" in place of the 0–100 figure the other rows print. Without
+   * The class, when the caller has it (`blueprint.autonomy`). The autonomy row states
+   * "Supervised" in place of the 0–100 figure the other rows print — the class and not
+   * the band behind it, because doc 2 §1.1 keeps that ordinal off every surface. Without
    * it the row still drops the bar and the number; the engine's own sentence below it
-   * names the level either way.
+   * names the class either way.
    */
   autonomy?: AutonomyInfo;
   className?: string;
@@ -45,8 +46,8 @@ export function MetricBars({
                 {isBand ? (
                   autonomy !== undefined ? (
                     <span className="font-mono text-xs text-fg">
-                      level {autonomy.level}
-                      <span className="ml-1 text-muted">· {autonomy.label}</span>
+                      <span className="sr-only">Autonomy class </span>
+                      {autonomy.label}
                     </span>
                   ) : null
                 ) : (

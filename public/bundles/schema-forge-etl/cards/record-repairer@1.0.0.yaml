@@ -17,6 +17,8 @@ spec: >-
   the reason on the record, so the next pass fails on something true instead of on your guess.
 agent: Repair worker
 tools: []
+mcp: []
+skill: skills/record-repairer.md
 params:
   max_iterations: 3
   temperature: 0.1
@@ -35,6 +37,9 @@ outputs:
     description: The record with the objected-to fields rewritten and everything else untouched.
 dependencies:
   - validate
+cannot:
+  - emit a partial record
+  - blank a field out to clear a violation
 
 requires_human: false
 risk_markers: []

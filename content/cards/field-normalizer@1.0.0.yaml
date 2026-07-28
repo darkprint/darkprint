@@ -18,6 +18,8 @@ spec: >-
   has come back three times and drop it instead of sending it round again.
 agent: Normalizer
 tools: []
+mcp: []
+skill: skills/field-normalizer.md
 params:
   locale: en-GB
   max_iterations: 3
@@ -39,6 +41,8 @@ outputs:
 dependencies:
   - extract
   - repair
+cannot:
+  - invent a value to fill a gap
 
 requires_human: false
 risk_markers: []

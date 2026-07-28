@@ -16,6 +16,8 @@ spec: >-
   whatever repairs them.
 agent: Validator
 tools: []
+mcp: []
+skill: skills/schema-gate.md
 params:
   schema_ref: "schema-registry://forge-record@2"
   strict: true
@@ -38,6 +40,8 @@ outputs:
     description: Field-level failures, one entry per breach, for the repair path to work from.
 dependencies:
   - normalize
+cannot:
+  - edit a record to make it conform
 
 requires_human: false
 risk_markers: []

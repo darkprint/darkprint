@@ -132,11 +132,12 @@ export function WhichTasksRemedies() {
               >
                 {EXAMPLE.blueprint.title}
               </Link>{" "}
-              is that graph, published as it is. It reads at autonomy level{" "}
-              {EXAMPLE.blueprint.analysis.autonomy.level}, which states where its{" "}
+              is that graph, published as it is. It reads{" "}
+              {EXAMPLE.blueprint.analysis.autonomy.label}, which states where its{" "}
               {EXAMPLE.people === 1 ? "person stands" : "people stand"} and states nothing
-              else. The band is a description of a design decision. It is never a mark,
-              and nothing on this site ranks or rewards a blueprint for landing higher.
+              else. The class is a description of a design decision. It is never a mark,
+              and nothing on this site ranks the four or rewards a blueprint for reading
+              as one of them rather than another.
             </p>
           )}
         </li>

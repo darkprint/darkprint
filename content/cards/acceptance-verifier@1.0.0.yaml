@@ -15,6 +15,8 @@ spec: >-
   missed, record which one and stop the run there rather than passing the work anywhere.
 agent: Verifier
 tools: []
+mcp: []
+skill: skills/acceptance-verifier.md
 params:
   criteria_ref: acceptance-criteria@1
   strict: true
@@ -33,6 +35,8 @@ outputs:
     description: The candidate unchanged, now signed off against the named criteria set.
 dependencies:
   - assemble-stage
+cannot:
+  - pass a candidate that missed a criterion
 
 requires_human: false
 risk_markers: []

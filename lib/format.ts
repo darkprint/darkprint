@@ -62,6 +62,59 @@ export const AUTONOMY_LABELS: Record<1 | 2 | 3 | 4, string> = {
   4: "Closed-loop",
 };
 
+/**
+ * The engine's autonomy sentence, with the band ordinal taken out.
+ *
+ * `AutonomyResult.rationale` ends in the threshold rule that produced the band — "… —
+ * 1.00 > 0.90 → level 4 (Closed-loop)." — because doc 1 §8.3 asks the metric to print
+ * arithmetic a reader can check against the source. That ordinal is the one value doc 2
+ * §1.1 keeps off every surface: it collides with the organisational maturity ladder
+ * `SectionLevels` teaches, which is a different scale about a different subject, and a
+ * reader who meets "4" twice has no way to tell the two apart.
+ *
+ * So the arithmetic survives and the ordinal does not: "… — 1.00 > 0.90 → Closed-loop."
+ * The fraction, the comparison and the class all still say exactly what they said, and
+ * the sentence stays checkable against the engine's own output — the class is what the
+ * band is *called*, so nothing is lost but the number.
+ *
+ * A presentation transform, deliberately in the app layer and not in `lib/core`: the
+ * ordinal is what the bands compare and sort on and the engine is right to keep it and
+ * right to show its working. Deciding what a reader is shown is the one thing `lib/core`
+ * does not do. `format.test.ts` runs this over every published blueprint, so a change to
+ * the engine's wording that left an ordinal standing fails there rather than in a build.
+ */
+export function autonomyStatement(rationale: string): string {
+  return rationale.replace(/→\s*level\s*[1-4]\s*\(([^)]*)\)/g, "→ $1");
+}
+
+/**
+ * The mark every *indicator* uses for "a person acts here".
+ *
+ * Doc 2 §1.1: "L'indicatore di autonomia mostra dove sono gli interventi umani, non quanto
+ * manca alla piena autonomia." An indicator row painted in `--color-signal` says the
+ * opposite of that. Signal is the site's alarm colour and it is spent on defects — the
+ * `criteria-leak` marker, the error count on the download step, the degraded security
+ * reading, the top penalty tier — so a human node wearing it is read as one more of those,
+ * which is the evaluative reading the principle rules out. Violet says the same thing and
+ * charges nothing for it, and the glyph and the words carry the meaning anyway: colour
+ * never carries it alone.
+ *
+ * One constant rather than four literals because the rule was already written twice in
+ * the repo (`components/blueprint/Explainability.tsx`, `app/nodes/[...id]/page.tsx`) and
+ * still lost on four surfaces that never read either comment.
+ *
+ * `NODE_KIND_META.gate` keeps `--color-signal` and is not a counterexample. That is the
+ * schematic's node-kind palette, which colours a *drawing* by what each node is, and the
+ * explainability panel names the distinction where it matters.
+ */
+export const HUMAN_PRESENCE_MARK = {
+  glyph: "⏸",
+  /** For a row coloured by class name. */
+  className: "text-violet",
+  /** The same colour for a row coloured by inline style. */
+  color: "var(--color-violet)",
+} as const;
+
 /** Per-node-kind presentation used by the schematic + legends. */
 export const NODE_KIND_META: Record<
   AgentNodeKind,

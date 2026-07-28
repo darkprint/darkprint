@@ -5,6 +5,7 @@ import { BlueprintGraph } from "@/components/graph/BlueprintGraph";
 import { useRovingListbox } from "@/components/panes/listbox";
 import type { PaneFocus, PaneModel } from "@/components/panes/model";
 import { NODE_KIND_META, cx } from "@/lib/format";
+import { withoutCardLinks } from "@/lib/graph-seed";
 import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
 
 /* ============================================================
@@ -60,6 +61,14 @@ export function ChoiceGraphPane({
   onSelectAbsence: (absenceId: string) => void;
   className?: string;
 }) {
+  /**
+   * This pane reads a click on a node as doc 2 §5.7's choice, so no node in it may also
+   * be a link out of the page. The guided path's bundles are generated in the browser and
+   * their cards have no page, so `graphForBlueprint` leaves the ids off already; stating
+   * it here means the pane does not depend on that staying true somewhere else.
+   */
+  const drawn = useMemo(() => withoutCardLinks(graph), [graph]);
+
   const kinds = useMemo(() => {
     const out: Record<string, BlueprintGraphData["nodes"][number]["kind"]> = {};
     for (const node of graph.nodes) out[node.id] = node.kind;
@@ -156,7 +165,7 @@ export function ChoiceGraphPane({
           in. */}
       <div onClick={onGraphClick} onKeyDown={onGraphKeyDown} className="p-3">
         <BlueprintGraph
-          graph={graph}
+          graph={drawn}
           id={graphId}
           highlighted={focus.graphNodeId}
           height={340}

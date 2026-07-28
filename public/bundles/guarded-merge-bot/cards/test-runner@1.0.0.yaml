@@ -19,6 +19,9 @@ agent: Test runner
 tools:
   - ci
   - git
+mcp:
+  - github
+skill: skills/test-runner.md
 params:
   timeout_s: 1800
   max_iterations: 3
@@ -36,6 +39,9 @@ outputs:
     description: The run write-up a maintainer reads — suites, durations, failures, coverage delta.
 dependencies:
   - review-drafter
+cannot:
+  - edit the code under test
+  - re-run a failing suite hoping for a different answer
 
 requires_human: false
 risk_markers: []

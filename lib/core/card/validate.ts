@@ -12,6 +12,15 @@
    `type` with `requires_human` unset an error rather than a warning.
    Doc 1 §3.2 added `spec`, the prose the agent actually reads.
 
+   Three later fields land here with no rule of their own: `mcp`
+   and `cannot` default to `[]` and `skill` is optional, and none
+   of the three is checked against the vocabulary. `mcp` names
+   installed servers the ontology does not describe; `cannot` is
+   free text right up until an entry happens to name a
+   `data-type`, and only the graph can tell — so
+   `bundle/prohibition-violated` is raised by `bundle/resolve.ts`,
+   where the edges are.
+
    `phase` is **optional and repeatable**, which supersedes doc 3
    §1's "esattamente 1" on the author's ruling: the five phases
    describe the factory, not every node in it. A card that names
@@ -60,10 +69,13 @@ const KNOWN_KEYS: ReadonlySet<string> = new Set([
   "model",
   "agent",
   "tools",
+  "mcp",
+  "skill",
   "params",
   "inputs",
   "outputs",
   "dependencies",
+  "cannot",
   "requires_human",
   "requiresHuman",
   "risk_markers",
@@ -166,12 +178,24 @@ export function validateCard(value: unknown, opts: ValidateCardOptions): CardVal
     kind: "tool",
     ontology: opts.ontology,
   });
+  // No ontology check, and that is the difference from `tools` one line up. An MCP server
+  // is a process somebody installed and the vocabulary names no such thing, so every entry
+  // here is free text. Defaults to `[]`.
+  const mcp = stringList(read(value, "mcp", ds, file), ds, file);
+  const skill = optionalString(read(value, "skill", ds, file), ds, file);
   const params = readParams(read(value, "params", ds, file), ds, file);
 
   /* 3.3 interfaces */
   const inputs = readPorts(read(value, "inputs", ds, file), opts.ontology, ds, file);
   const outputs = readPorts(read(value, "outputs", ds, file), opts.ontology, ds, file, true);
   const dependencies = stringList(read(value, "dependencies", ds, file), ds, file);
+  // Also unchecked against the ontology, for the opposite reason: an entry here is free
+  // text *unless* it happens to name a `data-type`, in which case `bundle/resolve.ts`
+  // enforces it against the graph. Running `checkTerm` would make `card/unknown-term` fire
+  // on "never opens a shell", which is a legal entry and the one the field was named for.
+  // Nothing about a single card decides which of the two an entry is, so the decision
+  // belongs where the edges are, and this reads the list unaltered. Defaults to `[]`.
+  const cannot = stringList(read(value, "cannot", ds, file), ds, file);
 
   /* 3.4 evaluation metadata */
   const requiresHumanField = read(value, "requires_human", ds, file, "requiresHuman");
@@ -232,10 +256,12 @@ export function validateCard(value: unknown, opts: ValidateCardOptions): CardVal
     action: action ?? "",
     spec: spec ?? "",
     tools,
+    mcp,
     params,
     inputs,
     outputs,
     dependencies,
+    cannot,
     requiresHuman,
     riskMarkers,
     version: version ?? "",
@@ -243,6 +269,7 @@ export function validateCard(value: unknown, opts: ValidateCardOptions): CardVal
   };
   if (model !== undefined) card.model = model;
   if (agent !== undefined) card.agent = agent;
+  if (skill !== undefined) card.skill = skill;
   if (notes !== undefined) card.notes = notes;
   if (author !== undefined) card.author = author;
   if (provenance !== undefined) card.provenance = provenance;

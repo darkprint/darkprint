@@ -12,6 +12,12 @@ import type {
   PhaseCoverage,
   SecurityResult,
 } from "@/lib/core";
+/* Deep path on purpose, and only until `lib/core/index.ts` re-exports it beside
+   `AutonomyResult`. The engine owns the four names and this file is the contract the
+   components read, so it is re-exported below rather than restated. */
+import type { AutonomyClass } from "@/lib/core/analysis/autonomy";
+
+export type { AutonomyClass };
 
 /**
  * How a given metric score is produced.
@@ -44,14 +50,41 @@ export interface Metric {
   detail: string;
 }
 
-/** Autonomy is also surfaced as a discrete 1–4 level per the scoring rubric. */
+/**
+ * The band the doc 3 §6 thresholds land on.
+ *
+ * An internal ordinal. It orders a filter list and it compares, and no surface prints
+ * it: doc 2 §1.1 keeps one number on this site meaning one thing, and the number a
+ * reader already meets is the 1-to-5 organisational maturity ladder, which is a
+ * different scale about a different subject. `AutonomyClass` is what gets rendered.
+ */
 export type AutonomyLevel = 1 | 2 | 3 | 4;
 
+/** What the interface says about a graph's autonomy, taken from the engine's reading. */
 export interface AutonomyInfo {
-  level: AutonomyLevel;
-  /** e.g. "Closed-loop" */
+  /**
+   * The named class, and the value every user-facing surface renders.
+   *
+   * The four names are co-ordinate the way "acyclic" and "cyclic" are. None of them is
+   * the destination of another, nothing sorts on them, and a graph that keeps a person
+   * on a step is a graph whose author decided where a person acts.
+   */
+  autonomyClass: AutonomyClass;
+  /** The class in title case, e.g. "Closed-loop". Ready to drop into a sentence. */
   label: string;
-  /** Short description of what the level means. */
+  /**
+   * No node in this graph waits for a person, so the graph is classed a dark factory.
+   *
+   * A statement of shape. `AutonomyResult.isDarkFactory` counts it from the per-node
+   * contributions: every node runs unattended, never a threshold and never "close". A
+   * graph one gate short of it is a supervised graph, which is a legitimate thing to
+   * be and usually a deliberate one, so no surface may style this as a prize, rank on
+   * it, sort by it or phrase it as a status to reach.
+   */
+  isDarkFactory: boolean;
+  /** The band behind the class. Filtering and ordering only; never rendered. */
+  level: AutonomyLevel;
+  /** Short description of what the class says about the design. */
   blurb: string;
 }
 
@@ -85,6 +118,8 @@ export interface AgentNodeData {
   kind: AgentNodeKind;
   /** Optional sub-label, e.g. the model/tool used. */
   sub?: string;
+  /** Card id behind this node, when that card has a page. See `FlowNodeSeed.cardId`. */
+  cardId?: string;
   [key: string]: unknown;
 }
 
@@ -94,6 +129,19 @@ export interface FlowNodeSeed {
   kind: AgentNodeKind;
   label: string;
   sub?: string;
+  /**
+   * The card id this node instantiates, set only when that card is published in this
+   * registry and therefore has a page at `/nodes/<id>`.
+   *
+   * The ref is in the resolved model either way (`ResolvedNode.ref`), so the presence of
+   * this field is a second fact: whether `/nodes/<id>` exists. `graphForBlueprint` fills
+   * it under `cardsInRegistry`, which only the archive path passes. A graph drawn from a
+   * bundle dropped into the upload wizard, or from the variant cards the guided path
+   * generates, carries ids no page was built for, and a link into a 404 is worse than no
+   * link. `BlueprintGraph` links the node name when it is here and draws plain text when
+   * it is not.
+   */
+  cardId?: string;
   /** Grid-ish position; the graph component scales these. */
   position: { x: number; y: number };
 }

@@ -54,6 +54,7 @@ import {
   starterRunBudget,
   starterSlug,
 } from "@/lib/starter/variants";
+import { autonomyStatement } from "@/lib/format";
 import { ALL_COMBINATIONS, APPROVAL_OPTIONS, OUTPUT_OPTIONS } from "./choices";
 import { buildState, uncappedReading } from "./state";
 import { STEPS } from "./steps";
@@ -201,6 +202,48 @@ describe("the lesson the path is built on", () => {
     expect(clean.bundle.dot).not.toContain("planner  -> builder");
     for (const file of clean.files) expect(file.text).not.toContain("planner  -> builder");
   });
+
+  /**
+   * The other half of what the switch does, which the panel was not reading.
+   *
+   * `code-builder@1.0.0` declares `cannot: [acceptance-criteria]`, so the demonstration
+   * edge does not merely cost security points: it makes the bundle fail to resolve. The
+   * card the reader is looking at in pane 4 says so on its own `notes` — "an edge carrying
+   * the criteria into this node fails the bundle with `bundle/prohibition-violated`,
+   * whatever the prose says" — while the panel beside it reported a level and stopped, so
+   * the two contradicted each other on one screen.
+   *
+   * `BuildState.errors` is what closes that, and it is asserted on all eight variants
+   * rather than on the one the sibling test above uses: the prohibition is a property of
+   * the builder's card, which every variant has its own copy of.
+   */
+  it("refuses the bundle behind the switch, in all eight variants", () => {
+    for (const variant of STARTER_VARIANTS) {
+      const choices = { ...variant, maxIterations: 3 };
+      const clean = buildState(choices, false);
+      const leaked = buildState(choices, true);
+      const where = starterSlug(variant);
+
+      // The artefact resolves. Anything else and the path hands out a broken factory.
+      expect(clean.errors, `${where} clean`).toEqual([]);
+
+      expect(
+        leaked.errors.map((d) => d.code),
+        `${where} leaked`,
+      ).toContain("bundle/prohibition-violated");
+      const violation = leaked.errors.find(
+        (d) => d.code === "bundle/prohibition-violated",
+      );
+      expect(violation?.message).toContain("builder");
+      expect(violation?.message).toContain("acceptance-criteria");
+
+      // `errors` is the error-severity half of `diagnostics` and never a separate list.
+      expect(leaked.errors).toEqual(
+        leaked.diagnostics.filter((d) => d.severity === "error"),
+      );
+      expect(hasErrors(leaked.diagnostics)).toBe(true);
+    }
+  });
 });
 
 /* --------------------- what the cap moves, and what it does not --------------------- */
@@ -306,7 +349,11 @@ function visibleCopy(source: string): string {
 
 describe("autonomy is a description, not a verdict", () => {
   it.each(COPY_FILES)("%s carries no evaluative language about the level", (path) => {
-    const text = readFileSync(join(process.cwd(), path), "utf8").toLowerCase();
+    // Through `visibleCopy`, like the em-dash check below: the rule is about what a reader
+    // sees. A comment quoting §5.3's "must not read as a penalty" is the rule being
+    // honoured, and reading it as a breach would push the next author to stop writing the
+    // reason down.
+    const text = visibleCopy(readFileSync(join(process.cwd(), path), "utf8")).toLowerCase();
     for (const phrase of FORBIDDEN) {
       expect(text, `${path} contains "${phrase}"`).not.toContain(phrase);
     }
@@ -412,10 +459,21 @@ describe("the exported README", () => {
       const readme = state.files.find((file) => file.path === BUNDLE_README);
       expect(readme, starterSlug(variant)).toBeDefined();
       const text = readme?.text ?? "";
-      expect(text, starterSlug(variant)).toContain(state.analysis!.autonomy.rationale);
+      // Autonomy is quoted through `autonomyStatement`: the engine's own sentence less
+      // the band ordinal it ends on (doc 2 §1.1). The counts, the fraction and the
+      // threshold are all still there, so the quote stays checkable against a local run.
+      expect(text, starterSlug(variant)).toContain(
+        autonomyStatement(state.analysis!.autonomy.rationale),
+      );
       expect(text, starterSlug(variant)).toContain(state.analysis!.security.rationale);
       expect(text, starterSlug(variant)).toContain(state.blueprint!.digest);
       expect(text.toLowerCase(), starterSlug(variant)).not.toContain("out of 4");
+      // The class carries the reading; the band behind it never reaches the file the
+      // reader takes away.
+      expect(text, starterSlug(variant)).toContain(
+        `Autonomy: ${state.analysis!.autonomy.label}.`,
+      );
+      expect(text, starterSlug(variant)).not.toMatch(/autonomy[^.\n]{0,24}level\s*\d/i);
     }
   });
 

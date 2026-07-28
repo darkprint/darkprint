@@ -17,6 +17,8 @@ spec: >-
   transformed set and the same diff, because a replayed attempt is exactly that.
 agent: Stage workers
 tools: []
+mcp: []
+skill: skills/transform-stage.md
 params:
   timeout_s: 300
   temperature: 0.1
@@ -36,6 +38,8 @@ outputs:
 dependencies:
   - ingest-stage
   - bounded-retry
+cannot:
+  - emit a partial set
 
 requires_human: false
 risk_markers: []

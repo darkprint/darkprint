@@ -16,6 +16,8 @@ spec: >-
   with the reason it was dropped.
 agent: Stage workers
 tools: []
+mcp: []
+skill: skills/assemble-stage.md
 params:
   output_format: bundle
   timeout_s: 240
@@ -30,6 +32,8 @@ outputs:
     description: The finished artefact plus the trace of which stages contributed which part of it.
 dependencies:
   - transform-stage
+cannot:
+  - emit a half-built bundle
 
 requires_human: false
 risk_markers: []

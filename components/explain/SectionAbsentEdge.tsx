@@ -8,6 +8,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import {
   ABSENT_EDGE,
   ADDED_DOT_LINE,
+  errorsOf,
   type IsolationDemo,
 } from "./starter-isolation";
 
@@ -51,16 +52,26 @@ function Figure({
   graph,
   id,
   title,
-  score,
-  scoreColor,
+  verdict,
+  verdictColor,
   caption,
 }: {
   graph: BlueprintGraphData;
   /** Distinct React Flow instance name — this is the one page that mounts two. */
   id: string;
   title: string;
-  score: string;
-  scoreColor: string;
+  /**
+   * What the engine concluded about this bundle, as the header reads it.
+   *
+   * A security level for the bundle that resolves, and the refusal for the one that does
+   * not. It used to be a score on both, which put "security level 2" in the header of a
+   * bundle carrying an error diagnostic — a number no other surface on the site is
+   * willing to print, and the wrong headline besides: the reason nobody can ship that
+   * graph is that a card said it could not receive what the edge carries, and the reason
+   * shows up before any score does.
+   */
+  verdict: string;
+  verdictColor: string;
   caption: React.ReactNode;
 }) {
   return (
@@ -69,9 +80,9 @@ function Figure({
         <span className={LABEL}>{title}</span>
         <span
           className="font-mono text-[11px] uppercase tracking-[0.14em]"
-          style={{ color: scoreColor }}
+          style={{ color: verdictColor }}
         >
-          {score}
+          {verdict}
         </span>
       </div>
       <div className="p-3">
@@ -111,6 +122,16 @@ export function SectionAbsentEdge({ demo }: { demo: IsolationDemo }) {
   const finding = leaked.security.findings[0];
   const penalty = leaked.security.penalties[0];
 
+  // What the engine refused, rather than what it scored. `code-builder@1.0.0` declares
+  // `cannot: [acceptance-criteria]` and the added edge carries exactly that, so the run
+  // that produced the figures below also produced an error and the bundle does not
+  // resolve. This page computes that and used to throw it away; the header of figure 2
+  // now reads the refusal and the block below quotes it. Guarded like every other quote
+  // here: if the card ever drops the prohibition, the page loses this block and keeps the
+  // security reading rather than asserting a refusal nothing produced.
+  const errors = errorsOf(leaked);
+  const refused = errors.length > 0;
+
   return (
     <section id="demonstration" className="bg-surface py-20 sm:py-28">
       <div className="container-page">
@@ -131,8 +152,8 @@ export function SectionAbsentEdge({ demo }: { demo: IsolationDemo }) {
             graph={published.graph}
             id="starter-as-published"
             title="As published"
-            score={`security level ${publishedSecurity.level}`}
-            scoreColor="var(--color-emerald)"
+            verdict={`resolves · security level ${publishedSecurity.level}`}
+            verdictColor="var(--color-emerald)"
             caption={
               <>
                 The planner writes two artefacts: an ordered build plan, and the acceptance
@@ -228,8 +249,12 @@ export function SectionAbsentEdge({ demo }: { demo: IsolationDemo }) {
             graph={leaked.graph}
             id="starter-with-leak"
             title="With one line added to the DOT"
-            score={`security level ${leaked.security.level}`}
-            scoreColor="var(--color-signal)"
+            verdict={
+              refused
+                ? "does not resolve"
+                : `resolves · security level ${leaked.security.level}`
+            }
+            verdictColor="var(--color-signal)"
             caption={
               <>
                 Same manifest, same cards, one edge. This bundle is not in the archive and
@@ -253,6 +278,57 @@ export function SectionAbsentEdge({ demo }: { demo: IsolationDemo }) {
               scored under ontology v{leaked.security.ontologyVersion}
             </span>
           </div>
+
+          {/* The refusal comes first because it comes first: an error ends the matter,
+              and the reading below it is what the analyzer computed on the way there. */}
+          {refused && (
+            <div className="mb-5 flex flex-col gap-3">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal">
+                <span aria-hidden>✕ </span>the bundle does not resolve
+              </span>
+              {errors.map((diagnostic) => (
+                <div
+                  key={`${diagnostic.code} ${diagnostic.message}`}
+                  className="flex flex-col gap-2 border-l-2 border-signal/50 pl-4"
+                >
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <code className="font-mono text-[11px] text-signal">
+                      {diagnostic.code}
+                    </code>
+                    {diagnostic.location?.edge !== undefined && (
+                      <span className="font-mono text-[11px] text-dim">
+                        edge {diagnostic.location.edge.source} →{" "}
+                        {diagnostic.location.edge.target}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm leading-relaxed text-fg">{diagnostic.message}</p>
+                  {diagnostic.hint !== undefined && (
+                    <p className="text-xs leading-relaxed text-muted">
+                      <span className="font-mono text-dim">hint </span>
+                      {diagnostic.hint}
+                    </p>
+                  )}
+                </div>
+              ))}
+              <p className="max-w-3xl text-sm leading-relaxed text-muted">
+                The builder&apos;s card states which types it will not accept, and the
+                acceptance criteria are on that list. An edge carrying them into it
+                contradicts the card, so the engine refuses the bundle instead of scoring
+                it. That answer needs no weights and no thresholds: one author wrote a rule
+                about their own node and the graph broke it. Publishing this variant is not
+                a matter of a low reading, because DarkPrint will not resolve it at all.
+              </p>
+              <p className="max-w-3xl text-sm leading-relaxed text-muted">
+                The security metric runs anyway and the two sentences below are what it
+                produced, because resolution goes as far as it can and a partial reading
+                with its working shown is what somebody fixing an upload needs. It is a
+                second, independent answer to the same question: the check reads the
+                topology and charges what it finds there, whether or not any card thought
+                to declare anything.
+              </p>
+            </div>
+          )}
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-2">
@@ -297,8 +373,8 @@ export function SectionAbsentEdge({ demo }: { demo: IsolationDemo }) {
 
           <p className="mt-5 max-w-3xl text-sm leading-relaxed text-muted">
             Autonomy does not move. Both graphs run with nobody standing in them and both
-            come out at level {published.autonomy.level}. What the edge changed is what one
-            node gets to see, and the security check is the one that answers for that.
+            come out {published.autonomy.label}. What the edge changed is what one node
+            gets to see, and the security check is the one that answers for that.
           </p>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted">
             Nothing was executed to produce either number. Both are read off the DOT and the

@@ -17,6 +17,9 @@ spec: >-
   push to any ref other than the base branch the approval names.
 tools:
   - git
+mcp:
+  - github
+skill: skills/merge-executor.md
 params:
   strategy: squash
   delete_source_branch: true
@@ -31,6 +34,9 @@ outputs:
     description: The commit the merge produced, with its parents and the branch it landed on.
 dependencies:
   - maintainer-approval
+cannot:
+  - resolve a merge conflict itself
+  - push to any ref other than the base branch the approval names
 
 requires_human: false
 risk_markers:

@@ -17,6 +17,8 @@ spec: >-
   its citations and that figure are on `draft`.
 agent: Resolver
 tools: []
+mcp: []
+skill: skills/resolution-composer.md
 params:
   temperature: 0.3
   max_tokens: 900
@@ -36,6 +38,9 @@ outputs:
 dependencies:
   - classify
   - kb
+cannot:
+  - fill a gap from memory when no reference arrived
+  - present its draft as approved
 
 requires_human: false
 risk_markers: []

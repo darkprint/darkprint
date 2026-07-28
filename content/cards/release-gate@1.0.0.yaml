@@ -15,6 +15,9 @@ spec: >-
   last-minute fix, no substitution of a build you think is better. Emit nothing onward: this is
   the end of the run, and the tag plus the digest are the whole of what it leaves behind.
 tools: []
+mcp:
+  - filesystem
+skill: skills/release-gate.md
 params:
   target: run-releases
   tag_from: run_id
@@ -27,6 +30,9 @@ inputs:
 outputs: []
 dependencies:
   - acceptance-tester
+cannot:
+  - alter the artefact on the way through
+  - release work the tester did not sign off
 
 requires_human: false
 risk_markers: []

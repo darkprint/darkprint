@@ -6,7 +6,7 @@ import { allBlueprints, getRegistry } from "@/lib/content";
 export const metadata: Metadata = {
   title: "Blueprints",
   description:
-    "Browse the DarkPrint registry of autonomous AI factory blueprints — filter by tag, category and autonomy level, and read each pipeline as a graph.",
+    "Browse the DarkPrint registry of AI factory blueprints. Filter by tag, category and autonomy class, and read each pipeline as a graph.",
 };
 
 /**
@@ -20,6 +20,14 @@ export const metadata: Metadata = {
  * "sort by autonomy", which advertised the league table the principle rules out and
  * had also outlived the control: `SortKey` in `GalleryBrowser` is recency, downloads
  * and votes, and autonomy was deliberately dropped from it.
+ *
+ * The lead also has to keep describing the shelf correctly. It used to open "Every dark
+ * factory in the registry", which made a classification into a condition of entry and was
+ * false about three of the nine besides. Doc 2 §1.1 names that exact reading as the
+ * barrier the principle exists to remove — somebody looks at their own pipeline, sees a
+ * manual step, and concludes they are not far enough along to publish. So the count of
+ * graphs with nobody in them is stated as a count, the rest are described by what they do
+ * say, and neither sentence is phrased as a rank.
  *
  * It lives at `app/blueprints/page.tsx`, the sibling of
  * `app/blueprints/[slug]/page.tsx`: a route segment folder holds both its own
@@ -38,13 +46,17 @@ export default function BlueprintsPage() {
   const registry = getRegistry();
   const tags = registry.tags();
   const categories = registry.categories();
+  // Counted off the archive rather than asserted, so the sentence cannot outlive the shelf
+  // it describes. It is a count of a shape, and the clause beside it says what the others
+  // carry instead: doc 2 §1.1 rules out phrasing either group as short of the other.
+  const darkFactories = blueprints.filter((b) => b.autonomy.isDarkFactory).length;
 
   return (
     <div className="container-page py-12 sm:py-16">
       <SectionHeading
         eyebrow="Registry"
         title="Blueprints"
-        lead={`Every dark factory in the registry — ${blueprints.length} complete pipelines you can read as a graph. Narrow the grid by tag, category, the phases a factory covers or the autonomy band it sits in; order it by what is recent, downloaded or upvoted.`}
+        lead={`${blueprints.length} complete pipelines you can read as a graph. ${darkFactories} of them carry no human node and are classed dark factories; the rest name the node where a person acts. Narrow the grid by tag, category, the phases a factory covers or its autonomy class, and order it by what is recent, downloaded or upvoted.`}
         className="mb-10"
       />
       <GalleryBrowser

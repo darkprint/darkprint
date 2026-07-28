@@ -19,6 +19,8 @@ spec: >-
   nothing at all.
 agent: QA checker
 tools: []
+mcp: []
+skill: skills/reply-qa-check.md
 params:
   confidence_threshold: 0.72
   rubric_ref: "support-reply-rubric@2"
@@ -36,6 +38,8 @@ outputs:
     description: The graded score — what the escalation branch reads.
 dependencies:
   - resolution-composer
+cannot:
+  - copy a customer identifier into the score it emits
 
 requires_human: false
 risk_markers:

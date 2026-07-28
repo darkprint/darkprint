@@ -17,9 +17,12 @@
    choice 1, output type   card contents, and the `data-type` on
                            the ports that carry the work. No node,
                            no edge, no metric.
-   choice 2, approval      one node and one edge. Autonomy moves
-                           from 4 to 3, and doc 2 §1.1 governs
-                           every word written about that.
+   choice 2, approval      one node and one edge. The autonomy
+                           class moves from closed-loop to
+                           conditional, and doc 2 §1.1 governs every
+                           word written about that — including the
+                           comments this file writes into the DOT,
+                           which travel inside the download.
    choice 3, iteration cap `params.max_iterations` on the debugger,
                            the sentence of its `spec` that tells the
                            agent when to stop, and that card's
@@ -154,8 +157,13 @@ function manifestFor(choices: StarterVariant, nodeCount: number): BundleManifest
     summary: human
       ? `${summary} One named approver accepts before anything is released.`
       : summary,
+    // Spec part 2 binds this string even though nothing renders it today. It is a
+    // manifest description, and `toBlueprintView` reads exactly that field as the body
+    // copy of a blueprint page (`lib/content/view.ts`), so "reads autonomy level 3 …
+    // level 4" was one call away from being the per-graph number printed beside the
+    // 1-to-5 organisational ladder. The class says the same thing and cannot collide.
     description: human
-      ? `${p.description}\n\nA sixth node holds the run at the release boundary until a person accepts the work. The blueprint reads autonomy level 3 with that node and level 4 without it, and the level records where a person acts.`
+      ? `${p.description}\n\nA sixth node holds the run at the release boundary until a person accepts the work. With that node the blueprint is classed conditional and without it closed-loop, and the class records where a person acts.`
       : p.description,
     category: p.category,
     tags,
@@ -222,9 +230,15 @@ export function starterDot(choices: StarterChoices): string {
   lines.push("");
 
   if (human) {
+    // Doc 2 §1.1 reaches into this comment. It is read twice — in the DOT pane on
+    // /build and in `blueprint.dot` inside the downloaded folder — so an ordinal here is
+    // an autonomy number on a user-facing surface, and "from 4 to 3" frames the person
+    // as a subtraction. The class says the same fact and ranks nothing, which is the
+    // wording the manifest description and the approver card already carry.
     lines.push("  // Doc 2 §5.3: a person accepts the work before it is released. The graph");
-    lines.push("  // changes here and the autonomy level changes with it, from 4 to 3. The");
-    lines.push("  // level records where a person acts in the run.");
+    lines.push("  // changes here and the autonomy class changes with it: with this node the");
+    lines.push("  // blueprint is classed conditional, without it closed-loop. The class records");
+    lines.push("  // where a person acts in the run.");
     lines.push(`  ${pad("tester")} -> ${pad("approver")} [label="approved build"];`);
     lines.push(`  ${pad("approver")} -> ${pad("deployer")} [label="human approval"];`);
   } else {
@@ -413,6 +427,8 @@ export function cardDocument(card: StarterCardSpec): string {
   lines.push(...foldedBlock("spec", card.spec, ""));
   if (card.agent !== undefined) lines.push(`agent: ${yamlString(card.agent)}`);
   lines.push(...listLines("tools", card.tools));
+  lines.push(...listLines("mcp", card.mcp));
+  if (card.skill !== undefined) lines.push(`skill: ${yamlString(card.skill)}`);
   if (card.params !== undefined) {
     lines.push("params:");
     for (const key of Object.keys(card.params)) {
@@ -424,6 +440,7 @@ export function cardDocument(card: StarterCardSpec): string {
   lines.push(...portsLines("inputs", card.inputs));
   lines.push(...portsLines("outputs", card.outputs));
   lines.push(...listLines("dependencies", card.dependencies));
+  lines.push(...listLines("cannot", card.cannot));
   lines.push("");
 
   lines.push(`requires_human: ${card.requiresHuman ? "true" : "false"}`);

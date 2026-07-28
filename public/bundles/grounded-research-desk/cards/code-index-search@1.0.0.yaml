@@ -16,6 +16,9 @@ spec: >-
   five of those coordinates.
 tools:
   - git
+mcp:
+  - git
+skill: skills/code-index-search.md
 params:
   max_hits: 20
   context_lines: 6
@@ -31,6 +34,9 @@ outputs:
     description: Matching snippets, each pinned to a repository, path, line range and commit sha.
 dependencies:
   - retrieval-planner
+cannot:
+  - check anything out of the repositories it searches
+  - write to the index
 
 requires_human: false
 risk_markers: []

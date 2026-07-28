@@ -4,7 +4,7 @@ import type { Blueprint } from "@/lib/types";
 import type { CardVersionRecord } from "@/lib/core";
 import { AUTHOR_LIST, getAuthor } from "@/lib/data";
 import { allBlueprints, allNodeCards, getOntologyView, getRegistry } from "@/lib/content";
-import { compact } from "@/lib/format";
+import { HUMAN_PRESENCE_MARK, compact } from "@/lib/format";
 import { nodeHref } from "@/lib/href";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { Badge } from "@/components/ui/Badge";
@@ -81,7 +81,14 @@ function NodeCardTile({
         <span>
           used in {usedIn} blueprint{usedIn === 1 ? "" : "s"}
         </span>
-        {card.requiresHuman && <span className="text-signal">⏸ human in the loop</span>}
+        {/* Violet, from `HUMAN_PRESENCE_MARK`, like every other row that says where a
+            person acts. Doc 2 §1.1: an author's shelf is the last place a human node
+            should be marked in the colour the site uses for defects. */}
+        {card.requiresHuman && (
+          <span className={HUMAN_PRESENCE_MARK.className}>
+            {HUMAN_PRESENCE_MARK.glyph} human in the loop
+          </span>
+        )}
       </div>
     </Link>
   );

@@ -46,9 +46,14 @@ export function ContentCard({
 
       {/* body */}
       <div className="flex flex-1 flex-col gap-3 p-4">
-        {/* The band is named, not drawn as a gauge (doc 2 §1.1), and it comes with the
+        {/* The class is named and no number is drawn (doc 2 §1.1), and it comes with the
             engine's own per-node reading so the tile can say how many nodes hand control
-            back to a person instead of how far the graph is from running unattended. */}
+            back to a person rather than how far the graph is from running unattended.
+            A graph with nobody in it is classed a dark factory on the same row, in the
+            same chrome: the grid must read as a shelf of designs, and a tile carrying a
+            second plain token is a tile that says one more thing about itself. The grid
+            it sits in offers autonomy as a filter and never as a sort, so nothing here
+            gathers those tiles at the top. */}
         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
           <KindBadge kind={item.kind} />
           <AutonomyMeter

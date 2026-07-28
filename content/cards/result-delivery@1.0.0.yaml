@@ -13,6 +13,9 @@ spec: >-
   without re-running the line. Emit nothing onward: this is the last step of the run, so
   deliver only what you were actually handed and alter none of it.
 tools: []
+mcp:
+  - filesystem
+skill: skills/result-delivery.md
 params:
   destination: run-artifacts
   include_trace: true
@@ -24,6 +27,8 @@ inputs:
 outputs: []
 dependencies:
   - acceptance-verifier
+cannot:
+  - alter the result it was handed
 
 requires_human: false
 risk_markers: []

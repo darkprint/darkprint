@@ -186,6 +186,53 @@ function comparePhases(
   if (sameMembers && previous.join(" ") !== next.join(" ")) push("patch", "`phase` entries were reordered");
 }
 
+/**
+ * `cannot`, whose two directions are the reverse of every other list on the card.
+ *
+ * `compareList` reads a list as a *claim*: adding to it claims more (minor) and dropping
+ * from it claims less, which breaks no wiring (patch). A prohibition is not a claim about
+ * what the node can do, it is a constraint on what may be wired into it, so both
+ * directions invert.
+ *
+ * **Adding is major.** It narrows the contract. A blueprint that pinned this card and ran
+ * clean can start raising `bundle/prohibition-violated` on an edge nobody touched, which
+ * is exactly the "breaks something a blueprint pinned" test §4 reserves major for. Whether
+ * the entry is an ontology `data-type` — enforced — or free text is not consulted: the
+ * vocabulary can grow a term that turns yesterday's free text into today's rule, and a
+ * bump level that changed under the card's feet would be worse than one that is
+ * occasionally strict.
+ *
+ * **Withdrawing is minor.** It widens what the node accepts, the way `requires_human`
+ * going true → false does. Nothing that resolved before stops resolving.
+ *
+ * A pure reorder claims the same set in a different sequence and falls under §4's "patch
+ * otherwise".
+ */
+function compareCannot(
+  previous: readonly string[],
+  next: readonly string[],
+  push: (level: Reason["level"], message: string) => void,
+): void {
+  const before = new Set(previous);
+  const after = new Set(next);
+  for (const entry of next) {
+    if (!before.has(entry)) {
+      push("major", `prohibition \`${entry}\` was declared, which narrows what the node accepts`);
+    }
+  }
+  for (const entry of previous) {
+    if (!after.has(entry)) push("minor", `prohibition \`${entry}\` was withdrawn`);
+  }
+
+  const sameMembers =
+    previous.length === next.length &&
+    previous.every((v) => after.has(v)) &&
+    next.every((v) => before.has(v));
+  // Joined on a newline, which a `cannot` entry cannot contain: entries are free text and
+  // a space would make ["a b"] and ["a", "b"] compare equal.
+  if (sameMembers && previous.join("\n") !== next.join("\n")) push("patch", "`cannot` entries were reordered");
+}
+
 /** The part of a card that decides its identity, for the "did anything at all change" check. */
 function contentSignature(card: NodeCard): string {
   const payload: Record<string, unknown> = { ...card };
@@ -197,14 +244,28 @@ function contentSignature(card: NodeCard): string {
  * Which bump the change from `previous` to `next` demands (design doc §4).
  *
  * MAJOR — the card breaks something a blueprint pinned: a port removed, renamed or
- * retyped, an input that became required, the node's `type` or `id` changed, or
- * `requires_human` flipped false → true. The last is a judgement call: it does not break
- * the wiring, but it invalidates every autonomy score already computed against the card,
- * and invalidating a published result is exactly what a major bump is for.
+ * retyped, an input that became required, the node's `type` or `id` changed,
+ * `requires_human` flipped false → true, or an entry *added* to `cannot`. The last two are
+ * judgement calls. `requires_human` does not break the wiring, but it invalidates every
+ * autonomy score already computed against the card, and invalidating a published result is
+ * exactly what a major bump is for. A new `cannot` entry narrows the contract: an edge
+ * that resolved clean yesterday can raise `bundle/prohibition-violated` today with nobody
+ * having touched the graph, which is the definition of breaking a blueprint that pinned
+ * this card. `compareCannot` carries the rest of the reasoning.
  *
- * MINOR — the declared surface *grew*: an optional port, an output, a tool, a param
- * key, a risk marker, a dependency, `spec`, `requires_human` true → false, or a change to
- * the set of declared phases. `spec` is one judgement call here: doc 1 §3.2 makes it the
+ * MINOR — the declared surface *grew*: an optional port, an output, a tool, an MCP server,
+ * a param key, a risk marker, a dependency, `spec`, `skill`, `requires_human` true →
+ * false, a `cannot` entry *withdrawn*, or a change to the set of declared phases.
+ *
+ * `mcp` follows `tools` exactly, since both list something the node requires of its
+ * environment: adding one grows what the card asks for, dropping one asks for less and
+ * lands in "patch otherwise". `skill` follows `spec` instead of `model`: doc 2 §3 makes
+ * the skill document the definition of the agent's behaviour, so pointing at a different
+ * one, or at one for the first time, changes what the node does while every port, type and
+ * param a blueprint declared against stays where it was. Withdrawing the pointer is the
+ * same size of edit in the other direction and is minor too.
+ *
+ * `spec` is the original judgement call here: doc 1 §3.2 makes it the
  * instruction the agent actually executes, so rewriting it changes what the node *does*
  * while every port, type and param a blueprint declared against stays exactly where it
  * was — behaviour moved, the interface did not. That is the definition of minor, and it is
@@ -225,7 +286,7 @@ function contentSignature(card: NodeCard): string {
  * PATCH — everything else, per §4's "patch otherwise": wording (`name`, `action`,
  * `notes`, `ontology_version`, a port description), a param's value, a reordering, a
  * relaxed `required`, a different `model`/`agent`, and anything *withdrawn* from
- * `tools`, `risk_markers`, `dependencies` or `params` — a card that claims less breaks
+ * `tools`, `mcp`, `risk_markers`, `dependencies` or `params` — a card that claims less breaks
  * no wiring a blueprint declared against it.
  */
 export function inferBump(previous: NodeCard, next: NodeCard): BumpAnalysis {
@@ -267,6 +328,17 @@ export function inferBump(previous: NodeCard, next: NodeCard): BumpAnalysis {
     },
     push,
   );
+  compareList(
+    previous.mcp,
+    next.mcp,
+    {
+      added: (v) => `MCP server \`${v}\` was added`,
+      removed: (v) => `MCP server \`${v}\` was removed`,
+      reordered: "`mcp` entries were reordered",
+    },
+    push,
+  );
+  compareCannot(previous.cannot, next.cannot, push);
   compareList(
     previous.riskMarkers,
     next.riskMarkers,
@@ -323,6 +395,13 @@ export function inferBump(previous: NodeCard, next: NodeCard): BumpAnalysis {
   // paragraphs, and a diff belongs in the UI, not in a one-line reason.
   if (previous.spec !== next.spec) {
     push("minor", "`spec` changed — the instruction handed to the agent is different");
+  }
+  // Same reasoning as `spec` and the same level: the skill document is where the agent's
+  // behaviour is defined, so repointing it, setting it or dropping it changes what the node
+  // does without moving anything a blueprint wired against. The path is short enough to
+  // quote, unlike a spec.
+  if (previous.skill !== next.skill) {
+    push("minor", `\`skill\` changed: ${showText(previous.skill)} → ${showText(next.skill)}`);
   }
   if (previous.action !== next.action) {
     push("patch", "`action` wording changed");

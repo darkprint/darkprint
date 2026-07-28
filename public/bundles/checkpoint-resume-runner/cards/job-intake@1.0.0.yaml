@@ -14,6 +14,8 @@ spec: >-
   references to its payload and the run id you minted, and nothing beyond those three. You are
   done when that record is emitted — do not begin any of the work the job describes.
 tools: []
+mcp: []
+skill: skills/job-intake.md
 params:
   idempotency_key: job_id
   max_payload_kb: 512
@@ -24,6 +26,9 @@ outputs:
     type: json
     description: The submitted job — its goal, its payload references and the run id assigned here.
 dependencies: []
+cannot:
+  - begin any of the work the job describes
+  - open a second run for a job id already in flight
 
 requires_human: false
 risk_markers: []

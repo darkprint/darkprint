@@ -17,6 +17,10 @@ spec: >-
 tools:
   - vector-store
   - git
+mcp:
+  - qdrant
+  - git
+skill: skills/runbook-resolver.md
 params:
   k: 3
   min_score: 0.4
@@ -31,6 +35,8 @@ outputs:
     description: The matched runbook at a pinned revision, preconditions and steps intact.
 dependencies:
   - intent-router
+cannot:
+  - resolve a runbook at any revision but the one current when the incident opened
 
 requires_human: false
 risk_markers: []

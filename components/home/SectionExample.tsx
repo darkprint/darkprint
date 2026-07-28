@@ -105,8 +105,12 @@ export function SectionExample() {
               />
             </div>
             <p className="border-t border-line px-4 py-3 font-mono text-[11px] leading-relaxed text-dim">
-              {bp.cardRefs.length} pinned cards · {shortDigest(bp.digest)} · autonomy
-              level {bp.analysis.autonomy.level} · security level{" "}
+              {/* The autonomy class, never the band behind it: this line sits four
+                  screens under `SectionLevels`, which is where the reader has just
+                  learned to read a small integer as a rung on the organisational ladder.
+                  Doc 2 §1.1's second head, on the one page where it would bite hardest. */}
+              {bp.cardRefs.length} pinned cards · {shortDigest(bp.digest)} · autonomy{" "}
+              {bp.analysis.autonomy.label} · security level{" "}
               {bp.analysis.security.level}
             </p>
           </div>

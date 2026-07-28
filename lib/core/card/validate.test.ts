@@ -63,10 +63,12 @@ describe("validateCard — the minimal card", () => {
       action: "Draft a candidate solution for the sub-task",
       spec: "Read the sub-task on the `task` input and write one candidate solution to `draft`.",
       tools: [],
+      mcp: [],
       params: {},
       inputs: [{ name: "task", type: "text" }],
       outputs: [{ name: "draft", type: "json" }],
       dependencies: [],
+      cannot: [],
       requiresHuman: false,
       riskMarkers: [],
       version: "1.0.0",
@@ -79,9 +81,11 @@ describe("validateCard — the minimal card", () => {
     expect(Object.keys(card ?? {}).sort()).toEqual(
       [
         "action",
+        "cannot",
         "dependencies",
         "id",
         "inputs",
+        "mcp",
         "name",
         "ontologyVersion",
         "outputs",
@@ -127,6 +131,8 @@ describe("validateCard — a fully populated card", () => {
     model: "claude-opus",
     agent: "reviewer",
     tools: ["shell", "http-fetch"],
+    mcp: ["filesystem", "github"],
+    skill: "skills/auditor.md",
     params: {
       retries: 3,
       threshold: 0.75,
@@ -140,6 +146,7 @@ describe("validateCard — a fully populated card", () => {
     ],
     outputs: [{ name: "verdict", type: "status", description: "pass or fail" }],
     dependencies: ["solver-a", "berti/criteria-store"],
+    cannot: ["code", "never edits the repository it audits"],
     // Doc 3 §3 constrains only one direction: a human type forces the flag, a non-human
     // type may still set it. `validation` with a person signing off is a legal card.
     requires_human: true,
@@ -164,6 +171,8 @@ describe("validateCard — a fully populated card", () => {
       model: "claude-opus",
       agent: "reviewer",
       tools: ["shell", "http-fetch"],
+      mcp: ["filesystem", "github"],
+      skill: "skills/auditor.md",
       params: {
         retries: 3,
         threshold: 0.75,
@@ -177,6 +186,9 @@ describe("validateCard — a fully populated card", () => {
       ],
       outputs: [{ name: "verdict", type: "status", description: "pass or fail" }],
       dependencies: ["solver-a", "berti/criteria-store"],
+      // Both spellings of a prohibition survive the round trip in the order written. The
+      // first names a `data-type` and the resolver checks it; the second is for a reader.
+      cannot: ["code", "never edits the repository it audits"],
       requiresHuman: true,
       riskMarkers: ["arbitrary-code-execution", "unvalidated-external-access"],
       notes: "Runs the project's own test suite.",
@@ -743,6 +755,131 @@ describe("validateCard — spec", () => {
     const { card, diagnostics } = validateCard({ ...minimal(), spec }, opts);
     expect(diagnostics).toEqual([]);
     expect(card?.spec).toBe(spec);
+  });
+});
+
+/* ============================================================
+   mcp, skill and cannot
+   ============================================================ */
+
+describe("validateCard — mcp", () => {
+  it("defaults to an empty list", () => {
+    const { card, diagnostics } = validateCard(minimal(), opts);
+    expect(diagnostics).toEqual([]);
+    expect(card?.mcp).toEqual([]);
+  });
+
+  it("keeps the server names in the order they were written", () => {
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), mcp: ["postgres", "filesystem"] },
+      opts,
+    );
+    expect(diagnostics).toEqual([]);
+    expect(card?.mcp).toEqual(["postgres", "filesystem"]);
+  });
+
+  it("does not check a server name against the ontology", () => {
+    // An MCP server is a process somebody installed and the vocabulary names no such
+    // thing, so `card/unknown-term` on one would be a complaint about a legal card.
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), mcp: ["some-server-nobody-has-heard-of"] },
+      opts,
+    );
+    expect(diagnostics).toEqual([]);
+    expect(card?.mcp).toEqual(["some-server-nobody-has-heard-of"]);
+  });
+
+  it("stays independent of `tools`", () => {
+    // Two questions, two fields. `tools` says what the node may do, `mcp` says which
+    // server supplies it, and a card may answer either without the other.
+    const serverOnly = validateCard({ ...minimal(), mcp: ["filesystem"] }, opts);
+    expect(serverOnly.card?.tools).toEqual([]);
+    const capabilityOnly = validateCard({ ...minimal(), tools: ["file-io"] }, opts);
+    expect(capabilityOnly.card?.mcp).toEqual([]);
+  });
+
+  it("reports a non-list and a non-string entry as bad types", () => {
+    expect(codes(validateCard({ ...minimal(), mcp: "filesystem" }, opts).diagnostics)).toEqual([
+      "card/bad-type",
+    ]);
+    expect(codes(validateCard({ ...minimal(), mcp: [1] }, opts).diagnostics)).toEqual([
+      "card/bad-type",
+    ]);
+  });
+});
+
+describe("validateCard — skill", () => {
+  it("is absent rather than undefined when the card names none", () => {
+    const { card } = validateCard(minimal(), opts);
+    expect(card && "skill" in card).toBe(false);
+  });
+
+  it("keeps the path verbatim", () => {
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), skill: "skills/planner.md" },
+      opts,
+    );
+    expect(diagnostics).toEqual([]);
+    expect(card?.skill).toBe("skills/planner.md");
+  });
+
+  it("reports a non-string as a bad type", () => {
+    expect(codes(validateCard({ ...minimal(), skill: 3 }, opts).diagnostics)).toEqual([
+      "card/bad-type",
+    ]);
+  });
+});
+
+describe("validateCard — cannot", () => {
+  it("defaults to an empty list", () => {
+    const { card, diagnostics } = validateCard(minimal(), opts);
+    expect(diagnostics).toEqual([]);
+    expect(card?.cannot).toEqual([]);
+  });
+
+  it("accepts an entry naming an ontology data-type", () => {
+    // The enforced spelling. Whether the graph honours it is a question about edges, so
+    // `bundle/resolve.ts` answers it and this file only reads the list.
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), cannot: ["acceptance-criteria"] },
+      opts,
+    );
+    expect(diagnostics).toEqual([]);
+    expect(card?.cannot).toEqual(["acceptance-criteria"]);
+  });
+
+  it("accepts free text, which no check will ever fire on", () => {
+    // The field would be unusable if this were an error: "never opens a shell" is a
+    // legitimate prohibition addressed to a reader, and the vocabulary has no term for it.
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), cannot: ["never opens a shell", "does not contact the network"] },
+      opts,
+    );
+    expect(diagnostics).toEqual([]);
+    expect(card?.cannot).toEqual(["never opens a shell", "does not contact the network"]);
+  });
+
+  it("does not raise card/unknown-term on an entry the vocabulary does not define", () => {
+    const { diagnostics } = validateCard({ ...minimal(), cannot: ["not-a-term-at-all"] }, opts);
+    expect(codes(diagnostics)).not.toContain("card/unknown-term");
+  });
+
+  it("holds both spellings in one list, in the order written", () => {
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), cannot: ["never opens a shell", "acceptance-criteria"] },
+      opts,
+    );
+    expect(diagnostics).toEqual([]);
+    expect(card?.cannot).toEqual(["never opens a shell", "acceptance-criteria"]);
+  });
+
+  it("reports a non-list and a non-string entry as bad types", () => {
+    expect(
+      codes(validateCard({ ...minimal(), cannot: "acceptance-criteria" }, opts).diagnostics),
+    ).toEqual(["card/bad-type"]);
+    expect(codes(validateCard({ ...minimal(), cannot: [null] }, opts).diagnostics)).toEqual([
+      "card/bad-type",
+    ]);
   });
 });
 

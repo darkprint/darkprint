@@ -232,7 +232,7 @@ export default function OntologyPage() {
               node that both builds and repairs stands in two. Which phases a blueprint
               has nodes in is read off its cards and shown on the blueprint as a
               statement of scope — <em>this factory covers planning, implementation and
-              testing</em> — in the same way the autonomy level is, not as a checklist
+              testing</em> — in the same way the autonomy class is, not as a checklist
               with two boxes left empty. Nothing on DarkPrint scores a blueprint for the
               phases it leaves to somebody else, and nothing scores a node for standing
               outside them.

@@ -17,6 +17,8 @@ spec: >-
   and never weaken a criterion to make it easier to meet.
 agent: Planner
 tools: []
+mcp: []
+skill: skills/spec-planner.md
 
 inputs:
   - name: request
@@ -30,6 +32,9 @@ outputs:
     type: acceptance-criteria
     description: The conditions the finished work must satisfy, one per line, each machine-decidable.
 dependencies: []
+cannot:
+  - write any of the code it plans
+  - weaken a criterion to make it easier to meet
 
 requires_human: false
 risk_markers: []
@@ -39,7 +44,10 @@ notes: >-
   criteria producer to the node whose artefact they judge, and the analyzer reads that path at
   node level — so any edge at all from this node into an `implementation` node establishes the
   marker, whichever port it carries. The builder is therefore handed its brief when the graph is
-  instantiated, and nothing leaves this node except the criteria, which go to the tester.
+  instantiated, and nothing leaves this node except the criteria, which go to the tester. The
+  other end of that gap is written down too: `code-builder@1.0.0` lists `acceptance-criteria`
+  under `cannot`, so an edge from here into the builder is refused by the resolver as well as
+  charged by the analyzer.
 
 version: 1.0.0
 author: orin

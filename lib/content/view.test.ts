@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import { CORE_ONTOLOGY, loadBundle, ontologyView, type Bundle, type NodeCard } from "@/lib/core";
 import type { CommunitySignals } from "@/lib/data/community";
 
-import { agentNodeKind } from "@/lib/graph-seed";
+import { autonomyStatement } from "@/lib/format";
+import { agentNodeKind, graphForBlueprint, withoutCardLinks } from "@/lib/graph-seed";
 import { toBlueprintView } from "./view";
 
 const ontology = ontologyView(CORE_ONTOLOGY);
@@ -20,10 +21,12 @@ function cardOf(type: string, over: Partial<NodeCard> = {}): NodeCard {
     action: "Stand in for a real card while the mapping is exercised.",
     spec: "Stand in for a real card while the ontology→schematic mapping is exercised, and produce nothing.",
     tools: [],
+    mcp: [],
     params: {},
     inputs: [],
     outputs: [],
     dependencies: [],
+    cannot: [],
     requiresHuman: false,
     riskMarkers: [],
     version: "1.0.0",
@@ -247,5 +250,238 @@ describe("toBlueprintView — the diagnostics passthrough", () => {
       community,
     });
     expect(view.analysis?.diagnostics).toEqual(result.analysis!.diagnostics);
+  });
+});
+
+/* ============================================================
+   Spec part 3 — a node of a rendered graph opens its card, and
+   only where that card has a page.
+
+   The seed carries the id under `cardsInRegistry` and not
+   otherwise. That is the whole guard: `/nodes/[...id]` is
+   statically generated with `dynamicParams = false`, so a link
+   built for a bundle the reader dropped into the upload wizard,
+   or for the variant cards the guided path generates a moment
+   before drawing them, lands on a 404. Only the archive path can
+   promise the page exists, and only the archive path passes the
+   flag.
+   ============================================================ */
+
+describe("graphForBlueprint — the card id on the seed", () => {
+  const bp = loadBundle(PROBE_BUNDLE, { ontology }).blueprint!;
+
+  it("leaves the seed unlinked by default", () => {
+    for (const node of graphForBlueprint(bp).nodes) {
+      expect([node.id, node.cardId]).toEqual([node.id, undefined]);
+    }
+  });
+
+  it("carries the card id, without its version, when the cards are in the registry", () => {
+    const nodes = graphForBlueprint(bp, { cardsInRegistry: true }).nodes;
+    expect(nodes.map((n) => n.cardId)).toEqual(["source", "sink"]);
+    // The bare id is what `/nodes/<id>` is keyed on: it resolves to the newest published
+    // version, and the pin this bundle holds is stated in the bundle panel instead.
+    expect(nodes.every((n) => !(n.cardId ?? "").includes("@"))).toBe(true);
+  });
+
+  it("puts the id on every drawn node of a view-model blueprint", () => {
+    const view = toBlueprintView({
+      blueprint: bp,
+      analysis: loadBundle(PROBE_BUNDLE, { ontology }).analysis!,
+      community,
+    });
+    expect(view.graph.nodes.map((n) => n.cardId)).toEqual(["source", "sink"]);
+  });
+});
+
+/* ============================================================
+   The other half of spec part 3: a pane that claims the click
+   takes the links off first.
+
+   `cardsInRegistry` says the cards have pages. It does **not** say
+   every mount of that graph may draw anchors, and treating it that
+   way shipped a real defect: `app/blueprints/[slug]/page.tsx`
+   hands one archive graph to `BlueprintCanvas`, where the links
+   belong, and to `SynchronisedPanes` → `GraphPane`, whose wrapper
+   reads a click on a node as doc 2 §5.1's selection. `AgentNode`
+   calls `stopPropagation` on the anchor, so on that page a pointer
+   aimed at a node name cancelled the pane's handler and navigated
+   off the blueprint instead of moving the selection across the
+   four panes. Enter on the same link diverged the other way: the
+   pane calls `preventDefault`, so the keyboard selected the node
+   and never navigated.
+
+   The panes that claim the gesture now strip the ids themselves.
+   This is that step, isolated from React so it can be checked.
+   ============================================================ */
+
+describe("withoutCardLinks — the graph a click-claiming pane draws", () => {
+  const bp = loadBundle(PROBE_BUNDLE, { ontology }).blueprint!;
+  const linked = graphForBlueprint(bp, { cardsInRegistry: true });
+
+  it("takes the card id off every node", () => {
+    expect(linked.nodes.map((n) => n.cardId)).toEqual(["source", "sink"]);
+    const stripped = withoutCardLinks(linked);
+    expect(stripped.nodes.map((n) => n.cardId)).toEqual([undefined, undefined]);
+    // Absent, not present-and-empty: `AgentNode` renders the plain name for `undefined`
+    // and would build a link to `/nodes/` for "".
+    for (const node of stripped.nodes) {
+      expect(Object.hasOwn(node, "cardId")).toBe(false);
+    }
+  });
+
+  it("changes nothing else about the drawing", () => {
+    const stripped = withoutCardLinks(linked);
+    expect(stripped.dot).toBe(linked.dot);
+    expect(stripped.edges).toEqual(linked.edges);
+    expect(stripped.nodes.map((n) => n.id)).toEqual(linked.nodes.map((n) => n.id));
+    expect(stripped.nodes.map((n) => n.kind)).toEqual(linked.nodes.map((n) => n.kind));
+    expect(stripped.nodes.map((n) => n.label)).toEqual(linked.nodes.map((n) => n.label));
+    expect(stripped.nodes.map((n) => n.position)).toEqual(
+      linked.nodes.map((n) => n.position),
+    );
+  });
+
+  it("leaves an already unlinked graph alone", () => {
+    const plain = graphForBlueprint(bp);
+    expect(withoutCardLinks(plain)).toEqual(plain);
+  });
+
+  it("does not mutate the graph it was handed", () => {
+    withoutCardLinks(linked);
+    expect(linked.nodes.map((n) => n.cardId)).toEqual(["source", "sink"]);
+  });
+});
+
+/* ============================================================
+   Spec part 2 — the view model states the class and never the
+   number.
+
+   `level` survives on `AutonomyInfo` because a filter list needs a
+   stable order and doc 3 §6's thresholds are arithmetic. What the
+   surfaces read is `autonomyClass`, `label` and `isDarkFactory`,
+   and the last of those is counted from the human nodes rather
+   than read off the band — which is why the two-node probe below
+   and the three-node one beside it are both worth having.
+   ============================================================ */
+
+const YAML_GATE = `
+id: gate
+name: Release gate
+type: human-gate
+phase: deployment
+action: Hold the payload until a person approves the release.
+spec: >-
+  Show the payload you are handed on \`payload\` to the person on duty and wait. Release it
+  onward only once they approve, and stop the run if they refuse.
+tools: []
+params: {}
+inputs:
+  - name: payload
+    type: json
+outputs:
+  - name: approved
+    type: json
+dependencies:
+  - source
+requires_human: true
+risk_markers: []
+version: 1.0.0
+ontology_version: 0.1.0
+`;
+
+/** The probe with a person standing in the middle of it. */
+const STAFFED_BUNDLE: Bundle = {
+  manifest: { ...PROBE_BUNDLE.manifest, slug: "staffed", title: "Staffed" },
+  dot: `digraph staffed {
+  source [card="source@1.0.0"];
+  gate   [card="gate@1.0.0"];
+  sink   [card="sink@1.0.0"];
+  source -> gate;
+  gate -> sink;
+}`,
+  cardFiles: { ...PROBE_BUNDLE.cardFiles, "cards/gate@1.0.0.yaml": YAML_GATE },
+};
+
+describe("toBlueprintView — autonomy as a class", () => {
+  const dark = loadBundle(PROBE_BUNDLE, { ontology });
+  const staffed = loadBundle(STAFFED_BUNDLE, { ontology });
+
+  const viewOf = (r: typeof dark) =>
+    toBlueprintView({ blueprint: r.blueprint!, analysis: r.analysis!, community });
+
+  it("takes the class, the label and the flag straight from the engine", () => {
+    for (const r of [dark, staffed]) {
+      const view = viewOf(r);
+      expect(view.autonomy.autonomyClass).toBe(r.analysis!.autonomy.autonomyClass);
+      expect(view.autonomy.label).toBe(r.analysis!.autonomy.label);
+      expect(view.autonomy.isDarkFactory).toBe(r.analysis!.autonomy.isDarkFactory);
+    }
+  });
+
+  it("classes a graph with no human node a dark factory", () => {
+    const view = viewOf(dark);
+    expect(view.autonomy.isDarkFactory).toBe(true);
+    expect(view.autonomy.autonomyClass).toBe("closed-loop");
+  });
+
+  it("keeps the classification off a graph a person stands in", () => {
+    // Two of three nodes run unattended, so the band is not the top one either. The
+    // point of the pair is that the flag is counted from the human nodes and never read
+    // off the band: `isDarkFactory` is false here because somebody is in the graph, and
+    // it would still be false at a fraction the top band accepts.
+    const view = viewOf(staffed);
+    expect(view.autonomy.isDarkFactory).toBe(false);
+    expect(view.autonomy.autonomyClass).toBe("supervised");
+  });
+
+  it("gives every class a blurb that says what the design does", () => {
+    for (const r of [dark, staffed]) {
+      const { blurb } = viewOf(r).autonomy;
+      expect(blurb.length).toBeGreaterThan(0);
+      // Doc 2 §1.1: nothing implying a maximum, a ranking or a shortfall, and no number
+      // for the 1-to-5 organisational ladder to collide with.
+      expect(blurb).not.toMatch(/out of|level|\blevels?\b|only|fully|achiev|score/i);
+    }
+  });
+
+  it("keeps the band available for ordering and out of everything a reader sees", () => {
+    // The one sanctioned use: a filter list needs a stable order, and the class names
+    // have none of their own. Nothing in `AutonomyInfo` prints it.
+    const view = viewOf(dark);
+    expect(view.autonomy.level).toBe(dark.analysis!.autonomy.level);
+    expect(view.autonomy.label).not.toMatch(/\d/);
+    expect(view.autonomy.blurb).not.toMatch(/\d/);
+  });
+
+  /**
+   * `Blueprint` crosses the server/client boundary — `GalleryBrowser` and
+   * `BlueprintCanvas` are client components — so everything on it is serialised into the
+   * RSC payload of every page that renders one, whether or not a surface prints it. The
+   * engine's raw rationale ends in "→ level 4 (Closed-loop)", so passing it through
+   * would put the band in the shipped HTML of pages that never show it.
+   *
+   * The bridge substitutes the display sentence and nothing else, which the second half
+   * of this test pins: same counts, same fraction, same class, one number fewer.
+   */
+  it("carries an autonomy rationale with no band ordinal in it", () => {
+    for (const r of [dark, staffed]) {
+      const view = viewOf(r);
+      const raw = r.analysis!.autonomy.rationale;
+
+      expect(view.analysis.autonomy.rationale).not.toMatch(/level\s*\d/);
+      expect(view.analysis.autonomy.rationale).toBe(autonomyStatement(raw));
+      // Everything the sentence said other than the ordinal is still in it.
+      expect(view.analysis.autonomy.rationale).toContain(
+        `${r.analysis!.autonomy.autonomousNodes} of ${r.analysis!.autonomy.totalNodes}`,
+      );
+      expect(view.analysis.autonomy.rationale).toContain(r.analysis!.autonomy.label);
+
+      // The rest of the engine's reading is untouched.
+      expect(view.analysis.autonomy.level).toBe(r.analysis!.autonomy.level);
+      expect(view.analysis.autonomy.fraction).toBe(r.analysis!.autonomy.fraction);
+      expect(view.analysis.autonomy.contributions).toEqual(r.analysis!.autonomy.contributions);
+      expect(view.analysis.autonomy.ontologyVersion).toBe(r.analysis!.autonomy.ontologyVersion);
+    }
   });
 });

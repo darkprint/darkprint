@@ -156,6 +156,17 @@ export function BundlePanel({
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">
             Node cards
           </span>
+          {/* Two routes to the same page, and this is the one that is always there. The
+              schematic above links a node by its name, which a reader finds by looking
+              at the drawing; this list is the index, and it names the pinned version
+              next to each row, which the drawing has no room for. Both land on
+              `/nodes/<id>`, which resolves the bare id to the newest published version,
+              so a row pinned to an older one is worth reading with its version in
+              hand. */}
+          <p className="text-xs leading-snug text-dim">
+            One row per drawn node. Each name opens that card, on the schematic above and
+            here, and the version beside it is the one this bundle pins.
+          </p>
           <ul className="flex flex-col divide-y divide-line">
             {nodes.map((node) => (
               <li key={node.nodeId} className="py-2 first:pt-0 last:pb-0">

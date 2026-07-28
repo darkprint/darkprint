@@ -145,7 +145,18 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <KindBadge kind={bp.kind} />
-            <AutonomyMeter autonomy={bp.autonomy} />
+            {/* The per-node reading goes with the class, the way it does on the gallery
+                tile. Without it the meter can only render the half of itself that a graph
+                with nobody in it earns — the dark factory token is gated on the flag, and
+                both counterpart statements are gated on having the contributions — so the
+                header of a supervised blueprint showed one token and the header of a
+                closed-loop one showed two. That is the asymmetry the meter is built to
+                avoid: a graph where a person acts answers with the nodes they act at,
+                which is more said about it rather than less. */}
+            <AutonomyMeter
+              autonomy={bp.autonomy}
+              contributions={bp.analysis.autonomy.contributions}
+            />
           </div>
           <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
             {bp.title}

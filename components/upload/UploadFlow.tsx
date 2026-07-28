@@ -698,8 +698,9 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                     <dl className="grid gap-2 text-xs">
                       <div className="flex gap-2">
                         <dt className="w-24 shrink-0 font-mono text-dim">autonomy</dt>
+                        {/* The class, not the band: "A4" is the same ordinal wearing a
+                            prefix, and doc 2 §1.1 keeps it off every surface. */}
                         <dd className="text-muted">
-                          A{result.analysis.autonomy.level} ·{" "}
                           {result.analysis.autonomy.label} —{" "}
                           {result.analysis.autonomy.autonomousNodes} of{" "}
                           {result.analysis.autonomy.totalNodes} nodes unattended

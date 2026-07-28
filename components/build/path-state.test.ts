@@ -35,13 +35,19 @@ import { STEPS } from "./steps";
 const TESTER: StarterChoices = { output: "python", approval: "tester", maxIterations: 3 };
 const HUMAN: StarterChoices = { ...TESTER, approval: "human" };
 
-/** What the panel reads for one graph. The engine's, never written down here. */
+/**
+ * What the panel reads for one graph. The engine's, never written down here.
+ *
+ * Autonomy is taken as its **class** and not the band behind it, because the class is
+ * what the panel prints and a marker quotes what the reader saw (doc 2 §1.1). The two
+ * are the same fact, so every relation this file asserts holds either way.
+ */
 function levelsOf(choices: StarterChoices, demo = false): PathLevels {
   const state = buildState(choices, demo);
   const analysis = state.analysis;
   expect(analysis, `${choices.output}/${choices.approval} did not resolve`).toBeDefined();
   if (analysis === undefined) throw new Error("unreachable");
-  return { autonomy: analysis.autonomy.level, security: analysis.security.level };
+  return { autonomy: analysis.autonomy.label, security: analysis.security.level };
 }
 
 const testerLevels = levelsOf(TESTER);
@@ -80,8 +86,8 @@ describe("the levels the path compares", () => {
 
 /* --------------------- the marker --------------------- */
 
-describe("the was-level marker", () => {
-  it("annotates the level the choice moved, on the step that moved it", () => {
+describe("the was marker", () => {
+  it("annotates the reading the choice moved, on the step that moved it", () => {
     const chosen = movePath(
       on("approval"),
       { kind: "choices", choices: HUMAN },

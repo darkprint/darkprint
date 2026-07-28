@@ -61,6 +61,7 @@ const EMITTED_BY: Record<DiagnosticCode, string | null> = {
   "bundle/no-exit": "bundle/resolve",
   "bundle/unreachable-node": "bundle/resolve",
   "bundle/ontology-mismatch": "bundle/resolve",
+  "bundle/prohibition-violated": "bundle/resolve",
 
   "attractor/strict-graph": "attractor/lint",
   "attractor/undirected-graph": "attractor/lint",

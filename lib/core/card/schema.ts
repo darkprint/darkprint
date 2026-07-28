@@ -66,6 +66,29 @@ export interface NodeCard {
   agent?: string;
   /** `tool` term ids; `[]` when the node needs none. */
   tools: string[];
+  /**
+   * The MCP servers this node needs, under the names they are registered with on the
+   * machine that runs the graph, such as `filesystem` or `github`.
+   *
+   * Free text by design: an MCP server is a concrete process somebody installed, and the
+   * vocabulary has no term for one. That is what keeps this field apart from `tools`,
+   * which holds `tool` capability terms. `tools` says what the node is permitted to do
+   * and `mcp` says which server supplies it, a node can carry either without the other,
+   * and merging the two would lose the question each of them answers.
+   *
+   * `[]` when the node needs none, which is the ordinary case.
+   */
+  mcp: string[];
+  /**
+   * Where the skill document defining this agent's behaviour lives, as a path inside the
+   * bundle or the repository that carries it, such as `skills/planner.md`.
+   *
+   * A pointer, and nothing in the engine reads what it points at. Doc 2 §3 puts a skill
+   * one level below the graph: a skill hands one agent a capability, while the blueprint
+   * decides who is wired to whom. Absent on a node whose `spec` is the whole of its
+   * instruction, and absence carries no judgement.
+   */
+  skill?: string;
   /** Nested configuration, free-form but JSON-serializable. */
   params: Record<string, JsonValue>;
 
@@ -74,6 +97,31 @@ export interface NodeCard {
   outputs: Port[];
   /** Ids of other cards this one receives data from. */
   dependencies: string[];
+  /**
+   * What this node must never do or receive. The negative half of the interface: `inputs`
+   * and `dependencies` say what arrives, and this says what may not.
+   *
+   * **An entry naming an ontology `data-type` is enforced.** It is a declared prohibition
+   * on receiving that type, and `bundle/resolve.ts` holds the graph to it: an incoming
+   * edge able to carry the type, meaning the type itself or a narrower kind of it, raises
+   * `bundle/prohibition-violated` at error severity, naming the card, the edge and the
+   * type. That is what turns doc 2 §3's isolation argument from prose into something the
+   * engine enforces. `code-builder` declaring `cannot: [acceptance-criteria]` makes the
+   * starter's absent edge a rule the analyzer checks, in place of a convention the author
+   * happened to remember.
+   *
+   * A `data-type` is the only kind of term enforced here, because it is the only kind an
+   * edge carries. An entry naming a `phase`, a `node-type` or a `tool` is read as free
+   * text.
+   *
+   * **An entry naming no ontology term is free text.** It is shown to the reader and
+   * checked by nothing, because the engine has no way to decide "never opens a shell"
+   * against a topology. Writing one is legitimate, and it addresses a reader rather than
+   * the resolver.
+   *
+   * `[]` when the node declares no prohibitions.
+   */
+  cannot: string[];
 
   /* 3.4 evaluation metadata */
   requiresHuman: boolean;

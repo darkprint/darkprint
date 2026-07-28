@@ -17,6 +17,8 @@ spec: >-
   reopened. `conflict` is for real disagreement only — never use it as a second failure exit.
 agent: Verifier
 tools: []
+mcp: []
+skill: skills/acceptance-verifier.md
 params:
   criteria_ref: acceptance-criteria@1
   strict: true
@@ -38,6 +40,9 @@ outputs:
     description: The second exit — the criteria held but the proposals genuinely disagreed.
 dependencies:
   - weighted-vote
+cannot:
+  - pass a candidate that missed a criterion
+  - use `conflict` as a second failure exit
 
 requires_human: false
 risk_markers: []

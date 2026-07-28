@@ -80,10 +80,15 @@ describe("NodeCard shape", () => {
     action: "Draft a candidate solution for the sub-task",
     spec: "Read the sub-task, draft one candidate solution, and return it as JSON on the draft port.",
     tools: [],
+    // `mcp` and `cannot` default to `[]` on the wire and are required on the model, the
+    // way `tools` and `risk_markers` are: an empty list is the answer for a node that
+    // needs no server and declares no prohibition, and it is not an absent one.
+    mcp: [],
     params: {},
     inputs: [{ name: "task", type: "text" }],
     outputs: [{ name: "draft", type: "json" }],
     dependencies: [],
+    cannot: [],
     requiresHuman: false,
     riskMarkers: [],
     version: "1.0.0",
@@ -104,5 +109,32 @@ describe("NodeCard shape", () => {
       params: { retries: 3, backoff: { kind: "exponential", factor: 1.5 }, tags: ["a", null] },
     };
     expect(JSON.parse(JSON.stringify(card.params))).toEqual(card.params);
+  });
+
+  it("carries the three fields the paradigm needs, with `skill` optional", () => {
+    const card: NodeCard = {
+      ...minimal,
+      mcp: ["filesystem", "github"],
+      skill: "skills/solver.md",
+      cannot: ["acceptance-criteria", "never opens a shell"],
+    };
+    expect(card.mcp).toEqual(["filesystem", "github"]);
+    expect(card.skill).toBe("skills/solver.md");
+    // Both spellings of a `cannot` entry live in the same list. The first names an
+    // ontology `data-type` and `bundle/resolve.ts` checks it against the edges; the second
+    // names no term and is read by a person. Neither is a lesser entry.
+    expect(card.cannot).toEqual(["acceptance-criteria", "never opens a shell"]);
+    // `skill` is the only one of the three that may be absent.
+    expect(minimal.skill).toBeUndefined();
+  });
+
+  it("keeps `mcp` and `tools` as separate questions", () => {
+    // `tools` holds `tool` capability terms and says what the node may do; `mcp` names the
+    // concrete servers that supply it. A node can carry either without the other, so the
+    // two are never merged and neither implies the other.
+    const serverOnly: NodeCard = { ...minimal, tools: [], mcp: ["filesystem"] };
+    const capabilityOnly: NodeCard = { ...minimal, tools: ["file-io"], mcp: [] };
+    expect(serverOnly.tools).toEqual([]);
+    expect(capabilityOnly.mcp).toEqual([]);
   });
 });

@@ -3,6 +3,7 @@
 import { useMemo, type KeyboardEvent, type MouseEvent } from "react";
 import { BlueprintGraph } from "@/components/graph/BlueprintGraph";
 import { NODE_KIND_META, cx } from "@/lib/format";
+import { withoutCardLinks } from "@/lib/graph-seed";
 import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
 import { useRovingListbox } from "./listbox";
 import type { PaneFocus, PaneModel } from "./model";
@@ -27,6 +28,17 @@ import type { PaneFocus, PaneModel } from "./model";
    comes back off the rendered node's `data-id`, which React Flow
    writes on every node element, rather than through a prop the
    shared component does not have.
+
+   ── The click is this pane's, so the card links come off ──
+   A node seed of an archive bundle carries a `cardId`, and
+   `AgentNode` draws the name of such a node as an anchor to
+   `/nodes/<id>`. The blueprint page hands the same graph object to
+   the canvas above, which wants those anchors, and to this pane,
+   which cannot have them: the anchor stops the click from bubbling
+   and navigates, so a pointer aimed at a node name left the page
+   instead of moving the selection across the four panes. The pane
+   that claims the gesture strips the ids before drawing, through
+   `withoutCardLinks`, and the index below is unaffected.
    ============================================================ */
 
 export function GraphPane({
@@ -49,6 +61,9 @@ export function GraphPane({
   onSelectAbsence: (absenceId: string) => void;
   className?: string;
 }) {
+  /** What this pane draws: the caller's graph, with every node link taken off it. */
+  const drawn = useMemo(() => withoutCardLinks(graph), [graph]);
+
   const kinds = useMemo(() => {
     const out: Record<string, BlueprintGraphData["nodes"][number]["kind"]> = {};
     for (const node of graph.nodes) out[node.id] = node.kind;
@@ -143,7 +158,7 @@ export function GraphPane({
           depend on that. */}
       <div onClick={onGraphClick} onKeyDown={onGraphKeyDown} className="p-3">
         <BlueprintGraph
-          graph={graph}
+          graph={drawn}
           id={graphId}
           highlighted={focus.graphNodeId}
           height={280}

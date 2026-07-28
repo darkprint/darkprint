@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import type { AutonomyLevel, Blueprint } from "@/lib/types";
+import type { AutonomyClass, Blueprint } from "@/lib/types";
 import { cx } from "@/lib/format";
 import { ContentCard } from "@/components/ui/ContentCard";
 import { PHASE_ORDER, phaseLabel } from "@/components/ui/PhaseCoverage";
@@ -15,6 +15,10 @@ import { PHASE_ORDER, phaseLabel } from "@/components/ui/PhaseCoverage";
  * implicita in cui 4 sta sopra 1." Ordering the registry by band put every blueprint
  * with a person in it at the bottom of the page — a ranking nobody wrote down, applied
  * before the reader had chosen anything. It is a filter now, further down this file.
+ *
+ * The dark factory classification is absent from this list for the same reason and one
+ * more: it is the classification doc 2 §1.1 guards most tightly, and a "dark factories
+ * first" option would be the leaderboard the principle exists to keep off the page.
  *
  * The default is recency, which orders by when something happened rather than by how
  * good anything is. Downloads and votes stay available because doc 2 §1.1 endorses
@@ -100,21 +104,32 @@ export function GalleryBrowser({
   const [tag, setTag] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [phase, setPhase] = useState<string | null>(null);
-  const [level, setLevel] = useState<AutonomyLevel | null>(null);
+  const [autonomy, setAutonomy] = useState<AutonomyClass | null>(null);
   const [sort, setSort] = useState<SortKey>("recent");
 
   /*
-   * Doc 2 §1.1 — autonomy as a way in, not as a league table. The list offers only the
-   * bands the registry actually holds, in numeric order because that is the order of
-   * the labels and not an order of merit: picking `level 2 · Supervised` narrows the
-   * gallery to the factories that keep a person on the critical move, exactly as
-   * picking a category narrows it to a category. Nothing here sorts, scores or
-   * compares one band against another.
+   * Doc 2 §1.1 — autonomy as a way in, and never as a league table. The list offers only
+   * the classes the registry actually holds: picking `Supervised` narrows the gallery to
+   * the factories that keep a person on the critical move, exactly as picking a category
+   * narrows it to a category. Nothing here sorts, scores or compares one class against
+   * another.
+   *
+   * The option says the class and stops. The band it came from used to be printed in
+   * front of it, which put a 1-to-4 scale in a select where every other option is a name,
+   * and a reader had no way to tell it from the 1-to-5 organisational ladder the landing
+   * teaches. `level` survives only as the key this list is ordered on, which the engine
+   * keeps for exactly that: an ordinal is what gives a menu a stable order, and the
+   * spec allows it there and nowhere a reader can see.
    */
-  const levels = useMemo(() => {
-    const byLevel = new Map<AutonomyLevel, string>();
-    for (const bp of blueprints) byLevel.set(bp.autonomy.level, bp.autonomy.label);
-    return [...byLevel.entries()].sort((a, b) => a[0] - b[0]);
+  const classes = useMemo(() => {
+    const byClass = new Map<AutonomyClass, { label: string; level: number }>();
+    for (const bp of blueprints) {
+      byClass.set(bp.autonomy.autonomyClass, {
+        label: bp.autonomy.label,
+        level: bp.autonomy.level,
+      });
+    }
+    return [...byClass.entries()].sort((a, b) => a[1].level - b[1].level);
   }, [blueprints]);
 
   /*
@@ -144,7 +159,7 @@ export function GalleryBrowser({
     const filtered = blueprints.filter((bp) => {
       if (category && bp.category !== category) return false;
       if (phase && !bp.analysis.phaseCoverage.covered.includes(phase)) return false;
-      if (level !== null && bp.autonomy.level !== level) return false;
+      if (autonomy !== null && bp.autonomy.autonomyClass !== autonomy) return false;
       if (tag && !bp.tags.includes(tag)) return false;
       if (q) {
         const haystack =
@@ -178,21 +193,21 @@ export function GalleryBrowser({
       }
     });
     return sorted;
-  }, [blueprints, search, tag, category, phase, level, sort]);
+  }, [blueprints, search, tag, category, phase, autonomy, sort]);
 
   const hasFilters =
     search.trim() !== "" ||
     tag !== null ||
     category !== null ||
     phase !== null ||
-    level !== null;
+    autonomy !== null;
 
   function clearFilters() {
     setSearch("");
     setTag(null);
     setCategory(null);
     setPhase(null);
-    setLevel(null);
+    setAutonomy(null);
   }
 
   return (
@@ -256,25 +271,23 @@ export function GalleryBrowser({
             </select>
           </label>
 
-          {/* Doc 2 §1.1: the band picks a subset, it never orders the page. */}
+          {/* Doc 2 §1.1: the class picks a subset, it never orders the page. */}
           <label className="flex items-center gap-2">
-            <span className="sr-only">Filter by autonomy level</span>
+            <span className="sr-only">Filter by autonomy class</span>
             <select
-              value={level === null ? "" : String(level)}
+              value={autonomy ?? ""}
               onChange={(e) =>
-                setLevel(
-                  e.target.value === ""
-                    ? null
-                    : (Number(e.target.value) as AutonomyLevel),
+                setAutonomy(
+                  e.target.value === "" ? null : (e.target.value as AutonomyClass),
                 )
               }
-              aria-label="Filter by autonomy level"
+              aria-label="Filter by autonomy class"
               className={controlClass}
             >
-              <option value="">All autonomy levels</option>
-              {levels.map(([value, label]) => (
+              <option value="">All autonomy classes</option>
+              {classes.map(([value, { label }]) => (
                 <option key={value} value={value}>
-                  level {value} · {label}
+                  {label}
                 </option>
               ))}
             </select>

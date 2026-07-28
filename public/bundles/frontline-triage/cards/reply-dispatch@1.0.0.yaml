@@ -18,6 +18,9 @@ spec: >-
 tools:
   - messaging
   - http-fetch
+mcp:
+  - zendesk
+skill: skills/reply-dispatch.md
 params:
   channel: ticket-thread
   timeout_s: 15
@@ -32,6 +35,9 @@ outputs:
     description: The provider's acknowledgement — delivered, deferred or rejected.
 dependencies:
   - reply-qa-check
+cannot:
+  - edit a reply that has already been cleared
+  - report a deferral as a success
 
 requires_human: false
 risk_markers:

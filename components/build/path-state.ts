@@ -8,14 +8,14 @@
    They live here rather than in four `useState` calls because two
    of them are cleared by a move that sets neither: crossing a step
    boundary turns the demonstration off (§5.4 — it must not be
-   persistable) and drops the "was level" markers (§1.1 — a marker
-   is the answer to "the control you just used moved this", and
-   after a step change no control on screen moved anything). A
-   transition that forgot one of those left a reader who chose the
-   human approval gate carrying "was level 4" beside their autonomy
-   level all the way to the download screen, which is a standing
-   reference to a higher number beside the files they are about to
-   take away.
+   persistable) and drops the "was" markers (§1.1 — a marker is the
+   answer to "the control you just used moved this", and after a
+   step change no control on screen moved anything). A transition
+   that forgot one of those left a reader who chose the human
+   approval gate carrying a marker for the reading they left behind
+   all the way to the download screen, which is a standing reference
+   to a rejected alternative beside the files they are about to take
+   away.
 
    PURE. No React, no engine, no clock — `path-state` decides what
    the reader is looking at, `state.ts` computes what it says.
@@ -23,9 +23,19 @@
 
 import { clampIterations, type StarterChoices } from "@/lib/starter/variants";
 
-/** The two computed levels of the graph currently on screen, as the panel reads them. */
+/**
+ * The two computed readings of the graph currently on screen, as the panel prints them.
+ *
+ * Autonomy is its **class** and not the band behind it. The marker is rendered verbatim
+ * ("was Closed-loop"), and doc 2 §1.1 keeps the ordinal off every surface — a "was level
+ * 4" left standing beside the graph of a reader who has just chosen the human approval
+ * gate is precisely the reference to a higher number this file's header set out to stop.
+ * Security is a scale with a top and stays a number.
+ *
+ * Both are compared with `!==` in `markersFor`, which works the same either way.
+ */
 export interface PathLevels {
-  autonomy?: number;
+  autonomy?: string;
   security?: number;
 }
 
@@ -92,11 +102,11 @@ export function movePath(
 }
 
 /**
- * What the panel prints beside a level, given what it read one move ago.
+ * What the panel prints beside a reading, given what it read one move ago.
  *
- * A level is annotated only while it differs from the figure it replaced, so a choice that
+ * A reading is annotated only while it differs from the one it replaced, so a choice that
  * moves one of the two never leaves a marker on the other. Neutral by construction: the
- * marker states a figure and no direction (see `Was` in `ScorePanel.tsx`).
+ * marker states the old reading and no direction (see `Was` in `ScorePanel.tsx`).
  */
 export function markersFor(previous: PathLevels, showing: PathLevels): PathLevels {
   const out: PathLevels = {};

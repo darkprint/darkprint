@@ -16,6 +16,8 @@ spec: >-
   alert to a person costs far less than confidently sending it down the wrong runbook.
 agent: Alert classifier
 tools: []
+mcp: []
+skill: skills/intent-router.md
 params:
   labels:
     - outage
@@ -44,6 +46,9 @@ outputs:
     description: The event enriched with its label, ready for whichever branch picks it up.
 dependencies:
   - ticket
+cannot:
+  - change the payload it routes
+  - leave an alert unrouted
 
 requires_human: false
 risk_markers: []

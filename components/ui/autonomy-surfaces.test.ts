@@ -1,0 +1,202 @@
+/* ============================================================
+   Doc 2 §1.1, held to the surfaces rather than to a function.
+
+   Three of the rules the principle imposes are properties of the
+   rendered page and of nothing else: which colour a row wears,
+   whether a component was handed the data that lets it say where
+   the people are, and what a page asks a visitor to bring. None of
+   them is reachable through a pure function, and all three were
+   broken by call sites that never read the comment stating the
+   rule. So this file reads the source.
+
+   Deliberately narrow. Each rule is a literal search with a stated
+   window, not a parser, and each one names the defect it was
+   written for. A source scan that grows into a style checker is a
+   file people start deleting assertions from; these three exist
+   because each one caught something.
+
+   No DOM and no renderer: the suite is `environment: "node"` by
+   design (`vitest.config.ts`), and reading a file needs neither.
+   ============================================================ */
+
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+
+import { HUMAN_PRESENCE_MARK } from "@/lib/format";
+
+/** Repo root: this file is `<root>/components/ui/`. */
+const ROOT = fileURLToPath(new URL("../../", import.meta.url));
+
+/** The two trees that render pages. `lib/` holds no JSX. */
+const TREES = ["app", "components"] as const;
+
+interface SourceFile {
+  /** Repo-relative, for the failure message. */
+  path: string;
+  text: string;
+}
+
+function collect(dir: string, rel: string, out: SourceFile[]): void {
+  for (const entry of readdirSync(join(ROOT, dir), { withFileTypes: true })) {
+    const child = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) {
+      collect(child, `${rel}/${entry.name}`, out);
+      continue;
+    }
+    if (!entry.name.endsWith(".tsx")) continue;
+    out.push({ path: child, text: readFileSync(join(ROOT, child), "utf8") });
+  }
+}
+
+const SOURCES: SourceFile[] = [];
+for (const tree of TREES) collect(tree, tree, SOURCES);
+
+/**
+ * Block comments removed, everything else left where it was.
+ *
+ * `{/* … *\/}` is how a JSX file writes prose about its own markup, and three of them
+ * discuss the alarm colour by name while describing the bug this file guards against.
+ * Positions shift, which is why every rule below works on line numbers taken from the
+ * stripped text rather than from the original.
+ */
+function withoutBlockComments(text: string): string {
+  return text.replace(/\/\*[\s\S]*?\*\//g, (match) => match.replace(/[^\n]/g, " "));
+}
+
+const STRIPPED = SOURCES.map((file) => ({
+  path: file.path,
+  text: withoutBlockComments(file.text),
+}));
+
+describe("the file tree renders something", () => {
+  it("found the pages", () => {
+    // A scan that silently matched nothing passes every rule below.
+    expect(SOURCES.length).toBeGreaterThan(40);
+    expect(SOURCES.map((f) => f.path)).toContain("components/ui/AutonomyMeter.tsx");
+  });
+});
+
+/* --------------------- 1. the indicator's colour --------------------- */
+
+/**
+ * The alarm colour, in both spellings the codebase uses for it.
+ *
+ * `--color-signal` is #ff5470 and it is spent on defects: the criteria-leak marker, the
+ * degraded security reading, the error count on the download step, the top penalty tier.
+ */
+const ALARM = ["text-signal", "--color-signal"];
+
+/**
+ * How far back an element's colour can sit from the glyph inside it.
+ *
+ * In every one of the four defects this was written for the class list was on the wrapping
+ * element, between 25 and 90 characters before the glyph. 260 covers a wrapper with a few
+ * more attributes on it without reaching the previous sibling.
+ */
+const LOOKBACK = 260;
+
+describe("where a person acts is never painted in the alarm colour", () => {
+  /**
+   * Doc 2 §1.1: "L'indicatore di autonomia mostra dove sono gli interventi umani." An
+   * indicator row in the colour reserved for defects says the graph has one, and the
+   * rule against it was already written twice in the repo — in
+   * `components/blueprint/Explainability.tsx` and in `app/nodes/[...id]/page.tsx` — while
+   * four components that never read either comment kept doing it: the autonomy meter on
+   * the gallery grid and the blueprint header, the node library tile, an author's shelf
+   * and the ontology term page.
+   *
+   * The glyph is the anchor because it is what the rule is about. `NODE_KIND_META.gate`
+   * keeps signal pink for the schematic's own node palette and is reached through an
+   * inline `style` from a colour table, so it is not a `⏸` with a class list in front of
+   * it and this rule does not touch it.
+   */
+  it("has no ⏸ with a signal colour in front of it", () => {
+    // Two anchors, because a call site can write the glyph either way and a rule that
+    // only sees the literal stops working on exactly the files that adopted the constant.
+    const anchors = [HUMAN_PRESENCE_MARK.glyph, "HUMAN_PRESENCE_MARK.glyph"];
+    const offences: string[] = [];
+    for (const { path, text } of STRIPPED) {
+      for (const anchor of anchors) {
+        let at = text.indexOf(anchor);
+        while (at >= 0) {
+          const before = text.slice(Math.max(0, at - LOOKBACK), at);
+          for (const alarm of ALARM) {
+            if (!before.includes(alarm)) continue;
+            const line = text.slice(0, at).split("\n").length;
+            offences.push(`${path}:${line} — ${alarm} within ${LOOKBACK} chars of ⏸`);
+          }
+          at = text.indexOf(anchor, at + 1);
+        }
+      }
+    }
+    expect(offences).toEqual([]);
+  });
+});
+
+/* --------------------- 2. the meter's second half --------------------- */
+
+describe("AutonomyMeter is always given the per-node reading", () => {
+  /**
+   * The dark factory token is gated on `isDarkFactory` alone; both counterpart statements
+   * are gated on `contributions !== undefined`. Omit the prop and a closed-loop graph
+   * answers with two tokens while a graph with a person in it answers with one and nothing
+   * in its place, which is the asymmetry the meter exists to avoid and which doc 2 §1.1
+   * makes a product problem rather than a layout one. `/upload` omitted it, on the one
+   * surface where somebody is looking at their own graph.
+   *
+   * Matched on the opening tag rather than on the whole element: the props are all inside
+   * it, self-closing in every call site, and a `>` cannot appear in a JSX attribute name.
+   */
+  it("passes contributions at every call site", () => {
+    const calls: { path: string; tag: string }[] = [];
+    for (const { path, text } of STRIPPED) {
+      let at = text.indexOf("<AutonomyMeter");
+      while (at >= 0) {
+        const close = text.indexOf("/>", at);
+        expect(close, `${path}: unterminated <AutonomyMeter`).toBeGreaterThan(at);
+        calls.push({ path, tag: text.slice(at, close) });
+        at = text.indexOf("<AutonomyMeter", at + 1);
+      }
+    }
+
+    // The component's own file declares it and does not call it, so a scan that found
+    // nothing is a scan that is looking in the wrong place.
+    expect(calls.length).toBeGreaterThanOrEqual(3);
+    for (const call of calls) {
+      expect(call.tag.includes("contributions"), `${call.path} omits contributions`).toBe(
+        true,
+      );
+    }
+  });
+});
+
+/* --------------------- 3. what a page asks a visitor to bring --------------------- */
+
+describe("no page makes the classification a condition of entry", () => {
+  /**
+   * Doc 2 §1.1 names the barrier in as many words: somebody looks at their own pipeline,
+   * sees a manual step, and concludes they are not far enough along to publish. The
+   * blueprints index opened "Every dark factory in the registry" and was rewritten for
+   * exactly this; `/upload` kept "Upload the DOT graph of your dark factory" through that
+   * change, on the page where the reader is being asked to hand something over. Since
+   * `isDarkFactory` is a literal zero-human-node test, the sentence was false besides
+   * about any bundle with a gate in it.
+   *
+   * Both the visible copy and the `metadata.description` are in scope: the second is what
+   * a search result and a link preview show, which is a page's first sentence more often
+   * than its first sentence is.
+   */
+  it("does not address the reader's own graph as a dark factory", () => {
+    const banned = ["your dark factory", "your own dark factory", "a dark factory of your"];
+    const offences: string[] = [];
+    for (const { path, text } of STRIPPED) {
+      const lower = text.toLowerCase();
+      for (const phrase of banned) {
+        if (lower.includes(phrase)) offences.push(`${path} — "${phrase}"`);
+      }
+    }
+    expect(offences).toEqual([]);
+  });
+});

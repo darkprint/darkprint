@@ -14,10 +14,12 @@ const CARD: NodeCard = {
   action: "Draft a candidate solution for the sub-task",
   spec: "Read the sub-task, draft one candidate solution, and return it as JSON on the draft port.",
   tools: [],
+  mcp: [],
   params: {},
   inputs: [{ name: "task", type: "text" }],
   outputs: [{ name: "draft", type: "json" }],
   dependencies: [],
+  cannot: [],
   requiresHuman: false,
   riskMarkers: [],
   version: "1.0.0",
@@ -34,22 +36,31 @@ describe("cardDigest — shape", () => {
     // It fails if the identity payload ever changes shape, which is the point.
     //
     // Recomputed when `phase` and `spec` became required fields (doc 3 §2, doc 1 §3.2),
-    // and again when `phase` became the optional, repeatable `phases` (the author's ruling
-    // that the five phases describe the factory, not every node). The digest necessarily
-    // moves each time: `cardDigest` spreads the whole card, and doc 1 §4 wants a card that
-    // says something different to hash differently — `phases: ["implementation"]` is a
-    // different statement from `phase: "implementation"`, because the first can hold two.
+    // again when `phase` became the optional, repeatable `phases` (the author's ruling
+    // that the five phases describe the factory, not every node), and again when `mcp`
+    // and `cannot` joined the card. The digest necessarily moves each time: `cardDigest`
+    // spreads the whole card, and doc 1 §4 wants a card that says something different to
+    // hash differently. A card carrying `cannot: []` states that it declares no
+    // prohibition, which is a statement the earlier schema had no way to make.
     expect(canonicalJson({ ...CARD })).toBe(
-      '{"action":"Draft a candidate solution for the sub-task","dependencies":[],' +
-        '"id":"solver-a","inputs":[{"name":"task","type":"text"}],"name":"Solver A",' +
+      '{"action":"Draft a candidate solution for the sub-task","cannot":[],"dependencies":[],' +
+        '"id":"solver-a","inputs":[{"name":"task","type":"text"}],"mcp":[],"name":"Solver A",' +
         '"ontologyVersion":"0.1.0","outputs":[{"name":"draft","type":"json"}],"params":{},' +
         '"phases":["implementation"],"requiresHuman":false,"riskMarkers":[],' +
         '"spec":"Read the sub-task, draft one candidate solution, and return it as JSON on the draft port.",' +
         '"tools":[],"type":"agent","version":"1.0.0"}',
     );
     expect(cardDigest(CARD)).toBe(
-      "sha256:b27406458838b3df18db555d7d0d1aa6a2244ec72cf3acaa7c04c7b5c4b63301",
+      "sha256:258157d00277e4b24e7298da9b54313a174b4e1f4122ff3726550ed42fdabff0",
     );
+  });
+
+  it("hashes the new fields into the identity", () => {
+    // `cardDigest` spreads the card, so these join it without the function being touched;
+    // the assertion is here so a future `VOLATILE_FIELDS` entry cannot quietly drop one.
+    expect(cardDigest({ ...CARD, mcp: ["filesystem"] })).not.toBe(cardDigest(CARD));
+    expect(cardDigest({ ...CARD, skill: "skills/solver.md" })).not.toBe(cardDigest(CARD));
+    expect(cardDigest({ ...CARD, cannot: ["acceptance-criteria"] })).not.toBe(cardDigest(CARD));
   });
 
   it("does not mutate the card it is given", () => {
@@ -129,10 +140,12 @@ describe("cardDigest — key order does not matter", () => {
       action: "Draft a candidate solution for the sub-task",
       spec: "Read the sub-task and write one candidate solution to the draft port.",
       tools: ["web-search"],
+      mcp: ["filesystem"],
       params: { retries: 3, backoff: { kind: "exponential", factor: 1.5 } },
       inputs: [{ name: "task", type: "text" }],
       outputs: [{ name: "draft", type: "json" }],
       dependencies: [],
+      cannot: ["acceptance-criteria"],
       requiresHuman: false,
       riskMarkers: [],
       version: "1.0.0",
@@ -143,10 +156,12 @@ describe("cardDigest — key order does not matter", () => {
       version: "1.0.0",
       riskMarkers: [],
       requiresHuman: false,
+      cannot: ["acceptance-criteria"],
       dependencies: [],
       outputs: [{ type: "json", name: "draft" }],
       inputs: [{ type: "text", name: "task" }],
       params: { backoff: { factor: 1.5, kind: "exponential" }, retries: 3 },
+      mcp: ["filesystem"],
       tools: ["web-search"],
       spec: "Read the sub-task and write one candidate solution to the draft port.",
       action: "Draft a candidate solution for the sub-task",
@@ -240,7 +255,7 @@ describe("shortDigest", () => {
 
   it("shortens a real card digest to 15 characters", () => {
     const short = shortDigest(cardDigest(CARD));
-    expect(short).toBe("sha256:b2740645");
+    expect(short).toBe("sha256:258157d0");
     expect(short).toHaveLength("sha256:".length + 8);
   });
 

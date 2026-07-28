@@ -20,8 +20,11 @@ const SHORT: Record<MetricKey, string> = {
  * person in it is smaller than a graph without one; it is a different shape, and a
  * length cannot say that.
  *
- * So it is said in words instead, under the chart, where the level and its name sit as
- * a fact about the design rather than as a coordinate. The metric is not dropped: it
+ * So it is said in words instead, under the chart, where the class sits as a fact about
+ * the design rather than as a coordinate. The name and not the ordinal behind it, for
+ * the reason doc 2 §1.1 gives: the one number a reader meets on this site is the
+ * organisational maturity ladder, and a second small integer beside it would read as the
+ * same scale. The metric is not dropped: it
  * keeps its row in `MetricBars`, with the analyser's sentence naming which nodes hand
  * control back to a person.
  */
@@ -147,13 +150,12 @@ export function ScoreRadar({
       <figcaption className="text-balance px-2 text-center font-mono text-[10px] leading-relaxed text-dim">
         {autonomy !== undefined ? (
           <>
-            Autonomy · <span className="text-fg">level {autonomy.level}</span> ·{" "}
-            {autonomy.label}. A band names a design choice, so it is stated here rather
-            than plotted.
+            Autonomy · <span className="text-fg">{autonomy.label}</span>. A class names a
+            design choice, so it is stated here rather than plotted.
           </>
         ) : (
           <>
-            Autonomy is a band. It names a design choice, so it is stated on the card
+            Autonomy is a class. It names a design choice, so it is stated on the card
             rather than plotted here.
           </>
         )}

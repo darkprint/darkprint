@@ -14,6 +14,9 @@ spec: >-
   declared intent. You are done the moment that payload is emitted — do not read the repository
   beyond the two refs the event names, and do not form an opinion about the change.
 tools: []
+mcp:
+  - github
+skill: skills/pr-intake.md
 params:
   events:
     - opened
@@ -27,6 +30,9 @@ outputs:
     type: json
     description: The PR as the line sees it — refs, changed files, diff stats and the description.
 dependencies: []
+cannot:
+  - read the repository beyond the two refs the event names
+  - form an opinion about the change
 
 requires_human: false
 risk_markers: []

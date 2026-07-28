@@ -30,6 +30,23 @@
    nodes produced the score, and *where* the people are — both
    false about the same node.
 
+   ── A class, and a shape with a name ──
+   The reading a surface renders is `autonomyClass`, not `level`.
+   Two scales were both arriving as a small integer — the 1-to-5
+   organisational maturity ladder, which does have a destination,
+   and this per-blueprint reading, which describes one design
+   decision and has none — and a reader had no way to tell them
+   apart. `level` stays because the doc 3 §6 bands are arithmetic
+   and an ordinal is what sorts; nothing user-facing prints it.
+
+   `isDarkFactory` is the other half. A graph with no human node at
+   all is *classed* a dark factory, the way a graph with no cycle
+   is classed acyclic. It is counted from the contributions and
+   never read off the band: zero nodes waiting for a person, not a
+   threshold, not "close". A graph one gate short of it is a
+   supervised graph, which is a legitimate thing to be and often a
+   deliberate one.
+
    Doc 3 §8: the result records the vocabulary version it was
    computed under. Two scores from different ontologies are not
    comparable, and comparability is what doc 1 §4 exists to protect.
@@ -52,6 +69,23 @@ import { DARKPRINT_CONFIG } from "../config";
  * explicitly allows in that direction.
  */
 export type HumanReason = "requires-human-flag" | "human-in-the-loop-type";
+
+/**
+ * The named class of a graph's autonomy, and the thing every interface renders.
+ *
+ * Four names for four shapes a graph can have. They are co-ordinate, the way "acyclic" and
+ * "cyclic" are: `assisted` describes a graph where people act at most of the nodes and
+ * `closed-loop` one where they act at none, and neither is the destination of the other.
+ * Doc 2 §1.1 rules out sorting a gallery by them, ranking them, or awarding one.
+ *
+ * The class exists because doc 2 §1.1's tension had grown a second head. Two different
+ * scales were both showing up as a small integer: the organisational maturity ladder,
+ * which does run 1 to 5 and does have a destination, and this per-blueprint reading, which
+ * describes one design decision and has none. A reader who saw "2" twice had every reason
+ * to think they were the same 2. `AutonomyResult.level` stays, because the bands are
+ * arithmetic and an ordinal is what sorts, and no user-facing surface prints it.
+ */
+export type AutonomyClass = "assisted" | "supervised" | "conditional" | "closed-loop";
 
 /** One node's share of the fraction, with the sentence the UI shows next to it. */
 export interface AutonomyContribution {
@@ -77,10 +111,45 @@ export interface AutonomyContribution {
   explanation: string;
 }
 
-/** The whole doc 3 §6 reading: the level, the arithmetic behind it, and the evidence. */
+/** The whole doc 3 §6 reading: the class, the arithmetic behind it, and the evidence. */
 export interface AutonomyResult {
-  /** 1–4. A band, not a grade — doc 2 §1.1. */
+  /**
+   * The named class. **This is what an interface shows.**
+   *
+   * `level` below is the same fact as an ordinal, kept for arithmetic and sorting; this is
+   * the same fact under the name a reader can use. Every user-facing surface renders this
+   * one (doc 2 §1.1), so that one number on this site means one thing.
+   */
+  autonomyClass: AutonomyClass;
+  /**
+   * True when no node in this graph waits for a person.
+   *
+   * **A description of a shape, and not a grade.** It is the classification doc 2 §1.1
+   * governs most tightly, so read the condition literally: `totalNodes > 0` and every
+   * single node runs unattended. Zero human nodes, never a threshold and never "close
+   * enough".
+   *
+   * The consequence is the point. A graph with exactly one human gate is not *nearly* a
+   * dark factory, and there is no sense in which it is short of one: it is a supervised
+   * graph, which is a legitimate and often deliberate thing to be, since a factory
+   * touching something irreversible is a factory whose author wanted that gate. Nothing
+   * may sort on this field, rank by it, award it, or phrase it as a status to reach. It
+   * answers "does anybody wait on a person here", and a blueprint answering yes is a
+   * first-class blueprint.
+   *
+   * A node whose card is not in the bundle keeps this false. Nothing states how such a
+   * node runs, and "no person is in this graph" is a claim the bundle has not earned.
+   */
+  isDarkFactory: boolean;
+  /**
+   * 1–4. A band, not a grade — doc 2 §1.1 — and deliberately **not** a rendered value:
+   * `autonomyClass` is the one a surface shows. Kept because the doc 3 §6 thresholds are
+   * arithmetic and an ordinal is what a comparison, a filter boundary or a stable sort
+   * needs. Anything printing this is printing a number that collides with the 1–5
+   * organisational ladder, which is a different scale about a different subject.
+   */
   level: 1 | 2 | 3 | 4;
+  /** The class in title case, ready to drop into a sentence. Doc 2 §1.1 governs it. */
   label: string;
   /** unattended / total, 0–1, rounded to 4dp. */
   fraction: number;
@@ -110,17 +179,34 @@ export interface AutonomyResult {
 }
 
 /**
- * Level → label. Deliberately duplicated from `AUTONOMY_LABELS` in `lib/format.ts`:
+ * Band → class. The bands are where the arithmetic lands; the class is what the answer is
+ * called. Doc 3 §6's fractions decide the band and this table does the rest, so the two
+ * cannot drift apart.
+ */
+const AUTONOMY_CLASSES: Record<1 | 2 | 3 | 4, AutonomyClass> = {
+  1: "assisted",
+  2: "supervised",
+  3: "conditional",
+  4: "closed-loop",
+};
+
+/**
+ * Class → label. Deliberately duplicated from `AUTONOMY_LABELS` in `lib/format.ts`:
  * `lib/core` stays free of app-side imports, so the two must be kept identical by
  * hand (a test asserts they still match). The labels name the shape of the graph and
  * carry no ranking (doc 2 §1.1).
  */
-const AUTONOMY_LEVEL_LABELS: Record<1 | 2 | 3 | 4, string> = {
-  1: "Assisted",
-  2: "Supervised",
-  3: "Conditional",
-  4: "Closed-loop",
+const AUTONOMY_CLASS_LABELS: Record<AutonomyClass, string> = {
+  assisted: "Assisted",
+  supervised: "Supervised",
+  conditional: "Conditional",
+  "closed-loop": "Closed-loop",
 };
+
+/** The label for a band, through the class, so the three never disagree. */
+function labelForLevel(level: 1 | 2 | 3 | 4): string {
+  return AUTONOMY_CLASS_LABELS[AUTONOMY_CLASSES[level]];
+}
 
 /**
  * The abstract category of doc 3 §3, and the only membership test this metric performs
@@ -167,13 +253,18 @@ export function computeAutonomy(
   if (totalNodes === 0) {
     diagnostics.push(emptyGraphDiagnostic());
     return {
+      // A graph with no nodes has no node waiting for a person and no node running
+      // unattended either, so there is nothing here to classify: `totalNodes > 0` is the
+      // first half of the test for that reason.
+      autonomyClass: AUTONOMY_CLASSES[1],
+      isDarkFactory: false,
       level: 1,
-      label: AUTONOMY_LEVEL_LABELS[1],
+      label: labelForLevel(1),
       fraction: 0,
       autonomousNodes: 0,
       totalNodes: 0,
       contributions,
-      rationale: `Nothing to score — the fraction defaults to 0.00 < ${fmt(config.autonomy.level2)} → level 1 (${AUTONOMY_LEVEL_LABELS[1]}).`,
+      rationale: `Nothing to score — the fraction defaults to 0.00 < ${fmt(config.autonomy.level2)} → level 1 (${labelForLevel(1)}).`,
       ontologyVersion,
       diagnostics,
     };
@@ -200,7 +291,15 @@ export function computeAutonomy(
         : fraction >= bands.level2
           ? 2
           : 1;
-  const label = AUTONOMY_LEVEL_LABELS[level];
+  const autonomyClass = AUTONOMY_CLASSES[level];
+  const label = AUTONOMY_CLASS_LABELS[autonomyClass];
+
+  // Counted, never inferred from the band. `level === 4` is a fraction above 0.90, which a
+  // graph with a person in it reaches as soon as it has eleven nodes, and calling that a
+  // dark factory would be the exact confusion doc 2 §1.1 warns about. `autonomousNodes`
+  // counts only nodes whose card says how they run and says nobody is in them, so a node
+  // with no card in the bundle also keeps this false.
+  const isDarkFactory = autonomousNodes === totalNodes;
 
   const comparison =
     level === 4
@@ -212,6 +311,8 @@ export function computeAutonomy(
           : `${fmt(fraction)} < ${fmt(bands.level2)}`;
 
   return {
+    autonomyClass,
+    isDarkFactory,
     level,
     label,
     fraction,

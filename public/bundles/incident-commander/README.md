@@ -4,7 +4,7 @@ Triages alerts, routes to the right runbook, drafts a mitigation, QAs it against
 
 ```
 blueprint      incident-commander
-bundle digest  sha256:9606e4413d5b3ee44d4a5c8e6a461d8ee5a5e20638e5543e09fc8c76a8568e09
+bundle digest  sha256:f02bbe19ab65b23d815259c1158a8ddd469c4caaeb78ad846f22d72639281d86
 ontology       v0.1.0
 nodes          7
 cards pinned   7
@@ -48,6 +48,25 @@ stores and scores. `factory.dot` is that same graph prepared for a runner: a syn
 `__start` and `__exit` node, and the prompts inlined. Delete those two nodes and their edges
 and you are back to the topology.
 
+6 of the nodes in this bundle name a skill document. There is no `skills/` directory above and
+there is not meant to be: DarkPrint stores the pointer and reads nothing at the other end of
+it, so a skill document is never part of a bundle. The paths are relative to the repository
+you run this factory from, and writing the documents is yours to do.
+
+```
+ticket        skills/event-intake.md
+classify      skills/intent-router.md
+autoresolve   skills/resolution-composer.md
+kb            skills/runbook-resolver.md
+qa            skills/blast-radius-check.md
+send          skills/runbook-executor.md
+```
+
+Nothing here needs them to run. Every node in `factory.dot` carries its card's `spec` inline
+as the prompt its agent receives, so a runner given this folder and nothing else has the whole
+instruction for every node. A skill document adds a capability to one agent; what the
+blueprint decides is who is wired to whom.
+
 ## The nodes
 
 | node | card | phase |
@@ -62,9 +81,9 @@ and you are back to the topology.
 
 ## What DarkPrint computed
 
-Autonomy level 3.
+Autonomy: Conditional.
 
-> 6 of 7 nodes run unattended, 1 has a person in the loop — 0.8571 ≥ 0.70 → level 3 (Conditional).
+> 6 of 7 nodes run unattended, 1 has a person in the loop — 0.8571 ≥ 0.70 → Conditional.
 
 Where a person acts:
 
@@ -80,10 +99,11 @@ What was charged:
 - Node "Runbook Executor" (send) declares the risk marker `secret-access` (Secret access).
 - Node "Blast Radius Check" (qa) reaches outside the graph (tool "http-fetch") and hands its output straight to "escalate" and "send" with no validation node in between.
 
-Both numbers come from the topology and the cards, with nothing executed. These are the files
-that produced them, so the same arithmetic on your side gives the same two numbers.
+Both readings come from the topology and the cards, with nothing executed. These are the files
+that produced them, so the same arithmetic on your side gives the same class and the same
+security level.
 
-The autonomy level says what this factory automates and where a person stands in it.
+The autonomy class says what this factory automates and where a person stands in it.
 Nothing here is a grade.
 
 ## What gets reported back

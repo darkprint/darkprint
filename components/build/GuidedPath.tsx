@@ -149,7 +149,9 @@ export function GuidedPath() {
     view.analysis === undefined
       ? {}
       : {
-          autonomy: view.analysis.autonomy.level,
+          // The class, because it is the class the panel prints and a marker has to
+          // quote what the reader actually saw (doc 2 §1.1).
+          autonomy: view.analysis.autonomy.label,
           security: view.analysis.security.level,
         };
 
@@ -160,7 +162,7 @@ export function GuidedPath() {
   }
 
   function goTo(index: number) {
-    // The switch goes off and the "was level" markers go with it: after a step change no
+    // The switch goes off and the "was" markers go with it: after a step change no
     // control on screen has moved anything, so there is nothing left to annotate.
     const moved = move({ kind: "step", index });
     setSelection(selectionFor(STEPS[moved.stepIndex].id, base.paneModel));
@@ -365,6 +367,7 @@ export function GuidedPath() {
             {...(autonomy === undefined ? {} : { autonomy })}
             {...(security === undefined ? {} : { security })}
             budget={view.budget}
+            errors={view.errors}
             demo={demo}
             className="sticky top-16 z-20 lg:hidden"
           />
@@ -396,6 +399,7 @@ export function GuidedPath() {
               on={demo}
               {...(base.analysis === undefined ? {} : { before: base.analysis.security })}
               {...(leaked?.analysis === undefined ? {} : { after: leaked.analysis.security })}
+              errors={leaked?.errors ?? []}
               {...(leakedLine === undefined ? {} : { dotLine: leakedLine })}
               {...(leakedStatement === undefined ? {} : { dotStatement: leakedStatement })}
             />
@@ -441,11 +445,12 @@ export function GuidedPath() {
             {...(view.blueprint === undefined ? {} : { digest: view.blueprint.digest })}
             budget={view.budget}
             previous={markers}
+            errors={view.errors}
             demo={demo}
           />
           <p className="mt-3 px-1 text-[11px] leading-relaxed text-dim">
             {outputLabel(choices.output)}. {approvalLabel(choices.approval)}. Cap{" "}
-            {choices.maxIterations}. Both levels are read off this graph and these cards
+            {choices.maxIterations}. Both readings are read off this graph and these cards
             with nothing executed, in this tab, on the bytes the download hands over.
           </p>
         </aside>

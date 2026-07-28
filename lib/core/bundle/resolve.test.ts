@@ -903,6 +903,279 @@ describe("edge port resolution", () => {
 });
 
 /* ------------------------------------------------------------------ */
+/* declared prohibitions — doc 2 §3 made checkable                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The starter's shape in miniature: a planner that emits a plan *and* the criteria the
+ * work will be judged by, a builder that receives only the plan, and a judge that holds
+ * one against the other. The builder declares `cannot: [acceptance-criteria]`, so the edge
+ * the starter deliberately omits stops being a convention and becomes a rule.
+ */
+const CRITERIA_PLANNER = `
+id: criteria-planner
+name: Criteria planner
+type: agent
+phase: planning
+action: Turn the request into a plan and the criteria it is judged by
+spec: Read the request and write two independent artefacts, an ordered plan on the plan port and the conditions the finished work must satisfy on the criteria port.
+inputs: []
+outputs:
+  - { name: plan, type: plan }
+  - { name: criteria, type: acceptance-criteria }
+version: 1.0.0
+ontology_version: ${ONTOLOGY_VERSION}
+`;
+
+const GUARDED_BUILDER = `
+id: guarded-builder
+name: Guarded builder
+type: agent
+phase: implementation
+action: Build what the brief describes and nothing else
+spec: Work through the brief in order and write the source it describes, staying inside the files each step names and adding no behaviour nobody asked for.
+inputs:
+  - { name: brief, type: plan }
+outputs:
+  - { name: build, type: code }
+cannot: [acceptance-criteria]
+version: 1.0.0
+ontology_version: ${ONTOLOGY_VERSION}
+`;
+
+const JUDGE = `
+id: judge
+name: Judge
+type: validation
+phase: testing
+action: Hold the build against the criteria and report a verdict
+spec: Run the build against every criterion in turn and emit a verdict carrying the evidence for each condition that was not met.
+inputs:
+  - { name: work, type: code }
+  - { name: rules, type: acceptance-criteria }
+outputs:
+  - { name: verdict, type: status }
+dependencies: [criteria-planner, guarded-builder]
+version: 1.0.0
+ontology_version: ${ONTOLOGY_VERSION}
+`;
+
+describe("declared prohibitions", () => {
+  const ISOLATION_FILES: Readonly<Record<string, string>> = {
+    "cards/criteria-planner@1.0.0.yaml": CRITERIA_PLANNER,
+    "cards/guarded-builder@1.0.0.yaml": GUARDED_BUILDER,
+    "cards/judge@1.0.0.yaml": JUDGE,
+  };
+
+  const NODES = `
+      planner [card="criteria-planner@1.0.0"];
+      builder [card="guarded-builder@1.0.0"];
+      judge   [card="judge@1.0.0"];`;
+
+  /** The starter's topology: the criteria reach the judge and never the builder. */
+  const ISOLATED = dot(`${NODES}
+      planner -> judge;
+      builder -> judge;
+    `);
+
+  /** The same graph with doc 2 §5.4's demonstration edge added. */
+  const LEAKED = dot(`${NODES}
+      planner -> judge;
+      builder -> judge;
+      planner -> builder;
+    `);
+
+  /** Every card in `ISOLATION_FILES`, with one of them patched. */
+  const patched = (file: string, from: string, to: string): Readonly<Record<string, string>> => ({
+    ...ISOLATION_FILES,
+    [file]: ISOLATION_FILES[file].replace(from, to),
+  });
+
+  it("resolves clean when no edge reaches the builder from the criteria", () => {
+    // The whole point of the field: a card may declare a prohibition and say nothing at
+    // all about a graph that honours it.
+    expect(resolve(ISOLATED, ISOLATION_FILES).diagnostics).toEqual([]);
+  });
+
+  it("errors when an incoming edge carries the prohibited type", () => {
+    const result = resolve(LEAKED, ISOLATION_FILES);
+    const d = one(result.diagnostics, "bundle/prohibition-violated");
+    expect(d.severity).toBe("error");
+    // Doc 2 §3's argument, enforced: the card, the edge and the type all named.
+    expect(d.message).toContain("`guarded-builder@1.0.0`");
+    expect(d.message).toContain("`builder`");
+    expect(d.message).toContain("`acceptance-criteria`");
+    expect(d.message).toContain("`planner -> builder`");
+    expect(d.location).toMatchObject({
+      file: "blueprint.dot",
+      nodeId: "builder",
+      cardRef: "guarded-builder@1.0.0",
+      edge: { source: "planner", target: "builder" },
+    });
+  });
+
+  it("names the output port that carries it, so the author knows which one to cut", () => {
+    const d = one(resolve(LEAKED, ISOLATION_FILES).diagnostics, "bundle/prohibition-violated");
+    expect(d.hint).toContain("`criteria` (`acceptance-criteria`)");
+    expect(d.hint).toContain("`cannot`");
+  });
+
+  it("fires even though the pairing the resolver inferred carries the plan", () => {
+    // The builder's only input is `brief: plan`, so the inferred pairing is plan → brief
+    // and the criteria port is never selected. Reading the check off that pairing would
+    // make the demonstration edge resolve clean, and doc 3 §4.1's `criteria-leak` reads
+    // the same edge at node level. Two isolation checks must not disagree about one edge.
+    const bp = mustResolve(resolve(LEAKED, ISOLATION_FILES));
+    const leak = bp.edges.find((e) => e.source === "planner" && e.target === "builder");
+    expect(leak?.fromPort?.type).toBe("plan");
+    expect(withCode(resolve(LEAKED, ISOLATION_FILES).diagnostics, "bundle/prohibition-violated"))
+      .toHaveLength(1);
+  });
+
+  it("honours an explicit `out=` pin, which says what the edge is for", () => {
+    const src = dot(`${NODES}
+      planner -> judge;
+      builder -> judge;
+      planner -> builder [out="plan", in="brief"];
+    `);
+    const result = resolve(src, ISOLATION_FILES);
+    expect(withCode(result.diagnostics, "bundle/prohibition-violated")).toEqual([]);
+  });
+
+  it("reports nothing extra when the pin names a port that does not exist", () => {
+    // Already a `bundle/port-mismatch`; answering a typo with a second, unrelated error
+    // would bury the one the author can act on.
+    const src = dot(`${NODES}
+      planner -> judge;
+      builder -> judge;
+      planner -> builder [out="nonexistent"];
+    `);
+    const result = resolve(src, ISOLATION_FILES);
+    expect(withCode(result.diagnostics, "bundle/port-mismatch")).toHaveLength(1);
+    expect(withCode(result.diagnostics, "bundle/prohibition-violated")).toEqual([]);
+  });
+
+  it("catches a narrower type: refusing `structured` refuses the criteria too", () => {
+    const files = patched(
+      "cards/guarded-builder@1.0.0.yaml",
+      "cannot: [acceptance-criteria]",
+      "cannot: [structured]",
+    );
+    const d = one(resolve(LEAKED, files).diagnostics, "bundle/prohibition-violated");
+    expect(d.message).toContain("`structured`");
+    // Declaration order picks the carrier, and `plan` is the planner's first output.
+    expect(d.hint).toContain("`plan` (`plan`)");
+  });
+
+  it("does not read subsumption the other way round", () => {
+    // `acceptance-criteria` is a kind of `structured`, so a node refusing the specific
+    // type is not refusing everything the general one covers.
+    const files = patched(
+      "cards/criteria-planner@1.0.0.yaml",
+      "{ name: criteria, type: acceptance-criteria }",
+      "{ name: criteria, type: structured }",
+    );
+    expect(withCode(resolve(LEAKED, files).diagnostics, "bundle/prohibition-violated")).toEqual([]);
+  });
+
+  it("does not fire on an output typed `any`, which asserts nothing", () => {
+    const files = patched(
+      "cards/criteria-planner@1.0.0.yaml",
+      "{ name: criteria, type: acceptance-criteria }",
+      "{ name: criteria, type: any }",
+    );
+    expect(withCode(resolve(LEAKED, files).diagnostics, "bundle/prohibition-violated")).toEqual([]);
+  });
+
+  it("never fires on a free-text entry", () => {
+    // The half of the field the engine cannot check. It has to stay silent, or the field
+    // is unusable for the prohibitions only a person can read.
+    const files = patched(
+      "cards/guarded-builder@1.0.0.yaml",
+      "cannot: [acceptance-criteria]",
+      'cannot: ["never sees the acceptance criteria", "does not open a shell"]',
+    );
+    const result = resolve(LEAKED, files);
+    expect(withCode(result.diagnostics, "bundle/prohibition-violated")).toEqual([]);
+    expect(withCode(result.diagnostics, "card/unknown-term")).toEqual([]);
+  });
+
+  it("only enforces `data-type` terms, since only a data-type travels down an edge", () => {
+    const files = patched(
+      "cards/guarded-builder@1.0.0.yaml",
+      "cannot: [acceptance-criteria]",
+      "cannot: [planning, human-gate, shell]",
+    );
+    expect(withCode(resolve(LEAKED, files).diagnostics, "bundle/prohibition-violated")).toEqual([]);
+  });
+
+  it("reports one diagnostic per prohibited type, not per repetition of it", () => {
+    const files = patched(
+      "cards/guarded-builder@1.0.0.yaml",
+      "cannot: [acceptance-criteria]",
+      "cannot: [acceptance-criteria, acceptance-criteria]",
+    );
+    expect(withCode(resolve(LEAKED, files).diagnostics, "bundle/prohibition-violated"))
+      .toHaveLength(1);
+  });
+
+  it("reports each prohibited type the same edge carries", () => {
+    const files = patched(
+      "cards/guarded-builder@1.0.0.yaml",
+      "cannot: [acceptance-criteria]",
+      "cannot: [acceptance-criteria, plan]",
+    );
+    const found = withCode(resolve(LEAKED, files).diagnostics, "bundle/prohibition-violated");
+    expect(found).toHaveLength(2);
+    expect(found.map((d) => d.message.includes("`plan`")).sort()).toEqual([false, true]);
+  });
+
+  it("says nothing when the source node has no card in the bundle", () => {
+    // `bundle/missing-card` has already reported the broken pointer, and nothing states
+    // what such a node emits.
+    const src = dot(`
+      ghost   [card="absent@1.0.0"];
+      builder [card="guarded-builder@1.0.0"];
+      ghost -> builder;
+    `);
+    const result = resolve(src, ISOLATION_FILES);
+    expect(withCode(result.diagnostics, "bundle/missing-card")).toHaveLength(1);
+    expect(withCode(result.diagnostics, "bundle/prohibition-violated")).toEqual([]);
+  });
+
+  it("reads the vocabulary rather than a fixed list, so a local data-type is enforced", () => {
+    // Doc 3 §7: a local term rooted in the core is a first-class term, and the check asks
+    // the ontology the bundle was resolved against instead of naming types itself.
+    const local = ontologyView(CORE_ONTOLOGY, [
+      {
+        id: "berti/secret-material",
+        kind: "data-type",
+        label: "Secret material",
+        description: "Credentials and keys the run must not hand to a generating node.",
+        broader: "binary",
+        since: "0.1.0",
+      },
+    ]);
+    const files = {
+      ...patched(
+        "cards/criteria-planner@1.0.0.yaml",
+        "{ name: criteria, type: acceptance-criteria }",
+        "{ name: criteria, type: berti/secret-material }",
+      ),
+      "cards/guarded-builder@1.0.0.yaml": GUARDED_BUILDER.replace(
+        "cannot: [acceptance-criteria]",
+        "cannot: [berti/secret-material]",
+      ),
+    };
+    // `judge` still asks for `acceptance-criteria` nobody produces now, so the edge into
+    // it is checked on its own terms; only the prohibition is asserted here.
+    const result = resolveBundle(makeBundle(LEAKED, files), local);
+    const d = one(result.diagnostics, "bundle/prohibition-violated");
+    expect(d.message).toContain("`berti/secret-material`");
+  });
+});
+
+/* ------------------------------------------------------------------ */
 /* declared dependencies                                                */
 /* ------------------------------------------------------------------ */
 

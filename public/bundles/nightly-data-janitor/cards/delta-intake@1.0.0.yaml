@@ -14,6 +14,8 @@ spec: >-
   there is no watermark at all, emit a window covering the last 24 hours and mark it as a cold
   start so the reader knows the bound was assumed rather than recorded.
 tools: []
+mcp: []
+skill: skills/delta-intake.md
 params:
   schedule: "0 2 * * *"
   window_hours: 24
@@ -25,6 +27,8 @@ outputs:
     type: json
     description: The time window to sweep — its bounds, and the watermark they were derived from.
 dependencies: []
+cannot:
+  - clip the window when the watermark is older than it
 
 requires_human: false
 risk_markers: []

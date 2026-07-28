@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { hasErrors, shortDigest, summarize, type LoadBundleResult } from "@/lib/core";
-import { cx } from "@/lib/format";
+import { autonomyStatement, cx } from "@/lib/format";
 import { graphForBlueprint } from "@/lib/graph-seed";
 import { SourceBadge } from "@/components/ui/Badge";
 import { AutonomyMeter } from "@/components/ui/AutonomyMeter";
@@ -114,19 +114,30 @@ export function ValidationReport({
                   <span className={LABEL}>Autonomy</span>
                   <SourceBadge source="auto" />
                 </div>
+                {/* The per-node reading goes with the class here for the same reason it
+                    does on the gallery tile and the blueprint header: the dark factory
+                    token is gated on the flag alone, while both counterpart statements
+                    are gated on having the contributions. Without them a closed-loop
+                    upload answered with two tokens and a supervised one with a single
+                    token and nothing in its place — on the one surface where somebody is
+                    looking at their own graph, which is exactly where doc 2 §1.1 says the
+                    asymmetry does its damage. */}
                 <AutonomyMeter
                   autonomy={{
+                    autonomyClass: analysis.autonomy.autonomyClass,
+                    isDarkFactory: analysis.autonomy.isDarkFactory,
                     level: analysis.autonomy.level,
                     label: analysis.autonomy.label,
-                    blurb: analysis.autonomy.rationale,
+                    blurb: autonomyStatement(analysis.autonomy.rationale),
                   }}
+                  contributions={analysis.autonomy.contributions}
                 />
                 <p className="font-mono text-xs text-dim">
                   {analysis.autonomy.autonomousNodes} of {analysis.autonomy.totalNodes}{" "}
                   nodes run unattended
                 </p>
                 <p className="text-xs leading-relaxed text-muted">
-                  {analysis.autonomy.rationale}
+                  {autonomyStatement(analysis.autonomy.rationale)}
                 </p>
               </div>
 

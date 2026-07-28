@@ -14,6 +14,9 @@ spec: >-
   a re-run land on the record already written instead of a second copy of it. You are done when
   every document in the intake location appears in exactly one emitted batch.
 tools: []
+mcp:
+  - filesystem
+skill: skills/document-intake.md
 params:
   batch_size: 100
 
@@ -23,6 +26,8 @@ outputs:
     type: json
     description: The batch, one entry per document, with its source path, content and hash.
 dependencies: []
+cannot:
+  - emit the same document in two batches
 
 requires_human: false
 risk_markers: []

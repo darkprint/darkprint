@@ -14,6 +14,8 @@ spec: >-
   dropped here and emitted nowhere. Emit the admitted record on `event`, and treat yourself as
   done when either one record has gone out or the item has been dropped as a repeat.
 tools: []
+mcp: []
+skill: skills/event-intake.md
 params:
   dedupe_window_s: 120
   sources:
@@ -26,6 +28,9 @@ outputs:
     type: json
     description: The event as received, with its correlation id and arrival time attached.
 dependencies: []
+cannot:
+  - change the payload it admits
+  - admit a record that repeats one inside the dedupe window
 
 requires_human: false
 risk_markers: []

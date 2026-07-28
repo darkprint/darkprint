@@ -16,6 +16,9 @@ spec: >-
 agent: Delta extractor
 tools:
   - sql
+mcp:
+  - postgres
+skill: skills/delta-extractor.md
 params:
   max_rows: 50000
   page_size: 5000
@@ -30,6 +33,9 @@ outputs:
     description: The changed rows over a fixed set of columns, in warehouse order.
 dependencies:
   - delta-intake
+cannot:
+  - write anything back to the warehouse
+  - reshape the rows it returns
 
 requires_human: false
 risk_markers: []

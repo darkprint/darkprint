@@ -20,6 +20,8 @@ spec: >-
   gaps rather than sending it round again.
 agent: Fact-checker
 tools: []
+mcp: []
+skill: skills/claim-verifier.md
 params:
   min_citations_per_claim: 1
   max_iterations: 3
@@ -37,6 +39,9 @@ outputs:
     description: The claims that failed, with the reason each citation did not carry them.
 dependencies:
   - evidence-synthesizer
+cannot:
+  - edit a sentence to make it pass
+  - supply a citation of its own
 
 requires_human: false
 risk_markers: []

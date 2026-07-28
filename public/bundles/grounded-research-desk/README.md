@@ -4,7 +4,7 @@ Fans a question across web, vector and code search, synthesizes one answer, and 
 
 ```
 blueprint      grounded-research-desk
-bundle digest  sha256:98d71e5e3f5c4c406aaaba1ac73f25f2f9c0be736f523f9c39497cb2fb199f7b
+bundle digest  sha256:3f23a864cf9c7f8d19f49d5531ac822ad26098c4929f6d63d398fef5e13c1db8
 ontology       v0.1.0
 nodes          8
 cards pinned   8
@@ -48,6 +48,27 @@ stores and scores. `factory.dot` is that same graph prepared for a runner: a syn
 `__start` and `__exit` node, and the prompts inlined. Delete those two nodes and their edges
 and you are back to the topology.
 
+8 of the nodes in this bundle name a skill document. There is no `skills/` directory above and
+there is not meant to be: DarkPrint stores the pointer and reads nothing at the other end of
+it, so a skill document is never part of a bundle. The paths are relative to the repository
+you run this factory from, and writing the documents is yours to do.
+
+```
+question    skills/question-intake.md
+plan        skills/retrieval-planner.md
+web         skills/web-retriever.md
+vectors     skills/vector-recall.md
+code        skills/code-index-search.md
+synth       skills/evidence-synthesizer.md
+factcheck   skills/claim-verifier.md
+report      skills/report-delivery.md
+```
+
+Nothing here needs them to run. Every node in `factory.dot` carries its card's `spec` inline
+as the prompt its agent receives, so a runner given this folder and nothing else has the whole
+instruction for every node. A skill document adds a capability to one agent; what the
+blueprint decides is who is wired to whom.
+
 ## The nodes
 
 | node | card | phase |
@@ -63,9 +84,9 @@ and you are back to the topology.
 
 ## What DarkPrint computed
 
-Autonomy level 4.
+Autonomy: Closed-loop.
 
-> 8 of 8 nodes run unattended, none have a person in the loop — 1.00 > 0.90 → level 4 (Closed-loop).
+> 8 of 8 nodes run unattended, none have a person in the loop — 1.00 > 0.90 → Closed-loop.
 
 Security level 2.
 
@@ -76,10 +97,11 @@ What was charged:
 - Node "Report Delivery" (report) declares the risk marker `irreversible-action` (Irreversible action).
 - Node "Web Retriever" (web) reaches outside the graph (tool "web-search", tool "http-fetch") and hands its output straight to "synth" with no validation node in between.
 
-Both numbers come from the topology and the cards, with nothing executed. These are the files
-that produced them, so the same arithmetic on your side gives the same two numbers.
+Both readings come from the topology and the cards, with nothing executed. These are the files
+that produced them, so the same arithmetic on your side gives the same class and the same
+security level.
 
-The autonomy level says what this factory automates and where a person stands in it.
+The autonomy class says what this factory automates and where a person stands in it.
 Nothing here is a grade.
 
 ## What gets reported back

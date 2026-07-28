@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import type { AgentNodeData } from "@/lib/types";
 import { NODE_KIND_META } from "@/lib/format";
+import { nodeHref } from "@/lib/href";
 
 /**
  * What the schematic carries on top of the domain data. `highlighted` is set by
@@ -13,11 +15,59 @@ export type AgentNodeFlowData = AgentNodeData & { highlighted?: boolean };
 
 export type AgentFlowNode = Node<AgentNodeFlowData, "agent">;
 
+/**
+ * The name of a node whose card is published, as a link to that card.
+ *
+ * **Why the name and nothing wider.** Spec part 3 leaves the interaction open and lists
+ * three candidates. Turning the whole block into a link is the one that looks obvious and
+ * is wrong: a React Flow node is draggable and the canvas is pannable, so every drag that
+ * started on a node would end in a navigation, and two of this component's three mounts
+ * sit inside a container that already claims a plain click. `components/panes/GraphPane`
+ * reads a click on a node as doc 2 §5.1's synchronised selection, and
+ * `components/build/ChoiceGraphPane` reads one as doc 2 §5.7's "le scelte si fanno dentro
+ * la vista del grafo, cliccando sul nodo interessato". A whole-block link would have taken
+ * a reader out of the guided path at the exact moment they were making a choice in it.
+ * A modifier click was the other candidate and it fails a different way: nothing on screen
+ * would say it exists, and a keyboard reader has no modifier to hold.
+ *
+ * So the affordance is the smallest thing that can carry it and still be seen. The name is
+ * a real anchor: it has a focus ring, it has a hover state, it announces itself, it opens
+ * in a new tab on a middle click like any other link, and it is reachable by Tab. The
+ * glyph after it is drawn at rest rather than on hover, because an affordance that appears
+ * only under a pointer is one a keyboard reader never learns about.
+ *
+ * `nodrag` and `nopan` are React Flow's own opt-outs: without them a press on the name
+ * starts a node drag and the click never lands. The click is stopped from bubbling because
+ * a container that also reads clicks would otherwise run its own handler on the way out of
+ * the page, selecting a node in a view that is being navigated away from.
+ *
+ * That is why the two panes above must never be handed a seed carrying a `cardId`, and why
+ * neither of them relies on the caller for it: `stopPropagation` cancels their handler
+ * while the anchor still navigates, so a link inside one of them replaces the selection
+ * with a page load. Each strips the ids itself, through `withoutCardLinks`.
+ */
+function NodeTitleLink({ cardId, label }: { cardId: string; label: string }) {
+  return (
+    <Link
+      href={nodeHref(cardId)}
+      aria-label={`Open the node card ${label}, ${cardId}`}
+      onClick={(event) => event.stopPropagation()}
+      className="nodrag nopan inline-flex items-baseline gap-1 rounded-sm text-sm font-medium text-fg underline decoration-line-bright decoration-dotted underline-offset-4 transition-colors hover:text-cyan hover:decoration-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
+    >
+      {label}
+      <span aria-hidden className="font-mono text-[10px] text-dim">
+        ↗
+      </span>
+    </Link>
+  );
+}
+
 /** Custom React Flow node styled as a blueprint schematic block. */
 export function AgentNode({ data }: NodeProps<AgentFlowNode>) {
   const meta = NODE_KIND_META[data.kind];
   // Never colour alone: a highlighted node also gains a ring and says so in words.
   const lit = data.highlighted === true;
+  const cardId = typeof data.cardId === "string" ? data.cardId : undefined;
   return (
     <div
       className="group relative min-w-[150px] rounded-md border bg-surface-2/95 px-3 py-2 backdrop-blur-sm"
@@ -45,7 +95,13 @@ export function AgentNode({ data }: NodeProps<AgentFlowNode>) {
           </span>
         )}
       </div>
-      <div className="mt-0.5 text-sm font-medium text-fg">{data.label}</div>
+      <div className="mt-0.5">
+        {cardId === undefined ? (
+          <span className="text-sm font-medium text-fg">{data.label}</span>
+        ) : (
+          <NodeTitleLink cardId={cardId} label={data.label} />
+        )}
+      </div>
       {data.sub && (
         <div className="mt-0.5 font-mono text-[10px] text-dim">{data.sub}</div>
       )}

@@ -35,10 +35,12 @@ function card(spec: NodeSpec): NodeCard {
     // Distinct 3-grams per node unless a test deliberately shares one.
     spec: spec.spec ?? `${spec.id} ${spec.id} ${spec.id} ${spec.id}`,
     tools: [],
+    mcp: [],
     params: {},
     inputs: [],
     outputs: spec.outputs ?? [],
     dependencies: [],
+    cannot: [],
     requiresHuman: false,
     riskMarkers: spec.markers ?? [],
     version: "1.0.0",

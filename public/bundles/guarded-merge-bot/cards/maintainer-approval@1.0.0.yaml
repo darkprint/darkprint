@@ -16,6 +16,7 @@ spec: >-
   and on a rejection emit nothing at all, so the step after you has nothing to act on.
 tools:
   - human-review
+mcp: []
 params:
   required_approvals: 1
   approver_scope: write-access
@@ -34,6 +35,9 @@ outputs:
     description: The maintainer's verdict, and nothing else — the merge step reads no other input.
 dependencies:
   - test-runner
+cannot:
+  - summarise the change for the maintainer
+  - recommend an outcome
 
 requires_human: true
 risk_markers: []

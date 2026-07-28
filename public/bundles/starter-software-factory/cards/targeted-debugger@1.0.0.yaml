@@ -17,6 +17,9 @@ spec: >-
   means you are circling, and another pass costs a round without buying information.
 agent: Debugger
 tools: []
+mcp:
+  - filesystem
+skill: skills/targeted-debugger.md
 params:
   max_iterations: 3
 
@@ -30,6 +33,9 @@ outputs:
     description: The narrowest change that accounts for the evidence, ready to be re-run.
 dependencies:
   - acceptance-tester
+cannot:
+  - acceptance-criteria
+  - special-case the literal values in a trace
 
 requires_human: false
 risk_markers: []
@@ -38,7 +44,10 @@ notes: >-
   load-bearing twice over. Drop it and doc 3 §4.1 charges the blueprint 1.5 for an unbounded
   loop. It also bounds a slower leak doc 2 §5.5 names: every iteration reveals another slice of
   the acceptance surface through the failure messages, so the cap limits how much of the criteria
-  this node can reconstruct by accumulation.
+  this node can reconstruct by accumulation. `acceptance-criteria` in `cannot` closes the fast
+  version of the same leak. Doc 2 §5.5 hands this node the evidence of a failure and withholds
+  the criteria themselves, and because that entry names a data type in the ontology the resolver
+  enforces it: an edge carrying the criteria in raises `bundle/prohibition-violated`.
 
 version: 1.0.0
 author: orin

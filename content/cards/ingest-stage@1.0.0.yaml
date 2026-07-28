@@ -16,6 +16,8 @@ spec: >-
   manifest under one of those two outcomes.
 agent: Stage workers
 tools: []
+mcp: []
+skill: skills/ingest-stage.md
 params:
   batch_size: 250
   timeout_s: 180
@@ -30,6 +32,8 @@ outputs:
     description: The staged working set plus the source manifest the later stages are checked against.
 dependencies:
   - stage-planner
+cannot:
+  - pull a source the stage does not name
 
 requires_human: false
 risk_markers: []

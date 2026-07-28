@@ -70,19 +70,25 @@ export interface CommunitySignals {
  * row here still renders — the loader falls back to a zeroed row — but it will read
  * as a blueprint nobody has run yet, which is exactly what it would be.
  *
- * A comment body may quote an autonomy level or a security score, and when it does it
- * has to quote the one the engine actually computes for that slug — the same page
- * prints both a few centimetres away. The current figures are:
+ * A comment body may quote the autonomy class or a security score, and when it does it
+ * has to quote the one the engine actually computes for that slug — the same page prints
+ * both a few centimetres away.
  *
- *     adversarial-consensus-line  A4 8/8   security 4.00 → 100
- *     checkpoint-resume-runner    A4 9/9   security 4.00 → 100
- *     frontline-triage            A3 6/7   security 3.38 →  84
- *     grounded-research-desk      A4 8/8   security 2.75 →  69
- *     guarded-merge-bot           A3 5/6   security 2.75 →  69
- *     incident-commander          A3 6/7   security 0.75 →  19
- *     nightly-data-janitor        A4 7/7   security 3.25 →  81
- *     schema-forge-etl            A4 7/7   security 4.00 → 100
- *     starter-software-factory    A4 5/5   security 4.00 → 100
+ * **The autonomy reading is a class and never a number.** Spec part 2 keeps the band
+ * ordinal off every surface, and a comment is a surface: a body reading "autonomy 3" put
+ * a small integer directly beside the meter's "Autonomy class Conditional", which is the
+ * 1-to-5 organisational ladder colliding with a per-graph description all over again. Two
+ * bodies did exactly that and were rewritten. The current figures:
+ *
+ *     adversarial-consensus-line  closed-loop  8/8   security 4.00 → 100
+ *     checkpoint-resume-runner    closed-loop  9/9   security 4.00 → 100
+ *     frontline-triage            conditional  6/7   security 3.38 →  84
+ *     grounded-research-desk      closed-loop  8/8   security 2.75 →  69
+ *     guarded-merge-bot           conditional  5/6   security 2.75 →  69
+ *     incident-commander          conditional  6/7   security 0.75 →  19
+ *     nightly-data-janitor        closed-loop  7/7   security 3.25 →  81
+ *     schema-forge-etl            closed-loop  7/7   security 4.00 → 100
+ *     starter-software-factory    closed-loop  5/5   security 4.00 → 100
  *
  * Anything else in a body — downloads, vote counts, run anecdotes — is seeded and says
  * so on the pages that render it.
@@ -101,7 +107,7 @@ export const COMMUNITY: Record<string, CommunitySignals> = {
       {
         id: "c1",
         author: AUTHORS.sol,
-        body: "Ran the static analyzer on this — genuinely zero human gates, autonomy 4 confirmed. The bounded re-vote (max 3) is what keeps it from looping forever.",
+        body: "Ran the static analyzer on this and it comes back closed-loop, with zero human gates. The bounded re-vote (max 3) is what keeps it from looping forever.",
         createdAt: "2026-05-02",
         votes: 41,
       },
@@ -179,7 +185,7 @@ export const COMMUNITY: Record<string, CommunitySignals> = {
       {
         id: "c1",
         author: AUTHORS.kwame,
-        body: "Good honest example of why the gate matters. Autonomy 3 isn't a failure — five of the six nodes run themselves, and the one that doesn't is the merge. For merges that's the point.",
+        body: "Good honest example of why the gate matters. The class comes back conditional: five of the six nodes run themselves, and the sixth is the merge. For merges that's the point.",
         createdAt: "2026-03-30",
         votes: 30,
       },

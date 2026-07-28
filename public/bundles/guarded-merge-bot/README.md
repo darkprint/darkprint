@@ -1,10 +1,10 @@
 # Guarded Merge Bot
 
-Triages a PR, drafts a review, runs the tests, then stops at a maintainer approval gate before merging — a deliberately supervised line.
+An agent line triages the PR and drafts the review, iterating with the test runner until the suite is green. A maintainer approves before the merge lands.
 
 ```
 blueprint      guarded-merge-bot
-bundle digest  sha256:a9cd0329f8a2abb4359e940edec108cef2f67b80a5507a799cdf4e6d673f8026
+bundle digest  sha256:8d4e6ccdc951a5be856b933622709264226286135c3dc2be17d15f126f1dd0d9
 ontology       v0.1.0
 nodes          6
 cards pinned   6
@@ -48,6 +48,24 @@ stores and scores. `factory.dot` is that same graph prepared for a runner: a syn
 `__start` and `__exit` node, and the prompts inlined. Delete those two nodes and their edges
 and you are back to the topology.
 
+5 of the nodes in this bundle name a skill document. There is no `skills/` directory above and
+there is not meant to be: DarkPrint stores the pointer and reads nothing at the other end of
+it, so a skill document is never part of a bundle. The paths are relative to the repository
+you run this factory from, and writing the documents is yours to do.
+
+```
+pr       skills/pr-intake.md
+triage   skills/diff-triager.md
+draft    skills/review-drafter.md
+tests    skills/test-runner.md
+merge    skills/merge-executor.md
+```
+
+Nothing here needs them to run. Every node in `factory.dot` carries its card's `spec` inline
+as the prompt its agent receives, so a runner given this folder and nothing else has the whole
+instruction for every node. A skill document adds a capability to one agent; what the
+blueprint decides is who is wired to whom.
+
 ## The nodes
 
 | node | card | phase |
@@ -61,9 +79,9 @@ and you are back to the topology.
 
 ## What DarkPrint computed
 
-Autonomy level 3.
+Autonomy: Conditional.
 
-> 5 of 6 nodes run unattended, 1 has a person in the loop — 0.8333 ≥ 0.70 → level 3 (Conditional).
+> 5 of 6 nodes run unattended, 1 has a person in the loop — 0.8333 ≥ 0.70 → Conditional.
 
 Where a person acts:
 
@@ -79,10 +97,11 @@ What was charged:
 - Node "Merge Executor" (merge) declares the risk marker `unchecked-write` (Unchecked write).
 - Node "Test Runner" (tests) reaches outside the graph (tool "ci") and hands its output straight to "draft" and "gate" with no validation node in between.
 
-Both numbers come from the topology and the cards, with nothing executed. These are the files
-that produced them, so the same arithmetic on your side gives the same two numbers.
+Both readings come from the topology and the cards, with nothing executed. These are the files
+that produced them, so the same arithmetic on your side gives the same class and the same
+security level.
 
-The autonomy level says what this factory automates and where a person stands in it.
+The autonomy class says what this factory automates and where a person stands in it.
 Nothing here is a grade.
 
 ## What gets reported back

@@ -16,6 +16,8 @@ spec: >-
   the run. You are done the moment one question with its scope has been emitted — do not answer
   it, rank it, or retrieve anything.
 tools: []
+mcp: []
+skill: skills/question-intake.md
 params:
   source: research-desk-inbox
   max_question_chars: 2000
@@ -26,6 +28,9 @@ outputs:
     type: text
     description: The question as asked, trimmed to a single stated ask with its scope attached.
 dependencies: []
+cannot:
+  - answer the question it opens the run with
+  - retrieve anything
 
 requires_human: false
 risk_markers: []
