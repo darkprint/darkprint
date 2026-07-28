@@ -1,7 +1,6 @@
 id: confidence-escalation
 name: Confidence Escalation
 type: human-gate
-phase: debugging
 
 action: >-
   Let anything at or above the confidence threshold through untouched and park the rest for a

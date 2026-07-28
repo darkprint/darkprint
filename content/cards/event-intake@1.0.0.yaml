@@ -1,7 +1,6 @@
 id: event-intake
 name: Event Intake
 type: tool
-phase: planning
 
 action: >-
   Accept an inbound event from the ticket queue or the alert bus, stamp it with a correlation id,

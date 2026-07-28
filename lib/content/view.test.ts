@@ -13,10 +13,10 @@ function cardOf(type: string, over: Partial<NodeCard> = {}): NodeCard {
     id: "probe",
     name: "Probe",
     type,
-    // Doc 3 §1 makes `phase` a dimension every node declares, and doc 1 §3.2 makes `spec`
-    // the payload the agent receives. Neither is read by `agentNodeKind`, but a NodeCard
-    // without them is not a NodeCard.
-    phase: "implementation",
+    // `phases` is a list a card may leave empty, and doc 1 §3.2 makes `spec` the payload
+    // the agent receives. Neither is read by `agentNodeKind`, but a NodeCard without
+    // them is not a NodeCard — the field is required, its contents are not.
+    phases: ["implementation"],
     action: "Stand in for a real card while the mapping is exercised.",
     spec: "Stand in for a real card while the ontology→schematic mapping is exercised, and produce nothing.",
     tools: [],

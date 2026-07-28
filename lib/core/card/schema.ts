@@ -31,10 +31,24 @@ export interface NodeCard {
   /** `node-type` term id. Doc 3 §1: exactly one. */
   type: string;
   /**
-   * `phase` term id: exactly one of doc 3 §2's five, and never namespaced (doc 3 §7 keeps
-   * the phases closed). Feeds phase coverage, which is descriptive and not a score.
+   * `phase` term ids: any number of doc 3 §2's five, never namespaced (doc 3 §7 keeps the
+   * phases closed).
+   *
+   * Optional and repeatable, which reverses doc 3 §1's cardinality row on the author's
+   * ruling: the five phases are *"the expected high level phases a dark factory should
+   * have, but do not necessarily have to stick to nodes"*. They describe the **factory**,
+   * not every node in it. An intake, a retrieval step or a memory store sits in none of
+   * the five, and `phases: []` is its complete and correct answer — not a hole to be
+   * filled. A node that genuinely spans two, such as a synthesiser that both builds and
+   * repairs, declares both.
+   *
+   * Nothing downstream may render an empty list as a defect: it feeds phase coverage,
+   * which doc 2 §1.1 and doc 3 §2 make descriptive rather than a score.
+   *
+   * The wire key stays the singular `phase` and accepts a scalar or a sequence, because
+   * both spellings read naturally in YAML; `validate.ts` normalises them onto this field.
    */
-  phase: string;
+  phases: string[];
 
   /* 3.2 behaviour */
   /** The operation the node performs, short and machine-readable. Doc 1 §3.2. */

@@ -1,7 +1,6 @@
 id: web-retriever
 name: Web Retriever
 type: tool
-phase: implementation
 
 action: >-
   Run the strand's query against public search, fetch the pages worth reading, and return each

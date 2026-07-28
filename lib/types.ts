@@ -158,6 +158,11 @@ export interface BlueprintAnalysisView {
    * way and off the same bundle, but it is not one of them: it carries no number, and
    * doc 2 §1.1 puts it under the same rule as autonomy — a description of scope, never
    * a score.
+   *
+   * The groups cover the graph without partitioning it: a node declaring two phases is
+   * in both, and `unphased` holds the nodes that declare none. Neither is a defect and
+   * no surface may render either as one — the five phases describe the factory, not
+   * every node in it.
    */
   phaseCoverage: PhaseCoverage;
   diagnostics: Diagnostic[];

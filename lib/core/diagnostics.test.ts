@@ -42,8 +42,9 @@ const EMITTED_BY: Record<DiagnosticCode, string | null> = {
   "card/deprecated-term": "card/validate",
   "card/wrong-term-kind": "card/validate",
   "card/version-bump-too-small": "card/validate",
-  "card/missing-phase": "card/validate",
+  "card/unknown-phase": "card/validate",
   "card/namespaced-phase": "card/validate",
+  "card/duplicate-phase": "card/validate",
   "card/human-type-inconsistent": "card/validate",
   "card/spec-too-thin": "card/validate",
 
@@ -82,6 +83,9 @@ const EMITTED_BY: Record<DiagnosticCode, string | null> = {
   "analysis/empty-graph": "analysis/autonomy + analysis/security",
   "analysis/unresolved-node": "analysis/autonomy",
   "analysis/criteria-leak-suspected": "analysis/security",
+  "analysis/criteria-leak-unanchored": "analysis/security",
+  "analysis/criteria-out-of-band": "analysis/security",
+  "analysis/criteria-relayed-through-judge": "analysis/security",
 };
 
 describe("the DiagnosticCode union", () => {
@@ -102,6 +106,15 @@ describe("the DiagnosticCode union", () => {
     // here without a comment in `diagnostics.ts` next to it is the oversight.
     const reserved = codes.filter((code) => EMITTED_BY[code as DiagnosticCode] === null);
     expect(reserved).toEqual(["ontology/unknown-term"]);
+  });
+
+  it("has no code that reads an absent phase as a defect", () => {
+    // The author's ruling: the five phases describe the *factory*, not every node in it,
+    // so a card that declares none is complete. `card/missing-phase` was deleted rather
+    // than renamed, and this keeps the concept from coming back under another name — the
+    // `Record<DiagnosticCode, …>` above already refuses to compile if the old member is
+    // still in the union, but it would happily accept `card/phase-missing`.
+    expect(codes.filter((code) => /missing-phase|phase-missing|unphased|no-phase/.test(code))).toEqual([]);
   });
 
   it("carries the six namespaces the engine reports under", () => {

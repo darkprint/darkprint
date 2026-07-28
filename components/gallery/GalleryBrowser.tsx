@@ -124,6 +124,11 @@ export function GalleryBrowser({
    * factory. This is a filter and only a filter (doc 2 §1.1) — picking `debugging`
    * narrows the gallery to the factories that debug, it does not rank anything, and
    * nothing here counts phases or compares one blueprint's coverage to another's.
+   *
+   * `covered` is the union of what the nodes declare, and a node declaring no phase
+   * adds nothing to it — which is why the gallery must never grow an option for
+   * "covers all five" or a sort by how many. A factory covering three phases is three
+   * ways into this list, not two short of anything.
    */
   const phases = useMemo(() => {
     const covered = new Set<string>();

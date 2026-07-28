@@ -667,7 +667,7 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
     // own coverage can be computed. The two statements are adjacent and nothing observes
     // the object between them; re-implementing the grouping here to avoid the seed would
     // give the engine two answers to one question, which is worse.
-    phaseCoverage: { covered: [], missing: [], byPhase: {} },
+    phaseCoverage: { covered: [], missing: [], byPhase: {}, unphased: [] },
   };
   blueprint.phaseCoverage = computePhaseCoverage(blueprint);
 

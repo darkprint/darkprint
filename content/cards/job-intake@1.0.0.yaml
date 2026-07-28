@@ -1,7 +1,6 @@
 id: job-intake
 name: Job Intake
 type: tool
-phase: planning
 
 action: >-
   Accept a long-running job submission, stamp it with a run id and the idempotency key the

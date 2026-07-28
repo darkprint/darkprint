@@ -3,11 +3,17 @@
 import type {
   AutonomyContribution,
   AutonomyResult,
+  Diagnostic,
   MarkerProvenance,
   SecurityFinding,
   SecurityResult,
 } from "@/lib/core";
 import { cx } from "@/lib/format";
+import {
+  criteriaVerdict,
+  CRITERIA_UNANCHORED_CODE,
+  type CriteriaState,
+} from "@/lib/criteria-state";
 
 /**
  * The two computed metrics, showing their working. Doc 1 §8.3: an evaluation nobody
@@ -439,6 +445,362 @@ function FindingRow({
   );
 }
 
+/* --------------------- criteria isolation --------------------- */
+
+/**
+ * What the analyzer was able to say about the criteria-leak check on this blueprint.
+ *
+ * The precedence and the derivation live in `lib/criteria-state`, deliberately outside
+ * this component and under test: reasoning about the engine's output inline is how this
+ * panel came to print "The check ran and found a route" over a bundle where the check had
+ * not run at all, while the sidebar printed the engine's own "was not evaluated on this
+ * blueprint" three inches away. See that file for the ordering and why.
+ *
+ * `quiet` is the honest name for the last state, and deliberately not "clean". Two
+ * different graphs produce it: one where the check ran end to end and found no path, and
+ * one where nothing is being judged at all so the check had no subject. The engine is
+ * silent in both, and this panel cannot tell them apart without re-deriving the generator
+ * set from the graph — which would be the analysis growing a second, drifting
+ * implementation inside a React component. So the copy states both readings instead of
+ * picking the flattering one.
+ */
+const CRITERIA_STATE_META: Record<
+  CriteriaState,
+  { glyph: string; word: string; color: string; border: string }
+> = {
+  leak: {
+    glyph: "✕",
+    word: "leak found",
+    color: "var(--color-signal)",
+    border: "border-signal/40 bg-signal/5",
+  },
+  /* Dashed, dim, hollow. Not amber and not signal: an author whose blueprint is in
+     this state has not done anything wrong, and an alarm here would send them off to
+     "fix" a graph that may well be isolated. Not emerald and not a tick either — that
+     is the exact misreading the state exists to prevent. The dashed border is the same
+     grammar the phase strip uses for a cell with no node: present, drawn, empty. */
+  unanchored: {
+    glyph: "◌",
+    word: "not evaluated",
+    color: "var(--color-dim)",
+    border: "border-dashed border-line-bright bg-surface-2",
+  },
+  /* Amber, like every other warning on the page. The content detector did report
+     something; under the shipped configuration a warning is the only thing it is allowed
+     to report, and a warning nobody renders is a warning nobody has. */
+  suspected: {
+    glyph: "▲",
+    word: "overlap suspected",
+    color: "var(--color-amber)",
+    border: "border-amber/40 bg-amber/5",
+  },
+  /* Dashed like `unanchored`, because it is the same kind of statement: a limit on what
+     was looked at, not a judgement on what was found. */
+  relayed: {
+    glyph: "◌",
+    word: "partly traced",
+    color: "var(--color-dim)",
+    border: "border-dashed border-line-bright bg-surface-2",
+  },
+  quiet: {
+    glyph: "·",
+    word: "nothing reported",
+    color: "var(--color-dim)",
+    border: "border-line bg-surface-2",
+  },
+};
+
+/**
+ * One channel the topology cannot answer for, as a row: a node, the sentence the engine
+ * wrote, and the way to go and look at it.
+ *
+ * Two callers, two glyphs, and the difference is real. Amber ▲ for criteria arriving in
+ * `params`, which names a specific key and is a design smell worth acting on. Dim ◌ for
+ * a walk that stopped at a judge, which is a limit on what was looked at and not a
+ * finding about the node — same grammar as the `unanchored` state. Neither charges
+ * anything.
+ */
+function BlindChannelRow({
+  diagnostic,
+  nodeNames,
+  highlighted,
+  onHighlight,
+  glyph = "▲",
+  tone = "text-amber",
+}: {
+  diagnostic: Diagnostic;
+  nodeNames: Readonly<Record<string, string>>;
+  highlighted?: string;
+  onHighlight: (nodeId: string | undefined) => void;
+  glyph?: string;
+  tone?: string;
+}) {
+  const nodeId = diagnostic.location?.nodeId;
+  return (
+    <li className="flex gap-3 py-3 first:pt-0 last:pb-0">
+      <span className={cx("mt-0.5 shrink-0 font-mono text-xs leading-5", tone)} aria-hidden>
+        {glyph}
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <p className="text-sm leading-relaxed text-fg">{diagnostic.message}</p>
+        {diagnostic.hint !== undefined && (
+          <p className="text-xs leading-relaxed text-muted">
+            <span className="font-mono text-dim">hint </span>
+            {diagnostic.hint}
+          </p>
+        )}
+        {nodeId !== undefined && (
+          <div className="pt-0.5">
+            <NodeButton
+              nodeId={nodeId}
+              name={nodeNames[nodeId] ?? nodeId}
+              active={nodeId === highlighted}
+              onToggle={onHighlight}
+            />
+          </div>
+        )}
+      </div>
+    </li>
+  );
+}
+
+/**
+ * Doc 3 §4.1's check, and whether it ran.
+ *
+ * It sits above the findings list rather than inside it because it is not a finding:
+ * two of its three states are the analyzer reporting the limits of what it can see, and
+ * neither of them moves the score. That is stated on the block, because a reader who has
+ * just read a ledger of weighted penalties will otherwise assume anything printed under
+ * "Security" was charged for.
+ *
+ * When a leak *was* found the block stays short and points down at the finding, which
+ * carries the engine's own sentence, the nodes and the hint. Saying it twice on one
+ * screen reads as two leaks.
+ */
+function CriteriaIsolation({
+  security,
+  nodeNames,
+  highlighted,
+  onHighlight,
+}: {
+  security: SecurityResult;
+  nodeNames: Readonly<Record<string, string>>;
+  highlighted?: string;
+  onHighlight: (nodeId: string | undefined) => void;
+}) {
+  const { state, leaks, inferred, unanchored, suspected, relayed, outOfBand } =
+    criteriaVerdict(security);
+  const meta = CRITERIA_STATE_META[state];
+
+  return (
+    <div className="mt-5 flex flex-col gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h4 className={LABEL}>Criteria isolation</h4>
+        <span
+          className="font-mono text-[11px] uppercase tracking-[0.14em]"
+          style={{ color: meta.color }}
+        >
+          <span aria-hidden>{meta.glyph}</span> {meta.word}
+        </span>
+      </div>
+
+      <p className="text-xs leading-relaxed text-dim">
+        Whoever writes the work must not see what it will be judged against. The analyzer
+        looks for a path from the node that produces the acceptance criteria to any node
+        feeding a validation node, for a card that declares both the criteria and the
+        artefact its judge reads, and for the criteria turning up in a generator&rsquo;s
+        own prose. It is the one check this registry exists to make possible, so what it
+        managed to conclude is stated here whether or not it found anything — including
+        where it could not look.
+      </p>
+
+      <div className={cx("rounded-md border px-4 py-3", meta.border)}>
+        {state === "leak" && (
+          <p className="text-sm leading-relaxed text-fg">
+            {inferred
+              ? "The check ran and found a route."
+              : "No route was traced. The marker is here because a card declares it, which is the author’s own statement about the node rather than something the analyzer observed."}{" "}
+            It is charged once in the ledger above, and the{" "}
+            {leaks.length === 1 ? "finding" : `${leaks.length} findings`} below
+            {leaks.length === 1 ? " names the node" : " name the nodes"} and what to
+            change.
+          </p>
+        )}
+
+        {state === "unanchored" && unanchored !== undefined && (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm leading-relaxed text-fg">
+              <span className="text-muted">
+                Nothing here says this blueprint leaks its acceptance criteria, and
+                nothing here says it does not.
+              </span>{" "}
+              The analyzer had nowhere to start.
+            </p>
+            <p className="text-sm leading-relaxed text-muted">{unanchored.message}</p>
+            {unanchored.hint !== undefined && (
+              <p className="text-xs leading-relaxed text-muted">
+                <span className="font-mono text-dim">hint </span>
+                {unanchored.hint}
+              </p>
+            )}
+            {/* A declared marker has no precondition at all, so it can sit on a bundle
+                the check never ran on. It used to outrank this block and hide it; now it
+                is stated inside it, as what it is. */}
+            {leaks.length > 0 && (
+              <p className="text-xs leading-relaxed text-amber">
+                {leaks.length === 1 ? "One node declares" : `${leaks.length} nodes declare`}{" "}
+                <code className="font-mono">criteria-leak</code> on{" "}
+                {leaks.length === 1 ? "its" : "their"} own card, and{" "}
+                {leaks.length === 1 ? "is" : "are"} charged for it in the ledger above.
+                That is the author&rsquo;s statement, not a route the analyzer traced —
+                the analyzer could not trace one either way here.
+              </p>
+            )}
+            <p className="text-xs leading-relaxed text-dim">
+              Most of the registry is in this state today, and it is a gap in what the
+              graphs declare rather than a fault in what they do — the criteria are real,
+              they are simply not typed on the port that carries them. It costs nothing
+              in points: the analyzer records that it does not know instead of charging
+              for a leak it never observed.
+            </p>
+          </div>
+        )}
+
+        {state === "suspected" && (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm leading-relaxed text-fg">
+              No route through the graph, and{" "}
+              {suspected.length === 1 ? "one node" : `${suspected.length} nodes`} whose
+              prose overlaps the criteria producer&rsquo;s. The rows below name{" "}
+              {suspected.length === 1 ? "it" : "them"}.
+            </p>
+          </div>
+        )}
+
+        {state === "relayed" && (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm leading-relaxed text-fg">
+              No criteria leak was reported, and the check did not see the whole graph.
+            </p>
+            <p className="text-xs leading-relaxed text-dim">
+              The rows below name where it stopped. Nothing there is charged.
+            </p>
+          </div>
+        )}
+
+        {state === "quiet" && (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm leading-relaxed text-fg">
+              No criteria leak was reported, and nothing stopped the check from looking.
+            </p>
+            <p className="text-xs leading-relaxed text-dim">
+              Two graphs produce this: one where the criteria producer and the judged
+              node both exist and no path runs between them, and one where nothing in
+              the graph is being judged, so the check had no subject. The lifecycle rows
+              and the schematic above say which of the two this is.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Rendered whatever the headline says, because a warning that only appears when it
+          happens to win the state machine is a warning that disappears the moment
+          something else fires. The content detector is the one that was invisible
+          entirely: under the shipped config `similarityFiresMarker` is false, so this
+          warning is the only thing it can ever emit, and nothing consumed it. */}
+      {suspected.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h5 className="font-mono text-[10px] uppercase tracking-[0.14em] text-amber">
+              <span aria-hidden>▲</span> criteria showing up in the prose
+            </h5>
+            <span className="font-mono text-[11px] text-dim">{suspected.length}</span>
+          </div>
+          <p className="text-xs leading-relaxed text-dim">
+            Doc 1 §3.2: isolation is not just an absent edge, it is the absence of the
+            content from the spec. The comparison is a proxy — the acceptance criteria
+            exist only at run time, so what is compared is the criteria producer&rsquo;s
+            instructions for writing them — which is why it is reported and not charged.
+            Read both texts before acting on it.
+          </p>
+          <ul className="divide-y divide-line">
+            {suspected.map((d, i) => (
+              <BlindChannelRow
+                key={`${d.location?.nodeId ?? "bundle"}-${i}`}
+                diagnostic={d}
+                nodeNames={nodeNames}
+                highlighted={highlighted}
+                onHighlight={onHighlight}
+              />
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {relayed.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h5 className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
+              <span aria-hidden>◌</span> where the trace stopped
+            </h5>
+            <span className="font-mono text-[11px] text-dim">{relayed.length}</span>
+          </div>
+          <p className="text-xs leading-relaxed text-dim">
+            The walk stops at a validation node on purpose. Doc 2 §5.5 endorses the repair
+            loop <code className="font-mono">tester → debugger → tester</code> by name —
+            seeing the evidence of a failure you caused is feedback, seeing the criteria is
+            gaming — and forbids the same loop returning to the builder two sentences
+            later. In the graph those are the same shape, so the analyzer names the channel
+            rather than deciding what crosses it.
+          </p>
+          <ul className="divide-y divide-line">
+            {relayed.map((d, i) => (
+              <BlindChannelRow
+                key={`${d.location?.nodeId ?? "bundle"}-${i}`}
+                diagnostic={d}
+                nodeNames={nodeNames}
+                highlighted={highlighted}
+                onHighlight={onHighlight}
+                glyph="◌"
+                tone="text-dim"
+              />
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {outOfBand.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h5 className="font-mono text-[10px] uppercase tracking-[0.14em] text-amber">
+              <span aria-hidden>▲</span> criteria arriving off the graph
+            </h5>
+            <span className="font-mono text-[11px] text-dim">{outOfBand.length}</span>
+          </div>
+          <p className="text-xs leading-relaxed text-dim">
+            These nodes name their acceptance criteria in a parameter instead of
+            receiving them along an edge. Isolation is a property of the topology, so a
+            channel the topology does not carry is one the check cannot follow — on this
+            channel, for these nodes, the result above says nothing either way. It is not
+            charged: an unverifiable channel is not evidence of a leak.
+          </p>
+          <ul className="divide-y divide-line">
+            {outOfBand.map((d, i) => (
+              <BlindChannelRow
+                key={`${d.location?.nodeId ?? "bundle"}-${i}`}
+                diagnostic={d}
+                nodeNames={nodeNames}
+                highlighted={highlighted}
+                onHighlight={onHighlight}
+              />
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SecurityPanel({
   security,
   nodeNames,
@@ -454,6 +816,9 @@ function SecurityPanel({
   // One weight per marker, which is the whole point of doc 3 §5 — the findings below
   // read theirs from here rather than carrying a per-node share of it.
   const weightOf = new Map(security.penalties.map((p) => [p.marker, p.weight]));
+  const criteriaUnanchored = security.diagnostics.some(
+    (d) => d.code === CRITERIA_UNANCHORED_CODE,
+  );
 
   return (
     <section className="panel p-5" aria-labelledby="security-explained">
@@ -573,6 +938,13 @@ function SecurityPanel({
         <Rationale text={security.rationale} />
       </div>
 
+      <CriteriaIsolation
+        security={security}
+        nodeNames={nodeNames}
+        highlighted={highlighted}
+        onHighlight={onHighlight}
+      />
+
       <div className="mt-5 flex flex-col gap-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h4 className={LABEL}>Findings</h4>
@@ -583,6 +955,12 @@ function SecurityPanel({
 
         {clean ? (
           <p className="flex items-start gap-2 text-sm leading-relaxed text-muted">
+            {/* The tick is for "no marker fired", which is exactly what it used to
+                claim on its own. With the criteria check unanchored that reading is
+                too strong: one of the three inferred markers never got to look, so the
+                sentence says so and points up at the block that explains it. Without
+                the clause, the most important check in the system would be reported as
+                a pass by the paragraph directly under it. */}
             <span className="mt-0.5 font-mono text-emerald" aria-hidden>
               ✓
             </span>
@@ -590,6 +968,15 @@ function SecurityPanel({
               Nothing fired. No card in this bundle declares a risk marker and the
               analyzer derived none from the graph, so the four points the score starts
               with are the four it keeps.
+              {criteriaUnanchored && (
+                <>
+                  {" "}
+                  <span className="text-dim">
+                    One of the derivations did not run, though — the criteria-leak check
+                    above found nothing to anchor on, so its silence is not a result.
+                  </span>
+                </>
+              )}
             </span>
           </p>
         ) : (
@@ -667,9 +1054,9 @@ export function Explainability({
       <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
         Autonomy and Security are the two scores the registry computes rather than
         collects. Both are read off the graph above without running it, and both show
-        their working: which nodes were counted, which markers were charged, and the
-        sentence the engine wrote for each. Select a node name to find it in the
-        schematic.
+        their working: which nodes were counted, which markers were charged, which check
+        could not run, and the sentence the engine wrote for each. Select a node name to
+        find it in the schematic.
       </p>
       {/* Doc 3 §8: a score that does not name the vocabulary it was computed under is
           not comparable with any other score. Both results carry the same version,

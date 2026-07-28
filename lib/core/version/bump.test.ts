@@ -7,7 +7,7 @@ const BASE: NodeCard = {
   id: "solver-a",
   name: "Solver A",
   type: "agent",
-  phase: "implementation",
+  phases: ["implementation"],
   action: "Draft a candidate solution for the sub-task",
   spec: "Read the sub-task on `task` and write one candidate solution to `draft`.",
   tools: ["web-search"],
@@ -90,13 +90,6 @@ describe("inferBump — major", () => {
     ],
     ["the node type changes", next({ type: "tool" }), /node type changed: agent → tool/],
     ["the card id changes", next({ id: "solver-b" }), /card id changed: solver-a → solver-b/],
-    // Doc 3 §2 via the spec's §3 note: the phase is what phase coverage buckets by, so
-    // moving it changes a published property of every blueprint that pinned this card.
-    [
-      "the phase changes",
-      next({ phase: "testing" }),
-      /phase changed: implementation → testing/,
-    ],
   ])("is major when %s", (_name, candidate, reason) => {
     const analysis = inferBump(BASE, candidate);
     expect(analysis.level).toBe("major");
@@ -232,6 +225,71 @@ describe("inferBump — minor", () => {
   });
 });
 
+describe("inferBump — the phase set (the documented reversal)", () => {
+  // `inferBump` used to call any phase change MAJOR: phase coverage re-buckets, and a
+  // blueprint that covered five phases would silently cover four. That reasoning rested on
+  // the phase being a required, exactly-one field. The author's ruling withdrew it — the
+  // five phases describe the factory, not every node in it — so the field is optional and
+  // repeatable, coverage is a description of scope rather than a figure anyone pinned, and
+  // a phase edit breaks no wiring and invalidates no published score. Minor, both ways.
+  it("is minor when the phase moves", () => {
+    const analysis = inferBump(BASE, next({ phases: ["testing"] }));
+    expect(analysis.level).toBe("minor");
+    expect(analysis.reasons).toEqual([
+      "phase `implementation` was withdrawn",
+      "phase `testing` was declared",
+    ]);
+  });
+
+  it("is minor when a second phase is added", () => {
+    const analysis = inferBump(BASE, next({ phases: ["implementation", "debugging"] }));
+    expect(analysis.level).toBe("minor");
+    expect(analysis.reasons).toEqual(["phase `debugging` was declared"]);
+  });
+
+  it("is minor when the only phase is dropped, not patch", () => {
+    // Deliberately not folded into `compareList`, whose convention makes a removal a patch
+    // because "the card claims less" and nothing a blueprint wired against moved. A phase
+    // is not a wiring claim, so dropping one is the same size of edit as adding one — and
+    // treating it as a patch would let the sixteen cards the content sweep unphases ship
+    // as bugfix releases.
+    const analysis = inferBump(BASE, next({ phases: [] }));
+    expect(analysis.level).toBe("minor");
+    expect(analysis.reasons).toEqual(["phase `implementation` was withdrawn"]);
+  });
+
+  it("is minor when a card that had none declares one", () => {
+    const before = next({ phases: [] });
+    const analysis = inferBump(before, next({ phases: ["planning"] }));
+    expect(analysis.level).toBe("minor");
+    expect(analysis.reasons).toEqual(["phase `planning` was declared"]);
+  });
+
+  it("is none when neither version declares a phase", () => {
+    const before = next({ phases: [] });
+    expect(inferBump(before, next({ phases: [] }))).toEqual({ level: "none", reasons: [] });
+  });
+
+  it("is patch for a pure reorder, which restates the same set", () => {
+    const before = next({ phases: ["implementation", "debugging"] });
+    const after = next({ phases: ["debugging", "implementation"] });
+    const analysis = inferBump(before, after);
+    expect(analysis.level).toBe("patch");
+    expect(analysis.reasons).toEqual(["`phase` entries were reordered"]);
+  });
+
+  it("reports both halves of a swap", () => {
+    const before = next({ phases: ["planning", "implementation"] });
+    const after = next({ phases: ["implementation", "testing"] });
+    const analysis = inferBump(before, after);
+    expect(analysis.level).toBe("minor");
+    expect(analysis.reasons).toEqual([
+      "phase `planning` was withdrawn",
+      "phase `testing` was declared",
+    ]);
+  });
+});
+
 describe("inferBump — patch", () => {
   it.each<[string, NodeCard, string]>([
     ["the name changes", next({ name: "Solver B" }), '`name` changed: "Solver A" → "Solver B"'],
@@ -340,15 +398,17 @@ describe("inferBump — combinations and edge cases", () => {
     expect(analysis.reasons).toHaveLength(3);
   });
 
-  it("takes the phase over everything else it also found", () => {
-    // A phase move is major; nothing weaker may bury it, however much else changed.
+  it("does not let a phase move outrank the interface changes beside it", () => {
+    // The reversal, stated where it is easiest to get wrong: a phase edit is minor now, so
+    // a diff that also removes an output is major *because of the output*, and the phase
+    // reason sorts below it rather than deciding the level.
     const analysis = inferBump(
       BASE,
-      next({ phase: "debugging", spec: "Read the failure evidence and produce a targeted fix.", notes: "n" }),
+      next({ phases: ["debugging"], outputs: [] }),
     );
     expect(analysis.level).toBe("major");
-    expect(analysis.reasons[0]).toContain("phase changed: implementation → debugging");
-    expect(analysis.reasons).toHaveLength(3);
+    expect(analysis.reasons[0]).toBe("output `draft` was removed");
+    expect(analysis.reasons.join(" | ")).toContain("phase `debugging` was declared");
   });
 
   it("survives a card with empty everything", () => {
@@ -358,7 +418,7 @@ describe("inferBump — combinations and edge cases", () => {
       id: "x",
       name: "X",
       type: "tool",
-      phase: "planning",
+      phases: ["planning"],
       action: "",
       spec: "",
       tools: [],

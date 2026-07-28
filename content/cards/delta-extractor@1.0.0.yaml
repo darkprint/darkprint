@@ -1,7 +1,6 @@
 id: delta-extractor
 name: Delta Extractor
 type: tool
-phase: implementation
 
 action: >-
   Query the warehouse for every row changed inside the window and return them as a table, paging

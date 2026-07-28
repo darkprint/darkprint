@@ -1,7 +1,6 @@
 id: pr-intake
 name: PR Intake
 type: tool
-phase: planning
 
 action: >-
   Open a run for every pull request the repository webhook reports, packaging the diff, the base

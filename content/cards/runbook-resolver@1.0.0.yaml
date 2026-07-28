@@ -1,7 +1,6 @@
 id: runbook-resolver
 name: Runbook Resolver
 type: tool
-phase: implementation
 
 action: >-
   Match the routed alert to a runbook in the versioned store and return it as Markdown, pinned to

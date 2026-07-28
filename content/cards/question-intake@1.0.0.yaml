@@ -1,7 +1,6 @@
 id: question-intake
 name: Question Intake
 type: tool
-phase: planning
 
 action: >-
   Open a research run from an inbound question, carrying the asker's scope and deadline with it

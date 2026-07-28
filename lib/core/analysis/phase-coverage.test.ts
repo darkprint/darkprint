@@ -2,6 +2,11 @@
    Tests for phase coverage (doc 2 §8, doc 3 §2, doc 2 §1.1).
    `bundle/resolve.ts` is not under test here, so the
    ResolvedBlueprint fixtures are hand-built from ../bundle/types.
+
+   The phase dimension is optional and repeatable: the five phases
+   describe the factory, not every node in it. So the fixtures here
+   carry cards with no phase and cards with two, and the assertions
+   below say in as many ways as they can that neither is a defect.
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
@@ -32,7 +37,7 @@ function makeCard(over: Partial<NodeCard> & { id: string }): NodeCard {
   return {
     name: `Node ${over.id}`,
     type: "agent",
-    phase: "implementation",
+    phases: ["implementation"],
     action: `Do the ${over.id} work`,
     spec: `Carry out the ${over.id} step exactly as the plan describes it, and stop there.`,
     tools: [],
@@ -87,22 +92,22 @@ function makeBlueprint(
     // Deliberately left empty here, and the one fixture in the engine that should be:
     // `computePhaseCoverage` is the subject of this file, so seeding the field with its
     // own answer would let a broken implementation agree with itself.
-    phaseCoverage: { covered: [], missing: [], byPhase: {} },
+    phaseCoverage: { covered: [], missing: [], byPhase: {}, unphased: [] },
   };
 }
 
 /** One node per named phase, ids matching the phase for readability. */
 function phased(...phases: readonly string[]): NodeSpec[] {
-  return phases.map((phase, i) => ({ id: `n${i}_${phase}`, card: { phase } }));
+  return phases.map((phase, i) => ({ id: `n${i}_${phase}`, card: { phases: [phase] } }));
 }
 
 /** The starter blueprint of doc 2 §5.2: one node per phase, in lifecycle order. */
 const STARTER: NodeSpec[] = [
-  { id: "planner", card: { phase: "planning" } },
-  { id: "builder", card: { phase: "implementation" } },
-  { id: "tester", card: { phase: "testing", type: "validation" } },
-  { id: "debugger", card: { phase: "debugging" } },
-  { id: "deployer", card: { phase: "deployment" } },
+  { id: "planner", card: { phases: ["planning"] } },
+  { id: "builder", card: { phases: ["implementation"] } },
+  { id: "tester", card: { phases: ["testing"], type: "validation" } },
+  { id: "debugger", card: { phases: ["debugging"] } },
+  { id: "deployer", card: { phases: ["deployment"] } },
 ];
 
 /* --------------------- the canonical order (doc 3 §2) --------------------- */
@@ -241,9 +246,9 @@ describe("computePhaseCoverage — byPhase", () => {
   it("lists several nodes of one phase in graph order", () => {
     const bp = makeBlueprint(
       [
-        { id: "c", card: { phase: "testing" } },
-        { id: "a", card: { phase: "testing" } },
-        { id: "b", card: { phase: "testing" } },
+        { id: "c", card: { phases: ["testing"] } },
+        { id: "a", card: { phases: ["testing"] } },
+        { id: "b", card: { phases: ["testing"] } },
       ],
       {
         graphIds: ["a", "b", "c"],
@@ -261,8 +266,8 @@ describe("computePhaseCoverage — byPhase", () => {
 
   it("groups by node id, so one card used twice covers its phase from both nodes", () => {
     const bp = makeBlueprint([
-      { id: "check_one", card: { phase: "testing", type: "validation" } },
-      { id: "check_two", card: { phase: "testing", type: "validation" } },
+      { id: "check_one", card: { phases: ["testing"], type: "validation" } },
+      { id: "check_two", card: { phases: ["testing"], type: "validation" } },
     ]);
 
     expect(computePhaseCoverage(bp).byPhase.testing).toEqual(["check_one", "check_two"]);
@@ -271,13 +276,163 @@ describe("computePhaseCoverage — byPhase", () => {
   it("keeps a resolved node the graph does not carry, at the end of its group", () => {
     const bp = makeBlueprint(
       [
-        { id: "ghost", card: { phase: "planning" } },
-        { id: "a", card: { phase: "planning" } },
+        { id: "ghost", card: { phases: ["planning"] } },
+        { id: "a", card: { phases: ["planning"] } },
       ],
       { graphIds: ["a"] },
     );
 
     expect(computePhaseCoverage(bp).byPhase.planning).toEqual(["a", "ghost"]);
+  });
+});
+
+/* --------------------- several phases on one card --------------------- */
+
+describe("computePhaseCoverage — a node in more than one phase", () => {
+  // The synthesiser of the research desk is the real case: it drafts the answer and it
+  // repairs the answer when the fact-checker sends it back. It is in `implementation` and
+  // in `debugging`, and picking one of the two would describe the factory wrongly.
+  const SYNTH: NodeSpec = {
+    id: "synth",
+    card: { phases: ["implementation", "debugging"] },
+  };
+
+  it("covers every phase the card declares", () => {
+    const result = computePhaseCoverage(makeBlueprint([SYNTH]));
+
+    expect(result.covered).toEqual(["implementation", "debugging"]);
+    expect(result.missing).toEqual(["planning", "testing", "deployment"]);
+  });
+
+  it("lists the node under each of them", () => {
+    const result = computePhaseCoverage(makeBlueprint([SYNTH]));
+
+    expect(result.byPhase.implementation).toEqual(["synth"]);
+    expect(result.byPhase.debugging).toEqual(["synth"]);
+  });
+
+  it("covers the graph without partitioning it, so the groups may overlap", () => {
+    // The invariant that used to hold — every node in exactly one bucket — is gone, and
+    // anything still summing the groups to count nodes is counting something else.
+    const result = computePhaseCoverage(
+      makeBlueprint([SYNTH, { id: "ship", card: { phases: ["deployment"] } }]),
+    );
+
+    const listed = Object.values(result.byPhase).flat();
+    expect(listed).toHaveLength(3);
+    expect(new Set(listed)).toEqual(new Set(["synth", "ship"]));
+  });
+
+  it("reports the phases in lifecycle order however the card wrote them", () => {
+    const backwards = makeBlueprint([
+      { id: "synth", card: { phases: ["debugging", "implementation"] } },
+    ]);
+
+    expect(computePhaseCoverage(backwards).covered).toEqual(["implementation", "debugging"]);
+  });
+
+  it("does not list a node twice under one phase when a card repeats it", () => {
+    // `card/duplicate-phase` warns and the validator collapses the repeat, but a card
+    // built by hand can still carry it and must not double the node in its group.
+    const bp = makeBlueprint([{ id: "a", card: { phases: ["testing", "testing"] } }]);
+
+    expect(computePhaseCoverage(bp).byPhase.testing).toEqual(["a"]);
+  });
+
+  it("keeps a node out of `unphased` when it declares two phases", () => {
+    expect(computePhaseCoverage(makeBlueprint([SYNTH])).unphased).toEqual([]);
+  });
+});
+
+/* --------------------- unphased: a description, never a gap --------------------- */
+
+describe("computePhaseCoverage — nodes in none of the five", () => {
+  // The author's ruling: the five phases are the phases a *factory* is expected to have
+  // and "do not necessarily have to stick to nodes". An intake, a retrieval strand and a
+  // checkpoint store sit in none of them, and that is the correct answer, not a hole.
+  const INGRESS: NodeSpec[] = [
+    { id: "intake", card: { phases: [] } },
+    { id: "recall", card: { phases: [] } },
+  ];
+
+  it("collects them in `unphased`, in graph order", () => {
+    const bp = makeBlueprint(
+      [...INGRESS, { id: "build", card: { phases: ["implementation"] } }],
+      { graphIds: ["intake", "recall", "build"] },
+    );
+
+    expect(computePhaseCoverage(bp).unphased).toEqual(["intake", "recall"]);
+  });
+
+  it("keeps them out of every phase group rather than inventing one", () => {
+    const result = computePhaseCoverage(makeBlueprint(INGRESS));
+
+    expect(Object.keys(result.byPhase)).toEqual([...CORE_PHASE_IDS]);
+    expect(Object.values(result.byPhase).flat()).toEqual([]);
+  });
+
+  it("does not make them cover or fill anything: a blueprint of only unphased nodes covers nothing", () => {
+    const result = computePhaseCoverage(makeBlueprint(INGRESS));
+
+    expect(result.covered).toEqual([]);
+    expect(result.missing).toEqual([...CORE_PHASE_IDS]);
+  });
+
+  it("reports the same coverage with and without the unphased nodes present", () => {
+    // The load-bearing assertion of the whole ruling: adding an intake to a factory must
+    // not change one character of what that factory is said to cover. If it did, an author
+    // would be pushed to invent a phase for it, which is exactly what this change undoes.
+    const withIngress = computePhaseCoverage(makeBlueprint([...INGRESS, ...STARTER]));
+    const without = computePhaseCoverage(makeBlueprint(STARTER));
+
+    expect(withIngress.covered).toEqual(without.covered);
+    expect(withIngress.missing).toEqual(without.missing);
+    expect(withIngress.byPhase).toEqual(without.byPhase);
+  });
+
+  it("puts a node with no phase in `unphased` and not in `missing`", () => {
+    // `missing` is about the five phases; `unphased` is about nodes. Conflating them is
+    // how "this node has no phase" would become "this blueprint is missing something".
+    const result = computePhaseCoverage(makeBlueprint([{ id: "intake", card: { phases: [] } }]));
+
+    expect(result.unphased).toEqual(["intake"]);
+    expect(result.missing).not.toContain("intake");
+  });
+
+  it("treats a card whose only entries are blank as unphased", () => {
+    const result = computePhaseCoverage(
+      makeBlueprint([
+        { id: "blank", card: { phases: [""] } },
+        { id: "spaces", card: { phases: ["   "] } },
+        { id: "real", card: { phases: ["deployment"] } },
+      ]),
+    );
+
+    expect(result.unphased).toEqual(["blank", "spaces"]);
+    expect(result.covered).toEqual(["deployment"]);
+    expect(Object.keys(result.byPhase)).toEqual([...CORE_PHASE_IDS]);
+    expect(Object.values(result.byPhase).flat()).toEqual(["real"]);
+  });
+
+  it("keeps a card with one real phase and one blank entry out of `unphased`", () => {
+    const result = computePhaseCoverage(
+      makeBlueprint([{ id: "a", card: { phases: ["testing", ""] } }]),
+    );
+
+    expect(result.unphased).toEqual([]);
+    expect(result.byPhase.testing).toEqual(["a"]);
+  });
+
+  it("covers every resolved node exactly once between byPhase and unphased", () => {
+    const bp = makeBlueprint([
+      { id: "intake", card: { phases: [] } },
+      { id: "synth", card: { phases: ["implementation", "debugging"] } },
+      { id: "ship", card: { phases: ["deployment"] } },
+    ]);
+    const result = computePhaseCoverage(bp);
+
+    const named = new Set([...Object.values(result.byPhase).flat(), ...result.unphased]);
+    expect(named).toEqual(new Set(["intake", "synth", "ship"]));
   });
 });
 
@@ -289,6 +444,7 @@ describe("computePhaseCoverage — cards that do not fit the five", () => {
 
     expect(result.covered).toEqual([]);
     expect(result.missing).toEqual([...CORE_PHASE_IDS]);
+    expect(result.unphased).toEqual([]);
     expect(result.byPhase).toEqual({
       planning: [],
       implementation: [],
@@ -299,10 +455,11 @@ describe("computePhaseCoverage — cards that do not fit the five", () => {
   });
 
   it("ignores a node whose card is not in the bundle", () => {
-    // The card declares the phase; a node with no card declares nothing, and
-    // `bundle/missing-card` already reports it.
+    // The card declares the phases; a node with no card declares nothing at all, which is
+    // not the same as declaring none — `bundle/missing-card` reports it, and putting it in
+    // `unphased` would state a fact about a card nobody read.
     const result = computePhaseCoverage(
-      makeBlueprint([{ id: "a", card: { phase: "planning" } }], {
+      makeBlueprint([{ id: "a", card: { phases: ["planning"] } }], {
         graphIds: ["a", "b", "c"],
       }),
     );
@@ -310,6 +467,7 @@ describe("computePhaseCoverage — cards that do not fit the five", () => {
     expect(result.covered).toEqual(["planning"]);
     expect(result.byPhase.planning).toEqual(["a"]);
     expect(Object.values(result.byPhase).flat()).toEqual(["a"]);
+    expect(result.unphased).toEqual([]);
   });
 
   it("keeps a phase outside the five visible instead of dropping the node", () => {
@@ -317,8 +475,8 @@ describe("computePhaseCoverage — cards that do not fit the five", () => {
     // validation. Losing the node here as well would hide it twice.
     const result = computePhaseCoverage(
       makeBlueprint([
-        { id: "a", card: { phase: "planning" } },
-        { id: "b", card: { phase: "berti/discovery" } },
+        { id: "a", card: { phases: ["planning"] } },
+        { id: "b", card: { phases: ["berti/discovery"] } },
       ]),
     );
 
@@ -333,25 +491,13 @@ describe("computePhaseCoverage — cards that do not fit the five", () => {
     ]);
     // And it sorts after the five, so the canonical order survives the intruder.
     expect(Object.keys(result.byPhase)).toEqual([...CORE_PHASE_IDS, "berti/discovery"]);
-  });
-
-  it("ignores an absent or blank phase rather than opening a group nobody can name", () => {
-    const result = computePhaseCoverage(
-      makeBlueprint([
-        { id: "blank", card: { phase: "" } },
-        { id: "spaces", card: { phase: "   " } },
-        { id: "real", card: { phase: "deployment" } },
-      ]),
-    );
-
-    expect(result.covered).toEqual(["deployment"]);
-    expect(Object.keys(result.byPhase)).toEqual([...CORE_PHASE_IDS]);
-    expect(Object.values(result.byPhase).flat()).toEqual(["real"]);
+    // The node declared *something*, so it is placed rather than counted as unphased.
+    expect(result.unphased).toEqual([]);
   });
 
   it("trims whitespace around a phase a hand-written card padded", () => {
     const result = computePhaseCoverage(
-      makeBlueprint([{ id: "a", card: { phase: " testing " } }]),
+      makeBlueprint([{ id: "a", card: { phases: [" testing "] } }]),
     );
 
     expect(result.covered).toEqual(["testing"]);
@@ -362,8 +508,8 @@ describe("computePhaseCoverage — cards that do not fit the five", () => {
     expect(() =>
       computePhaseCoverage(
         makeBlueprint([
-          { id: "a", card: { phase: "" } },
-          { id: "b", card: { phase: "not-a-phase" } },
+          { id: "a", card: { phases: [] } },
+          { id: "b", card: { phases: ["not-a-phase", "not-a-phase"] } },
         ], { graphIds: ["a", "b", "c"] }),
       ),
     ).not.toThrow();
@@ -379,10 +525,11 @@ describe("computePhaseCoverage — descriptive, never a score", () => {
     // appear. This test fails the moment a summary string or a percentage is added.
     const result = computePhaseCoverage(makeBlueprint(STARTER.slice(0, 3)));
 
-    expect(Object.keys(result).sort()).toEqual(["byPhase", "covered", "missing"]);
+    expect(Object.keys(result).sort()).toEqual(["byPhase", "covered", "missing", "unphased"]);
     for (const value of [
       ...result.covered,
       ...result.missing,
+      ...result.unphased,
       ...Object.values(result.byPhase).flat(),
     ]) {
       expect(typeof value).toBe("string");
@@ -396,6 +543,18 @@ describe("computePhaseCoverage — descriptive, never a score", () => {
     // Same shape, same keys — nothing in the result ranks one above the other.
     expect(Object.keys(three)).toEqual(Object.keys(five));
     expect(Object.keys(three.byPhase)).toEqual(Object.keys(five.byPhase));
+  });
+
+  it("treats a factory of unphased nodes as the same kind of answer as a full lifecycle", () => {
+    const none = computePhaseCoverage(
+      makeBlueprint([{ id: "intake", card: { phases: [] } }]),
+    );
+    const five = computePhaseCoverage(makeBlueprint(STARTER));
+
+    expect(Object.keys(none)).toEqual(Object.keys(five));
+    // No count, no ratio, no flag: the difference between the two is which ids are where.
+    expect(typeof none.unphased.length).toBe("number");
+    expect(Object.keys(none).filter((k) => /score|ratio|percent|complete/i.test(k))).toEqual([]);
   });
 });
 
@@ -416,10 +575,12 @@ describe("computePhaseCoverage — purity", () => {
     const first = computePhaseCoverage(bp);
     first.covered.push("nonsense");
     first.byPhase.planning.push("nonsense");
+    first.unphased.push("nonsense");
 
     const second = computePhaseCoverage(bp);
     expect(second.covered).toEqual([...CORE_PHASE_IDS]);
     expect(second.byPhase.planning).toEqual(["planner"]);
+    expect(second.unphased).toEqual([]);
   });
 
   it("is deterministic: the same blueprint answers identically every time", () => {

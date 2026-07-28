@@ -1,7 +1,6 @@
 id: vector-recall
 name: Vector Recall
 type: tool
-phase: implementation
 
 action: >-
   Embed the strand's query and return the k nearest passages from the internal store, each

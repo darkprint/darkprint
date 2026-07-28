@@ -53,11 +53,59 @@
    the author and does not move the score.
 
    A second limitation of the same check, worth knowing before
-   reading a clean result as an all-clear: both `criteria-leak`
-   detectors need a node that declares an output port subsumed by
-   `acceptance-criteria`. A factory whose planner leaves its ports
-   untyped gives the most important check in the system nothing to
-   anchor on, and it reports nothing rather than guessing.
+   reading a clean result as an all-clear: the check needs two
+   legs — a node declaring an output port subsumed by
+   `acceptance-criteria` to trace FROM, and a node whose work a
+   `validation` node judges to trace TO. A factory whose planner
+   leaves its ports untyped is missing the first; a factory whose
+   test runner is typed `tool` is missing the second, and the
+   ontology positively invites that reading. Either way the check
+   cannot run, and either way it now SAYS so, as
+   `analysis/criteria-leak-unanchored`. Measured on the real
+   archive it was inert in eight bundles out of nine and
+   indistinguishable from a pass, and a check that cannot tell
+   "clean" from "not evaluated" is the actual defect.
+
+   Five outcomes, and only the first moves the score:
+
+     leak found  — `criteria-leak` on the generator
+     clean       — the check ran end to end and found no route
+     unanchored  — `analysis/criteria-leak-unanchored`, warning:
+                   one of the two legs is missing
+     relayed     — `analysis/criteria-relayed-through-judge`,
+                   warning: the criteria reach a validation node
+                   whose output flows on to a generator, and the
+                   walk stops at a judge by design (doc 2 §5.5)
+     out of band — `analysis/criteria-out-of-band`, warning: the
+                   criteria are named in `params` and produced by
+                   nothing in the graph, so they arrive outside the
+                   topology and isolation cannot be a property of
+                   the topology (doc 2 §3) for that node at all
+
+   None of the three warnings ever fires the marker: reporting
+   that the system does not know is not evidence of a leak. What
+   they exist to prevent is the system not knowing *quietly*.
+
+   ── Where the generator set comes from, since it moved.
+   It used to be `phase == implementation`. The phase is now
+   optional (the five phases describe the factory, not every node),
+   so anchoring the most important check in the system on a field
+   an author may legitimately omit would have made it weaker still.
+   The anchor is purely topological, and it is the transitive
+   closure of the spec's formula through non-validation nodes:
+
+       G = { n | ∃ v : type(v) ⊑ validation ∧ v ≠ n ∧ ∃ path
+                 n → … → v with no validation node in between }
+
+   The thing being judged is whatever the judge reads, and that is
+   everything upstream of the judge that is not itself a verdict.
+   `⊑` is the ontology's `isA`, not an equality against a
+   hard-coded id, so a locally namespaced validation type (doc 3
+   §7) anchors the check exactly like the core one. `G` also has a
+   declarative half, rule (d): a node that says on its own card
+   that it emits both the criteria and the artefact its judge reads
+   needs no path at all, because at node level those are the same
+   edge.
 
    A third: the content detector needs both specs to be long enough
    to hold a 3-gram (`carriesShingleEvidence`). Two placeholder
@@ -71,7 +119,7 @@
 import { DARKPRINT_CONFIG, type DarkprintConfig } from "../config";
 import type { Diagnostic } from "../diagnostics";
 import { warning } from "../diagnostics";
-import type { NodeCard } from "../card/schema";
+import type { JsonValue, NodeCard } from "../card/schema";
 import { declaresIterationCap } from "../card/iteration-cap";
 import type { ResolvedBlueprint, ResolvedNode } from "../bundle/types";
 import type { OntologyView } from "../ontology/resolve";
@@ -173,14 +221,26 @@ const MARKER_UNBOUNDED_LOOP = "unbounded-loop";
 const MARKER_UNVALIDATED_EXTERNAL_ACCESS = "unvalidated-external-access";
 const MARKER_CRITERIA_LEAK = "criteria-leak";
 
-/** Doc 3 §2. Compared by identity, not `isA`: the five phases are closed and flat (doc 3 §7). */
-const IMPLEMENTATION_PHASE = "implementation";
-
 /** Doc 1 §2 rule 3's port type that doc 3 §4.1's check anchors on. */
 const CRITERIA_DATA_TYPE = "acceptance-criteria";
 
-/** Doc 3 §3. The node type that answers `unvalidated-external-access`. */
+/**
+ * Doc 3 §3. The node type that answers `unvalidated-external-access`, and — since the
+ * phase anchor was withdrawn — the type that defines the `criteria-leak` generator set too.
+ */
 const VALIDATION_TYPE = "validation";
+
+/**
+ * A `params` key naming the acceptance criteria, for `analysis/criteria-out-of-band`.
+ *
+ * `/criteri/i` rather than `/criteria/i` so the Italian `criterio`, `criteri` and the
+ * English `criteria`, `criterion` all match one pattern; doc 3 is written in Italian and
+ * the cards in the archive are not consistent about which language a param key uses.
+ */
+const CRITERIA_PARAM_KEY = /criteri/i;
+
+/** How far into a nested `params` value the out-of-band scan reads its string leaves. */
+const PARAM_SCAN_DEPTH = 6;
 
 /**
  * The tool capabilities that constitute "accesso a rete, API o risorse esterne" (doc 3 §4).
@@ -300,6 +360,28 @@ function usableWeight(weight: number | undefined): number | undefined {
   return Number.isFinite(weight) && weight >= 0 ? weight : undefined;
 }
 
+/**
+ * Every string inside a `params` value, down to `depth` levels of nesting.
+ *
+ * `analysis/criteria-out-of-band` asks whether a param *names* something, and a criteria
+ * reference is written as a string however it is wrapped — `criteria_ref: x`,
+ * `criteria: [a, b]`, `criteria: {set: x}`. Numbers and booleans are deliberately not
+ * stringified: `criteria_threshold: 0.8` names nothing and must not be reported as a
+ * dangling reference. The depth limit keeps a hand-written params tree from turning a
+ * warning into a stack overflow; `card/bad-type` already refuses anything deeper than 100.
+ */
+function stringLeaves(value: JsonValue | undefined, depth: number): string[] {
+  if (typeof value === "string") return [value];
+  if (depth <= 0 || value === null || typeof value !== "object") return [];
+  const out: string[] = [];
+  if (Array.isArray(value)) {
+    for (const item of value) out.push(...stringLeaves(item, depth - 1));
+    return out;
+  }
+  for (const key of Object.keys(value)) out.push(...stringLeaves(value[key], depth - 1));
+  return out;
+}
+
 /** `` `criteria-leak` (Criteria leak) `` when the term resolves, `` `berti/x` `` when it does not. */
 function describeMarker(marker: string, ontology: OntologyView): string {
   const resolved = ontology.resolve(marker, "risk-marker");
@@ -329,9 +411,17 @@ interface MarkerHit {
   inferredHint?: string;
 }
 
-/** Keyed on the pair. ` ` cannot occur in a term id or a DOT node id. */
+/**
+ * Keyed on the pair. `\0` cannot occur in a term id or a DOT node id.
+ *
+ * Written as the escape, never as a raw NUL byte: one NUL anywhere in a source file makes
+ * git and grep classify the whole file as binary, so `git diff` prints "Binary files
+ * differ" instead of the patch and `grep -n criteria security.ts` silently returns
+ * nothing. The runtime string is identical either way; only the bytes on disk differ, and
+ * a file nobody can diff is a file nobody can review.
+ */
 function hitKey(marker: string, nodeId: string): string {
-  return `${marker} ${nodeId}`;
+  return `${marker}\0${nodeId}`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -523,63 +613,417 @@ export function computeSecurity(
       MARKER_UNVALIDATED_EXTERNAL_ACCESS,
       node.nodeId,
       `reaches outside the graph (${tools}) and hands its output straight to ${joinQuotedAnd(consumerIds)} with no validation node in between`,
-      `Insert a validation node between ${node.nodeId} and ${consumerIds.length === 1 ? consumerIds[0] : `each of ${consumerIds.join(", ")}`}, so the fetched content is checked before anything downstream uses it.`,
+      // The second sentence is not decoration. The criteria walk below stops at a
+      // validation node, so following this hint literally drops a judge onto whatever
+      // path the criteria were taking and the topological half of `criteria-leak` stops
+      // tracing through it. That used to turn a blueprint scoring 1 with two markers into
+      // a blueprint scoring 4 with none, while the criteria still reached the builder —
+      // the engine's own remediation advice quietly disarming the most important check in
+      // the system. `analysis/criteria-relayed-through-judge` now says so out loud when it
+      // happens, and this sentence says so before it happens.
+      `Insert a validation node between ${node.nodeId} and ${consumerIds.length === 1 ? consumerIds[0] : `each of ${consumerIds.join(", ")}`}, so the fetched content is checked before anything downstream uses it. Make it judge the content and forward a verdict: a validation node that passes the acceptance criteria along with it is where \`criteria-leak\` stops being able to trace them, and the analyzer will report that it stopped rather than read the silence as isolation.`,
     );
   }
 
   /* ---------- inferred 3/3: criteria-leak (doc 3 §4.1, doc 2 §3) ---------- */
-  // "Il controllo più importante dell'intero sistema." Two independent detectors: the
-  // topology, and the prose the topology cannot see.
+  // "Il controllo più importante dell'intero sistema." Four detectors — two that charge
+  // the marker and two that report a route the graph cannot answer for — plus the
+  // unanchored guard, whose only job is to make sure the check can never report nothing
+  // without saying that it did.
+
+  /** `C` — a node declaring an output port subsumed by `acceptance-criteria` (doc 3 §4.1). */
   const criteriaProducers = bp.nodes.filter((node) =>
     node.card.outputs.some((port) => ontology.isA(port.type, CRITERIA_DATA_TYPE)),
   );
-  // Identity, not `isA`: doc 3 §7 closes the phase dimension, so a subtype of
-  // `implementation` is a term that must never exist, and asking `isA` here would quietly
-  // accept one.
-  const generators = bp.nodes.filter((node) => node.card.phase === IMPLEMENTATION_PHASE);
+  const producesCriteria = new Set(criteriaProducers.map((node) => node.nodeId));
 
-  /* (a) topological */
-  // One reachability walk per criteria producer. `C` is the set of nodes declaring an
-  // `acceptance-criteria` output port, which in any real factory is one node; asking
-  // `ancestors` per generator instead would cost a walk per implementation node, and
-  // there are many more of those.
+  /** Doc 3 §3, through `isA`: a locally namespaced judge (doc 3 §7) is a judge. */
+  const isJudge = (id: string): boolean => {
+    const node = nodesById.get(id);
+    return node !== undefined && ontology.isA(node.card.type, VALIDATION_TYPE);
+  };
+
+  /**
+   * For each node, the validation nodes it hands its output to *directly*. Self-loops are
+   * excluded for the same reason `unvalidated-external-access` excludes them: doc 2 §3's
+   * argument is that the thing that produced an output must not be the thing that blesses
+   * it, so a node is never its own judge.
+   */
+  const judgesOf = new Map<string, string[]>();
+  for (const id of graph.ids) {
+    const judges = uniq(graph.successors(id)).filter(
+      (successor) => successor !== id && isJudge(successor),
+    );
+    if (judges.length > 0) judgesOf.set(id, judges.sort(cmpString));
+  }
+
+  /**
+   * `G` — the generator set: the nodes whose work is measured against the criteria.
+   *
+   * The spec writes it `G = { n | ∃ v : type(v) ⊑ validation ∧ edge(n → v) }`, and that is
+   * the floor rather than the whole of it. Read literally it names only whoever hands the
+   * judge its artefact, which is as often a packaging or formatting step as the author of
+   * the thing; with `planner → builder → packager → tester` the marker landed on
+   * `packager`, which neither saw the criteria nor wrote a line, and `builder` — the node
+   * doc 2 §3 is entirely about — appeared in neither the finding nor the hint. So `G` is
+   * closed upwards through non-validation nodes:
+   *
+   *     G = { n | ∃ v : type(v) ⊑ validation ∧ v ≠ n ∧ ∃ path n → … → v
+   *               whose intermediate nodes are all non-validation }
+   *
+   * Everything on such a path contributes to the artefact the judge reads, so everything
+   * on it is somewhere criteria-shaped content can be injected. The closure stopping at a
+   * judge is the load-bearing half, in both directions:
+   *
+   *  - **upwards**, because what a judge emits is a verdict *about* an artefact and not
+   *    the artefact — doc 2 §5.5 is explicit that failure evidence and criteria are
+   *    different things. Without this stop, a review gate sitting two hops upstream of a
+   *    tester would be charged for holding the criteria it exists to apply.
+   *  - **at the judge itself**, because a validation node enters `G` only as a *direct*
+   *    predecessor of a *different* judge. A terminal judge — the starter's `tester`,
+   *    whose successors are a debugger and a deployer — is therefore never a subject, and
+   *    doc 3 §3's node is not charged for existing. But a node typed `validation` that
+   *    hands its output straight to another judge is producing an artefact under
+   *    judgement whatever its type says, and the blanket `!isJudge` exclusion this
+   *    replaces sold total immunity for one field value: a "review" node taking the
+   *    criteria and a draft and emitting an edited draft was invisible as a subject *and*
+   *    absorbed every walk that reached it, so the drafter upstream escaped too.
+   *
+   * Criteria producers are **not** excluded here. A producer is skipped only against a
+   * walk starting at itself — the criteria originate there, they do not arrive — which is
+   * the narrow rule the canonical `planner → tester` topology actually needs. The blanket
+   * exclusion that used to stand here cost the check the case in rule (d) below, and the
+   * content detector it named as the compensating control never covered it.
+   */
+  const generatorIds = new Set<string>();
+  /** For each generator, the judges its work reaches. Drives the explanation. */
+  const judgesReachedBy = new Map<string, Set<string>>();
+  const recordGenerator = (id: string, judgeId: string): void => {
+    generatorIds.add(id);
+    const judges = judgesReachedBy.get(id);
+    if (judges === undefined) judgesReachedBy.set(id, new Set([judgeId]));
+    else judges.add(judgeId);
+  };
+  for (const judgeId of graph.ids) {
+    if (!isJudge(judgeId)) continue;
+    const seen = new Set<string>();
+    const stack: string[] = [];
+    // Level 0: whoever hands this judge its artefact, whatever their own type.
+    for (const predecessor of graph.predecessors(judgeId)) {
+      if (predecessor === judgeId) continue;
+      recordGenerator(predecessor, judgeId);
+      if (!isJudge(predecessor)) stack.push(predecessor);
+    }
+    // Then upwards, through non-validation nodes only.
+    while (stack.length > 0) {
+      const id = stack.pop();
+      if (id === undefined) break;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      for (const predecessor of graph.predecessors(id)) {
+        if (isJudge(predecessor)) continue;
+        recordGenerator(predecessor, judgeId);
+        if (!seen.has(predecessor)) stack.push(predecessor);
+      }
+    }
+  }
+  /** A node the graph names but no card describes has no spec and no ports to reason from. */
+  const generators = bp.nodes.filter((node) => generatorIds.has(node.nodeId));
+
+  /** "hands its output to the validation node(s) …" — the subject-less clause form. */
+  const routeClause = (id: string): string => {
+    const direct = judgesOf.get(id) ?? [];
+    if (direct.length > 0) {
+      return `hands its output to the validation node${direct.length === 1 ? "" : "s"} ${joinQuotedAnd(direct)}`;
+    }
+    const downstream = [...(judgesReachedBy.get(id) ?? [])].sort(cmpString);
+    return `feeds the validation node${downstream.length === 1 ? "" : "s"} ${joinQuotedAnd(downstream)} further downstream, so its work is part of what ${downstream.length === 1 ? "that node judges" : "those nodes judge"}`;
+  };
+
+  /**
+   * The nodes a producer's criteria can reach, walking forward from its successors.
+   *
+   * Two rules, and they are the whole of the topological reading:
+   *
+   *  - the walk starts at the producer's *successors*, so a producer is not in its own
+   *    flow. The criteria do not arrive there; they originate there.
+   *  - with `absorbAtJudge`, a validation node **absorbs** the criteria: it is recorded as
+   *    reached and its own successors are not explored. That is the sanctioned destination
+   *    — doc 3 §3 makes holding the criteria the judge's job — and expanding through it
+   *    would report a leak on every node downstream of any judge, starting with the
+   *    debugger of the starter factory, whose loop is `tester → debugger → tester` and
+   *    which doc 2 §5.5 endorses by name.
+   *
+   * The unabsorbed walk is not the truth the absorbed one approximates. It is the second
+   * half of a comparison: everything it reaches and the absorbed walk does not is a node
+   * the criteria arrive at *if* some judge forwards them, and the graph cannot say whether
+   * one does. `tester → debugger → tester`, which doc 2 §5.5 endorses, and
+   * `tester → builder → tester`, which it forbids in the same paragraph, are the same
+   * shape here. So the difference is reported rather than decided — see (a2).
+   */
+  const criteriaFlow = (producerId: string, absorbAtJudge: boolean): Set<string> => {
+    const reached = new Set<string>();
+    const stack: string[] = [...graph.successors(producerId)];
+    while (stack.length > 0) {
+      const id = stack.pop();
+      if (id === undefined) break;
+      if (reached.has(id)) continue;
+      reached.add(id);
+      if (absorbAtJudge && isJudge(id)) continue;
+      stack.push(...graph.successors(id));
+    }
+    return reached;
+  };
+
+  /**
+   * The shortest route the criteria take from `from` to `to`, or `[]` when there is none.
+   *
+   * Breadth-first, so the hint can name the *first* edge on the shortest path — the edge
+   * the author wrote, which is the one they can delete. Naming only the endpoints told an
+   * author with an intermediary in the way to remove a path that does not appear anywhere
+   * in their DOT.
+   */
+  const criteriaRoute = (from: string, to: string): string[] => {
+    const parent = new Map<string, string>();
+    const queue: string[] = [from];
+    const seen = new Set<string>([from]);
+    for (let head = 0; head < queue.length; head += 1) {
+      const id = queue[head];
+      // Same absorption as the walk this explains, so the route is one the walk took.
+      if (id !== from && isJudge(id)) continue;
+      for (const next of graph.successors(id)) {
+        if (seen.has(next)) continue;
+        seen.add(next);
+        parent.set(next, id);
+        if (next !== to) {
+          queue.push(next);
+          continue;
+        }
+        const route = [to];
+        for (let cursor = to; ; ) {
+          const previous = parent.get(cursor);
+          if (previous === undefined) return route;
+          route.unshift(previous);
+          cursor = previous;
+        }
+      }
+    }
+    return [];
+  };
+
+  /* (a) topological — a route from a criteria producer to a generator */
+  // One pair of walks per criteria producer, which in any real factory is one node; asking
+  // `ancestors` per generator instead would cost a walk each, and there are more of those.
   const reachedFrom = new Map<string, string[]>();
+  /** Generator id → the judges the criteria stopped at on the way to it. Rule (a2). */
+  const relayedThrough = new Map<string, Set<string>>();
   for (const producer of criteriaProducers) {
-    const reach = graph.descendants(producer.nodeId);
-    for (const generator of generators) {
-      // The reflexive case is a leak too, and the sneakiest one: a node that both writes
-      // the acceptance criteria and builds the artefact has them in hand while building.
-      // `descendants` excludes self unless a cycle returns, so it is tested separately.
-      if (generator.nodeId !== producer.nodeId && !reach.has(generator.nodeId)) continue;
-      const producers = reachedFrom.get(generator.nodeId);
-      if (producers === undefined) reachedFrom.set(generator.nodeId, [producer.nodeId]);
-      else producers.push(producer.nodeId);
+    const absorbed = criteriaFlow(producer.nodeId, true);
+    const gates = [...absorbed].filter(isJudge).sort(cmpString);
+    // Skipped entirely when the walk never met a judge: with nothing to absorb at, the two
+    // walks are the same set and there is no relay to report.
+    const unabsorbed = gates.length === 0 ? absorbed : criteriaFlow(producer.nodeId, false);
+    // Hoisted out of the node loop: `descendants` walks the graph, and asking it once per
+    // (gate, generator) pair would re-walk it for every node in `G`.
+    const below = gates.map((gate) => ({ gate, reach: graph.descendants(gate) }));
+    for (const node of generators) {
+      // A producer is never the subject of a walk that starts at itself: the criteria
+      // originate there, they do not arrive. This is the whole of the exemption the
+      // canonical `planner → tester` topology needs; rule (d) covers the rest.
+      if (node.nodeId === producer.nodeId) continue;
+      if (absorbed.has(node.nodeId)) {
+        const producers = reachedFrom.get(node.nodeId);
+        if (producers === undefined) reachedFrom.set(node.nodeId, [producer.nodeId]);
+        else producers.push(producer.nodeId);
+        continue;
+      }
+      if (!unabsorbed.has(node.nodeId)) continue;
+      // Reachable only by walking *through* a judge. Which judge, so the diagnostic can
+      // name the edge whose contents decide the answer the graph cannot give.
+      for (const { gate, reach } of below) {
+        if (!reach.has(node.nodeId)) continue;
+        const through = relayedThrough.get(node.nodeId);
+        if (through === undefined) relayedThrough.set(node.nodeId, new Set([gate]));
+        else through.add(gate);
+      }
     }
   }
   /** Nodes the topological detector already fired on, so the content one does not repeat it. */
   const leakedByTopology = new Set<string>();
-  for (const generator of generators) {
-    const producers = reachedFrom.get(generator.nodeId);
+  for (const node of generators) {
+    const producers = reachedFrom.get(node.nodeId);
     if (producers === undefined) continue;
-    leakedByTopology.add(generator.nodeId);
-    const sorted = [...producers].sort(cmpString);
-    const selfProduced = sorted.includes(generator.nodeId);
-    const others = sorted.filter((id) => id !== generator.nodeId);
-    const clauses: string[] = [];
-    if (selfProduced) clauses.push("produces the acceptance criteria itself");
-    if (others.length > 0) {
-      clauses.push(
-        `is reachable from ${joinQuotedAnd(others)}, which ${others.length === 1 ? "produces" : "produce"} an \`acceptance-criteria\` output`,
-      );
-    }
+    leakedByTopology.add(node.nodeId);
+    const sorted = uniq(producers).sort(cmpString);
+    const route = criteriaRoute(sorted[0], node.nodeId);
+    const cut =
+      route.length > 2
+        ? ` It runs ${route.join(" → ")}, so the edge to cut is \`${route[0]} → ${route[1]}\`.`
+        : "";
     recordInferred(
       MARKER_CRITERIA_LEAK,
-      generator.nodeId,
-      `is in the \`implementation\` phase and ${clauses.join(" and ")}, so the criteria can reach the node whose work they judge`,
-      selfProduced
-        ? `Split ${generator.nodeId} in two: a planning node that writes the criteria and an implementation node that never sees them.`
-        : `Remove the path from ${others.join(", ")} to ${generator.nodeId}. Doc 2 §3: whoever writes the code must never see the acceptance tests, because if they see them they game them.`,
+      node.nodeId,
+      `${routeClause(node.nodeId)} and is reachable from ${joinQuotedAnd(sorted)}, which ${sorted.length === 1 ? "produces" : "produce"} an \`acceptance-criteria\` output, so the criteria can reach the node whose work they judge`,
+      `Remove the path from ${sorted.join(", ")} to ${node.nodeId}.${cut} Doc 2 §3: whoever writes the code must never see the acceptance tests, because if they see them they game them.`,
     );
+  }
+
+  /* (a2) the walk stopped at a judge, and the author is told that it stopped */
+  // Absorption is right — doc 2 §5.5 endorses `tester → debugger → tester` and the walk
+  // must not charge the debugger — but it was also silent, and silence made it a way to
+  // switch the check off. Any validation node dropped anywhere on the criteria path
+  // cleared the marker and left the score at 4 while the criteria still reached the
+  // builder, and inserting one is precisely what this engine's own
+  // `unvalidated-external-access` hint asks the author to do. The endorsed loop and the
+  // shape doc 2 §5.5 forbids in the very next sentence — "Non torna al `builder`" — are
+  // isomorphic in the graph, so this is a warning that names the channel rather than a
+  // marker that guesses at what travels down it. It never moves the score.
+  for (const node of generators) {
+    const gates = relayedThrough.get(node.nodeId);
+    if (gates === undefined || gates.size === 0) continue;
+    // Already charged by (a) on another route: the author has a finding, not silence.
+    if (leakedByTopology.has(node.nodeId)) continue;
+    const named = [...gates].sort(cmpString);
+    diagnostics.push(
+      warning(
+        "analysis/criteria-relayed-through-judge",
+        `The \`criteria-leak\` check stops at ${joinQuotedAnd(named)} on this blueprint and does not trace past ${named.length === 1 ? "it" : "them"}: the acceptance criteria reach that validation node, and its output flows on to ${describeNode(node)}, whose own work is judged in turn. Whether what it forwards is failure evidence or the criteria themselves is a property of the prose, not of the graph.`,
+        {
+          hint: `Read what ${named[0]} emits on its way to ${node.nodeId}. Doc 2 §5.5: stack traces, failed assertions and expected-against-actual are feedback, the criteria set is gaming — "se glieli passi tutti, ricomincia a fare special-casing". Keep an iteration cap on the loop too, which is what limits how much of the acceptance surface leaks across repeated failures. Nothing is charged for this: a channel the topology cannot follow is not evidence of a leak, and it is not evidence of isolation either.`,
+          location: { nodeId: node.nodeId },
+        },
+      ),
+    );
+  }
+
+  /* (d) one node writes the criteria and produces the artefact they judge */
+  // The case rule (a)'s self-exemption necessarily leaves behind: at node level the
+  // criteria edge and the artefact edge are the same edge, so there is no path to trace
+  // and no walk that could find one. It is answerable from the declarations alone, and
+  // exactly: the node says it emits the criteria, and it says it emits something the judge
+  // reads as the artefact under judgement. That is doc 2 §3's prohibition inside one card,
+  // and it used to be the sneakiest leak available with nothing reporting it at all.
+  //
+  // The port match is what keeps the canonical topology clean, and it is the whole of the
+  // rule. The starter's planner emits `plan: plan` and `criteria: acceptance-criteria`
+  // into a tester whose only non-criteria input is `build: code`; `plan` is not subsumed
+  // by `code`, so the planner hands the judge the criteria and nothing else — correct, and
+  // silent. A node emitting `criteria` *and* `build: code` into that same tester hands it
+  // both, and says so on its own card.
+  for (const producer of criteriaProducers) {
+    const artefactPorts = producer.card.outputs.filter(
+      (port) => !ontology.isA(port.type, CRITERIA_DATA_TYPE),
+    );
+    if (artefactPorts.length === 0) continue;
+    const matches: { judgeId: string; portName: string; portType: string }[] = [];
+    for (const judgeId of judgesOf.get(producer.nodeId) ?? []) {
+      const judge = nodesById.get(judgeId);
+      if (judge === undefined) continue;
+      for (const input of judge.card.inputs) {
+        if (ontology.isA(input.type, CRITERIA_DATA_TYPE)) continue;
+        for (const port of artefactPorts) {
+          if (ontology.isA(port.type, input.type)) {
+            matches.push({ judgeId, portName: port.name, portType: port.type });
+          }
+        }
+      }
+    }
+    if (matches.length === 0) continue;
+    matches.sort((a, b) => cmpString(a.judgeId, b.judgeId) || cmpString(a.portName, b.portName));
+    const [first] = matches;
+    recordInferred(
+      MARKER_CRITERIA_LEAK,
+      producer.nodeId,
+      `declares an \`${CRITERIA_DATA_TYPE}\` output and also \`${first.portName}: ${first.portType}\`, which is what the validation node ${quote(first.judgeId)} reads as the artefact it judges, so one node both writes the acceptance criteria and produces the work they measure`,
+      `Split ${producer.nodeId} in two — the node that writes the acceptance criteria and the node that produces the artefact — and wire only the criteria into ${first.judgeId}. Doc 2 §3: whoever writes the code must never see the acceptance tests, because if they see them they game them.`,
+    );
+  }
+
+  /* (c1) one of the anchor's two legs is missing — the check did not run, and says so */
+  // The anchor has two legs: a criteria producer to trace *from* and a generator to trace
+  // *to*. Guarding only the first left the failure mode this diagnostic exists to remove
+  // fully intact on the other side — type the tester `tool` instead of `validation`, which
+  // the ontology positively invites ("a deterministic operation: running tests,
+  // compiling…"), and `G` is empty, every detector iterates nothing, and the blueprint
+  // scores 4 with not one word about it. A warning either way, and deliberately not a
+  // marker: an unknown is not evidence of a leak any more than it is evidence of isolation.
+  //
+  // Both legs missing at once is silent on purpose. A blueprint with no criteria producer
+  // *and* nothing under judgement is not a factory that forgot to declare its acceptance
+  // check; it is a graph doing something else, and a missing-check warning on every one of
+  // those would make the diagnostic worthless where it means something.
+  if (criteriaProducers.length === 0 && generators.length > 0) {
+    // Named by the nodes that hand a judge its artefact directly, not by all of `G`. The
+    // upward closure is the right subject set for the *check*; it is the wrong subject
+    // list for a *sentence*, because on a real bundle it runs to every node upstream of
+    // the tester and buries the one fact the reader needs.
+    const subjects = generators
+      .filter((node) => judgesOf.has(node.nodeId))
+      .map((node) => node.nodeId)
+      .sort(cmpString);
+    const judges = uniq(
+      subjects.flatMap((id) => judgesOf.get(id) ?? []),
+    ).sort(cmpString);
+    diagnostics.push(
+      warning(
+        "analysis/criteria-leak-unanchored",
+        `The \`criteria-leak\` check was not evaluated on this blueprint: ${joinQuotedAnd(judges)} ${judges.length === 1 ? "judges" : "judge"} the output of ${joinQuotedAnd(subjects)}, but no node declares an output port typed \`acceptance-criteria\`, so there is no criteria producer to trace a path from.`,
+        {
+          hint: `Type the port that carries the acceptance criteria as \`acceptance-criteria\` on the node that produces them — doc 3 §4.1 anchors this check there, and every one of its detectors needs that port to exist. Until it does, this blueprint has no \`criteria-leak\` result at all: the absence of a finding here is silence, not a clean verdict.`,
+        },
+      ),
+    );
+  } else if (criteriaProducers.length > 0 && generators.length === 0) {
+    const producers = criteriaProducers.map((node) => node.nodeId).sort(cmpString);
+    const anyJudge = graph.ids.some(isJudge);
+    diagnostics.push(
+      warning(
+        "analysis/criteria-leak-unanchored",
+        `The \`criteria-leak\` check was not evaluated on this blueprint: ${joinQuotedAnd(producers)} ${producers.length === 1 ? "declares" : "declare"} an \`acceptance-criteria\` output, but ${anyJudge ? "no node's output is read by a `validation` node" : "no node in the graph is typed `validation`"}, so the check has no generator to trace a path to.`,
+        {
+          hint: `Type the node that judges the work as \`validation\` (doc 3 §3) and wire the artefact under judgement into it — doc 3 §4.1 anchors the generator set on \`G = { n | ∃ v : type(v) ⊑ validation ∧ edge(n → v) }\`, so a test runner typed \`tool\` leaves this check with an anchor and no subject. Until one exists, this blueprint has no \`criteria-leak\` result at all: the absence of a finding here is silence, not a clean verdict.`,
+        },
+      ),
+    );
+  }
+
+  /* (c2) the criteria arrive from outside the graph — topology cannot answer for them */
+  // Doc 2 §3's argument is that isolation is a property of the *topology*. A `params` key
+  // naming a criteria set nothing in the graph produces takes the criteria out of the
+  // topology, so that argument does not reach the node at all — which is worth naming even
+  // though, and partly because, it is often the judge itself doing it.
+  const producedNames = new Set<string>();
+  for (const id of graph.ids) producedNames.add(id.toLowerCase());
+  for (const node of bp.nodes) {
+    producedNames.add(node.nodeId.toLowerCase());
+    producedNames.add(node.card.id.toLowerCase());
+    for (const port of node.card.outputs) {
+      producedNames.add(port.name.toLowerCase());
+      producedNames.add(`${node.nodeId}.${port.name}`.toLowerCase());
+      producedNames.add(`${node.card.id}.${port.name}`.toLowerCase());
+    }
+  }
+  for (const node of bp.nodes) {
+    for (const key of Object.keys(node.card.params)) {
+      if (!CRITERIA_PARAM_KEY.test(key)) continue;
+      const named = stringLeaves(node.card.params[key], PARAM_SCAN_DEPTH)
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0);
+      // A flag or a number names nothing: `criteria_strict: true` is configuration, not a
+      // reference, and reporting it as a dangling one would be noise.
+      if (named.length === 0) continue;
+      if (named.some((value) => producedNames.has(value.toLowerCase()))) continue;
+      diagnostics.push(
+        warning(
+          "analysis/criteria-out-of-band",
+          `${describeNode(node)} names its acceptance criteria in \`params.${key}\` (${named.map((value) => `\`${value}\``).join(", ")}), and no node in this graph produces anything by that name, so the criteria reach it from outside the topology.`,
+          {
+            hint: `Doc 2 §3 makes isolation a property of the topology, so criteria that arrive out of band cannot be checked structurally — \`criteria-leak\` is blind to this channel on ${node.nodeId}. Give the node that produces ${named.map((value) => `\`${value}\``).join(", ")} an \`acceptance-criteria\` output port and wire it, or record in the card's notes why the reference stays out of band.`,
+            location: { nodeId: node.nodeId },
+          },
+        ),
+      );
+    }
   }
 
   /* (b) content — doc 3 §4.1's ⚠️ note and doc 1 §3.2 */
@@ -592,10 +1036,15 @@ export function computeSecurity(
   }
   const contentHits: ContentHit[] = [];
   for (const generator of generators) {
+    // `G` no longer excludes the criteria producers, and this detector cannot use them.
+    // Its evidence is "this node's prose restates what the criteria producer's prose
+    // says", which for a node whose own job is to write criteria is a description of the
+    // job. Two planners in a consensus line share a spec by construction and would score
+    // 1.00 against each other for doing exactly what they were built to do. The producer
+    // that is *also* a generator is not lost with it: rule (d) answers that case from the
+    // declarations, structurally and without a threshold.
+    if (producesCriteria.has(generator.nodeId)) continue;
     for (const producer of criteriaProducers) {
-      // A node compared against itself is trivially similar; the reflexive leak is the
-      // topological detector's case and does not need a similarity score to prove it.
-      if (producer.nodeId === generator.nodeId) continue;
       // A spec too short to hold a 3-gram carries no evidence of copied prose, whatever
       // the arithmetic says: two cards reading "TODO" score 1.00 against each other. Doc 3
       // §4.1's content detector exists to catch criteria pasted into a builder's spec, and
@@ -642,16 +1091,16 @@ export function computeSecurity(
 
   if (config.criteriaLeak.similarityFiresMarker) {
     for (const [nodeId, hit] of bestContentHit) {
-      // The short form when topology already established the marker on this node: the
-      // phase has been stated once already, and saying it twice in one sentence reads
-      // like a bug even though the two detectors really are independent.
+      // The short form when topology already established the marker on this node: which
+      // judge reads the node has been stated once already, and saying it twice in one
+      // sentence reads like a bug even though the two detectors really are independent.
       const overlap = `the spec of the acceptance-criteria producer ${quote(hit.producer.nodeId)} at ${SHINGLE_WIDTH}-gram similarity ${hit.score.toFixed(2)}`;
       recordInferred(
         MARKER_CRITERIA_LEAK,
         nodeId,
         leakedByTopology.has(nodeId)
           ? `has a spec that also repeats ${overlap}`
-          : `is in the \`implementation\` phase and has a spec that repeats ${overlap}`,
+          : `${routeClause(nodeId)} and has a spec that repeats ${overlap}`,
         `Rewrite the spec of ${nodeId} in its own terms. Doc 1 §3.2: isolation is not just an absent edge, it is the absence of the content from the spec.`,
       );
     }

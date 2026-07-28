@@ -299,6 +299,17 @@ outputs: []
    its instructions from its own `spec`, which doc 1 §0.1.2 makes
    the payload that instructs the agent in the first place.
 
+   `tester` is a `validation` node, and that is now load-bearing
+   rather than cosmetic: the `criteria-leak` generator set is
+   `{ n | ∃ v : type(v) ⊑ validation ∧ edge(n → v) }`, so it is the
+   tester's *type* that makes the builder a node whose work is
+   judged. Doc 3 §3 defines `validation` as exactly what this card
+   does — "confronta un artefatto contro criteri e produce un
+   verdetto con evidenze" — and the real archive's
+   `acceptance-tester@1.0.0` declares it too. It used to say `tool`,
+   which was a shrug, and under the old `phase: implementation`
+   anchor nothing depended on it.
+
    The pair below is the point of this file: two bundles that
    differ by ONE edge, `planner -> builder`. That edge is doc 2
    §5.4's demonstration switch, and adding it must move the score.
@@ -355,7 +366,7 @@ dependencies: []
 `,
   "cards/tester@1.0.0.yaml": `id: tester
 name: Tester
-type: tool
+type: validation
 phase: testing
 version: 1.0.0
 ontology_version: ${ONTOLOGY_VERSION}
@@ -465,9 +476,17 @@ function codes(ds: readonly Diagnostic[]): string[] {
 describe("loadBundle — the adversarial-consensus blueprint", () => {
   const result = loadBundle(consensusBundle());
 
-  it("resolves every node and reports nothing at all", () => {
+  it("resolves every node and reports one thing: that the criteria check could not run", () => {
     // Listed rather than counted: a failure names the diagnostic that appeared.
-    expect(codes(result.diagnostics)).toEqual([]);
+    //
+    // This used to expect an empty list. It is not a regression, it is the finding: this
+    // blueprint has a `validation` node judging the vote's output and no node anywhere
+    // declaring an `acceptance-criteria` port, so the most important check in the system
+    // has nothing to anchor on. It reported silence before, which was indistinguishable
+    // from a pass. Eight of the nine bundles in the real archive are in this state.
+    expect(codes(result.diagnostics)).toEqual([
+      'warning:analysis/criteria-leak-unanchored The `criteria-leak` check was not evaluated on this blueprint: "verify" judges the output of "vote", but no node declares an output port typed `acceptance-criteria`, so there is no criteria producer to trace a path from.',
+    ]);
     expect(summarize(result.diagnostics).error).toBe(0);
     expect(result.blueprint).toBeDefined();
     expect(result.analysis).toBeDefined();
@@ -572,7 +591,20 @@ describe("loadBundle — the adversarial-consensus blueprint", () => {
     expect(security.findings).toEqual([]);
     expect(security.penalties).toEqual([]);
     expect(security.rationale).toBe("4 − 0.00 (no risk marker present across 8 nodes) → 4");
-    expect(security.diagnostics).toEqual([]);
+  });
+
+  it("qualifies that 4: one of the three inferred markers was never evaluated", () => {
+    // The whole reason `analysis/criteria-leak-unanchored` exists. A 4 with this warning
+    // beside it is not the same claim as a 4 without it, and the warning does not move
+    // the number: reporting that the system does not know is a third state, not evidence.
+    const security = result.analysis?.security;
+    if (security === undefined) throw new Error("expected an analysis");
+
+    expect(security.diagnostics.map((d) => d.code)).toEqual([
+      "analysis/criteria-leak-unanchored",
+    ]);
+    expect(security.diagnostics[0].severity).toBe("warning");
+    expect(security.raw).toBe(4);
   });
 
   it("does not read the re-vote loop as unbounded: the vote declares a cap", () => {
@@ -705,8 +737,22 @@ describe("loadBundle — the rogue-scraper blueprint", () => {
 describe("loadBundle — the doc 2 §5.2 starter, clean", () => {
   const result = loadBundle(starterBundle());
 
-  it("resolves with nothing to report", () => {
-    expect(codes(result.diagnostics)).toEqual([]);
+  it("reports one thing: the one channel the topology cannot follow", () => {
+    // This used to expect an empty list, and the empty list was a claim the engine could
+    // not support. Doc 2 §5.5's repair loop is `tester → debugger → tester`, so the
+    // criteria reach the tester and the tester's output reaches the debugger, whose patch
+    // the tester then judges. Whether what crosses that edge is failure evidence (doc 2
+    // §5.5 endorses it) or the criteria set (doc 2 §5.5 forbids it in the next sentence)
+    // is a fact about the prose: `tester → debugger → tester` and the forbidden
+    // `tester → builder → tester` are the same shape in the graph. The walk stops at the
+    // judge either way, and now it says that it stopped. Doc 2 §5.5 flags this exact
+    // channel itself — "su molte iterazioni il debugger può ricostruire i criteri
+    // accumulando messaggi di errore" — so naming it on the flagship is the finding, not
+    // noise on it.
+    expect(codes(result.diagnostics)).toEqual([
+      'warning:analysis/criteria-relayed-through-judge The `criteria-leak` check stops at "tester" on this blueprint and does not trace past it: the acceptance criteria reach that validation node, and its output flows on to "Debugger" (debugger), whose own work is judged in turn. Whether what it forwards is failure evidence or the criteria themselves is a property of the prose, not of the graph.',
+    ]);
+    expect(summarize(result.diagnostics).error).toBe(0);
     expect(result.blueprint?.nodes).toHaveLength(5);
   });
 
@@ -728,7 +774,11 @@ describe("loadBundle — the doc 2 §5.2 starter, clean", () => {
     expect(security.level).toBe(4);
     expect(security.raw).toBe(4);
     expect(security.findings).toEqual([]);
-    expect(security.diagnostics).toEqual([]);
+    // Clean on the marker, and one warning about the debug loop — which costs nothing and
+    // is not a finding. Asserted by code so "clean" can never be restated as "silent".
+    expect(security.diagnostics.map((d) => d.code)).toEqual([
+      "analysis/criteria-relayed-through-judge",
+    ]);
 
     // The fact the score rests on, asserted directly so a topology change cannot make the
     // clean result true for the wrong reason.
@@ -754,7 +804,12 @@ describe("loadBundle — the same starter with the criteria edge added", () => {
   const leaking = loadBundle(leakingStarterBundle());
 
   it("still resolves cleanly — the difference is the score, not the upload", () => {
-    expect(codes(leaking.diagnostics)).toEqual([]);
+    // The same single warning the clean starter carries, and no error: doc 2 §5.4's switch
+    // moves the score, never the validity of the upload.
+    expect(leaking.diagnostics.map((d) => d.code)).toEqual([
+      "analysis/criteria-relayed-through-judge",
+    ]);
+    expect(summarize(leaking.diagnostics).error).toBe(0);
     expect(leaking.blueprint?.nodes).toHaveLength(5);
     // One edge more, and nothing else about the topology moved.
     expect(leaking.blueprint?.edges).toHaveLength(
@@ -781,7 +836,7 @@ describe("loadBundle — the same starter with the criteria edge added", () => {
       establishedBy: "inferred",
     });
     expect(security.findings[0].explanation).toBe(
-      'Node "Builder" (builder) is in the `implementation` phase and is reachable from "planner", which produces an `acceptance-criteria` output, so the criteria can reach the node whose work they judge.',
+      'Node "Builder" (builder) hands its output to the validation node "tester" and is reachable from "planner", which produces an `acceptance-criteria` output, so the criteria can reach the node whose work they judge.',
     );
     expect(security.findings[0].hint).toContain("must never see the acceptance tests");
   });
@@ -1072,7 +1127,10 @@ describe("loadBundle — inputs it must survive", () => {
     expect(garbled.analysis?.security.level).toBe(4);
   });
 
-  it("rejects a card with no phase, and says which field is missing", () => {
+  it("accepts a card with no phase, silently, and still analyses the bundle", () => {
+    // Rewritten to the author's ruling, which supersedes doc 3 §1's cardinality row: the
+    // five phases describe the factory, not every node in it, so a card that declares none
+    // is complete. This used to assert `card/missing-phase`, which no longer exists.
     const bundle = consensusBundle();
     const noPhase = loadBundle({
       ...bundle,
@@ -1084,9 +1142,12 @@ describe("loadBundle — inputs it must survive", () => {
         ),
       },
     });
-    const missing = noPhase.diagnostics.filter((d) => d.code === "card/missing-phase");
-    expect(missing).toHaveLength(1);
-    expect(missing[0].severity).toBe("error");
+    expect(noPhase.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(noPhase.blueprint).toBeDefined();
+    // It drops out of the coverage it used to hold up, and appears in `unphased` instead —
+    // a description of where it sits, never a gap.
+    expect(noPhase.blueprint?.phaseCoverage.unphased).toEqual(["solver_b"]);
+    expect(noPhase.analysis).toBeDefined();
   });
 });
 

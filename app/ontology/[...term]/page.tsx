@@ -314,11 +314,16 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                 </div>
 
                 <p className="text-sm leading-relaxed text-muted">
-                  A card declares exactly one phase, and the five are the one dimension a
-                  local namespace cannot extend: a node type or a risk marker can be
-                  coined by anybody, a sixth phase would be a different definition of what
-                  a dark factory is. There is no abstract root above them either, because
-                  a root would make the set look open.
+                  The five are the one dimension a local namespace cannot extend: a node
+                  type or a risk marker can be coined by anybody, a sixth phase would be a
+                  different definition of what a dark factory is. There is no abstract
+                  root above them either, because a root would make the set look open.
+                </p>
+                <p className="text-sm leading-relaxed text-muted">
+                  A card may name one of them, several, or none. The five describe the
+                  factory rather than every node inside it, so an intake or a retrieval
+                  step declares no phase at all and a node that both builds and repairs
+                  declares two. Neither is a card with something missing from it.
                 </p>
                 <p className="text-sm leading-relaxed text-muted">
                   Which phases a blueprint has nodes in is its <em>phase coverage</em>, and

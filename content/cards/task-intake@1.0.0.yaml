@@ -1,7 +1,6 @@
 id: task-intake
 name: Task Intake
 type: tool
-phase: planning
 
 action: >-
   Accept an inbound task request, stamp it with a run id and the acceptance criteria it will be

@@ -25,9 +25,9 @@ import { termHref } from "@/lib/href";
  * Presentation for each `TermKind`. Every entry carries a glyph *and* a word, so
  * the accent colour is decoration and a reader who cannot see it loses nothing.
  *
- * Five entries, not four: doc 3 §1 makes `phase` one of the three dimensions every
- * node declares, alongside `node-type` and `risk-marker`. `data-type` and `tool` are
- * the two doc 1 needs for typed ports (§2 rule 3) and `tools[]` (§3.2).
+ * Five entries, not four: `phase` is one of the three dimensions a node card describes
+ * itself with, alongside `node-type` and `risk-marker`. `data-type` and `tool` are the
+ * two doc 1 needs for typed ports (§2 rule 3) and `tools[]` (§3.2).
  */
 export const TERM_KIND_META: Record<
   TermKind,
@@ -110,9 +110,13 @@ interface UsageDraft {
  * term is counted against that term and not against its successor, which is the only
  * way the counts can answer "is anybody still writing the old spelling?".
  *
- * `phase` is in the list because doc 3 §1 makes it a structural field like the others —
- * leaving it out left every one of the five phases reading "unused so far" on a page
- * where each of them is declared by most of the archive.
+ * `phase` is in the list because it is a structural field like the others — leaving it
+ * out left every one of the five phases reading "unused so far" on a page where each of
+ * them is declared by most of the archive. It is spread rather than pushed: a card
+ * declares zero, one or several phases, so a card outside the five credits none of them
+ * and a card in two credits both. There is no bucket for "declared no phase" and there
+ * must not be one — this index counts terms, and a card that names no phase has named
+ * no term.
  */
 export function termUsageIndex(registry: Registry): ReadonlyMap<string, TermUsage> {
   const drafts = new Map<string, UsageDraft>();
@@ -121,7 +125,7 @@ export function termUsageIndex(registry: Registry): ReadonlyMap<string, TermUsag
   for (const record of cards) {
     const { card } = record;
     const ids = [
-      card.phase,
+      ...card.phases,
       card.type,
       ...card.riskMarkers,
       ...card.tools,

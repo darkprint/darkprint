@@ -160,6 +160,32 @@ function compareList(
   }
 }
 
+/**
+ * Doc 3 §2's phases, which the author's ruling made optional and repeatable.
+ *
+ * Membership only, in both directions, at `minor`; a pure reorder is a `patch`. The card
+ * carries the phases in the order the author wrote them, so the sequence can differ while
+ * the statement does not — and phase coverage reports in the lifecycle order regardless,
+ * which is why a reorder cannot move anything a reader sees.
+ */
+function comparePhases(
+  previous: readonly string[],
+  next: readonly string[],
+  push: (level: Reason["level"], message: string) => void,
+): void {
+  const before = new Set(previous);
+  const after = new Set(next);
+  for (const phase of previous) if (!after.has(phase)) push("minor", `phase \`${phase}\` was withdrawn`);
+  for (const phase of next) if (!before.has(phase)) push("minor", `phase \`${phase}\` was declared`);
+
+  const sameMembers =
+    previous.length === next.length &&
+    previous.every((p) => after.has(p)) &&
+    next.every((p) => before.has(p));
+  // Joined on a space, which no phase id contains.
+  if (sameMembers && previous.join(" ") !== next.join(" ")) push("patch", "`phase` entries were reordered");
+}
+
 /** The part of a card that decides its identity, for the "did anything at all change" check. */
 function contentSignature(card: NodeCard): string {
   const payload: Record<string, unknown> = { ...card };
@@ -171,20 +197,30 @@ function contentSignature(card: NodeCard): string {
  * Which bump the change from `previous` to `next` demands (design doc §4).
  *
  * MAJOR — the card breaks something a blueprint pinned: a port removed, renamed or
- * retyped, an input that became required, the node's `type`, `phase` or `id` changed, or
- * `requires_human` flipped false → true. The last two are judgement calls: neither breaks
- * the wiring, but `requires_human` invalidates every autonomy score already computed
- * against the card, and `phase` re-buckets it in every phase-coverage calculation (doc 3
- * §2) — a blueprint that covered five phases silently covers four. Invalidating a
- * published result is exactly what a major bump is for.
+ * retyped, an input that became required, the node's `type` or `id` changed, or
+ * `requires_human` flipped false → true. The last is a judgement call: it does not break
+ * the wiring, but it invalidates every autonomy score already computed against the card,
+ * and invalidating a published result is exactly what a major bump is for.
  *
  * MINOR — the declared surface *grew*: an optional port, an output, a tool, a param
- * key, a risk marker, a dependency, `spec`, or `requires_human` true → false. `spec` is
- * the judgement call here: doc 1 §3.2 makes it the instruction the agent actually
- * executes, so rewriting it changes what the node *does* while every port, type and
- * param a blueprint declared against stays exactly where it was — behaviour moved, the
- * interface did not. That is the definition of minor, and it is a level above `action`,
- * which is a machine-readable label for the same operation rather than the operation.
+ * key, a risk marker, a dependency, `spec`, `requires_human` true → false, or a change to
+ * the set of declared phases. `spec` is one judgement call here: doc 1 §3.2 makes it the
+ * instruction the agent actually executes, so rewriting it changes what the node *does*
+ * while every port, type and param a blueprint declared against stays exactly where it
+ * was — behaviour moved, the interface did not. That is the definition of minor, and it is
+ * a level above `action`, which is a machine-readable label for the same operation rather
+ * than the operation.
+ *
+ * `phase` is the other, and it is a **documented reversal**. This function used to call a
+ * phase change *major*, on the reasoning that phase coverage re-buckets and a blueprint
+ * that covered five phases would silently cover four. That reasoning rested on the phase
+ * being a required, exactly-one field, which the author's ruling has withdrawn: the five
+ * phases describe the factory, not every node in it, so the field is optional and
+ * repeatable and its coverage is a description of scope, not a published figure a consumer
+ * pinned. A phase edit now changes no interface, breaks no wiring and invalidates no
+ * score — it restates what the same node was always doing. Minor in both directions:
+ * adding a phase claims more, dropping one claims less, and neither is a break. A pure
+ * reorder claims exactly what it claimed before and falls under §4's "patch otherwise".
  *
  * PATCH — everything else, per §4's "patch otherwise": wording (`name`, `action`,
  * `notes`, `ontology_version`, a port description), a param's value, a reordering, a
@@ -204,11 +240,11 @@ export function inferBump(previous: NodeCard, next: NodeCard): BumpAnalysis {
   if (previous.type !== next.type) {
     push("major", `node type changed: ${previous.type} → ${next.type}`);
   }
-  // Doc 3 §2: the phase is what every phase-coverage calculation buckets the card by, so
-  // moving it changes a published, visible property of every blueprint using the card.
-  if (previous.phase !== next.phase) {
-    push("major", `phase changed: ${previous.phase} → ${next.phase} — every phase coverage using this card moves`);
-  }
+  // Reversed from major — see the note in the doc comment above. `compareList` is not
+  // reused here because its convention makes a removal a patch ("the card claims less"),
+  // and a phase is not a claim a blueprint wires against: dropping one is the same size of
+  // edit as adding one. Both are minor, and only a reorder is a patch.
+  comparePhases(previous.phases, next.phases, push);
 
   comparePorts("input", previous.inputs, next.inputs, push);
   comparePorts("output", previous.outputs, next.outputs, push);

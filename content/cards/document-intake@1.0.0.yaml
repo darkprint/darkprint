@@ -1,7 +1,6 @@
 id: document-intake
 name: Document Intake
 type: tool
-phase: planning
 
 action: >-
   Open the run on a batch of unstructured source documents, stamp each one with its origin and

@@ -59,7 +59,7 @@ describe("validateCard — the minimal card", () => {
       id: "solver-a",
       name: "Solver A",
       type: "agent",
-      phase: "implementation",
+      phases: ["implementation"],
       action: "Draft a candidate solution for the sub-task",
       spec: "Read the sub-task on the `task` input and write one candidate solution to `draft`.",
       tools: [],
@@ -86,7 +86,7 @@ describe("validateCard — the minimal card", () => {
         "ontologyVersion",
         "outputs",
         "params",
-        "phase",
+        "phases",
         "requiresHuman",
         "riskMarkers",
         "spec",
@@ -158,7 +158,7 @@ describe("validateCard — a fully populated card", () => {
       id: "berti/auditor",
       name: "Auditor",
       type: "validation",
-      phase: "testing",
+      phases: ["testing"],
       action: "Check the draft against the acceptance criteria",
       spec: "Run the project's test suite against the draft, then compare the result with each acceptance criterion and report a verdict with the evidence for it.",
       model: "claude-opus",
@@ -219,6 +219,47 @@ describe("validateCard — snake_case and camelCase", () => {
     expect(diagnostics[0].severity).toBe("info");
     expect(paths(diagnostics)).toEqual(["Phase"]);
   });
+
+  it("reads the plural `phases`, which is the spelling the field now invites", () => {
+    // `phase` became optional and repeatable and the model calls the field `phases`, so
+    // `phases: [implementation]` is the obvious thing to write. Without the alias that
+    // card loaded *clean* — `ok: true`, one `info` nobody reads, and every declared phase
+    // silently dropped — so a blueprint shipped with its coverage quietly reduced. Loading
+    // it wrong in silence is worse than either accepting it or rejecting it.
+    const doc: Record<string, unknown> = { ...minimal() };
+    delete doc.phase;
+    const { card, diagnostics } = validateCard({ ...doc, phases: ["implementation"] }, opts);
+    expect(diagnostics).toEqual([]);
+    expect(card?.phases).toEqual(["implementation"]);
+  });
+
+  it("validates the plural exactly like the singular", () => {
+    const doc: Record<string, unknown> = { ...minimal() };
+    delete doc.phase;
+    const { card, diagnostics } = validateCard({ ...doc, phases: ["refactoring"] }, opts);
+    expect(card).toBeUndefined();
+    expect(codes(diagnostics)).toEqual(["card/unknown-phase"]);
+    // The alias reaches the location too: the entry is pointed at under the key the card
+    // actually wrote, not under the wire key it did not.
+    expect(paths(diagnostics)).toEqual(["phases[0]"]);
+  });
+
+  it("prefers `phase` and says so when a card writes both", () => {
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), phase: "testing", phases: ["debugging"] },
+      opts,
+    );
+    expect(card?.phases).toEqual(["testing"]);
+    expect(codes(diagnostics)).toEqual(["card/bad-type"]);
+    expect(diagnostics[0].severity).toBe("info");
+    expect(diagnostics[0].message).toContain(
+      "Fields `phase` and `phases` are both present; `phase` is used.",
+    );
+    // Not "snake_case is the wire spelling" — these two are a singular and a plural.
+    expect(diagnostics[0].hint).toBe(
+      "Delete `phases` — `phase` is the spelling this schema reads.",
+    );
+  });
 });
 
 /* ============================================================
@@ -248,8 +289,9 @@ describe("validateCard — the document is not a mapping", () => {
 });
 
 describe("validateCard — missing required fields", () => {
-  // `phase` is absent from this list on purpose: it reports `card/missing-phase`, not
-  // `card/missing-field`, and has its own block below.
+  // `phase` is absent from this list on purpose: it is not required at all. The five
+  // phases describe the factory, not every node in it, so a card that names none is
+  // complete — the block below asserts that absence produces no diagnostic whatsoever.
   const required = [
     "id",
     "name",
@@ -292,11 +334,12 @@ describe("validateCard — missing required fields", () => {
   it("reports every missing field at once, not just the first", () => {
     const { card, diagnostics } = validateCard({ notes: "nothing else here" }, opts);
     expect(card).toBeUndefined();
+    // No `phase` in this list: a document that declares nothing at all is missing nine
+    // fields, not ten. That is the ruling stated as an assertion.
     expect(paths(diagnostics)).toEqual([
       "id",
       "name",
       "type",
-      "phase",
       "action",
       "spec",
       "inputs",
@@ -304,9 +347,7 @@ describe("validateCard — missing required fields", () => {
       "version",
       "ontology_version",
     ]);
-    expect(new Set(codes(diagnostics))).toEqual(
-      new Set(["card/missing-field", "card/missing-phase"]),
-    );
+    expect(new Set(codes(diagnostics))).toEqual(new Set(["card/missing-field"]));
   });
 });
 
@@ -432,46 +473,24 @@ describe("validateCard — bad versions", () => {
 });
 
 /* ============================================================
-   phase — doc 3 §1 (one per node), §2 (five of them), §7 (closed)
+   phase — optional (the author's ruling), repeatable, and still
+   closed to the five (doc 3 §2) and to local namespaces (doc 3 §7)
    ============================================================ */
 
-describe("validateCard — phase", () => {
+describe("validateCard — phase, when the card declares one", () => {
   it.each(["planning", "implementation", "testing", "debugging", "deployment"])(
-    "accepts `%s`",
+    "accepts the scalar `%s`",
     (phase) => {
       const { card, diagnostics } = validateCard({ ...minimal(), phase }, opts);
       expect(diagnostics).toEqual([]);
-      expect(card?.phase).toBe(phase);
+      expect(card?.phases).toEqual([phase]);
     },
   );
 
-  it("reports an absent phase under its own code, not `card/missing-field`", () => {
-    const doc = minimal();
-    delete doc["phase"];
-    const { card, diagnostics } = validateCard(doc, opts);
-    expect(card).toBeUndefined();
-    expect(codes(diagnostics)).toEqual(["card/missing-phase"]);
-    expect(paths(diagnostics)).toEqual(["phase"]);
-    expect(diagnostics[0].severity).toBe("error");
-  });
-
-  it.each<[string, unknown]>([
-    ["null", null],
-    ["an empty string", ""],
-    ["blank space", "   "],
-  ])("treats %s as no phase at all", (_label, phase) => {
-    const { card, diagnostics } = validateCard({ ...minimal(), phase }, opts);
-    expect(card).toBeUndefined();
-    expect(codes(diagnostics)).toEqual(["card/missing-phase"]);
-  });
-
-  it("offers the five in lifecycle order, not alphabetically", () => {
-    // `byKind` would sort them d-d-i-p-t, which is not how anyone thinks about a factory.
-    const doc = minimal();
-    delete doc["phase"];
-    expect(validateCard(doc, opts).diagnostics[0].hint).toContain(
-      "`planning`, `implementation`, `testing`, `debugging`, `deployment`",
-    );
+  it("accepts a single-entry sequence, which means the same thing", () => {
+    const { card, diagnostics } = validateCard({ ...minimal(), phase: ["testing"] }, opts);
+    expect(diagnostics).toEqual([]);
+    expect(card?.phases).toEqual(["testing"]);
   });
 
   it.each(["refactoring", "release", "Planning", "planning ", "plan"])(
@@ -479,8 +498,9 @@ describe("validateCard — phase", () => {
     (phase) => {
       const { card, diagnostics } = validateCard({ ...minimal(), phase }, opts);
       expect(card).toBeUndefined();
-      expect(codes(diagnostics)).toEqual(["card/missing-phase"]);
+      expect(codes(diagnostics)).toEqual(["card/unknown-phase"]);
       expect(diagnostics[0].message).toContain("not one of the five phases");
+      expect(paths(diagnostics)).toEqual(["phase"]);
     },
   );
 
@@ -488,8 +508,27 @@ describe("validateCard — phase", () => {
     // `agent` is a real term, so this is not an unknown-term problem: it is simply not
     // one of the five, and the author needs the list rather than the vocabulary.
     const { diagnostics } = validateCard({ ...minimal(), phase: "agent" }, opts);
-    expect(codes(diagnostics)).toEqual(["card/missing-phase"]);
+    expect(codes(diagnostics)).toEqual(["card/unknown-phase"]);
     expect(diagnostics[0].hint).toContain("`planning`");
+  });
+
+  it("offers the five in lifecycle order, not alphabetically", () => {
+    // `byKind` would sort them d-d-i-p-t, which is not how anyone thinks about a factory.
+    expect(validateCard({ ...minimal(), phase: "refactoring" }, opts).diagnostics[0].hint).toContain(
+      "`planning`, `implementation`, `testing`, `debugging`, `deployment`",
+    );
+  });
+
+  it.each<[string, unknown]>([
+    ["an empty string", ""],
+    ["blank space", "   "],
+  ])("rejects %s, which declares a phase and names none", (_label, phase) => {
+    // Distinct from leaving the field out: writing `phase: ""` states an intention the
+    // vocabulary cannot honour, and silently reading it as "no phase" would swallow a typo.
+    const { card, diagnostics } = validateCard({ ...minimal(), phase }, opts);
+    expect(card).toBeUndefined();
+    expect(codes(diagnostics)).toEqual(["card/unknown-phase"]);
+    expect(diagnostics[0].message).toBe("Field `phase` is empty.");
   });
 
   it.each(["berti/planning", "berti/refactoring", "acme/deployment", "planning/", "/planning"])(
@@ -525,6 +564,118 @@ describe("validateCard — phase", () => {
     );
     expect(card).toBeUndefined();
     expect(codes(diagnostics)).toEqual(["card/namespaced-phase"]);
+  });
+});
+
+describe("validateCard — phase, when the card declares none", () => {
+  // The author's ruling, which supersedes doc 3 §1's cardinality row: the five phases are
+  // "the expected high level phases a dark factory should have, but do not necessarily
+  // have to stick to nodes". A node outside all five is normal, and this validator is the
+  // last place where a "gap" could be invented — so these tests assert silence, not a
+  // gentler diagnostic.
+  it("accepts an absent `phase` with no diagnostic at all", () => {
+    const doc = minimal();
+    delete doc["phase"];
+    const { card, diagnostics } = validateCard(doc, opts);
+    expect(diagnostics).toEqual([]);
+    expect(card?.phases).toEqual([]);
+  });
+
+  it.each<[string, unknown]>([
+    ["null", null],
+    ["an empty list", []],
+  ])("accepts %s as declaring none, silently", (_label, phase) => {
+    const { card, diagnostics } = validateCard({ ...minimal(), phase }, opts);
+    expect(diagnostics).toEqual([]);
+    expect(card?.phases).toEqual([]);
+  });
+
+  it("emits nothing of any severity — not an info, not a hint about phases", () => {
+    // Deliberately stronger than "no error". An `info` saying "consider adding a phase"
+    // is exactly the nudge the ruling forbids: it would push an author to invent a phase
+    // for an intake node, which is how sixteen nodes ended up in phases they do not occupy.
+    const doc = minimal();
+    delete doc["phase"];
+    const { diagnostics } = validateCard(doc, opts);
+    expect(diagnostics).toEqual([]);
+    expect(diagnostics.map((d) => d.severity)).toEqual([]);
+  });
+
+  it("still returns a card, so a phaseless node is publishable", () => {
+    const doc = minimal();
+    delete doc["phase"];
+    expect(validateCard(doc, opts).card).toBeDefined();
+  });
+
+  it("keeps `phases` on the model as an empty list rather than omitting it", () => {
+    // `phases` is not an optional field with an absent case for consumers to handle: it
+    // is a list that happens to be empty, so nothing downstream needs an `?? []`.
+    const doc = minimal();
+    delete doc["phase"];
+    const { card } = validateCard(doc, opts);
+    expect(Object.keys(card ?? {})).toContain("phases");
+    expect(card?.phases).toEqual([]);
+  });
+});
+
+describe("validateCard — phase, when the card declares several", () => {
+  it("accepts a sequence and keeps the author's order", () => {
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), phase: ["implementation", "debugging"] },
+      opts,
+    );
+    expect(diagnostics).toEqual([]);
+    expect(card?.phases).toEqual(["implementation", "debugging"]);
+  });
+
+  it("accepts all five at once", () => {
+    const phase = ["planning", "implementation", "testing", "debugging", "deployment"];
+    const { card, diagnostics } = validateCard({ ...minimal(), phase }, opts);
+    expect(diagnostics).toEqual([]);
+    expect(card?.phases).toEqual(phase);
+  });
+
+  it("warns on a duplicate and collapses it, without refusing the card", () => {
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), phase: ["testing", "testing"] },
+      opts,
+    );
+    expect(codes(diagnostics)).toEqual(["card/duplicate-phase"]);
+    expect(diagnostics[0].severity).toBe("warning");
+    expect(paths(diagnostics)).toEqual(["phase[1]"]);
+    expect(card?.phases).toEqual(["testing"]);
+  });
+
+  it("reports the index of a bad entry as written, keeping the good ones", () => {
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), phase: ["planning", "refactoring", "testing"] },
+      opts,
+    );
+    expect(card).toBeUndefined();
+    expect(codes(diagnostics)).toEqual(["card/unknown-phase"]);
+    expect(paths(diagnostics)).toEqual(["phase[1]"]);
+  });
+
+  it("reports every bad entry in one pass", () => {
+    const { diagnostics } = validateCard(
+      { ...minimal(), phase: ["berti/planning", "refactoring", 7] },
+      opts,
+    );
+    expect(codes(diagnostics)).toEqual([
+      "card/namespaced-phase",
+      "card/unknown-phase",
+      "card/bad-type",
+    ]);
+    expect(paths(diagnostics)).toEqual(["phase[0]", "phase[1]", "phase[2]"]);
+  });
+
+  it("rejects a mapping under `phase`, which is neither a phase nor a list of them", () => {
+    const { card, diagnostics } = validateCard({ ...minimal(), phase: { id: "testing" } }, opts);
+    expect(card).toBeUndefined();
+    expect(codes(diagnostics)).toEqual(["card/bad-type"]);
+    expect(diagnostics[0].message).toBe(
+      "Field `phase` must be a phase or a list of phases, but it is a mapping.",
+    );
   });
 });
 
@@ -1207,18 +1358,53 @@ describe("validateCard — version bump", () => {
     expect(diagnostics[0].location?.path).toBe("version");
   });
 
-  it("demands a major bump when the phase moves", () => {
-    // The phase is what every phase-coverage calculation buckets the card by, so a card
-    // that changes it changes a published property of every blueprint pinning it.
+  it("demands a minor bump when the phase moves — the documented reversal", () => {
+    // This used to demand a *major* bump, on the reasoning that phase coverage re-buckets.
+    // That reasoning depended on the phase being a required, exactly-one field, which the
+    // author's ruling withdrew: the five phases describe the factory, not every node, so a
+    // phase edit changes no interface and invalidates no published score. A card at 1.0.1
+    // is therefore now enough, and only a card that did not bump at all is refused.
     const previous = minimalCard();
+    const ok = validateCard(
+      { ...minimal(), version: "1.1.0", phase: "testing" },
+      { ontology, previous },
+    );
+    expect(ok.diagnostics).toEqual([]);
+
     const { diagnostics } = validateCard(
-      { ...minimal(), version: "1.0.1", phase: "testing" },
+      { ...minimal(), version: "1.0.0", phase: "testing" },
       { ontology, previous },
     );
     expect(codes(diagnostics)).toEqual(["card/version-bump-too-small"]);
-    expect(diagnostics[0].message).toContain("major");
-    expect(diagnostics[0].hint).toContain("2.0.0");
-    expect(diagnostics[0].hint).toContain("phase changed: implementation → testing");
+    expect(diagnostics[0].message).toContain("minor");
+    expect(diagnostics[0].hint).toContain("1.1.0");
+    expect(diagnostics[0].hint).toContain("phase `implementation` was withdrawn");
+    expect(diagnostics[0].hint).toContain("phase `testing` was declared");
+  });
+
+  it("demands a minor bump when a second phase is added to a card that had one", () => {
+    // `evidence-synthesizer` is the real case: it drafts and it repairs, so it is in two
+    // phases. Adding the second claims more about the same node and breaks no consumer.
+    const previous = minimalCard();
+    const { diagnostics } = validateCard(
+      { ...minimal(), version: "1.0.1", phase: ["implementation", "debugging"] },
+      { ontology, previous },
+    );
+    expect(codes(diagnostics)).toEqual(["card/version-bump-too-small"]);
+    expect(diagnostics[0].message).toContain("minor");
+    expect(diagnostics[0].hint).toContain("phase `debugging` was declared");
+  });
+
+  it("demands a minor bump when the last phase is dropped", () => {
+    // The content sweep does exactly this to sixteen cards. It claims less about the same
+    // node, and doc 2 §1.1 forbids reading the result as a shortfall — so it is not a break.
+    const previous = minimalCard();
+    const doc = { ...minimal(), version: "1.0.1" };
+    delete (doc as Record<string, unknown>)["phase"];
+    const { diagnostics } = validateCard(doc, { ontology, previous });
+    expect(codes(diagnostics)).toEqual(["card/version-bump-too-small"]);
+    expect(diagnostics[0].message).toContain("minor");
+    expect(diagnostics[0].hint).toContain("phase `implementation` was withdrawn");
   });
 
   it("demands a minor bump when the spec is rewritten", () => {
@@ -1356,7 +1542,7 @@ outputs:
     const { card, diagnostics } = loadCard(YAML, opts);
     expect(diagnostics).toEqual([]);
     expect(card?.id).toBe("solver-a");
-    expect(card?.phase).toBe("implementation");
+    expect(card?.phases).toEqual(["implementation"]);
     expect(card?.spec).toContain("Do not look for the acceptance criteria.");
   });
 

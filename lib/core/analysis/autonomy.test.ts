@@ -42,7 +42,7 @@ function makeCard(over: Partial<NodeCard> & { id: string }): NodeCard {
   return {
     name: `Node ${over.id}`,
     type: "agent",
-    phase: "implementation",
+    phases: ["implementation"],
     action: `Do the ${over.id} work`,
     spec: `Carry out the ${over.id} step exactly as the plan describes it, and stop there.`,
     tools: [],
@@ -99,7 +99,7 @@ function makeBlueprint(
     // Filled the way `resolveBundle` fills it, so the fixture is the shape the metric
     // really sees. Nothing in this file reads it; a fixture that carried an empty
     // coverage next to five phased nodes would be a trap for whoever edits next.
-    phaseCoverage: { covered: [], missing: [], byPhase: {} },
+    phaseCoverage: { covered: [], missing: [], byPhase: {}, unphased: [] },
   };
   bp.phaseCoverage = computePhaseCoverage(bp);
   return bp;
@@ -475,9 +475,9 @@ describe("computeAutonomy — contributions", () => {
   it("covers every node, unattended ones included", () => {
     const result = computeAutonomy(
       makeBlueprint([
-        { id: "plan", card: { type: "agent", phase: "planning" } },
+        { id: "plan", card: { type: "agent", phases: ["planning"] } },
         { id: "review", card: { requiresHuman: true } },
-        { id: "ship", card: { type: "tool", phase: "deployment" } },
+        { id: "ship", card: { type: "tool", phases: ["deployment"] } },
       ]),
     );
 
@@ -498,7 +498,7 @@ describe("computeAutonomy — contributions", () => {
           card: {
             name: "Customer delivery",
             type: "agent",
-            phase: "deployment",
+            phases: ["deployment"],
             action: "Publish the approved report to the customer channel",
             requiresHuman: true,
           },
@@ -528,7 +528,7 @@ describe("computeAutonomy — contributions", () => {
           card: {
             name: "Merge approval",
             type: "human-gate",
-            phase: "deployment",
+            phases: ["deployment"],
             action: "Waits for a reviewer to approve the merge before continuing",
             requiresHuman: true,
           },
@@ -556,7 +556,7 @@ describe("computeAutonomy — contributions", () => {
           id: "ask",
           card: {
             type: "human-input",
-            phase: "planning",
+            phases: ["planning"],
             action: "Collect the target repo from the operator",
             requiresHuman: true,
           },
@@ -599,7 +599,7 @@ describe("computeAutonomy — contributions", () => {
             id: "desk",
             card: {
               type: "berti/approval-desk",
-              phase: "deployment",
+              phases: ["deployment"],
               action: "Queue the change for the duty engineer",
               requiresHuman: true,
             },
@@ -780,9 +780,9 @@ describe("computeAutonomy — non-triggers", () => {
   it("does not count the evaluative types, which judge without a person", () => {
     const result = computeAutonomy(
       makeBlueprint([
-        { id: "check", card: { type: "validation", phase: "testing" } },
-        { id: "route", card: { type: "decision", phase: "debugging" } },
-        { id: "run", card: { type: "tool", phase: "testing" } },
+        { id: "check", card: { type: "validation", phases: ["testing"] } },
+        { id: "route", card: { type: "decision", phases: ["debugging"] } },
+        { id: "run", card: { type: "tool", phases: ["testing"] } },
       ]),
     );
 
@@ -826,7 +826,7 @@ describe("computeAutonomy — non-triggers", () => {
     // `plan` is a `data-type`. `card/wrong-term-kind` is validate.ts's to report; here it
     // simply resolves to nothing in the `node-type` dimension and stays unattended.
     const result = computeAutonomy(
-      makeBlueprint([{ id: "fmt", card: { type: "plan", phase: "implementation" } }]),
+      makeBlueprint([{ id: "fmt", card: { type: "plan", phases: ["implementation"] } }]),
     );
 
     expect(result.contributions[0].requiresHuman).toBe(false);

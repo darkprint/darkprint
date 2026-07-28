@@ -23,14 +23,27 @@ interface NodeSpec {
   name?: string;
   /** Doc 3 §3. Defaults to `agent`. */
   type?: string;
-  /** Doc 3 §2. Defaults to `implementation`, the phase most fixtures want. */
-  phase?: string;
+  /**
+   * Doc 3 §2, optional and repeatable. Defaults to **none**, and deliberately so: no
+   * branch of the security metric reads the phase any more, so a fixture that declared one
+   * would suggest it mattered. "fires identically whatever phases the cards declare" below
+   * asserts that the emptiness is not hiding anything.
+   */
+  phases?: string[];
   /** Doc 1 §3.2. Defaults to something no other fixture node shares a 3-gram with. */
   spec?: string;
   tools?: string[];
   markers?: string[];
   params?: Record<string, JsonValue>;
   outputs?: Port[];
+  /**
+   * Doc 1 §3.3. Defaults to none, and only rule (d) reads them: a validation node's
+   * non-criteria inputs are what say which artefact it judges, and that is what tells the
+   * criteria producer of the starter factory (`plan` + `criteria` into a tester that
+   * judges `code`) apart from a node that writes the criteria and the judged artefact
+   * both.
+   */
+  inputs?: Port[];
 }
 
 type EdgeSpec = readonly [source: string, target: string];
@@ -52,12 +65,12 @@ function card(spec: NodeSpec): NodeCard {
     id: spec.id,
     name: spec.name ?? spec.id,
     type: spec.type ?? "agent",
-    phase: spec.phase ?? "implementation",
+    phases: spec.phases ?? [],
     action: "Do the one thing this fixture needs.",
     spec: spec.spec ?? defaultSpec(spec.id),
     tools: spec.tools ?? [],
     params: spec.params ?? {},
-    inputs: [],
+    inputs: spec.inputs ?? [],
     outputs: spec.outputs ?? [],
     dependencies: [],
     requiresHuman: false,
@@ -115,7 +128,7 @@ function blueprint(
     cards: new Map(nodes.map((node) => [node.ref, node.card])),
     // Filled below, the way `resolveBundle` fills it. Nothing in this file reads it, but
     // a fixture that disagrees with the resolver is a fixture that proves less.
-    phaseCoverage: { covered: [], missing: [], byPhase: {} },
+    phaseCoverage: { covered: [], missing: [], byPhase: {}, unphased: [] },
   };
   bp.phaseCoverage = computePhaseCoverage(bp);
   return bp;
@@ -155,10 +168,10 @@ const FIRES_ON_SIMILARITY: DarkprintConfig = {
 describe("a clean graph", () => {
   const clean = blueprint(
     [
-      { id: "planner", type: "agent", phase: "planning" },
-      { id: "builder", type: "agent", phase: "implementation" },
-      { id: "tester", type: "tool", phase: "testing" },
-      { id: "gate", type: "human-gate", phase: "deployment" },
+      { id: "planner", type: "agent" },
+      { id: "builder", type: "agent" },
+      { id: "tester", type: "tool" },
+      { id: "gate", type: "human-gate" },
     ],
     [
       ["planner", "builder"],
@@ -343,7 +356,7 @@ describe("inferred: unbounded-loop (doc 3 §4.1)", () => {
   /** `tester → debugger → tester`, the doc 2 §5.5 loop, with an optional cap. */
   function loop(member: NodeSpec): ResolvedBlueprint {
     return blueprint(
-      [{ id: "start", phase: "planning" }, { id: "tester", phase: "testing" }, member],
+      [{ id: "start" }, { id: "tester" }, member],
       [
         ["start", "tester"],
         ["tester", "debug"],
@@ -353,20 +366,20 @@ describe("inferred: unbounded-loop (doc 3 §4.1)", () => {
   }
 
   it("fires on a cycle with no iteration cap", () => {
-    const result = computeSecurity(loop({ id: "debug", phase: "debugging" }));
+    const result = computeSecurity(loop({ id: "debug" }));
     expect(markers(result.findings)).toEqual(["unbounded-loop", "unbounded-loop"]);
     expect(result.raw).toBe(2.5);
     expect(result.level).toBe(3);
   });
 
   it("fires on every member of the cycle, and only on them", () => {
-    const result = computeSecurity(loop({ id: "debug", phase: "debugging" }));
+    const result = computeSecurity(loop({ id: "debug" }));
     expect(result.penalties[0].nodeIds).toEqual(["debug", "tester"]);
     expect(result.findings.map((f) => f.nodeId)).toEqual(["debug", "tester"]);
   });
 
   it("records it as inferred, since no card declared it", () => {
-    const [finding] = computeSecurity(loop({ id: "debug", phase: "debugging" })).findings;
+    const [finding] = computeSecurity(loop({ id: "debug" })).findings;
     expect(finding.establishedBy).toBe("inferred");
     expect(finding.explanation).toContain("sits in a cycle with");
     expect(finding.explanation).toContain("no node declares an iteration cap");
@@ -378,7 +391,7 @@ describe("inferred: unbounded-loop (doc 3 §4.1)", () => {
     ["params.maxIterations", { maxIterations: 3 }],
     ["params.max_retries", { max_retries: 2 }],
   ])("goes quiet when a member declares %s", (_label, params) => {
-    expect(computeSecurity(loop({ id: "debug", phase: "debugging", params })).findings).toEqual([]);
+    expect(computeSecurity(loop({ id: "debug", params })).findings).toEqual([]);
   });
 
   it.each<[string, JsonValue]>([
@@ -390,7 +403,7 @@ describe("inferred: unbounded-loop (doc 3 §4.1)", () => {
     ["a blank string", "  "],
     ["a word", "many"],
   ])("rejects %s as a cap", (_label, value) => {
-    const bp = loop({ id: "debug", phase: "debugging", params: { max_iterations: value } });
+    const bp = loop({ id: "debug", params: { max_iterations: value } });
     expect(markerSet(bp)).toEqual(["unbounded-loop"]);
   });
 
@@ -408,7 +421,7 @@ describe("inferred: unbounded-loop (doc 3 §4.1)", () => {
     // exactly the "evaluation nobody can audit" doc 1 §8.3 warns about. There is now one
     // reader, `card/iteration-cap.ts`, and it carries the reasoning for both calls: a
     // quoting slip is not a missing cap, and zero is the tightest bound there is.
-    const bp = loop({ id: "debug", phase: "debugging", params: { max_iterations: value } });
+    const bp = loop({ id: "debug", params: { max_iterations: value } });
     expect(computeSecurity(bp).findings).toEqual([]);
   });
 
@@ -418,7 +431,7 @@ describe("inferred: unbounded-loop (doc 3 §4.1)", () => {
       // Rewritten to doc 3 §4.1, which names exactly one condition: "nessun nodo del ciclo
       // dichiara un tetto di iterazioni". A decision node can pick which way to go round;
       // it is not a declared bound.
-      expect(markerSet(loop({ id: "debug", type, phase: "debugging" }))).toEqual([
+      expect(markerSet(loop({ id: "debug", type }))).toEqual([
         "unbounded-loop",
       ]);
     },
@@ -442,7 +455,7 @@ describe("inferred: unbounded-loop (doc 3 §4.1)", () => {
   });
 
   it("reports a self-loop in its own words", () => {
-    const bp = blueprint([{ id: "retry" }, { id: "deliver", phase: "deployment" }], [
+    const bp = blueprint([{ id: "retry" }, { id: "deliver" }], [
       ["retry", "retry"],
       ["retry", "deliver"],
     ]);
@@ -454,7 +467,7 @@ describe("inferred: unbounded-loop (doc 3 §4.1)", () => {
 
   it("charges two independent uncapped cycles once between them", () => {
     const bp = blueprint(
-      [{ id: "a1" }, { id: "a2" }, { id: "b1" }, { id: "b2" }, { id: "out", phase: "deployment" }],
+      [{ id: "a1" }, { id: "a2" }, { id: "b1" }, { id: "b2" }, { id: "out" }],
       [
         ["a1", "a2"],
         ["a2", "a1"],
@@ -485,7 +498,7 @@ describe("inferred: unbounded-loop (doc 3 §4.1)", () => {
   });
 
   it("still detects a cycle made of nodes whose cards are missing", () => {
-    const bp = blueprint([{ id: "start", phase: "planning" }], [
+    const bp = blueprint([{ id: "start" }], [
       ["start", "ghost_a"],
       ["ghost_a", "ghost_b"],
       ["ghost_b", "ghost_a"],
@@ -631,24 +644,34 @@ describe("inferred: unvalidated-external-access (doc 3 §4.1)", () => {
 });
 
 /* ------------------------------------------------------------------ */
-/* doc 3 §4.1 — criteria-leak by topology                              */
+/* doc 3 §4.1 — criteria-leak: where the generator set comes from      */
 /* ------------------------------------------------------------------ */
 
-describe("inferred: criteria-leak by topology (spec PART 4.4a)", () => {
-  /** `planner` writes the acceptance criteria; `builder` is the node they would judge. */
+describe("criteria-leak: the anchor is topological, not the phase", () => {
+  /**
+   * The starter factory of doc 2 §5.2 in miniature: `planner` writes the acceptance
+   * criteria, `tester` judges, `builder` is judged. Which edges exist is the whole test.
+   */
   function factory(edges: readonly EdgeSpec[]): ResolvedBlueprint {
     return blueprint(
       [
-        { id: "planner", phase: "planning", outputs: [CRITERIA_PORT] },
-        { id: "builder", phase: "implementation" },
-        { id: "tester", phase: "testing" },
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        { id: "tester", type: "validation" },
       ],
       edges,
     );
   }
 
-  it("fires on the implementation node reachable from the criteria producer", () => {
-    const result = computeSecurity(factory([["planner", "builder"]]));
+  const JUDGED_FACTORY: readonly EdgeSpec[] = [
+    ["planner", "builder"],
+    ["builder", "tester"],
+  ];
+
+  it("fires on the node whose output a validation node reads", () => {
+    // G = { n | ∃ v : type(v) ⊑ validation ∧ edge(n → v) }. `builder` hands its work to
+    // `tester`, so `builder` is the thing being judged, and the criteria reach it.
+    const result = computeSecurity(factory(JUDGED_FACTORY));
     expect(markers(result.findings)).toEqual(["criteria-leak"]);
     expect(result.findings[0].nodeId).toBe("builder");
     expect(result.findings[0].establishedBy).toBe("inferred");
@@ -656,85 +679,451 @@ describe("inferred: criteria-leak by topology (spec PART 4.4a)", () => {
     expect(result.level).toBe(2);
   });
 
-  it("names the producer and the phase in the explanation", () => {
-    const [finding] = computeSecurity(factory([["planner", "builder"]])).findings;
-    expect(finding.explanation).toContain("is in the `implementation` phase");
+  it("names the judge and the producer in the explanation", () => {
+    const [finding] = computeSecurity(factory(JUDGED_FACTORY)).findings;
+    expect(finding.explanation).toContain('hands its output to the validation node "tester"');
     expect(finding.explanation).toContain('is reachable from "planner"');
+    expect(finding.explanation).toContain("the criteria can reach the node whose work they judge");
     expect(finding.hint).toContain("Remove the path from planner to builder");
   });
 
-  it("fires along an indirect path, which is the case an author actually commits", () => {
+  it("says nothing about the phase, because it no longer reads one", () => {
+    const [finding] = computeSecurity(factory(JUDGED_FACTORY)).findings;
+    expect(finding.explanation).not.toContain("phase");
+  });
+
+  it("fires on a node that declares no phase at all", () => {
+    // The coupling between the two halves of this change, stated once: making `phase`
+    // optional removed the signal the old anchor used, and the fixtures here declare none.
+    const bp = factory(JUDGED_FACTORY);
+    expect(bp.nodes.every((node) => node.card.phases.length === 0)).toBe(true);
+    expect(markers(computeSecurity(bp).findings)).toEqual(["criteria-leak"]);
+  });
+
+  it("fires identically whatever phases the cards declare", () => {
+    // Same graph, three phase spellings: none, one, two. The metric must not move.
+    const phased = blueprint(
+      [
+        { id: "planner", phases: ["planning"], outputs: [CRITERIA_PORT] },
+        { id: "builder", phases: ["implementation", "debugging"] },
+        { id: "tester", phases: ["testing"], type: "validation" },
+      ],
+      JUDGED_FACTORY,
+    );
+    const bare = factory(JUDGED_FACTORY);
+    expect(computeSecurity(phased).raw).toBe(computeSecurity(bare).raw);
+    expect(computeSecurity(phased).findings.map((f) => f.nodeId)).toEqual(
+      computeSecurity(bare).findings.map((f) => f.nodeId),
+    );
+  });
+
+  it("no longer fires on an implementation-phase node nothing judges", () => {
+    // The old anchor's exact case, now correctly silent: `builder` says it implements, but
+    // no validation node reads it, so nothing is judging its work against any criteria.
     const bp = blueprint(
       [
-        { id: "planner", phase: "planning", outputs: [CRITERIA_PORT] },
-        { id: "notes", phase: "planning" },
-        { id: "builder", phase: "implementation" },
+        { id: "planner", phases: ["planning"], outputs: [CRITERIA_PORT] },
+        { id: "builder", phases: ["implementation"] },
       ],
-      [
-        ["planner", "notes"],
-        ["notes", "builder"],
-      ],
+      [["planner", "builder"]],
     );
-    expect(markerSet(bp)).toEqual(["criteria-leak"]);
-  });
-
-  it("stays silent when there is no path — the missing edge of doc 2 §5.2", () => {
-    const bp = factory([
-      ["planner", "tester"],
-      ["builder", "tester"],
-    ]);
-    expect(computeSecurity(bp).findings).toEqual([]);
-    expect(computeSecurity(bp).level).toBe(4);
-  });
-
-  it("does not fire on the tester, which is supposed to see the criteria", () => {
-    const bp = factory([
-      ["planner", "tester"],
-      ["builder", "tester"],
-    ]);
     expect(computeSecurity(bp).findings).toEqual([]);
   });
 
-  it("fires on a node that produces the criteria and implements against them", () => {
-    const bp = blueprint([
-      { id: "solo", phase: "implementation", outputs: [CRITERIA_PORT] },
-    ]);
-    const result = computeSecurity(bp);
-    expect(markers(result.findings)).toEqual(["criteria-leak"]);
-    expect(result.findings[0].explanation).toContain("produces the acceptance criteria itself");
-    expect(result.findings[0].hint).toContain("Split solo in two");
-  });
-
-  it("follows a local subtype of acceptance-criteria (doc 3 §7)", () => {
+  it("finds the judge through `isA`, so a locally namespaced validation type anchors it", () => {
+    // Doc 3 §7's whole point: the analysis reasons by category, never by a hard-coded id.
     const local: OntologyTerm = {
-      id: "berti/gherkin",
-      kind: "data-type",
-      label: "Gherkin",
-      description: "Acceptance criteria written as Given/When/Then scenarios.",
-      broader: "acceptance-criteria",
+      id: "berti/scenario-check",
+      kind: "node-type",
+      label: "Scenario check",
+      description: "A validation node that runs Given/When/Then scenarios.",
+      broader: "validation",
       since: "0.1.0",
     };
     const bp = blueprint(
       [
-        { id: "planner", phase: "planning", outputs: [{ name: "criteria", type: "berti/gherkin" }] },
-        { id: "builder", phase: "implementation" },
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        { id: "tester", type: "berti/scenario-check" },
       ],
-      [["planner", "builder"]],
+      JUDGED_FACTORY,
       { ontology: ontologyView(CORE_ONTOLOGY, [local]) },
     );
     expect(markerSet(bp)).toEqual(["criteria-leak"]);
   });
 
-  it("charges the marker once when two producers reach the same builder", () => {
+  it("fires along an indirect path, which is the case an author actually commits", () => {
     const bp = blueprint(
       [
-        { id: "plan_a", phase: "planning", outputs: [CRITERIA_PORT] },
-        { id: "plan_b", phase: "planning", outputs: [CRITERIA_PORT] },
-        { id: "builder", phase: "implementation" },
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "notes" },
+        { id: "builder" },
+        { id: "tester", type: "validation" },
+      ],
+      [
+        ["planner", "notes"],
+        ["notes", "builder"],
+        ["builder", "tester"],
+      ],
+    );
+    expect(markerSet(bp)).toEqual(["criteria-leak"]);
+    // Both, and that is the change. `G` is closed upwards through non-validation nodes,
+    // so it is not only whoever hands the judge the artefact but everything that fed into
+    // it: `notes` holds the criteria and passes them into the builder, `builder` holds
+    // them and writes the thing the tester judges. The marker is still charged once — the
+    // score is identical either way — and doc 3 §5's second sentence is what changes,
+    // because it asks for every node that fired it to be listed.
+    expect(computeSecurity(bp).findings.map((f) => f.nodeId)).toEqual(["builder", "notes"]);
+    expect(computeSecurity(bp).penalties).toHaveLength(1);
+    expect(computeSecurity(bp).raw).toBe(2);
+  });
+
+  it("names the edge to cut, not a path that is not in the DOT", () => {
+    // Doc 1 §8.3 promises a named node and something to change behind every point
+    // subtracted. With an intermediary between the builder and the judge, the hint used to
+    // say "Remove the path from planner to packager" — an edge that appears nowhere in the
+    // source, on a node that neither saw the criteria nor wrote anything.
+    const bp = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        { id: "packager" },
+        { id: "tester", type: "validation" },
+      ],
+      [
+        ["planner", "builder"],
+        ["builder", "packager"],
+        ["packager", "tester"],
+      ],
+    );
+    const result = computeSecurity(bp);
+    expect(result.findings.map((f) => f.nodeId)).toEqual(["builder", "packager"]);
+    const packager = result.findings.find((f) => f.nodeId === "packager");
+    expect(packager?.hint).toContain("It runs planner → builder → packager");
+    expect(packager?.hint).toContain("the edge to cut is `planner → builder`");
+    // And the node doc 2 §3 is actually about is named in its own right, not only inside
+    // somebody else's hint.
+    const builder = result.findings.find((f) => f.nodeId === "builder");
+    expect(builder?.explanation).toContain(
+      'feeds the validation node "tester" further downstream',
+    );
+  });
+
+  it("stays silent when there is no path — the missing edge of doc 2 §5.2", () => {
+    // The starter blueprint exactly: the criteria go to the judge and to nothing else.
+    const bp = factory([
+      ["planner", "tester"],
+      ["builder", "tester"],
+    ]);
+    const result = computeSecurity(bp);
+    expect(result.findings).toEqual([]);
+    expect(result.level).toBe(4);
+    // Clean, and *evaluated*: the check had a producer and a subject and found no path.
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  it("does not fire on the criteria producer, even though a judge reads it", () => {
+    // `planner → tester` puts the planner in G by the letter of the formula. It is also
+    // the canonical correct topology of doc 2 §3, so a reflexive rule here would report a
+    // leak on every well-built factory in the gallery. The producer is the criteria's
+    // origin; they do not arrive there.
+    const bp = factory([
+      ["planner", "tester"],
+      ["builder", "tester"],
+    ]);
+    expect(computeSecurity(bp).findings.filter((f) => f.nodeId === "planner")).toEqual([]);
+  });
+
+  it("does not fire on a terminal judge, which is supposed to see the criteria", () => {
+    // Doc 3 §3 defines a validation node as the thing that compares an artefact against
+    // criteria, so charging one for holding them would charge it for existing. `tester`
+    // hands its verdict to a deployer and to nobody who judges it, so nothing it produces
+    // is under judgement and it is not in G at all.
+    const bp = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        { id: "tester", type: "validation" },
+        { id: "deployer", type: "tool" },
+      ],
+      [
+        ["planner", "tester"],
+        ["builder", "tester"],
+        ["tester", "deployer"],
+      ],
+    );
+    expect(computeSecurity(bp).findings).toEqual([]);
+    expect(computeSecurity(bp).diagnostics).toEqual([]);
+  });
+
+  it("fires on a validation node whose own output another judge reads", () => {
+    // The rewritten form of "does not fire on the judge". The blanket `!isJudge` exclusion
+    // this replaces sold total immunity for one field value: a node typed `validation`
+    // that takes the criteria and a draft and emits an edited draft was invisible as a
+    // subject *and* absorbed every walk that reached it, so the drafter behind it escaped
+    // too. Doc 3 §3 does define validation as comparing an artefact against criteria — but
+    // a node whose output is itself judged is producing an artefact under judgement,
+    // whatever its `type` says, and `auditor` exists to check something `tester` emitted.
+    const bp = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "tester", type: "validation" },
+        { id: "auditor", type: "validation" },
+      ],
+      [
+        ["planner", "tester"],
+        ["tester", "auditor"],
+      ],
+    );
+    const result = computeSecurity(bp);
+    expect(result.findings.map((f) => [f.marker, f.nodeId])).toEqual([
+      ["criteria-leak", "tester"],
+    ]);
+    expect(result.findings[0].explanation).toContain(
+      'hands its output to the validation node "auditor"',
+    );
+    expect(result.raw).toBe(2);
+  });
+
+  it("fires on a validation node that rewrites the artefact it was given to judge", () => {
+    // The case the exclusion cost, end to end and with the shape an author actually
+    // writes: `reviewer` is typed `validation` because "review" reads like validation, it
+    // takes the criteria and a draft, and it emits an edited draft that `tester` then
+    // judges. One field value used to buy immunity as subject and as absorber at once —
+    // the reviewer escaped, and `drafter` escaped behind it.
+    const bp = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "drafter" },
+        { id: "reviewer", type: "validation" },
+        { id: "tester", type: "validation" },
+      ],
+      [
+        ["planner", "reviewer"],
+        ["drafter", "reviewer"],
+        ["reviewer", "tester"],
+      ],
+    );
+    const result = computeSecurity(bp);
+    expect(result.findings.map((f) => [f.marker, f.nodeId])).toEqual([
+      ["criteria-leak", "reviewer"],
+    ]);
+    // The drafter never receives the criteria, so it is correctly left alone: the fix is
+    // not "report more nodes", it is "report the right one".
+    expect(result.findings.map((f) => f.nodeId)).not.toContain("drafter");
+  });
+
+  it("does not charge the criteria through the judge (doc 2 §5.5)", () => {
+    // The starter's repair loop: tester → debugger → tester. The debugger is judged, and
+    // the criteria producer reaches it *through* the tester. Doc 2 §5.5 endorses this
+    // shape by name — "seeing the failure evidence is not seeing the criteria" — so the
+    // walk stops at the judge instead of charging everything downstream of it.
+    const bp = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        { id: "tester", type: "validation" },
+        { id: "debugger", params: { max_iterations: 3 } },
+      ],
+      [
+        ["planner", "tester"],
+        ["builder", "tester"],
+        ["tester", "debugger"],
+        ["debugger", "tester"],
+      ],
+    );
+    // The cap keeps `unbounded-loop` out of the way; this test is about one marker.
+    const result = computeSecurity(bp);
+    expect(markers(result.findings)).not.toContain("criteria-leak");
+    expect(result.raw).toBe(4);
+  });
+
+  it("says out loud that it stopped at the judge, instead of reading as clean", () => {
+    // The other half of the rule above, and the half that was missing. Absorption is
+    // right; absorption in silence was a way to switch the check off. Every node the
+    // criteria would reach if some judge forwarded them is named, at warning severity,
+    // charging nothing.
+    const bp = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        { id: "tester", type: "validation" },
+        { id: "debugger", params: { max_iterations: 3 } },
+      ],
+      [
+        ["planner", "tester"],
+        ["builder", "tester"],
+        ["tester", "debugger"],
+        ["debugger", "tester"],
+      ],
+    );
+    const result = computeSecurity(bp);
+    expect(result.diagnostics.map((d) => [d.severity, d.code, d.location?.nodeId])).toEqual([
+      ["warning", "analysis/criteria-relayed-through-judge", "debugger"],
+    ]);
+    expect(result.diagnostics[0].message).toContain('stops at "tester"');
+    expect(result.diagnostics[0].message).toContain("property of the prose, not of the graph");
+    expect(result.diagnostics[0].hint).toContain("Doc 2 §5.5");
+    // Warning only. Doc 3 §5 prices evidence, and a channel the topology cannot follow is
+    // not evidence of a leak — nor of isolation.
+    expect(result.raw).toBe(4);
+    expect(result.findings).toEqual([]);
+  });
+
+  it("reports the same relay when the loop returns to the builder, which doc 2 §5.5 forbids", () => {
+    // "Il loop è `tester → debugger → tester`. Non torna al `builder`." — and in the graph
+    // the forbidden shape is the endorsed one with a different node id on it. There is no
+    // topological fact that separates them, so the engine names the channel for both
+    // rather than blessing one and charging the other.
+    const bp = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder", params: { max_iterations: 3 } },
+        { id: "tester", type: "validation" },
+      ],
+      [
+        ["planner", "tester"],
+        ["builder", "tester"],
+        ["tester", "builder"],
+      ],
+    );
+    const result = computeSecurity(bp);
+    expect(result.diagnostics.map((d) => [d.code, d.location?.nodeId])).toEqual([
+      ["analysis/criteria-relayed-through-judge", "builder"],
+    ]);
+    expect(result.findings).toEqual([]);
+  });
+
+  it("reports the relay through an intermediary downstream of the judge", () => {
+    // One hop longer, and the shape that used to read as completely clean: the judge hands
+    // the run's evidence to a triage node, which restates it as a brief for the builder.
+    // No `acceptance-criteria` port anywhere but the planner's, so no second walk starts,
+    // and the unanchored guard stays quiet because the anchor is present — the blueprint
+    // read as evaluated and clean rather than as partly unfollowable.
+    const bp = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        { id: "tester", type: "validation", params: { max_iterations: 3 } },
+        { id: "triage" },
+      ],
+      [
+        ["planner", "tester"],
+        ["builder", "tester"],
+        ["tester", "triage"],
+        ["triage", "builder"],
+      ],
+    );
+    const result = computeSecurity(bp);
+    expect(result.diagnostics.map((d) => [d.code, d.location?.nodeId])).toEqual([
+      ["analysis/criteria-relayed-through-judge", "builder"],
+      ["analysis/criteria-relayed-through-judge", "triage"],
+    ]);
+    expect(result.findings).toEqual([]);
+  });
+
+  it("does not report a relay for a node the criteria already reach directly", () => {
+    // A node already carrying the marker has a finding, not silence, so repeating the
+    // channel as a warning would be two rows for one fact.
+    const bp = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder", params: { max_iterations: 3 } },
+        { id: "tester", type: "validation" },
+      ],
+      [
+        ["planner", "builder"],
+        ["builder", "tester"],
+        ["tester", "builder"],
+      ],
+    );
+    const result = computeSecurity(bp);
+    expect(markers(result.findings)).toEqual(["criteria-leak"]);
+    expect(result.diagnostics.map((d) => d.code)).toEqual([]);
+  });
+
+  it("still fires when the path around the judge is a real one", () => {
+    // No judge on the route at all: `planner → notes → builder` reaches the builder
+    // without passing a validation node, so this is the marker and not the warning.
+    const bp = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        { id: "tester", type: "validation" },
+        { id: "notes" },
+      ],
+      [
+        ["planner", "notes"],
+        ["notes", "builder"],
+        ["builder", "tester"],
+      ],
+    );
+    expect(computeSecurity(bp).findings.map((f) => f.nodeId)).toEqual(["builder", "notes"]);
+  });
+
+  it("a validation node inserted on the criteria path cannot buy a clean result", () => {
+    // The hint loop, closed. `unvalidated-external-access` tells the author to insert a
+    // validation node between the fetcher and its consumer; doing that on the criteria
+    // path used to clear `criteria-leak` as a side effect and take the blueprint from 1
+    // with two markers to 4 with none, while the criteria still reached the builder. The
+    // engine's own remediation advice was a recipe for disarming the most important check
+    // in the system.
+    const before = blueprint(
+      [
+        { id: "planner", tools: ["web-search"], outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        { id: "tester", type: "validation" },
+      ],
+      [
+        ["planner", "builder"],
+        ["planner", "tester"],
+        ["builder", "tester"],
+      ],
+    );
+    expect(markerSet(before)).toEqual(["criteria-leak", "unvalidated-external-access"]);
+    expect(computeSecurity(before).raw).toBe(1);
+    // The hint says so before the author acts on it, too.
+    const external = computeSecurity(before).findings.find(
+      (f) => f.marker === "unvalidated-external-access",
+    );
+    expect(external?.hint).toContain("`criteria-leak` stops being able to trace them");
+
+    // Follow it verbatim: a `gate` typed `validation` between planner and builder.
+    const after = blueprint(
+      [
+        { id: "planner", tools: ["web-search"], outputs: [CRITERIA_PORT] },
+        { id: "gate", type: "validation" },
+        { id: "builder" },
+        { id: "tester", type: "validation" },
+      ],
+      [
+        ["planner", "gate"],
+        ["gate", "builder"],
+        ["planner", "tester"],
+        ["builder", "tester"],
+      ],
+    );
+    const result = computeSecurity(after);
+    // `unvalidated-external-access` really is answered — every consumer is a judge now.
+    expect(markers(result.findings)).not.toContain("unvalidated-external-access");
+    // And the criteria path to the builder is not silently gone. It is named.
+    expect(result.diagnostics.map((d) => [d.code, d.location?.nodeId])).toEqual([
+      ["analysis/criteria-relayed-through-judge", "builder"],
+    ]);
+  });
+
+  it("charges the marker once when two producers reach the same node", () => {
+    const bp = blueprint(
+      [
+        { id: "plan_a", outputs: [CRITERIA_PORT] },
+        { id: "plan_b", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        { id: "tester", type: "validation" },
       ],
       [
         ["plan_a", "builder"],
         ["plan_b", "builder"],
+        ["builder", "tester"],
       ],
     );
     const result = computeSecurity(bp);
@@ -743,16 +1132,526 @@ describe("inferred: criteria-leak by topology (spec PART 4.4a)", () => {
     expect(result.findings[0].explanation).toContain('"plan_a" and "plan_b"');
   });
 
-  it("reports nothing when no node types its criteria port, and says so nowhere else", () => {
-    // The documented blind spot: both detectors anchor on `acceptance-criteria`.
+  it("lists every judge when a node is read by more than one", () => {
     const bp = blueprint(
       [
-        { id: "planner", phase: "planning", outputs: [{ name: "criteria", type: "markdown" }] },
-        { id: "builder", phase: "implementation" },
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        { id: "tester", type: "validation" },
+        { id: "auditor", type: "validation" },
+      ],
+      [
+        ["planner", "builder"],
+        ["builder", "tester"],
+        ["builder", "auditor"],
+      ],
+    );
+    expect(computeSecurity(bp).findings[0].explanation).toContain(
+      'hands its output to the validation nodes "auditor" and "tester"',
+    );
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* the third state: the check that could not run                       */
+/* ------------------------------------------------------------------ */
+
+describe("criteria-leak: unanchored is not clean (analysis/criteria-leak-unanchored)", () => {
+  /** A judged generator and nobody typing the criteria — eight of the nine real bundles. */
+  const unanchored = blueprint(
+    [
+      { id: "planner", outputs: [{ name: "criteria", type: "markdown" }] },
+      { id: "builder" },
+      { id: "tester", type: "validation" },
+    ],
+    [
+      ["planner", "builder"],
+      ["builder", "tester"],
+    ],
+  );
+
+  it("warns instead of reporting nothing at all", () => {
+    const result = computeSecurity(unanchored);
+    expect(result.diagnostics.map((d) => d.code)).toEqual(["analysis/criteria-leak-unanchored"]);
+    expect(result.diagnostics[0].severity).toBe("warning");
+  });
+
+  it("says the check was not evaluated, and never says clean", () => {
+    // The defect this diagnostic exists for: a check that reports nothing looks exactly
+    // like a check that passed, and on the real archive that was eight bundles out of nine.
+    const [diagnostic] = computeSecurity(unanchored).diagnostics;
+    expect(diagnostic.message).toContain("was not evaluated");
+    expect(diagnostic.message.toLowerCase()).not.toContain("clean");
+    expect(diagnostic.message.toLowerCase()).not.toContain("no leak");
+    expect(diagnostic.hint).toContain("silence, not a clean verdict");
+  });
+
+  it("names what the author would add to make it evaluable", () => {
+    const [diagnostic] = computeSecurity(unanchored).diagnostics;
+    expect(diagnostic.message).toContain("`acceptance-criteria`");
+    expect(diagnostic.hint).toContain("Type the port that carries the acceptance criteria");
+  });
+
+  it("names the judged node and the judge", () => {
+    const [diagnostic] = computeSecurity(unanchored).diagnostics;
+    expect(diagnostic.message).toContain('"tester"');
+    expect(diagnostic.message).toContain('"builder"');
+  });
+
+  it("does not fire the marker and does not move the score", () => {
+    // Reporting that the system does not know is a third state, not evidence of a leak.
+    const result = computeSecurity(unanchored);
+    expect(result.findings).toEqual([]);
+    expect(result.penalties).toEqual([]);
+    expect(result.raw).toBe(4);
+    expect(result.level).toBe(4);
+    expect(markers(computeSecurity(unanchored, FIRES_ON_SIMILARITY).findings)).toEqual([]);
+  });
+
+  it("stays quiet when a producer exists, whatever the verdict is", () => {
+    const clean = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        { id: "tester", type: "validation" },
+      ],
+      [
+        ["planner", "tester"],
+        ["builder", "tester"],
+      ],
+    );
+    const leaking = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        { id: "tester", type: "validation" },
+      ],
+      [
+        ["planner", "builder"],
+        ["builder", "tester"],
+      ],
+    );
+    expect(computeSecurity(clean).diagnostics).toEqual([]);
+    expect(computeSecurity(leaking).diagnostics).toEqual([]);
+  });
+
+  it("stays quiet when both legs are missing at once", () => {
+    // No criteria producer *and* no validation node. This is not a factory that forgot to
+    // declare its acceptance check, it is a graph doing something else, and warning here
+    // would put the diagnostic on most of the internet and make it worthless where it
+    // means something. Silent on purpose, and the only case that is.
+    const bp = blueprint([{ id: "a" }, { id: "b" }], [["a", "b"]]);
+    expect(computeSecurity(bp).diagnostics).toEqual([]);
+  });
+
+  it("warns when the judge leg is the missing one — a test runner typed `tool`", () => {
+    // The other half of the anchor, and the half that was unguarded. `criteria-leak` was
+    // still silently inert whenever no node was typed `validation`: `G` came out empty,
+    // every detector iterated nothing, and the blueprint scored 4 with no diagnostic at
+    // all — the exact failure mode the unanchored state exists to remove, reachable by
+    // changing one word on one card. The ontology invites the word: `tool` is "a
+    // deterministic operation: running tests, compiling, formatting, calling an API".
+    const bp = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        // The leaking starter exactly, except for this one field value.
+        { id: "tester", type: "tool" },
+      ],
+      [
+        ["planner", "builder"],
+        ["planner", "tester"],
+        ["builder", "tester"],
+      ],
+    );
+    const result = computeSecurity(bp);
+    expect(result.diagnostics.map((d) => d.code)).toEqual(["analysis/criteria-leak-unanchored"]);
+    expect(result.diagnostics[0].message).toContain("was not evaluated");
+    expect(result.diagnostics[0].message).toContain("no node in the graph is typed `validation`");
+    expect(result.diagnostics[0].hint).toContain("silence, not a clean verdict");
+    // Still not a marker: an unknown is not evidence of a leak.
+    expect(result.findings).toEqual([]);
+    expect(result.raw).toBe(4);
+
+    // The same graph with the one word changed back scores 2 and names the builder. That
+    // difference is doc 2 §5.4's demonstration switch, and it must not be purchasable by
+    // retyping the tester.
+    const withJudge = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        { id: "tester", type: "validation" },
+      ],
+      [
+        ["planner", "builder"],
+        ["planner", "tester"],
+        ["builder", "tester"],
+      ],
+    );
+    expect(computeSecurity(withJudge).raw).toBe(2);
+  });
+
+  it("says the judge leg is missing even when a validation node exists but judges nothing", () => {
+    const bp = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        // Present, typed, and with no predecessor — so no node's output is judged.
+        { id: "auditor", type: "validation" },
       ],
       [["planner", "builder"]],
     );
+    const [diagnostic] = computeSecurity(bp).diagnostics;
+    expect(diagnostic.code).toBe("analysis/criteria-leak-unanchored");
+    expect(diagnostic.message).toContain("no node's output is read by a `validation` node");
+  });
+
+  it("emits one diagnostic for the blueprint, not one per judged node", () => {
+    const bp = blueprint(
+      [
+        { id: "builder_a" },
+        { id: "builder_b" },
+        { id: "tester", type: "validation" },
+      ],
+      [
+        ["builder_a", "tester"],
+        ["builder_b", "tester"],
+      ],
+    );
+    const result = computeSecurity(bp);
+    expect(result.diagnostics).toHaveLength(1);
+    expect(result.diagnostics[0].message).toContain('"builder_a" and "builder_b"');
+  });
+
+  it("has no node location, because it is a statement about the whole blueprint", () => {
+    expect(computeSecurity(unanchored).diagnostics[0].location).toBeUndefined();
+  });
+
+  it("distinguishes all three states on three graphs that differ by one fact", () => {
+    const judged: readonly EdgeSpec[] = [
+      ["planner", "builder"],
+      ["builder", "tester"],
+    ];
+    const isolated: readonly EdgeSpec[] = [
+      ["planner", "tester"],
+      ["builder", "tester"],
+    ];
+    const typed: NodeSpec[] = [
+      { id: "planner", outputs: [CRITERIA_PORT] },
+      { id: "builder" },
+      { id: "tester", type: "validation" },
+    ];
+    const untyped: NodeSpec[] = [
+      { id: "planner", outputs: [{ name: "criteria", type: "markdown" }] },
+      { id: "builder" },
+      { id: "tester", type: "validation" },
+    ];
+
+    const leak = computeSecurity(blueprint(typed, judged));
+    const clean = computeSecurity(blueprint(typed, isolated));
+    const notEvaluated = computeSecurity(blueprint(untyped, judged));
+
+    expect([markers(leak.findings), leak.diagnostics.length]).toEqual([["criteria-leak"], 0]);
+    expect([markers(clean.findings), clean.diagnostics.length]).toEqual([[], 0]);
+    expect([
+      markers(notEvaluated.findings),
+      notEvaluated.diagnostics.map((d) => d.code),
+    ]).toEqual([[], ["analysis/criteria-leak-unanchored"]]);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* one card that writes the criteria and the work they judge           */
+/* ------------------------------------------------------------------ */
+
+describe("criteria-leak: the producer that is also the generator", () => {
+  /** Doc 2 §5.2's tester: it is handed the criteria and the build, and judges one by the other. */
+  const TESTER: NodeSpec = {
+    id: "tester",
+    type: "validation",
+    inputs: [CRITERIA_PORT, { name: "build", type: "code" }],
+  };
+
+  it("fires on a node declaring both the criteria and the artefact its judge reads", () => {
+    // No path exists to trace: at node level the criteria edge and the artefact edge are
+    // the same edge, so the topological walk cannot reach this and never could. The card
+    // answers it on its own — this node says it emits the acceptance criteria, and it says
+    // it emits the `code` the tester judges. Doc 2 §3's prohibition inside one card.
+    //
+    // This used to be completely silent, and the source claimed the content detector was
+    // the compensating control. It was not: the content detector drew its generators from
+    // the same set the exclusion had just removed this node from, so nothing caught it
+    // under any configuration.
+    const bp = blueprint(
+      [
+        {
+          id: "spec_builder",
+          outputs: [CRITERIA_PORT, { name: "build", type: "code" }],
+        },
+        TESTER,
+      ],
+      [["spec_builder", "tester"]],
+    );
+    const result = computeSecurity(bp);
+    expect(result.findings.map((f) => [f.marker, f.nodeId])).toEqual([
+      ["criteria-leak", "spec_builder"],
+    ]);
+    expect(result.findings[0].establishedBy).toBe("inferred");
+    expect(result.findings[0].explanation).toContain(
+      "declares an `acceptance-criteria` output and also `build: code`",
+    );
+    expect(result.findings[0].hint).toContain("Split spec_builder in two");
+    expect(result.raw).toBe(2);
+  });
+
+  it("stays silent on the canonical planner, which hands the judge only the criteria", () => {
+    // The rule's whole load is carried by the port match, and this is what it protects.
+    // Doc 2 §5.2's planner emits `plan: plan` and `criteria: acceptance-criteria` into a
+    // tester whose only non-criteria input is `build: code`. `plan` is not subsumed by
+    // `code`, so the planner hands the judge the criteria and nothing else. A rule without
+    // the match would fire on every well-built factory in the gallery, and a check that
+    // fires on the right answer is worse than no check.
+    const bp = blueprint(
+      [
+        {
+          id: "planner",
+          outputs: [CRITERIA_PORT, { name: "plan", type: "plan" }],
+        },
+        { id: "builder", outputs: [{ name: "build", type: "code" }] },
+        TESTER,
+      ],
+      [
+        ["planner", "tester"],
+        ["builder", "tester"],
+      ],
+    );
     expect(computeSecurity(bp).findings).toEqual([]);
+    expect(computeSecurity(bp).diagnostics).toEqual([]);
+  });
+
+  it("matches through `isA`, so a subtype of the judged input counts", () => {
+    // The judge reads `text`; the producer emits `code`, which is subsumed by it. The
+    // artefact under judgement is whatever the judge will accept, not an exact string.
+    const bp = blueprint(
+      [
+        {
+          id: "spec_builder",
+          outputs: [CRITERIA_PORT, { name: "build", type: "code" }],
+        },
+        {
+          id: "tester",
+          type: "validation",
+          inputs: [CRITERIA_PORT, { name: "work", type: "text" }],
+        },
+      ],
+      [["spec_builder", "tester"]],
+    );
+    expect(markers(computeSecurity(bp).findings)).toEqual(["criteria-leak"]);
+  });
+
+  it("needs the edge: a producer that does not feed the judge is not its generator", () => {
+    const bp = blueprint(
+      [
+        {
+          id: "spec_builder",
+          outputs: [CRITERIA_PORT, { name: "build", type: "code" }],
+        },
+        { id: "sink" },
+        TESTER,
+        { id: "builder", outputs: [{ name: "build", type: "code" }] },
+      ],
+      [
+        ["spec_builder", "sink"],
+        ["builder", "tester"],
+      ],
+    );
+    expect(computeSecurity(bp).findings.map((f) => f.nodeId)).not.toContain("spec_builder");
+  });
+
+  it("is silent when the judge declares no input the producer could satisfy", () => {
+    // Nothing to match against is not evidence of a match. The blueprint is still
+    // *evaluated* — both legs of the anchor are present — so no unanchored warning either.
+    const bp = blueprint(
+      [
+        {
+          id: "spec_builder",
+          outputs: [CRITERIA_PORT, { name: "build", type: "code" }],
+        },
+        { id: "tester", type: "validation", inputs: [CRITERIA_PORT] },
+      ],
+      [["spec_builder", "tester"]],
+    );
+    expect(computeSecurity(bp).findings).toEqual([]);
+    expect(computeSecurity(bp).diagnostics).toEqual([]);
+  });
+
+  it("charges the marker once when the same node is caught by path and by declaration", () => {
+    // `plan_a` reaches `spec_builder` by an edge *and* `spec_builder` declares both ports.
+    // Two detectors, one marker, one node: doc 3 §5's rule is structural here, not a
+    // reminder somebody has to honour.
+    const bp = blueprint(
+      [
+        { id: "plan_a", outputs: [CRITERIA_PORT] },
+        {
+          id: "spec_builder",
+          outputs: [CRITERIA_PORT, { name: "build", type: "code" }],
+        },
+        TESTER,
+      ],
+      [
+        ["plan_a", "spec_builder"],
+        ["spec_builder", "tester"],
+      ],
+    );
+    const result = computeSecurity(bp);
+    expect(result.findings.map((f) => f.nodeId)).toEqual(["spec_builder"]);
+    expect(result.penalties).toHaveLength(1);
+    expect(result.raw).toBe(2);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* criteria that arrive outside the graph                              */
+/* ------------------------------------------------------------------ */
+
+describe("criteria-leak: out of band (analysis/criteria-out-of-band)", () => {
+  /** `acceptance-verifier@1.x` of the real archive: `params.criteria_ref`, nothing wired. */
+  const outOfBand = blueprint(
+    [
+      { id: "builder" },
+      { id: "verify", type: "validation", params: { criteria_ref: "acceptance-criteria@1" } },
+    ],
+    [["builder", "verify"]],
+  );
+
+  it("warns when a criteria param names something no node produces", () => {
+    const codes = computeSecurity(outOfBand).diagnostics.map((d) => d.code);
+    expect(codes).toContain("analysis/criteria-out-of-band");
+  });
+
+  it("names the node, the key and the value, and points at the node", () => {
+    const [diagnostic] = computeSecurity(outOfBand).diagnostics.filter(
+      (d) => d.code === "analysis/criteria-out-of-band",
+    );
+    expect(diagnostic.message).toContain('"verify"');
+    expect(diagnostic.message).toContain("`params.criteria_ref`");
+    expect(diagnostic.message).toContain("`acceptance-criteria@1`");
+    expect(diagnostic.location).toEqual({ nodeId: "verify" });
+    expect(diagnostic.severity).toBe("warning");
+  });
+
+  it("says why it matters: isolation is a property of the topology (doc 2 §3)", () => {
+    const [diagnostic] = computeSecurity(outOfBand).diagnostics.filter(
+      (d) => d.code === "analysis/criteria-out-of-band",
+    );
+    expect(diagnostic.hint).toContain("isolation a property of the topology");
+    expect(diagnostic.hint).toContain("blind to this channel on verify");
+  });
+
+  it("does not fire the marker and does not move the score", () => {
+    const result = computeSecurity(outOfBand, FIRES_ON_SIMILARITY);
+    expect(result.findings).toEqual([]);
+    expect(result.raw).toBe(4);
+    expect(result.level).toBe(4);
+  });
+
+  it("fires on the judge itself, which is the archive's actual case", () => {
+    // `acceptance-verifier` is a validation node, and it is exempt from the *marker* for
+    // that reason. It is not exempt from being told that its criteria are unreachable to
+    // the analyzer: the exemption is about blame, this diagnostic is about visibility.
+    const [diagnostic] = computeSecurity(outOfBand).diagnostics.filter(
+      (d) => d.code === "analysis/criteria-out-of-band",
+    );
+    expect(diagnostic.location?.nodeId).toBe("verify");
+  });
+
+  it.each<[string, JsonValue]>([
+    ["a node id", "planner"],
+    ["a card id", "planner"],
+    ["an output port name", "criteria"],
+    ["a qualified port", "planner.criteria"],
+    ["a differently cased spelling", "Planner.Criteria"],
+  ])("stays quiet when the value names %s the graph produces", (_label, value) => {
+    const bp = blueprint(
+      [
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
+        { id: "verify", type: "validation", params: { criteria_ref: value } },
+      ],
+      [
+        ["planner", "verify"],
+        ["builder", "verify"],
+      ],
+    );
+    expect(
+      computeSecurity(bp).diagnostics.filter((d) => d.code === "analysis/criteria-out-of-band"),
+    ).toEqual([]);
+  });
+
+  it.each<[string, JsonValue]>([
+    ["a boolean", true],
+    ["a number", 0.8],
+    ["null", null],
+    ["an empty string", "   "],
+    ["an empty list", []],
+  ])("stays quiet for %s, which names nothing at all", (_label, value) => {
+    const bp = blueprint(
+      [{ id: "builder" }, { id: "verify", type: "validation", params: { criteria_strict: value } }],
+      [["builder", "verify"]],
+    );
+    expect(
+      computeSecurity(bp).diagnostics.filter((d) => d.code === "analysis/criteria-out-of-band"),
+    ).toEqual([]);
+  });
+
+  it("reads nested and repeated values", () => {
+    const bp = blueprint(
+      [
+        { id: "builder" },
+        {
+          id: "verify",
+          type: "validation",
+          params: { criteria: { set: ["suite-a", "suite-b"] } },
+        },
+      ],
+      [["builder", "verify"]],
+    );
+    const [diagnostic] = computeSecurity(bp).diagnostics.filter(
+      (d) => d.code === "analysis/criteria-out-of-band",
+    );
+    expect(diagnostic.message).toContain("`suite-a`, `suite-b`");
+  });
+
+  it("ignores a params key that is not about criteria", () => {
+    const bp = blueprint(
+      [{ id: "builder" }, { id: "verify", type: "validation", params: { source: "nowhere" } }],
+      [["builder", "verify"]],
+    );
+    expect(computeSecurity(bp).diagnostics.map((d) => d.code)).toEqual([
+      "analysis/criteria-leak-unanchored",
+    ]);
+  });
+
+  it.each(["criteria_ref", "criterio", "acceptance_criteria", "criteriaSet", "CRITERIA"])(
+    "matches the key spelling `%s`",
+    (key) => {
+      const bp = blueprint(
+        [{ id: "builder" }, { id: "verify", type: "validation", params: { [key]: "nowhere" } }],
+        [["builder", "verify"]],
+      );
+      expect(computeSecurity(bp).diagnostics.map((d) => d.code)).toContain(
+        "analysis/criteria-out-of-band",
+      );
+    },
+  );
+
+  it("coexists with the unanchored warning: two different things are unknown", () => {
+    // The archive's `adversarial-consensus-line` in miniature. One says the check could not
+    // run at all; the other says this node's criteria never entered the graph.
+    expect(computeSecurity(outOfBand).diagnostics.map((d) => d.code)).toEqual([
+      "analysis/criteria-leak-unanchored",
+      "analysis/criteria-out-of-band",
+    ]);
   });
 });
 
@@ -767,17 +1666,22 @@ describe("inferred: criteria-leak by content (spec PART 4.4b)", () => {
   const INDEPENDENT_SPEC =
     "Build a React component that displays the records handed to it in props and reports back which one the user clicked.";
 
-  /** No edge at all between the two: the false isolation of doc 1 §3.2. */
+  /**
+   * No edge at all from the planner: the false isolation of doc 1 §3.2. The builder is
+   * still *judged* — `builder → tester` — which is what puts it in the generator set now.
+   */
   function pair(builderSpec: string): ResolvedBlueprint {
-    return blueprint([
-      {
-        id: "planner",
-        phase: "planning",
-        spec: CRITERIA_SPEC,
-        outputs: [CRITERIA_PORT],
-      },
-      { id: "builder", phase: "implementation", spec: builderSpec },
-    ]);
+    return blueprint(
+      [
+        { id: "planner", spec: CRITERIA_SPEC, outputs: [CRITERIA_PORT] },
+        { id: "builder", spec: builderSpec },
+        { id: "tester", type: "validation" },
+      ],
+      [
+        ["planner", "tester"],
+        ["builder", "tester"],
+      ],
+    );
   }
 
   it("keeps the two specs above the configured threshold", () => {
@@ -820,26 +1724,30 @@ describe("inferred: criteria-leak by content (spec PART 4.4b)", () => {
     expect(result.findings[0].nodeId).toBe("builder");
     expect(result.findings[0].establishedBy).toBe("inferred");
     expect(result.findings[0].explanation).toContain(
-      "is in the `implementation` phase and has a spec that repeats the spec of",
+      'hands its output to the validation node "tester" and has a spec that repeats the spec of',
     );
     expect(result.raw).toBe(2);
     expect(result.level).toBe(2);
   });
 
-  it("states the phase once when both detectors fire on the same node", () => {
+  it("names the judge once when both detectors fire on the same node", () => {
     // Topology and content are independent, but a reader must not be told twice in one
-    // sentence which phase the node is in.
+    // sentence which validation node reads the work.
     const bp = blueprint(
       [
-        { id: "planner", phase: "planning", spec: CRITERIA_SPEC, outputs: [CRITERIA_PORT] },
-        { id: "builder", phase: "implementation", spec: PASTED_SPEC },
+        { id: "planner", spec: CRITERIA_SPEC, outputs: [CRITERIA_PORT] },
+        { id: "builder", spec: PASTED_SPEC },
+        { id: "tester", type: "validation" },
       ],
-      [["planner", "builder"]],
+      [
+        ["planner", "builder"],
+        ["builder", "tester"],
+      ],
     );
     const result = computeSecurity(bp, FIRES_ON_SIMILARITY);
     expect(result.findings).toHaveLength(1);
     const { explanation } = result.findings[0];
-    expect(explanation.match(/is in the `implementation` phase/g)).toHaveLength(1);
+    expect(explanation.match(/hands its output to the validation node/g)).toHaveLength(1);
     expect(explanation).toContain('is reachable from "planner"');
     expect(explanation).toContain("has a spec that also repeats");
     // Still one marker, charged once, whichever detector found it.
@@ -859,10 +1767,17 @@ describe("inferred: criteria-leak by content (spec PART 4.4b)", () => {
   });
 
   it("stays silent when both specs are empty, rather than calling them identical", () => {
-    const bp = blueprint([
-      { id: "planner", phase: "planning", spec: "", outputs: [CRITERIA_PORT] },
-      { id: "builder", phase: "implementation", spec: "" },
-    ]);
+    const bp = blueprint(
+      [
+        { id: "planner", spec: "", outputs: [CRITERIA_PORT] },
+        { id: "builder", spec: "" },
+        { id: "tester", type: "validation" },
+      ],
+      [
+        ["planner", "tester"],
+        ["builder", "tester"],
+      ],
+    );
     expect(computeSecurity(bp, FIRES_ON_SIMILARITY).diagnostics).toEqual([]);
     expect(computeSecurity(bp, FIRES_ON_SIMILARITY).findings).toEqual([]);
   });
@@ -870,22 +1785,26 @@ describe("inferred: criteria-leak by content (spec PART 4.4b)", () => {
   it.each(["TODO", "tbd", "Go.", "build it"])(
     "stays silent for two placeholder specs of %j, which score 1.00 and prove nothing",
     (placeholder) => {
-      // The regression: the empty-spec guard above covered only the *zero-word* case, so
-      // two cards reading "TODO" produced one identical whole-text shingle each, scored
-      // 1.00, and fired `analysis/criteria-leak-suspected` — and, with the marker enabled,
+      // The regression: the empty-spec guard covered only the *zero-word* case, so two
+      // cards reading "TODO" produced one identical whole-text shingle each, scored 1.00,
+      // and fired `analysis/criteria-leak-suspected` — and, with the marker enabled,
       // charged the 2.00 `criteria-leak` weight. `card/spec-too-thin` warns below 40
       // characters, so the engine already expects to see specs this short; the most
       // expensive marker in the vocabulary must never be what an unfilled card triggers.
-      // The measure is fine and the analyzer's use of it was not: a text with fewer than
-      // three words shares no 3-gram with anything, which is the only evidence this
-      // detector claims to have.
       expect(jaccardSimilarity(placeholder, placeholder)).toBeGreaterThan(
         DARKPRINT_CONFIG.criteriaLeak.similarityThreshold,
       );
-      const bp = blueprint([
-        { id: "planner", phase: "planning", spec: placeholder, outputs: [CRITERIA_PORT] },
-        { id: "builder", phase: "implementation", spec: placeholder },
-      ]);
+      const bp = blueprint(
+        [
+          { id: "planner", spec: placeholder, outputs: [CRITERIA_PORT] },
+          { id: "builder", spec: placeholder },
+          { id: "tester", type: "validation" },
+        ],
+        [
+          ["planner", "tester"],
+          ["builder", "tester"],
+        ],
+      );
       expect(computeSecurity(bp).diagnostics).toEqual([]);
       expect(computeSecurity(bp, FIRES_ON_SIMILARITY).findings).toEqual([]);
     },
@@ -895,10 +1814,17 @@ describe("inferred: criteria-leak by content (spec PART 4.4b)", () => {
     // The guard is a floor on the measure's evidential range, not a length filter that
     // quietly disables the most important check in the system for short specs.
     const three = "render every item";
-    const bp = blueprint([
-      { id: "planner", phase: "planning", spec: three, outputs: [CRITERIA_PORT] },
-      { id: "builder", phase: "implementation", spec: three },
-    ]);
+    const bp = blueprint(
+      [
+        { id: "planner", spec: three, outputs: [CRITERIA_PORT] },
+        { id: "builder", spec: three },
+        { id: "tester", type: "validation" },
+      ],
+      [
+        ["planner", "tester"],
+        ["builder", "tester"],
+      ],
+    );
     expect(computeSecurity(bp).diagnostics.map((d) => d.code)).toEqual([
       "analysis/criteria-leak-suspected",
     ]);
@@ -909,10 +1835,17 @@ describe("inferred: criteria-leak by content (spec PART 4.4b)", () => {
     // Asymmetric case: the long side has 3-grams and the short side has one whole-text
     // shingle, so the score is 0 anyway — but the pair is skipped before the arithmetic,
     // so the reason it stays quiet does not depend on that happening to be true.
-    const bp = blueprint([
-      { id: "planner", phase: "planning", spec: "TODO", outputs: [CRITERIA_PORT] },
-      { id: "builder", phase: "implementation", spec: PASTED_SPEC },
-    ]);
+    const bp = blueprint(
+      [
+        { id: "planner", spec: "TODO", outputs: [CRITERIA_PORT] },
+        { id: "builder", spec: PASTED_SPEC },
+        { id: "tester", type: "validation" },
+      ],
+      [
+        ["planner", "tester"],
+        ["builder", "tester"],
+      ],
+    );
     expect(computeSecurity(bp, FIRES_ON_SIMILARITY).diagnostics).toEqual([]);
   });
 
@@ -924,23 +1857,31 @@ describe("inferred: criteria-leak by content (spec PART 4.4b)", () => {
     expect(computeSecurity(pair(PASTED_SPEC), strict).diagnostics).toEqual([]);
   });
 
-  it("does not compare a node against itself", () => {
-    // A node that both produces the criteria and implements scores 1.0 against its own
-    // spec; that is the topological detector's case, not evidence of quoting.
-    const bp = blueprint([
-      { id: "solo", phase: "implementation", spec: CRITERIA_SPEC, outputs: [CRITERIA_PORT] },
-    ]);
+  it("cannot compare a node against itself, because a producer is never a subject", () => {
+    // A node that both produces the criteria and feeds the judge scores 1.0 against its
+    // own spec. It is excluded from the generator set, so the comparison never happens.
+    const bp = blueprint(
+      [
+        { id: "solo", spec: CRITERIA_SPEC, outputs: [CRITERIA_PORT] },
+        { id: "tester", type: "validation" },
+      ],
+      [["solo", "tester"]],
+    );
     const result = computeSecurity(bp, FIRES_ON_SIMILARITY);
     expect(result.diagnostics).toEqual([]);
-    expect(result.findings[0].explanation).toContain("produces the acceptance criteria itself");
+    expect(result.findings).toEqual([]);
   });
 
   it("emits one diagnostic per producer, in a deterministic order", () => {
-    const bp = blueprint([
-      { id: "plan_z", phase: "planning", spec: CRITERIA_SPEC, outputs: [CRITERIA_PORT] },
-      { id: "plan_a", phase: "planning", spec: CRITERIA_SPEC, outputs: [CRITERIA_PORT] },
-      { id: "builder", phase: "implementation", spec: PASTED_SPEC },
-    ]);
+    const bp = blueprint(
+      [
+        { id: "plan_z", spec: CRITERIA_SPEC, outputs: [CRITERIA_PORT] },
+        { id: "plan_a", spec: CRITERIA_SPEC, outputs: [CRITERIA_PORT] },
+        { id: "builder", spec: PASTED_SPEC },
+        { id: "tester", type: "validation" },
+      ],
+      [["builder", "tester"]],
+    );
     const result = computeSecurity(bp);
     expect(result.diagnostics).toHaveLength(2);
     const named = result.diagnostics.map((d) => (d.message.includes("plan_a") ? "plan_a" : "plan_z"));
@@ -992,8 +1933,8 @@ describe("a declared marker and an inferred one are the same marker", () => {
   it("does not double count a criteria-leak the author also declared", () => {
     const bp = blueprint(
       [
-        { id: "planner", phase: "planning", outputs: [CRITERIA_PORT] },
-        { id: "builder", phase: "implementation", markers: ["criteria-leak"] },
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder", markers: ["criteria-leak"] },
       ],
       [["planner", "builder"]],
     );
@@ -1250,11 +2191,11 @@ describe("marker weights (spec PART 4.2)", () => {
 
 describe("scoring and clamping", () => {
   const dangerousSpecs: NodeSpec[] = [
-    { id: "start", phase: "planning" },
+    { id: "start" },
     { id: "runner", markers: ["arbitrary-code-execution"] },
     { id: "fetch", tools: ["http-fetch"] },
     { id: "vault", markers: ["secret-access", "irreversible-action"] },
-    { id: "deliver", phase: "deployment" },
+    { id: "deliver" },
   ];
   const dangerousEdges: EdgeSpec[] = [
     ["start", "runner"],
@@ -1336,12 +2277,17 @@ describe("scoring and clamping", () => {
     const criteria =
       "Write the acceptance criteria: it must render every item supplied, show a placeholder when the collection is empty, and call onSelect with the chosen row.";
     const specs: NodeSpec[] = [
-      { id: "plan_a", phase: "planning", spec: criteria, outputs: [CRITERIA_PORT] },
-      { id: "plan_b", phase: "planning", spec: criteria, outputs: [CRITERIA_PORT] },
-      { id: "build_x", phase: "implementation", spec: quoted },
-      { id: "build_y", phase: "implementation", spec: quoted },
+      { id: "plan_a", spec: criteria, outputs: [CRITERIA_PORT] },
+      { id: "plan_b", spec: criteria, outputs: [CRITERIA_PORT] },
+      { id: "build_x", spec: quoted },
+      { id: "build_y", spec: quoted },
+      { id: "judge", type: "validation" },
     ];
-    const edges: EdgeSpec[] = [["plan_a", "build_x"]];
+    const edges: EdgeSpec[] = [
+      ["plan_a", "build_x"],
+      ["build_x", "judge"],
+      ["build_y", "judge"],
+    ];
     const forward = computeSecurity(blueprint(specs, edges), FIRES_ON_SIMILARITY);
     const reversed = computeSecurity(
       blueprint([...specs].reverse(), [...edges].reverse()),
@@ -1415,30 +2361,41 @@ describe("degenerate blueprints", () => {
     expect(computeSecurity(bp).level).toBe(4);
   });
 
-  it("ignores a phase that is not one of the five", () => {
-    // `card/missing-phase` is the validator's job; the metric must not invent a bucket.
+  it("does not read the phase, so a criteria path with no judge downstream is not a leak", () => {
+    // The anchor is topological now: `builder` is judged by nothing, so nothing judges its
+    // output against the criteria and the marker has no subject. It used to fire here
+    // purely because the card said `phase: implementation`.
     const bp = blueprint(
       [
-        { id: "planner", phase: "planning", outputs: [CRITERIA_PORT] },
-        { id: "builder", phase: "berti/prototyping" },
+        { id: "planner", outputs: [CRITERIA_PORT] },
+        { id: "builder" },
       ],
       [["planner", "builder"]],
     );
     expect(computeSecurity(bp).findings).toEqual([]);
+    // No marker, and not silence either: the criteria producer is there and the subject is
+    // not, which is the other way for the anchor to be one leg short.
+    expect(computeSecurity(bp).diagnostics.map((d) => d.code)).toEqual([
+      "analysis/criteria-leak-unanchored",
+    ]);
   });
 
   it("scores a node that trips several markers at once", () => {
     const bp = blueprint(
       [
+        { id: "planner", outputs: [CRITERIA_PORT] },
         {
           id: "kitchen_sink",
-          phase: "implementation",
           tools: ["http-fetch"],
           markers: ["arbitrary-code-execution", "secret-access", "berti/unknown"],
-          outputs: [CRITERIA_PORT],
         },
+        { id: "judge", type: "validation" },
       ],
-      [["kitchen_sink", "kitchen_sink"]],
+      [
+        ["planner", "kitchen_sink"],
+        ["kitchen_sink", "kitchen_sink"],
+        ["kitchen_sink", "judge"],
+      ],
     );
     const result = computeSecurity(bp);
     expect([...new Set(markers(result.findings))].sort()).toEqual([
@@ -1462,14 +2419,16 @@ describe("degenerate blueprints", () => {
 describe("explainability (doc 1 §8.3)", () => {
   const bp = blueprint(
     [
-      { id: "planner", name: "Planner", phase: "planning", outputs: [CRITERIA_PORT] },
-      { id: "builder", name: "The builder", phase: "implementation" },
+      { id: "planner", name: "Planner", outputs: [CRITERIA_PORT] },
+      { id: "builder", name: "The builder" },
+      { id: "tester", name: "Tester", type: "validation" },
       { id: "fetch", name: "Doc fetcher", tools: ["http-fetch"] },
       { id: "vault", name: "Secret reader", markers: ["secret-access", "berti/unknown"] },
-      { id: "deliver", name: "Deployer", phase: "deployment" },
+      { id: "deliver", name: "Deployer" },
     ],
     [
       ["planner", "builder"],
+      ["builder", "tester"],
       ["builder", "fetch"],
       ["fetch", "vault"],
       ["vault", "deliver"],

@@ -11,7 +11,7 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "used", label: "Most used" },
   { value: "name", label: "Name A–Z" },
   { value: "type", label: "By node type" },
-  // Lifecycle order, not alphabetical — see `byPhaseOrder` below.
+  // Lifecycle order, not alphabetical — see `phaseRank` below.
   { value: "phase", label: "By phase" },
 ];
 
@@ -24,16 +24,36 @@ function byText(a: string, b: string): number {
 }
 
 /**
- * Doc 3 §2's lifecycle order for the phase sort. Sorting the grid alphabetically would
- * open the library on debugging and close it on testing, which is not how a factory
- * runs; a phase outside the closed five sorts after the five, by id.
+ * Where a card sits in the lifecycle sort, in doc 3 §2's order — sorting the grid
+ * alphabetically would open the library on debugging and close it on testing, which is
+ * not how a factory runs.
+ *
+ * The rank is the earliest phase the card declares, because a card standing in
+ * implementation and debugging is first met at implementation.
+ *
+ * A card declaring none returns `PHASE_ORDER.length`, which groups those cards together
+ * at the end of the sorted grid. That is a grouping and not a ranking: they are being
+ * sorted on a dimension they do not speak to, so any position is arbitrary, and the end
+ * is the one position that does not interleave them randomly through the five. Nothing
+ * in the grid marks them, styles them differently, or counts them against anything.
  */
-function byPhaseOrder(a: string, b: string): number {
-  const ia = PHASE_ORDER.indexOf(a);
-  const ib = PHASE_ORDER.indexOf(b);
-  if (ia === -1 || ib === -1) return (ia === -1 ? 1 : 0) - (ib === -1 ? 1 : 0) || byText(a, b);
-  return ia - ib;
+function phaseRank(phases: readonly { id: string }[]): number {
+  let rank = PHASE_ORDER.length;
+  for (const phase of phases) {
+    const i = PHASE_ORDER.indexOf(phase.id);
+    if (i !== -1 && i < rank) rank = i;
+  }
+  return rank;
 }
+
+/**
+ * The value the phase `select` uses for "cards that declare no phase".
+ *
+ * Safe as a plain string: doc 3 §7 closes the phase vocabulary at the five ids of §2 and
+ * a card naming anything else is a validation error, so no card can ever carry a phase
+ * that collides with this.
+ */
+const UNPHASED = "unphased";
 
 /** A boolean filter as a toggle chip. Sibling of the gallery's tag chips. */
 function FilterChip({
@@ -94,21 +114,27 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
   }, [nodes]);
 
   /*
-   * The second dimension of doc 3 §1, filtered the same way — except for the order.
+   * The phase dimension, filtered the same way as the type — except for the order.
    * The type list is sorted alphabetically because nothing orders node types; the
    * phases are doc 3 §2's lifecycle and are offered in it, so the control reads
    * planning → deployment and not debugging → testing. A phase no card declares is
    * left out, and anything outside the closed five (which the validator rejects, so
    * normally nothing) is appended rather than dropped.
+   *
+   * A card may declare several phases and is counted under each of them, so these
+   * counts cover the library without partitioning it and do not add up to the number
+   * of cards. Nothing displays them as a total.
    */
   const phases = useMemo(() => {
     const byId = new Map<string, { id: string; label: string; count: number }>();
     for (const node of nodes) {
-      const found = byId.get(node.phase);
-      if (found === undefined) {
-        byId.set(node.phase, { id: node.phase, label: node.phaseLabel, count: 1 });
-      } else {
-        found.count += 1;
+      for (const phase of node.phases) {
+        const found = byId.get(phase.id);
+        if (found === undefined) {
+          byId.set(phase.id, { id: phase.id, label: phase.label, count: 1 });
+        } else {
+          found.count += 1;
+        }
       }
     }
     const ordered = PHASE_ORDER.map((id) => byId.get(id)).filter((row) => row !== undefined);
@@ -118,12 +144,31 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
     return [...ordered, ...rest];
   }, [nodes]);
 
+  /*
+   * The cards that declare no phase, findable.
+   *
+   * Without this the library had no route to a third of itself: the five options each
+   * narrow the grid to a phase, and a card outside them could only be reached by
+   * scrolling past everything else. Offering it as an option is what makes "no phase"
+   * a state of the library a reader can ask about rather than an absence they have to
+   * infer, and the wording is what keeps it from reading as a defect list — "not in a
+   * named phase" is where the node stands, "missing a phase" would be what the author
+   * failed to write.
+   */
+  const unphasedCount = useMemo(
+    () => nodes.filter((node) => node.phases.length === 0).length,
+    [nodes],
+  );
+
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
 
     const filtered = nodes.filter((node) => {
       if (type !== null && node.type !== type) return false;
-      if (phase !== null && node.phase !== phase) return false;
+      if (phase === UNPHASED && node.phases.length > 0) return false;
+      if (phase !== null && phase !== UNPHASED) {
+        if (!node.phases.some((p) => p.id === phase)) return false;
+      }
       if (humanOnly && !node.requiresHuman) return false;
       if (riskOnly && node.riskMarkers.length === 0) return false;
       if (q) {
@@ -143,7 +188,7 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
         case "type":
           return byText(a.typeLabel, b.typeLabel) || byText(a.name, b.name);
         case "phase":
-          return byPhaseOrder(a.phase, b.phase) || byText(a.name, b.name);
+          return phaseRank(a.phases) - phaseRank(b.phases) || byText(a.name, b.name);
         case "name":
         default:
           return byText(a.name, b.name);
@@ -219,6 +264,14 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
                   {p.label} ({p.count})
                 </option>
               ))}
+              {/* Last in the list because the five above are a sequence and this is
+                  not a sixth step in it. Named for where the node stands, not for
+                  what its card leaves out. */}
+              {unphasedCount > 0 && (
+                <option value={UNPHASED}>
+                  Not in a named phase ({unphasedCount})
+                </option>
+              )}
             </select>
           </label>
 
@@ -271,6 +324,20 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
           </button>
         )}
       </div>
+
+      {/* What the reader is looking at when they pick the last option in the phase
+          list — said here rather than on each tile, because it is one fact about the
+          selection and not a stamp on thirty cards. It is also the one place in the
+          library where the ruling itself is worth writing down: the reader who picks
+          this filter is the reader wondering which of the five an intake node was
+          supposed to claim. */}
+      {phase === UNPHASED && (
+        <p className="border-l-2 border-line-bright pl-4 text-sm leading-relaxed text-muted">
+          These cards name no phase, and that is a complete answer. The five phases
+          describe the shape of a factory, not every node inside one — intake,
+          retrieval, routing and hand-off are real work that none of the five names.
+        </p>
+      )}
 
       {/* grid / empty state */}
       {results.length > 0 ? (

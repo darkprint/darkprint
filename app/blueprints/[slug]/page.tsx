@@ -150,7 +150,12 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               §1.1's last bullet puts it under the autonomy rule, so nothing here counts
               or completes — a phase with no node is where this factory stops, stated as
               a fact. The gallery card's strip says only which phases; this says which
-              node, which is the half that earns the dimension. */}
+              node, which is the half that earns the dimension.
+
+              It also names the nodes that stand in none of the five, below the
+              lifecycle and outside it. A node may declare several phases or none: the
+              five describe the factory, not every node in it, so the rows cover the
+              graph without partitioning it and nothing on this page adds them up. */}
           <section
             className="panel overflow-hidden"
             aria-labelledby="phase-coverage-heading"

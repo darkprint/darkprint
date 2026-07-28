@@ -1,7 +1,6 @@
 id: kb-resolver
 name: KB Resolver
 type: tool
-phase: implementation
 
 action: >-
   Retrieve the k nearest knowledge-base articles for the routed request and return the best match

@@ -55,7 +55,7 @@ function makeCard(id: string, version: string, over: Partial<NodeCard> = {}): No
     id,
     name: `Card ${id}`,
     type: "agent",
-    phase: "implementation",
+    phases: ["implementation"],
     action: "Draft a candidate solution for the sub-task",
     spec: "Read the task on the `task` port and write one candidate solution to `draft` as JSON. Do not look at anything else.",
     tools: [],
@@ -111,7 +111,7 @@ function makeBlueprint(
     // Inert like `graph` and `ontology`: `buildRegistry` reads phases off the indexed
     // cards, not off this field (see the notes on `phases()`), and computing it here
     // over a stub graph would suggest the registry consults it.
-    phaseCoverage: { covered: [], missing: [], byPhase: {} },
+    phaseCoverage: { covered: [], missing: [], byPhase: {}, unphased: [] },
   };
 }
 
@@ -130,7 +130,7 @@ const solver200 = makeCard("solver-a", "2.0.0", {
 const checker = makeCard("checker-b", "1.0.0", {
   name: "Checker B",
   type: "validation",
-  phase: "testing",
+  phases: ["testing"],
   action: "Verify the draft against the acceptance criteria",
   spec: "Run the declared checks over the incoming draft and emit a pass or fail verdict with the evidence that produced it.",
   inputs: [{ name: "draft", type: "json" }],
@@ -331,7 +331,7 @@ describe("usedIn and usersOf", () => {
 
   it("does not index a card that sits in the bundle unreferenced", () => {
     // An orphan has no digest and no user — bundle/orphan-card is the resolver's business.
-    const orphan = makeCard("orphan-c", "1.0.0", { phase: "deployment" });
+    const orphan = makeCard("orphan-c", "1.0.0", { phases: ["deployment"] });
     const registry = buildRegistry([
       makeBlueprint("with-orphan", [makeNode(solver110)], {}, [orphan]),
     ]);
@@ -351,33 +351,33 @@ describe("usedIn and usersOf", () => {
 describe("phases and cardsByPhase", () => {
   const planner = makeCard("planner-a", "1.0.0", {
     name: "Planner A",
-    phase: "planning",
+    phases: ["planning"],
     action: "Turn the request into a plan and acceptance criteria",
     spec: "Read the request and write both a step-by-step plan and the acceptance criteria the result will be judged against.",
     outputs: [{ name: "criteria", type: "acceptance-criteria" }],
   });
   const builder = makeCard("builder-b", "1.0.0", {
     name: "Builder B",
-    phase: "implementation",
+    phases: ["implementation"],
     spec: "Take the plan on the input port and produce the artefact it describes, writing the result to the `draft` port.",
   });
   const tester = makeCard("tester-c", "1.0.0", {
     name: "Tester C",
     type: "validation",
-    phase: "testing",
+    phases: ["testing"],
     action: "Run the checks and produce the evidence",
     spec: "Run every declared check against the artefact and emit the verdict together with the evidence each check produced.",
   });
   const fixer = makeCard("fixer-d", "1.0.0", {
     name: "Fixer D",
-    phase: "debugging",
+    phases: ["debugging"],
     action: "Turn failure evidence into a targeted fix",
     spec: "Read the failing evidence, locate the smallest cause you can defend, and write a fix that addresses only that cause.",
   });
   const shipper = makeCard("shipper-e", "1.0.0", {
     name: "Shipper E",
     type: "human-gate",
-    phase: "deployment",
+    phases: ["deployment"],
     action: "Approve the release",
     spec: "Show the artefact and the verdict to a person and wait for an explicit approval or rejection before releasing.",
     // Doc 3 §3: a type under `human-in-the-loop` must carry the flag, or the validator
@@ -450,7 +450,7 @@ describe("phases and cardsByPhase", () => {
       "solver-a@1.9.0",
     ]);
     // The same order the full listing has, with the other phases filtered out.
-    expect(inPhase).toEqual(registry.cards().filter((c) => c.card.phase === "implementation"));
+    expect(inPhase).toEqual(registry.cards().filter((c) => c.card.phases.includes("implementation")));
   });
 
   it("returns an empty list for a phase no card declares", () => {
@@ -488,7 +488,7 @@ describe("phases and cardsByPhase", () => {
   it("files two versions of one card under the phase each declares", () => {
     // A phase change is a major bump (doc 1 §4), so the two versions are genuinely
     // different cards and belong in different buckets.
-    const moved = makeCard("solver-a", "2.0.0", { phase: "debugging" });
+    const moved = makeCard("solver-a", "2.0.0", { phases: ["debugging"] });
     const registry = buildRegistry([
       makeBlueprint("moved", [makeNode(solver110), makeNode(moved, { nodeId: "later" })]),
     ]);
@@ -503,7 +503,7 @@ describe("phases and cardsByPhase", () => {
   it("treats a blank phase as an absent one and never lists it", () => {
     // card/missing-field is the validator's to raise; the index just refuses to invent
     // a phase named "" and put it on a badge.
-    const blank = makeCard("blank-f", "1.0.0", { phase: "" });
+    const blank = makeCard("blank-f", "1.0.0", { phases: [""] });
     const registry = buildRegistry([makeBlueprint("blank", [makeNode(blank), makeNode(tester)])]);
 
     expect(registry.phases()).toEqual(["testing"]);
@@ -516,7 +516,7 @@ describe("phases and cardsByPhase", () => {
     // Doc 3 §7 closes the phase dimension and the validator rejects a namespaced one, so
     // this cannot reach the index from validated content. If it ever does, `phases()`
     // omitting a bucket `cardsByPhase()` answers would make the gallery filter lie.
-    const local = makeCard("local-g", "1.0.0", { phase: "berti/simulation" });
+    const local = makeCard("local-g", "1.0.0", { phases: ["berti/simulation"] });
     const registry = buildRegistry([
       makeBlueprint("local", [makeNode(local), makeNode(tester), makeNode(planner)]),
     ]);
@@ -526,8 +526,8 @@ describe("phases and cardsByPhase", () => {
   });
 
   it("sorts several non-core phases among themselves, after the five", () => {
-    const zulu = makeCard("zulu-h", "1.0.0", { phase: "zulu" });
-    const acme = makeCard("acme-i", "1.0.0", { phase: "acme" });
+    const zulu = makeCard("zulu-h", "1.0.0", { phases: ["zulu"] });
+    const acme = makeCard("acme-i", "1.0.0", { phases: ["acme"] });
     const registry = buildRegistry([
       makeBlueprint("odd", [makeNode(zulu), makeNode(acme), makeNode(builder)]),
     ]);
@@ -611,7 +611,7 @@ describe("duplicates", () => {
   });
 
   it.each([
-    ["phase", { phase: "debugging" }],
+    ["phase", { phases: ["debugging"] }],
     ["spec", { spec: "Read the task and write one candidate solution, but explain each choice first." }],
   ])("does not group two cards that differ only in %s", (_name, over) => {
     // Both are content, not naming: `phase` re-buckets the card in every coverage

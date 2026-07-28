@@ -7,10 +7,16 @@
    Design doc §3–§4 and §6.1, engine spec §5.
 
    Ontology v0.1 (doc 3) added three rules this file owns:
-   §1/§2 `phase` is required and is one of five closed values,
-   §7 it is never namespaced, and §3's note makes a human `type`
-   with `requires_human` unset an error rather than a warning.
+   §2 every phase a card declares is one of five closed values,
+   §7 none of them is ever namespaced, and §3's note makes a human
+   `type` with `requires_human` unset an error rather than a warning.
    Doc 1 §3.2 added `spec`, the prose the agent actually reads.
+
+   `phase` is **optional and repeatable**, which supersedes doc 3
+   §1's "esattamente 1" on the author's ruling: the five phases
+   describe the factory, not every node in it. A card that names
+   none of them is complete, and this file emits nothing at all
+   about it — see `readPhases`.
    ============================================================ */
 
 import {
@@ -45,6 +51,10 @@ const KNOWN_KEYS: ReadonlySet<string> = new Set([
   "name",
   "type",
   "phase",
+  // The plural. `phase` became optional and repeatable, and `NodeCard.phases` is the
+  // model's own name for the field, so `phases:` is the spelling an author reaches for —
+  // and it used to load clean with every declared phase silently dropped, on an `info`.
+  "phases",
   "action",
   "spec",
   "model",
@@ -136,8 +146,14 @@ export function validateCard(value: unknown, opts: ValidateCardOptions): CardVal
   const typeField = read(value, "type", ds, file);
   const type = requiredString(typeField, ds, file);
   if (type !== undefined) checkTerm(type, "node-type", typeField.key, opts.ontology, ds, file);
-  // Doc 3 §1 makes `phase` a first-level dimension of the node, alongside `type`.
-  const phase = readPhase(read(value, "phase", ds, file), opts.ontology, ds, file);
+  // Doc 3 §2's dimension, optional and repeatable. `[]` is a legal, silent answer.
+  //
+  // Both spellings are read. `phase` is the wire key and the one the documents use, but
+  // the field holds a list now and the model calls it `phases`, so an author writing
+  // `phases: [implementation]` is writing the obvious thing. Without the alias that card
+  // loaded *clean* — `ok: true`, an `info` nobody reads, and every declared phase
+  // silently dropped — which is worse than either accepting it or rejecting it.
+  const phases = readPhases(read(value, "phase", ds, file, "phases"), opts.ontology, ds, file);
 
   /* 3.2 behaviour */
   const action = requiredString(read(value, "action", ds, file), ds, file);
@@ -212,7 +228,7 @@ export function validateCard(value: unknown, opts: ValidateCardOptions): CardVal
     id: id ?? "",
     name: name ?? "",
     type: type ?? "",
-    phase: phase ?? "",
+    phases,
     action: action ?? "",
     spec: spec ?? "",
     tools,
@@ -282,7 +298,9 @@ function read(
   if (hasWire && hasCamel && camel !== undefined) {
     ds.push(
       info("card/bad-type", `Fields \`${wire}\` and \`${camel}\` are both present; \`${wire}\` is used.`, {
-        hint: `Delete \`${camel}\` — snake_case is the wire spelling.`,
+        // Not "snake_case is the wire spelling": the alias pairs are no longer all
+        // snake/camel. `phase`/`phases` is a singular and a plural of the same field.
+        hint: `Delete \`${camel}\` — \`${wire}\` is the spelling this schema reads.`,
         location: at(file, camel),
       }),
     );
@@ -400,68 +418,111 @@ function phaseIds(ontology: OntologyView): string[] {
 }
 
 /**
- * Doc 3 §1 and §2 — a card declares exactly one of the five phases, and doc 3 §7 keeps
- * the dimension closed to local namespaces.
+ * Doc 3 §2 and §7 — every phase a card declares is one of the five, and none of them is
+ * ever namespaced.
  *
- * Judgement call: every way of failing to name one of the five reports the single code
- * `card/missing-phase`, absence included, instead of sharing `card/missing-field` with
- * the other required fields. The author's fix is the same sentence either way ("write
- * one of these five"), and one code makes the whole rule greppable. A value of the wrong
- * JS type still reports `card/bad-type` like every other field: that is a complaint about
- * the document, not about the vocabulary.
+ * **Absence is legal and silent.** The author's ruling supersedes doc 3 §1's "esattamente
+ * 1": the five phases are the high-level phases a dark *factory* is expected to have, and
+ * they "do not necessarily have to stick to nodes". An intake that receives work, a
+ * retrieval step that fetches evidence, a memory store that survives a restart — none of
+ * these occupies one of the five, and forcing a guess on them produces a coverage badge
+ * that describes the guess rather than the factory. So no diagnostic of any kind is
+ * emitted for a card that names no phase, not even an `info`: this validator is the last
+ * place a "gap" could be invented, and there is nothing here to invent it with.
+ *
+ * Both wire spellings are accepted, because both read naturally in YAML:
+ *
+ *     phase: implementation
+ *     phase: [implementation, debugging]
+ *     # absent entirely
+ *
+ * What still fails, and why each keeps its own code:
+ *  - a namespaced entry → `card/namespaced-phase` (error). Doc 3 §7 makes `phase` the one
+ *    dimension a local namespace may not extend; this is not a typo but an attempt to
+ *    extend a closed set, so it is checked before membership and owns the message.
+ *  - an entry that is not one of the five, blank included → `card/unknown-phase` (error).
+ *    Declaring a phase and getting it wrong is a different act from declaring none.
+ *  - the same phase twice → `card/duplicate-phase` (warning), and the repeat is collapsed.
+ *    The card describes one node in one phase either way, so it still loads.
+ *
+ * A value of the wrong JS type reports `card/bad-type` like every other field: that is a
+ * complaint about the document, not about the vocabulary. Entries are returned in the
+ * order the author wrote them, the way `tools` and `risk_markers` are — the canonical
+ * lifecycle order is the *reporting* order and belongs to phase coverage, not to the card.
  */
-function readPhase(
+function readPhases(
   f: Field,
   ontology: OntologyView,
   ds: Diagnostic[],
   file: string | undefined,
-): string | undefined {
+): string[] {
   const ids = phaseIds(ontology);
-  const hint = `Use one of: ${ids.map((id) => `\`${id}\``).join(", ")}.`;
+  const list = `Use any of: ${ids.map((id) => `\`${id}\``).join(", ")}.`;
+  const optional =
+    "The field is optional: a node that does not sit in one of the five phases leaves it out, and that is a complete answer rather than a gap.";
 
-  if (!f.present || f.value === null || f.value === undefined) {
-    ds.push(
-      error("card/missing-phase", `Field \`${f.key}\` is missing.`, {
-        hint: `${hint} Doc 3 §1 makes the phase one of the three things every node declares.`,
-        location: at(file, f.key),
-      }),
-    );
-    return undefined;
+  // Absent, `null`, or `phase:` with nothing after it. The normal state for an intake.
+  if (!f.present || f.value === null || f.value === undefined) return [];
+
+  // Scalar or sequence; anything else is a malformed document.
+  let entries: unknown[];
+  if (typeof f.value === "string") entries = [f.value];
+  else if (Array.isArray(f.value)) entries = f.value;
+  else {
+    ds.push(badType(f.key, "a phase or a list of phases", f.value, file));
+    return [];
   }
-  if (typeof f.value !== "string") {
-    ds.push(badType(f.key, "a string", f.value, file));
-    return undefined;
-  }
-  if (f.value.trim() === "") {
-    ds.push(
-      error("card/missing-phase", `Field \`${f.key}\` is empty.`, {
-        hint,
-        location: at(file, f.key),
-      }),
-    );
-    return undefined;
-  }
-  // Checked before membership so the more specific rule owns the message: a namespaced
-  // phase is not a typo, it is an attempt to extend a set that does not extend.
-  if (f.value.includes("/")) {
-    ds.push(
-      error("card/namespaced-phase", `Phase \`${f.value}\` is namespaced.`, {
-        hint: `The five phases are closed and cannot be extended locally, unlike \`type\` and \`risk_markers\`. ${hint}`,
-        location: at(file, f.key),
-      }),
-    );
-    return undefined;
-  }
-  if (!ids.includes(f.value)) {
-    ds.push(
-      error("card/missing-phase", `Phase \`${f.value}\` is not one of the five phases.`, {
-        hint,
-        location: at(file, f.key),
-      }),
-    );
-    return undefined;
-  }
-  return f.value;
+
+  const scalar = typeof f.value === "string";
+  /** `phase` for the scalar spelling, `phase[2]` for the sequence — what the author wrote. */
+  const pathOf = (i: number): string => (scalar ? f.key : `${f.key}[${i}]`);
+
+  const out: string[] = [];
+  entries.forEach((entry: unknown, i) => {
+    const path = pathOf(i);
+    if (typeof entry !== "string") {
+      ds.push(badType(path, "a string", entry, file));
+      return;
+    }
+    if (entry.trim() === "") {
+      ds.push(
+        error("card/unknown-phase", `Field \`${path}\` is empty.`, {
+          hint: `${list} ${optional}`,
+          location: at(file, path),
+        }),
+      );
+      return;
+    }
+    if (entry.includes("/")) {
+      ds.push(
+        error("card/namespaced-phase", `Phase \`${entry}\` is namespaced.`, {
+          hint: `The five phases are closed and cannot be extended locally, unlike \`type\` and \`risk_markers\`. ${list}`,
+          location: at(file, path),
+        }),
+      );
+      return;
+    }
+    if (!ids.includes(entry)) {
+      ds.push(
+        error("card/unknown-phase", `Phase \`${entry}\` is not one of the five phases.`, {
+          hint: `${list} ${optional}`,
+          location: at(file, path),
+        }),
+      );
+      return;
+    }
+    if (out.includes(entry)) {
+      ds.push(
+        warning("card/duplicate-phase", `Phase \`${entry}\` is declared more than once.`, {
+          hint: "A node is in a phase or it is not; the repeat is ignored. Delete the duplicate.",
+          location: at(file, path),
+        }),
+      );
+      return;
+    }
+    out.push(entry);
+  });
+  return out;
 }
 
 /**

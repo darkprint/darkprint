@@ -14,6 +14,19 @@
    the shape of the pipeline — a merge bot has no planning node
    because it is not asked to plan — and reads as position, not as a
    shortfall.
+
+   ⚠️ Second rule, from the author's ruling that supersedes doc 3 §1's
+   cardinality row: **the five phases describe the factory, not every
+   node in it.** A card may declare one phase, several, or none, and a
+   node with none is a complete answer — an intake, a retrieval step,
+   a router. So:
+   - `byPhase` COVERS the graph, it does not PARTITION it. A two-phase
+     node appears in two rows on purpose, and nothing here may sum the
+     rows to count nodes.
+   - `unphased` is stated as what it is, never as what is missing. It
+     gets no cell in the strip, no row in the lifecycle, no glyph
+     borrowed from a phase that has no node, and no count set against
+     a total.
    ============================================================ */
 
 import { cx } from "@/lib/format";
@@ -45,8 +58,20 @@ export interface PhaseCoverageView {
   covered: readonly string[];
   /** The rest, same order. A statement of scope, not a to-do list. */
   missing: readonly string[];
-  /** Node ids grouped by the phase their card declares, in graph order. */
+  /**
+   * Node ids grouped by the phase their card declares, in graph order.
+   *
+   * A cover, not a partition: a card declaring two phases is listed under both, so
+   * the groups may name the same node twice and their lengths do not add up to the
+   * number of nodes in the graph. Nothing here adds them up.
+   */
   byPhase: Readonly<Record<string, readonly string[]>>;
+  /**
+   * Nodes whose card declares no phase at all. Descriptive: the five phases are a
+   * statement about the factory, and a node outside them is doing work none of the
+   * five names, not work somebody forgot to label.
+   */
+  unphased: readonly string[];
 }
 
 /**
@@ -102,6 +127,12 @@ const CELL =
  *
  * No link inside: the gallery card is itself one big anchor, and an anchor inside an
  * anchor is not markup a browser can resolve.
+ *
+ * Takes `covered` and `missing` and nothing else — deliberately no `unphased`. The strip
+ * is five cells because there are five phases; a node that declares none is not a sixth
+ * cell, and appending one would put "outside the lifecycle" on the same axis as the
+ * lifecycle. The nodes standing outside it are named on the blueprint page, in words,
+ * by `PhaseCoverageList` below.
  */
 export function PhaseCoverageBadge({
   covered,
@@ -155,6 +186,12 @@ export function PhaseCoverageBadge({
  *
  * A phase with no node says so in words. It is not styled as an error, is not sorted
  * to the bottom, and keeps its place in the lifecycle — where it sits is the point.
+ *
+ * A node in two phases appears in both rows, and that is the data being honest rather
+ * than a duplicate: `evidence-synthesizer` reads failure evidence and writes the fix
+ * brief, so it stands in implementation and in debugging. A node in no phase appears in
+ * none of the rows and is named underneath them, outside the lifecycle strip entirely —
+ * see `Unphased` at the bottom of this file for why it is not a sixth row.
  */
 export function PhaseCoverageList({
   coverage,
@@ -186,7 +223,8 @@ export function PhaseCoverageList({
       <p className="text-sm leading-relaxed text-muted">
         Which of the lifecycle phases this graph has a node in, and which node. It
         describes what the factory covers — a phase with no node is a decision about
-        scope, not a gap in the blueprint.
+        scope, not a gap in the blueprint. A node may stand in more than one phase, and
+        it may stand in none: the five describe the factory, not every node in it.
       </p>
 
       <dl className="flex flex-col divide-y divide-line">
@@ -220,16 +258,7 @@ export function PhaseCoverageList({
               </dt>
               <dd className="min-w-0">
                 {nodes.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {nodes.map((nodeId) => (
-                      <span
-                        key={nodeId}
-                        className="inline-flex items-center rounded border border-line bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-fg"
-                      >
-                        {nodeLabels?.[nodeId] ?? nodeId}
-                      </span>
-                    ))}
-                  </div>
+                  <NodeChips ids={nodes} nodeLabels={nodeLabels} />
                 ) : (
                   <span className="text-xs leading-relaxed text-dim">
                     No node in this graph.
@@ -240,6 +269,87 @@ export function PhaseCoverageList({
           );
         })}
       </dl>
+
+      <Unphased ids={coverage.unphased} nodeLabels={nodeLabels} />
     </div>
+  );
+}
+
+/** The node names a phase row or the unphased statement lists, drawn identically. */
+function NodeChips({
+  ids,
+  nodeLabels,
+}: {
+  ids: readonly string[];
+  nodeLabels?: Readonly<Record<string, string>>;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {ids.map((nodeId) => (
+        <span
+          key={nodeId}
+          className="inline-flex items-center rounded border border-line bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-fg"
+        >
+          {nodeLabels?.[nodeId] ?? nodeId}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The nodes standing outside the five, named.
+ *
+ * Three deliberate refusals, because this is the exact place the ruling could be
+ * undone by a layout choice:
+ *
+ * 1. **Not a sixth row.** It sits below the `dl`, past a rule, with the same chips but
+ *    none of the lifecycle furniture — no ■/□ state glyph, no position in the strip.
+ *    A sixth row would put "outside the lifecycle" on the lifecycle's own axis and
+ *    would read as the phase nobody filled in.
+ * 2. **No denominator.** The count is stated on its own ("2 nodes"), never against the
+ *    graph's total and never as a share of anything. Doc 2 §1.1 rules out the second
+ *    number, and a fraction here would turn a design fact into a completion figure.
+ * 3. **Absent when empty.** A graph where every node declares a phase says nothing
+ *    here at all: "0 nodes outside the five" is a scoreboard reading zero, and a
+ *    scoreboard is what this dimension must never become. The absence of the block is
+ *    not a claim — the rows above already say where every node stands.
+ *
+ * The sentence names the kinds of node that legitimately land here, because the reader
+ * most likely to be confused is an author looking at their own intake node and
+ * wondering which of the five they were supposed to pick. None of them.
+ */
+function Unphased({
+  ids,
+  nodeLabels,
+}: {
+  ids: readonly string[];
+  nodeLabels?: Readonly<Record<string, string>>;
+}) {
+  if (ids.length === 0) return null;
+
+  return (
+    <section
+      aria-labelledby="phase-unphased-heading"
+      className="flex flex-col gap-2 border-t border-line pt-4"
+    >
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3
+          id="phase-unphased-heading"
+          className="font-mono text-[12px] uppercase tracking-[0.12em] text-fg"
+        >
+          Outside the five
+        </h3>
+        <span className="font-mono text-[11px] text-dim">
+          {ids.length} node{ids.length === 1 ? "" : "s"}
+        </span>
+      </div>
+      <p className="text-xs leading-relaxed text-muted">
+        These nodes name no phase, which is a complete answer rather than a blank one.
+        Intake, retrieval, routing and hand-off are real work that none of the five
+        phases describes, and the card says so by leaving the field out.
+      </p>
+      <NodeChips ids={ids} nodeLabels={nodeLabels} />
+    </section>
   );
 }

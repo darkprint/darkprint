@@ -1,7 +1,6 @@
 id: delta-intake
 name: Delta Intake
 type: tool
-phase: planning
 
 action: >-
   Open the nightly run on the window since the last successful watermark and hand that window

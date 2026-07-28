@@ -22,12 +22,15 @@ export interface NodeSummary {
   type: string;
   typeLabel: string;
   /**
-   * `phase` term id, and its ontology label. Doc 3 §1 makes phase a first-level
-   * dimension alongside the type — exactly one per card — so a summary that carried
-   * only the type would be describing half of what a card declares.
+   * The `phase` terms the card declares, in the order it wrote them, each with its
+   * ontology label.
+   *
+   * A list, and often an empty one. The five phases describe the factory, not every
+   * node in it: an intake, a retrieval step or a router declares none, and a node that
+   * both builds and fixes declares two. Nothing downstream may read the empty list as
+   * a missing value.
    */
-  phase: string;
-  phaseLabel: string;
+  phases: { id: string; label: string }[];
   /** `tool` term ids, as the card writes them. */
   tools: string[];
   requiresHuman: boolean;
@@ -66,12 +69,22 @@ export function NodeCardSummary({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex flex-wrap items-center gap-1.5">
           <Badge color="var(--color-amber)">{node.typeLabel}</Badge>
-          {/* The other half of doc 3 §1: which stretch of the lifecycle this node
-              works in. Named, not abbreviated — a tile has the room the gallery
-              card's strip does not. */}
-          <span className="inline-flex items-center rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[11px] text-muted">
-            {node.phaseLabel.toLowerCase()}
-          </span>
+          {/* Which stretch of the lifecycle this node works in. Named, not abbreviated
+              — a tile has the room the gallery card's strip does not.
+
+              One chip per declared phase, and **nothing at all** when the card declares
+              none. A tile that printed "no phase" would draw an empty slot next to a
+              filled one and turn a complete answer into a hole in the row; the tiles
+              that carry no phase chip are the answer to the browser's own "not in a
+              named phase" filter, and the card page says it in words. */}
+          {node.phases.map((phase) => (
+            <span
+              key={phase.id}
+              className="inline-flex items-center rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[11px] text-muted"
+            >
+              {phase.label.toLowerCase()}
+            </span>
+          ))}
         </span>
         <span className="font-mono text-[11px] text-dim">{node.ref}</span>
       </div>

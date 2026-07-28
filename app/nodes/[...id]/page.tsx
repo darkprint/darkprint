@@ -157,14 +157,23 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   const typeLabel = type?.term.label ?? card.type;
   const typeHref = termHref(type?.term.id ?? card.type);
 
-  /* Doc 3 §1 — phase and type are two independent dimensions, and doc 3 §2 closes the
-     phase list, so an id the vocabulary does not know is shown as written rather than
-     guessed at. Neither dimension is a score: this is where in the lifecycle the node
-     works, not how far along it is. */
-  const phase = ontology.resolve(card.phase, "phase");
-  const phaseLabel = phase?.term.label ?? card.phase;
-  const phaseHref = termHref(phase?.term.id ?? card.phase);
-  const phaseDescription = phase?.term.description;
+  /* Phase and type are two independent dimensions, and doc 3 §2 closes the phase list,
+     so an id the vocabulary does not know is shown as written rather than guessed at.
+     Neither dimension is a score: this is where in the lifecycle the node works, not
+     how far along it is.
+
+     Zero, one or several, in the order the card wrote them. The five phases describe
+     the factory and not every node in it, so a card that names none has answered the
+     question — nothing below may draw that as an empty field. */
+  const phases = card.phases.map((id) => {
+    const resolved = ontology.resolve(id, "phase");
+    return {
+      id,
+      label: resolved?.term.label ?? id,
+      href: termHref(resolved?.term.id ?? id),
+      description: resolved?.term.description,
+    };
+  });
 
   const port = (declared: (typeof card.inputs)[number]): PortView => {
     const view: PortView = {
@@ -228,10 +237,15 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <KindBadge kind="node" />
-            {/* The two dimensions of doc 3 §1, side by side and each named. They are
-                the same kind of thing — a term in the vocabulary — so they wear the
-                same chip, and the word in front of each says which dimension it is
-                rather than leaving a colour to carry it. */}
+            {/* The two dimensions, side by side and each named. They are the same kind
+                of thing — a term in the vocabulary — so they wear the same chip, and
+                the word in front of each says which dimension it is rather than
+                leaving a colour to carry it.
+
+                One phase chip per declared phase, and no chip at all when the card
+                declares none: a chip reading "phase · —" would put a blank where the
+                other chips carry a value and make a complete card look half-filled.
+                The Behaviour panel below says it in a sentence instead. */}
             <Link
               href={typeHref}
               aria-label={`Ontology node type: ${typeLabel}`}
@@ -241,15 +255,18 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
               {typeLabel}
               <span aria-hidden>→</span>
             </Link>
-            <Link
-              href={phaseHref}
-              aria-label={`Ontology phase: ${phaseLabel}`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-violet/10 px-2.5 py-0.5 font-mono text-[11px] text-violet transition-colors hover:border-violet"
-            >
-              <span className="text-muted">phase ·</span>
-              {phaseLabel}
-              <span aria-hidden>→</span>
-            </Link>
+            {phases.map((phase) => (
+              <Link
+                key={phase.id}
+                href={phase.href}
+                aria-label={`Ontology phase: ${phase.label}`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-violet/10 px-2.5 py-0.5 font-mono text-[11px] text-violet transition-colors hover:border-violet"
+              >
+                <span className="text-muted">phase ·</span>
+                {phase.label}
+                <span aria-hidden>→</span>
+              </Link>
+            ))}
             {/* Violet, like the two chips beside it and like the explainability
                 panel's own human rows, rather than the alarm pink it used to wear.
                 Doc 2 §1.1: this states where a person acts, which is a third fact read
@@ -321,15 +338,41 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
 
               <div className="flex flex-col gap-4 border-t border-line pt-5">
                 <div className="flex flex-col gap-2">
-                  <span className={LABEL}>Phase</span>
-                  <p className="text-[15px] leading-relaxed text-muted">
-                    <span className="text-fg">{phaseLabel}.</span>{" "}
-                    {phaseDescription ??
-                      "Outside the five phases the vocabulary closes on, so the card names it and nothing here interprets it."}
-                  </p>
+                  <span className={LABEL}>
+                    {phases.length === 1 ? "Phase" : "Phases"}
+                  </span>
+                  {/* Three renderings of one field, and the empty one is the one that
+                      had to be designed: it is a sentence stating where the node
+                      stands, not a dash, not a placeholder, and not styled to differ
+                      from the other two. The author's ruling — the five phases
+                      describe the factory, not every node in it — is stated in full
+                      here because this is the page an author lands on when they are
+                      about to invent a phase for their intake node. */}
+                  {phases.length === 0 ? (
+                    <p className="text-[15px] leading-relaxed text-muted">
+                      <span className="text-fg">Outside the five.</span> The lifecycle
+                      phases describe the shape of a factory, not every node inside
+                      one: intake, retrieval, routing and hand-off are real work that
+                      none of the five names. This card declares no phase, which is an
+                      answer rather than a blank.
+                    </p>
+                  ) : (
+                    phases.map((phase) => (
+                      <p
+                        key={phase.id}
+                        className="text-[15px] leading-relaxed text-muted"
+                      >
+                        <span className="text-fg">{phase.label}.</span>{" "}
+                        {phase.description ??
+                          "Outside the five phases the vocabulary closes on, so the card names it and nothing here interprets it."}
+                      </p>
+                    ))
+                  )}
                   <p className="text-xs leading-relaxed text-dim">
-                    A blueprint&apos;s phase coverage is the set of phases its nodes
-                    declare. It says what a factory covers, not how complete it is.
+                    A blueprint&apos;s phase coverage is the union of the phases its
+                    nodes declare. It says what a factory covers, not how complete it
+                    is, and a node standing outside the five takes nothing away from
+                    it.
                   </p>
                 </div>
 

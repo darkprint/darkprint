@@ -62,17 +62,80 @@ describe("allBlueprints", () => {
     }
   });
 
-  // The archive ships clean on both counts. A warning is not fatal to the build, so
-  // nothing else would catch one drifting in — which is exactly why it is asserted
-  // here rather than left to the loader's error check. The wiring that carries a
-  // resolver diagnostic into the view model is exercised in `view.test.ts`, against a
-  // bundle built to be broken, so this stays a statement about the content.
-  it("resolves every bundle with no diagnostic at all — no errors, no warnings", () => {
+  // A warning is not fatal to the build, so nothing else would catch one drifting in —
+  // which is exactly why the whole set is pinned here rather than left to the loader's
+  // error check. The wiring that carries a resolver diagnostic into the view model is
+  // exercised in `view.test.ts`, against a bundle built to be broken, so this stays a
+  // statement about the content.
+  //
+  // It used to read `toEqual([])` for every slug, and that was true right up until doc 3
+  // §4.1's `criteria-leak` check learned to say when it had not run. It is not true now
+  // and must not be made true: eight of the nine bundles give the check nothing to anchor
+  // on — no node in them declares an output port typed `acceptance-criteria` — and the
+  // whole point of `analysis/criteria-leak-unanchored` is that this is reported instead of
+  // passing for silence. Blanking these expectations, or wiring an `acceptance-criteria`
+  // port into eight blueprints to make them go quiet, would put the archive straight back
+  // into the state the diagnostic was written to expose.
+  //
+  // So the set is pinned per slug instead of merely bounded. A bundle that gains an
+  // anchor, loses one, or grows any *other* diagnostic fails here, which is the same
+  // pressure the empty expectation used to apply.
+  const EXPECTED_DIAGNOSTICS: Record<string, string[]> = {
+    // `verify` (`acceptance-verifier`) judges `vote`, and nothing types a criteria port —
+    // and the card names its criteria set in `params.criteria_ref`, so the criteria also
+    // reach it from outside the graph, where topology cannot speak for them at all.
+    "adversarial-consensus-line": [
+      "warning analysis/criteria-leak-unanchored",
+      "warning analysis/criteria-out-of-band",
+    ],
+    "checkpoint-resume-runner": [
+      "warning analysis/criteria-leak-unanchored",
+      "warning analysis/criteria-out-of-band",
+    ],
+    "frontline-triage": ["warning analysis/criteria-leak-unanchored"],
+    "grounded-research-desk": ["warning analysis/criteria-leak-unanchored"],
+    "guarded-merge-bot": ["warning analysis/criteria-leak-unanchored"],
+    "incident-commander": ["warning analysis/criteria-leak-unanchored"],
+    "nightly-data-janitor": ["warning analysis/criteria-leak-unanchored"],
+    "schema-forge-etl": ["warning analysis/criteria-leak-unanchored"],
+    // Doc 2 §5.2's canonical factory, and the only bundle where the check runs end to
+    // end: `spec-planner` types its `criteria` port, `planner -> builder` is absent, and
+    // the marker verdict is a real clean rather than a silence.
+    //
+    // The one warning is doc 2 §5.5's repair loop, and it is not a defect in this
+    // blueprint. The criteria reach `tester`; `tester -> debugger` carries what the run
+    // produced; `debugger -> tester` puts a patch back in front of the judge. The
+    // topological walk stops at a judge on purpose — expanding through one would charge
+    // the debugger of the very loop doc 2 §5.5 endorses by name — and the endorsed
+    // `tester -> debugger -> tester` is indistinguishable in the graph from the
+    // `tester -> builder` doc 2 §5.5 forbids two sentences later. So the analyzer names
+    // the channel instead of guessing what crosses it. Doc 2 §5.5 raises the same channel
+    // itself, as an "hint of the week": over many iterations the debugger can rebuild the
+    // criteria out of accumulated error messages, which is why the iteration cap is a
+    // leak control and not only a termination control. Nothing here is charged.
+    "starter-software-factory": ["warning analysis/criteria-relayed-through-judge"],
+  };
+
+  it("carries exactly the criteria-leak reporting warnings, and no other diagnostic", () => {
     for (const bp of blueprints) {
       expect([bp.slug, bp.analysis?.diagnostics.map((d) => `${d.severity} ${d.code}`)]).toEqual([
         bp.slug,
-        [],
+        EXPECTED_DIAGNOSTICS[bp.slug],
       ]);
+    }
+  });
+
+  // The reason the warnings above are tolerable: not one of them charges a risk marker.
+  // `criteria-leak-unanchored` and `criteria-out-of-band` both report that the engine does
+  // not know, and doc 3 §5 prices evidence, not ignorance — so an unanchored bundle must
+  // never lose a point of security for being unanchored.
+  it("charges no `criteria-leak` marker on a bundle where the check never ran", () => {
+    for (const bp of blueprints) {
+      const codes = bp.analysis?.diagnostics.map((d) => d.code) ?? [];
+      if (!codes.includes("analysis/criteria-leak-unanchored")) continue;
+      const leaks =
+        bp.analysis?.security.findings.filter((f) => f.marker === "criteria-leak") ?? [];
+      expect([bp.slug, leaks]).toEqual([bp.slug, []]);
     }
   });
 

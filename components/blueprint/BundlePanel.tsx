@@ -179,8 +179,14 @@ export function BundlePanel({
         </div>
       </section>
 
-      {/* Warnings are information, not something to tuck away — all eight bundles in
-          the archive are clean today, so this is usually the affirmative state. */}
+      {/* Warnings are information, not something to tuck away. Measured on the archive as
+          it stands: nine bundles, of which eight carry `analysis/criteria-leak-unanchored`
+          — the most important check in the system has nothing to anchor on in any of them
+          — two of those also carry `analysis/criteria-out-of-band`, and the ninth, the
+          starter, carries `analysis/criteria-relayed-through-judge` for doc 2 §5.5's
+          repair loop. Zero errors, and not one of these warnings costs a point. So this
+          list is normally non-empty and normally the honest reading rather than the
+          affirmative one, which is exactly why it renders instead of hiding. */}
       <DiagnosticList diagnostics={diagnostics} title="Validation notes" collapsible />
     </div>
   );

@@ -29,22 +29,42 @@ describe("readContent over content/", () => {
     }
   });
 
-  // Doc 3 §1 makes `phase` and `type` two of the three things every node declares, and
-  // doc 1 §3.2 makes `spec` the payload the agent actually receives. The whole archive was
-  // migrated to v0.1 at once, so the cheapest way to notice a card slipping back is to
-  // assert the vocabulary here rather than to trust 57 files to stay migrated.
+  // Doc 3 §3 makes `type` one of the things every node declares, doc 3 §2 makes `phase`
+  // one it *may* declare, and doc 1 §3.2 makes `spec` the payload the agent actually
+  // receives. The whole archive was migrated to v0.1 at once, so the cheapest way to
+  // notice a card slipping back is to assert the vocabulary here rather than to trust 57
+  // files to stay migrated.
+  //
+  // `phases` is checked entry by entry rather than for presence: the author's ruling makes
+  // the five phases a description of the factory, not of every node in it, so an intake or
+  // a retrieval strand declaring none is a complete answer and `[]` is asserted as legal.
+  // What must never drift is an entry *outside* the five, or a namespaced one (doc 3 §7
+  // keeps the dimension closed), or the same phase written twice.
   it("resolves every node against ontology v0.1 — five phases, six types, a real spec", () => {
     const PHASES = ["planning", "implementation", "testing", "debugging", "deployment"];
     const TYPES = ["agent", "tool", "human-gate", "human-input", "decision", "validation"];
     for (const bundle of loaded) {
       for (const node of bundle.blueprint.nodes) {
-        expect([node.ref, PHASES.includes(node.card.phase)]).toEqual([node.ref, true]);
+        const phases = node.card.phases;
+        expect([node.ref, phases.every((p) => PHASES.includes(p))]).toEqual([node.ref, true]);
+        expect([node.ref, new Set(phases).size]).toEqual([node.ref, phases.length]);
         expect([node.ref, TYPES.includes(node.card.type)]).toEqual([node.ref, true]);
         expect(node.card.spec.trim().length).toBeGreaterThan(40);
         expect(node.card.ontologyVersion).toBe("0.1.0");
       }
       expect(bundle.bundle.manifest.ontologyVersion).toBe("0.1.0");
     }
+  });
+
+  // The migration that made `phase` optional and repeatable is only real if the archive
+  // actually uses both ends of it. Asserted as a property of the content rather than of the
+  // schema, because a schema that permits `[]` and `[a, b]` while all 57 cards still carry
+  // exactly one would leave the interesting paths — `unphased`, and a node in two groups —
+  // untravelled by every page the site builds.
+  it("exercises both ends of the new phase cardinality — none, and more than one", () => {
+    const cards = loaded.flatMap((bundle) => bundle.blueprint.nodes.map((n) => n.card));
+    expect(cards.some((card) => card.phases.length === 0)).toBe(true);
+    expect(cards.some((card) => card.phases.length > 1)).toBe(true);
   });
 
   // Doc 3 §3's note: the two fields feed the same metric, so disagreeing is an error and
@@ -141,10 +161,11 @@ function manifest(slug: string, extra = ""): string {
 }
 
 /**
- * A card that satisfies ontology v0.1 in full: doc 3 §1's three dimensions and doc 1
- * §3.2's `spec`. Written out here rather than defaulted away because `phase` and `spec`
- * are now required, and a fixture that omitted them would fail for a reason none of the
- * tests below is about.
+ * A card that satisfies ontology v0.1 in full: doc 3's dimensions and doc 1 §3.2's `spec`.
+ * `spec` is written out rather than defaulted away because it is required, and a fixture
+ * that omitted it would fail for a reason none of the tests below is about. `phase` is
+ * *not* required — it is here only so the fixtures land in a phase group rather than in
+ * `unphased`, which keeps the coverage they produce readable.
  */
 function card(id: string, inputs: string, outputs: string, extra = ""): string {
   return [
@@ -262,9 +283,16 @@ describe("readContent on broken content", () => {
     expect(read).toThrow(/`code`/);
   });
 
-  // Doc 3 §1 and §2: `phase` is a first-level dimension, and doc 1 §3.2 makes `spec` the
-  // payload the agent receives. Both are required, and the loader must refuse a card
-  // missing either — this is the failure the whole archive migration existed to clear.
+  // Doc 3 §2 keeps the phase vocabulary closed and doc 1 §3.2 makes `spec` the payload the
+  // agent receives, so the loader must refuse a card carrying a phase v0.1 does not have,
+  // or carrying no `spec` at all — this is the failure the whole archive migration existed
+  // to clear.
+  //
+  // What is *not* asserted here, and used to be: `card/missing-phase`. Declaring no phase
+  // is now legal and silent, so the only phase failure left is declaring the wrong one.
+  // The fixture says so both ways — `phase: coding` is the pre-v0.1 spelling of
+  // `implementation` and must be reported, while the absent-phase case is covered in
+  // `card/validate` and `analysis/analyze`, which own the silence.
   it("throws when a card predates ontology v0.1", async () => {
     const read = await readFixture((root) => {
       const cards = join(root, "content", "cards");
@@ -274,6 +302,7 @@ describe("readContent on broken content", () => {
           "id: legacy",
           "name: legacy",
           "type: trigger",
+          "phase: coding",
           "version: 1.0.0",
           "ontology_version: 1.0.0",
           "action: Open the run.",
@@ -287,7 +316,8 @@ describe("readContent on broken content", () => {
       writeFileSync(join(dir, "blueprint.dot"), 'digraph legacy {\n  n [card="legacy@1.0.0"];\n}\n');
     });
 
-    expect(read).toThrow(/card\/missing-phase/);
+    expect(read).toThrow(/card\/unknown-phase/);
+    expect(read).toThrow(/Phase `coding` is not one of the five phases/);
     expect(read).toThrow(/card\/missing-field/);
     expect(read).toThrow(/Field `spec` is missing/);
     // `trigger` was folded into `tool` by v0.1 and is no longer a term at all.

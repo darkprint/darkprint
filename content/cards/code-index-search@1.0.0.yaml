@@ -1,7 +1,6 @@
 id: code-index-search
 name: Code Index Search
 type: tool
-phase: implementation
 
 action: >-
   Search the indexed repositories for the symbols and snippets the strand names, and return each

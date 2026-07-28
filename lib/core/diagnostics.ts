@@ -26,10 +26,19 @@ export type DiagnosticCode =
   | "card/deprecated-term"
   | "card/wrong-term-kind"
   | "card/version-bump-too-small"
-  // doc 3 §2 — `phase` is absent, blank, or not one of the five closed phases.
-  | "card/missing-phase"
+  // doc 3 §2 — a declared `phase` that is not one of the five closed phases.
+  //
+  // There is deliberately no code for an *absent* phase. The author's ruling supersedes
+  // doc 3 §1's cardinality row: the five phases describe the factory, not every node in
+  // it, so a card that declares none is complete, not deficient. `card/missing-phase` was
+  // deleted rather than renamed for that reason — nothing in the engine may treat "no
+  // phase" as a gap, and leaving a code with "missing" in its name would invite it back.
+  | "card/unknown-phase"
   // doc 3 §7 — `phase` is the one dimension local namespaces may not extend.
   | "card/namespaced-phase"
+  // The same phase declared twice on one card. A warning: it describes one node in one
+  // phase either way, so the card still loads with the repeat collapsed.
+  | "card/duplicate-phase"
   // doc 3 §3 — `type` ⊂ `human-in-the-loop` while `requires_human` is not true.
   | "card/human-type-inconsistent"
   // doc 1 §3.2 — `spec` is present but too short to instruct an agent on its own.
@@ -83,7 +92,30 @@ export type DiagnosticCode =
   // Doc 3 §6 divides by *nodi totali*, and a node whose card is not in the bundle has no
   // `type` to read: it is counted, and the reader is told the fraction includes it.
   | "analysis/unresolved-node"
-  | "analysis/criteria-leak-suspected";
+  | "analysis/criteria-leak-suspected"
+  // Doc 3 §4.1 calls `criteria-leak` the most important check in the system, and a check
+  // that reports nothing looks exactly like a check that passed. These two exist so it can
+  // never be silently inert: they report that the engine does **not know**, which is a
+  // third state, distinct from finding a leak and from finding none. Neither ever fires
+  // the `criteria-leak` marker — an unknown is not evidence.
+  //
+  // `analysis/criteria-leak-unanchored` — a validation node judges somebody's output, but
+  // no node in the blueprint declares an `acceptance-criteria` output, so there is no
+  // producer to trace a path from and the check did not run.
+  | "analysis/criteria-leak-unanchored"
+  // `analysis/criteria-out-of-band` — a node's `params` name a criteria set that no node
+  // in the graph produces. The criteria reach it outside the topology, so doc 2 §3's
+  // claim that isolation is a property of the topology cannot be checked here at all.
+  | "analysis/criteria-out-of-band"
+  // `analysis/criteria-relayed-through-judge` — the criteria reach a `validation` node
+  // whose own output then flows on to a node whose work is judged. The walk stops at a
+  // judge on purpose (doc 2 §5.5 endorses `tester → debugger → tester` by name), so this
+  // is the one place the topological detector deliberately declines to follow. Whether
+  // what the judge forwards is the failure evidence doc 2 §5.5 allows or the criteria set
+  // it forbids is a property of the prose, and the two shapes are isomorphic in the
+  // graph — so the analyzer reports that it stopped looking instead of guessing either
+  // way. Never fires the marker: declining to follow is not evidence of a leak.
+  | "analysis/criteria-relayed-through-judge";
 
 /** Where a diagnostic points. Every field is optional — a bundle-wide problem has none. */
 export interface DiagnosticLocation {

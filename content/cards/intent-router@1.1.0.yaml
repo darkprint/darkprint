@@ -1,7 +1,6 @@
 id: intent-router
 name: Intent Router
 type: decision
-phase: planning
 
 action: >-
   Classify the inbound event against the label set — overridden by a taxonomy supplied for this

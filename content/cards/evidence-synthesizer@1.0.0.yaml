@@ -1,7 +1,7 @@
 id: evidence-synthesizer
 name: Evidence Synthesizer
 type: agent
-phase: implementation
+phase: [implementation, debugging]
 
 action: >-
   Draft a single answer from the fanned-in passages, citing the passage behind every claim, and

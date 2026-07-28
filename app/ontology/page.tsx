@@ -218,21 +218,24 @@ export default function OntologyPage() {
           />
           <div className="flex flex-col gap-5 px-5 py-5">
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
-              Every card declares exactly one <Id>phase</Id>. These five are what the
-              word <em>factory</em> means here — from the request to a plan, from the
-              plan to an artefact, to the checks, to the fix, to the release — so they
-              are listed in that order rather than alphabetically, and they are the one
-              dimension a local namespace cannot extend. A node type or a risk marker can
-              be coined by anybody; a sixth phase would be a different definition of the
-              thing being described.
+              These five are what the word <em>factory</em> means here — from the request
+              to a plan, from the plan to an artefact, to the checks, to the fix, to the
+              release — so they are listed in that order rather than alphabetically, and
+              they are the one dimension a local namespace cannot extend. A node type or
+              a risk marker can be coined by anybody; a sixth phase would be a different
+              definition of the thing being described.
             </p>
             <p className="max-w-3xl border-l-2 border-violet/50 pl-4 text-sm leading-relaxed text-muted">
-              Which phases a blueprint has nodes in is read off its cards and shown on the
-              blueprint as a statement of scope: <em>this factory covers planning,
-              implementation and testing</em>. It is a description of what the factory
-              does, in the same way the autonomy level is — not a checklist with two boxes
-              left empty. Nothing on DarkPrint scores a blueprint for the phases it leaves
-              to somebody else.
+              A card&apos;s <Id>phase</Id> names one of them, several of them, or none.
+              The five describe the factory, not every node inside it: an intake, a
+              retrieval step and a router each do work that none of the five names, and a
+              node that both builds and repairs stands in two. Which phases a blueprint
+              has nodes in is read off its cards and shown on the blueprint as a
+              statement of scope — <em>this factory covers planning, implementation and
+              testing</em> — in the same way the autonomy level is, not as a checklist
+              with two boxes left empty. Nothing on DarkPrint scores a blueprint for the
+              phases it leaves to somebody else, and nothing scores a node for standing
+              outside them.
             </p>
             <TermTable terms={phases} usage={usage} ontology={view} />
           </div>

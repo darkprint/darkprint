@@ -10,7 +10,7 @@ const CARD: NodeCard = {
   type: "agent",
   // Doc 3 §2 and doc 1 §3.2, both required as of ontology v0.1 — and both part of the
   // identity below, because `cardDigest` spreads the whole card.
-  phase: "implementation",
+  phases: ["implementation"],
   action: "Draft a candidate solution for the sub-task",
   spec: "Read the sub-task, draft one candidate solution, and return it as JSON on the draft port.",
   tools: [],
@@ -33,20 +33,22 @@ describe("cardDigest — shape", () => {
     // Golden vector: the canonical JSON below hashed by an independent SHA-256.
     // It fails if the identity payload ever changes shape, which is the point.
     //
-    // Recomputed when `phase` and `spec` became required fields (doc 3 §2, doc 1 §3.2).
-    // The digest necessarily moved: `cardDigest` spreads the whole card, so two new
-    // required fields are two new facts about what the node does, and doc 1 §4 wants a
-    // card that says something different to hash differently.
+    // Recomputed when `phase` and `spec` became required fields (doc 3 §2, doc 1 §3.2),
+    // and again when `phase` became the optional, repeatable `phases` (the author's ruling
+    // that the five phases describe the factory, not every node). The digest necessarily
+    // moves each time: `cardDigest` spreads the whole card, and doc 1 §4 wants a card that
+    // says something different to hash differently — `phases: ["implementation"]` is a
+    // different statement from `phase: "implementation"`, because the first can hold two.
     expect(canonicalJson({ ...CARD })).toBe(
       '{"action":"Draft a candidate solution for the sub-task","dependencies":[],' +
         '"id":"solver-a","inputs":[{"name":"task","type":"text"}],"name":"Solver A",' +
         '"ontologyVersion":"0.1.0","outputs":[{"name":"draft","type":"json"}],"params":{},' +
-        '"phase":"implementation","requiresHuman":false,"riskMarkers":[],' +
+        '"phases":["implementation"],"requiresHuman":false,"riskMarkers":[],' +
         '"spec":"Read the sub-task, draft one candidate solution, and return it as JSON on the draft port.",' +
         '"tools":[],"type":"agent","version":"1.0.0"}',
     );
     expect(cardDigest(CARD)).toBe(
-      "sha256:e1bd7cc71de6de1e43ebfdf0718dab60af9b4cc57afe148f75cef77d7afe40e4",
+      "sha256:b27406458838b3df18db555d7d0d1aa6a2244ec72cf3acaa7c04c7b5c4b63301",
     );
   });
 
@@ -123,7 +125,7 @@ describe("cardDigest — key order does not matter", () => {
       id: "solver-a",
       name: "Solver A",
       type: "agent",
-      phase: "implementation",
+      phases: ["implementation"],
       action: "Draft a candidate solution for the sub-task",
       spec: "Read the sub-task and write one candidate solution to the draft port.",
       tools: ["web-search"],
@@ -148,7 +150,7 @@ describe("cardDigest — key order does not matter", () => {
       tools: ["web-search"],
       spec: "Read the sub-task and write one candidate solution to the draft port.",
       action: "Draft a candidate solution for the sub-task",
-      phase: "implementation",
+      phases: ["implementation"],
       type: "agent",
       name: "Solver A",
       id: "solver-a",
@@ -238,7 +240,7 @@ describe("shortDigest", () => {
 
   it("shortens a real card digest to 15 characters", () => {
     const short = shortDigest(cardDigest(CARD));
-    expect(short).toBe("sha256:e1bd7cc7");
+    expect(short).toBe("sha256:b2740645");
     expect(short).toHaveLength("sha256:".length + 8);
   });
 

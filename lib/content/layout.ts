@@ -220,9 +220,14 @@ export function layeredLayout(
 
 /* --------------------- helpers --------------------- */
 
-/** Edge identity. Node ids come from DOT, where ` ` cannot appear. */
+/**
+ * Edge identity. Node ids come from DOT, where `\0` cannot appear.
+ *
+ * The escape and not a raw NUL byte: one NUL turns the file binary as far as git and grep
+ * are concerned, and the runtime string is the same either way.
+ */
 function key(source: string, target: string): string {
-  return `${source} ${target}`;
+  return `${source}\0${target}`;
 }
 
 function pushUnique(map: Map<string, string[]>, from: string, to: string): void {

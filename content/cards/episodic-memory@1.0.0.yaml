@@ -1,7 +1,6 @@
 id: episodic-memory
 name: Episodic Memory
 type: tool
-phase: implementation
 
 action: >-
   Append each stage's inputs, outputs and decisions to the episode log as an immutable entry,

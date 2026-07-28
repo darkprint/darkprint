@@ -76,7 +76,7 @@ describe("NodeCard shape", () => {
     // Doc 3 §1 makes `phase` a first-level dimension beside `type`, and doc 1 §3.2 makes
     // `spec` the payload the agent is handed. Neither is optional, so neither can be
     // absent from the minimal card.
-    phase: "implementation",
+    phases: ["implementation"],
     action: "Draft a candidate solution for the sub-task",
     spec: "Read the sub-task, draft one candidate solution, and return it as JSON on the draft port.",
     tools: [],

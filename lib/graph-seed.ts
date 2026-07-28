@@ -55,8 +55,10 @@ import { layeredLayout, type LayoutEdge } from "@/lib/content/layout";
  * Two deliberate losses, recorded rather than hidden:
  * - `planner` and `negotiator` cannot be recovered. v0.1 has no term for either, so a
  *   planning agent comes back as `executor` and a negotiating one as `executor` too.
- *   The `phase` dimension knows which of them plans; the type dimension does not, and
- *   this function is only allowed to read the type.
+ *   A card that declares `planning` says which of them plans; the type dimension never
+ *   does, and this function is only allowed to read the type. It is a weaker hint than
+ *   it looks, too: `phases` is a list a card may leave empty, so plenty of nodes state
+ *   nothing on that dimension either.
  * - `retry` and `memory` likewise: v0.1 folded `control` and `memory` into `tool`.
  *   A retry node is recognisable from the loop it closes, not from its card, and the
  *   loop is the layout's business (`edgeVariant` already draws the back edge as

@@ -7,7 +7,7 @@ import { allNodeCards, getOntologyView, getRegistry } from "@/lib/content";
 export const metadata: Metadata = {
   title: "Nodes",
   description:
-    "The DarkPrint node-card library — every reusable node in the registry, with its ontology type, its lifecycle phase, declared interface, tools and risk markers. Filter by type, by phase, by human involvement or by risk.",
+    "The DarkPrint node-card library — every reusable node in the registry, with its ontology type, the lifecycle phases it stands in, declared interface, tools and risk markers. Filter by type, by phase, by human involvement or by risk.",
 };
 
 export default function NodesPage() {
@@ -23,9 +23,14 @@ export default function NodesPage() {
     type: record.card.type,
     typeLabel:
       ontology.resolve(record.card.type, "node-type")?.term.label ?? record.card.type,
-    phase: record.card.phase,
-    phaseLabel:
-      ontology.resolve(record.card.phase, "phase")?.term.label ?? record.card.phase,
+    /* Zero, one or several — the card decides. Resolved here on the server, in the
+       order the card wrote them, so the browser filters plain data and never has to
+       ask the ontology anything. An id the vocabulary does not know is shown as
+       written rather than guessed at. */
+    phases: record.card.phases.map((id) => ({
+      id,
+      label: ontology.resolve(id, "phase")?.term.label ?? id,
+    })),
     tools: [...record.card.tools],
     requiresHuman: record.card.requiresHuman,
     riskMarkers: record.card.riskMarkers.map(
