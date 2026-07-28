@@ -4,7 +4,7 @@ Fans a question across web, vector and code search, synthesizes one answer, and 
 
 ```
 blueprint      grounded-research-desk
-bundle digest  sha256:3f23a864cf9c7f8d19f49d5531ac822ad26098c4929f6d63d398fef5e13c1db8
+bundle digest  sha256:22650d903612e521952d737a11e9659da3df5c7d958c1b0301c4408c2aee804f
 ontology       v0.1.0
 nodes          8
 cards pinned   8
@@ -33,6 +33,12 @@ attractor run factory.dot --simulate
 `factory.dot` is self-contained. Every node carries its card's `spec` as the `prompt` its
 agent receives, so the runner needs no other file from this folder. Flags vary between
 Attractor runners; `attractor run --help` is authoritative on yours.
+
+3 of the 8 nodes name the model they run on, and carry it as `llm_model`. That is Attractor's
+own attribute for it, so the run uses those models as they stand and your provider has to
+serve them. A node attribute outranks a graph-level `model_stylesheet`, so edit the line to
+run a node on something else, and delete the attribute to hand the choice back to your own
+configuration.
 
 ## What is in the folder
 

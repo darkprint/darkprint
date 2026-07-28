@@ -16,6 +16,7 @@ spec: >-
   those failing cases and tie each one to the finding it belongs to. Emit the finished review as
   Markdown on `review` with at most twenty-five comments, and repeat the suite names the record
   selected so whoever runs them next knows what to execute.
+model: claude-sonnet-5
 agent: Reviewer
 tools: []
 mcp: []

@@ -484,22 +484,67 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             )}
           </Panel>
 
-          {/* The two fields that say what has to exist on the machine before this node
-              can run. They sit above Behaviour rather than inside it because the card's
-              `tools` are in there and the pair is easy to conflate: `tools` is what the
-              node is permitted to do, `mcp` is which server supplies it, and merging them
-              loses the question each one answers. */}
+          {/* The three fields that say what has to exist before this node can run: the
+              model it is instantiated with, the document that defines its behaviour, and
+              the servers it reaches. They sit above Behaviour rather than inside it
+              because the card's `tools` are in there and the pair is easy to conflate:
+              `tools` is what the node is permitted to do, `mcp` is which server supplies
+              it, and merging them loses the question each one answers.
+
+              `model` used to sit inside Behaviour beside `agent`, which put the one field
+              the exported `factory.dot` carries as a reserved Attractor attribute next to
+              a free-text label the engine never reads. It leads here now, beside the other
+              two fields a reader has to satisfy before the node runs. */}
           <Panel
             id="runtime"
-            label="Skill and servers"
-            meta={
-              card.mcp.length === 0
-                ? "no MCP servers"
-                : `${card.mcp.length} MCP server${card.mcp.length === 1 ? "" : "s"}`
-            }
+            label="Model, skill and servers"
+            meta={card.model ?? "no model named"}
           >
             <div className="flex flex-col gap-5">
               <div className="flex flex-col gap-2">
+                <span className={LABEL}>Model</span>
+                {card.model === undefined ? (
+                  <p className="text-xs leading-relaxed text-dim">
+                    None named. This node runs on whatever the graph or the runner
+                    supplies, which is the ordinary case. A card names a model when it was
+                    written against one.
+                  </p>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg">
+                        <span
+                          className="h-1 w-1 rounded-full"
+                          style={{ background: "var(--color-cyan)" }}
+                          aria-hidden
+                        />
+                        {card.model}
+                      </span>
+                    </div>
+                    <p className="text-xs leading-relaxed text-dim">
+                      The model this node&apos;s agent is instantiated with. Download a
+                      blueprint that uses this card and{" "}
+                      <code className="font-mono text-muted">factory.dot</code> carries the
+                      name on the node as{" "}
+                      <code className="font-mono text-muted">llm_model</code>, which is
+                      Attractor&apos;s own attribute for it, so the factory runs on it
+                      without anybody configuring anything.
+                    </p>
+                    {/* Doc 2 §1.1's sibling problem: a field rendered as a hard fact
+                        invites a reader to treat it as one. `llm_model` resolves from the
+                        node attribute, then the graph's stylesheet, then the graph
+                        default, so what the card names is where that resolution starts. */}
+                    <p className="text-xs leading-relaxed text-dim">
+                      It is the default this card was written against. A graph can set the
+                      model for a whole class of nodes with a{" "}
+                      <code className="font-mono text-muted">model_stylesheet</code>, and
+                      nodes naming none take theirs from it.
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2 border-t border-line pt-5">
                 <span className={LABEL}>Skill</span>
                 {card.skill === undefined ? (
                   <p className="text-xs leading-relaxed text-dim">
@@ -583,7 +628,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           <Panel
             id="behaviour"
             label="Behaviour"
-            meta={card.model ?? card.agent ?? "no named runner"}
+            meta={card.agent ?? "no named agent"}
           >
             <div className="flex flex-col gap-5">
               <p className="text-[15px] leading-relaxed text-muted">
@@ -630,36 +675,36 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   </p>
                 </div>
 
+                {/* `agent` on its own now that `model` leads the panel above. The two
+                    answer different questions and only one of them reaches the runner:
+                    `model` becomes `llm_model` in the exported factory, while this is a
+                    label the author chose and nothing downstream reads. */}
                 <div className="flex flex-col gap-2">
-                  <span className={LABEL}>Runs on</span>
-                  {card.model !== undefined || card.agent !== undefined ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {card.model !== undefined && (
-                        <span className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg">
-                          <span
-                            className="h-1 w-1 rounded-full"
-                            style={{ background: "var(--color-cyan)" }}
-                            aria-hidden
-                          />
-                          model · {card.model}
-                        </span>
-                      )}
-                      {card.agent !== undefined && (
-                        <span className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg">
-                          <span
-                            className="h-1 w-1 rounded-full"
-                            style={{ background: "var(--color-cyan)" }}
-                            aria-hidden
-                          />
-                          agent · {card.agent}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
+                  <span className={LABEL}>Agent</span>
+                  {card.agent === undefined ? (
                     <p className="text-xs leading-relaxed text-dim">
-                      No model or agent named — whatever runs this node is the
-                      caller&apos;s choice.
+                      None named. The card&apos;s <code className="font-mono text-muted">type</code>{" "}
+                      and <code className="font-mono text-muted">spec</code> are the whole
+                      of what this node is.
                     </p>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg">
+                          <span
+                            className="h-1 w-1 rounded-full"
+                            style={{ background: "var(--color-cyan)" }}
+                            aria-hidden
+                          />
+                          {card.agent}
+                        </span>
+                      </div>
+                      <p className="text-xs leading-relaxed text-dim">
+                        The role the author gave this node, in their own words. Free text
+                        that no part of the engine reads. Which model it runs on is the
+                        panel above.
+                      </p>
+                    </>
                   )}
                 </div>
 

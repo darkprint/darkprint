@@ -4,7 +4,7 @@ Classifies inbound tickets, auto-resolves the simple ones with a KB lookup, QAs 
 
 ```
 blueprint      frontline-triage
-bundle digest  sha256:ea46b70a5f280ed1466b3e9a40a3cee0cf91b78565cd964ae8748cdea99b5aac
+bundle digest  sha256:b0d2a966deafbacbad41714f4eff55cbb030e8ad09d0e5344362a8b8b25726fa
 ontology       v0.1.0
 nodes          7
 cards pinned   7
@@ -34,6 +34,12 @@ attractor run factory.dot --simulate
 `factory.dot` is self-contained. Every node carries its card's `spec` as the `prompt` its
 agent receives, so the runner needs no other file from this folder. Flags vary between
 Attractor runners; `attractor run --help` is authoritative on yours.
+
+2 of the 7 nodes name the model they run on, and carry it as `llm_model`. That is Attractor's
+own attribute for it, so the run uses those models as they stand and your provider has to
+serve them. A node attribute outranks a graph-level `model_stylesheet`, so edit the line to
+run a node on something else, and delete the attribute to hand the choice back to your own
+configuration.
 
 ## What is in the folder
 

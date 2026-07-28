@@ -15,6 +15,7 @@ spec: >-
   reference actually covered the request, not how well the prose reads. Do not present the draft
   as approved, sent or applied, and do not act on it yourself — you are done the moment the draft,
   its citations and that figure are on `draft`.
+model: claude-sonnet-5
 agent: Resolver
 tools: []
 mcp: []

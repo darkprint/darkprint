@@ -267,6 +267,42 @@ describe("factory.dot, as Attractor will read it", () => {
       }
     }
   });
+
+  // The claim the `model` field exists to make good on: a card that names a model produces
+  // a factory that runs on it. Engine spec §2.6 reserves `llm_model` for exactly this, so
+  // the attribute survives into the folder a reader downloads. Asserted here as well as in
+  // `emit.test.ts` because this is the archive, where the models are real ids rather than
+  // fixtures, and a card whose model never reached the DOT would be a broken promise on
+  // every node page that shows it.
+  it("carries the model onto every node whose card names one, and onto no other", () => {
+    let named = 0;
+    for (const { slug, entry, files } of EXPORTS) {
+      const factory = fileMap(files).get(FACTORY_DOT) ?? "";
+      const lines = factory.split("\n");
+      for (const node of entry.blueprint.nodes) {
+        // The node statement, which is the only line the node's id starts.
+        const line = lines.find((l) => l.trimStart().startsWith(`${node.nodeId} [`)) ?? "";
+        expect([slug, node.nodeId, line === ""]).toEqual([slug, node.nodeId, false]);
+        const model = node.card.model;
+        if (model === undefined) {
+          expect([slug, node.nodeId, line.includes("llm_model=")]).toEqual([
+            slug,
+            node.nodeId,
+            false,
+          ]);
+          continue;
+        }
+        named += 1;
+        expect([slug, node.nodeId, line.includes(`llm_model="${model}"`)]).toEqual([
+          slug,
+          node.nodeId,
+          true,
+        ]);
+      }
+    }
+    // A scan that matched nothing would pass every assertion above.
+    expect(named).toBeGreaterThan(0);
+  });
 });
 
 /* --------------------- determinism --------------------- */

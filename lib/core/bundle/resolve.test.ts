@@ -553,6 +553,45 @@ describe("the card pointer", () => {
     );
   });
 
+  /*
+   * §4's bump rule, at the one place a bundle can supply the predecessor.
+   *
+   * The rule shipped as a diagnostic code no caller could raise: `validateCard` wants
+   * `opts.previous` and nothing passed it, while `/spec` listed the code as an error that
+   * refuses a bundle. A bundle carrying two versions of one card is exactly the case where
+   * the predecessor is in hand, so the check runs here now and these two hold it there.
+   */
+  it("refuses a bundle whose second version of a card under-declares its bump", () => {
+    const files = {
+      ...CARD_FILES,
+      "cards/planner@1.1.0.yaml": PLANNER.replace("version: 1.0.0", "version: 1.1.0").replace(
+        "ontology_version:",
+        "cannot:\n  - read the acceptance criteria\nontology_version:",
+      ),
+    };
+    const src = BASE_DOT.replace('planner [card="planner@1.0.0"]', 'planner [card="planner@1.1.0"]');
+    const { diagnostics } = resolve(src, files);
+    const d = one(diagnostics, "card/version-bump-too-small");
+    expect(d.severity).toBe("error");
+    expect(d.message).toContain("major");
+    expect(d.hint).toContain("2.0.0");
+    expect(d.hint).toContain("narrows what the node accepts");
+    expect(d.location?.file).toBe("cards/planner@1.1.0.yaml");
+  });
+
+  it("says nothing when the same edit is published as a major", () => {
+    const files = {
+      ...CARD_FILES,
+      "cards/planner@2.0.0.yaml": PLANNER.replace("version: 1.0.0", "version: 2.0.0").replace(
+        "ontology_version:",
+        "cannot:\n  - read the acceptance criteria\nontology_version:",
+      ),
+    };
+    const src = BASE_DOT.replace('planner [card="planner@1.0.0"]', 'planner [card="planner@2.0.0"]');
+    const { diagnostics } = resolve(src, files);
+    expect(withCode(diagnostics, "card/version-bump-too-small")).toEqual([]);
+  });
+
   it("reports bundle/missing-card for a node with no pointer and no candidate card", () => {
     const src = dot(`
       intake [card="intake@1.0.0"];

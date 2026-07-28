@@ -15,6 +15,7 @@ spec: >-
   by field name and carrying that document's hash, so a later step can key back to the source.
   Where the document simply does not state a field, leave it absent: an absent field is a fact
   the next step can act on, and an invented one is a plausible record rather than a true one.
+model: claude-haiku-4-5
 agent: Extractor
 tools: []
 mcp: []

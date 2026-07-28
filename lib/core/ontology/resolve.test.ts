@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { DARKPRINT_CONFIG } from "../config";
 import { CORE_ONTOLOGY, CORE_PHASE_IDS } from "./core";
-import { ontologyView, splitTermId } from "./resolve";
+import { ontologyView, partitionTerms, splitTermId } from "./resolve";
 import type { Ontology, OntologyTerm, TermKind } from "./types";
 
 /** One view over the real vocabulary — read-only, so every test may share it. */
@@ -321,6 +321,47 @@ describe("byKind", () => {
     const before = CORE.byKind("tool").length;
     CORE.byKind("tool").push(term("berti/intruder", { kind: "tool" }));
     expect(CORE.byKind("tool").length).toBe(before);
+  });
+});
+
+/* ============================================================
+   partitionTerms
+   The count `/spec` and `/ontology` print. Both used to reach for
+   `view.ontology.terms.length`, which is the merged view, under
+   copy naming the curated core — so the pages announced 50 terms
+   and 10 risk markers against a core of 49 and 9, the extra being
+   the one namespaced term the same copy says the core cannot have.
+   ============================================================ */
+
+describe("partitionTerms", () => {
+  it("counts the shipped core as core, with nothing local in it", () => {
+    const split = partitionTerms(CORE_ONTOLOGY.terms);
+    expect(split.core.length).toBe(CORE_ONTOLOGY.terms.length);
+    expect(split.local).toEqual([]);
+  });
+
+  it("keeps an overlay out of the core count, per kind as well as in total", () => {
+    const overlay = term("lupo/pii-handling", { kind: "risk-marker", broader: "isolation-breach" });
+    const view = ontologyView(CORE_ONTOLOGY, [overlay]);
+
+    const all = partitionTerms(view.ontology.terms);
+    expect(all.core.length).toBe(CORE_ONTOLOGY.terms.length);
+    expect(ids(all.local)).toEqual(["lupo/pii-handling"]);
+
+    const markers = partitionTerms(view.byKind("risk-marker"));
+    expect(markers.core.length).toBe(
+      CORE_ONTOLOGY.terms.filter((t) => t.kind === "risk-marker").length,
+    );
+    expect(ids(markers.local)).toEqual(["lupo/pii-handling"]);
+  });
+
+  it("counts a local term that shadows a curated id as local", () => {
+    // §7 lets an overlay replace a core term in place. It is still somebody's namespace,
+    // so the curated count goes down by one rather than staying where it was.
+    const view = ontologyView(CORE_ONTOLOGY, [term("acme/agent")]);
+    const split = partitionTerms(view.ontology.terms);
+    expect(split.core.length + split.local.length).toBe(view.ontology.terms.length);
+    expect(ids(split.local)).toEqual(["acme/agent"]);
   });
 });
 

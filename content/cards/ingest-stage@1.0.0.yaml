@@ -14,6 +14,7 @@ spec: >-
   `staged` the working set you assembled, that manifest, and the stages still to run, so the next
   stage picks up where you stopped. You are done when every source the stage names appears in the
   manifest under one of those two outcomes.
+model: claude-haiku-4-5
 agent: Stage workers
 tools: []
 mcp: []

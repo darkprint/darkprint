@@ -2,8 +2,17 @@ import Link from "next/link";
 import { shortDigest } from "@/lib/core";
 import { criteriaVerdict } from "@/lib/criteria-state";
 import { contentHref } from "@/lib/href";
-import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
-import { BlueprintGraph } from "@/components/graph/BlueprintGraph";
+import type { FlowEdgeSeed, FlowNodeSeed } from "@/lib/types";
+import {
+  AbsentEdge,
+  Edge,
+  NodeBox,
+  Scene,
+  Sheet,
+  VIZ,
+  nodePort,
+  type Point,
+} from "@/components/viz";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import {
   ABSENT_EDGE,
@@ -25,10 +34,27 @@ import {
    from what the engine actually does. If the weights are ever
    re-tuned, the figures here move with them.
 
-   The absent edge is marked in the one way an absence can be:
-   as a row that is drawn and empty, in a list of the edges that
-   are there. The same grammar the phase strip uses for a lifecycle
-   phase with no node standing in it.
+   The absence is marked twice, in the two grammars this site has
+   for one: as a row that is drawn and empty in the list of edges
+   that are there, and as `AbsentEdge` in the drawing, which is the
+   dashed place the edge would have gone.
+
+   ── Why the two figures are drawn rather than rendered ──
+   Spec §4.4 asks for the argument in a picture: two graphs side by
+   side, one resolving, one refused, the difference being a single
+   edge. React Flow drew them before, stacked, one screenful apart,
+   and it cannot draw an edge that does not exist — so the lesson
+   of the bundle was the one thing the schematic had no mark for.
+   `components/viz` does, and two SVG scenes fit beside each other,
+   which is what makes the single-edge difference readable in one
+   look.
+
+   Both drawings use the SAME placement, taken from the published
+   graph. Adding `planner -> builder` moves the builder down a layer
+   in `layeredLayout`, so laying each graph out on its own would
+   have shifted four boxes and put a second difference in front of a
+   reader who is being asked to find one. The node set is identical
+   and placement is presentation; the edges are each graph's own.
    ============================================================ */
 
 const LABEL = "font-mono text-[11px] uppercase tracking-[0.18em] text-dim";
@@ -43,25 +69,183 @@ function Verbatim({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* --------------------- the two drawings --------------------- */
+
 /**
- * One schematic with its caption. `<figure>` takes its accessible name from the
- * `<figcaption>`, so the caption is the only label there is and nothing here overrides it
- * with a shorter one.
+ * Scene units for both figures, and one set for both.
+ *
+ * A reader is being asked to find a one-edge difference between two pictures, so every
+ * other quantity has to be identical: same box, same node size, same spacing.
+ */
+const FIG = {
+  width: 460,
+  height: 300,
+  padX: 34,
+  padY: 26,
+  node: { width: 120, height: 40 },
+  /** Clearance between a box and the arrowhead that lands on it. */
+  pad: 6,
+  /** Lateral spacing when several edges share one face of a box. */
+  spread: 20,
+} as const;
+
+const PORT = { width: FIG.node.width, height: FIG.node.height, pad: FIG.pad };
+
+interface Placed {
+  id: string;
+  /** The card's name, which is what the wiring table prints under the node id. */
+  label: string;
+  x: number;
+  y: number;
+}
+
+/**
+ * The engine's own layout, turned on its side.
+ *
+ * `layeredLayout` runs left to right, which is what `rankdir=LR` in the DOT asks for and
+ * what the full-width schematic on a blueprint page draws. These two figures sit beside
+ * each other and have half a page's width each, so the layer axis becomes the vertical
+ * one. Nothing is invented: the layer a node landed in and the row it took inside that
+ * layer are both read off `position`, mapped proportionally into the box above. A node
+ * that moves in the archive moves here.
+ */
+function place(nodes: readonly FlowNodeSeed[]): Placed[] {
+  if (nodes.length === 0) return [];
+  const xs = nodes.map((n) => n.position.x);
+  const ys = nodes.map((n) => n.position.y);
+  const spanLayer = Math.max(...xs) - Math.min(...xs);
+  const spanRow = Math.max(...ys) - Math.min(...ys);
+  const usableY = FIG.height - 2 * FIG.padY - FIG.node.height;
+  const usableX = FIG.width - 2 * FIG.padX - FIG.node.width;
+  const minX = Math.min(...xs);
+  const minY = Math.min(...ys);
+
+  return nodes.map((node) => ({
+    id: node.id,
+    label: node.label,
+    // A single layer, or a single row inside every layer, divides by zero otherwise and
+    // the honest answer for one lane is the middle of the box.
+    x:
+      FIG.padX +
+      FIG.node.width / 2 +
+      (spanRow === 0 ? usableX / 2 : ((node.position.y - minY) / spanRow) * usableX),
+    y:
+      FIG.padY +
+      FIG.node.height / 2 +
+      (spanLayer === 0 ? usableY / 2 : ((node.position.x - minX) / spanLayer) * usableY),
+  }));
+}
+
+/**
+ * Where an edge leaves and where it lands.
+ *
+ * Three cases, and the third is the one this page is about. A run down the layers leaves
+ * the bottom face and lands on the top face. A run back up the layers swings out to the
+ * left of the drawing, which is the convention the schematic already uses for the return
+ * leg of the debug loop. A run across one layer goes face to face, and `planner` to
+ * `builder` is exactly that: both sit in layer 0 of the published graph, so the edge the
+ * bundle does not have and the edge the variant adds are the same horizontal line.
+ */
+function run(
+  from: Placed,
+  to: Placed,
+  offsets: { from: number; to: number } = { from: 0, to: 0 },
+): { a: Point; b: Point; bend: number } {
+  if (to.y > from.y) {
+    const [ax, ay] = nodePort(from.x, from.y, "bottom", PORT);
+    const [bx, by] = nodePort(to.x, to.y, "top", PORT);
+    return { a: [ax + offsets.from, ay], b: [bx + offsets.to, by], bend: 0 };
+  }
+  if (to.y < from.y) {
+    // Wider clearance than a forward run and a bend away from the drawing, in that
+    // order: a return leg that leaves from the same 6 units as everything else clips the
+    // corner of the box it just left, which reads as a line through a node.
+    const clear = { ...PORT, pad: 16 };
+    return {
+      a: nodePort(from.x, from.y, "left", clear),
+      b: nodePort(to.x, to.y, "left", clear),
+      bend: -44,
+    };
+  }
+  const rightwards = to.x > from.x;
+  return {
+    a: nodePort(from.x, from.y, rightwards ? "right" : "left", PORT),
+    b: nodePort(to.x, to.y, rightwards ? "left" : "right", PORT),
+    bend: 0,
+  };
+}
+
+/**
+ * Lateral offsets so two edges sharing a face do not land their arrowheads on one point.
+ *
+ * The tester takes two incoming runs and emits two, which without this draws four heads
+ * on two pixels. Only downward runs are spread; a back edge leaves from a face of its own.
+ */
+function spreadOf(
+  edges: readonly FlowEdgeSeed[],
+  at: Map<string, Placed>,
+): Map<string, { from: number; to: number }> {
+  const leaving = new Map<string, string[]>();
+  const arriving = new Map<string, string[]>();
+  const push = (map: Map<string, string[]>, key: string, id: string) => {
+    const list = map.get(key);
+    if (list === undefined) map.set(key, [id]);
+    else list.push(id);
+  };
+  for (const edge of edges) {
+    const from = at.get(edge.source);
+    const to = at.get(edge.target);
+    if (from === undefined || to === undefined || to.y <= from.y) continue;
+    push(leaving, edge.source, edge.id);
+    push(arriving, edge.target, edge.id);
+  }
+
+  const centred = (list: string[], id: string) =>
+    (list.indexOf(id) - (list.length - 1) / 2) * FIG.spread;
+
+  const out = new Map<string, { from: number; to: number }>();
+  for (const edge of edges) {
+    out.set(edge.id, {
+      from: centred(leaving.get(edge.source) ?? [], edge.id),
+      to: centred(arriving.get(edge.target) ?? [], edge.id),
+    });
+  }
+  return out;
+}
+
+/** `source→target`, which is how an edge is identified across the two graphs. */
+function edgeKey(edge: { source: string; target: string }): string {
+  return `${edge.source} ${edge.target}`;
+}
+
+/**
+ * One drawing, with its sheet and its caption.
+ *
+ * `<figure>` takes its accessible name from the `<figcaption>` and the scene carries its
+ * own `aria-label`, so the drawing is announced as a picture of something and the caption
+ * carries the argument. Nothing here overrides either with a shorter label.
  */
 function Figure({
-  graph,
-  id,
+  placed,
+  edges,
+  absent,
+  addedKey,
+  sceneLabel,
   title,
   verdict,
   verdictColor,
   caption,
 }: {
-  graph: BlueprintGraphData;
-  /** Distinct React Flow instance name — this is the one page that mounts two. */
-  id: string;
+  placed: readonly Placed[];
+  edges: readonly FlowEdgeSeed[];
+  /** Draw the edge that is not there. The published graph passes it; the variant does not. */
+  absent?: boolean;
+  /** `edgeKey` of the run this graph has and the other does not. Drawn as a defect. */
+  addedKey?: string;
+  sceneLabel: string;
   title: string;
   /**
-   * What the engine concluded about this bundle, as the header reads it.
+   * What the engine concluded about this bundle, as the sheet's title block reads it.
    *
    * A security level for the bundle that resolves, and the refusal for the one that does
    * not. It used to be a score on both, which put "security level 2" in the header of a
@@ -74,33 +258,77 @@ function Figure({
   verdictColor: string;
   caption: React.ReactNode;
 }) {
+  const at = new Map(placed.map((node) => [node.id, node]));
+  const offsets = spreadOf(edges, at);
+  const source = at.get(ABSENT_EDGE.source);
+  const target = at.get(ABSENT_EDGE.target);
+
   return (
-    <figure className="panel overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
-        <span className={LABEL}>{title}</span>
-        <span
-          className="font-mono text-[11px] uppercase tracking-[0.14em]"
-          style={{ color: verdictColor }}
-        >
-          {verdict}
-        </span>
-      </div>
-      <div className="p-3">
-        {/* `builder` is ringed in both figures on purpose: it is the same node in both,
-            and the difference between the two drawings is what points into it. */}
-        <BlueprintGraph
-          graph={graph}
-          id={id}
-          highlighted={ABSENT_EDGE.target}
-          height={360}
-          className="rounded-md"
-        />
-      </div>
-      <figcaption className="border-t border-line px-4 py-3 text-sm leading-relaxed text-muted">
-        {caption}
-      </figcaption>
+    <figure className="flex flex-col gap-3">
+      <Sheet
+        label={title}
+        title={
+          <span style={{ color: verdictColor }} className="uppercase tracking-[0.12em]">
+            {verdict}
+          </span>
+        }
+        note={`${placed.length} nodes · ${edges.length} edges`}
+        bodyClassName="p-2 sm:p-3"
+      >
+        <Scene width={FIG.width} height={FIG.height} label={sceneLabel}>
+          {edges.map((edge) => {
+            const from = at.get(edge.source);
+            const to = at.get(edge.target);
+            if (from === undefined || to === undefined) return null;
+            const added = addedKey !== undefined && edgeKey(edge) === addedKey;
+            const { a, b, bend } = run(from, to, offsets.get(edge.id));
+            return (
+              <Edge
+                key={edge.id}
+                from={a}
+                to={b}
+                bend={bend}
+                tone={added ? "signal" : "line"}
+                weight={added ? VIZ.stroke.bold : VIZ.stroke.base}
+                // Only the runs out of the criteria producer are labelled. Every edge and
+                // what it carries is listed in the table below, and a drawing with five
+                // labels on it stops being readable at the width of half a column.
+                label={edge.source === ABSENT_EDGE.source ? edge.label : undefined}
+                id={edge.id}
+              />
+            );
+          })}
+
+          {absent === true && source !== undefined && target !== undefined && (
+            <AbsentEdge {...runOf(source, target)} label={ABSENT_EDGE.label} id="absent" />
+          )}
+
+          {placed.map((node) => (
+            <NodeBox
+              key={node.id}
+              x={node.x}
+              y={node.y}
+              label={node.id}
+              sub={node.label}
+              // The same node is ringed in both drawings, because it is what the one edge
+              // points into and the reader is being asked to compare what reaches it.
+              tone={node.id === ABSENT_EDGE.target ? "cyan" : "line"}
+              width={FIG.node.width}
+              height={FIG.node.height}
+              id={node.id}
+            />
+          ))}
+        </Scene>
+      </Sheet>
+      <figcaption className="text-sm leading-relaxed text-muted">{caption}</figcaption>
     </figure>
   );
+}
+
+/** `run` shaped for `AbsentEdge`, which takes `from`/`to` rather than `a`/`b`. */
+function runOf(from: Placed, to: Placed): { from: Point; to: Point; bend: number } {
+  const { a, b, bend } = run(from, to);
+  return { from: a, to: b, bend };
 }
 
 export function SectionAbsentEdge({ demo }: { demo: IsolationDemo }) {
@@ -132,6 +360,17 @@ export function SectionAbsentEdge({ demo }: { demo: IsolationDemo }) {
   const errors = errorsOf(leaked);
   const refused = errors.length > 0;
 
+  // One placement, used by both drawings. See the file header for why the variant is not
+  // laid out on its own.
+  const placed = place(published.graph.nodes);
+
+  // The run the variant has and the published bundle does not, found by comparing the two
+  // edge lists rather than by naming it. `ADDED_DOT_LINE` says what was inserted; this
+  // says what the parser made of it, and if the two ever disagree the drawing marks
+  // nothing instead of marking the wrong edge.
+  const declared = new Set(published.graph.edges.map(edgeKey));
+  const addedKey = leaked.graph.edges.map(edgeKey).find((key) => !declared.has(key));
+
   return (
     <section id="demonstration" className="bg-surface py-20 sm:py-28">
       <div className="container-page">
@@ -146,11 +385,13 @@ export function SectionAbsentEdge({ demo }: { demo: IsolationDemo }) {
           {published.cardRefs.length} pinned cards · {shortDigest(published.digest)}
         </p>
 
-        {/* ---------- figure 1: as published ---------- */}
-        <div className="mt-8">
+        {/* ---------- the pair, side by side ---------- */}
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <Figure
-            graph={published.graph}
-            id="starter-as-published"
+            placed={placed}
+            edges={published.graph.edges}
+            absent
+            sceneLabel="The starter blueprint drawn as five nodes. The planner's acceptance criteria run to the tester, and the place an edge from the planner to the builder would have gone is drawn as a dashed line with nothing on it."
             title="As published"
             verdict={`resolves · security level ${publishedSecurity.level}`}
             verdictColor="var(--color-emerald)"
@@ -159,12 +400,37 @@ export function SectionAbsentEdge({ demo }: { demo: IsolationDemo }) {
                 The planner writes two artefacts: an ordered build plan, and the acceptance
                 criteria the finished work will be judged against. The criteria go to the
                 tester. Nothing at all goes to the builder, which is why nothing points
-                into the ringed node above. Its brief arrives when the graph is
-                instantiated.
+                into the ringed node. Its brief arrives when the graph is instantiated.
+              </>
+            }
+          />
+          <Figure
+            placed={placed}
+            edges={leaked.graph.edges}
+            addedKey={addedKey}
+            sceneLabel="The same five nodes with one edge added, from the planner to the builder, carrying the acceptance criteria."
+            title="With one line added to the DOT"
+            verdict={
+              refused
+                ? "does not resolve"
+                : `resolves · security level ${leaked.security.level}`
+            }
+            verdictColor="var(--color-signal)"
+            caption={
+              <>
+                Same manifest, same cards, one edge. This bundle is not in the archive and
+                has no page of its own: it is assembled during the build so the analyzer
+                can be run on it and quoted here. Everything except the marked run is drawn
+                exactly as it is drawn beside it, so the difference between the two
+                pictures is the whole of the difference between the two bundles.
               </>
             }
           />
         </div>
+
+        <pre className="mt-5 overflow-x-auto rounded-lg border border-line bg-surface-2 px-4 py-3 font-mono text-[12px] leading-relaxed text-fg">
+          <code>{ADDED_DOT_LINE}</code>
+        </pre>
 
         {/* ---------- the wiring, including the row that is not there ---------- */}
         <div className="panel mt-5 p-5 sm:p-6">
@@ -237,38 +503,14 @@ export function SectionAbsentEdge({ demo }: { demo: IsolationDemo }) {
           </div>
 
           <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted">
-            The last row is the design. It is the only one you cannot find in the drawing,
-            because an edge nobody wrote has nothing to look at. So here is the same bundle
-            with it added.
+            The last row is the design, and it is the row a schematic normally has nothing
+            to show for, because an edge nobody wrote leaves nothing to look at. The first
+            drawing marks it the way this table does, as the place the run would have gone.
+            In the DOT above it is one more line among five, in the same syntax as the four
+            that belong there, which is what a leak looks like when you meet one. The second
+            drawing paints it because this page is pointing at it.
           </p>
         </div>
-
-        {/* ---------- figure 2: the variant ---------- */}
-        <div className="mt-8">
-          <Figure
-            graph={leaked.graph}
-            id="starter-with-leak"
-            title="With one line added to the DOT"
-            verdict={
-              refused
-                ? "does not resolve"
-                : `resolves · security level ${leaked.security.level}`
-            }
-            verdictColor="var(--color-signal)"
-            caption={
-              <>
-                Same manifest, same cards, one edge. This bundle is not in the archive and
-                has no page of its own: it is assembled during the build so the
-                analyzer can be run on it and quoted here. The new edge is drawn like every
-                other edge, because that is what it is. A leak looks like ordinary wiring.
-              </>
-            }
-          />
-        </div>
-
-        <pre className="mt-4 overflow-x-auto rounded-lg border border-line bg-surface-2 px-4 py-3 font-mono text-[12px] leading-relaxed text-fg">
-          <code>{ADDED_DOT_LINE}</code>
-        </pre>
 
         {/* ---------- what the engine said ---------- */}
         <div className="panel mt-5 p-5 sm:p-6">

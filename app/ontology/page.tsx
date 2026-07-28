@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { OntologyTerm, TermKind } from "@/lib/core";
-import { CORE_PHASE_IDS, splitTermId } from "@/lib/core";
+import { CORE_PHASE_IDS, partitionTerms } from "@/lib/core";
 import { getOntologyView, getRegistry } from "@/lib/content";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Stat } from "@/components/ui/Stat";
@@ -88,10 +88,12 @@ export default function OntologyPage() {
   // What arrived through the local-namespace channel of doc 3 §7, counted rather than
   // asserted: this archive ships an overlay, and a page claiming it does not would be
   // wrong the moment somebody reads the risk-marker list below.
-  const localTerms = view.ontology.terms.filter(
-    (term) => splitTermId(term.id).namespace !== undefined,
-  );
-  const coreTerms = terms.length - localTerms.length;
+  //
+  // Through `partitionTerms` rather than by hand, because `/spec` printed the merged
+  // count where it meant the curated one and the two pages disagreed by a term. One
+  // derivation, so they cannot.
+  const { core: coreTermList, local: localTerms } = partitionTerms(terms);
+  const coreTerms = coreTermList.length;
 
   // §6.2's live demonstration. Read off the vocabulary rather than written into the
   // copy, so the paragraph cannot outlive the rename it describes.
@@ -139,13 +141,18 @@ export default function OntologyPage() {
         lead="Every structural field on a node card — the lifecycle phase it belongs to, its type, the data type on each port, the tools it needs, the risks it declares — is a reference into this vocabulary rather than free text. That is what lets a static analyzer reason about a graph it has never seen, and what stops two authors from naming the same thing twice."
       />
 
+      {/* The line names the curated set, so it counts the curated set. It printed
+          `terms.length` and therefore said 50 while the body 25 lines below said 49, the
+          difference being the one namespaced term this archive layers on. The overlay is
+          on the line too, since the tables further down list both. */}
       <p className="mt-4 font-mono text-xs text-dim">
-        {title} · v{version} · {terms.length} terms
+        {title} · v{version} · {coreTerms} curated terms
+        {localTerms.length > 0 && ` · ${localTerms.length} local`}
       </p>
 
       {/* ---------- Stats ---------- */}
       <div className="mt-8 flex flex-wrap items-end justify-between gap-x-10 gap-y-8 border-y border-line py-6">
-        <Stat value={terms.length} label="Terms" accent="var(--color-violet)" />
+        <Stat value={coreTerms} label="Curated terms" accent="var(--color-violet)" />
         <Stat value={phases.length} label="Phases" accent="var(--color-violet)" />
         <Stat
           value={nodeTypes.length}

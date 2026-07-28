@@ -3,7 +3,7 @@ digraph incident_commander {
   node [shape=box, style=rounded];
 
   ticket      [card="event-intake@1.0.0"];
-  classify    [card="intent-router@1.1.0"];
+  classify    [card="intent-router@2.0.0"];
   autoresolve [card="resolution-composer@1.0.0"];
   kb          [card="runbook-resolver@1.0.0"];
   qa          [card="blast-radius-check@1.0.0"];

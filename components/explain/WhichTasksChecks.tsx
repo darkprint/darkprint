@@ -17,6 +17,24 @@ import Link from "next/link";
    second side is written as flatly as the first: this page is a
    filter, and a filter that hedges lets through the person who
    was about to run a factory at something nothing can check.
+
+   ── Spec §4.3: the same four, at a quarter of the height ──
+   The author's reading of this page was "good but too wordy, you
+   need to make people get in a glance the concepts." Four
+   full-width cards carrying a question, a probe, two readings and
+   a paragraph on what breaks came to four screenfuls, and the
+   fourth question is the one that decides the most.
+
+   Not one sentence was cut. The four cards now sit two abreast
+   and show the question and the two readings, which is what a
+   reader compares their own task against; the probe and the
+   paragraph on what stops working move into a `<details>` under
+   each card. Both are prose that rewards the reader who has
+   already found their question and costs the reader who has not.
+
+   `<details>` and not a script: the content is in the prerendered
+   HTML either way, it is searchable in the page, and it opens
+   with JavaScript switched off.
    ============================================================ */
 
 type Check = {
@@ -147,15 +165,18 @@ function Side({
 export function WhichTasksChecks() {
   return (
     <section className="flex flex-col gap-5" aria-labelledby="checks-heading">
-      <h2 id="checks-heading" className="sr-only">
-        The four questions
+      <h2
+        id="checks-heading"
+        className="font-display text-2xl font-semibold tracking-tight text-fg"
+      >
+        The four questions in full
       </h2>
 
-      <ol className="flex flex-col gap-5">
+      <ol className="grid gap-4 lg:grid-cols-2">
         {CHECKS.map((c) => (
           <li
             key={c.id}
-            className="panel flex flex-col gap-5 p-6"
+            className="panel flex flex-col gap-4 p-5"
             style={{ borderTop: `2px solid ${c.color}` }}
           >
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -170,18 +191,11 @@ export function WhichTasksChecks() {
               </span>
             </div>
 
-            <h3 className="max-w-3xl font-display text-xl font-semibold leading-snug text-fg">
+            <h3 className="font-display text-lg font-semibold leading-snug text-fg">
               {c.question}
             </h3>
 
-            <p className="max-w-3xl rounded border border-line bg-surface-2 px-4 py-3 text-sm leading-relaxed text-muted">
-              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
-                Settle it{" "}
-              </span>
-              {c.probe}
-            </p>
-
-            <div className="grid gap-5 border-t border-line pt-5 sm:grid-cols-2">
+            <div className="grid gap-4 border-t border-line pt-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
               <Side
                 word="reads as yes"
                 glyph="✓"
@@ -196,9 +210,23 @@ export function WhichTasksChecks() {
               />
             </div>
 
-            <p className="max-w-3xl border-l-2 border-line-bright pl-4 text-sm leading-relaxed text-dim">
-              {c.breaks}
-            </p>
+            <details className="group border-t border-line pt-3">
+              <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden font-mono text-[11px] uppercase tracking-[0.14em] text-dim transition-colors hover:text-fg">
+                <span aria-hidden className="inline-block transition-transform group-open:rotate-90">
+                  ▸{" "}
+                </span>
+                How to settle it, and what breaks on a no
+              </summary>
+              <p className="mt-3 rounded border border-line bg-surface-2 px-4 py-3 text-sm leading-relaxed text-muted">
+                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
+                  Settle it{" "}
+                </span>
+                {c.probe}
+              </p>
+              <p className="mt-3 border-l-2 border-line-bright pl-4 text-sm leading-relaxed text-dim">
+                {c.breaks}
+              </p>
+            </details>
           </li>
         ))}
       </ol>

@@ -171,8 +171,14 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           <span className="font-mono text-xs text-dim">
             {prettyDate(bp.createdAt)}
           </span>
+          {/* Marked here as well as in the sidebar panel, because this line sits beside
+              the author and the date and reads as a fact about the artefact. Doc 2 §0.4:
+              no counter produced it. */}
           <span className="font-mono text-xs text-dim">
-            ↓ {compact(bp.downloads)} downloads
+            ↓ {compact(bp.downloads)} downloads{" "}
+            <span className="text-amber" title="Seeded — no counter stands behind it">
+              <span aria-hidden>◐ </span>seeded
+            </span>
           </span>
           {/* The runnable artefact, not a `data:` URI of the topology: doc 2 §11 item 10
               asks for something that starts from a command line, and `factory.dot` is
@@ -379,10 +385,20 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             diagnostics={notes}
           />
 
-          {/* Stats */}
+          {/* Stats.
+
+              Every row here comes out of `lib/data/community.ts`, so the panel says so
+              at the top rather than printing three figures as facts. The scorecard above
+              carries the same `◐ seeded` marker, but its note is scoped to the six
+              scorecard axes and does not reach down here — which is how this panel came
+              to print votes and downloads unlabelled on a site whose own pages state that
+              there is no ballot and no telemetry (doc 2 §0.4). */}
           <section className="panel p-5">
-            <div className="mb-4">
+            <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
               <PanelLabel>Registry stats</PanelLabel>
+              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-amber">
+                <span aria-hidden>◐ </span>seeded
+              </span>
             </div>
             <dl className="flex flex-col divide-y divide-line">
               <div className="flex items-center justify-between py-2.5">
@@ -404,6 +420,10 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
                 </dd>
               </div>
             </dl>
+            <p className="mt-3 border-t border-line pt-3 text-xs leading-relaxed text-dim">
+              Three rows in the index. No ballot, no download counter and no publishing
+              step stands behind them.
+            </p>
           </section>
         </aside>
       </div>

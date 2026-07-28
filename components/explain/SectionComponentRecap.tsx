@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CORE_PHASE_IDS } from "@/lib/core";
+import { CORE_PHASE_IDS, partitionTerms } from "@/lib/core";
 import { allNodeCards, getOntologyView, getRegistry } from "@/lib/content";
 import { kindHref, termHref } from "@/lib/href";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -36,7 +36,10 @@ const PHASES = CORE_PHASE_IDS.map((id) => ({
 
 function entries(): Entry[] {
   const registry = getRegistry();
-  const terms = getOntologyView().ontology.terms.length;
+  // The curated set, not the merged view. The card names the vocabulary two authors hold
+  // each other to, and the merged count folds in this archive's own namespaced overlay —
+  // which is how the recap came to print 50 where `/ontology` prints 49.
+  const terms = partitionTerms(getOntologyView().ontology.terms).core.length;
 
   return [
     {
@@ -66,7 +69,7 @@ function entries(): Entry[] {
       label: "Ontology",
       glyph: "⬡",
       color: "var(--color-violet)",
-      count: `${terms} terms`,
+      count: `${terms} curated terms`,
       title: "The vocabulary the cards are written in",
       body: "Every structural field on a card points into it: the node's type, the data type on each port, the tools it needs, the risk markers it declares. It is what lets an analyzer read a graph it has never seen and reason about it, and what stops two authors from naming the same thing twice.",
       href: kindHref("ontology"),

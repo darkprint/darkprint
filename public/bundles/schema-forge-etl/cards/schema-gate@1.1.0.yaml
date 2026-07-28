@@ -14,6 +14,7 @@ spec: >-
   Otherwise emit one entry per breach on `violations`, each naming the field and the specific
   constraint it broke, and stop at twenty-five entries so one unparseable batch cannot flood
   whatever repairs them.
+model: claude-haiku-4-5
 agent: Validator
 tools: []
 mcp: []

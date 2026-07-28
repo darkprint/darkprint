@@ -360,7 +360,7 @@ describe("inferBump — `cannot`, whose two directions are inverted", () => {
   });
 });
 
-describe("inferBump — `mcp` and `skill`", () => {
+describe("inferBump — `mcp`, `skill` and `model`", () => {
   it("is minor when an MCP server is added, exactly as for a tool", () => {
     const analysis = inferBump(BASE, next({ mcp: ["filesystem", "github"] }));
     expect(analysis.level).toBe("minor");
@@ -409,6 +409,56 @@ describe("inferBump — `mcp` and `skill`", () => {
     expect(analysis.reasons).toEqual(['`skill` changed: "skills/solver.md" → (none)']);
   });
 
+  it("is minor when the model is named for the first time", () => {
+    // Engine spec §2.6 makes `llm_model` overridable by the graph's stylesheet and §8.5
+    // resolves it from the node attribute, the sheet and the graph default in that order,
+    // so the field is the default the card was written against. Naming one changes what
+    // the node runs on and moves no port, type, param or prohibition with it.
+    const analysis = inferBump(BASE, next({ model: "claude-opus-5" }));
+    expect(analysis.level).toBe("minor");
+    expect(analysis.reasons).toEqual(['`model` changed: (none) → "claude-opus-5"']);
+  });
+
+  it("is minor when the model is swapped", () => {
+    const before = next({ model: "claude-sonnet-5" });
+    const after = next({ model: "claude-opus-5" });
+    const analysis = inferBump(before, after);
+    expect(analysis.level).toBe("minor");
+    expect(analysis.reasons).toEqual([
+      '`model` changed: "claude-sonnet-5" → "claude-opus-5"',
+    ]);
+  });
+
+  it("is minor when the model is withdrawn, since the node falls back to the graph", () => {
+    const before = next({ model: "claude-opus-5" });
+    const analysis = inferBump(before, BASE);
+    expect(analysis.level).toBe("minor");
+    expect(analysis.reasons).toEqual(['`model` changed: "claude-opus-5" → (none)']);
+  });
+
+  it("stays under a declared prohibition, which is the contrast the level rests on", () => {
+    // The two edits in one diff: an overridable default moved, and an entry was added to
+    // `cannot`, which can fail a graph nobody touched. Only the second is major.
+    const analysis = inferBump(
+      BASE,
+      next({ model: "claude-opus-5", cannot: ["acceptance-criteria"] }),
+    );
+    expect(analysis.level).toBe("major");
+    expect(analysis.reasons).toEqual([
+      "prohibition `acceptance-criteria` was declared, which narrows what the node accepts",
+      '`model` changed: (none) → "claude-opus-5"',
+    ]);
+  });
+
+  it("outranks `agent`, which no runner reads", () => {
+    const analysis = inferBump(BASE, next({ model: "claude-opus-5", agent: "Solver A" }));
+    expect(analysis.level).toBe("minor");
+    expect(analysis.reasons).toEqual([
+      '`model` changed: (none) → "claude-opus-5"',
+      '`agent` changed: (none) → "Solver A"',
+    ]);
+  });
+
   it("ranks a declared prohibition above everything else in the same diff", () => {
     const analysis = inferBump(
       BASE,
@@ -454,11 +504,6 @@ describe("inferBump — patch", () => {
     ["a tool is removed", next({ tools: [] }), "tool `web-search` was removed"],
     ["a param key is removed", next({ params: {} }), "parameter `retries` was removed"],
     ["a dependency is removed", next({ dependencies: [] }), "dependency `planner` was removed"],
-    [
-      "the model changes",
-      next({ model: "claude-opus" }),
-      '`model` changed: (none) → "claude-opus"',
-    ],
     ["the agent changes", next({ agent: "runner" }), '`agent` changed: (none) → "runner"'],
   ])("is patch when %s", (_name, candidate, reason) => {
     const analysis = inferBump(BASE, candidate);

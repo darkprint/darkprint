@@ -13,6 +13,7 @@ spec: >-
   every criterion has cleared — nothing ships on a partial result, and a criterion you cannot
   evaluate has not cleared. There is no failure exit from this node: when a criterion is
   missed, record which one and stop the run there rather than passing the work anywhere.
+model: claude-sonnet-5
 agent: Verifier
 tools: []
 mcp: []
@@ -42,8 +43,9 @@ requires_human: false
 risk_markers: []
 notes: >-
   One exit only: a candidate that misses a criterion stops the run rather than being routed
-  anywhere, which is all a linear pipeline can act on. Version 1.1.0 adds the second exit for
-  lines that can reopen the decision instead of failing it.
+  anywhere, which is all a linear pipeline can act on. Version 2.0.0 adds the second exit for
+  lines that can reopen the decision instead of failing it, which is a major bump because a
+  declared prohibition came with it.
 
 version: 1.0.0
 author: sol-antczak

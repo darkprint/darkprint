@@ -70,7 +70,7 @@ version: 1.0.0
 ontology_version: 0.1.0
 action: Turn the request into a plan and acceptance criteria
 spec: Read the request and write an ordered plan of implementation steps, plus the acceptance criteria the finished work will be judged against. Hand the plan onward and keep the criteria for the tester.
-model: claude-opus-4
+model: claude-opus-5
 inputs: []
 outputs:
   - { name: plan, type: plan }
@@ -85,7 +85,7 @@ version: 1.0.0
 ontology_version: 0.1.0
 action: Turn the plan into working code
 spec: Implement the plan you are given, one step at a time, and return the source you produced. You do not receive the acceptance criteria and must not ask for them.
-model: claude-opus-4
+model: claude-opus-5
 inputs:
   - { name: plan, type: plan }
 outputs:
@@ -116,7 +116,7 @@ version: 1.0.0
 ontology_version: 0.1.0
 action: Turn failure evidence into a targeted patch
 spec: Read the failure evidence, find the smallest change that addresses it, and return the patched source. Stop when two consecutive rounds produce the same failures.
-model: claude-opus-4
+model: claude-opus-5
 params:
   max_iterations: 3
 inputs:
@@ -455,6 +455,67 @@ describe("the iteration cap", () => {
   it("prefers `max_iterations` when a card declares more than one spelling", () => {
     const graph = withParams("params:\n  max_iterations: 2\n  max_retries: 9\n");
     expect(attrsOf(graph, "debugger").max_retries).toBe("2");
+  });
+});
+
+/* ============================================================
+   the model
+   ============================================================ */
+
+describe("the model the factory runs on", () => {
+  /** The fixture with one card's `model:` line removed, or replaced by another value. */
+  const withModel = (file: string, replacement: string): DotGraph => {
+    const card = STARTER_CARDS[file].replace("model: claude-opus-5\n", replacement);
+    const bp = resolve(bundleOf(STARTER_DOT, { ...STARTER_CARDS, [file]: card }));
+    return reparse(emitAttractorDot(bp));
+  };
+
+  it("becomes `llm_model` on every node whose card names one", () => {
+    // Spec §2.6's reserved node attribute. Without this the field is YAML nobody executes
+    // and the downloaded factory runs on whatever the operator's default happens to be.
+    const graph = reparse(emitAttractorDot(STARTER()));
+    expect(attrsOf(graph, "planner").llm_model).toBe("claude-opus-5");
+    expect(attrsOf(graph, "builder").llm_model).toBe("claude-opus-5");
+    expect(attrsOf(graph, "debugger").llm_model).toBe("claude-opus-5");
+    expect(isReserved("node", "llm_model")).toBe(true);
+  });
+
+  it("omits it on a card that names none, leaving the graph to decide", () => {
+    // Spec §8.5 ranks an explicit node attribute above the `model_stylesheet`, so
+    // `llm_model=""` would beat the sheet with the empty string instead of deferring to
+    // it. The starter's tester and its release gate name no model and get no attribute.
+    const graph = reparse(emitAttractorDot(STARTER()));
+    expect(attrsOf(graph, "tester").llm_model).toBeUndefined();
+    expect(attrsOf(graph, "deployer").llm_model).toBeUndefined();
+    expect(attrsOf(graph, "__start").llm_model).toBeUndefined();
+  });
+
+  it("treats a blank model as no model", () => {
+    const graph = withModel("cards/planner@1.0.0.yaml", 'model: "   "\n');
+    expect(attrsOf(graph, "planner").llm_model).toBeUndefined();
+  });
+
+  it("quotes the identifier, which the grammar's Identifier rule cannot hold", () => {
+    // `claude-opus-5` ends at the first hyphen as a bare Identifier, so an unquoted value
+    // would not parse. Asserted on the emitted text rather than on the parse, because the
+    // parser is the thing this is protecting.
+    const dot = emitAttractorDot(STARTER());
+    expect(dot).toContain('llm_model="claude-opus-5"');
+  });
+
+  it("escapes a model name carrying the characters the String rule reserves", () => {
+    // Nobody ships a model id with a quote in it; the point is that a hand-edited card
+    // cannot break the file it is emitted into. Same `quoteAttractorString` as `prompt`.
+    const card = STARTER_CARDS["cards/planner@1.0.0.yaml"].replace(
+      "model: claude-opus-5\n",
+      'model: \'gpt-"5"\'\n',
+    );
+    const bp = resolve(
+      bundleOf(STARTER_DOT, { ...STARTER_CARDS, "cards/planner@1.0.0.yaml": card }),
+    );
+    const dot = emitAttractorDot(bp);
+    expect(dot).toContain('llm_model="gpt-\\"5\\""');
+    expect(() => reparse(dot)).not.toThrow();
   });
 });
 

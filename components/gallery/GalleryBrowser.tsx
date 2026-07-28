@@ -24,13 +24,20 @@ import { PHASE_ORDER, phaseLabel } from "@/components/ui/PhaseCoverage";
  * good anything is. Downloads and votes stay available because doc 2 §1.1 endorses
  * reputation earned "sulla qualità e sull'uso" — they are just no longer the only way
  * in, and none of them is imposed.
+ *
+ * Both of those say `seeded` in the option itself. Doc 2 §0.4 and the honesty rule the
+ * rest of the site keeps: there is no ballot and no download counter, the figures are
+ * rows in `lib/data/community.ts`, and `/how-to-build-a-dark-factory` states in as many
+ * words that there are "no accounts, no votes and no telemetry". A control offering to
+ * order the shelf by a number it does not have has to say so where the offer is made,
+ * not in a footer two screens down.
  */
 type SortKey = "recent" | "downloads" | "votes";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "recent", label: "Recently updated" },
-  { value: "downloads", label: "Most downloaded" },
-  { value: "votes", label: "Most upvoted" },
+  { value: "downloads", label: "Most downloaded · seeded" },
+  { value: "votes", label: "Most upvoted · seeded" },
 ];
 
 const controlClass =
@@ -321,6 +328,18 @@ export function GalleryBrowser({
             />
           ))}
         </div>
+
+        {/* The same marker `/u/` and the blueprint scorecard already use, at the one
+            control that offers to order the shelf by a figure nobody counted. Glyph and
+            word, never colour alone. */}
+        <p className="border-t border-line pt-3 text-xs leading-relaxed text-dim">
+          <span className="font-mono text-amber" aria-hidden>
+            ◐
+          </span>{" "}
+          <span className="font-mono uppercase tracking-[0.12em] text-amber">seeded</span>.
+          The download and vote counts on every tile are rows in the index. There is no
+          ballot and no counter behind them, and the two orderings above sort those rows.
+        </p>
       </div>
 
       {/* result count + reset */}

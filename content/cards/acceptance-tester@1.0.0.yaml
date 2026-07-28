@@ -14,6 +14,7 @@ spec: >-
   underneath it, and the expected value beside the value actually obtained — and nothing else:
   do not quote the criterion, do not summarise the ones still outstanding, and do not say how
   many there are in total. A criterion you were unable to evaluate has not held.
+model: claude-sonnet-5
 agent: Acceptance tester
 tools: []
 mcp: []

@@ -56,7 +56,11 @@ notes: >-
   A named `escalation_lane` and a higher threshold are the difference from 1.0.0: an incident
   line would rather hand a misread alert to a person than route it confidently to the wrong
   runbook. `taxonomy` is optional, so a deployment that never supplies one behaves as before.
+  The version is 2.0.0 because the prohibition was reworded: `leave an event unrouted` went
+  and `leave an alert unrouted` arrived, and §4 reads an entry added to `cannot` as major
+  without asking whether the author meant it as a rewrite. A prohibition is the one field the
+  resolver holds a graph to, so the rule errs toward the stronger bump.
 
-version: 1.1.0
+version: 2.0.0
 author: hachi
 ontology_version: 0.1.0

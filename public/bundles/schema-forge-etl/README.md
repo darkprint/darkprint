@@ -4,7 +4,7 @@ Extracts, normalizes and schema-validates messy documents, repairing anything th
 
 ```
 blueprint      schema-forge-etl
-bundle digest  sha256:8ef4dd794ee0c5944294693302ad7295e869483f57110262e988b2fa2b7a9c3e
+bundle digest  sha256:3a6feedc1bcfea35562ac1dde9d0f2e37f12373316b07565d80d64669bd315f9
 ontology       v0.1.0
 nodes          7
 cards pinned   7
@@ -33,6 +33,12 @@ attractor run factory.dot --simulate
 `factory.dot` is self-contained. Every node carries its card's `spec` as the `prompt` its
 agent receives, so the runner needs no other file from this folder. Flags vary between
 Attractor runners; `attractor run --help` is authoritative on yours.
+
+4 of the 7 nodes name the model they run on, and carry it as `llm_model`. That is Attractor's
+own attribute for it, so the run uses those models as they stand and your provider has to
+serve them. A node attribute outranks a graph-level `model_stylesheet`, so edit the line to
+run a node on something else, and delete the attribute to hand the choice back to your own
+configuration.
 
 ## What is in the folder
 

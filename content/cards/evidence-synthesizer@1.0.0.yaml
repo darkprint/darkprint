@@ -17,6 +17,7 @@ spec: >-
   each — rewrite exactly those claims against the same pool and leave every other sentence of the
   draft untouched. You are done when every asserted sentence in `draft` carries a citation into
   the pool and nothing named in `gaps` has been left as it was.
+model: claude-opus-5
 agent: Synthesizer
 tools: []
 mcp: []

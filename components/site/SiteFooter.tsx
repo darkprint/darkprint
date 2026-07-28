@@ -1,14 +1,26 @@
 import Link from "next/link";
 
 /**
- * Three columns, and the middle one is doc 2 §2.1's ladder in order.
+ * Four columns, and the last two are the landing read in its own order.
  *
  * Every anchor points at a block that exists on the rebuilt landing. The old set did
  * not survive the reorder: `/#what` and `/#content` were sections that are gone, and
  * `/#telemetry` named a panel whose material now sits inside the example's scoring
  * note. A footer link to a fragment nothing renders is a dead link that looks alive.
+ *
+ * The first two columns carry the header's own two groups under the header's own two
+ * words, so a reader who has seen the nav meets the same division here. `/spec` and
+ * `/how-to-build-a-dark-factory` joined in the same pass that added them to the header,
+ * and `/build` joined with them: it was the one primary route the footer had never
+ * listed, and a site that grew by two routes in the same pass could not afford a footer
+ * that was already an incomplete map of it.
+ *
+ * The labels are the header's labels, character for character, and `SiteFooter`'s own
+ * test holds them there. They drifted once: the header called `/spec` "Spec" and this
+ * called it "The spec language", so one route had two names on one page, and both places
+ * repeated "Build one" and "How to build one" for two pages that share nothing.
  */
-const COLS: { title: string; links: { href: string; label: string }[] }[] = [
+export const COLS: { title: string; links: { href: string; label: string }[] }[] = [
   {
     title: "Registry",
     links: [
@@ -21,20 +33,31 @@ const COLS: { title: string; links: { href: string; label: string }[] }[] = [
     ],
   },
   {
+    title: "Learn",
+    links: [
+      { href: "/build", label: "Build one" },
+      { href: "/spec", label: "Spec" },
+      { href: "/how-to-build-a-dark-factory", label: "The climb" },
+      { href: "/which-tasks", label: "Which tasks" },
+      { href: "/what-it-isnt", label: "What it isn't" },
+    ],
+  },
+  {
     title: "Start here",
     links: [
       { href: "/#anchor", label: "What a dark factory is" },
       { href: "/#levels", label: "Where you are today" },
-      { href: "/what-it-isnt", label: "What it isn't" },
-      { href: "/which-tasks", label: "Which tasks fit" },
+      { href: "/#autonomy", label: "Autonomy, and the levels" },
     ],
   },
   {
     title: "How it is read",
     links: [
+      { href: "/#node-card", label: "One node, line by line" },
+      { href: "/#roles", label: "The five roles" },
       { href: "/#examples", label: "The starter factory" },
       { href: "/#scoring", label: "How a factory is graded" },
-      { href: "/#autonomy", label: "Autonomy, and the levels" },
+      { href: "/#lifecycle", label: "What you can do with one" },
     ],
   },
 ];
@@ -42,8 +65,11 @@ const COLS: { title: string; links: { href: string; label: string }[] }[] = [
 export function SiteFooter() {
   return (
     <footer className="border-t border-line bg-surface/40">
-      <div className="container-page grid grid-cols-2 gap-8 py-12 sm:grid-cols-4">
-        <div className="col-span-2 sm:col-span-1">
+      {/* Five tracks at `lg`, where the wordmark sits in the row with the four columns.
+          At `sm` the wordmark takes a row of its own and the four columns take the next,
+          which is what keeps a column from being orphaned under three of its siblings. */}
+      <div className="container-page grid grid-cols-2 gap-8 py-12 sm:grid-cols-4 lg:grid-cols-5">
+        <div className="col-span-2 sm:col-span-4 lg:col-span-1">
           <Link href="/" className="font-display text-lg font-semibold tracking-tight">
             <span className="text-fg">Dark</span>
             <span className="text-cyan">Print</span>

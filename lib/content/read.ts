@@ -20,8 +20,10 @@ import { parse as parseYaml } from "yaml";
 import {
   CORE_ONTOLOGY,
   cardRef,
+  checkVersionChain,
   hasErrors,
   loadBundle,
+  loadCard,
   ontologyView,
   parseCardRef,
   parseDot,
@@ -31,6 +33,7 @@ import {
   type BundleManifest,
   type CardRef,
   type Diagnostic,
+  type NodeCard,
   type OntologyTerm,
   type OntologyView,
   type ResolvedBlueprint,
@@ -227,6 +230,16 @@ function loadAll(): readonly LoadedBundle[] {
     problems.push(...ontologyDiagnostics.map((d) => formatDiagnostic(d, EXTENSIONS_FILE)));
   }
 
+  // §4's bump rule, held against the whole library rather than against one bundle.
+  // `resolveBundle` checks a chain when a bundle carries two versions of a card, and no
+  // bundle here does: each blueprint pins one version of each id, so the archive's own
+  // chains live in `content/cards/` and nowhere else. Without this sweep the archive
+  // published three cards whose 1.0.0 → 1.1.0 step the engine itself called major, and
+  // said so in red on their node pages, while `/spec` told a reader the check refuses a
+  // bundle. Broken content fails the build, and a version number the site's own engine
+  // contradicts is broken content.
+  problems.push(...cardLibraryProblems(ontology));
+
   for (const slug of blueprintSlugs()) {
     const dir = `content/blueprints/${slug}`;
     let assembled: { bundle: Bundle; cardFiles: BundleCardFile[] };
@@ -274,6 +287,45 @@ function loadAll(): readonly LoadedBundle[] {
   }
 
   return Object.freeze(loaded);
+}
+
+/* --------------------- the shared card library --------------------- */
+
+/**
+ * Every version of every card under `content/cards/`, checked against §4's bump rule.
+ *
+ * Only the version chain is reported from here. A card that fails to load at all is left
+ * to the bundle that pins it, which names the DOT line the reference came from and is a
+ * better message than anything a directory walk could write; a card nothing pins and
+ * nothing can load ships in no bundle and reaches no page, so it is not the loader's
+ * business either. What *is* the loader's business is a published version number the
+ * engine disagrees with, because the site prints the engine's verdict on the node page
+ * beside the number and the two must not contradict each other.
+ */
+function cardLibraryProblems(ontology: OntologyView): string[] {
+  const chains = new Map<string, { card: NodeCard; file?: string }[]>();
+  // The bare filename, because `formatDiagnostic` prefixes it with the directory it is
+  // handed. A name already carrying `content/cards/` would be printed twice.
+  for (const name of readdirSync(CARDS_DIR).sort()) {
+    if (!name.endsWith(".yaml")) continue;
+    const loaded = loadCard(readFileSync(join(CARDS_DIR, name), "utf8"), {
+      ontology,
+      file: name,
+    });
+    if (loaded.card === undefined) continue;
+    const chain = chains.get(loaded.card.id);
+    if (chain === undefined) chains.set(loaded.card.id, [{ card: loaded.card, file: name }]);
+    else chain.push({ card: loaded.card, file: name });
+  }
+
+  const problems: string[] = [];
+  for (const chain of chains.values()) {
+    if (chain.length < 2) continue;
+    for (const d of sortDiagnostics(checkVersionChain(chain))) {
+      problems.push(formatDiagnostic(d, "content/cards"));
+    }
+  }
+  return problems;
 }
 
 /* --------------------- assembling one bundle --------------------- */

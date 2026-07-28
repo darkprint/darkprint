@@ -13,6 +13,7 @@ spec: >-
   When it does not conform, emit one entry per breach on `violations`, each naming the field
   and the specific constraint it broke: the repair step works from the constraint and can do
   nothing with a bare rejection.
+model: claude-haiku-4-5
 agent: Validator
 tools: []
 mcp: []

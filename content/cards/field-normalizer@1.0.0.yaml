@@ -16,6 +16,7 @@ spec: >-
   never invent one to fill a gap. A record arriving on `repaired` is one you have already seen,
   mended elsewhere: normalize it the same way and emit it the same way, but stop after a record
   has come back three times and drop it instead of sending it round again.
+model: claude-haiku-4-5
 agent: Normalizer
 tools: []
 mcp: []

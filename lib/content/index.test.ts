@@ -396,13 +396,25 @@ describe("the registry", () => {
 
   it("keeps the older version of a card alive while a blueprint still pins it", () => {
     // §4: the history is immutable, so both versions are indexed and both have a user.
-    const multi = ["acceptance-verifier", "bounded-retry", "intent-router", "schema-gate"];
-    for (const id of multi) {
+    //
+    // The newest version is named per id rather than shared, because §4 also decides the
+    // *number*: three of these four declare a prohibition their 1.0.0 did not, which
+    // `inferBump` calls major, so they step to 2.0.0 and schema-gate stays at 1.1.0. The
+    // list used to say 1.1.0 for all four, which is what an archive looks like when
+    // nothing holds it to the rule the site teaches. `cardLibraryProblems` in
+    // `lib/content/read.ts` now fails the build on it; this asserts the outcome.
+    const newest: Record<string, string> = {
+      "acceptance-verifier": "2.0.0",
+      "bounded-retry": "2.0.0",
+      "intent-router": "2.0.0",
+      "schema-gate": "1.1.0",
+    };
+    for (const [id, top] of Object.entries(newest)) {
       const versions = registry.versionsOf(id);
       expect(versions.length).toBeGreaterThanOrEqual(2);
       // Newest first.
-      expect(versions[0].version).toBe("1.1.0");
-      expect(versions[versions.length - 1].version).toBe("1.0.0");
+      expect([id, versions[0].version]).toEqual([id, top]);
+      expect([id, versions[versions.length - 1].version]).toEqual([id, "1.0.0"]);
       for (const version of versions) expect(version.usedIn.length).toBeGreaterThan(0);
     }
   });
@@ -416,7 +428,7 @@ describe("the registry", () => {
     expect(getNodeCard("schema-gate", "1.0.0")?.ref).toBe("schema-gate@1.0.0");
     expect(getNodeCard("schema-gate", "9.9.9")).toBeUndefined();
     expect(getNodeCard("not-a-card")).toBeUndefined();
-    expect(nodeCardVersions("bounded-retry").map((c) => c.version)).toEqual(["1.1.0", "1.0.0"]);
+    expect(nodeCardVersions("bounded-retry").map((c) => c.version)).toEqual(["2.0.0", "1.0.0"]);
     expect(nodeCardVersions("not-a-card")).toEqual([]);
   });
 });

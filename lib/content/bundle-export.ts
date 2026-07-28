@@ -360,6 +360,27 @@ export function bundleReadme(input: BundleExportInput): string {
     "",
   );
 
+  /* The command above spends tokens on somebody's account, so which model it spends them
+     on belongs beside it rather than three sections down. Written only when a card names
+     one: a folder where nothing does would be claiming a default it never set. */
+  const modelled = blueprint.nodes.filter((node) => (node.card.model ?? "").trim() !== "");
+  if (modelled.length > 0) {
+    push(
+      ...wrap(
+        [
+          modelled.length === 1
+            ? "One node in this factory names the model it runs on, and carries it as `llm_model`."
+            : `${modelled.length} of the ${blueprint.nodes.length} nodes name the model they run on, and carry it as \`llm_model\`.`,
+          "That is Attractor's own attribute for it, so the run uses those models as they stand and",
+          "your provider has to serve them. A node attribute outranks a graph-level",
+          "`model_stylesheet`, so edit the line to run a node on something else, and delete the",
+          "attribute to hand the choice back to your own configuration.",
+        ].join(" "),
+      ),
+      "",
+    );
+  }
+
   /* ---- the folder ---- */
   push("## What is in the folder", "");
   // Laid out from the list rather than by hand-counted spaces, so a row whose name is

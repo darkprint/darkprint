@@ -15,6 +15,7 @@ spec: >-
   field is worse than a rejected one. When a violation cannot be mended from what the record
   itself contains — the value is missing rather than malformed — leave the field alone and note
   the reason on the record, so the next pass fails on something true instead of on your guess.
+model: claude-sonnet-5
 agent: Repair worker
 tools: []
 mcp: []

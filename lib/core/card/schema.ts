@@ -62,6 +62,25 @@ export interface NodeCard {
    * criteria written into the prose is a false isolation.
    */
   spec: string;
+  /**
+   * Which model the agent is instantiated with, written the way the provider writes the
+   * identifier: `claude-opus-5`, `claude-haiku-4-5`.
+   *
+   * **A default rather than a binding**, and that is the whole of its contract. Engine
+   * spec §2.6 reserves `llm_model` as "LLM model identifier. Overridable by stylesheet",
+   * and §8 gives the graph a `model_stylesheet` whose rules set the model for every node
+   * matching a shape, a class or an id. An explicit node attribute outranks the sheet, so
+   * `attractor/emit.ts` writing this field onto the node is what makes the downloaded
+   * bundle run on the named model until whoever runs it says otherwise.
+   *
+   * Absent on most cards, and absence is an answer rather than a hole: the node takes
+   * whatever the graph or the runner supplies. Nothing that renders a card may draw the
+   * empty case as missing data.
+   *
+   * `version/bump.ts` prices a change here as minor for the same reason the field is a
+   * default: it moves what the node does without moving any port, type or param a
+   * blueprint declared against, and the operator can override it either way.
+   */
   model?: string;
   agent?: string;
   /** `tool` term ids; `[]` when the node needs none. */

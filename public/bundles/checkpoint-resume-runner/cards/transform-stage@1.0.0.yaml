@@ -15,6 +15,7 @@ spec: >-
   the input you started from, so the result can be replayed later without re-reading the sources.
   Be idempotent over your own output: run twice on the same input you must produce the same
   transformed set and the same diff, because a replayed attempt is exactly that.
+model: claude-sonnet-5
 agent: Stage workers
 tools: []
 mcp: []

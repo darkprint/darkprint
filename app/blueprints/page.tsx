@@ -21,6 +21,11 @@ export const metadata: Metadata = {
  * had also outlived the control: `SortKey` in `GalleryBrowser` is recency, downloads
  * and votes, and autonomy was deliberately dropped from it.
  *
+ * The two remaining orderings are named with what stands behind them, because nothing
+ * does. Doc 2 §0.4 and the honesty rule: there is no ballot and no download counter, and
+ * a lead offering to order the shelf "by what is downloaded or upvoted" described two
+ * counters the site does not have, one click from a page saying so outright.
+ *
  * The lead also has to keep describing the shelf correctly. It used to open "Every dark
  * factory in the registry", which made a classification into a condition of entry and was
  * false about three of the nine besides. Doc 2 §1.1 names that exact reading as the
@@ -56,7 +61,7 @@ export default function BlueprintsPage() {
       <SectionHeading
         eyebrow="Registry"
         title="Blueprints"
-        lead={`${blueprints.length} complete pipelines you can read as a graph. ${darkFactories} of them carry no human node and are classed dark factories; the rest name the node where a person acts. Narrow the grid by tag, category, the phases a factory covers or its autonomy class, and order it by what is recent, downloaded or upvoted.`}
+        lead={`${blueprints.length} complete pipelines you can read as a graph. ${darkFactories} of them carry no human node and are classed dark factories; the rest name the node where a person acts. Narrow the grid by tag, category, the phases a factory covers or its autonomy class. It also orders by downloads and by votes, and both of those are seeded rows in the index rather than anything this site counted.`}
         className="mb-10"
       />
       <GalleryBrowser

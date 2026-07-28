@@ -15,6 +15,7 @@ spec: >-
   ordered list on `subtasks`, and decompose the same brief the same way every time: two solvers
   work this plan in parallel, and their answers are only comparable if they started from an
   identical plan.
+model: claude-opus-5
 agent: Planner
 tools: []
 mcp: []

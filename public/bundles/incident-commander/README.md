@@ -4,7 +4,7 @@ Triages alerts, routes to the right runbook, drafts a mitigation, QAs it against
 
 ```
 blueprint      incident-commander
-bundle digest  sha256:f02bbe19ab65b23d815259c1158a8ddd469c4caaeb78ad846f22d72639281d86
+bundle digest  sha256:0027d8911fdb6373b911f691a841b627f944c095355cf483fc1a60abf8b60976
 ontology       v0.1.0
 nodes          7
 cards pinned   7
@@ -33,6 +33,12 @@ attractor run factory.dot --simulate
 `factory.dot` is self-contained. Every node carries its card's `spec` as the `prompt` its
 agent receives, so the runner needs no other file from this folder. Flags vary between
 Attractor runners; `attractor run --help` is authoritative on yours.
+
+2 of the 7 nodes name the model they run on, and carry it as `llm_model`. That is Attractor's
+own attribute for it, so the run uses those models as they stand and your provider has to
+serve them. A node attribute outranks a graph-level `model_stylesheet`, so edit the line to
+run a node on something else, and delete the attribute to hand the choice back to your own
+configuration.
 
 ## What is in the folder
 
@@ -72,7 +78,7 @@ blueprint decides is who is wired to whom.
 | node | card | phase |
 | --- | --- | --- |
 | `ticket` | `event-intake@1.0.0` | none declared |
-| `classify` | `intent-router@1.1.0` | none declared |
+| `classify` | `intent-router@2.0.0` | none declared |
 | `autoresolve` | `resolution-composer@1.0.0` | implementation |
 | `kb` | `runbook-resolver@1.0.0` | none declared |
 | `qa` | `blast-radius-check@1.0.0` | testing |

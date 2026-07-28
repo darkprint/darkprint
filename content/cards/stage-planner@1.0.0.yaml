@@ -14,6 +14,7 @@ spec: >-
   unchanged so every later stage and every checkpoint entry is written under the same run. You
   are done when every unit of work the job names belongs to exactly one stage and no stage
   depends on a stage that comes after it.
+model: claude-opus-5
 agent: Planner
 tools: []
 mcp: []

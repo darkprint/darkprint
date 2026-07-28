@@ -9,11 +9,25 @@ import { AutonomyMeter } from "./AutonomyMeter";
 import { PhaseCoverageBadge } from "./PhaseCoverage";
 import { TagPill } from "./TagPill";
 
+/**
+ * The two index figures, marked as seeded at the point of display.
+ *
+ * Doc 2 §0.4: nothing may be described as working that is not built, and there is no
+ * ballot and no download counter. These are rows in `lib/data/community.ts`, and the tile
+ * used to print them bare while `/how-to-build-a-dark-factory` said one click away that
+ * the site has "no accounts, no votes and no telemetry". `◐` is the marker `/u/` and the
+ * blueprint scorecard already use for exactly this class of number, and the glyph carries
+ * a word beside it for a reader who cannot separate amber from dim.
+ */
 function Meta({ downloads, votes }: { downloads: number; votes: number }) {
   return (
-    <div className="flex items-center gap-3 font-mono text-[11px] text-dim">
-      <span title="Downloads">↓ {compact(downloads)}</span>
-      <span title="Votes">▲ {compact(votes)}</span>
+    <div className="flex items-center gap-2 font-mono text-[11px] text-dim">
+      <span className="text-amber" aria-hidden title="Seeded — no ballot and no counter">
+        ◐
+      </span>
+      <span className="sr-only">Seeded index figures, with no ballot or counter behind them:</span>
+      <span title="Downloads — a seeded row in the index">↓ {compact(downloads)}</span>
+      <span title="Votes — a seeded row in the index">▲ {compact(votes)}</span>
     </div>
   );
 }

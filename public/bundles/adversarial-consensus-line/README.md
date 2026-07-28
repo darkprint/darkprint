@@ -4,7 +4,7 @@ Two agents solve the same task from opposite temperatures, then a consensus node
 
 ```
 blueprint      adversarial-consensus-line
-bundle digest  sha256:644482b6a7c7d2fb1169097a819f5c29a17c4d6214cb5ff20042f4d2c1a5590f
+bundle digest  sha256:38ffe516c0d8bcf716ce2aca19a836ec579b033b65819ead27f1a40547c0ea75
 ontology       v0.1.0
 nodes          8
 cards pinned   8
@@ -33,6 +33,12 @@ attractor run factory.dot --simulate
 `factory.dot` is self-contained. Every node carries its card's `spec` as the `prompt` its
 agent receives, so the runner needs no other file from this folder. Flags vary between
 Attractor runners; `attractor run --help` is authoritative on yours.
+
+2 of the 8 nodes name the model they run on, and carry it as `llm_model`. That is Attractor's
+own attribute for it, so the run uses those models as they stand and your provider has to
+serve them. A node attribute outranks a graph-level `model_stylesheet`, so edit the line to
+run a node on something else, and delete the attribute to hand the choice back to your own
+configuration.
 
 ## What is in the folder
 
@@ -78,7 +84,7 @@ blueprint decides is who is wired to whom.
 | `solverA` | `conservative-solver@1.0.0` | implementation |
 | `solverB` | `exploratory-solver@1.0.0` | implementation |
 | `vote` | `weighted-vote@1.0.0` | implementation |
-| `verify` | `acceptance-verifier@1.1.0` | testing |
+| `verify` | `acceptance-verifier@2.0.0` | testing |
 | `reopen` | `bounded-retry@1.0.0` | debugging |
 | `deliver` | `result-delivery@1.0.0` | deployment |
 

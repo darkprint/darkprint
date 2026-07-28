@@ -16,6 +16,7 @@ spec: >-
   to find, because they run at the same time and any of them may come back empty. Emit all the
   plans together on `strands`; you are done when every corpus that could hold an answer has
   exactly one plan and none has two.
+model: claude-opus-5
 agent: Search planner
 tools: []
 mcp: []

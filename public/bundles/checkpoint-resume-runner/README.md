@@ -4,7 +4,7 @@ A staged pipeline that snapshots state after every stage, so a failure at stage 
 
 ```
 blueprint      checkpoint-resume-runner
-bundle digest  sha256:886536dd51226a10cd743c3dd1dc8577fe9f99f952cb2130bfb636e35fdcfe0b
+bundle digest  sha256:bdfb0b1d52638772a74cbb2a446fb827f057cc146c8600afcd8cee002739974b
 ontology       v0.1.0
 nodes          9
 cards pinned   9
@@ -33,6 +33,12 @@ attractor run factory.dot --simulate
 `factory.dot` is self-contained. Every node carries its card's `spec` as the `prompt` its
 agent receives, so the runner needs no other file from this folder. Flags vary between
 Attractor runners; `attractor run --help` is authoritative on yours.
+
+5 of the 9 nodes name the model they run on, and carry it as `llm_model`. That is Attractor's
+own attribute for it, so the run uses those models as they stand and your provider has to
+serve them. A node attribute outranks a graph-level `model_stylesheet`, so edit the line to
+run a node on something else, and delete the attribute to hand the choice back to your own
+configuration.
 
 ## What is in the folder
 
@@ -80,7 +86,7 @@ blueprint decides is who is wired to whom.
 | `stage2` | `transform-stage@1.0.0` | implementation |
 | `stage3` | `assemble-stage@1.0.0` | implementation |
 | `checkpoint` | `episodic-memory@1.0.0` | none declared |
-| `resume` | `bounded-retry@1.1.0` | debugging |
+| `resume` | `bounded-retry@2.0.0` | debugging |
 | `verify` | `acceptance-verifier@1.0.0` | testing |
 | `ship` | `result-delivery@1.0.0` | deployment |
 

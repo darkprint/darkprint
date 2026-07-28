@@ -4,7 +4,7 @@ An agent line triages the PR and drafts the review, iterating with the test runn
 
 ```
 blueprint      guarded-merge-bot
-bundle digest  sha256:8d4e6ccdc951a5be856b933622709264226286135c3dc2be17d15f126f1dd0d9
+bundle digest  sha256:4dfcd33cf0900c3c90fcdbe932f2dab8a03846bb03f4f92ee91656837fddcf7a
 ontology       v0.1.0
 nodes          6
 cards pinned   6
@@ -33,6 +33,12 @@ attractor run factory.dot --simulate
 `factory.dot` is self-contained. Every node carries its card's `spec` as the `prompt` its
 agent receives, so the runner needs no other file from this folder. Flags vary between
 Attractor runners; `attractor run --help` is authoritative on yours.
+
+3 of the 6 nodes name the model they run on, and carry it as `llm_model`. That is Attractor's
+own attribute for it, so the run uses those models as they stand and your provider has to
+serve them. A node attribute outranks a graph-level `model_stylesheet`, so edit the line to
+run a node on something else, and delete the attribute to hand the choice back to your own
+configuration.
 
 ## What is in the folder
 

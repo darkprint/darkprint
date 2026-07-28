@@ -7,7 +7,7 @@ digraph adversarial_consensus_line {
   solverA [card="conservative-solver@1.0.0"];
   solverB [card="exploratory-solver@1.0.0"];
   vote    [card="weighted-vote@1.0.0"];
-  verify  [card="acceptance-verifier@1.1.0"];
+  verify  [card="acceptance-verifier@2.0.0"];
   reopen  [card="bounded-retry@1.0.0"];
   deliver [card="result-delivery@1.0.0"];
 

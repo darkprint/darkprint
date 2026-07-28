@@ -200,3 +200,67 @@ describe("no page makes the classification a condition of entry", () => {
     expect(offences).toEqual([]);
   });
 });
+
+/* --------------------- 4. what stands behind a number --------------------- */
+
+/**
+ * The reads that put a seeded index figure on a page.
+ *
+ * `votes` and `downloads` come out of `lib/data/community.ts` and nothing counts them:
+ * there is no ballot, no account and no download counter, which doc 2 §0.4 makes a
+ * product rule and which `/how-to-build-a-dark-factory` states on the page in as many
+ * words. Matched on the property read rather than on the word, so a file discussing votes
+ * in prose is not caught and a file printing one cannot escape by renaming its variable.
+ */
+const SEEDED_READS = [".votes", ".downloads", "compact(votes)", "compact(downloads)"];
+
+describe("no surface prints a seeded index figure as a fact", () => {
+  /**
+   * Four surfaces printed one with no marker anywhere near it: the gallery's two sort
+   * options, every tile in the grid, the blueprint header line, and the Registry stats
+   * panel with the Community notes above it. The scorecard and `/u/` had the marker all
+   * along, which is what made the omission a contradiction rather than an oversight.
+   *
+   * The rule is per file rather than per line: `◐ seeded` sits on a panel heading or a
+   * note under a list, several lines from the figure it governs, so a proximity window
+   * would report the correct arrangement. What it catches is a surface that prints one of
+   * these numbers and never says the word.
+   */
+  it("says seeded in every file that reads one", () => {
+    const printers: string[] = [];
+    for (const { path, text } of STRIPPED) {
+      if (!SEEDED_READS.some((read) => text.includes(read))) continue;
+      printers.push(path);
+      expect(text.toLowerCase(), `${path} prints an index figure and never says seeded`)
+        .toContain("seeded");
+    }
+    // A scan matching nothing passes silently, and these four are the surfaces the rule
+    // was written for.
+    expect(printers).toEqual(
+      expect.arrayContaining([
+        "app/blueprints/[slug]/page.tsx",
+        "components/ui/ContentCard.tsx",
+        "components/blueprint/Comments.tsx",
+        "app/u/[username]/page.tsx",
+      ]),
+    );
+  });
+
+  /**
+   * The gallery offers to order the shelf by two of those numbers, and the offer is made
+   * in `<option>` text where no glyph or note can reach. So the option itself carries the
+   * word.
+   */
+  it("names the sort options that order on one", () => {
+    const gallery = STRIPPED.find((f) => f.path === "components/gallery/GalleryBrowser.tsx");
+    expect(gallery).toBeDefined();
+    for (const option of ["downloads", "votes"]) {
+      const at = gallery!.text.indexOf(`value: "${option}", label:`);
+      expect(at, `no sort option for ${option}`).toBeGreaterThan(-1);
+      const label = gallery!.text.slice(at, gallery!.text.indexOf("}", at));
+      expect(label.toLowerCase(), `the ${option} sort option does not say seeded`).toContain(
+        "seeded",
+      );
+    }
+  });
+});

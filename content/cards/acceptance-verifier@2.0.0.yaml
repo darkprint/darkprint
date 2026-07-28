@@ -15,6 +15,7 @@ spec: >-
   is simply wrong, record the criterion and stop the run; if the candidates it was chosen from
   answered the brief in genuinely different ways, emit that on `conflict` so the choice can be
   reopened. `conflict` is for real disagreement only — never use it as a second failure exit.
+model: claude-opus-5
 agent: Verifier
 tools: []
 mcp: []
@@ -50,7 +51,14 @@ notes: >-
   `conflict` is not a second failure exit. A candidate can miss a criterion because the work is
   wrong, or because the proposals it was chosen from read the brief differently — only the
   second is worth reopening, and separating the two is the whole reason this version exists.
+  The model moved with the job: 1.0.0 decides pass or fail and names `claude-sonnet-5`, this
+  one has to tell a defect from a disagreement and names `claude-opus-5`. On its own that is a
+  minor change by `inferBump`, since `model` is the default the card was written against and
+  the graph settles it at run time, so what the node runs on moves while no port, type or
+  prohibition a blueprint declared against does. The version is 2.0.0 for the other edit:
+  `use \`conflict\` as a second failure exit` is a new entry under `cannot`, and a prohibition
+  added after publication narrows what the node accepts, so §4 calls it major.
 
-version: 1.1.0
+version: 2.0.0
 author: sol-antczak
 ontology_version: 0.1.0

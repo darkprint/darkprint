@@ -4,7 +4,7 @@ The canonical five-node factory — plan, build, test, debug, release — and th
 
 ```
 blueprint      starter-software-factory
-bundle digest  sha256:053946633b79284a6f8dcc3be2602a263a555af18d7597dc95e014f35baf2000
+bundle digest  sha256:b7938870caaa28a19adc56926eba61da80923e790361f37cf0123116da580fcb
 ontology       v0.1.0
 nodes          5
 cards pinned   5
@@ -33,6 +33,12 @@ attractor run factory.dot --simulate
 `factory.dot` is self-contained. Every node carries its card's `spec` as the `prompt` its
 agent receives, so the runner needs no other file from this folder. Flags vary between
 Attractor runners; `attractor run --help` is authoritative on yours.
+
+4 of the 5 nodes name the model they run on, and carry it as `llm_model`. That is Attractor's
+own attribute for it, so the run uses those models as they stand and your provider has to
+serve them. A node attribute outranks a graph-level `model_stylesheet`, so edit the line to
+run a node on something else, and delete the attribute to hand the choice back to your own
+configuration.
 
 ## What is in the folder
 

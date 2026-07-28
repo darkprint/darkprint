@@ -83,6 +83,34 @@ export function splitTermId(id: string): { namespace?: string; local: string } {
   return { namespace: id.slice(0, first), local: id.slice(first + 1) };
 }
 
+/** A vocabulary split by where its terms came from (doc 3 §7). */
+export interface TermOrigins {
+  /** The curated set: every term whose id carries no namespace. */
+  core: OntologyTerm[];
+  /** What a local overlay added, in the order the view holds them. */
+  local: OntologyTerm[];
+}
+
+/**
+ * Split a term list into the curated core and the local overlay.
+ *
+ * A view merges the two and counting it whole gives the size of *this archive's*
+ * vocabulary, which is a different number from the size of the vocabulary everybody
+ * writes against. `/spec` printed the merged count under the words "the curated core" and
+ * so claimed 50 terms and 10 risk markers where the core has 49 and 9, with the tenth
+ * being the namespaced term the same page says the core does not contain. The split is
+ * here rather than repeated per page so two surfaces cannot answer it differently.
+ */
+export function partitionTerms(terms: readonly OntologyTerm[]): TermOrigins {
+  const core: OntologyTerm[] = [];
+  const local: OntologyTerm[] = [];
+  for (const term of terms) {
+    if (splitTermId(term.id).namespace === undefined) core.push(term);
+    else local.push(term);
+  }
+  return { core, local };
+}
+
 /** A term's `broader` chain, memoized: ordered for `ancestors`, set-backed for `isA`. */
 interface AncestorChain {
   readonly terms: readonly OntologyTerm[];

@@ -38,7 +38,7 @@ import {
 import { computePhaseCoverage } from "../analysis/phase-coverage";
 import { lintAttractor } from "../attractor/lint";
 import { cardRef, parseCardRef, type CardRef, type NodeCard, type Port } from "../card/schema";
-import { loadCard } from "../card/validate";
+import { checkVersionChain, loadCard } from "../card/validate";
 import { buildGraph } from "../dot/graph";
 import { parseDot, type DotAttrs, type DotEdgeStmt, type DotNodeStmt } from "../dot/parser";
 import { bundleDigest, cardDigest } from "../hash/digest";
@@ -220,6 +220,26 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
     const versions = versionsById.get(card.id);
     if (versions === undefined) versionsById.set(card.id, [card.version]);
     else versions.push(card.version);
+  }
+
+  /*
+   * §4's bump rule, applied where a bundle gives it two versions to compare.
+   *
+   * `validateCard` has always known how to check this and has always needed the caller
+   * to hand it the predecessor, and no caller did — so the rule shipped as an error code
+   * nothing could raise while `/spec` described it as one that refuses a bundle. A bundle
+   * carrying two versions of one card id is the case where the predecessor is right here,
+   * so this is where the check belongs. `checkVersionChain` orders them and holds every
+   * consecutive pair to the rule; a bundle with one version of each card is untouched.
+   */
+  const byCardId = new Map<string, { card: NodeCard; file?: string }[]>();
+  for (const entry of entries.values()) {
+    const chain = byCardId.get(entry.card.id);
+    if (chain === undefined) byCardId.set(entry.card.id, [{ card: entry.card, file: entry.file }]);
+    else chain.push({ card: entry.card, file: entry.file });
+  }
+  for (const chain of byCardId.values()) {
+    if (chain.length > 1) ds.push(...checkVersionChain(chain));
   }
 
   /* ---------- 3. nodes: the card pointer (§2, §4) ---------- */

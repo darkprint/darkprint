@@ -5,7 +5,7 @@ import { CORE_ONTOLOGY } from "../ontology/core";
 import { ontologyView } from "../ontology/resolve";
 import type { OntologyTerm } from "../ontology/types";
 import type { NodeCard } from "./schema";
-import { loadCard, validateCard } from "./validate";
+import { checkVersionChain, loadCard, validateCard } from "./validate";
 
 const ontology = ontologyView(CORE_ONTOLOGY);
 const opts = { ontology };
@@ -1594,12 +1594,25 @@ describe("validateCard — version bump", () => {
     expect(diagnostics[0].hint).toContain("1.1.0");
   });
 
-  it("lets a patch release through when only the model changed", () => {
-    // §4 makes a bump minor when the declared surface *grows*; swapping the model adds
-    // no port, tool or param, so a patch is enough and must not be rejected.
-    const previous = { ...minimalCard(), model: "claude-opus-4" };
-    const { card, diagnostics } = validateCard(
+  it("demands a minor bump when the model changes", () => {
+    // Swapping the model moves what the node runs on while every port, type and param a
+    // blueprint declared against stays where it was, which is the shape of a minor bump.
+    // A patch was accepted here until the field became the one `attractor/emit.ts` writes
+    // out as `llm_model`: a released card and the factory built from it now disagree about
+    // which model the run uses, and a patch release hides that from anyone tracking it.
+    const previous = { ...minimalCard(), model: "claude-sonnet-5" };
+    const { diagnostics } = validateCard(
       { ...minimal(), version: "1.0.1", model: "claude-opus-5" },
+      { ontology, previous },
+    );
+    expect(codes(diagnostics)).toEqual(["card/version-bump-too-small"]);
+    expect(diagnostics[0].hint).toContain("1.1.0");
+  });
+
+  it("lets a minor release through when only the model changed", () => {
+    const previous = { ...minimalCard(), model: "claude-sonnet-5" };
+    const { card, diagnostics } = validateCard(
+      { ...minimal(), version: "1.1.0", model: "claude-opus-5" },
       { ontology, previous },
     );
     expect(diagnostics).toEqual([]);
@@ -1651,6 +1664,68 @@ describe("validateCard — version bump", () => {
   it("does nothing without a `previous`", () => {
     const { diagnostics } = validateCard({ ...minimal(), notes: "changed" }, opts);
     expect(diagnostics).toEqual([]);
+  });
+});
+
+/* ============================================================
+   checkVersionChain
+   The reachable form of the rule above. `opts.previous` needs a
+   caller holding the predecessor and nothing in this repository
+   was one, so `card/version-bump-too-small` was a declared error
+   no surface could raise while `/spec` described it as one that
+   refuses a bundle. These tests exist so it stays reachable.
+   ============================================================ */
+
+describe("checkVersionChain", () => {
+  /** One validated card at `version`, with `fields` overlaid on the minimal document. */
+  function at(version: string, fields: Record<string, unknown> = {}): NodeCard {
+    const { card } = validateCard({ ...minimal(), ...fields, version }, opts);
+    if (!card) throw new Error(`the fixture at ${version} must validate`);
+    return card;
+  }
+
+  it("says nothing about a single version", () => {
+    expect(checkVersionChain([{ card: at("1.0.0") }])).toEqual([]);
+  });
+
+  it("catches a prohibition added under a minor bump, wherever the versions arrived in", () => {
+    const chain = [
+      { card: at("1.1.0", { cannot: ["read the acceptance criteria"] }), file: "b.yaml" },
+      { card: at("1.0.0"), file: "a.yaml" },
+    ];
+    const ds = checkVersionChain(chain);
+    expect(codes(ds)).toEqual(["card/version-bump-too-small"]);
+    expect(ds[0].message).toContain("major");
+    expect(ds[0].hint).toContain("2.0.0");
+    // Reported against the file that declares the version being judged, not its predecessor.
+    expect(ds[0].location?.file).toBe("b.yaml");
+    expect(ds[0].location?.path).toBe("version");
+  });
+
+  it("accepts the major release the same edit asks for", () => {
+    expect(
+      checkVersionChain([
+        { card: at("1.0.0") },
+        { card: at("2.0.0", { cannot: ["read the acceptance criteria"] }) },
+      ]),
+    ).toEqual([]);
+  });
+
+  it("holds every consecutive pair, not just the ends", () => {
+    // 1.0.0 -> 2.0.0 on its own would satisfy any requirement, so a chain checked only
+    // end to end would pass an illegal middle step in silence.
+    const ds = checkVersionChain([
+      { card: at("1.0.0"), file: "a.yaml" },
+      { card: at("1.0.1", { cannot: ["read the acceptance criteria"] }), file: "b.yaml" },
+      { card: at("2.0.0", { cannot: ["read the acceptance criteria"] }), file: "c.yaml" },
+    ]);
+    expect(codes(ds)).toEqual(["card/version-bump-too-small"]);
+    expect(ds[0].location?.file).toBe("b.yaml");
+  });
+
+  it("ignores a version repeated with the same number", () => {
+    // Two files claiming one version is `bundle/digest-mismatch`, which says it better.
+    expect(checkVersionChain([{ card: at("1.0.0") }, { card: at("1.0.0") }])).toEqual([]);
   });
 });
 

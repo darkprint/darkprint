@@ -16,6 +16,7 @@ spec: >-
   record on `triage` holding the per-file bands with their reasons, the blast radius, and the
   list of suites to run. Triage at most sixty files; if the diff is larger, take the sixty that
   touch the most call sites and state in the record how many you left out.
+model: claude-sonnet-5
 agent: Triager
 tools:
   - git

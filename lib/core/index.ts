@@ -40,8 +40,8 @@ export { DARKPRINT_CONFIG } from "./config";
 /* --------------------- ontology (doc 3) --------------------- */
 export type { TermKind, TermDeprecation, OntologyTerm, Ontology } from "./ontology/types";
 export { CORE_ONTOLOGY, CORE_PHASE_IDS } from "./ontology/core";
-export type { ResolvedTerm, OntologyView } from "./ontology/resolve";
-export { ontologyView, splitTermId } from "./ontology/resolve";
+export type { ResolvedTerm, OntologyView, TermOrigins } from "./ontology/resolve";
+export { ontologyView, partitionTerms, splitTermId } from "./ontology/resolve";
 
 /* --------------------- the node card (doc 1 §3) --------------------- */
 export type { JsonValue, Port, NodeCard, CardRef } from "./card/schema";
@@ -49,7 +49,7 @@ export { cardRef, parseCardRef } from "./card/schema";
 export type { CardFormat, ParseResult } from "./card/parse";
 export { formatForFilename, parseDocument } from "./card/parse";
 export type { CardValidation, ValidateCardOptions } from "./card/validate";
-export { validateCard, loadCard } from "./card/validate";
+export { validateCard, loadCard, checkVersionChain } from "./card/validate";
 /**
  * The single reader of a card's iteration cap. `analysis/security.ts` asks whether the
  * cycle is capped and `attractor/emit.ts` writes the number into the runnable DOT, and

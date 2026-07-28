@@ -39,7 +39,7 @@ import {
 import type { TermKind } from "../ontology/types";
 import type { OntologyView } from "../ontology/resolve";
 import { bumpSatisfies, declaredBump, inferBump, type BumpLevel } from "../version/bump";
-import { formatSemver, parseSemver } from "../version/semver";
+import { compareVersionStrings, formatSemver, parseSemver } from "../version/semver";
 import { formatForFilename, parseDocument, type CardFormat } from "./parse";
 import type { JsonValue, NodeCard, Port } from "./schema";
 
@@ -815,6 +815,39 @@ function checkTerm(
 }
 
 /* --------------------- versioning --------------------- */
+
+/**
+ * §4 across a whole chain of published versions of one card id.
+ *
+ * `validateCard`'s `opts.previous` checks one step and needs a caller holding the
+ * predecessor, which nothing in this repository was: the check was declared, described
+ * on `/spec` as an error that refuses a bundle, and unreachable, while the archive
+ * published three cards that fail it. This is the reachable form. It takes the versions
+ * a caller already has, orders them, and holds every consecutive pair to the rule.
+ *
+ * Ordering is by semver rather than by the order they arrived, because "the last
+ * published one" is a fact about the numbers and not about a directory listing. Every
+ * card reaching here parses: `card/bad-version` is an error, so `validateCard` returns
+ * no card at all for one that does not, and this function never sees it.
+ *
+ * Duplicate versions are not this function's problem either: `resolveBundle` reports two
+ * files claiming one version as `bundle/digest-mismatch`, which is a sharper message.
+ */
+export function checkVersionChain(
+  versions: readonly { card: NodeCard; file?: string }[],
+): Diagnostic[] {
+  const ds: Diagnostic[] = [];
+  const ordered = [...versions].sort((a, b) =>
+    compareVersionStrings(a.card.version, b.card.version),
+  );
+  for (let i = 1; i < ordered.length; i++) {
+    const previous = ordered[i - 1].card;
+    const next = ordered[i];
+    if (previous.version === next.card.version) continue;
+    checkVersionBump(previous, next.card, "version", ds, next.file);
+  }
+  return ds;
+}
 
 /** §4: the declared bump must be at least as strong as the change requires. */
 function checkVersionBump(

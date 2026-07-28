@@ -12,6 +12,7 @@
 
      card `spec`                | node `prompt`
      card `name`                | node `label`
+     card `model`               | node `llm_model`
      type: agent                | shape=box           → codergen
      type: tool                 | shape=parallelogram → tool
      type: human-gate           | shape=hexagon       → wait.human
@@ -371,8 +372,8 @@ function exitSources(graph: Graph): string[] {
  * - one node statement per node in `graph.ids` — the topology as the author wrote it,
  *   including a node whose card is missing (already reported as `bundle/missing-card`;
  *   dropping it here would quietly emit a different graph);
- * - `label`, `shape` and `prompt` on every node that has a card, plus `max_retries`
- *   where the card declares an iteration cap;
+ * - `label`, `shape` and `prompt` on every node that has a card, plus `llm_model` where
+ *   the card names a model and `max_retries` where it declares an iteration cap;
  * - `card="id@version"` — *not* a reserved Attractor name, so Attractor ignores it while
  *   DarkPrint keeps the pin (doc 1 §4). That is the compatibility claim in one line;
  * - `dp_node="…"` only when the node id had to be rewritten, so nothing is lost;
@@ -443,6 +444,18 @@ export function emitAttractorDot(bp: ResolvedBlueprint): string {
       attrs.push({ key: "label", value: quoteAttractorString(card.name) });
       attrs.push({ key: "shape", value: attractorKindFor(card.type, ontology).shape });
       attrs.push({ key: "prompt", value: quoteAttractorString(card.spec) });
+      // Spec §2.6's reserved `llm_model`, which is the only reason the card carries the
+      // field at all: without this line a bundle names its model in YAML nobody executes,
+      // and the factory runs on whatever the operator's default happens to be. Written as
+      // a quoted String because an identifier like `claude-opus-4-5` is not an Identifier
+      // under the grammar — the dashes end the token. Omitted when the card names none, so
+      // the graph's `model_stylesheet` (§8) still decides: `llm_model=""` would be an
+      // explicit node attribute, and §8.5 puts those above the sheet, so the empty string
+      // would beat the default instead of deferring to it.
+      const model = card.model?.trim();
+      if (model !== undefined && model !== "") {
+        attrs.push({ key: "llm_model", value: quoteAttractorString(model) });
+      }
       // The same reader `analysis/security.ts` uses, so a card that caps its loop is
       // capped in the artefact and uncharged in the score, always as one decision.
       const cap = readIterationCap(card.params);

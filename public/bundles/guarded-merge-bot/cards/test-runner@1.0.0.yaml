@@ -15,6 +15,7 @@ spec: >-
   `report`: suite names, durations, every failing case with its assertion and stack trace, and
   the coverage delta against the base ref. Do not edit the code, do not re-run a failing suite
   hoping for a different answer, and do not judge whether the change deserves to be merged.
+model: claude-haiku-4-5
 agent: Test runner
 tools:
   - ci

@@ -14,6 +14,7 @@ spec: >-
   no commentary and no summary of what you did. The brief is all you get, and that is the point
   — do not go looking for a test suite, do not reason about how the result will be checked, and
   do not tune anything toward a check you imagine exists.
+model: claude-sonnet-5
 agent: Builder
 tools: []
 mcp:

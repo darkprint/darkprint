@@ -1,9 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { parseCardRef } from "@/lib/core";
+import { checkVersionChain, loadCard, parseCardRef, type NodeCard } from "@/lib/core";
 
 import { contentOntology, contentOntologyDiagnostics, readContent } from "./read";
 
@@ -396,6 +403,89 @@ describe("readContent on broken content", () => {
       "cards/consumer@1.0.0.yaml",
     ]);
     expect(bundles[0].diagnostics.map((d) => d.code)).not.toContain("bundle/orphan-card");
+  });
+
+  /*
+   * §4's bump rule, held against `content/cards/` rather than against one bundle.
+   *
+   * The archive's version chains live in the shared card library and nowhere else: each
+   * blueprint pins one version of each id, so `resolveBundle` never sees two of them
+   * together and the rule went unenforced. Three published cards stepped 1.0.0 → 1.1.0
+   * for an edit the engine calls major, the node pages printed that verdict in
+   * `--color-signal` beside the number, and the build stayed green. It does not now.
+   */
+  it("throws when a second version of a library card under-declares its bump", async () => {
+    const read = await readFixture((root) => {
+      const cards = join(root, "content", "cards");
+      writeFileSync(join(cards, "only@1.0.0.yaml"), card("only", "[]", "[]"));
+      writeFileSync(
+        join(cards, "only@1.1.0.yaml"),
+        card("only", "[]", "[]", "cannot:\n  - read the acceptance criteria").replace(
+          "version: 1.0.0",
+          "version: 1.1.0",
+        ),
+      );
+      const dir = join(root, "content", "blueprints", "solo");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "blueprint.yaml"), manifest("solo"));
+      writeFileSync(join(dir, "blueprint.dot"), 'digraph solo {\n  n [card="only@1.0.0"];\n}\n');
+    });
+
+    expect(read).toThrow(/DarkPrint content is broken/);
+    expect(read).toThrow(/card\/version-bump-too-small/);
+    expect(read).toThrow(/content\/cards\/only@1\.1\.0\.yaml/);
+    expect(read).toThrow(/Publish `2\.0\.0` or higher/);
+  });
+
+  it("accepts the same edit published as a major", async () => {
+    const read = await readFixture((root) => {
+      const cards = join(root, "content", "cards");
+      writeFileSync(join(cards, "only@1.0.0.yaml"), card("only", "[]", "[]"));
+      writeFileSync(
+        join(cards, "only@2.0.0.yaml"),
+        card("only", "[]", "[]", "cannot:\n  - read the acceptance criteria").replace(
+          "version: 1.0.0",
+          "version: 2.0.0",
+        ),
+      );
+      const dir = join(root, "content", "blueprints", "solo");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "blueprint.yaml"), manifest("solo"));
+      writeFileSync(join(dir, "blueprint.dot"), 'digraph solo {\n  n [card="only@1.0.0"];\n}\n');
+    });
+
+    expect(read()).toHaveLength(1);
+  });
+
+  /*
+   * The archive's own chains, asserted as content rather than as engine behaviour. The
+   * loader above would fail the build on a violation, so this is the positive statement:
+   * every id in `content/cards/` that has more than one version declares a number the
+   * engine agrees with, and the four multi-version ids are actually there to be checked.
+   */
+  it("publishes every card version at a number `inferBump` agrees with", () => {
+    const chains = new Map<string, { card: NodeCard; file: string }[]>();
+    for (const name of readdirSync(join(process.cwd(), "content", "cards")).sort()) {
+      if (!name.endsWith(".yaml")) continue;
+      const text = readFileSync(join(process.cwd(), "content", "cards", name), "utf8");
+      const loaded = loadCard(text, { ontology: contentOntology(), file: name });
+      expect([name, loaded.card === undefined]).toEqual([name, false]);
+      const id = loaded.card!.id;
+      const chain = chains.get(id) ?? [];
+      chain.push({ card: loaded.card!, file: name });
+      chains.set(id, chain);
+    }
+
+    const multi = [...chains.entries()].filter(([, chain]) => chain.length > 1);
+    expect(multi.map(([id]) => id).sort()).toEqual([
+      "acceptance-verifier",
+      "bounded-retry",
+      "intent-router",
+      "schema-gate",
+    ]);
+    for (const [id, chain] of multi) {
+      expect([id, checkVersionChain(chain)]).toEqual([id, []]);
+    }
   });
 });
 

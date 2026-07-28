@@ -8,6 +8,17 @@
    the suitable one. Softening it is the failure the page exists
    to prevent: somebody takes an impossible task to a factory,
    gets slop, and concludes the pattern is vapour.
+
+   ── Spec §4.3: the split resolves before the reasoning ──
+   Two columns of four titles is the fits / does-not-fit split the
+   spec asks the page to lead with, and eight titles is something a
+   reader settles in seconds: they look for the entry their own
+   work resembles. The paragraph that adjudicates each one is what
+   they read after they have found it, so it sits inside a
+   `<details>` under the title rather than between the reader and
+   the next title. Every word of all eight is still on the page and
+   still in the prerendered HTML; the disclosure decides what is
+   on screen before a click, and nothing else.
    ============================================================ */
 
 type Example = {
@@ -135,23 +146,32 @@ export function WhichTasksExamples() {
 
             <ul className="flex flex-col divide-y divide-line">
               {col.items.map((item) => (
-                <li key={item.title} className="flex gap-3 px-5 py-4">
-                  <span
-                    className="mt-1 shrink-0 font-mono text-xs leading-5"
-                    style={{ color: col.color }}
-                    aria-hidden
-                  >
-                    {col.glyph}
-                  </span>
-                  <div className="flex min-w-0 flex-col gap-1.5">
-                    <h4 className="font-display text-[15px] font-semibold leading-snug text-fg">
-                      {item.title}
-                    </h4>
-                    <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
-                      {item.check}
-                    </span>
-                    <p className="text-sm leading-relaxed text-muted">{item.body}</p>
-                  </div>
+                <li key={item.title}>
+                  <details className="group px-5 py-3.5">
+                    <summary className="flex cursor-pointer list-none [&::-webkit-details-marker]:hidden gap-3">
+                      <span
+                        className="mt-0.5 shrink-0 font-mono text-xs leading-5"
+                        style={{ color: col.color }}
+                        aria-hidden
+                      >
+                        {col.glyph}
+                      </span>
+                      <span className="flex min-w-0 flex-col gap-1">
+                        <span className="font-display text-[15px] font-semibold leading-snug text-fg">
+                          {item.title}
+                        </span>
+                        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-dim transition-colors group-hover:text-muted">
+                          {item.check}
+                          <span aria-hidden className="ml-2 inline-block transition-transform group-open:rotate-90">
+                            ▸
+                          </span>
+                        </span>
+                      </span>
+                    </summary>
+                    <p className="mt-2.5 pl-6 text-sm leading-relaxed text-muted">
+                      {item.body}
+                    </p>
+                  </details>
                 </li>
               ))}
             </ul>

@@ -254,16 +254,27 @@ function contentSignature(card: NodeCard): string {
  * this card. `compareCannot` carries the rest of the reasoning.
  *
  * MINOR — the declared surface *grew*: an optional port, an output, a tool, an MCP server,
- * a param key, a risk marker, a dependency, `spec`, `skill`, `requires_human` true →
- * false, a `cannot` entry *withdrawn*, or a change to the set of declared phases.
+ * a param key, a risk marker, a dependency, `spec`, `skill`, `model`, `requires_human`
+ * true → false, a `cannot` entry *withdrawn*, or a change to the set of declared phases.
  *
  * `mcp` follows `tools` exactly, since both list something the node requires of its
  * environment: adding one grows what the card asks for, dropping one asks for less and
- * lands in "patch otherwise". `skill` follows `spec` instead of `model`: doc 2 §3 makes
- * the skill document the definition of the agent's behaviour, so pointing at a different
- * one, or at one for the first time, changes what the node does while every port, type and
- * param a blueprint declared against stays where it was. Withdrawing the pointer is the
- * same size of edit in the other direction and is minor too.
+ * lands in "patch otherwise". `skill` follows `spec`: doc 2 §3 makes the skill document
+ * the definition of the agent's behaviour, so pointing at a different one, or at one for
+ * the first time, changes what the node does while every port, type and param a blueprint
+ * declared against stays where it was. Withdrawing the pointer is the same size of edit in
+ * the other direction and is minor too.
+ *
+ * `model` sits at the same level for a weaker version of the same reason. Engine spec §2.6
+ * calls `llm_model` "overridable by stylesheet" and §8.5 settles it at run time from the
+ * node attribute, the graph's `model_stylesheet`, the graph default and the handler
+ * default in that order, so the field is the default a card was written against rather
+ * than a term anything is held to. Naming a model, renaming it or withdrawing it moves
+ * what the node runs on and narrows nothing: every port, type, param and prohibition a
+ * blueprint declared against this card stays exactly where it was, no already-published
+ * score changes, and a graph that disagrees says so in the DOT. That is the line between
+ * this field and a `cannot` entry, which the resolver enforces and which is therefore
+ * major on the way in.
  *
  * `spec` is the original judgement call here: doc 1 §3.2 makes it the
  * instruction the agent actually executes, so rewriting it changes what the node *does*
@@ -285,7 +296,7 @@ function contentSignature(card: NodeCard): string {
  *
  * PATCH — everything else, per §4's "patch otherwise": wording (`name`, `action`,
  * `notes`, `ontology_version`, a port description), a param's value, a reordering, a
- * relaxed `required`, a different `model`/`agent`, and anything *withdrawn* from
+ * relaxed `required`, a different `agent`, and anything *withdrawn* from
  * `tools`, `mcp`, `risk_markers`, `dependencies` or `params` — a card that claims less breaks
  * no wiring a blueprint declared against it.
  */
@@ -378,10 +389,13 @@ export function inferBump(previous: NodeCard, next: NodeCard): BumpAnalysis {
     }
   }
 
-  // Who runs the node changes nothing a blueprint declared against it — no port, no
-  // tool, no param key — so §4 leaves it under "patch otherwise", loud reason and all.
+  // Minor in both directions, and the direction is why it is not major: engine spec §2.6
+  // makes `llm_model` overridable by the graph's stylesheet, so this field states the
+  // default the card was written against rather than a term a blueprint is held to. What
+  // the node runs on moves; no port, type, param or prohibition does. Contrast
+  // `compareCannot`, where an *addition* narrows what the node accepts and is major.
   if (previous.model !== next.model) {
-    push("patch", `\`model\` changed: ${showText(previous.model)} → ${showText(next.model)}`);
+    push("minor", `\`model\` changed: ${showText(previous.model)} → ${showText(next.model)}`);
   }
   if (previous.agent !== next.agent) {
     push("patch", `\`agent\` changed: ${showText(previous.agent)} → ${showText(next.agent)}`);

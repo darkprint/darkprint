@@ -4,7 +4,7 @@ An unattended overnight cleanup line: extract deltas, normalize, validate agains
 
 ```
 blueprint      nightly-data-janitor
-bundle digest  sha256:843031b27c3764dcd7316ac441287466a68cbb69444475403761e2512020ded5
+bundle digest  sha256:dbef1e27b43359b7016f66ae48991b48dfd145d136d2ff917578594e68392f3b
 ontology       v0.1.0
 nodes          7
 cards pinned   7
@@ -33,6 +33,12 @@ attractor run factory.dot --simulate
 `factory.dot` is self-contained. Every node carries its card's `spec` as the `prompt` its
 agent receives, so the runner needs no other file from this folder. Flags vary between
 Attractor runners; `attractor run --help` is authoritative on yours.
+
+3 of the 7 nodes name the model they run on, and carry it as `llm_model`. That is Attractor's
+own attribute for it, so the run uses those models as they stand and your provider has to
+serve them. A node attribute outranks a graph-level `model_stylesheet`, so edit the line to
+run a node on something else, and delete the attribute to hand the choice back to your own
+configuration.
 
 ## What is in the folder
 

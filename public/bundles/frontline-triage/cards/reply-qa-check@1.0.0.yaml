@@ -17,6 +17,7 @@ spec: >-
   order numbers or account identifiers into the score or into any comment you attach to it. You
   are done when a score is on `confidence` and `approved` carries either the stamped reply or
   nothing at all.
+model: claude-sonnet-5
 agent: QA checker
 tools: []
 mcp: []

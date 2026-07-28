@@ -27,7 +27,7 @@
    §1.1 is most easily lost and the hardest thing to notice going.
    ============================================================ */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -332,19 +332,114 @@ const COPY_FILES = [
 ];
 
 /**
+ * Where the em-dash rule is enforced, as trees rather than as a list of files.
+ *
+ * The list below it used to be the whole of it: fifteen paths under `components/build`
+ * and `components/panes`, named one at a time. Doc 2 §2.5 is a rule about the site's copy
+ * and the constraint sheet cites this test as what keeps it, so a pass that wrote a new
+ * landing, `/spec` and `/how-to-build-a-dark-factory` added several thousand words that
+ * the guard could not see. A directory is added once and covers every file put in it
+ * afterwards, which is the property a hardcoded list does not have.
+ *
+ * What is deliberately outside: `components/nodes`, `components/upload`,
+ * `components/blueprint`, `app/ontology` and `app/nodes` carry em dashes in copy that
+ * predates the rule, so adding them here would fail on text nobody in this pass wrote.
+ * They are a copy edit, not a guard, and putting them in the list before the edit would
+ * only produce a skipped test.
+ */
+const COPY_TREES = [
+  "components/home",
+  "components/hero",
+  "components/spec",
+  "components/howto",
+  "components/viz",
+  "components/explain",
+  "components/site",
+  "components/gallery",
+];
+
+/** Single files outside those trees, on the routes this rule was extended for. */
+const COPY_PAGES = [
+  "app/page.tsx",
+  "app/spec/page.tsx",
+  "app/how-to-build-a-dark-factory/page.tsx",
+  "app/which-tasks/page.tsx",
+  "app/what-it-isnt/page.tsx",
+  "app/blueprints/page.tsx",
+];
+
+/**
+ * Every `.ts`/`.tsx` under `dir`, tests excluded.
+ *
+ * A test that asserts on the character has to be able to name it, and three of them do
+ * (`nodecard.test.ts`, `graph.test.ts` and this file). Including them would make the guard
+ * report itself.
+ */
+function sourcesUnder(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(join(process.cwd(), dir), { withFileTypes: true })) {
+    const child = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) {
+      out.push(...sourcesUnder(child));
+      continue;
+    }
+    if (!/\.tsx?$/.test(entry.name) || /\.test\.tsx?$/.test(entry.name)) continue;
+    out.push(child);
+  }
+  return out;
+}
+
+/** Every file the em-dash rule is held over, deduplicated and stable. */
+const EM_DASH_FILES = [
+  ...new Set([
+    ...COPY_FILES,
+    "components/build/path-state.ts",
+    "components/build/state.ts",
+    "components/build/BuildPanes.tsx",
+    "components/panes/GraphPane.tsx",
+    "components/panes/SkeletonPane.tsx",
+    "components/panes/SourcePane.tsx",
+    "components/panes/SynchronisedPanes.tsx",
+    ...COPY_TREES.flatMap(sourcesUnder),
+    ...COPY_PAGES,
+  ]),
+].sort();
+
+/**
  * Comments out, so what is left is roughly what a reader sees.
  *
  * A block comment is the house style for the header of every file here and a line comment
  * explains a decision beside it; neither is product copy, and both are allowed the
  * punctuation §2.5 keeps out of the page. The line-comment rule skips a `//` that follows
  * a colon or a quote, which is what a URL inside a string looks like.
+ *
+ * The block rule wants a whitespace or bracket boundary in front of the comment opener for
+ * the same class of reason. `SpecLayers` names its figure with a glob over the card
+ * directory, and that glob puts a slash-star inside a string literal: an opener with no
+ * boundary in front of it matches there and swallows everything up to the next real
+ * closer, which on that file is the caption and the whole of lane 1. A guard that is
+ * silently blind over the span it ate is the worst way for a check to fail, and this rule
+ * was just extended to cover exactly that file.
  */
 function visibleCopy(source: string): string {
   return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[\s{(=,])\/\*[\s\S]*?\*\//g, "$1")
     .split("\n")
     .map((line) => line.replace(/(^|[^:"])\/\/.*$/, "$1"))
     .join("\n");
+}
+
+/**
+ * A lone em dash standing in for an empty cell, removed before the pause check.
+ *
+ * §2.5 rules out the em dash "usato come pausa", and a pause has text on at least one side
+ * of it. `{edge.label ?? "—"}` puts the character in a table cell that has nothing in it,
+ * which is a glyph and not a sentence: `SectionAbsentEdge` and the security ledger both
+ * write one. Only the exact one-character string is stripped, so `"— and then"` is still
+ * caught.
+ */
+function withoutPlaceholders(source: string): string {
+  return source.replace(/"—"/g, '""').replace(/>\s*—\s*</g, "><");
 }
 
 describe("autonomy is a description, not a verdict", () => {
@@ -364,19 +459,28 @@ describe("autonomy is a description, not a verdict", () => {
    * to strip from the site's text, and the audience is developers who recognise them. The
    * panel shipped one, between a status token and the sentence explaining it.
    */
-  it.each([
-    ...COPY_FILES,
-    "components/build/path-state.ts",
-    "components/build/state.ts",
-    "components/build/BuildPanes.tsx",
-    "components/panes/GraphPane.tsx",
-    "components/panes/SkeletonPane.tsx",
-    "components/panes/SourcePane.tsx",
-    "components/panes/SynchronisedPanes.tsx",
-  ])(
+  it("covers the surfaces this pass wrote, not a list somebody has to remember", () => {
+    // A walk that matched nothing passes every case below. These four are the routes the
+    // guard was extended for, and the landing sections are the bulk of the new copy.
+    expect(EM_DASH_FILES.length).toBeGreaterThan(40);
+    for (const path of [
+      "app/page.tsx",
+      "app/spec/page.tsx",
+      "app/how-to-build-a-dark-factory/page.tsx",
+      "components/home/SectionLevels.tsx",
+      "components/spec/SpecLayers.tsx",
+      "components/viz/Glyphs.tsx",
+    ]) {
+      expect(EM_DASH_FILES, `${path} is not guarded`).toContain(path);
+    }
+  });
+
+  it.each(EM_DASH_FILES)(
     "%s uses no em dash as a pause in what a reader sees",
     (path) => {
-      const text = visibleCopy(readFileSync(join(process.cwd(), path), "utf8"));
+      const text = withoutPlaceholders(
+        visibleCopy(readFileSync(join(process.cwd(), path), "utf8")),
+      );
       const offending = text
         .split("\n")
         .map((line, i) => ({ line: line.trim(), at: i + 1 }))
