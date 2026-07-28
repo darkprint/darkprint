@@ -1,54 +1,72 @@
 /* ============================================================
-   The landing. Doc 2 §2.1's six rungs are the spine, and spec §3's
-   table inserts three new sections between them.
+   The landing: five beats, and nothing else.
 
-   §0 diagnosed the old one: "il sito definisce il concetto prima di
-   far localizzare il lettore". The fix is the sequence, so the order
-   below is the deliverable and not an arrangement of what happened to
-   exist. The rungs still run 1 to 6 in the same order they did; every
-   new section sits between two of them and displaces none.
+   ── Why doc 2 §2.1's six rungs are no longer here ──
+   They were, all six of them on one scroll, and the author read the
+   result and rejected it:
 
-   1. claim              → Hero
-      anchoring          → SectionAnchor            (rung 2)
-      self-localisation  → SectionLevels            (rung 3)
-                         → SectionNodeCard          spec §3.2
-                         → SectionRoles             spec §3.3
-      one example        → SectionExample           (rung 4)
-                         → SectionLifecycle         spec §3.5
-      what it isn't      → SectionNotSkill          (rung 5)
-      two doors          → SectionDoors             (rung 6)
+     "the landing page should be fancy with the text DarkPrint like
+      previous and now it is a flat landing page with a lot of
+      content. The landing should have concepts and suggestive
+      illustration not technical ones. The content of the landing
+      should be rearranged in other pages as it is useful."
 
-   Where the three go, and why there:
+   The six rungs are still the site's sequence. What changed is
+   where a cold visitor walks them: across four pages whose subject
+   each rung already was, instead of down one page that had to be
+   about everything. The ladder was distributed rather than
+   dropped, and the table below is the record of where each rung
+   went, so that the next person reads it as a move and not as a
+   loss. Restoring any row of it to this file puts the flat landing
+   back.
 
-   - `SectionNodeCard` follows self-localisation because a reader who
-     has just placed themselves on the five levels is the one for whom
-     "a node is a card, and here is the card" is an answer rather than
-     a detail. It is also the heaviest scroll on the page, so it wants
-     a reader who has decided to stay.
-   - `SectionRoles` follows the card for scale: the card lands inside
-     one node of the starter graph at the end of §3.2's dezoom, and
-     §3.3 is that same graph read as a division of labour. Two
-     sections, one figure, seen twice at different magnifications.
-   - `SectionLifecycle` follows the example because "what you can do
-     with a blueprint" needs a blueprint the reader has already been
-     shown. Placed before the example it would be instructions for
-     handling an object nobody has seen.
+     rung 1  claim              Hero              beat 1, kept here
+     rung 2  anchoring          SectionAnchor     /what-it-isnt, rewritten
+                                                  as components/explain/
+                                                  SectionWhatItIs
+     rung 3  self-localisation  SectionLevels     /towards-a-dark-factory
+     rung 4  one example        SectionExample    /spec
+     rung 5  what it isn't      SectionNotSkill   /what-it-isnt, folded into
+                                                  SectionSkillVsFactory and
+                                                  SectionIsolationRule
+     rung 6  two doors          SectionDoors      beat 5, kept here
 
-   This is the *conceptual* onboarding of §0's table: a cold visitor,
-   thirty seconds, what is this and why does it concern me. The
-   practical one ("how do I build one", about an hour) is the guided
-   path and stays physically separate.
+   Redesign spec §3 sent three more sections the same way: the
+   annotated node card to `/spec/card`, the five roles and the
+   absent edge to `/spec/topology`, and download / fork / update to
+   `/blueprints`. Those three files are untouched at their old paths
+   under `components/home/` and their new pages import them
+   directly, which is why `components/home/index.ts` is now shorter
+   than the directory it names.
+
+   Two rungs stayed. Rung 1 is the site's claim and rung 6 is the
+   two doors, and those are the only two whose subject is the site
+   itself; every other rung is about a blueprint, a card or a
+   ladder, and each of those now has a page.
+
+   ── What the five beats are ──
+   Spec §2: one illustration and roughly one sentence each. Beat 1
+   is the wordmark and takes the animation budget, because it is the
+   thing the author missed and the first thing anyone sees. Beats 2,
+   3 and 4 carry one concept apiece in the luminous-flow register of
+   spec §1. Beat 5 is the two doors.
+
+   Beat 4 is the one doc 2 §1.1 constrains hardest. The lights going
+   out describe a graph in which no node waits for a person. A graph
+   with a person in it is a first-class blueprint and the beat says
+   so on the sheet, in the same words the rest of the site uses.
+
+   No YAML, no scorecard, no term table and no code listing survive
+   on this page. Spec §6 greps the built HTML for all four;
+   `components/home/beats.test.ts` renders the beats the way the
+   server does and fails a minute earlier.
    ============================================================ */
 
 import { Hero } from "@/components/hero/Hero";
 import {
-  SectionAnchor,
-  SectionLevels,
-  SectionNodeCard,
-  SectionRoles,
-  SectionExample,
-  SectionLifecycle,
-  SectionNotSkill,
+  SectionBlueprint,
+  SectionNodeIsCard,
+  SectionLightsOut,
   SectionDoors,
 } from "@/components/home";
 
@@ -56,13 +74,9 @@ export default function HomePage() {
   return (
     <>
       <Hero />
-      <SectionAnchor />
-      <SectionLevels />
-      <SectionNodeCard />
-      <SectionRoles />
-      <SectionExample />
-      <SectionLifecycle />
-      <SectionNotSkill />
+      <SectionBlueprint />
+      <SectionNodeIsCard />
+      <SectionLightsOut />
       <SectionDoors />
     </>
   );

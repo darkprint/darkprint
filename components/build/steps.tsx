@@ -10,6 +10,9 @@ import type {
 import { ITERATION_CAP_KEYS } from "@/lib/core";
 import type { StarterRunBudget } from "@/lib/starter/variants";
 import { autonomyStatement, cx } from "@/lib/format";
+/* Moved out of this file when `/what-it-isnt` and the climb needed the same device;
+   `components/ui/More.tsx` carries the reasoning. */
+import { More } from "@/components/ui/More";
 import { LEAK_EDGE, STARTER_NODES } from "./choices";
 import type { UncappedReading } from "./state";
 
@@ -27,6 +30,36 @@ import type { UncappedReading } from "./state";
    sees is passed in from `loadBundle` or from `starterRunBudget`,
    and the sentences that carry one are written to read correctly
    whatever it turns out to be.
+
+   ── One idea per step, and `More` for the rest ──
+   Redesign spec §4.3, on the author's reading of this page: "it's
+   way too dense. The user gets bored and starts skipping." A
+   skipped page teaches nothing, so the argument each step is
+   actually making is the only thing above the panes, and the
+   support behind it went into `More`, a plain `<details>`.
+
+   That is a change of what is on screen and not of what is on the
+   page. Every sentence is still in the document, still keyboard
+   reachable and still findable by find-in-page.
+
+   Five passages left the route outright, and redesign spec §5 is
+   the licence for each: the same statement is already on screen
+   beside where it stood.
+
+     · doc 1 §8's "what a run costs is reported by whoever runs
+       it" — `ScorePanel` carries it and never unmounts;
+     · the download step's walk through the folder — `DownloadPanel`
+       sits under it and describes every file as it lists it;
+     · its second telling of "there is nowhere to save this" — the
+       same panel ends on it;
+     · its second printing of `attractor run factory.dot` — the
+       panel prints it with a copy button;
+     · the rail caption's third telling of "nothing is executed" —
+       the panel above it and the page header both say so.
+
+   Nothing else was deleted. Where a sentence reads shorter here it
+   was rewritten, and the claims it carried are asserted against
+   the live page rather than trusted.
 
    ── Why three steps are split in two ──
    The control for a step sits inside pane 1, on the node it is
@@ -48,6 +81,9 @@ export type StepId =
   | "loop"
   | "download";
 
+/** Which of the three readings a step is talking about, so the pane opens on it. */
+export type StepReading = "skeleton" | "dot" | "card";
+
 export interface StepDef {
   id: StepId;
   /** Short label for the step bar. */
@@ -55,41 +91,54 @@ export interface StepDef {
   title: string;
   /** The node this step's control hangs on, when it has one. */
   choiceNode?: string;
+  /**
+   * Which reading pane opens with the step.
+   *
+   * §4.3 asks for a clear primary among the four panes, so pane 1 is always drawn and
+   * panes 2 to 4 share one frame. A step that argues about a document has to be able to
+   * put that document in front of the reader, and this is how it says which.
+   */
+  reading?: StepReading;
 }
 
 export const STEPS: readonly StepDef[] = [
-  { id: "whole", nav: "The factory", title: "Five nodes, one factory" },
-  { id: "node", nav: "One node", title: "One node, four blocks" },
+  { id: "whole", nav: "The factory", title: "Five nodes, one factory", reading: "dot" },
+  { id: "node", nav: "One node", title: "One node, four blocks", reading: "skeleton" },
   {
     id: "output",
     nav: "What it builds",
     title: "What does your factory build?",
     choiceNode: STARTER_NODES.builder,
+    reading: "card",
   },
   {
     id: "switch",
     nav: "The absent edge",
     title: "The edge that is not there",
     choiceNode: STARTER_NODES.builder,
+    reading: "dot",
   },
   {
     id: "approval",
     nav: "Who ends a run",
     title: "Who decides the work is finished?",
     choiceNode: STARTER_NODES.tester,
+    reading: "dot",
   },
   {
     id: "loop",
     nav: "The loop",
     title: "How many turns before it gives up?",
     choiceNode: STARTER_NODES.debugger,
+    reading: "card",
   },
-  { id: "download", nav: "Take it away", title: "Your factory, as files" },
+  { id: "download", nav: "Take it away", title: "Your factory, as files", reading: "dot" },
 ];
 
 /* --------------------- shared bits --------------------- */
 
 const P = "text-[15px] leading-relaxed text-muted";
+const SMALL = "text-[13px] leading-relaxed text-muted";
 
 function Quote({ children }: { children: React.ReactNode }) {
   return (
@@ -127,19 +176,18 @@ export function WholeStep() {
   return (
     <>
       <p className={P}>
-        A dark factory turns a written specification into working software. This one has
-        five nodes, one for each phase of that work: planning, implementation, testing,
+        A dark factory turns a written specification into working software. This one does it
+        with five nodes, one for each phase of that work: planning, implementation, testing,
         debugging, deployment.
       </p>
-      <p className={P}>
-        Nothing on this page runs. The four panes below are four readings of one bundle.
-        The drawing is built from the DOT. The DOT pins a card on every node. The card is a
-        file, and it is one of the files you download at the end.
-      </p>
-      <p className={P}>
-        Select a node in the drawing and the other three panes go to it. It works the other
-        way too: pick a line of the DOT or a field of the card and the drawing follows.
-      </p>
+      <p className={P}>Nothing on this page runs.</p>
+      <More summary="How the panes below fit together">
+        <p className={SMALL}>
+          The drawing comes from the DOT. The DOT pins a card on every node, and the card is
+          one of the files you download at the end. Select a node, a line of the DOT or a
+          field of the card, and the rest follow.
+        </p>
+      </More>
     </>
   );
 }
@@ -151,21 +199,25 @@ export function NodeStep() {
     <>
       <p className={P}>
         Here is the <code className="font-mono text-fg">{STARTER_NODES.builder}</code>{" "}and
-        the card it pins. A card seen on its own is a YAML file with fields in it, which is
-        why it comes second.
+        the card it pins. Every card has four blocks: identity, behaviour, interfaces, and
+        evaluation metadata.
       </p>
-      <p className={P}>
-        A card has four blocks. <span className="text-fg">Identity</span>{" "}carries the id the
-        DOT points at. <span className="text-fg">Behaviour</span>{" "}carries{" "}
-        <code className="font-mono text-fg">spec</code>, the prose handed to the agent when
-        the graph is instantiated. <span className="text-fg">Interfaces</span>{" "}declare what
-        arrives and what leaves. <span className="text-fg">Evaluation metadata</span>{" "}is
-        read by DarkPrint&rsquo;s static analysis and by nothing at run time.
-      </p>
-      <p className={P}>
-        Pane 2 lays those blocks out as slots and fills them from the document in pane 4. A
-        slot the card leaves empty is an answer: a node that needs no tool has said so.
-      </p>
+      <More summary="What each block carries">
+        <p className={SMALL}>
+          <span className="text-fg">Identity</span>{" "}is the id the DOT points at.{" "}
+          <span className="text-fg">Behaviour</span>{" "}carries{" "}
+          <code className="font-mono text-fg">spec</code>, the prose handed to the agent when
+          the graph is instantiated. <span className="text-fg">Interfaces</span>{" "}declare what
+          arrives and what leaves. <span className="text-fg">Evaluation metadata</span>{" "}is
+          read by DarkPrint&rsquo;s static analysis and by nothing at run time.
+        </p>
+        <p className={SMALL}>
+          A card seen on its own is a YAML file with fields in it, which is why the skeleton
+          is the reading beside it: it lays the blocks out as slots and fills them from the
+          document. A slot the card leaves empty is an answer, so a node that needs no tool
+          has said so.
+        </p>
+      </More>
     </>
   );
 }
@@ -176,27 +228,24 @@ export function OutputStep({ digest }: { digest?: string }) {
   return (
     <>
       <p className={P}>
-        Pick what this factory produces. This is the easiest question on the page and the
-        one that makes the download yours rather than the registry&rsquo;s example.
+        Pick what this factory produces. The graph does not change and neither computed score
+        moves. The prose in every card does, and the prose is what the agent is handed when
+        the graph runs.
       </p>
-      <p className={P}>
-        The graph does not change and neither computed score moves. What changes is the
-        prose in every card, and the prose is what the agent is handed when the graph runs.
-      </p>
-      <p className={P}>
-        Watch pane 4 while you choose. The builder&rsquo;s{" "}
-        <code className="font-mono text-fg">spec</code>{" "}is rewritten, the ports change type
-        where the artefact changes kind, and the bundle digest changes with them.
-        {digest !== undefined && (
-          <>
-            {" "}
-            Right now it is{" "}
-            <code className="font-mono text-[13px] break-all text-fg">
-              {digest.slice(0, 23)}…
-            </code>
-          </>
-        )}
-      </p>
+      {digest !== undefined && (
+        <p className="font-mono text-[11px] text-dim">
+          digest{" "}
+          <span className="break-all text-fg">{digest.slice(0, 23)}…</span>
+        </p>
+      )}
+      <More summary="What moves when you choose">
+        <p className={SMALL}>
+          The builder&rsquo;s <code className="font-mono text-fg">spec</code>{" "}is rewritten,
+          the ports change type where the artefact changes kind, and the digest above changes
+          with them. This is what makes the download yours rather than the
+          registry&rsquo;s example.
+        </p>
+      </More>
     </>
   );
 }
@@ -207,26 +256,27 @@ export function SwitchIntro({ on }: { on: boolean }) {
   return (
     <>
       <p className={P}>
-        The planner writes two artefacts: a build brief and the acceptance criteria. The
-        brief goes to the builder. The criteria go to the tester.
-      </p>
-      <p className={P}>
-        Pane 1 lists{" "}
-        <code className="font-mono text-signal">
-          {LEAK_EDGE.source} ⇢ {LEAK_EDGE.target}
-        </code>{" "}
-        under <span className="text-fg">not drawn</span>. Pane 3 draws it struck through
-        where the statement would have gone. Pane 2 hangs the same gap on the
-        builder&rsquo;s <code className="font-mono text-fg">spec</code>, because an absent
-        edge is isolation only when the content is absent from the prose too.
+        The planner writes a build brief and the acceptance criteria. The brief goes to the
+        builder. The criteria go to the tester.
       </p>
       {!on && (
         <p className={P}>
-          The switch is in pane 1, on the builder. Turn it on and watch the panel beside
-          you: the builder&rsquo;s card already names the acceptance criteria among the
-          types it refuses, so the engine answers twice.
+          The switch on the builder writes the missing edge in. Turn it on and read what the
+          engine says.
         </p>
       )}
+      <More summary="Where the gap shows, on all three readings">
+        <p className={SMALL}>
+          The graph lists{" "}
+          <code className="font-mono text-signal">
+            {LEAK_EDGE.source} ⇢ {LEAK_EDGE.target}
+          </code>{" "}
+          under <span className="text-fg">not drawn</span>. The DOT draws it struck through
+          where the statement would have gone. The skeleton hangs the same gap on the
+          builder&rsquo;s <code className="font-mono text-fg">spec</code>, because an absent
+          edge is isolation only when the content is absent from the prose too.
+        </p>
+      </More>
     </>
   );
 }
@@ -253,6 +303,9 @@ export function SwitchReading({
    * the reader in as many words that an edge carrying the criteria into this node fails
    * the bundle "whatever the prose says". Reporting the security drop and nothing else
    * left the card and the panel contradicting each other on the same screen.
+   *
+   * The refusal therefore stays above the fold of this aside and outside the disclosure,
+   * ahead of the security reading, which is the order §4.3's density pass had to preserve.
    */
   errors?: readonly Diagnostic[];
   /** Where the statement landed in the DOT, when it did. */
@@ -300,26 +353,27 @@ export function SwitchReading({
         </div>
       )}
 
-      {before !== undefined && after !== undefined && (
-        <p className="text-[13px] leading-relaxed text-muted">
-          The security metric runs on it anyway, so there is a second answer to read:
-          it kept level <span className="font-mono text-fg">{before.level}</span>{" "}a moment
-          ago and reads level <span className="font-mono text-signal">{after.level}</span>
-          {" "}now. One author wrote a rule about their own node and the graph broke it;
-          the metric reads the topology and charges what it finds there. Both point at the
-          same edge.
+      <More summary="The second answer, from the security metric">
+        {before !== undefined && after !== undefined && (
+          <p className={SMALL}>
+            The metric runs on the graph anyway: level{" "}
+            <span className="font-mono text-fg">{before.level}</span>{" "}a moment ago, level{" "}
+            <span className="font-mono text-signal">{after.level}</span>{" "}now. One author
+            wrote a rule about their own node and the graph broke it, and the metric reads
+            the topology and charges what it finds there. Both point at the same edge.
+          </p>
+        )}
+        {leak !== undefined && (
+          <p className="text-[13px] leading-relaxed text-fg">{leak.explanation}</p>
+        )}
+        {after !== undefined && <Quote>{after.rationale}</Quote>}
+        <p className={SMALL}>
+          An agent that can read the acceptance criteria can write work shaped to pass them.
+          The suite goes green and the problem is untouched. Isolation is a property of the
+          topology, so the analyzer reads it off the graph without running anything.
         </p>
-      )}
-      {leak !== undefined && (
-        <p className="text-[13px] leading-relaxed text-fg">{leak.explanation}</p>
-      )}
-      {after !== undefined && <Quote>{after.rationale}</Quote>}
-      <p className="text-[13px] leading-relaxed text-muted">
-        An agent that can read the acceptance criteria can write work shaped to pass them.
-        The suite goes green and the problem is untouched. Isolation is a property of the
-        topology, so the analyzer can read it off the graph without running anything, and it
-        just did.
-      </p>
+      </More>
+
       <p className="text-[13px] leading-relaxed text-muted">
         Turn it back off. Nobody would ship this, which is why it is not one of the choices.
       </p>
@@ -337,15 +391,17 @@ export function ApprovalIntro() {
         the release boundary, read the report, and answer before anything ships.
       </p>
       <p className={P}>
-        Both are complete factories and both belong in the gallery. The autonomy class
-        records which one you drew, and the panel beside you names the class for the graph
-        on screen along with the arithmetic behind it. It describes the shape of the graph.
+        Both are complete factories and both belong in the gallery. Nothing on DarkPrint
+        ranks the two, and the autonomy class records which one you drew.
       </p>
-      <p className={P}>
-        If this factory touches something you cannot take back, the approver is the design
-        you want. The other class describes a different factory. It does not describe a
-        better one, and nothing on DarkPrint ranks the two.
-      </p>
+      <More summary="Choosing between them">
+        <p className={SMALL}>
+          If this factory touches something you cannot take back, the approver is the design
+          you want. The other class describes a different factory. The panel beside you names
+          the class for the graph on screen along with the arithmetic behind it, and it
+          describes the shape of the graph.
+        </p>
+      </More>
     </>
   );
 }
@@ -398,16 +454,16 @@ export function LoopIntro() {
         <code className="font-mono text-fg">
           {STARTER_NODES.tester} → {STARTER_NODES.debugger} → {STARTER_NODES.tester}
         </code>
-        . It does not go back to the builder.
+        . It does not go back to the builder. The slider on the debugger caps it.
       </p>
-      <p className={P}>
-        Two reasons, and each holds without the other. The work already done is preserved,
-        so the run converges instead of regenerating from scratch and oscillating. And the
-        builder stays isolated from every fact about the failures for the whole run.
-      </p>
-      <p className={P}>
-        The slider is in pane 1, on the debugger. Move it, then read what follows.
-      </p>
+      <More summary="Why the loop stops at the debugger">
+        <p className={SMALL}>
+          Going back to the builder would regenerate from scratch and oscillate instead of
+          converging on the work already done, and it would end the builder&rsquo;s
+          isolation from every fact about the failures for the whole run. Either reason
+          holds without the other.
+        </p>
+      </More>
     </>
   );
 }
@@ -433,13 +489,15 @@ export function LoopDetail({
 
   return (
     <>
+      {/* Doc 1 §8's sentence about cost and runtime used to close this aside. It is the
+          score panel's now and only the score panel's: the panel never unmounts, so the
+          two were on screen together, which is the duplication §4.3's §5 licence names. */}
       <Aside title="What the slider moves">
         {budget !== undefined && (
           <>
             <p className="text-[13px] leading-relaxed text-muted">
-              This is the working behind the three figures beside the slider. At a cap of{" "}
-              <span className="font-mono text-fg">{budget.maxIterations}</span>{" "}the tester
-              runs at most{" "}
+              At a cap of <span className="font-mono text-fg">{budget.maxIterations}</span>{" "}
+              the tester runs at most{" "}
               <span className="font-mono text-fg">{budget.testerRunsAtMost}</span>{" "}times and
               the debugger at most{" "}
               <span className="font-mono text-fg">{budget.debuggerRunsAtMost}</span>, so a
@@ -452,58 +510,49 @@ export function LoopDetail({
             </Quote>
           </>
         )}
-        <p className="text-[13px] leading-relaxed text-muted">
-          The two computed levels are not among the figures that move. They are read off the
-          topology and the cards, and a cap of 1 and a cap of 10 are both a cap
+      </Aside>
+
+      {/* Two disclosures where there were four paragraphs and two asides. The cap's effect
+          on the two computed levels and its effect on the accumulated leak are one subject
+          read twice, so they are folded behind one summary each rather than printed in
+          sequence under the arithmetic that is the step's actual argument (§4.3). */}
+      <More summary="What the cap does not move">
+        <p className={SMALL}>
+          Neither computed level moves with it. A cap of 1 and a cap of 10 are both a cap
           {security !== undefined && (
             <>
               , so security stays at level{" "}
               <span className="font-mono text-fg">{security.level}</span>{" "}either way
             </>
           )}
-          . What the cap is worth shows up in the three counts instead, and they are counts
-          rather than estimates.
+          . What the cap is worth shows up in the three counts beside the slider, and they
+          are counts rather than estimates.
         </p>
         {uncapped !== undefined && (
           <>
-            <p className="text-[13px] leading-relaxed text-muted">
+            <p className={SMALL}>
               Take the cap away entirely and the same analyzer reads level{" "}
               <span className="font-mono text-signal">{uncapped.level}</span>.
             </p>
             <Quote>{uncapped.rationale}</Quote>
           </>
         )}
-        <p className="text-[13px] leading-relaxed text-muted">
-          A low cap costs you convergence: fewer turns, more runs that stop without a green
-          build. A high cap costs you model calls and widens the accumulated leak below.
-          Designing a dark factory is a trade, and neither end of this slider is the answer.
+        <p className={SMALL}>
+          A low cap costs convergence: fewer turns, more runs that stop without a green
+          build. A high cap costs model calls and widens the accumulated leak. Designing a
+          dark factory is a trade, and neither end of the slider is the answer.
         </p>
-        <p className="text-[11px] leading-relaxed text-dim">
-          What a run costs in money and time is not on this page. Execution happens on your
-          machine, so both are reported by whoever runs a blueprint and DarkPrint has no way
-          to measure them. The counts beside the slider are the part that can be read off
-          the graph without running it.
-        </p>
-      </Aside>
+      </More>
 
-      <Aside title="The obvious objection">
-        <p className="text-[13px] leading-relaxed text-muted">
-          If the builder must not see the criteria, why may the debugger see the failures?
+      <More summary="Why the debugger may see the failures when the builder may not see the criteria">
+        <p className={SMALL}>
+          Seeing the criteria lets an agent write work built to pass them without solving the
+          problem. Seeing the evidence of a failure it caused only tells it what broke. The
+          first is gaming. The second is feedback. So the debugger receives stack traces,
+          failed assertions, and obtained beside expected. It does not receive the criteria
+          set. Hand it everything and it starts special-casing again.
         </p>
-        <p className="text-[13px] leading-relaxed text-fg">
-          Seeing the criteria lets an agent write work built to pass them without solving
-          the problem. Seeing the evidence of a failure it caused only tells it what broke.
-          The first is gaming. The second is feedback.
-        </p>
-        <p className="text-[13px] leading-relaxed text-muted">
-          So the debugger receives stack traces, failed assertions, and obtained beside
-          expected. It does not receive the criteria set. Hand it everything and it starts
-          special-casing again.
-        </p>
-      </Aside>
-
-      <Aside title="Why the cap is also an isolation control">
-        <p className="text-[13px] leading-relaxed text-muted">
+        <p className={SMALL}>
           Over many turns that distinction wears thin. Each round of error messages reveals
           another slice of the acceptance surface, and a debugger that accumulates them can
           reconstruct a good deal of the criteria without ever being shown them. The cap
@@ -513,66 +562,68 @@ export function LoopDetail({
               {" "}
               At the position the slider is in, the debugger sees at most{" "}
               <span className="font-mono text-fg">{budget.debuggerRunsAtMost}</span>{" "}
-              {budget.debuggerRunsAtMost === 1 ? "round" : "rounds"} of it. That is the
-              third figure beside the slider, and it is the same number as the debugger
-              runs above: a round of evidence is a run of the debugger.
+              {budget.debuggerRunsAtMost === 1 ? "round" : "rounds"} of it. A round of
+              evidence is a run of the debugger, which is why that is the same number as the
+              debugger runs above.
             </>
           )}
         </p>
-      </Aside>
+      </More>
 
-      <p className={P}>
-        A healthy loop needs three things. The analyzer can check the first from the graph
-        and has to take the other two from the card.
-      </p>
-      <dl className="flex flex-col gap-3 border-l-2 border-line pl-4">
-        <div className="flex flex-col gap-1">
-          <dt className="text-[13px] text-fg">An iteration cap.</dt>
-          <dd className="text-[13px] leading-relaxed text-muted">
-            Without one the cycle has no exit condition, and doc 3 §4.1 charges{" "}
-            <code className="font-mono text-[12px]">unbounded-loop</code>{" "}for it. The slider
-            in pane 1 writes it into the debugger&rsquo;s card and into{" "}
-            <code className="font-mono text-[12px]">max_retries</code>{" "}in the runnable DOT.
-            {capKey !== undefined && (
-              <>
-                {" "}
-                <Param name={capKey} value={params[capKey]} />
-              </>
-            )}
-          </dd>
-        </div>
-        <div className="flex flex-col gap-1">
-          <dt className="text-[13px] text-fg">A progress criterion.</dt>
-          <dd className="text-[13px] leading-relaxed text-muted">
-            If two turns produce identical failures the debugger is circling, and another
-            pass costs a round without buying information. That is a statement about the
-            content of two runs, which a topology cannot express, so it lives in the
-            card.{" "}
-            {params.stop_on_repeated_evidence === undefined ? (
-              <>Read the debugger&rsquo;s prose in pane 4 and make sure it is there.</>
-            ) : (
-              <Param
-                name="stop_on_repeated_evidence"
-                value={params.stop_on_repeated_evidence}
-              />
-            )}
-          </dd>
-        </div>
-        <div className="flex flex-col gap-1">
-          <dt className="text-[13px] text-fg">An escalation path.</dt>
-          <dd className="text-[13px] leading-relaxed text-muted">
-            A run that spends its cap has to do something other than fail where it stands.
-            This one ends and hands back the evidence it gathered, so whoever filed the
-            request can decide whether the plan was wrong.{" "}
-            {params.on_cap_exhausted !== undefined && (
-              <Param name="on_cap_exhausted" value={params.on_cap_exhausted} />
-            )}{" "}
-            An edge back to the planner is the other answer, and it costs something: it
-            would take the planner&rsquo;s incoming degree above zero and move the
-            run&rsquo;s entry point onto the builder.
-          </dd>
-        </div>
-      </dl>
+      <More summary="What a healthy loop needs">
+        <p className={SMALL}>
+          Three things. The analyzer can check the first from the graph and has to take the
+          other two from the card.
+        </p>
+        <dl className="flex flex-col gap-3 border-l-2 border-line pl-4">
+          <div className="flex flex-col gap-1">
+            <dt className="text-[13px] text-fg">An iteration cap.</dt>
+            <dd className="text-[13px] leading-relaxed text-muted">
+              Without one the cycle has no exit condition, and doc 3 §4.1 charges{" "}
+              <code className="font-mono text-[12px]">unbounded-loop</code>{" "}for it. The
+              slider writes it into the debugger&rsquo;s card and into{" "}
+              <code className="font-mono text-[12px]">max_retries</code>{" "}in the runnable
+              DOT.
+              {capKey !== undefined && (
+                <>
+                  {" "}
+                  <Param name={capKey} value={params[capKey]} />
+                </>
+              )}
+            </dd>
+          </div>
+          <div className="flex flex-col gap-1">
+            <dt className="text-[13px] text-fg">A progress criterion.</dt>
+            <dd className="text-[13px] leading-relaxed text-muted">
+              If two turns produce identical failures the debugger is circling, and another
+              pass buys nothing. A topology cannot say that about the content of two runs, so
+              it lives in the card.{" "}
+              {params.stop_on_repeated_evidence === undefined ? (
+                <>Read the debugger&rsquo;s prose in the card and make sure it is there.</>
+              ) : (
+                <Param
+                  name="stop_on_repeated_evidence"
+                  value={params.stop_on_repeated_evidence}
+                />
+              )}
+            </dd>
+          </div>
+          <div className="flex flex-col gap-1">
+            <dt className="text-[13px] text-fg">An escalation path.</dt>
+            <dd className="text-[13px] leading-relaxed text-muted">
+              A run that spends its cap has to do something other than fail where it stands.
+              This one ends and hands the evidence back, so whoever filed the request can
+              decide whether the plan was wrong.{" "}
+              {params.on_cap_exhausted !== undefined && (
+                <Param name="on_cap_exhausted" value={params.on_cap_exhausted} />
+              )}{" "}
+              An edge back to the planner is the other answer, and it costs something: the
+              planner&rsquo;s incoming degree goes above zero and the run&rsquo;s entry point
+              moves onto the builder.
+            </dd>
+          </div>
+        </dl>
+      </More>
     </>
   );
 }

@@ -29,16 +29,16 @@ describe("autonomyStatement", () => {
   it("drops the band ordinal and keeps the class", () => {
     expect(
       autonomyStatement(
-        "5 of 5 nodes run unattended, none have a person in the loop — 1.00 > 0.90 → level 4 (Closed-loop).",
+        "5 of 5 nodes run unattended, none have a person in the loop. 1.00 > 0.90 → level 4 (Closed-loop).",
       ),
     ).toBe(
-      "5 of 5 nodes run unattended, none have a person in the loop — 1.00 > 0.90 → Closed-loop.",
+      "5 of 5 nodes run unattended, none have a person in the loop. 1.00 > 0.90 → Closed-loop.",
     );
   });
 
   it("keeps the counts, the fraction and the threshold it is compared against", () => {
     const out = autonomyStatement(
-      "6 of 7 nodes run unattended, 1 has a person in the loop — 0.8571 ≥ 0.70 → level 3 (Conditional).",
+      "6 of 7 nodes run unattended, 1 has a person in the loop. 0.8571 ≥ 0.70 → level 3 (Conditional).",
     );
     expect(out).toContain("6 of 7 nodes run unattended");
     expect(out).toContain("1 has a person in the loop");
@@ -47,7 +47,7 @@ describe("autonomyStatement", () => {
   });
 
   it("leaves a sentence that carries no ordinal untouched", () => {
-    const plain = "Nothing to score — the fraction defaults to 0.00 < 0.40.";
+    const plain = "Nothing to score. The fraction defaults to 0.00 < 0.40.";
     expect(autonomyStatement(plain)).toBe(plain);
   });
 

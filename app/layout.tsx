@@ -67,8 +67,26 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-void text-fg">
+        {/* WCAG 2.4.1. The landmarks below give a screen-reader user a bypass already, so
+            this is for the reader who navigates by keyboard and does not run one: the
+            header is ten links, and the luminous register then makes every node of the
+            first figure a focus stop, so reaching the landing's doors was more than twenty
+            tabs. Visually hidden until it takes focus, which is the whole convention: it
+            is the first thing in the tab order and nothing else changes. */}
+        <a
+          href="#main"
+          className="sr-only rounded-md border border-cyan bg-void px-4 py-2 font-mono text-sm text-cyan focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
+        >
+          Skip to content
+        </a>
         <SiteHeader />
-        <main className="flex-1">{children}</main>
+        {/* `tabIndex={-1}` so the skip link's target actually takes focus in every engine:
+            a fragment moves the scroll position everywhere and moves focus only where the
+            target is focusable, and a reader whose focus stayed in the header would tab
+            straight back into the nav. */}
+        <main id="main" tabIndex={-1} className="flex-1 outline-none">
+          {children}
+        </main>
         <SiteFooter />
         {/*
           Page-view counting only, and only once deployed on Vercel — it no-ops

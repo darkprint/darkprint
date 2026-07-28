@@ -35,8 +35,11 @@
    sentences under them are this site's, the article is credited
    with the account of the climb it actually contains, and the
    source note says which is which. Getting this wrong was
-   reader-visible: `/how-to-build-a-dark-factory` opens on "the gap
+   reader-visible: `/towards-a-dark-factory` opens on "the gap
    between level 2 and level 5" beside a link whose top rung is 4.
+   (That route was `/how-to-build-a-dark-factory` when this was
+   written; redesign spec §4.2 renamed it, and this comment was the
+   fourth stale reference to the old path.)
 
    ⚠️ §1.1 is binding here more than anywhere: nothing in this file
    may teach a reader to optimise a number. The five levels describe
@@ -77,10 +80,11 @@
 import Link from "next/link";
 
 import {
-  Edge,
-  HumanMark,
-  NodeBox,
-  Scene,
+  FLOW,
+  FlowEdge,
+  FlowNode,
+  FlowScene,
+  HumanFlowNode,
   Sheet,
   VIZ,
   toneColor,
@@ -170,9 +174,42 @@ const SOURCES: Source[] = [
    sees between two of them is the difference the copy is about.
    ==================================================== */
 
-const SCENE = { width: 640, height: 200 } as const;
+/**
+ * The frame, and why it is 420 rather than the 640 these five were drawn in.
+ *
+ * A label inside an `<svg>` renders at its units times (rendered CSS width ÷ frame width),
+ * and `FLOW.frame` carries the measurement: this sheet is 328 CSS px wide on a phone. At
+ * 640 that put every label on these five drawings between 5.1 and 6.7 CSS px, the smallest
+ * text anywhere on the site, on the page that teaches the ladder the whole positioning
+ * argument rests on. At 420 they clear `FLOW.frame.legible`.
+ *
+ * Everything below is the same drawing at the new scale, with the node spacing opened up
+ * where the wider labels needed it: level 5's five words are the binding constraint, and
+ * "debug" beside "release" is the tightest pair on the page.
+ */
+const SCENE = { width: 420, height: 148 } as const;
 /** The path from the request to the shipped change. Identical in all five drawings. */
-const PATH = { y: 130, from: 120, to: 520 } as const;
+const PATH = { y: 88, from: 79, to: 341 } as const;
+
+/**
+ * Radius of every disc in these five frames.
+ *
+ * The five boxes each drawing used to be were the CAD register the author rejected by
+ * name (redesign spec §1), and this file was one of the three still shipping it. A disc
+ * carries one label and no sub-label, so what a sub-label used to say is in the glyph's
+ * accessible name now: the drawings lost "does the typing" and "writes it and runs it" as
+ * printed words and kept them as what a screen reader is told.
+ */
+const R = 7;
+
+/** Level 5's run, as a table, so five near-identical lines do not have to be read. */
+const RUN_5: readonly { x: number; label: string }[] = [
+  { x: 96, label: "plan" },
+  { x: 148, label: "build" },
+  { x: 200, label: "test" },
+  { x: 252, label: "debug" },
+  { x: 310, label: "release" },
+];
 
 /**
  * One stretch of the path.
@@ -220,22 +257,25 @@ function WorkPath({
         stroke={toneColor("dim")}
         strokeWidth={VIZ.stroke.hair}
       />
+      {/* Above the ticks rather than outside them. Beside the path, "specification" at
+          `FLOW.label.size` runs off the left edge of a 420-unit frame; centred over its own
+          tick it fits, and the two ends read as a pair. */}
       <text
         data-viz="label"
-        x={PATH.from - 8}
-        y={PATH.y + 4}
-        textAnchor="end"
-        fontSize={VIZ.font.sub}
+        x={PATH.from}
+        y={PATH.y - 14}
+        textAnchor="middle"
+        fontSize={FLOW.label.size}
         fill={toneColor("dim")}
       >
         {start}
       </text>
       <text
         data-viz="label"
-        x={PATH.to + 8}
-        y={PATH.y + 4}
-        textAnchor="start"
-        fontSize={VIZ.font.sub}
+        x={PATH.to}
+        y={PATH.y - 14}
+        textAnchor="middle"
+        fontSize={FLOW.label.size}
         fill={toneColor("dim")}
       >
         {end}
@@ -311,9 +351,21 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
     body: (
       <>
         <WorkPath runs={[{ from: PATH.from, to: PATH.to, human: true }]} start="request" end="merged" />
-        <NodeBox x={320} y={54} width={160} height={38} label="completion model" tone="dim" />
-        <Edge from={[320, 73]} to={[320, 114]} tone="dim" label="the next few tokens" />
-        <HumanMark x={320} y={PATH.y} label="writes the code" />
+        {/* Named rather than labelled. A vertical run this short puts its label within nine
+            units of the disc's own label, and the two words overlapped on the drawing. The
+            level's own sentence beside it says what the run carries — "the model finishes
+            the line you are typing" — and the accessible name says it inside the figure. */}
+        <FlowEdge
+          from={[210, 34]}
+          to={[210, 78]}
+          fromRadius={R}
+          toRadius={0}
+          tone="dim"
+          name="the next few tokens"
+          pulse={false}
+        />
+        <FlowNode x={210} y={30} r={R} tone="dim" label="completion model" />
+        <HumanFlowNode x={210} y={PATH.y} r={8} label="writes the code" />
       </>
     ),
   },
@@ -325,16 +377,23 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
       <>
         <WorkPath
           runs={[
-            { from: PATH.from, to: 232, human: true },
-            { from: 232, to: 408 },
-            { from: 408, to: PATH.to, human: true },
+            { from: PATH.from, to: 152, human: true },
+            { from: 152, to: 268, human: false },
+            { from: 268, to: PATH.to, human: true },
           ]}
           start="request"
           end="merged"
         />
-        <NodeBox x={320} y={PATH.y} width={160} height={38} label="the agent" sub="does the typing" />
-        <HumanMark x={176} y={PATH.y} label="prompts" />
-        <HumanMark x={464} y={PATH.y} label="reviews, merges" />
+        <FlowNode
+          x={205}
+          y={PATH.y}
+          r={R}
+          tone="cyan"
+          label="the agent"
+          name="the agent, which does the typing"
+        />
+        <HumanFlowNode x={112} y={PATH.y} r={8} label="prompts" />
+        <HumanFlowNode x={312} y={PATH.y} r={8} label="reviews, merges" />
       </>
     ),
   },
@@ -346,15 +405,31 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
       <>
         <WorkPath
           runs={[
-            { from: PATH.from, to: 408 },
-            { from: 408, to: PATH.to, human: true },
+            { from: PATH.from, to: 268, human: false },
+            { from: 268, to: PATH.to, human: true },
           ]}
           start="task"
           end="lands"
         />
-        <NodeBox x={262} y={PATH.y} width={170} height={38} label="the agent" sub="writes it and runs it" />
-        <Edge from={[318, 149]} to={[206, 149]} bend={-58} tone="dim" label="reads its own output" />
-        <HumanMark x={464} y={PATH.y} label="decides whether it lands" />
+        <FlowEdge
+          from={[196, PATH.y]}
+          to={[144, PATH.y]}
+          bend={-34}
+          fromRadius={R}
+          toRadius={R}
+          tone="dim"
+          label="reads its own output"
+          pulse={false}
+        />
+        <FlowNode
+          x={170}
+          y={PATH.y}
+          r={R}
+          tone="cyan"
+          label="the agent"
+          name="the agent, which writes it and runs it"
+        />
+        <HumanFlowNode x={305} y={PATH.y} r={8} label="decides whether it lands" />
       </>
     ),
   },
@@ -366,24 +441,36 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
       <>
         <WorkPath
           runs={[
-            { from: PATH.from, to: 452 },
-            { from: 452, to: PATH.to, human: true },
+            { from: PATH.from, to: 296, human: false },
+            { from: 296, to: PATH.to, human: true },
           ]}
           start="task"
           end="shipped"
         />
-        <Boundary x={164} y={106} width={250} height={48} label="harness" />
-        <NodeBox x={226} y={PATH.y} width={104} height={34} label="orchestrator" />
-        <NodeBox x={350} y={PATH.y} width={104} height={34} label="evaluator" />
-        <Edge from={[278, PATH.y]} to={[292, PATH.y]} />
-        {/* The person is upstream of the harness rather than on the path. `HumanMark`
-            hangs its caption directly under the mark, so the run out of it leaves
-            sideways: an edge dropping away would be drawn straight through the words. */}
-        <HumanMark x={144} y={52} label="wrote the constraints" />
-        <NodeBox x={288} y={52} width={120} height={32} label="constraints" tone="dim" />
-        <Edge from={[156, 52]} to={[222, 52]} tone="dim" />
-        <Edge from={[288, 68]} to={[288, 102]} tone="dim" />
-        <HumanMark x={480} y={PATH.y} label="reads at a checkpoint" />
+        <Boundary x={128} y={72} width={154} height={32} label="harness" />
+        <FlowEdge
+          from={[160, PATH.y]}
+          to={[250, PATH.y]}
+          fromRadius={R}
+          toRadius={R}
+          pulse={false}
+        />
+        <FlowNode x={160} y={PATH.y} r={R} tone="cyan" label="orchestrator" />
+        <FlowNode x={250} y={PATH.y} r={R} tone="cyan" label="evaluator" />
+        {/* The person is upstream of the harness rather than on the path. A label hangs
+            directly under its own glyph, so the run out of the mark leaves sideways: an
+            edge dropping away would be drawn straight through the words. */}
+        <HumanFlowNode x={88} y={24} r={8} label="wrote the constraints" />
+        <FlowEdge
+          from={[189, 24]}
+          to={[189, 66]}
+          fromRadius={R}
+          toRadius={0}
+          tone="dim"
+          pulse={false}
+        />
+        <FlowNode x={189} y={24} r={R} tone="dim" label="constraints" />
+        <HumanFlowNode x={318} y={PATH.y} r={8} label="reads at a checkpoint" />
       </>
     ),
   },
@@ -394,12 +481,18 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
     body: (
       <>
         <WorkPath runs={[{ from: PATH.from, to: PATH.to }]} start="specification" end="released" />
-        <NodeBox x={156} y={PATH.y} width={72} height={30} label="plan" />
-        <NodeBox x={238} y={PATH.y} width={72} height={30} label="build" />
-        <NodeBox x={320} y={PATH.y} width={72} height={30} label="test" />
-        <NodeBox x={402} y={PATH.y} width={72} height={30} label="debug" />
-        <NodeBox x={484} y={PATH.y} width={72} height={30} label="release" />
-        <Edge from={[402, 145]} to={[320, 145]} bend={-34} tone="dim" />
+        <FlowEdge
+          from={[252, PATH.y]}
+          to={[200, PATH.y]}
+          bend={-FLOW.edge.bend.wide}
+          fromRadius={R}
+          toRadius={R}
+          tone="dim"
+          pulse={false}
+        />
+        {RUN_5.map((step) => (
+          <FlowNode key={step.label} x={step.x} y={PATH.y} r={R} tone="cyan" label={step.label} />
+        ))}
       </>
     ),
   },
@@ -451,9 +544,13 @@ function LevelRow({ level, flip }: { level: Level; flip: boolean }) {
         title={level.name}
         note={drawing.note}
       >
-        <Scene width={SCENE.width} height={SCENE.height} label={drawing.label}>
+        {/* A `FlowScene` rather than a plain `Scene`, because `FLOW_CSS` is scoped to the
+            attribute this writes: without it a disc inside would keep its drawn focus ring
+            switched off by the presentation attribute that hides it, and a keyboard reader
+            would land on the glyph with nothing to show for it. */}
+        <FlowScene width={SCENE.width} height={SCENE.height} label={drawing.label}>
           {drawing.body}
-        </Scene>
+        </FlowScene>
       </Sheet>
     </li>
   );

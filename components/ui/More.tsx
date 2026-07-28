@@ -1,0 +1,54 @@
+import { cx } from "@/lib/format";
+
+/* ============================================================
+   The support behind something, folded away.
+
+   Redesign spec §4.3 asked `/build` for "one idea per step, with
+   the supporting prose behind a disclosure", and the reviewers
+   measured that it worked: the visible word count per step fell by
+   between 37% and 66% and nothing on the page stopped being true.
+   §4.4 asks the same of `/what-it-isnt`, which is now the longest
+   page on the site, and the climb's four-phase account is in the
+   same position.
+
+   So the device is one component rather than three copies. It was
+   written inside `components/build/steps.tsx` and moved here the
+   moment a second page needed it.
+
+   A native `<details>`, the same disclosure `DownloadPanel` and
+   `DiagnosticList` already use, so the whole site opens one the
+   same way. It is deliberately not a tab and not a modal: the
+   content stays in the document, keyboard reachable, printable,
+   searchable by find-in-page, and — the reason it is allowed here
+   at all — present in the prerendered HTML, which is the property
+   that makes §4.3's cut a cut in density rather than a cut in what
+   the page says.
+   ============================================================ */
+
+export function More({
+  summary,
+  children,
+  className,
+}: {
+  /** What is behind it, said plainly enough that a reader can decide not to open it. */
+  summary: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <details
+      className={cx("group rounded-lg border border-line bg-surface-2/40 px-4 py-2.5", className)}
+    >
+      <summary className="flex cursor-pointer list-none items-baseline gap-2 text-[13px] text-muted transition-colors hover:text-fg [&::-webkit-details-marker]:hidden">
+        <span
+          className="inline-block shrink-0 text-cyan transition-transform group-open:rotate-90"
+          aria-hidden
+        >
+          ▸
+        </span>
+        {summary}
+      </summary>
+      <div className="mt-3 flex flex-col gap-3">{children}</div>
+    </details>
+  );
+}

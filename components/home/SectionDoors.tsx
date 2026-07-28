@@ -1,27 +1,39 @@
 /* ============================================================
-   Rung 6 of doc 2 §2.1 — the two doors.
+   Beat 5 of redesign spec §2, and rung 6 of doc 2 §2.1: two doors.
 
    "Due porte. *Sfoglia i blueprint* oppure *costruisci il tuo*."
 
-   The second door points at the guided path (§5), which now exists
-   at `/build`. The status token stays, because the register is what
-   the rest of the site uses for the difference between designed and
-   built, and the door still has something to be honest about: the
-   path is live and it stops at the download, since accounts and
-   publishing (§6) are Fase 4. Saying so on the door beats letting a
-   reader find out an hour in.
+   ── What came off, and why that is allowed ──
+   Redesign spec §5 lets a page drop "prose that says the same thing
+   a second time", and this section carried four paragraphs of it.
+   The gallery door explained what a published bundle contains,
+   which every blueprint page prints in full; the build door
+   explained the three choices, which `/build` puts on the screen a
+   reader is about to open; and the closing line pointed at
+   `/which-tasks`, a route that has folded into
+   `/towards-a-dark-factory` and is reachable from the nav.
 
-   The counters are the three things counted off the real archive at
-   build time. The seeded pair that used to sit beside them (builders,
-   pulls) needed a paragraph of disclaimer to be honest, which is a
-   poor trade for a number nobody came here for.
+   ── What stayed, and why it had to ──
+   The line about where the guided path stops. Spec §0.4: nothing
+   may be described as working that is not built, "say so wherever
+   the question arises", and a door that says "build your own" is
+   exactly where it arises. One sentence is enough to be honest;
+   four were enough to lose the reader.
+
+   The three counts stay because they are read off the archive at
+   build time rather than written here, so they are the one thing on
+   this beat a reader could check.
+
+   And the line saying so stays with them. It went out with the four
+   paragraphs and it was not one of them: "Counted off the archive on
+   the last deploy, and nothing here is rounded up" is the claim that
+   makes the three figures worth printing, and it was the only
+   sentence on the site that made it. A number beside a door with
+   nothing behind it is marketing.
    ============================================================ */
 
-import Link from "next/link";
 import { PLATFORM_STATS } from "@/lib/data";
 import { ButtonLink } from "@/components/ui/Button";
-
-const STARTER = "/blueprints/starter-software-factory";
 
 const COUNTS: { value: number; label: string }[] = [
   { value: PLATFORM_STATS.blueprints, label: "blueprints" },
@@ -29,13 +41,30 @@ const COUNTS: { value: number; label: string }[] = [
   { value: PLATFORM_STATS.terms, label: "ontology terms" },
 ];
 
-/** Glyph and word both, never a colour on its own. */
-function Status({ glyph, word }: { glyph: string; word: string }) {
+function Door({
+  title,
+  line,
+  href,
+  cta,
+  children,
+}: {
+  title: string;
+  line: string;
+  href: string;
+  cta: string;
+  children?: React.ReactNode;
+}) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-blueprint-line/40 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-blueprint-line">
-      <span aria-hidden>{glyph}</span>
-      {word}
-    </span>
+    <article className="flex flex-col gap-4 rounded-lg border border-blueprint-line/40 bg-blueprint/20 p-6 sm:p-8">
+      <h3 className="font-display text-2xl font-semibold text-blueprint-ink">{title}</h3>
+      <p className="text-sm leading-relaxed text-blueprint-ink/85">{line}</p>
+      {children}
+      <div className="mt-auto pt-2">
+        <ButtonLink href={href} variant="primary" size="lg">
+          {cta}
+        </ButtonLink>
+      </div>
+    </article>
   );
 }
 
@@ -66,31 +95,15 @@ export function SectionDoors() {
           <h2 className="max-w-3xl font-display text-4xl font-semibold leading-tight tracking-tight text-blueprint-ink sm:text-5xl">
             Read one, or build one
           </h2>
-          <p
-            className="max-w-xl text-lg leading-relaxed"
-            style={{ color: "var(--color-blueprint-line)" }}
-          >
-            Specifications go in. Software comes out. The part you have to design is
-            everything in between.
-          </p>
         </div>
 
         <div className="mt-12 grid gap-5 md:grid-cols-2">
-          {/* ---------- door one ---------- */}
-          <article className="flex flex-col gap-4 rounded-lg border border-blueprint-line/40 bg-blueprint/20 p-6 sm:p-8">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="font-display text-2xl font-semibold text-blueprint-ink">
-                Browse the blueprints
-              </h3>
-              <Status glyph="✓" word="live" />
-            </div>
-            <p className="text-sm leading-relaxed text-blueprint-ink/85">
-              Every graph in the gallery is published as its files: a DOT topology, one
-              pinned card per node, and a digest over the lot. Both computed scores print
-              the arithmetic and name the nodes behind it, so a reader can check either
-              number against the source on the page. The files come down one at a time;
-              there is no bundle archive to fetch yet.
-            </p>
+          <Door
+            title="Browse the blueprints"
+            line="Every graph is published as the files it runs from."
+            href="/blueprints"
+            cta="Open the gallery"
+          >
             <dl className="flex flex-wrap gap-x-6 gap-y-2 border-t border-blueprint-line/25 pt-4">
               {COUNTS.map((c) => (
                 <div key={c.label}>
@@ -112,61 +125,23 @@ export function SectionDoors() {
                 </div>
               ))}
             </dl>
+            {/* What the three figures are worth, in one line. `PLATFORM_STATS` counts
+                `content/` at build time, so this is checkable rather than decorative. */}
             <p className="text-xs leading-relaxed text-blueprint-ink/70">
               Counted off the archive on the last deploy, and nothing here is rounded up.
             </p>
-            <div className="mt-auto pt-2">
-              <ButtonLink href="/blueprints" variant="primary" size="lg">
-                Open the gallery
-              </ButtonLink>
-            </div>
-          </article>
+          </Door>
 
-          {/* ---------- door two ---------- */}
-          <article className="flex flex-col gap-4 rounded-lg border border-blueprint-line/40 bg-blueprint/20 p-6 sm:p-8">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="font-display text-2xl font-semibold text-blueprint-ink">
-                Build your own
-              </h3>
-              <Status glyph="✓" word="live" />
-            </div>
-            <p className="text-sm leading-relaxed text-blueprint-ink/85">
-              The guided path takes about an hour and ends with a factory of your own,
-              downloaded and runnable on your machine. You start from the five-node starter,
-              take it apart, and make three choices that stay in the artefact. One of those
-              choices decides whether a person stands at the release boundary, so the class
-              the analyzer reads off the graph is yours to pick. Both computed scores move
-              with the graph while you work, on the exact bytes you download.
-            </p>
-            <p className="border-l-2 border-blueprint-line/50 pl-4 text-sm leading-relaxed text-blueprint-ink/85">
-              It ends at the download. There is nowhere to save a blueprint yet: accounts
-              and publishing are designed and neither is built, so nothing you make there
-              leaves your machine. The same validator runs on files you drop into it, if you
-              would rather point it at a graph you already have.
-            </p>
-            <div className="mt-auto flex flex-wrap gap-3 pt-2">
-              <ButtonLink href="/build" variant="primary" size="lg">
-                Start the guided path
-              </ButtonLink>
-              <ButtonLink href={STARTER} variant="outline" size="lg">
-                Open the starter blueprint
-              </ButtonLink>
-              <ButtonLink href="/upload" variant="outline" size="lg">
-                Validate a bundle
-              </ButtonLink>
-            </div>
-          </article>
+          <Door
+            title="Build your own"
+            line="An hour of choices, and a factory that downloads to your machine."
+            href="/build"
+            cta="Start the guided path"
+          />
         </div>
 
         <p className="mt-8 text-center text-sm leading-relaxed text-blueprint-ink/80">
-          Before you point one at real work, it is worth knowing what these are bad at.{" "}
-          <Link
-            href="/which-tasks"
-            className="text-blueprint-ink underline decoration-blueprint-line/60 underline-offset-4 transition-colors hover:decoration-blueprint-ink"
-          >
-            Which tasks fit a dark factory
-          </Link>
-          .
+          The guided path ends at the download. There is nowhere to publish yet.
         </p>
       </div>
     </section>

@@ -264,7 +264,7 @@ export function computeAutonomy(
       autonomousNodes: 0,
       totalNodes: 0,
       contributions,
-      rationale: `Nothing to score — the fraction defaults to 0.00 < ${fmt(config.autonomy.level2)} → level 1 (${labelForLevel(1)}).`,
+      rationale: `Nothing to score. The fraction defaults to 0.00 < ${fmt(config.autonomy.level2)} → level 1 (${labelForLevel(1)}).`,
       ontologyVersion,
       diagnostics,
     };
@@ -319,7 +319,7 @@ export function computeAutonomy(
     autonomousNodes,
     totalNodes,
     contributions,
-    rationale: `${unattendedClause(autonomousNodes, totalNodes)}, ${humanClause(humanNodes)}${unresolvedClause(unresolvedIds.length)} — ${comparison} → level ${level} (${label}).`,
+    rationale: `${unattendedClause(autonomousNodes, totalNodes)}, ${humanClause(humanNodes)}${unresolvedClause(unresolvedIds.length)}. ${comparison} → level ${level} (${label}).`,
     ontologyVersion,
     diagnostics,
   };
@@ -401,7 +401,7 @@ function contributionFor(
       resolved: true,
       reason: "human-in-the-loop-type",
       term: citation.term,
-      explanation: `${what} (${citeType(card.type, citation)}) — a person acts here.`,
+      explanation: `${what} (${citeType(card.type, citation)}). A person acts here.`,
     };
   }
 
@@ -413,7 +413,7 @@ function contributionFor(
       requiresHuman: true,
       resolved: true,
       reason: "requires-human-flag",
-      explanation: `${what} (requires_human: true) — a person acts here.`,
+      explanation: `${what} (requires_human: true). A person acts here.`,
     };
   }
 
@@ -423,7 +423,7 @@ function contributionFor(
     name: card.name,
     requiresHuman: false,
     resolved: true,
-    explanation: `${what} (type: ${card.type}) — runs unattended.`,
+    explanation: `${what} (type: ${card.type}). Runs unattended.`,
   };
 }
 

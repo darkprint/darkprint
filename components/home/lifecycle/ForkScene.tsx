@@ -7,41 +7,39 @@
    to do is spot the difference: one card edited, and the last node
    replaced by a place where a person acts.
 
-   The person is drawn with `HumanMark`, which is violet by
-   construction and cannot be handed the alarm colour (doc 2 §1.1,
-   and `components/viz/Glyphs.tsx` enforces it in the type). The
+   The person is drawn with `HumanFlowNode`, which is violet by
+   construction and accepts no colour argument at all (doc 2 §1.1,
+   and `components/viz/FlowGlyphs.tsx` enforces it in the type). The
    caption says what they do there and nothing about what it costs:
-   the copy on the right is a complete factory, and so is the one on
-   the left.
+   the copy on the second row is a complete factory, and so is the
+   one on the first.
+
+   Converted out of the CAD register on the author's instruction
+   (redesign spec §1); `DownloadScene` beside it carries the note.
    ============================================================ */
 
-import { Edge, HumanMark, NodeBox, Scene, VIZ, VIZ_LINE, nodePort } from "@/components/viz";
+import { FlowEdge, FlowNode, FlowScene, HumanFlowNode, toneColor } from "@/components/viz";
+import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
+import { VIZ } from "@/components/viz";
 
-import { useSceneReveal } from "./scene-reveal";
-
-const BOX = { width: 96, height: 34 } as const;
+/** 340 for the reason `DownloadScene` records: these panels render 270 CSS px wide. */
+const FIGURE = { width: 340, height: 202 } as const;
 
 /** Column centres, shared by both rows so the two graphs sit exactly on top of each other. */
-const COLUMNS = [66, 220, 374] as const;
-const PUBLISHED_Y = 56;
-const COPY_Y = 152;
+const COLUMNS = [62, 158, 254] as const;
+const PUBLISHED_Y = 52;
+const COPY_Y = 146;
 
-/** The run between two neighbouring columns, at either row. */
-function run(from: number, to: number, y: number) {
-  return {
-    from: nodePort(from, y, "right", { ...BOX, pad: 4 }),
-    to: nodePort(to, y, "left", { ...BOX, pad: 4 }),
-  };
-}
+const R = 7;
 
+/** A caption naming which row is which. Two words, in the register the sheet uses. */
 function Caption({ y, children }: { y: number; children: string }) {
   return (
     <text
-      data-scene-part
-      x={6}
+      x={8}
       y={y}
       fontSize={VIZ.font.sub}
-      fill={VIZ_LINE}
+      fill={toneColor("dim")}
       letterSpacing="0.08em"
     >
       {children}
@@ -50,43 +48,65 @@ function Caption({ y, children }: { y: number; children: string }) {
 }
 
 export function ForkScene() {
-  const { ref, armed } = useSceneReveal();
+  const flow = useLuminousFlow({ amount: 0.3 });
 
   return (
-    <Scene
-      ref={ref}
-      width={440}
-      height={200}
+    <FlowScene
+      {...flow.scene}
+      width={FIGURE.width}
+      height={FIGURE.height}
       id="lifecycle-fork"
-      label="The same three-node line drawn twice. The published copy ends at a release node. The reader's copy has an edited builder card and ends where a person approves the release."
+      label="The same three-node run drawn twice, once as published and once edited"
+      description="The published copy runs builder, tester, deployer. The reader's copy has an edited builder card, and where the deployer was there is now a person who approves the release. Both are complete blueprints."
     >
-      <g style={{ opacity: armed ? 0 : 1 }}>
-        <Caption y={20}>as published</Caption>
-        <NodeBox id="builder" x={COLUMNS[0]} y={PUBLISHED_Y} {...BOX} label="builder" />
-        <NodeBox id="tester" x={COLUMNS[1]} y={PUBLISHED_Y} {...BOX} label="tester" />
-        <NodeBox id="deployer" x={COLUMNS[2]} y={PUBLISHED_Y} {...BOX} label="deployer" />
-        <Edge {...run(COLUMNS[0], COLUMNS[1], PUBLISHED_Y)} id="published-1" />
-        <Edge {...run(COLUMNS[1], COLUMNS[2], PUBLISHED_Y)} id="published-2" />
+      <Caption y={18}>as published</Caption>
+      <FlowEdge
+        from={[COLUMNS[0], PUBLISHED_Y]}
+        to={[COLUMNS[1], PUBLISHED_Y]}
+        fromRadius={R}
+        toRadius={R}
+        id="published-1"
+      />
+      <FlowEdge
+        from={[COLUMNS[1], PUBLISHED_Y]}
+        to={[COLUMNS[2], PUBLISHED_Y]}
+        fromRadius={R}
+        toRadius={R}
+        id="published-2"
+      />
+      <FlowNode id="builder" x={COLUMNS[0]} y={PUBLISHED_Y} r={R} tone="cyan" label="builder" />
+      <FlowNode id="tester" x={COLUMNS[1]} y={PUBLISHED_Y} r={R} tone="cyan" label="tester" />
+      <FlowNode id="deployer" x={COLUMNS[2]} y={PUBLISHED_Y} r={R} tone="cyan" label="deployer" />
 
-        <Caption y={116}>your copy</Caption>
-        <NodeBox
-          id="copy-builder"
-          x={COLUMNS[0]}
-          y={COPY_Y}
-          {...BOX}
-          label="builder"
-          sub="edited"
-          tone="cyan"
-        />
-        <NodeBox id="copy-tester" x={COLUMNS[1]} y={COPY_Y} {...BOX} label="tester" />
-        <Edge {...run(COLUMNS[0], COLUMNS[1], COPY_Y)} id="copy-1" />
-        <Edge
-          from={nodePort(COLUMNS[1], COPY_Y, "right", { ...BOX, pad: 4 })}
-          to={[COLUMNS[2] - 16, COPY_Y]}
-          id="copy-2"
-        />
-        <HumanMark x={COLUMNS[2]} y={COPY_Y} label="a person approves" id="approver" />
-      </g>
-    </Scene>
+      <Caption y={112}>your copy</Caption>
+      <FlowEdge
+        from={[COLUMNS[0], COPY_Y]}
+        to={[COLUMNS[1], COPY_Y]}
+        fromRadius={R}
+        toRadius={R}
+        id="copy-1"
+      />
+      <FlowEdge
+        from={[COLUMNS[1], COPY_Y]}
+        to={[COLUMNS[2], COPY_Y]}
+        fromRadius={R}
+        toRadius={9}
+        id="copy-2"
+      />
+      {/* Lit rather than recoloured. The register has one accent for the whole drawing and
+          brightness is what it has left to say "this is the one that changed". */}
+      <FlowNode
+        id="copy-builder"
+        x={COLUMNS[0]}
+        y={COPY_Y}
+        r={R}
+        lit
+        tone="cyan"
+        label="builder"
+        name="builder, with its card edited"
+      />
+      <FlowNode id="copy-tester" x={COLUMNS[1]} y={COPY_Y} r={R} tone="cyan" label="tester" />
+      <HumanFlowNode x={COLUMNS[2]} y={COPY_Y} r={9} label="a person approves" id="approver" />
+    </FlowScene>
   );
 }

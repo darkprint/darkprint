@@ -11,147 +11,157 @@
    and the node the card lands in is `builder`, which is the node
    that pins `code-builder@1.0.0`. That makes the dezoom a true
    statement rather than a transition: the reader has just read the
-   card for the box the card flies into.
-
-   Each box is labelled with its DOT node id and its card id, which
-   is the scale claim made in text as well as in motion. Nothing on
-   this drawing is invented; the five ids, the four edges and the
-   one absent edge are all in that file.
+   card for the disc the card flies into.
 
    The absent edge is the reason this is the right graph to end on.
    Annotation 7 has just told the reader that `cannot:
    [acceptance-criteria]` is enforced, and here is the run it
-   forbids, drawn as the dashed non-edge `AbsentEdge` exists for.
+   forbids, drawn as the dashed non-edge `FlowAbsence` exists for.
+
+   ── Two things changed here, both from the redesign review ──
+   1. The register. This drew five CAD boxes with sub-labels, which
+      is the style the author rejected by name (redesign spec §1),
+      and it did so on a page that already carried six luminous
+      nodes further up, so `/spec/card` was showing both vocabularies
+      at once. Every box is now a disc from `components/viz`'s
+      luminous set, and the card id that used to be a sub-label is
+      in each disc's accessible name, where `./graph.ts` already
+      puts it.
+   2. The placement. One 880-unit frame rendered at 354 CSS px on a
+      phone, which drew `FLOW.label.size` at four pixels — below
+      `md` the label gate shows every label unconditionally, so that
+      was the branch that most needed to be legible. It now renders
+      the same two placements the landing does.
    ============================================================ */
 
 import Link from "next/link";
 
-import {
-  AbsentEdge,
-  Edge,
-  NodeBox,
-  Scene,
-  VIZ,
-  edgePath,
-  nodePort,
-  toneColor,
-} from "@/components/viz";
+import { FlowAbsence, FlowEdge, FlowNode, FlowScene, VIZ, toneColor } from "@/components/viz";
 import { cx } from "@/lib/format";
 
-const W = 880;
-const H = 380;
-const PAD = { pad: 6 };
+import {
+  LANDING_GRAPH_DESCRIPTION,
+  LANDING_NARROW,
+  LANDING_WIDE,
+  LIT_NODE,
+  type LandingGraph,
+} from "../graph";
 
-/** Centres, in scene units. The layout is the DOT's `rankdir=LR` read left to right. */
-const AT = {
-  planner: [120, 96],
-  builder: [300, 300],
-  tester: [566, 200],
-  debugger: [566, 330],
-  deployer: [790, 200],
-} as const;
+/**
+ * The builder's centre as a fraction of the wide drawing, for the shrink's
+ * `transform-origin`.
+ *
+ * The wide placement and not the narrow one, because the dezoom itself is an `lg:` effect
+ * (`NodeCardStage` gates every part of it on that breakpoint) and `lg` is where the wide
+ * frame is the one on screen.
+ */
+export const LANDING_ORIGIN = originOf(LANDING_WIDE);
 
-/** The builder's centre as a fraction of the drawing, for the shrink's `transform-origin`. */
-export const LANDING_ORIGIN = `${((AT.builder[0] / W) * 100).toFixed(1)}% ${(
-  (AT.builder[1] / H) *
-  100
-).toFixed(1)}%`;
+function originOf(graph: LandingGraph): string {
+  const node = graph.nodes.find((candidate) => candidate.id === LIT_NODE.id);
+  if (node === undefined) throw new Error(`the dezoom graph has no \`${LIT_NODE.id}\``);
+  return `${((node.x / graph.width) * 100).toFixed(1)}% ${((node.y / graph.height) * 100).toFixed(1)}%`;
+}
+
+/** Gap between the lit disc's own label and the leader that points at it. */
+const LEADER_DROP = 16;
+
+function Drawing({ graph, className }: { graph: LandingGraph; className: string }) {
+  const builder = graph.nodes.find((node) => node.id === LIT_NODE.id);
+  if (builder === undefined) throw new Error(`the dezoom graph has no \`${LIT_NODE.id}\``);
+
+  /* Below the disc's own label, so the leader starts under the word rather than through
+     it. `labelOffset` is the vocabulary's arithmetic and the drop below is this drawing's. */
+  const from = builder.y + graph.nodeRadius * 1.7 + 15 + LEADER_DROP;
+
+  return (
+    <FlowScene
+      width={graph.width}
+      height={graph.height}
+      id="node-card-dezoom"
+      label="The starter software factory, with the disc this card runs on lit"
+      description={LANDING_GRAPH_DESCRIPTION}
+      className={className}
+    >
+      {graph.wires.map((wire) => (
+        <FlowEdge
+          key={wire.id}
+          id={wire.id}
+          from={wire.from}
+          to={wire.to}
+          bend={wire.bend}
+          fromRadius={graph.nodeRadius}
+          toRadius={graph.nodeRadius}
+        />
+      ))}
+
+      <FlowAbsence
+        from={graph.absence.from}
+        to={graph.absence.to}
+        fromRadius={graph.nodeRadius}
+        toRadius={graph.nodeRadius}
+        label={graph.absence.label}
+        id="planner-builder"
+      />
+
+      {graph.nodes.map((node) => (
+        <FlowNode
+          key={node.id}
+          id={node.id}
+          x={node.x}
+          y={node.y}
+          r={graph.nodeRadius}
+          /* The one disc the card belongs to, brighter than the other four. The card id it
+             pins rides in `name`, which is where `./graph.ts` puts it for every node. */
+          lit={node.id === LIT_NODE.id}
+          tone="cyan"
+          label={node.label}
+          name={node.name}
+        />
+      ))}
+
+      {/* A leader from the lit disc down to its caption, in the register the rest of the
+          site's drawings use for a note about a part. Dashed, so it reads as an annotation
+          and never as a run of work. */}
+      <path
+        d={`M ${builder.x} ${from} L ${builder.x} ${from + 14}`}
+        stroke={toneColor("dim")}
+        strokeWidth={VIZ.stroke.hair}
+        strokeDasharray={VIZ.dash.leader}
+      />
+      <text
+        x={builder.x}
+        y={from + 28}
+        textAnchor="middle"
+        fontSize={VIZ.font.sub}
+        fill={toneColor("cyan")}
+      >
+        the card above
+      </text>
+    </FlowScene>
+  );
+}
 
 export function DezoomGraph({
   cardHref,
   darkFactory,
   className,
 }: {
-  /** `/nodes/code-builder`. The box the card landed in is a link to the card. */
+  /** `/nodes/code-builder`. The caption under the drawing links to the card. */
   cardHref: string;
   /**
    * Whether the engine classes this bundle as a dark factory, read off the analysis
    * rather than asserted here. Doc 2 §1.1 makes the classification a description of a
-   * shape, and a description typed into a landing page is one the archive can drift away
-   * from without anybody noticing.
+   * shape, and a description typed into a page is one the archive can drift away from
+   * without anybody noticing.
    */
   darkFactory: boolean;
   className?: string;
 }) {
   return (
     <div className={cx("flex flex-col gap-4", className)}>
-      <Scene
-        width={W}
-        height={H}
-        id="node-card-dezoom"
-        label="The starter software factory: five boxes labelled with their node id and the card each one pins. The planner feeds the tester, the builder feeds the tester, the tester and the debugger loop, and the tester hands an approved build to the deployer. A dashed run from the planner to the builder marks the edge the builder's card forbids."
-      >
-        {/* The loop, drawn first so the boxes knock it out where they meet. */}
-        <Edge
-          from={nodePort(...AT.tester, "bottom", PAD)}
-          to={nodePort(...AT.debugger, "top", PAD)}
-          bend={30}
-          label="failure evidence"
-          id="tester-debugger"
-        />
-        <Edge
-          from={nodePort(...AT.debugger, "top", PAD)}
-          to={nodePort(...AT.tester, "bottom", PAD)}
-          bend={30}
-          id="debugger-tester"
-        />
-        <Edge
-          from={nodePort(...AT.planner, "right", PAD)}
-          to={nodePort(...AT.tester, "top", PAD)}
-          bend={-24}
-          label="acceptance criteria"
-          id="planner-tester"
-        />
-        <Edge
-          from={nodePort(...AT.builder, "right", PAD)}
-          to={nodePort(...AT.tester, "left", PAD)}
-          label="build"
-          tone="cyan"
-          id="builder-tester"
-        />
-        <Edge
-          from={nodePort(...AT.tester, "right", PAD)}
-          to={nodePort(...AT.deployer, "left", PAD)}
-          label="approved build"
-          id="tester-deployer"
-        />
-
-        <AbsentEdge
-          from={nodePort(...AT.planner, "bottom", PAD)}
-          to={nodePort(...AT.builder, "top", PAD)}
-          label="acceptance-criteria"
-          id="planner-builder"
-        />
-
-        <NodeBox {...box("planner")} label="planner" sub="spec-planner" />
-        <NodeBox {...box("tester")} label="tester" sub="acceptance-tester" />
-        <NodeBox {...box("debugger")} label="debugger" sub="targeted-debugger" />
-        <NodeBox {...box("deployer")} label="deployer" sub="release-gate" />
-        {/* Last, and in the sheet's accent, because it is the box the card lands in. */}
-        <NodeBox {...box("builder")} label="builder" sub="code-builder" tone="cyan" />
-
-        {/* A dimension leader from the landing box down to its caption, in the register
-            the rest of the site's drawings use for a note about a part. */}
-        <path
-          /* Starts below the box's own sub-label rather than at its port, which is what
-             `nodePort` would give: the card id is printed there and a rule through it is
-             a rule through the one word this drawing exists to point at. */
-          d={edgePath([AT.builder[0], 340] as const, [AT.builder[0], 356] as const)}
-          stroke={toneColor("dim")}
-          strokeWidth={VIZ.stroke.hair}
-          strokeDasharray={VIZ.dash.leader}
-          fill="none"
-        />
-        <text
-          x={AT.builder[0]}
-          y={368}
-          textAnchor="middle"
-          fontSize={VIZ.font.sub}
-          fill={toneColor("cyan")}
-        >
-          the card above
-        </text>
-      </Scene>
+      <Drawing graph={LANDING_NARROW} className="sm:hidden" />
+      <Drawing graph={LANDING_WIDE} className="hidden sm:block" />
 
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-3">
@@ -168,7 +178,7 @@ export function DezoomGraph({
           )}
         </div>
         <p className="max-w-2xl text-sm leading-relaxed text-muted">
-          Five boxes, and behind each one a card like the one above. Nobody stands in this
+          Five discs, and behind each one a card like the one above. Nobody stands in this
           graph, which is what the classification records. The dashed run is the edge
           annotation 7 described: draw it and the bundle stops resolving.{" "}
           <Link
@@ -182,10 +192,4 @@ export function DezoomGraph({
       </div>
     </div>
   );
-}
-
-/** Centre coordinates as `NodeBox` props, so the table above stays a table. */
-function box(id: keyof typeof AT): { x: number; y: number; id: string } {
-  const [x, y] = AT[id];
-  return { x, y, id };
 }

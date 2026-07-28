@@ -374,7 +374,11 @@ export function GuidedPath() {
 
           {/* The four panes stay mounted for the whole path. The reader is always looking
               at the factory the step is talking about, and the graph they choose in on
-              step 3 is the graph they download on step 7. */}
+              step 3 is the graph they download on step 7.
+
+              `stepId` and `reading` are what redesign spec §4.3's primary costs: the graph
+              is always drawn and the three documents share one frame, so the step has to
+              be able to say which document it is arguing about. */}
           {view.paneModel !== undefined && view.graph !== undefined ? (
             <BuildPanes
               model={view.paneModel}
@@ -383,6 +387,8 @@ export function GuidedPath() {
               onSelect={setSelection}
               {...(choice === undefined ? {} : { choice })}
               graphId={`build-${choices.approval}-${demo ? "leak" : "base"}`}
+              stepId={step.id}
+              {...(step.reading === undefined ? {} : { reading: step.reading })}
               className="mt-1"
             />
           ) : (
@@ -448,10 +454,13 @@ export function GuidedPath() {
             errors={view.errors}
             demo={demo}
           />
+          {/* The sentence about nothing being executed used to close this caption. The
+              panel above it already ends on doc 1 §8 ("execution happens on your machine")
+              and the page header states where the scores are computed, so §5's licence
+              covers dropping the third telling and leaving the three choices. */}
           <p className="mt-3 px-1 text-[11px] leading-relaxed text-dim">
             {outputLabel(choices.output)}. {approvalLabel(choices.approval)}. Cap{" "}
-            {choices.maxIterations}. Both readings are read off this graph and these cards
-            with nothing executed, in this tab, on the bytes the download hands over.
+            {choices.maxIterations}.
           </p>
         </aside>
       </div>

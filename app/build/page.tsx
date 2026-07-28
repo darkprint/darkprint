@@ -104,24 +104,26 @@ export default function BuildPage() {
     <div className="container-page py-12">
       <header className="max-w-3xl">
         <Eyebrow>Guided path</Eyebrow>
+        {/* Redesign spec §4.3: the header is the first thing a reader skips, so it holds
+            one sentence of orientation and one of honesty. What left it is the promise
+            that there is nowhere to save the result, which `DownloadPanel` states at the
+            step where a reader can act on it, and the word "static", which the sentence
+            about nothing running says already. */}
         <SectionHeading
           className="mt-3"
           as="h1"
           title="Build your own factory"
-          lead="About an hour. You start from the five-node starter, take it apart, make three choices that stay in the artefact, and finish holding a factory that runs from your own command line."
+          lead="About an hour. Start from the five-node starter, make three choices, and leave with a factory that runs from your own command line."
         />
         <p className="mt-4 text-[15px] leading-relaxed text-muted">
-          Every score on this page is computed by the same static analysis the gallery
-          uses, on the exact bytes you are about to download, in this browser tab. Nothing
-          is uploaded. There is nowhere to save any of it yet, so the download is the whole
-          of it.
+          Every score is computed in this tab, by the analysis the gallery runs, on the
+          exact bytes you download. Nothing is uploaded.
         </p>
         {/* Doc 2 §5.7's count, stated rather than claimed: the number is the length of the
             enumeration the build just walked through the engine. */}
         <p className="mt-3 font-mono text-[11px] leading-relaxed text-dim">
-          {combinations} combinations of the three choices. Every one of them was resolved
-          through the engine when this page was built, and a single error would have failed
-          the build.
+          {combinations} combinations, each resolved through the engine when this page was
+          built. One error would have failed the build.
         </p>
       </header>
 

@@ -28,6 +28,15 @@ import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
    panel a child of a list of options. The index below, the roving
    tabindex, the "not drawn" group and the wiring footer are the same
    behaviour, built from the same hook.
+
+   ── Why this one is drawn brighter than the rest ──
+   Redesign spec §4.3 asks for a clear primary among the four
+   panes. On this route the graph is where the choice is made, so
+   it keeps its own frame in `border-line-bright` while the three
+   readings share one box behind a tablist in `BuildPanes`. The
+   weight is carried by the border rather than by size, because the
+   two columns have to stay the same width for the drawing and the
+   documents to be read against each other.
    ============================================================ */
 
 /** The choice this step attaches to a node of the graph. */
@@ -139,7 +148,7 @@ export function ChoiceGraphPane({
   return (
     <section
       className={cx(
-        "flex min-w-0 flex-col overflow-hidden rounded-lg border border-line bg-surface",
+        "flex min-w-0 flex-col overflow-hidden rounded-lg border border-line-bright bg-surface",
         className,
       )}
       aria-labelledby={`pane-${paneNumber}-heading`}

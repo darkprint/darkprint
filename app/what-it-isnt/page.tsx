@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { ButtonLink } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 // Imported by path rather than through a barrel: `components/explain/` is shared with
-// `/which-tasks`, and an `index.ts` that covered only half of it would read as the
-// directory's inventory while being one.
+// the which-tasks route under `/towards-a-dark-factory`, and an `index.ts` that covered
+// only half of it would read as the directory's inventory while being one.
 import { isolationDemo } from "@/components/explain/starter-isolation";
+import { SectionWhatItIs } from "@/components/explain/SectionWhatItIs";
 import { SectionSkillVsFactory } from "@/components/explain/SectionSkillVsFactory";
 import { SectionIsolationRule } from "@/components/explain/SectionIsolationRule";
 import { SectionAbsentEdge } from "@/components/explain/SectionAbsentEdge";
@@ -20,6 +21,15 @@ import { SectionComponentRecap } from "@/components/explain/SectionComponentReca
    sections run definition → rule → demonstration → vocabulary,
    and the premise argument sits inside the rule section rather
    than at the end, where it would read as a footnote.
+
+   Redesign spec §3 and §4.4 put a rung in front of that order and
+   asked for the whole page shorter. The landing's "what it is"
+   material arrives as `SectionWhatItIs`, because a reader cannot
+   be told what a dark factory is not until they have been told
+   what one is; the landing's "not a skill library" material was
+   the same argument in a second set of words and is absorbed into
+   the two sections that already made it. Every cut is recorded in
+   the file it was made in.
 
    Static: everything the page shows is read off the archive at
    build time, including the leaked variant of the starter bundle,
@@ -44,11 +54,12 @@ export default function WhatItIsntPage() {
             as="h1"
             eyebrow="What it isn't"
             title="A Skill gives one agent a capability"
-            lead="A dark factory is the architecture of several agents, and above all it is the set of isolation rules between them. Which of those two you are storing decides what a registry can be, so this page works the difference out on the one example that settles it."
+            lead="A dark factory is the architecture of several agents, and above all the isolation rules between them. This page says what one is, then settles the difference on the single example that decides it."
           />
         </div>
       </header>
 
+      <SectionWhatItIs />
       <SectionSkillVsFactory />
       <SectionIsolationRule />
       {demo !== undefined && <SectionAbsentEdge demo={demo} />}

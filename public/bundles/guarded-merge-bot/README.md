@@ -87,11 +87,11 @@ blueprint decides is who is wired to whom.
 
 Autonomy: Conditional.
 
-> 5 of 6 nodes run unattended, 1 has a person in the loop — 0.8333 ≥ 0.70 → Conditional.
+> 5 of 6 nodes run unattended, 1 has a person in the loop. 0.8333 ≥ 0.70 → Conditional.
 
 Where a person acts:
 
-- `gate` (Maintainer Approval): Hold the run at the merge boundary until a maintainer with write rights reads the green test report and approves, and emit their verdict as the only thing the merge step will act on (type: human-gate) — a person acts here.
+- `gate` (Maintainer Approval): Hold the run at the merge boundary until a maintainer with write rights reads the green test report and approves, and emit their verdict as the only thing the merge step will act on (type: human-gate). A person acts here.
 
 Security level 1.
 

@@ -49,17 +49,21 @@ describe("the drawings render their finished state on the server", () => {
   });
 
   /**
-   * `useSceneReveal` returns `armed: false` outside the browser, and the wrapper it feeds
-   * is the one thing that can hide a whole drawing. Rendered opaque here, which is what
-   * makes the markup above legible rather than merely present.
+   * `useReveal` reports `static` outside the browser, and `FlowScene` holds a scene at
+   * nothing only while it is `armed`. Rendered opaque here, which is what makes the markup
+   * above legible rather than merely present.
+   *
+   * The class rather than an inline style since the conversion out of the CAD register:
+   * these three drawings hung their own `<g style={{opacity}}>` off `useSceneReveal`, and
+   * the luminous scene owns the same decision on the `<svg>` so a scene cannot forget it.
    */
   it.each([
     ["download", download],
     ["fork", fork],
     ["update", update],
   ])("%s is not held at nothing", (_name, markup) => {
-    expect(markup).toContain("opacity:1");
-    expect(markup).not.toContain("opacity:0");
+    expect(markup).toContain("opacity-100");
+    expect(markup).not.toContain("opacity-0");
   });
 
   /**

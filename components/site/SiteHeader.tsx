@@ -17,11 +17,23 @@ import { cx } from "@/lib/format";
  * one run reads as eight equal destinations, which is the flattening §0 blames for the
  * site being unreadable cold.
  *
- * The pass that added `/spec` and `/how-to-build-a-dark-factory` took the header from six
- * items to eight, and eight is where the arrangement stops being decoration: the group
- * headings in the collapsed panel below are the only thing that keeps a phone reader from
- * scrolling a flat list of eight, and the rule in the wide row is the same statement made
- * with one border.
+ * The pass that added `/spec` and the climb took the header from six items to eight, and
+ * eight is where the arrangement stops being decoration: the group headings in the
+ * collapsed panel below are the only thing that keeps a phone reader from scrolling a
+ * flat list of eight, and the rule in the wide row is the same statement made with one
+ * border.
+ *
+ * Seven now. Redesign spec §4.2 renamed `/how-to-build-a-dark-factory` to
+ * `/towards-a-dark-factory` and folded `/which-tasks` into it as a child, so the two
+ * items that used to sit side by side in `learn` are one item leading to a three-page
+ * sequence. Both old paths redirect from `next.config.ts` and neither is listed here: a
+ * nav is a map of where the site is, and a redirect is for a link somebody else already
+ * wrote down.
+ *
+ * The `/spec` and `/towards-a-dark-factory` children are deliberately absent too. Each
+ * sequence carries its own previous/next pager and its parent opens with a door per
+ * child, so putting five more items in this row would make the header a table of contents
+ * for two pages that already have one.
  */
 export const NAV = [
   { href: "/blueprints", label: "Blueprints", group: "registry" },
@@ -36,16 +48,11 @@ export const NAV = [
   // the reader has just written a graph and a card, and this is what the three layers
   // they were writing in actually are.
   { href: "/spec", label: "Spec", group: "learn" },
-  // "The climb", which is the page's own eyebrow, and not "How to build one".
-  //
-  // Two items apart from "Build one" the old label differed by two words and led
-  // somewhere unrelated: `/build` is a seven-step path that ends with a downloaded
-  // factory, and this is a prose account of an organisation crossing four phases with no
-  // artefact at the end. A visitor choosing between them from the nav had no signal, and
-  // the labels inverted the distinction the two pages were written to hold apart. This
-  // one names the ladder, which is what the page is about.
-  { href: "/how-to-build-a-dark-factory", label: "The climb", group: "learn" },
-  { href: "/which-tasks", label: "Which tasks", group: "learn" },
+  // The author named this label: "/which-tasks should be placed in The climb part which
+  // I'd rename Towards a Dark Factory". It is also the page's own `h1`, character for
+  // character, which is what `nav.test.ts` holds it to. The label a reader clicks is the
+  // heading they land on, so there is nothing to re-resolve on arrival.
+  { href: "/towards-a-dark-factory", label: "Towards a Dark Factory", group: "learn" },
   { href: "/what-it-isnt", label: "What it isn't", group: "learn" },
 ] as const;
 
@@ -74,9 +81,12 @@ export function SiteHeader() {
           <span className="text-cyan">Print</span>
         </Link>
 
-        {/* Eight items in 976px of container at `lg`, so the row tightens by two pixels
+        {/* Seven items in 976px of container at `lg`, so the row tightens by two pixels
             of padding and one of type there and relaxes at `xl`, where there is 1152px
-            and no reason to crowd. Measured at 1024, 1280 and 1440. */}
+            and no reason to crowd. Measured at 1024, 1280 and 1440.
+            One fewer item than the eight this was measured for, and the same number of
+            characters in them: "Towards a Dark Factory" is as wide as the two labels it
+            replaced, so the row that fit before still fits. */}
         <nav className="hidden items-center gap-1 lg:flex">
           {NAV.map((item) => (
             <Link
@@ -118,9 +128,12 @@ export function SiteHeader() {
       </div>
 
       {open && (
-        /* The panel is scrollable and capped below the header's own 4rem, because eight
+        /* The panel is scrollable and capped below the header's own 4rem, because seven
            items plus two headings plus the validate row is taller than a 640px phone in
-           landscape and the last item was unreachable under a `position: sticky` header. */
+           landscape and the last item was unreachable under a `position: sticky` header.
+           `overflow-y: auto` on a `svh`-based cap is what keeps it reachable; do not swap
+           it for `h-screen`, which on iOS measures the viewport without the browser
+           chrome that is covering the bottom of it. */
         <div className="max-h-[calc(100svh-4rem)] overflow-y-auto border-t border-line bg-void lg:hidden">
           <div className="container-page flex flex-col py-3">
             {/* A `nav` per group, named by the same word the reader sees. The label is a

@@ -35,6 +35,14 @@ import Link from "next/link";
    `<details>` and not a script: the content is in the prerendered
    HTML either way, it is searchable in the page, and it opens
    with JavaScript switched off.
+
+   ── Redesign spec §5: one panel removed ──
+   A closing panel headed "Three of the four are work. One is a
+   veto." restated, at a hundred and thirty words, the two
+   paragraphs the opening figure's caption already carries. Its one
+   sentence that was not a repeat, the instruction not to add the
+   four up, moved into that caption, where a reader meets the
+   counting temptation first. Nothing else went.
    ============================================================ */
 
 type Check = {
@@ -230,27 +238,6 @@ export function WhichTasksChecks() {
           </li>
         ))}
       </ol>
-
-      {/* The counting reading, denied before anyone starts counting. Doc 2 §1.1 is
-          about the autonomy score rather than this page, but the failure mode is the
-          same shape: turn four questions into a tally and people optimise the tally. */}
-      <div className="panel flex flex-col gap-3 p-6">
-        <h3 className="font-display text-lg font-semibold text-fg">
-          Three of the four are work. One is a veto.
-        </h3>
-        <p className="max-w-3xl text-sm leading-relaxed text-muted">
-          Questions 01 to 03 name something missing that you can go and supply: a harness
-          nobody has written yet, or a target nobody has decided. Question 04 works
-          differently. No amount of coverage makes a wrong answer cheap once the wrong
-          answer is already in production, so a no there is a fact about the system you
-          are touching, and it survives every improvement you make to the other three.
-        </p>
-        <p className="max-w-3xl text-sm leading-relaxed text-muted">
-          So do not add these up. Four yeses mean the task is a good fit. One no on 04
-          means the design has to change, and there is a standard way to change it, which
-          is the last section on this page.
-        </p>
-      </div>
     </section>
   );
 }

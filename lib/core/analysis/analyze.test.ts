@@ -550,7 +550,7 @@ describe("loadBundle — the adversarial-consensus blueprint", () => {
     // Doc 2 §1.1: the sentence states where the people are, not how far the graph is
     // from full autonomy.
     expect(autonomy.rationale).toBe(
-      "6 of 8 nodes run unattended, 2 have a person in the loop — 0.75 ≥ 0.70 → level 3 (Conditional).",
+      "6 of 8 nodes run unattended, 2 have a person in the loop. 0.75 ≥ 0.70 → level 3 (Conditional).",
     );
     expect(autonomy.diagnostics).toEqual([]);
 
@@ -565,20 +565,20 @@ describe("loadBundle — the adversarial-consensus blueprint", () => {
     expect(human[0].reason).toBe("human-in-the-loop-type");
     expect(human[0].term).toBe("human-gate");
     expect(human[0].explanation).toBe(
-      "Ask a reviewer to re-open the debate when the vote is contested (type: human-gate) — a person acts here.",
+      "Ask a reviewer to re-open the debate when the vote is contested (type: human-gate). A person acts here.",
     );
     // `deliver` is a `tool`, which says nothing about people; the author staffed it anyway,
     // and doc 3 §3 allows exactly that direction.
     expect(human[1].reason).toBe("requires-human-flag");
     expect(human[1].explanation).toBe(
-      "Publish the approved report to the customer channel (requires_human: true) — a person acts here.",
+      "Publish the approved report to the customer channel (requires_human: true). A person acts here.",
     );
 
     const solver = autonomy.contributions.find((c) => c.nodeId === "solver_a");
     expect(solver?.requiresHuman).toBe(false);
     expect(solver?.reason).toBeUndefined();
     expect(solver?.explanation).toBe(
-      "Draft a candidate solution at low temperature (type: agent) — runs unattended.",
+      "Draft a candidate solution at low temperature (type: agent). Runs unattended.",
     );
   });
 
@@ -667,7 +667,7 @@ describe("loadBundle — the rogue-scraper blueprint", () => {
     expect(autonomy?.label).toBe("Closed-loop");
     expect(autonomy?.fraction).toBe(1);
     expect(autonomy?.rationale).toBe(
-      "5 of 5 nodes run unattended, none have a person in the loop — 1.00 > 0.90 → level 4 (Closed-loop).",
+      "5 of 5 nodes run unattended, none have a person in the loop. 1.00 > 0.90 → level 4 (Closed-loop).",
     );
   });
 
@@ -794,7 +794,7 @@ describe("loadBundle — the doc 2 §5.2 starter, clean", () => {
   it("is fully autonomous, which is a description of this graph and not a grade", () => {
     expect(result.analysis?.autonomy.level).toBe(4);
     expect(result.analysis?.autonomy.rationale).toBe(
-      "5 of 5 nodes run unattended, none have a person in the loop — 1.00 > 0.90 → level 4 (Closed-loop).",
+      "5 of 5 nodes run unattended, none have a person in the loop. 1.00 > 0.90 → level 4 (Closed-loop).",
     );
   });
 });

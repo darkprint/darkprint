@@ -1,12 +1,18 @@
-/* The landing's sections, in the order `app/page.tsx` renders them: doc 2 §2.1's rungs
-   2 to 6 (rung 1 is the hero) with spec §3's three additions between them. The order is
-   the point: "l'ordine non è definizione poi esempi. È: localizza, poi definisci."
-   `app/page.tsx` carries the reasoning for each insertion. */
-export { SectionAnchor } from "./SectionAnchor";
-export { SectionLevels } from "./SectionLevels";
-export { SectionNodeCard } from "./SectionNodeCard";
-export { SectionRoles } from "./SectionRoles";
-export { SectionExample } from "./SectionExample";
-export { SectionLifecycle } from "./SectionLifecycle";
-export { SectionNotSkill } from "./SectionNotSkill";
+/* The landing's beats, in the order `app/page.tsx` renders them. Beat 1 is the hero and
+   lives in `components/hero/`, so this barrel starts at beat 2.
+
+   The directory holds more than this. `SectionLevels`, `SectionNodeCard`, `SectionRoles`,
+   `SectionExample` and `SectionLifecycle` are the rungs redesign spec §3 relocated, and
+   they are still here at their own paths because moving the files would have rewritten
+   five components on the same day their register changed. Their new pages
+   (`/towards-a-dark-factory`, `/spec/card`, `/spec/topology`, `/spec`, `/blueprints`)
+   import them by path rather than through this barrel, which is the reason this list is
+   allowed to be the landing's list and nothing else: a page that reads its section out of
+   the landing's index would make the index a shared surface, and then no one could tell
+   from it what the landing renders.
+
+   `app/page.tsx` carries the table of where every rung went. */
+export { SectionBlueprint } from "./SectionBlueprint";
+export { SectionNodeIsCard } from "./SectionNodeIsCard";
+export { SectionLightsOut } from "./SectionLightsOut";
 export { SectionDoors } from "./SectionDoors";

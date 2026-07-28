@@ -118,18 +118,17 @@ export function SectionLifecycle() {
               <DownloadScene />
             </Sheet>
 
+            {/* One paragraph where there were two. Every blueprint page prints the same
+                inventory beside the files themselves (`components/blueprint/DownloadPanel`
+                names each one and what it is for), so the long version here was the second
+                printing redesign spec §5 allows removing. The clauses kept are the two that
+                panel does not carry: the cards are the published bytes, and the vocabulary
+                file is what makes the README's scores recomputable. */}
             <p className="text-sm leading-relaxed text-muted">
-              Every blueprint in the gallery is published as its files.{" "}
-              <Mono>factory.dot</Mono> is the pipeline Attractor runs, with each
-              card&rsquo;s <Mono>spec</Mono> inlined as the prompt its agent receives, so
-              that one file is enough to start. <Mono>blueprint.dot</Mono> is the topology
-              with the card version pinned on every node, <Mono>cards/</Mono> holds those
-              cards byte for byte, and <Mono>README.md</Mono> states the digest, the command
-              and both computed scores in the engine&rsquo;s own words.
-            </p>
-            <p className="text-sm leading-relaxed text-muted">
-              A bundle whose cards reach for a term from the archive&rsquo;s own vocabulary
-              carries <Mono>ontology/extensions.yaml</Mono> too. Without it the scores its
+              A blueprint is published as its files, and <Mono>factory.dot</Mono> is the one
+              that runs. <Mono>cards/</Mono> holds the published cards byte for byte, and a
+              bundle reaching for a term from the archive&rsquo;s vocabulary carries{" "}
+              <Mono>ontology/extensions.yaml</Mono> as well, without which the scores its
               README quotes cannot be recomputed from the folder.
             </p>
 
@@ -171,19 +170,18 @@ export function SectionLifecycle() {
               <ForkScene />
             </Sheet>
 
+            {/* Two paragraphs folded into one. What went is the sentence describing the
+                drawing, which the drawing now says for itself: the edited card is the lit
+                disc and the person is the violet mark. Doc 2 §1.1's sentence stays, and it
+                is the last one, because a reader who stops early has to have read it. */}
             <p className="text-sm leading-relaxed text-muted">
               Forking a blueprint is copying a directory. The whole thing is text under
               version control, so an edit shows up in a diff like any other: pin a card at a
               different version, rewrite a <Mono>spec</Mono>, add a node, delete an edge.
-              Nothing about that needs a registry.
-            </p>
-            <p className="text-sm leading-relaxed text-muted">
-              The drawing shows two edits. One card has been rewritten, and the node that
-              shipped the release is now a place where a person approves it. The autonomy
-              class the analyzer reads follows from where the people are in the graph, so a
-              copy that puts somebody at the release boundary reads differently from the one
-              it came from. Both are complete factories, and either one runs on your
-              machine.
+              The autonomy class the analyzer reads follows from where the people are in the
+              graph, so a copy that puts somebody at the release boundary reads differently
+              from the one it came from. Both are complete factories, and either one runs on
+              your machine.
             </p>
 
             <Split
@@ -233,19 +231,19 @@ export function SectionLifecycle() {
 
             <p className="text-sm leading-relaxed text-muted">
               A published version is never edited in place. Every change is a new version,
-              and how large that version bump has to be follows from what changed.{" "}
-              <Mono>inferBump</Mono> reads the two cards and works it out.
+              and how large that bump has to be follows from what changed.
             </p>
 
             {demo !== undefined && (
               <>
+                {/* Shortened to the two sentences the demonstration needs. What the starter
+                    does about that evidence today is drawn in the panel's own figure and
+                    stated at length on `/spec/topology`, which is where the absence lives. */}
                 <p className="text-sm leading-relaxed text-muted">
-                  Take <Mono>{demo.ref}</Mono> and add one entry to its prohibitions:{" "}
+                  Add one entry to <Mono>{demo.ref}</Mono>&rsquo;s prohibitions:{" "}
                   <Mono>{demo.added}</Mono>, the data type the tester emits its failure
-                  evidence on. The starter keeps that evidence away from the builder by
-                  having no edge into it. Declaring the prohibition turns the arrangement
-                  into a rule the resolver holds every graph to, and an edge carrying one
-                  fails the bundle with <Mono>bundle/prohibition-violated</Mono>.
+                  evidence on. From then on an edge carrying one fails the bundle with{" "}
+                  <Mono>bundle/prohibition-violated</Mono>.
                 </p>
 
                 {/* The list as the file carries it, with the one added line marked. Real
@@ -275,8 +273,8 @@ export function SectionLifecycle() {
                 </ul>
 
                 <p className="text-sm leading-relaxed text-muted">
-                  The engine reads that diff as <Mono>{demo.level}</Mono>:{" "}
-                  <Ticked text={demo.reason} />. The next version is{" "}
+                  <Mono>inferBump</Mono> reads that diff as <Mono>{demo.level}</Mono>:{" "}
+                  <Ticked text={demo.reason} />, so the next version is{" "}
                   <Mono>{demo.nextVersion}</Mono>. The published starter stays pinned to{" "}
                   <Mono>{demo.ref}</Mono> and scores exactly as it did, because a pin names
                   one exact version.

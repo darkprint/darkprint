@@ -86,7 +86,7 @@ blueprint decides is who is wired to whom.
 
 Autonomy: Closed-loop.
 
-> 5 of 5 nodes run unattended, none have a person in the loop — 1.00 > 0.90 → Closed-loop.
+> 5 of 5 nodes run unattended, none have a person in the loop. 1.00 > 0.90 → Closed-loop.
 
 Security level 4.
 

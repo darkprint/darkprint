@@ -11,22 +11,26 @@
    with two leader lines between them say that before the first
    paragraph is read.
 
-   Spec §1's rendering rules, and how each is met here:
-     - every label is an SVG `<text>` written at SSR time, so the
-       drawing is complete in the prerendered HTML and legible with
-       JS off;
-     - `useReveal` gates the only motion there is. Under
-       `phase === "static"` — the server, no JS, and
-       `prefers-reduced-motion: reduce` — the lanes carry opacity 1
-       and no `transition` property at all, so there is nothing for
-       a style recalculation to animate;
-     - the box is reserved by `Scene`'s viewBox and aspect-ratio, so
-       nothing shifts when the reveal runs.
+   ── Redesign spec §1: the luminous register ──
+   The boxes are gone. The author looked at the CAD figures and
+   said so: "the look of [the roles figure] and related figure using
+   the same style, I don't like at all. What I like is the pattern
+   on the background but not the style of the graph." So lane 1 and
+   lane 3 are `FlowNode` discs on the same `Sheet` graticule, and
+   the light travelling each edge is what says a graph runs.
 
+   The card in lane 2 keeps a panel, and that is deliberate rather
+   than an oversight of the conversion. The register replaces the
+   box a *node* was drawn as; lane 2 is not a node, it is a YAML
+   document, and a document with no edge to it is the one thing on
+   this sheet that is a page of text in life as well as in the
+   drawing.
+
+   ── What the drawing is not allowed to lose ──
    The split inside lane 2 is the page's whole argument made
    visible: a `◆` value is an id the ontology defines and the engine
-   resolves, a `◌` value is text nobody checks. The tables further
-   down the page say the same thing in words, and this is the
+   resolves, a `◌` value is text nobody checks. The table on
+   `/spec/card` says the same thing row by row, and this is the
    version a reader gets in one look.
 
    The markers are not decoration. The split used to be carried by
@@ -34,23 +38,34 @@
    values are identifiers…" and a leader saying "every green id is
    defined here" — so the one instruction the figure gave was to use
    the one cue a reader with a colour vision deficiency does not
-   have, and the `aria-label` did not encode it either (WCAG 1.4.1,
-   Level A). Colour still carries it for everybody else; it is no
-   longer alone.
+   have, and the accessible description did not encode it either
+   (WCAG 1.4.1, Level A). Colour still carries it for everybody
+   else; it is no longer alone. `spec-layers.test.ts` holds that.
+
+   ── Rendering (spec §1) ──
+   Every label is an SVG `<text>` written at SSR time, so the
+   drawing is complete in the prerendered HTML and legible with JS
+   off. `useLuminousFlow` owns the only motion there is, and its
+   `static` phase — the server, no JS, and reduced motion — is the
+   finished drawing with every label showing. The lane furniture
+   below is faded in from `onScene` so it arrives with the lane it
+   belongs to; under `static` that effect never runs and the
+   furniture is simply there.
    ============================================================ */
 
 import {
-  Scene,
-  Edge,
-  NodeBox,
+  FLOW,
+  FlowEdge,
+  FlowNode,
+  FlowScene,
   VIZ,
   VIZ_KNOCKOUT,
-  nodePort,
   toneColor,
 } from "@/components/viz";
-import { useReveal, type RevealPhase } from "@/components/viz/useReveal";
+import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
 
 import { FigureFrame } from "./FigureFrame";
+import { LaneLabel, Leader, fadeInFurniture, furniture } from "./furniture";
 
 /* --------------------- geometry ---------------------
 
@@ -59,129 +74,53 @@ import { FigureFrame } from "./FigureFrame";
    drawing whose numbers are scattered through the markup is one nobody dares adjust. */
 
 const W = 720;
-const H = 366;
+const H = 432;
 
 /** Lane 1 — the graph. Node centres. */
-const PLANNER = { x: 90, y: 46 } as const;
-const BUILDER = { x: 90, y: 100 } as const;
-const TESTER = { x: 350, y: 73 } as const;
-const DEPLOYER = { x: 580, y: 73 } as const;
-const NODE = { width: 108, height: 40 } as const;
+const PLANNER = { x: 100, y: 50 } as const;
+const BUILDER = { x: 100, y: 130 } as const;
+const TESTER = { x: 330, y: 90 } as const;
+const DEPLOYER = { x: 560, y: 90 } as const;
 
 /** Lane 2 — the card panel. */
-const CARD = { left: 60, top: 164, right: 660, bottom: 274 } as const;
+const CARD = { left: 50, top: 204, right: 670, bottom: 316 } as const;
 
-/** Lane 3 — the term chips. */
-const CHIP_Y = 330;
-const CHIP_H = 22;
-const CHIP_LEFT = 40;
+/** Lane 3 — the terms the card's resolved values name. */
+const TERM_Y = 390;
+const TERM_R = 5;
+const TERM_KIND_Y = 360;
+const TERM_LEFT = 50;
+const TERM_GAP = 58;
 
-/** Rough advance width of the mono face at a given size. Chips are sized from it. */
+/** Rough advance width of the mono face at a given size. The term row is laid out from it. */
 function textWidth(text: string, size: number): number {
   return text.length * size * 0.62;
 }
 
-/* --------------------- the reveal ---------------------
-
-   One wrapper, three delays. The transition is omitted entirely on `static` rather than
-   set to `0ms`: a reader who asked for reduced motion should not have a transition
-   declared on an element at all, in case anything later changes the value under it. */
-
-function Lane({
-  phase,
-  shown,
-  delay,
-  children,
-}: {
-  phase: RevealPhase;
-  shown: boolean;
-  delay: number;
-  children: React.ReactNode;
-}) {
-  const style: React.CSSProperties =
-    phase === "static"
-      ? {}
-      : {
-          opacity: shown ? 1 : 0,
-          transform: shown ? "none" : "translateY(10px)",
-          transition: `opacity 620ms ease ${delay}ms, transform 620ms ease ${delay}ms`,
-        };
-  return <g style={style}>{children}</g>;
-}
-
-/* --------------------- lane furniture --------------------- */
-
-/**
- * The mono caption that names a lane.
- *
- * Anchored to the right edge of the scene, which is not decoration: both leader lines run
- * down the left of the drawing and carry a label of their own, and a left-aligned lane
- * caption sat on top of one of them at two of the three lanes.
- */
-function LaneLabel({ y, children }: { y: number; children: string }) {
-  return (
-    <text
-      x={W - 10}
-      y={y}
-      textAnchor="end"
-      fontSize={VIZ.font.sub}
-      fill={toneColor("dim")}
-      letterSpacing="0.14em"
-    >
-      {children}
-    </text>
-  );
-}
-
-/** A dashed run from one lane to the next, with the reason for the link written beside it. */
-function Leader({
-  x,
-  from,
-  to,
-  label,
-}: {
-  x: number;
-  from: number;
-  to: number;
-  label: string;
-}) {
-  return (
-    <g>
-      <path
-        d={`M ${x} ${from} L ${x} ${to}`}
-        stroke={toneColor("dim")}
-        strokeWidth={VIZ.stroke.hair}
-        strokeDasharray={VIZ.dash.leader}
-      />
-      <text
-        x={x + 10}
-        y={(from + to) / 2 + 3}
-        fontSize={VIZ.font.sub}
-        fill={toneColor("dim")}
-      >
-        {label}
-      </text>
-    </g>
-  );
-}
+/** The right edge every lane caption on this sheet is anchored to. */
+const CAPTION_X = W - 10;
 
 /**
  * The two markers the figure's whole argument rests on.
  *
  * `◆` is a value the vocabulary defines and the engine resolves; `◌` is free text nothing
  * is held to. The site already spends `◌` on exactly this meaning, in the "Shown, and
- * checked by nothing" panel further down this same page, so the figure and the prose use
- * one glyph between them.
+ * checked by nothing" panel on `/spec/card`, so the figure and the prose use one glyph
+ * between them.
  *
  * They exist because colour was carrying the distinction alone. The only difference
  * between the two kinds of line was `fill`, emerald against ink, while the caption told
  * the reader to sort them by hue ("Green values are identifiers…") and the leader line
  * said "every green id is defined here". WCAG 1.4.1: a reader who cannot separate the two
- * hues was being pointed at the one cue unavailable to them, and the figure's `aria-label`
- * did not encode it either.
+ * hues was being pointed at the one cue unavailable to them, and the figure's accessible
+ * description did not encode it either.
+ *
+ * Exported, and defined here rather than in `furniture.tsx`, because `spec-layers.test.ts`
+ * reads this file's source and asserts on the two declarations by name. Fig. 2 imports
+ * them, so the two plates cannot end up spelling the distinction with different glyphs.
  */
-const RESOLVED_MARK = "◆";
-const FREE_TEXT_MARK = "◌";
+export const RESOLVED_MARK = "◆";
+export const FREE_TEXT_MARK = "◌";
 
 /**
  * One line of the card panel: the key, then the value.
@@ -216,45 +155,7 @@ function Field({
   );
 }
 
-/** A term the vocabulary defines, drawn as a chip with its kind underneath. */
-function Chip({ x, id, kind }: { x: number; id: string; kind: string }) {
-  const width = textWidth(id, VIZ.font.sub) + 20;
-  return (
-    <g>
-      <rect
-        x={x}
-        y={CHIP_Y - CHIP_H / 2}
-        width={width}
-        height={CHIP_H}
-        rx={VIZ.node.radius}
-        fill={VIZ_KNOCKOUT}
-        stroke={toneColor("emerald")}
-        strokeWidth={VIZ.stroke.thin}
-      />
-      <text
-        x={x + width / 2}
-        y={CHIP_Y}
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontSize={VIZ.font.sub}
-        fill={toneColor("emerald")}
-      >
-        {id}
-      </text>
-      <text
-        x={x + width / 2}
-        y={CHIP_Y + CHIP_H / 2 + 12}
-        textAnchor="middle"
-        fontSize={8}
-        fill={toneColor("dim")}
-      >
-        {kind}
-      </text>
-    </g>
-  );
-}
-
-/** The chips, laid out left to right from one list so the gaps stay even. */
+/** The terms the resolved values on the card name, laid out left to right from one list. */
 const TERMS: readonly { id: string; kind: string }[] = [
   { id: "agent", kind: "node-type" },
   { id: "implementation", kind: "phase" },
@@ -263,80 +164,92 @@ const TERMS: readonly { id: string; kind: string }[] = [
   { id: "acceptance-criteria", kind: "data-type" },
 ];
 
-function chipPositions(): { id: string; kind: string; x: number }[] {
-  let x = CHIP_LEFT;
+/**
+ * Term centres, spaced by the width of each label rather than evenly.
+ *
+ * `acceptance-criteria` is five times the width of `plan`, so an even split puts two
+ * labels on top of each other at one end of the row and leaves a hole at the other.
+ */
+function termPositions(): { id: string; kind: string; x: number }[] {
+  let cursor = TERM_LEFT;
   return TERMS.map((term) => {
-    const at = x;
-    x += textWidth(term.id, VIZ.font.sub) + 20 + 16;
-    return { ...term, x: at };
+    const width = textWidth(term.id, FLOW.label.size);
+    const centre = cursor + width / 2;
+    cursor += width + TERM_GAP;
+    return { ...term, x: Math.round(centre) };
   });
 }
 
-export function SpecLayers() {
-  const { ref, shown, phase } = useReveal<SVGSVGElement>({ amount: 0.15 });
+/** Where the leader out of the card lands: on the term it points at. */
+const CARD_TO_TERMS_X =
+  termPositions().find((term) => term.id === "implementation")?.x ?? CARD.left + 140;
 
-  const chips = chipPositions();
+export function SpecLayers() {
+  const terms = termPositions();
+
+  const flow = useLuminousFlow<SVGSVGElement>({
+    amount: 0.15,
+    /* The lane captions, the leaders and the card panel, brought in with the lane they
+       belong to. `furniture.tsx` owns the beat so the three plates arrive alike. */
+    onScene: fadeInFurniture,
+  });
 
   return (
     <FigureFrame
-      label="Fig. 1 · three languages, one bundle"
-      title="blueprint.dot · cards/*.yaml · ontology v0.1.0"
+      label="DRW-101 · three languages, one bundle"
+      title="blueprint.dot · cards/id@version.yaml · ontology v0.1.0"
       note="the stack a reader resolves from the bottom"
-      scrollLabel="Fig. 1"
+      scrollLabel="The three layers"
       caption={`On the card, ${RESOLVED_MARK} marks a value the vocabulary defines and the engine resolves, and ${FREE_TEXT_MARK} marks one nothing in the archive holds to a list. The model line is written the way its provider writes it.`}
     >
-      <Scene
-        ref={ref}
+      <FlowScene
+        {...flow.scene}
         width={W}
         height={H}
-        label="Three stacked lanes. A DOT graph of four nodes on top; one of its nodes opens into a YAML card in the middle, where the type, phase, input, output and prohibition lines carry a filled diamond because the vocabulary defines them and the model line carries a hollow circle because nothing does; the identifiers that card uses appear at the bottom as terms in the ontology, each labelled with its kind."
+        label="The three layers of a blueprint, stacked"
+        description="Three stacked lanes. A DOT graph of four nodes on top; one of its nodes opens into a YAML card in the middle, where the type, phase, input, output and prohibition lines carry a filled diamond because the vocabulary defines them and the model line carries a hollow circle because nothing does; the identifiers that card uses appear at the bottom as terms in the ontology, each labelled with its kind."
       >
         {/* ---------- lane 1: the topology ---------- */}
-        <Lane phase={phase} shown={shown} delay={0}>
-          <LaneLabel y={12}>1 · TOPOLOGY · blueprint.dot</LaneLabel>
+        <g {...furniture}>
+          <LaneLabel x={CAPTION_X} y={14}>1 · TOPOLOGY · blueprint.dot</LaneLabel>
+        </g>
 
-          <Edge
-            from={nodePort(PLANNER.x, PLANNER.y, "right", { ...NODE, pad: 2 })}
-            to={nodePort(TESTER.x, TESTER.y, "left", { ...NODE, pad: 6 })}
-            label="acceptance-criteria"
-          />
-          <Edge
-            from={nodePort(BUILDER.x, BUILDER.y, "right", { ...NODE, pad: 2 })}
-            to={nodePort(TESTER.x, TESTER.y, "left", { ...NODE, pad: 6 })}
-            label="code"
-          />
-          <Edge
-            from={nodePort(TESTER.x, TESTER.y, "right", { ...NODE, pad: 2 })}
-            to={nodePort(DEPLOYER.x, DEPLOYER.y, "left", { ...NODE, pad: 6 })}
-            label="code"
-          />
+        {/* The edges carry no label here. They do on `/spec/topology`, where the topology
+            is the subject; on this sheet the subject is the stack, and seven more words
+            in lane 1 buy nothing the lane below does not say better. */}
+        <FlowEdge
+          from={[PLANNER.x, PLANNER.y]}
+          to={[TESTER.x, TESTER.y]}
+          bend={FLOW.edge.bend.gentle}
+        />
+        <FlowEdge
+          from={[BUILDER.x, BUILDER.y]}
+          to={[TESTER.x, TESTER.y]}
+          bend={-FLOW.edge.bend.gentle}
+        />
+        <FlowEdge from={[TESTER.x, TESTER.y]} to={[DEPLOYER.x, DEPLOYER.y]} />
 
-          <NodeBox {...PLANNER} {...NODE} label="planner" sub="planning" />
-          <NodeBox
-            {...BUILDER}
-            {...NODE}
-            label="builder"
-            sub="implementation"
-          />
-          <NodeBox {...TESTER} {...NODE} label="tester" sub="testing" />
-          <NodeBox {...DEPLOYER} {...NODE} label="deployer" sub="deployment" />
-        </Lane>
+        <FlowNode {...PLANNER} label="planner" id="planner" />
+        {/* Lit, and amber, because this is the node the lane below is a card of. Amber is
+            the tone `/spec` gives the card layer on its own index, so the highlight and
+            the door a reader arrived through agree. */}
+        <FlowNode {...BUILDER} label="builder" tone="amber" lit id="builder" />
+        <FlowNode {...TESTER} label="tester" id="tester" />
+        <FlowNode {...DEPLOYER} label="deployer" id="deployer" />
 
         {/* The pointer that makes the two lanes one bundle. `card="id@version"` is not
-              an Attractor attribute, which is the fact the whole format rests on: the
-              runner ignores it and DarkPrint reads it. */}
-        <Lane phase={phase} shown={shown} delay={160}>
-          <Leader
-            x={BUILDER.x}
-            from={BUILDER.y + NODE.height / 2 + 4}
-            to={CARD.top - 4}
-            label={`card="code-builder@1.0.0"`}
-          />
-        </Lane>
+            an Attractor attribute, which is the fact the whole format rests on: the
+            runner ignores it and DarkPrint reads it. */}
+        <Leader
+          x={BUILDER.x}
+          from={168}
+          to={CARD.top - 8}
+          label={`card="code-builder@1.0.0"`}
+        />
 
         {/* ---------- lane 2: the node card ---------- */}
-        <Lane phase={phase} shown={shown} delay={220}>
-          <LaneLabel y={152}>2 · NODE CARD · code-builder@1.0.0.yaml</LaneLabel>
+        <g {...furniture}>
+          <LaneLabel x={CAPTION_X} y={190}>2 · NODE CARD · code-builder@1.0.0.yaml</LaneLabel>
 
           <rect
             x={CARD.left}
@@ -346,7 +259,7 @@ export function SpecLayers() {
             rx={VIZ.node.radius}
             fill={VIZ_KNOCKOUT}
             stroke={toneColor("line")}
-            strokeWidth={VIZ.stroke.base}
+            strokeWidth={VIZ.stroke.hair}
           />
           <text
             x={CARD.left + 18}
@@ -403,25 +316,48 @@ export function SpecLayers() {
             value="acceptance-criteria"
             term
           />
-        </Lane>
+        </g>
 
-        <Lane phase={phase} shown={shown} delay={380}>
-          <Leader
-            x={CARD.left + 140}
-            from={CARD.bottom + 4}
-            to={CHIP_Y - CHIP_H / 2 - 8}
-            label={`every ${RESOLVED_MARK} id is defined here`}
-          />
-        </Lane>
+        <Leader
+          x={CARD_TO_TERMS_X}
+          from={CARD.bottom + 6}
+          to={TERM_KIND_Y - 12}
+          label={`every ${RESOLVED_MARK} id is defined here`}
+        />
 
         {/* ---------- lane 3: the ontology ---------- */}
-        <Lane phase={phase} shown={shown} delay={440}>
-          <LaneLabel y={296}>3 · ONTOLOGY · vocabulary v0.1.0</LaneLabel>
-          {chips.map((chip) => (
-            <Chip key={chip.id} x={chip.x} id={chip.id} kind={chip.kind} />
+        <g {...furniture}>
+          <LaneLabel x={CAPTION_X} y={340}>3 · ONTOLOGY · vocabulary v0.1.0</LaneLabel>
+          {terms.map((term) => (
+            <text
+              key={term.id}
+              x={term.x}
+              y={TERM_KIND_Y}
+              textAnchor="middle"
+              fontSize={8}
+              fill={toneColor("dim")}
+            >
+              {term.kind}
+            </text>
           ))}
-        </Lane>
-      </Scene>
+        </g>
+
+        {/* Always visible, because this row is what the leader above points at and a
+            reader who never moves a pointer has to be able to read the answer. */}
+        {terms.map((term) => (
+          <FlowNode
+            key={term.id}
+            x={term.x}
+            y={TERM_Y}
+            r={TERM_R}
+            tone="emerald"
+            label={term.id}
+            name={`${term.id}, a ${term.kind} in the ontology`}
+            reveal="always"
+            id={term.id}
+          />
+        ))}
+      </FlowScene>
     </FigureFrame>
   );
 }

@@ -127,23 +127,10 @@ export const SHEET_REGISTER = {
 
 export type SheetRegister = keyof typeof SHEET_REGISTER;
 
-/**
- * What an anime.js selector may rely on.
- *
- * Every glyph writes a `data-viz` attribute naming what it is, so a scene can drive its
- * own parts without threading a ref through four components:
- * `animate(`${VIZ_SELECTOR.edge}`, { … })` inside a `createScope` rooted on the scene.
- * These strings are the contract; the attribute values are not otherwise load-bearing.
+/*
+ * `VIZ_SELECTOR` and `vizId` used to close this file: the anime.js contract for the CAD
+ * glyphs. Both are gone with those glyphs (redesign spec §1; `Glyphs.tsx` carries the
+ * author's own words on the register). `FLOW_SELECTOR` and `flowId` in `flow.ts` are the
+ * one selector contract now, and they keep the same attribute values, so a scene converted
+ * from one register to the other selects the same things by the same names.
  */
-export const VIZ_SELECTOR = {
-  node: '[data-viz="node"]',
-  edge: '[data-viz="edge"]',
-  absentEdge: '[data-viz="absent-edge"]',
-  human: '[data-viz="human"]',
-  label: '[data-viz="label"]',
-} as const;
-
-/** The stable handle a glyph gets from its `id` prop: `[data-viz-id="builder"]`. */
-export function vizId(id: string): string {
-  return `[data-viz-id="${id}"]`;
-}

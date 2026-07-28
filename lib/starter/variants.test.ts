@@ -385,7 +385,7 @@ describe("choice 2: who decides the work is finished", () => {
       expect(staffed).toHaveLength(1);
       expect(staffed[0].nodeId).toBe("approver");
       // Doc 1 §8.3: the metric names the node and says what it is, in the engine's words.
-      expect(staffed[0].explanation).toContain("a person acts here");
+      expect(staffed[0].explanation).toContain("A person acts here");
       // Doc 2 §5.3: the choice moves autonomy alone.
       expect(gated.analysis.security.level).toBe(alone.analysis.security.level);
       expect(gated.analysis.phaseCoverage.missing).toEqual(alone.analysis.phaseCoverage.missing);

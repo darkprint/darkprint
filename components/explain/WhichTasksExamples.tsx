@@ -19,6 +19,15 @@
    the next title. Every word of all eight is still on the page and
    still in the prerendered HTML; the disclosure decides what is
    on screen before a click, and nothing else.
+
+   ── Redesign spec §5: a section folded into this one ──
+   The page carried a closing section, "Why the page is written
+   this flatly", whose whole content was the paragraph above about
+   the reader who takes an unverifiable task to a factory. It was a
+   heading and a paragraph explaining a decision the reader was
+   about to see anyway, three screens after they saw it. The
+   sentences moved into the lead here, where the second column is
+   in front of them.
    ============================================================ */
 
 type Example = {
@@ -112,9 +121,12 @@ export function WhichTasksExamples() {
           Eight real tasks, run through the four questions
         </h2>
         <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
-          Held against your own work, the questions are easier to answer by comparison
-          than in the abstract. Find the entry your task most resembles and read the check
-          it turns on.
+          Find the entry your task most resembles and read the check it turns on. The
+          second column is written at full strength on purpose. This page exists to
+          prevent one outcome: somebody picks a task nothing can verify, points a factory
+          at it, gets back fluent work that is wrong in a way no node in the graph can
+          detect, and concludes that dark factories do not work. The graph was fine. The
+          task was never a candidate.
         </p>
       </div>
 

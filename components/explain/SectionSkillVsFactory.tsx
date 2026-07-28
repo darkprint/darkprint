@@ -9,6 +9,15 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    a worse dark factory; it is a smaller object, and the reason
    the distinction earns a page is that only one of the two has
    somewhere to record an isolation rule.
+
+   ── What this section absorbed, and what that let it drop ──
+   Redesign spec §3 moves the landing's `SectionNotSkill` here. Its
+   two panels made the same distinction these two make, in a second
+   set of words, so absorbing it cost nothing and paid for the cut
+   §5 licences: prose that says the same thing a second time. The
+   panel bodies lost their middle sentences, and the paragraph that
+   announced what the next section would do went with them, since
+   the next section is directly underneath.
    ============================================================ */
 
 type Side = {
@@ -27,7 +36,7 @@ const SIDES: Side[] = [
     glyph: "◆",
     color: "var(--color-cyan)",
     title: "A capability, handed to one agent",
-    body: "It states what the agent can do and supplies what it needs to do it: instructions, plus a tool or two. Load it and the agent is better at something than it was a moment ago. Everything it changes happens inside one head.",
+    body: "It states what the agent can do and supplies what it needs to do it: instructions, plus a tool or two. Everything it changes happens inside one head.",
   },
   {
     id: "factory",
@@ -35,7 +44,7 @@ const SIDES: Side[] = [
     glyph: "▧",
     color: "var(--color-violet)",
     title: "Several agents, with the wiring written down",
-    body: "One card per node saying what that node does and which model or tool does it. One edge for every place an output becomes somebody else's input. Past the work itself, what the graph records is which node receives which artefact.",
+    body: "One card per node saying what that node does and which model runs it. One edge for every place an output becomes somebody else's input. What the graph records is which node receives which artefact.",
   },
 ];
 
@@ -139,8 +148,7 @@ export function SectionSkillVsFactory() {
         <p className="mt-6 max-w-3xl border-l-2 border-line-bright pl-4 text-[15px] leading-relaxed text-muted">
           A Skill can make a node better at its job. It has nothing to say about what that
           node is forbidden to see, because inside a Skill there is nobody else in the
-          picture to be isolated from. That is the whole difference, and the next section
-          is the case where it decides the outcome.
+          picture to be isolated from.
         </p>
       </div>
     </section>

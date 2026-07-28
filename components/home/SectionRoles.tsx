@@ -22,9 +22,9 @@
    This comment used to claim the drawing was read off the DOT
    while the labels, the wires and the iteration cap were literals
    typed into the JSX with no test anywhere near them. They were
-   correct, and correct by luck: the sibling figure in
-   `components/hero/` has been parsed against the same file since
-   it was written, and this one had nothing.
+   correct, and correct by luck: the sibling figure in the hero had
+   been parsed against the same file since it was written, and this
+   one had nothing.
 
    ── The two things the drawing exists to show ──
 
@@ -41,7 +41,7 @@
 
    2. **The absent edge.** Doc 2 §5.2: "la lezione centrale non sta
       in un nodo, sta in un arco che non c'è." Nothing runs from the
-      planner to the builder. `AbsentEdge` draws the place it would
+      planner to the builder. `FlowAbsence` draws the place it would
       have gone and names the prohibition, and the prohibition is a
       real entry: `code-builder@1.0.0` lists `acceptance-criteria`
       under `cannot`, that entry names a data type in the ontology,
@@ -69,164 +69,291 @@
    from a card that still exists.
 
    ── Rendering (spec §1) ──
-   Every label is real DOM at SSR time. The anime.js timeline plays
-   only on `useReveal`'s `shown` phase and spends itself on opacity
-   and on `draw`; `static` is the server, no JS and reduced motion,
-   and in that phase the markup is already the finished drawing.
+   Every label is real DOM at SSR time. The timeline plays only on
+   `useReveal`'s `shown` phase and spends itself on opacity, on
+   transform and on `draw`; `static` is the server, no JS and
+   reduced motion, and in that phase the markup is already the
+   finished drawing.
+
+   ── The register changed under this figure ──
+   Redesign spec §1, on the author's verdict about this drawing in
+   particular: "the look of [the roles figure] and related figure
+   using the same style, I don't like at all. What I like is the
+   pattern on the background but not the style of the graph." So the
+   graticule is untouched and the CAD boxes are gone. A node is a lit
+   disc, a run is a curve with a light travelling it, and the
+   placement is imported from `./graph.ts` rather than restated,
+   which is what keeps this figure and the landing's second beat the
+   same drawing at two magnifications.
+
+   The hand-rolled timeline went with the boxes. `useLuminousFlow`
+   owns the entrance for every scene in this register, including the
+   rule that the absence arrives last and alone.
    ============================================================ */
 
-import { createScope, createTimeline, stagger, svg, utils } from "animejs";
 import Link from "next/link";
 
 import {
-  AbsentEdge,
-  Edge,
-  NodeBox,
-  Scene,
+  FLOW,
+  FlowAbsence,
+  FlowEdge,
+  FlowNode,
+  FlowScene,
   Sheet,
   VIZ,
-  VIZ_SELECTOR,
+  VIZ_INK,
+  labelOffset,
   toneColor,
+  type Point,
 } from "@/components/viz";
-import { useIsomorphicLayoutEffect, useReveal } from "@/components/viz/useReveal";
+import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { cx } from "@/lib/format";
 
-import { ROLE_ABSENCE, ROLE_LOOP_CAP, boxProps, wireProps } from "./roles";
+import { LANDING_NARROW, LANDING_WIDE, type LandingGraph } from "./graph";
+import { ROLE_LOOP_CAP, boxProps, wireProps } from "./roles";
 
 /* ==================== the figure ====================
 
-   Coordinates are viewBox units and a node is placed by its centre
-   (`components/viz/Glyphs.tsx`). Two rows: the planner and the
+   The five centres come from `./graph.ts`: the planner and the
    tester and the deployer along the top, the builder and the
    debugger beneath them, which puts the loop on one axis and the
    absence on the other so neither has to cross the other to be
    read.
+
+   ── Two placements, and why there had to be ──
+   A label inside an `<svg>` is drawn in viewBox units, so its
+   rendered size is the label's units times the ratio of pixel width
+   to viewBox width. This figure shipped as one 900-unit frame,
+   which `container-page` and `Sheet` render at 320 CSS px on a
+   402-pixel phone: `FLOW.label.size` landed at **3.9 pixels**, on
+   the one branch of the label gate that shows every label
+   unconditionally, on the grounds that "below `md` a figure is
+   small and the labels are what make it legible at all"
+   (`components/viz/flow.ts`). The landing's second beat already
+   drew this graph at two magnifications for exactly that reason and
+   this page did not.
+
+   The frame is taller than the landing's at both sizes, because
+   this figure carries two annotations the landing does not: the cap
+   on the loop, and what the deployer leaves behind.
    ==================================================== */
 
-const FIGURE = { width: 900, height: 340 } as const;
+/**
+ * One placement of the figure: a graph from `./graph.ts`, plus the room this page's own
+ * annotations need under it.
+ */
+interface RolesPlacement {
+  graph: LandingGraph;
+  /** Frame height. Taller than the graph's, for the two annotations under the discs. */
+  height: number;
+  /** Where the two runs that start the graph come in from. */
+  offSheet: number;
+  /**
+   * How far the loop's two arms are moved off the discs they join, along the axis the
+   * loop does not run on.
+   *
+   * A label sits at the midpoint of its own curve, so two arcs between the same pair of
+   * discs put "failure evidence" and "patch" on top of each other whatever bend they
+   * take. Shifting the endpoints across the run moves the two midpoints apart, which is
+   * the only lever that separates the words rather than only the lines.
+   */
+  loopShift: number;
+  /** Which way that shift runs, which follows from how the two discs lie. */
+  loopAxis: "x" | "y";
+  /**
+   * Where each edge's label sits along its own curve, keyed `source-target`. Default 0.5.
+   *
+   * `loopShift` separates the loop's two labels from each other. It does nothing about the
+   * other three labels that crowd the same region once the frame is narrow: on the phone
+   * placement "build" landed on "failure evidence", "failure evidence" on the tester's own
+   * label, and "patch" on "approved build". Sliding a label along its own curve is the one
+   * lever that fixes those without moving a disc and without shortening a word —
+   * `roles.test.ts` holds these labels to `blueprint.dot`, so shortening is not available.
+   *
+   * `roles-labels.test.ts` renders the figure and compares every box, so a number here that
+   * stops being enough fails the build rather than shipping as overlapping type.
+   */
+  labelTs?: Readonly<Record<string, number>>;
+  className: string;
+}
 
-/** Row centres. */
-const TOP = 76;
-const LOW = 234;
+const PLACEMENTS: readonly RolesPlacement[] = [
+  /* The narrow one first, so the phone's markup is the first thing in the document. Its
+     loop is vertical (tester above debugger), so the arms shift sideways is the wrong
+     axis there and the shift runs down the frame instead. */
+  {
+    graph: LANDING_NARROW,
+    height: LANDING_NARROW.height + 96,
+    offSheet: 16,
+    loopShift: 34,
+    loopAxis: "y",
+    labelTs: {
+      "builder-tester": 0.32,
+      "tester-debugger": 0.66,
+      "debugger-tester": 0.4,
+      "tester-deployer": 0.36,
+    },
+    className: "sm:hidden",
+  },
+  {
+    graph: LANDING_WIDE,
+    height: LANDING_WIDE.height + 40,
+    offSheet: 26,
+    loopShift: 26,
+    loopAxis: "x",
+    /* The wide frame has room; every label stays at the midpoint of its own curve. */
+    className: "hidden sm:block",
+  },
+];
 
-/** Column centres. */
-const LEFT = 150;
-const MID = 450;
-const RIGHT = 750;
+/** The tone every disc takes. Uniform, so the drawing's colour says nothing it should not. */
+const NODE_TONE = "cyan" as const;
 
-/** Half of `VIZ.node.width` and `VIZ.node.height`, for the port arithmetic below. */
-const HW = VIZ.node.width / 2;
-const HH = VIZ.node.height / 2;
+function RolesFigure({ placement }: { placement: RolesPlacement }) {
+  const flow = useLuminousFlow({ amount: 0.2 });
+  const { graph, loopShift, loopAxis, offSheet } = placement;
+  /* 0.5 is `run.midpoint`, so a placement that names nothing draws exactly as before. */
+  const labelT = (key: string): number => placement.labelTs?.[key] ?? 0.5;
 
-function RolesFigure() {
-  const { ref, shown, phase } = useReveal<SVGSVGElement>({ amount: 0.2 });
+  /** Every disc in this figure, at the size `./graph.ts` sets for this frame. */
+  const R = graph.nodeRadius;
+  /** How far below a disc's centre its own label sits, and therefore where an annotation
+      may start without writing over one. */
+  const UNDER = labelOffset(R);
 
-  useIsomorphicLayoutEffect(() => {
-    /* `static` is the server, a reader without JS and a reader who asked for reduced
-       motion, and in all three `useReveal` has already rendered the finished drawing.
-       Playing here would take it apart in front of exactly the reader who said no. */
-    if (phase !== "shown") return;
-    const root = ref.current;
-    if (root === null) return;
+  function centre(id: string): Point {
+    const node = graph.nodes.find((candidate) => candidate.id === id);
+    if (node === undefined) throw new Error(`the roles figure has no place for \`${id}\``);
+    return [node.x, node.y];
+  }
 
-    const scope = createScope({ root }).add(() => {
-      const nodes = root.querySelectorAll(VIZ_SELECTOR.node);
-      const carried = root.querySelectorAll(`${VIZ_SELECTOR.edge} ${VIZ_SELECTOR.label}`);
-      const absent = root.querySelectorAll(VIZ_SELECTOR.absentEdge);
-      /* Only the edges that exist are drawn. `createDrawable` works by writing
-         `stroke-dasharray`, and the absent edge's dash is the whole of what makes it
-         read as absent, so it arrives by opacity instead. */
-      const wires = svg.createDrawable(root.querySelectorAll(`${VIZ_SELECTOR.edge} path`));
+  /** Move a centre across the loop's own axis, by `by`. */
+  function across(point: Point, by: number): Point {
+    return loopAxis === "x" ? [point[0] + by, point[1]] : [point[0], point[1] + by];
+  }
 
-      /* Set rather than declared as a `from` value: a layout effect runs before paint,
-         so the hidden state is what the reader's first frame shows and there is no
-         finished drawing flashing up before it collapses. */
-      utils.set(nodes, { opacity: 0 });
-      utils.set(carried, { opacity: 0 });
-      utils.set(absent, { opacity: 0 });
-      utils.set(wires, { draw: "0 0" });
+  const planner = centre("planner");
+  const builder = centre("builder");
+  const tester = centre("tester");
+  const debug = centre("debugger");
+  const deployer = centre("deployer");
 
-      createTimeline({ defaults: { ease: "outQuad" } })
-        .add(nodes, { opacity: 1, duration: 340 }, stagger(90))
-        .add(wires, { draw: "0 1", duration: 460 }, stagger(60, { start: 300 }))
-        .add(carried, { opacity: 1, duration: 260 }, stagger(60, { start: 540 }))
-        /* Last, and alone. A reader who has just watched five edges land is the reader
-           most likely to notice the sixth one that never connects. */
-        .add(absent, { opacity: 1, duration: 560 }, 1280);
-    });
-
-    return () => {
-      scope.revert();
-    };
-  }, [phase, ref]);
+  /* The loop's two arms, moved off the discs' centres so their labels land apart. */
+  const testerOut: Point = across(tester, -loopShift);
+  const debugIn: Point = across(debug, -loopShift);
+  const debugOut: Point = across(debug, loopShift);
+  const testerIn: Point = across(tester, loopShift);
 
   return (
-    <Scene
-      ref={ref}
+    <FlowScene
+      {...flow.scene}
       id="roles"
-      width={FIGURE.width}
-      height={FIGURE.height}
-      label="Five roles wired in order. The planner sends acceptance criteria to the tester and the builder sends its build to the tester. The tester sends failure evidence to the debugger and the debugger sends a patch back, a loop bounded by an iteration cap. The tester sends the approved build to the deployer. A dashed non-edge marks the run that is deliberately missing, from the planner to the builder, labelled acceptance-criteria."
-      className={cx(
-        "transition-opacity duration-500 ease-out",
-        shown ? "opacity-100" : "opacity-0",
-      )}
+      width={graph.width}
+      height={placement.height}
+      className={placement.className}
+      label="Five roles wired in order, with one run deliberately missing"
+      description="The planner sends acceptance criteria to the tester and the builder sends its build to the tester. The tester sends failure evidence to the debugger and the debugger sends a patch back, a loop bounded by an iteration cap. The tester sends the approved build to the deployer. Nothing runs from the planner to the builder, and the prohibition that keeps it missing is acceptance-criteria."
     >
       {/* what the run is started with */}
-      <Edge from={[26, TOP]} to={[LEFT - HW - 6, TOP]} tone="dim" label="request" />
-      <Edge from={[26, LOW]} to={[LEFT - HW - 6, LOW]} tone="dim" label="plan" />
-
-      {/* Doc 2 §5.2's absence, drawn in the place it would have gone. `code-builder@1.0.0`
-          lists `acceptance-criteria` under `cannot`, so this is a rule the resolver holds
-          the graph to and not a convention an author remembered. */}
-      <AbsentEdge
-        from={[LEFT, TOP + HH]}
-        to={[LEFT, LOW - HH]}
-        label={ROLE_ABSENCE.prohibition}
-        id="absent"
+      <FlowEdge
+        from={[offSheet, planner[1]]}
+        to={planner}
+        fromRadius={0}
+        toRadius={R}
+        tone="dim"
+        label="request"
+      />
+      <FlowEdge
+        from={[offSheet, builder[1]]}
+        to={builder}
+        fromRadius={0}
+        toRadius={R}
+        tone="dim"
+        label="plan"
       />
 
-      <Edge
-        from={[LEFT + HW, TOP]}
-        to={[MID - HW - 6, TOP]}
+      <FlowEdge
+        from={planner}
+        to={tester}
+        bend={-FLOW.edge.bend.gentle}
+        fromRadius={R}
+        toRadius={R}
         {...wireProps("planner", "tester")}
       />
-      <Edge from={[LEFT + HW, LOW]} to={[400, TOP + HH + 6]} {...wireProps("builder", "tester")} />
+      <FlowEdge
+        from={builder}
+        to={tester}
+        bend={FLOW.edge.bend.gentle}
+        fromRadius={R}
+        toRadius={R}
+        labelT={labelT("builder-tester")}
+        {...wireProps("builder", "tester")}
+      />
 
-      {/* Doc 2 §5.5. Two arcs bowing apart so each says what it carries in its own
-          space, and so the direction of each is readable without a legend. */}
-      <Edge
-        from={[MID - 22, TOP + HH]}
-        to={[MID - 22, LOW - HH]}
-        bend={30}
+      {/* Doc 2 §5.5. Two arcs taking the same bend and bowing to opposite sides, because
+          `edgeControl` offsets perpendicular to the run and the return runs the other way.
+          One number, two arcs that separate. */}
+      <FlowEdge
+        from={testerOut}
+        to={debugIn}
+        bend={FLOW.edge.bend.wide}
+        labelT={labelT("tester-debugger")}
         {...wireProps("tester", "debugger")}
       />
-      <Edge
-        from={[MID + 22, LOW - HH]}
-        to={[MID + 22, TOP + HH]}
-        bend={30}
+      <FlowEdge
+        from={debugOut}
+        to={testerIn}
+        bend={FLOW.edge.bend.wide}
+        labelT={labelT("debugger-tester")}
         {...wireProps("debugger", "tester")}
       />
 
-      <Edge
-        from={[MID + HW, TOP]}
-        to={[RIGHT - HW - 6, TOP]}
+      <FlowEdge
+        from={tester}
+        to={deployer}
+        bend={-FLOW.edge.bend.gentle}
+        fromRadius={R}
+        toRadius={R}
+        labelT={labelT("tester-deployer")}
         {...wireProps("tester", "deployer")}
       />
 
-      <NodeBox x={LEFT} y={TOP} {...boxProps("planner")} />
-      <NodeBox x={LEFT} y={LOW} {...boxProps("builder")} />
-      <NodeBox x={MID} y={TOP} {...boxProps("tester")} />
-      <NodeBox x={MID} y={LOW} {...boxProps("debugger")} />
-      <NodeBox x={RIGHT} y={TOP} {...boxProps("deployer")} />
+      {/* Doc 2 §5.2's absence, drawn in the place it would have gone. `code-builder@1.0.0`
+          lists `acceptance-criteria` under `cannot`, so this is a rule the resolver holds
+          the graph to and not a convention an author remembered. Its label stays on
+          without a pointer, because this is the sentence the whole page is about. */}
+      <FlowAbsence
+        from={graph.absence.from}
+        to={graph.absence.to}
+        fromRadius={R}
+        toRadius={R}
+        label={graph.absence.label}
+        id="absent"
+      />
+
+      {graph.nodes.map((node) => {
+        const box = boxProps(node.id);
+        return (
+          <FlowNode
+            key={node.id}
+            id={box.id}
+            x={node.x}
+            y={node.y}
+            r={R}
+            label={box.label}
+            /* The visible word is the role and the accessible name carries the card
+               pinned on it, so a screen reader is told which document to go and open. */
+            name={`${box.label}, running ${box.sub}`}
+            tone={NODE_TONE}
+          />
+        );
+      })}
 
       {/* The run ends here. `release-gate@1.0.0` emits nothing onward, so there is no
           outgoing edge to draw and the note says what it leaves behind instead. */}
       <text
-        data-viz="label"
-        x={RIGHT}
-        y={TOP + HH + 20}
+        x={deployer[0]}
+        y={deployer[1] + UNDER + 16}
         textAnchor="middle"
         fontSize={VIZ.font.sub}
         fill={toneColor("dim")}
@@ -234,34 +361,25 @@ function RolesFigure() {
         writes the tag and the digest
       </text>
 
-      {/* The cap, attached to the node that declares it. */}
+      {/* The cap, attached to the node that declares it. Dashed, and therefore never
+          handed to a drawable: `createDrawable` writes `stroke-dasharray`, which is the
+          whole of what makes this read as an annotation. */}
       <path
-        d={`M ${MID} ${LOW + HH + 2} L ${MID} ${LOW + HH + 30}`}
+        d={`M ${debug[0]} ${debug[1] + UNDER + 8} L ${debug[0]} ${debug[1] + UNDER + 36}`}
         stroke={toneColor("dim")}
         strokeWidth={VIZ.stroke.hair}
         strokeDasharray={VIZ.dash.leader}
       />
       <text
-        data-viz="label"
-        x={MID}
-        y={LOW + HH + 46}
+        x={debug[0]}
+        y={debug[1] + UNDER + 52}
         textAnchor="middle"
-        fontSize={VIZ.font.label}
-        fill={toneColor("ink")}
+        fontSize={FLOW.label.size}
+        fill={VIZ_INK}
       >
         {`${ROLE_LOOP_CAP.param}: ${ROLE_LOOP_CAP.value}`}
       </text>
-      <text
-        data-viz="label"
-        x={MID}
-        y={LOW + HH + 62}
-        textAnchor="middle"
-        fontSize={VIZ.font.sub}
-        fill={toneColor("dim")}
-      >
-        {`the cap on the loop, declared on ${ROLE_LOOP_CAP.card}`}
-      </text>
-    </Scene>
+    </FlowScene>
   );
 }
 
@@ -315,7 +433,17 @@ export function SectionRoles() {
           title="starter-software-factory"
           note="five nodes, five edges, one absence"
         >
-          <RolesFigure />
+          {PLACEMENTS.map((placement) => (
+            <RolesFigure key={placement.className} placement={placement} />
+          ))}
+          {/* The cap's sentence sits here rather than inside the drawing. As an SVG
+              `<text>` it was one unwrappable line: 55 characters centred on the debugger
+              spans 336 units, and the narrow frame is 360 wide, so a fifth of it was
+              clipped off the right edge on every phone. HTML wraps, and the number itself
+              stays on the sheet where the dashed leader points at it. */}
+          <p className="mt-1 text-center font-mono text-[11px] leading-relaxed text-dim">
+            {`the cap on the loop, declared on ${ROLE_LOOP_CAP.card}`}
+          </p>
         </Sheet>
 
         <div className="mt-8 grid gap-6 md:grid-cols-2">

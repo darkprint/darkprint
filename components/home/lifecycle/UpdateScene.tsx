@@ -11,23 +11,27 @@
 
    The dashed run at the bottom is the point of the whole panel. It
    is the edge the new version refuses, drawn where it would have
-   gone, which is the only way to draw an absence. It is faint
+   gone, which is the only way to draw an absence. It is neutral
    rather than pink, because a prohibition doing its job is the
    design working and the alarm colour on this site means a defect
    was found (`components/viz/tokens.ts`).
+
+   Converted out of the CAD register on the author's instruction
+   (redesign spec §1); `DownloadScene` beside it carries the note.
    ============================================================ */
 
-import { AbsentEdge, Edge, NodeBox, Scene, nodePort } from "@/components/viz";
+import { FLOW, FlowAbsence, FlowEdge, FlowNode, FlowScene } from "@/components/viz";
+import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
 
-import { useSceneReveal } from "./scene-reveal";
+/** 340 for the reason `DownloadScene` records: these panels render 270 CSS px wide. */
+const FIGURE = { width: 340, height: 202 } as const;
 
-const CARD = { width: 152, height: 44 } as const;
-const SOURCE = { width: 152, height: 40 } as const;
+const BEFORE_X = 88;
+const AFTER_X = 252;
+const CARD_Y = 50;
+const SOURCE_Y = 150;
 
-const BEFORE_X = 96;
-const AFTER_X = 312;
-const CARD_Y = 46;
-const SOURCE_Y = 148;
+const R = 8;
 
 export function UpdateScene({
   cardId,
@@ -47,46 +51,67 @@ export function UpdateScene({
   /** The node id whose output the new prohibition refuses. */
   source: string;
 }) {
-  const { ref, armed } = useSceneReveal();
+  const flow = useLuminousFlow({ amount: 0.3 });
 
   return (
-    <Scene
-      ref={ref}
-      width={420}
-      height={196}
+    <FlowScene
+      {...flow.scene}
+      width={FIGURE.width}
+      height={FIGURE.height}
       id="lifecycle-update"
-      label={`The card ${cardId} at ${from} beside the same card at ${to}, one prohibition longer. A dashed run from ${source} into the new version marks the edge it refuses.`}
+      label={`The card ${cardId} at ${from} beside the same card at ${to}`}
+      description={`The card ${cardId} at ${from}, and the same card at ${to} with one prohibition longer. A run from ${source}, which emits ${added}, into the new version is drawn where it would have gone and is refused.`}
     >
-      <g style={{ opacity: armed ? 0 : 1 }}>
-        <NodeBox id="before" x={BEFORE_X} y={CARD_Y} {...CARD} label={cardId} sub={`@${from}`} />
-        <Edge
-          from={nodePort(BEFORE_X, CARD_Y, "right", { ...CARD, pad: 4 })}
-          to={nodePort(AFTER_X, CARD_Y, "left", { ...CARD, pad: 4 })}
-          label={`+ ${added}`}
-          id="edit"
-        />
-        {/* Cyan for the version that does not exist yet, matching the edited card in the
-            fork drawing beside it: the same accent means the same thing twice, which is
-            what a shared vocabulary is for. */}
-        <NodeBox
-          id="after"
-          x={AFTER_X}
-          y={CARD_Y}
-          {...CARD}
-          label={cardId}
-          sub={`@${to}`}
-          tone="cyan"
-        />
+      <FlowEdge
+        from={[BEFORE_X, CARD_Y]}
+        to={[AFTER_X, CARD_Y]}
+        fromRadius={R}
+        toRadius={R}
+        label={`+ ${added}`}
+        id="edit"
+      />
+      <FlowNode
+        id="before"
+        x={BEFORE_X}
+        y={CARD_Y}
+        r={R}
+        tone="cyan"
+        label={`${cardId}@${from}`}
+        reveal="always"
+      />
+      {/* Lit for the version that does not exist yet, matching the edited card in the fork
+          drawing beside it: the same treatment means the same thing twice, which is what a
+          shared vocabulary is for. */}
+      <FlowNode
+        id="after"
+        x={AFTER_X}
+        y={CARD_Y}
+        r={R}
+        lit
+        tone="cyan"
+        label={`${cardId}@${to}`}
+        reveal="always"
+      />
 
-        <NodeBox id="source" x={BEFORE_X} y={SOURCE_Y} {...SOURCE} label={source} sub={`emits ${added}`} />
-        <AbsentEdge
-          from={nodePort(BEFORE_X, SOURCE_Y, "right", { ...SOURCE, pad: 4 })}
-          to={nodePort(AFTER_X, CARD_Y, "bottom", { ...CARD, pad: 4 })}
-          bend={18}
-          label="refused"
-          id="refused"
-        />
-      </g>
-    </Scene>
+      <FlowNode
+        id="source"
+        x={BEFORE_X}
+        y={SOURCE_Y}
+        r={R}
+        tone="line"
+        label={source}
+        name={`${source}, which emits ${added}`}
+      />
+      <FlowAbsence
+        from={[BEFORE_X, SOURCE_Y]}
+        to={[AFTER_X, CARD_Y]}
+        bend={FLOW.edge.bend.wide}
+        fromRadius={R}
+        toRadius={R}
+        label="refused"
+        name={`${added} from ${source}, an edge the new version refuses`}
+        id="refused"
+      />
+    </FlowScene>
   );
 }

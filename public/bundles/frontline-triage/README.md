@@ -91,11 +91,11 @@ blueprint decides is who is wired to whom.
 
 Autonomy: Conditional.
 
-> 6 of 7 nodes run unattended, 1 has a person in the loop — 0.8571 ≥ 0.70 → Conditional.
+> 6 of 7 nodes run unattended, 1 has a person in the loop. 0.8571 ≥ 0.70 → Conditional.
 
 Where a person acts:
 
-- `escalate` (Confidence Escalation): Let anything at or above the confidence threshold through untouched and park the rest for a person, with the full context pack attached and an SLA on the clock (type: human-gate) — a person acts here.
+- `escalate` (Confidence Escalation): Let anything at or above the confidence threshold through untouched and park the rest for a person, with the full context pack attached and an SLA on the clock (type: human-gate). A person acts here.
 
 Security level 2.
 

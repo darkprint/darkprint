@@ -102,10 +102,29 @@ export function roleBox(id: string): RoleBox {
   return found;
 }
 
+/**
+ * A role's card id, version dropped.
+ *
+ * The two identifiers on a `RoleBox` are different vocabularies and this is the join
+ * between them. `id` is what the DOT calls the node inside this one graph (`builder`);
+ * `card` is the pinned reference it resolves to (`code-builder@1.0.0`); and
+ * `/nodes/[...id]` is one page per card id, listing its versions. A beat that linked
+ * `nodeHref(box.id)` shipped `/nodes/builder`, which typechecks, renders and 404s.
+ *
+ * Split here rather than through the engine's `parseCardRef`. `@/lib/core` is the
+ * documented import for the engine and this file is pulled into a client component, so
+ * reaching for it to drop three characters put a measured 197 kB of engine into the
+ * landing's JS. `roles.test.ts` holds `card` against the DOT, so the `id@version` shape
+ * is guaranteed before this runs.
+ */
+export function cardId(id: string): string {
+  return roleBox(id).card.split("@")[0];
+}
+
 /** What `NodeBox` needs: the role, the card id without its version, and the viz id. */
 export function boxProps(id: string): { id: string; label: string; sub: string } {
   const box = roleBox(id);
-  return { id: box.id, label: box.label, sub: box.card.split("@")[0] };
+  return { id: box.id, label: box.label, sub: cardId(box.id) };
 }
 
 /** What `Edge` needs: the DOT's label and the viz id. */

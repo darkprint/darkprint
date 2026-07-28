@@ -14,6 +14,17 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    currently holds rather than a number typed into the copy.
    The distinctions are the paragraph underneath, because the
    confusable pairs are across entries and not inside one.
+
+   ── The condensation ──
+   Redesign spec §4.4 asks this page concise and §5 licences one
+   cut: prose that says the same thing a second time. Every entry
+   body lost the clause that restated its own first sentence. The
+   third closing paragraph went entirely, because it was the phase
+   entry again — phase and node type as two dimensions of one card
+   is what that entry opens with, and the one claim the paragraph
+   added on top of it (a card may name several phases or none, and
+   a step outside all five is not a defect) has moved up into the
+   entry itself.
    ============================================================ */
 
 type Entry = {
@@ -49,7 +60,7 @@ function entries(): Entry[] {
       color: "var(--color-cyan)",
       count: `${registry.blueprints().length} in the archive`,
       title: "The whole factory, as one graph",
-      body: "A DOT file carrying the topology, plus one pinned card version for every node in it. Hashed and versioned as a unit, so a blueprint always names the exact cards it was scored against and a score can be reproduced years later. This is the unit you take away.",
+      body: "A DOT file carrying the topology, plus one pinned card version for every node in it. Hashed and versioned as a unit, so a score can be reproduced years later against the exact cards it was computed from. This is the unit you take away.",
       href: kindHref("blueprint"),
       cta: "Browse blueprints",
     },
@@ -60,7 +71,7 @@ function entries(): Entry[] {
       color: "var(--color-amber)",
       count: `${allNodeCards().length} distinct cards`,
       title: "One step, fully described",
-      body: "A card stating what the step does, which model or tool does it, the typed ports it reads and writes, whether a person acts there, and the natural-language spec the agent is handed when the graph is instantiated. It is versioned on its own, and the same version can be pinned by several blueprints without being copied.",
+      body: "A card stating what the step does, which model or tool does it, the typed ports it reads and writes, whether a person acts there, and the spec the agent is handed when the graph is instantiated. Versioned on its own, and pinnable by several blueprints without being copied.",
       href: kindHref("node"),
       cta: "Browse node cards",
     },
@@ -71,7 +82,7 @@ function entries(): Entry[] {
       color: "var(--color-violet)",
       count: `${terms} curated terms`,
       title: "The vocabulary the cards are written in",
-      body: "Every structural field on a card points into it: the node's type, the data type on each port, the tools it needs, the risk markers it declares. It is what lets an analyzer read a graph it has never seen and reason about it, and what stops two authors from naming the same thing twice.",
+      body: "Every structural field on a card points into it: the node's type, the data type on each port, the tools it needs, the risk markers it declares. It is what lets an analyzer read a graph it has never seen, and what stops two authors from naming one thing twice.",
       href: kindHref("ontology"),
       cta: "Read the ontology",
     },
@@ -82,7 +93,7 @@ function entries(): Entry[] {
       color: "var(--color-emerald)",
       count: `${PHASES.length}, and no more`,
       title: "Where a node stands in the lifecycle",
-      body: "A phase is a term in the ontology like any other, sitting on its own dimension: a card says what kind of thing the node is and, separately, where in the arc it acts. These five are the one closed set in the vocabulary, because a sixth would be a different definition of the word factory. Which of them a blueprint has nodes in is its phase coverage, and that states the scope of the graph. An empty phase is where this factory stops.",
+      body: "A term in the ontology like any other, on its own dimension: a card says what kind of thing the node is and, separately, where in the arc it acts. A card may name several phases or none. These five are the one closed set in the vocabulary, because a sixth would be a different definition of the word factory. Which of them a blueprint has nodes in is its phase coverage, and an intake step standing outside all five is not a defect.",
       href: "/ontology#phases-heading",
       cta: "See the five phases",
     },
@@ -155,22 +166,14 @@ export function SectionComponentRecap() {
           <p className="text-sm leading-relaxed text-muted">
             Blueprint and node are the two structural levels, and nothing sits between
             them. A reusable sub-graph would be a third, with an arbitrary line drawn
-            somewhere, so when the need becomes real it gets answered by letting one
-            blueprint reference another as a composite node. That composition is designed
-            for and nothing on the site does it today.
+            somewhere, so the format answers that need by letting one blueprint reference
+            another as a composite node. Nothing on the site does it today.
           </p>
           <p className="text-sm leading-relaxed text-muted">
             The ontology sits underneath both of them: it is the vocabulary the other two
-            are written in. Which is why a term has no version of its own the way a card
+            are written in, which is why a term has no version of its own the way a card
             does. There is one curated core, versioned as a whole, with room for terms
             coined in somebody&apos;s own namespace.
-          </p>
-          <p className="text-sm leading-relaxed text-muted">
-            Phase and node type are two separate dimensions of the same card. A node
-            declares what kind of thing it is and where in the lifecycle it acts, and
-            neither answer implies the other. A card may name several phases or none. The
-            five describe the factory as a whole, so an intake step that stands outside all
-            of them is not a defect.
           </p>
         </div>
       </div>

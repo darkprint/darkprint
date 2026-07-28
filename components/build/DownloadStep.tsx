@@ -93,18 +93,15 @@ export function DownloadStep({
 
   return (
     <div className={cx("flex flex-col gap-5", className)}>
+      {/* The walk through the folder that used to stand here is gone (redesign spec §5).
+          `DownloadPanel` sits directly under this line and describes every file as it
+          lists it: what Attractor runs, what the topology carries, what the README is for.
+          Two descriptions of one folder on one screen is the duplication the licence
+          names. What the panel does not say, the README's quotation of both computed
+          readings, moved down to the paragraph about checking the digest. */}
       <p className="text-[15px] leading-relaxed text-muted">
-        This is your factory. {summary}
-      </p>
-      <p className="text-[15px] leading-relaxed text-muted">
-        The folder has the same shape as every blueprint in the gallery.{" "}
-        <code className="font-mono text-fg">{FACTORY_DOT}</code>{" "}is what Attractor runs,
-        with each card&rsquo;s <code className="font-mono text-fg">spec</code>{" "}inlined as
-        the prompt its agent receives.{" "}
-        <code className="font-mono text-fg">{TOPOLOGY_DOT}</code>{" "}is the topology with the
-        card version pinned on every node.{" "}
-        <code className="font-mono text-fg">{BUNDLE_README}</code>{" "}states the digest, the
-        command, and the two computed scores in the engine&rsquo;s own words.
+        This is your factory, in the same folder shape as every blueprint in the gallery.{" "}
+        {summary}
       </p>
 
       <DownloadPanel
@@ -153,22 +150,26 @@ export function DownloadStep({
           </ul>
         </div>
 
-        {/* Doc 2 §6 is Fase 4. No account prompt, and no button that implies one. */}
+        {/* Doc 2 §6 is Fase 4. No account prompt, and no button that implies one.
+            `DownloadPanel` above already ends on "there is nowhere to save this yet", and
+            already carries the run command and doc 1 §0.1.3's sentence about execution
+            happening on the reader's machine. Repeating either of them a screen-width away
+            is §5's duplication, so what is left here is the part the panel does not say:
+            that nothing was recorded, and how to check the bytes against the page. */}
         <div className="flex flex-col gap-3">
           <p className="text-[13px] leading-relaxed text-muted">
-            There is nowhere to save this. Accounts, profiles and publishing are designed
-            and none of them is built, so the download is the whole of it. Keep the folder
-            somewhere you will find it again, because this page cannot hand it back to you.
-          </p>
-          <p className="text-[13px] leading-relaxed text-muted">
             Nothing was uploaded and nothing was recorded. The graph was assembled and
-            scored in this tab. DarkPrint watches no run and holds none of your provider
-            keys.
+            scored in this tab.
           </p>
           <p className="text-[13px] leading-relaxed text-muted">
-            Run it with <code className="font-mono text-fg">attractor run {FACTORY_DOT}</code>{" "}
-            on your own machine. The README states the digest these files hash to, so you
-            can confirm that what you have is what was scored on this page.
+            The <code className="font-mono text-fg">{BUNDLE_README}</code>{" "}states the
+            digest these files hash to and quotes both computed readings in the
+            engine&rsquo;s own words, so you can confirm that what you have is what was
+            scored on this page.
+          </p>
+          <p className="text-[13px] leading-relaxed text-muted">
+            Keep the folder somewhere you will find it again. This page cannot hand it back
+            to you.
           </p>
         </div>
       </div>

@@ -336,7 +336,11 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               — the other four are rows in the index. Voting and run telemetry are
               designed and neither is built, so no ballot and no execution stands behind
               those numbers.{" "}
-              <Link href="/#scoring" className="text-muted underline-offset-4 hover:text-cyan hover:underline">
+              {/* Redesign spec §3 moved `SectionExample` and the `#scoring` panel inside
+                  it off the landing and onto `/spec`. The id came with it verbatim; only
+                  the route in front of it changed, and `/#scoring` was left pointing at a
+                  fragment the five-beat landing no longer renders. */}
+              <Link href="/spec#scoring" className="text-muted underline-offset-4 hover:text-cyan hover:underline">
                 How a factory is graded
               </Link>
             </p>

@@ -358,15 +358,38 @@ const COPY_TREES = [
   "components/gallery",
 ];
 
-/** Single files outside those trees, on the routes this rule was extended for. */
-const COPY_PAGES = [
-  "app/page.tsx",
-  "app/spec/page.tsx",
-  "app/how-to-build-a-dark-factory/page.tsx",
-  "app/which-tasks/page.tsx",
-  "app/what-it-isnt/page.tsx",
-  "app/blueprints/page.tsx",
+/**
+ * Routes whose page copy predates the rule, kept out for the reason `COPY_TREES` records.
+ *
+ * `app/nodes`, `app/ontology` and `app/upload` are the page halves of the component trees
+ * already named above. `app/blueprints/[slug]` and `app/u` carry the same kind of legacy
+ * punctuation. All five are a copy edit rather than a guard, and adding them here before
+ * that edit would only fail on text nobody in this pass wrote.
+ */
+const APP_EXEMPT = [
+  "app/nodes/",
+  "app/ontology/",
+  "app/upload/",
+  "app/blueprints/[slug]/",
+  "app/u/",
 ];
+
+/**
+ * Every route page the rule is held over, walked rather than listed.
+ *
+ * This replaced six paths typed out one at a time, two of which named routes that the
+ * redesign renames (`/how-to-build-a-dark-factory` and `/which-tasks` fold into
+ * `/towards-a-dark-factory`). A guard that throws ENOENT the day a route moves is a guard
+ * the next author deletes rather than fixes, and a hardcoded list covers no page added
+ * after it was written. A walk covers a new sub-route on the day it appears, which is what
+ * the `/spec` and `/towards-a-dark-factory` splits need from it.
+ */
+function appPages(): string[] {
+  return sourcesUnder("app").filter(
+    (path) =>
+      path.endsWith("/page.tsx") && !APP_EXEMPT.some((dir) => path.startsWith(dir)),
+  );
+}
 
 /**
  * Every `.ts`/`.tsx` under `dir`, tests excluded.
@@ -389,10 +412,30 @@ function sourcesUnder(dir: string): string[] {
   return out;
 }
 
+/**
+ * The two files outside `components/` and `app/` that write sentences a reader reads.
+ *
+ * `lib/core/analysis/autonomy.ts` composes the autonomy rationale and the per-node
+ * explanation, and `lib/format.ts` is the presentation transform every surface puts them
+ * through. Both print onto `/blueprints`, `/build`, `/spec`, every blueprint detail page
+ * and every generated `README.md`, and neither was covered: the guard walked
+ * `components/` trees and `app/**` pages and stopped there, so
+ * "… (type: human-gate) — a person acts here." shipped on three blueprint pages against
+ * doc 2 §2.5 for as long as the rule has existed.
+ *
+ * The rest of `lib/` stays out for the reason `COPY_TREES` records about
+ * `components/nodes`: `lib/content/view.ts`, `lib/data/*` and the diagnostic hints in
+ * `lib/core/bundle`, `lib/core/card` and `lib/core/ontology` carry em dashes in copy that
+ * predates the rule. Those are a copy edit rather than a guard, and adding them here
+ * before that edit would only produce a failing test on text nobody in this pass wrote.
+ */
+const LIB_COPY_FILES = ["lib/core/analysis/autonomy.ts", "lib/format.ts"];
+
 /** Every file the em-dash rule is held over, deduplicated and stable. */
 const EM_DASH_FILES = [
   ...new Set([
     ...COPY_FILES,
+    ...LIB_COPY_FILES,
     "components/build/path-state.ts",
     "components/build/state.ts",
     "components/build/BuildPanes.tsx",
@@ -401,7 +444,7 @@ const EM_DASH_FILES = [
     "components/panes/SourcePane.tsx",
     "components/panes/SynchronisedPanes.tsx",
     ...COPY_TREES.flatMap(sourcesUnder),
-    ...COPY_PAGES,
+    ...appPages(),
   ]),
 ].sort();
 
@@ -460,16 +503,16 @@ describe("autonomy is a description, not a verdict", () => {
    * panel shipped one, between a status token and the sentence explaining it.
    */
   it("covers the surfaces this pass wrote, not a list somebody has to remember", () => {
-    // A walk that matched nothing passes every case below. These four are the routes the
-    // guard was extended for, and the landing sections are the bulk of the new copy.
+    // A walk that matched nothing passes every case below. The four named files are the
+    // ones a rename cannot move, and the route count is what notices a walk that stopped
+    // finding pages: `app` carries more than six guarded routes and always has.
     expect(EM_DASH_FILES.length).toBeGreaterThan(40);
+    expect(appPages().length).toBeGreaterThan(6);
     for (const path of [
       "app/page.tsx",
-      "app/spec/page.tsx",
-      "app/how-to-build-a-dark-factory/page.tsx",
-      "components/home/SectionLevels.tsx",
-      "components/spec/SpecLayers.tsx",
-      "components/viz/Glyphs.tsx",
+      "app/build/page.tsx",
+      "components/site/SiteHeader.tsx",
+      "components/viz/Sheet.tsx",
     ]) {
       expect(EM_DASH_FILES, `${path} is not guarded`).toContain(path);
     }
@@ -541,6 +584,37 @@ describe("the steps", () => {
     expect(ids.indexOf("switch")).toBeLessThan(ids.indexOf("loop"));
     // §5.6: the loop is the finale, and the download closes the path.
     expect(ids[ids.length - 1]).toBe("download");
+  });
+
+  /**
+   * The order the demonstration step reports two answers in, locked against a density pass.
+   *
+   * `code-builder@1.0.0` declares `cannot: [acceptance-criteria]`, so the switch does not
+   * merely cost security points: the bundle stops resolving, and the sibling test above
+   * asserts `bundle/prohibition-violated` on all eight variants. An error is the end of the
+   * matter everywhere else on the site, so it has to be the first thing the step says.
+   *
+   * Redesign spec §4.3 folded the second answer, the security reading, behind a disclosure.
+   * Folding the first one away with it, or letting the metric print above it, would put the
+   * page back in the state that made this a finding: a level reported for a graph the
+   * engine refuses, beside a card in the frame whose own `notes` say it fails. Source order
+   * is the cheap way to hold that, because the refusal is a plain block and the reading is
+   * a `More`.
+   */
+  it("reports the refusal before the security reading, and never folds it away", () => {
+    const source = readFileSync(join(process.cwd(), "components/build/steps.tsx"), "utf8");
+    const at = source.indexOf("export function SwitchReading");
+    expect(at, "SwitchReading is gone from steps.tsx").toBeGreaterThan(-1);
+    const step = source.slice(at);
+
+    const refusal = step.indexOf("The bundle does not resolve");
+    const metric = step.indexOf("from the security metric");
+    expect(refusal, "the refusal copy is gone").toBeGreaterThan(-1);
+    expect(metric, "the security reading is gone").toBeGreaterThan(-1);
+    expect(refusal).toBeLessThan(metric);
+    expect(step.slice(0, refusal), "the refusal is inside a disclosure").not.toContain(
+      "<More",
+    );
   });
 
   it("hangs every choice on a node the graph actually has", () => {

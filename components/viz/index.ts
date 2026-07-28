@@ -12,9 +12,20 @@
    while everything below may be imported from either side of the
    boundary:
 
-       import { Sheet, Scene, NodeBox, Edge } from "@/components/viz";
+       import { Sheet, Scene, flowRun } from "@/components/viz";
+
+   `useLuminousFlow` is absent for the same reason as the two hooks
+   above. The glyphs it drives are not: `FlowScene`, `FlowNode`,
+   `FlowEdge`, `FlowAbsence` and `HumanFlowNode` hold no state and
+   import no animation engine, so a server component may draw a
+   static luminous figure with them and pay nothing for it.
+
+       import { FlowScene, FlowNode, FlowEdge } from "@/components/viz";
+       import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
    ============================================================ */
 
 export * from "./tokens";
 export * from "./Sheet";
 export * from "./Glyphs";
+export * from "./flow";
+export * from "./FlowGlyphs";

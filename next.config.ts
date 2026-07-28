@@ -18,6 +18,22 @@ const nextConfig: NextConfig = {
    * `/blueprints/[slug]` detail pages it was always linking into. Next passes the query
    * string through a redirect, so the `/gallery?tag=…` deep links the blueprint pages
    * used to emit still arrive at the same filtered index.
+   *
+   * The last two are the redesign's §4.2 rename. `/how-to-build-a-dark-factory` became
+   * `/towards-a-dark-factory` on the author's instruction and `/which-tasks` folded into
+   * it as a child, and both old paths were in the header and the footer of every page
+   * this site has ever served. Neither may 404.
+   *
+   * Each one lands on the page that holds its content rather than on the new parent.
+   * `/how-to-build-a-dark-factory` was the four phases, the holdout scenarios and the
+   * progressive-disclosure account, and all of that is now `/towards-a-dark-factory/
+   * the-climb`; the parent is the 1-5 ladder, which that page never carried. A redirect
+   * to a parent index is how a bookmark quietly becomes a shrug.
+   *
+   * `permanent: true`, so 308 rather than 307. The rename is a decision and not an
+   * experiment, and 308 is the code that tells a client to stop asking. Redirects are
+   * checked before the filesystem, so a directory reappearing at either old path would
+   * be shadowed by its entry here; `components/site/nav.test.ts` fails if one does.
    */
   async redirects() {
     return [
@@ -26,6 +42,16 @@ const nextConfig: NextConfig = {
       { source: "/parts/:slug", destination: "/nodes", permanent: true },
       { source: "/ontologies", destination: "/ontology", permanent: true },
       { source: "/ontologies/:slug", destination: "/ontology", permanent: true },
+      {
+        source: "/how-to-build-a-dark-factory",
+        destination: "/towards-a-dark-factory/the-climb",
+        permanent: true,
+      },
+      {
+        source: "/which-tasks",
+        destination: "/towards-a-dark-factory/which-tasks",
+        permanent: true,
+      },
     ];
   },
 };

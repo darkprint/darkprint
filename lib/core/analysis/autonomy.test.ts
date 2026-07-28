@@ -352,16 +352,16 @@ describe("computeAutonomy — the number is a description, not a verdict", () =>
     const result = computeAutonomy(makeBlueprint(withHumans(10, 2)));
 
     expect(result.rationale).toBe(
-      "8 of 10 nodes run unattended, 2 have a person in the loop — 0.80 ≥ 0.70 → level 3 (Conditional).",
+      "8 of 10 nodes run unattended, 2 have a person in the loop. 0.80 ≥ 0.70 → level 3 (Conditional).",
     );
   });
 
   it("uses the singular in the rationale for a one-node graph, both ways round", () => {
     expect(computeAutonomy(makeBlueprint(withHumans(1, 0))).rationale).toBe(
-      "1 of 1 node runs unattended, none have a person in the loop — 1.00 > 0.90 → level 4 (Closed-loop).",
+      "1 of 1 node runs unattended, none have a person in the loop. 1.00 > 0.90 → level 4 (Closed-loop).",
     );
     expect(computeAutonomy(makeBlueprint(withHumans(1, 1))).rationale).toBe(
-      "0 of 1 node runs unattended, 1 has a person in the loop — 0.00 < 0.50 → level 1 (Assisted).",
+      "0 of 1 node runs unattended, 1 has a person in the loop. 0.00 < 0.50 → level 1 (Assisted).",
     );
   });
 
@@ -369,7 +369,7 @@ describe("computeAutonomy — the number is a description, not a verdict", () =>
     const result = computeAutonomy(makeBlueprint(withHumans(4, 0)));
 
     expect(result.rationale).toBe(
-      "4 of 4 nodes run unattended, none have a person in the loop — 1.00 > 0.90 → level 4 (Closed-loop).",
+      "4 of 4 nodes run unattended, none have a person in the loop. 1.00 > 0.90 → level 4 (Closed-loop).",
     );
   });
 
@@ -593,7 +593,7 @@ describe("computeAutonomy — nothing to score", () => {
       }),
     );
     expect(mixed.rationale).toBe(
-      "1 of 3 nodes run unattended, 1 has a person in the loop, 1 has no card in the bundle — 0.3333 < 0.50 → level 1 (Assisted).",
+      "1 of 3 nodes run unattended, 1 has a person in the loop, 1 has no card in the bundle. 0.3333 < 0.50 → level 1 (Assisted).",
     );
 
     // A fully resolved blueprint reads exactly as it did before the third category
@@ -652,7 +652,7 @@ describe("computeAutonomy — contributions", () => {
       resolved: true,
       reason: "requires-human-flag",
       explanation:
-        "Publish the approved report to the customer channel (requires_human: true) — a person acts here.",
+        "Publish the approved report to the customer channel (requires_human: true). A person acts here.",
     });
     // No ontology term fired, so `term` is absent rather than set to undefined.
     expect("term" in result.contributions[0]).toBe(false);
@@ -683,7 +683,7 @@ describe("computeAutonomy — contributions", () => {
       reason: "human-in-the-loop-type",
       term: "human-gate",
       explanation:
-        "Waits for a reviewer to approve the merge before continuing (type: human-gate) — a person acts here.",
+        "Waits for a reviewer to approve the merge before continuing (type: human-gate). A person acts here.",
     });
   });
 
@@ -709,7 +709,7 @@ describe("computeAutonomy — contributions", () => {
     // The nearest term carrying the flag is the type itself, not the category above it.
     expect(ask.term).toBe("human-input");
     expect(ask.explanation).toBe(
-      "Collect the target repo from the operator (type: human-input) — a person acts here.",
+      "Collect the target repo from the operator (type: human-input). A person acts here.",
     );
     expect(result.contributions[1].requiresHuman).toBe(false);
     expect(result.autonomousNodes).toBe(1);
@@ -752,7 +752,7 @@ describe("computeAutonomy — contributions", () => {
     expect(desk.reason).toBe("human-in-the-loop-type");
     expect(desk.term).toBe("human-in-the-loop");
     expect(desk.explanation).toBe(
-      "Queue the change for the duty engineer (type: berti/approval-desk, a kind of human-in-the-loop) — a person acts here.",
+      "Queue the change for the duty engineer (type: berti/approval-desk, a kind of human-in-the-loop). A person acts here.",
     );
     expect(result.level).toBe(1);
   });
@@ -773,7 +773,7 @@ describe("computeAutonomy — contributions", () => {
     expect(result.contributions[0].reason).toBe("human-in-the-loop-type");
     expect(result.contributions[0].term).toBe("human-in-the-loop");
     expect(result.contributions[0].explanation).toBe(
-      "Hand the change to whoever is on duty (type: human-in-the-loop) — a person acts here.",
+      "Hand the change to whoever is on duty (type: human-in-the-loop). A person acts here.",
     );
   });
 
@@ -812,7 +812,7 @@ describe("computeAutonomy — contributions", () => {
     // not be a true sentence about this term.
     expect(desk.term).toBe("human-gate");
     expect(desk.explanation).toBe(
-      "Hold the change until the duty engineer signs it off (type: berti/legacy-desk, superseded by human-gate) — a person acts here.",
+      "Hold the change until the duty engineer signs it off (type: berti/legacy-desk, superseded by human-gate). A person acts here.",
     );
   });
 
@@ -854,7 +854,7 @@ describe("computeAutonomy — contributions", () => {
       requiresHuman: false,
       resolved: true,
       // The card's trailing full stop is dropped so the sentence reads as one.
-      explanation: "Draft a candidate solution (type: agent) — runs unattended.",
+      explanation: "Draft a candidate solution (type: agent). Runs unattended.",
     });
   });
 
@@ -863,14 +863,14 @@ describe("computeAutonomy — contributions", () => {
       makeBlueprint([{ id: "x", card: { action: "   ", name: "Fallback name" } }]),
     );
     expect(blankAction.contributions[0].explanation).toBe(
-      "Fallback name (type: agent) — runs unattended.",
+      "Fallback name (type: agent). Runs unattended.",
     );
 
     const blankBoth = computeAutonomy(
       makeBlueprint([{ id: "x", card: { action: "", name: "" } }]),
     );
     expect(blankBoth.contributions[0].explanation).toBe(
-      "x (type: agent) — runs unattended.",
+      "x (type: agent). Runs unattended.",
     );
   });
 
@@ -886,7 +886,7 @@ describe("computeAutonomy — contributions", () => {
     );
 
     expect(result.contributions[0].explanation).toBe(
-      "Emit the module (type: agent) — runs unattended.",
+      "Emit the module (type: agent). Runs unattended.",
     );
   });
 });

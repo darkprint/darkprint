@@ -17,6 +17,20 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    The second one is the block at the bottom of this file. It is
    stated outright rather than implied, because implied is how it
    was lost the first time.
+
+   ── The condensation, and what was taken out ──
+   Redesign spec §4.4 asks for this page concise, and §5 licences
+   one cut: prose that says the same thing a second time. Three
+   paragraphs stood between the failure cards and the panel, and
+   the first two both said that no instruction added to the builder
+   enforces the rule. They are one paragraph now. The panel's third
+   paragraph described the data model, which the four-word recap
+   at the foot of this page describes as its whole subject.
+
+   The landing's `SectionNotSkill` said the same thing again on the
+   home page and has been absorbed here (spec §3). Its two sentences
+   that were not already in this file are in the paragraph below the
+   failure cards.
    ============================================================ */
 
 /** The two ways a generator that can read its own checks goes wrong. */
@@ -26,14 +40,14 @@ const FAILURES: { id: string; tag: string; color: string; title: string; body: s
     tag: "direct",
     color: "var(--color-amber)",
     title: "It writes against the checks",
-    body: "A generator that can read the acceptance criteria will aim at them. It special-cases the inputs the tests use. The general case stays broken and everything passes, so the work looks finished and the criteria have stopped measuring anything.",
+    body: "A generator that can read the acceptance criteria will aim at them, special-casing the inputs the tests use. The general case stays broken, everything passes, and the criteria have stopped measuring anything.",
   },
   {
     id: "sycophancy",
     tag: "the one people walk into",
     color: "var(--color-signal)",
     title: "It grades its own work",
-    body: "The model that produced the change is the same model reporting that the change is fine. LLMs agree with their own previous turns and are quick to declare victory over something they just produced. A review by the author reads exactly like a real review, in the same confident register, and it is worth nothing.",
+    body: "The model that produced the change is the same model reporting that the change is fine. LLMs agree with their own previous turns and are quick to declare victory over something they just produced. A review by the author reads exactly like a real review, and it is worth nothing.",
   },
 ];
 
@@ -73,14 +87,8 @@ export function SectionIsolationRule() {
         <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="flex flex-col gap-4">
             <p className="text-[15px] leading-relaxed text-muted">
-              So generation and validation are held apart. The node that writes the code
-              and the node that judges it are two different nodes, and the acceptance
-              criteria only ever reach the second one. That is the design decision, and it
-              has to be enforced somewhere.
-            </p>
-            <p className="text-[15px] leading-relaxed text-muted">
-              No instruction added to the builder enforces it. The builder cannot decline
-              to use what it was handed, and a rule it applies to itself is a rule the same
+              So generation and validation are held apart, and no instruction added to the
+              builder holds them apart. A rule a model applies to itself is a rule the same
               model gets to interpret, on the same run, with the same incentives. The
               property lives one level up, in the topology: who is connected to whom, and
               above all who is cut off from what.
@@ -108,11 +116,6 @@ export function SectionIsolationRule() {
               nowhere to record that the first must never receive what the second checks.
               The fact worth keeping is an edge somebody chose not to draw. A list of texts
               has no edges.
-            </p>
-            <p className="text-sm leading-relaxed text-muted">
-              Which is why every entry in this registry is a graph with typed ports and a
-              versioned card behind each node, and why the two scores it computes are read
-              off that structure. The data model and the positioning hold each other up.
             </p>
           </div>
         </div>
