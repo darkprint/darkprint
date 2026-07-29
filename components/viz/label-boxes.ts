@@ -57,14 +57,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 /**
  * Advance width of one character as a fraction of the font size.
  *
- * The shipped mono face advances at exactly 0.6 em: `app/layout.tsx` loads `Geist_Mono`
- * through `next/font`, whose generated fallback is `local(Arial)` at `size-adjust: 134.59%`,
- * and Arial's mean advance of 0.4458 em times that is 0.600. So 0.6 is the *measurement*
- * and carries no margin at all — two labels one rounding error apart would be reported
- * clear. 0.62 is the top of the range any mono face this site can land on, which is the
- * end a guard against collision has to take, and it is the constant
- * `components/home/graph.test.ts` was already written against; that file imports this one
- * rather than keeping a second copy, so the two cannot drift again.
+ * Geist Mono measured 0.600 em (next/font's fallback `size-adjust: 134.59%` × Arial's
+ * mean advance 0.4458 em). JetBrains Mono measured 0.600 em by the same method, after
+ * the 2026-07-29 font swap (`app/layout.tsx`) — its generated fallback lands on the same
+ * `size-adjust: 134.59%`, so the arithmetic and the result are unchanged. 0.62 stays the
+ * guard's margin: it is the top of the range any mono face this site has landed on, not
+ * a number tied to one font, and `components/home/graph.test.ts` imports this constant
+ * rather than keeping a second copy, so the two cannot drift.
  */
 export const ADVANCE = 0.62;
 

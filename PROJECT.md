@@ -190,8 +190,11 @@ Three things about it are worth keeping in mind before touching a figure:
 - **The advance constant is `0.62` and lives in one place.** The shipped mono face measures
   0.600 exactly (`next/font`'s Geist Mono fallback is `local(Arial)` at `size-adjust:
   134.59%`, and 0.4458 × 1.3459 = 0.600), so a guard using the measurement has no margin at
-  all. `graph.test.ts` imports it rather than declaring a second one; that divergence is
-  how the shared guard ended up three percent more permissive than its sibling.
+  all. The 2026-07-29 swap to JetBrains Mono (`app/layout.tsx`) re-measured this: its
+  generated fallback lands on the same `size-adjust: 134.59%`, so the measurement is still
+  0.600 and `0.62` needed no change. `graph.test.ts` imports it rather than declaring a
+  second one; that divergence is how the shared guard ended up three percent more
+  permissive than its sibling.
 - **It compares text against text, and text against a stroked `<rect>`.** Curves,
   arrowheads and node rings are not collected. The rect case exists because the first fix
   to level 4 slid the harness box onto the word `task` while every text-only case stayed
