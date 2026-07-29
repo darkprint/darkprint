@@ -63,6 +63,11 @@ A graph one gate short of it is not "nearly" anything. It is a supervised graph,
 legitimate thing to be. Doc 2 §1.1 is enforced by tests here: no ordinal on any surface, no
 ranking, no badge.
 
+**Amended 2026-07-29:** `components/ui/AutonomyBar.tsx` is a deliberate, documented
+exception — a segmented gauge on the blueprint card top and the `/build` score panel.
+See `docs/superpowers/specs/2026-07-29-visual-polish-design.md` §1. The rule above still
+holds everywhere else; this is the one named exception, not a repeal.
+
 ---
 
 ## Security

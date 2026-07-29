@@ -30,6 +30,15 @@ import { HUMAN_PRESENCE_MARK, cx } from "@/lib/format";
  *
  * Compact by construction: it appears in the gallery grid, in the blueprint header and in
  * the upload preview, so it is one line of text at `sm` and one short line at `md`.
+ *
+ * ── The one named exception ──
+ * Added 2026-07-29: `components/ui/AutonomyBar.tsx` renders a *separate* component — a
+ * segmented gauge on the blueprint card's top edge and the `/build` score panel — that
+ * deliberately does show level as a filled/empty 4-segment bar. It is not rendered by
+ * this file and does not change anything below: this component's own row (the class
+ * label, the dark-factory token, "N nodes wait for a person") keeps the no-ordinal
+ * behavior described above, unchanged. See
+ * `docs/superpowers/specs/2026-07-29-visual-polish-design.md` §1 for the reasoning.
  */
 
 /**
