@@ -200,12 +200,6 @@ describe("every link the landing draws goes somewhere", () => {
   function resolves(href: string): boolean {
     const path = href.split(/[#?]/)[0].replace(/\/$/, "");
     if (path === "") return true;
-    // One deliberate exception, added 2026-07-29: `/install` is beat 5's forward link
-    // to the CLI-registry page, which the same content-cli plan's next task ships. The
-    // callout beside it already says outright that the page behind it "is not built
-    // yet" — the 404 is the honest, disclosed state this check exists to catch a
-    // reader *not* being told about, not a bug in the link itself.
-    if (path === "/install") return true;
     const card = /^\/nodes\/(.+)$/.exec(path);
     if (card !== null) {
       // `<id>@<version>.yaml`, one file per version and one page per id. Nothing in the

@@ -61,6 +61,7 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
     title: "Learn",
     links: [
       { href: "/build", label: "Build one" },
+      { href: "/install", label: "Install" },
       { href: "/spec", label: "Spec" },
       { href: "/towards-a-dark-factory", label: "Towards a Dark Factory" },
       { href: "/what-it-isnt", label: "What it isn't" },

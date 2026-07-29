@@ -23,7 +23,7 @@ import { cx } from "@/lib/format";
  * flat list of eight, and the rule in the wide row is the same statement made with one
  * border.
  *
- * Seven now. Redesign spec §4.2 renamed `/how-to-build-a-dark-factory` to
+ * Seven for a while. Redesign spec §4.2 renamed `/how-to-build-a-dark-factory` to
  * `/towards-a-dark-factory` and folded `/which-tasks` into it as a child, so the two
  * items that used to sit side by side in `learn` are one item leading to a three-page
  * sequence. Both old paths redirect from `next.config.ts` and neither is listed here: a
@@ -34,6 +34,10 @@ import { cx } from "@/lib/format";
  * sequence carries its own previous/next pager and its parent opens with a door per
  * child, so putting five more items in this row would make the header a table of contents
  * for two pages that already have one.
+ *
+ * Eight again: the content-cli plan added `/install` after `/build`, one setup action
+ * for a factory the reader just downloaded. It is the shortest label in the group, so it
+ * costs the row less width than the item it follows.
  */
 export const NAV = [
   { href: "/blueprints", label: "Blueprints", group: "registry" },
@@ -44,9 +48,13 @@ export const NAV = [
   // rather than with the three registry surfaces, because it is something to do rather
   // than something to browse.
   { href: "/build", label: "Build one", group: "learn" },
-  // `/spec` follows `/build` because it answers the question the guided path raises:
-  // the reader has just written a graph and a card, and this is what the three layers
-  // they were writing in actually are.
+  // Right after `/build`: once the reader has something built, wiring it into a client
+  // is the next setup action, not a registry surface to browse — hence "learn" rather
+  // than beside the three registry routes above.
+  { href: "/install", label: "Install", group: "learn" },
+  // `/spec` answers the question the guided path raises: the reader has just written a
+  // graph and a card, and this is what the three layers they were writing in actually
+  // are.
   { href: "/spec", label: "Spec", group: "learn" },
   // The author named this label: "/which-tasks should be placed in The climb part which
   // I'd rename Towards a Dark Factory". It is also the page's own `h1`, character for
@@ -81,12 +89,12 @@ export function SiteHeader() {
           <span className="text-cyan">Print</span>
         </Link>
 
-        {/* Seven items in 976px of container at `lg`, so the row tightens by two pixels
-            of padding and one of type there and relaxes at `xl`, where there is 1152px
-            and no reason to crowd. Measured at 1024, 1280 and 1440.
-            One fewer item than the eight this was measured for, and the same number of
-            characters in them: "Towards a Dark Factory" is as wide as the two labels it
-            replaced, so the row that fit before still fits. */}
+        {/* Eight items again in 976px of container at `lg`, so the row tightens by two
+            pixels of padding and one of type there and relaxes at `xl`, where there is
+            1152px and no reason to crowd. The seven-item version of this row was measured
+            at 1024, 1280 and 1440; `/install` adds "Install", the shortest label in
+            either group, so it costs less width than any item already accounted for
+            there — not independently re-measured in a live browser since. */}
         <nav className="hidden items-center gap-1 lg:flex">
           {NAV.map((item) => (
             <Link
