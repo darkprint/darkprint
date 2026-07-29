@@ -76,12 +76,15 @@ import { WORDMARK_LETTER_PATHS } from "./wordmark-paths";
 const MARK = "DarkPrint";
 
 /**
- * Doc 2 §1's validated claim, verbatim and as one text node.
+ * The site's claim, verbatim and as one text node.
  *
- * Splitting it with markup would put the two sentences in separate text nodes, and
- * `app/layout.tsx` carries the same string as the document's default description.
+ * Replaced 2026-07-29 at the author's request: doc 2 §1's original line
+ * ("Specifications go in. Software comes out.") didn't evoke what the site is for — a
+ * registry of graphs that define a pipeline's autonomy, published so others can read and
+ * reuse them as-is. Splitting the claim with markup would put its words in separate text
+ * nodes, and `app/layout.tsx` carries the same string in its own metadata.
  */
-const CLAIM = "Specifications go in. Software comes out.";
+const CLAIM = "Autonomy you can read as a graph.";
 
 /** The rule under the name, in scene units. Tall enough for the pulse's stroke. */
 const RULE = { width: 900, height: 6 } as const;

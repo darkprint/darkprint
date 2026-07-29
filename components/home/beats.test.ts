@@ -78,11 +78,17 @@ describe("beat 1 is the wordmark, and the claim survives it", () => {
     expect(html).toContain("DarkPrint");
   });
 
-  it("keeps doc 2 §1's claim as one string", () => {
-    // `app/layout.tsx` carries the same sentence as the document's default description,
-    // and the build's greps read it out of the prerendered HTML as one text node. Markup
-    // between the two halves would split it in both places.
-    expect(html).toContain("Specifications go in. Software comes out.");
+  it("keeps the claim as one string", () => {
+    // `app/layout.tsx` carries the same sentence in its own metadata, and the build's
+    // greps read it out of the prerendered HTML as one text node. Markup between the two
+    // halves would split it in both places.
+    expect(html).toContain("Autonomy you can read as a graph.");
+  });
+
+  it("says the CLI setup is not live yet", () => {
+    const words = readable(html).toLowerCase();
+    expect(words).toContain("npx darkprint setup");
+    expect(words).toContain("coming soon");
   });
 });
 
@@ -240,11 +246,5 @@ describe("beat 4 says where its numbers come from", () => {
     expect(words).toMatch(/\d+ blueprints/);
     expect(words).toMatch(/\d+ node cards/);
     expect(words).toMatch(/\d+ ontology terms/);
-  });
-
-  it("says the CLI setup is not live yet", () => {
-    expect(words).toContain("npx darkprint setup");
-    expect(words.toLowerCase()).toContain("coming soon");
-    expect(words.toLowerCase()).toContain("not built yet");
   });
 });

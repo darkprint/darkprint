@@ -57,10 +57,6 @@ export interface Metric {
  * it: doc 2 §1.1 keeps one number on this site meaning one thing, and the number a
  * reader already meets is the 1-to-5 organisational maturity ladder, which is a
  * different scale about a different subject. `AutonomyClass` is what gets rendered.
- *
- * Amended 2026-07-29: `components/ui/AutonomyBar.tsx` is a deliberate, narrow
- * exception — a segmented gauge on the blueprint card top renders this value
- * directly. See `docs/superpowers/specs/2026-07-29-visual-polish-design.md` §1.
  */
 export type AutonomyLevel = 1 | 2 | 3 | 4;
 
@@ -86,12 +82,7 @@ export interface AutonomyInfo {
    * it, sort by it or phrase it as a status to reach.
    */
   isDarkFactory: boolean;
-  /**
-   * The band behind the class. Filtering and ordering only, with one named exception:
-   * `components/ui/AutonomyBar.tsx` (added 2026-07-29) renders this value directly on
-   * the blueprint card top. See
-   * `docs/superpowers/specs/2026-07-29-visual-polish-design.md` §1.
-   */
+  /** The band behind the class. Filtering and ordering only; never rendered. */
   level: AutonomyLevel;
   /** Short description of what the class says about the design. */
   blurb: string;

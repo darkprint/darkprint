@@ -5,9 +5,7 @@ import { contentHref } from "@/lib/href";
 import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
 import { Avatar } from "./Avatar";
 import { KindBadge } from "./Badge";
-import { AutonomyBar } from "./AutonomyBar";
 import { AutonomyMeter } from "./AutonomyMeter";
-import { PhaseCoverageBadge } from "./PhaseCoverage";
 import { TagPill } from "./TagPill";
 
 /**
@@ -45,17 +43,12 @@ export function ContentCard({
     <Link
       href={contentHref(item)}
       className={cx(
-        "group flex flex-col overflow-hidden rounded-lg border border-line bg-surface bp-grid transition-all duration-200 hover:border-line-bright hover:shadow-[0_12px_40px_-24px_var(--color-cyan)]",
+        "group flex flex-col overflow-hidden rounded-lg border border-line bg-surface transition-all duration-200 hover:border-line-bright hover:shadow-[0_12px_40px_-24px_var(--color-cyan)]",
         className,
       )}
     >
       {/* preview */}
-      <div className="relative h-40 overflow-hidden border-b border-line bg-blueprint-deep/40">
-        <AutonomyBar
-          level={item.autonomy.level}
-          label={item.autonomy.label}
-          className="absolute inset-x-0 top-0 z-10"
-        />
+      <div className="relative h-40 overflow-hidden border-b border-line bg-blueprint-deep/40 bp-grid">
         <GraphThumbnail
           graph={item.graph}
           className="h-full w-full p-2 opacity-90 transition-transform duration-300 group-hover:scale-[1.03]"
@@ -69,17 +62,18 @@ export function ContentCard({
         {/* The class is named and no number is drawn (doc 2 §1.1), and it comes with the
             engine's own per-node reading so the tile can say how many nodes hand control
             back to a person rather than how far the graph is from running unattended.
-            A graph with nobody in it is classed a dark factory on the same row, in the
-            same chrome: the grid must read as a shelf of designs, and a tile carrying a
-            second plain token is a tile that says one more thing about itself. The grid
-            it sits in offers autonomy as a filter and never as a sort, so nothing here
-            gathers those tiles at the top. */}
+            `showDarkFactory={false}` (2026-07-29, author's call): the grid is a shelf of
+            designs and a tile carrying the dark-factory token read as one more badge than
+            the grid needed; the blueprint header and upload preview still show it. The
+            grid it sits in offers autonomy as a filter and never as a sort, so nothing
+            here gathers those tiles at the top either way. */}
         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
           <KindBadge kind={item.kind} />
           <AutonomyMeter
             autonomy={item.autonomy}
             contributions={item.analysis.autonomy.contributions}
             size="sm"
+            showDarkFactory={false}
           />
         </div>
 
@@ -91,14 +85,6 @@ export function ContentCard({
             {item.summary}
           </p>
         </div>
-
-        {/* Doc 2 §8's badge. Above the tags, not beside the autonomy meter: it says
-            what the factory covers, which belongs with the rest of the description
-            rather than with the scores. */}
-        <PhaseCoverageBadge
-          covered={item.analysis.phaseCoverage.covered}
-          missing={item.analysis.phaseCoverage.missing}
-        />
 
         <div className="flex flex-wrap gap-1.5">
           {item.tags.slice(0, 3).map((t) => (

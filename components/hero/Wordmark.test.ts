@@ -19,7 +19,7 @@ describe("Wordmark", () => {
     const html = renderToStaticMarkup(createElement(Wordmark));
     const text = plainText(html);
     expect(text).toContain("DarkPrint");
-    expect(text).toContain("Specifications go in. Software comes out.");
+    expect(text).toContain("Autonomy you can read as a graph.");
   });
 
   it("does not cut the heading into per-letter spans on the server", () => {

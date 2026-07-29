@@ -102,7 +102,7 @@ export function SiteFooter() {
             <span className="text-cyan">Print</span>
           </Link>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-dim">
-            Specifications go in. Software comes out. This is where the graphs in
+            Autonomy you can read as a graph. This is where the graphs in
             between are kept.
           </p>
         </div>

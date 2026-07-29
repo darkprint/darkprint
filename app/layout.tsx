@@ -35,7 +35,7 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   metadataBase: new URL("https://darkprint.io"),
   title: {
-    default: "DarkPrint · specifications go in, software comes out",
+    default: "DarkPrint · autonomy you can read as a graph",
     template: "%s · DarkPrint",
   },
   description:
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "DarkPrint",
     description:
-      "Specifications go in. Software comes out. A registry of the graphs that make that work.",
+      "Autonomy you can read as a graph. A registry of the graphs that make that work.",
     type: "website",
   },
 };

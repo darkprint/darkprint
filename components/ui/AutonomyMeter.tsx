@@ -30,15 +30,6 @@ import { HUMAN_PRESENCE_MARK, cx } from "@/lib/format";
  *
  * Compact by construction: it appears in the gallery grid, in the blueprint header and in
  * the upload preview, so it is one line of text at `sm` and one short line at `md`.
- *
- * ── The one named exception ──
- * Added 2026-07-29: `components/ui/AutonomyBar.tsx` renders a *separate* component — a
- * segmented gauge on the blueprint card's top edge (`components/ui/ContentCard.tsx`) —
- * that deliberately does show level as a filled/empty 4-segment bar. It is not rendered
- * by this file and does not change anything below: this component's own row (the class
- * label, the dark-factory token, "N nodes wait for a person") keeps the no-ordinal
- * behavior described above, unchanged. See
- * `docs/superpowers/specs/2026-07-29-visual-polish-design.md` §1 for the reasoning.
  */
 
 /**
@@ -77,6 +68,7 @@ export function AutonomyMeter({
   autonomy,
   contributions,
   size = "md",
+  showDarkFactory = true,
   className,
 }: {
   autonomy: AutonomyInfo;
@@ -87,6 +79,10 @@ export function AutonomyMeter({
    */
   contributions?: readonly AutonomyContribution[];
   size?: "sm" | "md";
+  /** The card grid drops the dark-factory token (the author's call, 2026-07-29) while
+      keeping it on the blueprint header and the upload preview. The class label and
+      "N nodes wait for a person" line are unaffected either way. */
+  showDarkFactory?: boolean;
   /* `showLabel` is gone with the number it used to sit beside. It suppressed the class
      name on a tight row and left the band standing on its own; with the band unrendered
      that switch can only produce an empty token, and the class is the reading. No caller
@@ -102,7 +98,7 @@ export function AutonomyMeter({
   // compact variant can drop to a glyph and a count without dropping the meaning.
   const full = [
     `Autonomy class ${autonomy.label}.`,
-    autonomy.isDarkFactory
+    autonomy.isDarkFactory && showDarkFactory
       ? "Classed a dark factory: no node in this graph waits for a person."
       : undefined,
     contributions === undefined
@@ -136,7 +132,7 @@ export function AutonomyMeter({
           a shape the graph has, and the moment it is drawn as a prize the blueprint next
           to it starts reading as a failed attempt at one. Glyph and words, no colour of
           its own. */}
-      {autonomy.isDarkFactory && (
+      {autonomy.isDarkFactory && showDarkFactory && (
         <span className="inline-flex items-center gap-1 rounded border border-line bg-surface-2 px-2 py-0.5 text-fg">
           <span aria-hidden>◼</span>
           dark factory
@@ -180,11 +176,13 @@ export function AutonomyMeter({
       {/* A graph nobody has to attend says so in words at `md`, unless the dark factory
           token above has already said it. In a grid tile it says it by having nothing to
           point at, and the sentence stays for a screen reader. */}
-      {contributions !== undefined && people.length === 0 && !autonomy.isDarkFactory && (
-        <span className={cx("text-dim", compactSize && "sr-only")}>
-          no node waits for a person
-        </span>
-      )}
+      {contributions !== undefined &&
+        people.length === 0 &&
+        (!autonomy.isDarkFactory || !showDarkFactory) && (
+          <span className={cx("text-dim", compactSize && "sr-only")}>
+            no node waits for a person
+          </span>
+        )}
 
       {/* Neither unattended nor staffed. Named rather than silently absorbed into one
           of the other two counts. */}

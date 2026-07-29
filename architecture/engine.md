@@ -55,10 +55,6 @@ Two separate outputs, and the difference matters:
 Thresholds live in `config.ts`. The ordinal band exists internally for sorting; **no surface
 ever prints it.**
 
-**Amended 2026-07-29:** one named exception — `components/ui/AutonomyBar.tsx` renders it
-directly on the blueprint card top. See `docs/superpowers/specs/2026-07-29-visual-polish-design.md`
-§1; the full note is below, where the exception is discussed again in context.
-
 **`isDarkFactory`** — `totalNodes > 0 && autonomousNodes === totalNodes`. A literal
 **zero-human-node** test, not a threshold. This matters: an eleven-node graph clears 0.90 with
 a person still standing in it, so the fraction cannot carry that claim.
@@ -66,11 +62,6 @@ a person still standing in it, so the fraction cannot carry that claim.
 A graph one gate short of it is not "nearly" anything. It is a supervised graph, which is a
 legitimate thing to be. Doc 2 §1.1 is enforced by tests here: no ordinal on any surface, no
 ranking, no badge.
-
-**Amended 2026-07-29:** `components/ui/AutonomyBar.tsx` is a deliberate, documented
-exception — a segmented gauge on the blueprint card top (`components/ui/ContentCard.tsx`).
-See `docs/superpowers/specs/2026-07-29-visual-polish-design.md` §1. The rule above still
-holds everywhere else; this is the one named exception, not a repeal.
 
 ---
 

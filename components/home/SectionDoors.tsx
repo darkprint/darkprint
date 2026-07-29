@@ -32,11 +32,8 @@
    nothing behind it is marketing.
    ============================================================ */
 
-import Link from "next/link";
-
 import { PLATFORM_STATS } from "@/lib/data";
 import { ButtonLink } from "@/components/ui/Button";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 
 const COUNTS: { value: number; label: string }[] = [
   { value: PLATFORM_STATS.blueprints, label: "blueprints" },
@@ -141,37 +138,6 @@ export function SectionDoors() {
             href="/build"
             cta="Start the guided path"
           />
-        </div>
-
-        {/* The CLI callout. No `<pre>`/`<code>` here — `components/home/beats.test.ts`
-            bans code blocks on every landing beat, since the landing quotes no page it
-            introduces. Plain `<div>`s carry the same monospace look without tripping it. */}
-        <div className="mt-8 rounded-lg border border-blueprint-line/40 bg-void/40 p-6 sm:p-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="font-display text-xl font-semibold text-blueprint-ink">
-              Bring it into your agent
-            </h3>
-            <ComingSoonBadge />
-          </div>
-          <div className="mt-4 rounded-md border border-line bg-void px-4 py-3 font-mono text-sm text-blueprint-ink">
-            <div>
-              <span className="text-blueprint-line">$</span> npx darkprint setup
-            </div>
-            <div className="mt-2 text-blueprint-ink/60">
-              <div>Connecting to the registry...</div>
-              <div>Blueprints and node cards now available to your agent.</div>
-            </div>
-          </div>
-          <p className="mt-4 text-sm leading-relaxed text-blueprint-ink/80">
-            An MCP server for the registry is not built yet.{" "}
-            <Link
-              href="/install"
-              className="underline decoration-blueprint-line/60 underline-offset-4 hover:text-blueprint-ink"
-            >
-              See what it will do
-            </Link>
-            .
-          </p>
         </div>
 
         <p className="mt-8 text-center text-sm leading-relaxed text-blueprint-ink/80">
