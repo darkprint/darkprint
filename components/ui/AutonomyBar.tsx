@@ -33,22 +33,27 @@ export interface AutonomyBarProps {
   className?: string;
 }
 
-/** A thin, 4-segment gauge for the card top: which segments are filled says the level. */
+/**
+ * A thin, 4-segment gauge for the card top: which segments are filled says the level.
+ *
+ * Purely decorative (`aria-hidden` on the wrapper): `role="img"` is a
+ * children-presentational role, so a nested `aria-label` would have been the only
+ * thing assistive tech ever reached, and the sr-only span that existed only to carry
+ * text for `plainText()` in the original test also became the DOM's first child,
+ * which broke `first:rounded-l-sm` on the actual first segment (it matched the
+ * invisible span instead). `AutonomyMeter`, which sits right below this in
+ * `ContentCard.tsx`, already announces the class textually, so this bar duplicating
+ * that announcement would be redundant for assistive tech even if it were exposed.
+ * `title` stays for a mouse-hover tooltip — harmless on an aria-hidden element.
+ */
 export function AutonomyBar({ level, label, className }: AutonomyBarProps) {
   const accessibleName = `Autonomy class ${label}, level ${level} of ${SEGMENT_COUNT}`;
 
   return (
-    <div
-      role="img"
-      aria-label={accessibleName}
-      title={accessibleName}
-      className={cx("flex gap-0.5", className)}
-    >
-      <span className="sr-only">{label}</span>
+    <div aria-hidden title={accessibleName} className={cx("flex gap-0.5", className)}>
       {SEGMENTS.map((segment) => (
         <span
           key={segment}
-          aria-hidden
           className="h-1.5 flex-1 first:rounded-l-sm last:rounded-r-sm"
           style={{
             background: segment <= level ? LEVEL_COLOR[segment] : "var(--color-line)",

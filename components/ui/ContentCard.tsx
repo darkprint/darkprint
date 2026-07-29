@@ -50,7 +50,7 @@ export function ContentCard({
       )}
     >
       {/* preview */}
-      <div className="relative h-40 overflow-hidden border-b border-line bg-blueprint-deep/40 bp-grid">
+      <div className="relative h-40 overflow-hidden border-b border-line bg-blueprint-deep/40">
         <AutonomyBar
           level={item.autonomy.level}
           label={item.autonomy.label}

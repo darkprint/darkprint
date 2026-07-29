@@ -3,7 +3,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { AutonomyBar } from "@/components/ui/AutonomyBar";
-import { plainText } from "@/components/ui/visible-text";
 
 const LEVEL_COLOR = {
   1: "--color-violet",
@@ -17,10 +16,16 @@ function render(level: 1 | 2 | 3 | 4, label: string): string {
 }
 
 describe("AutonomyBar", () => {
-  it("names the class and the level in its accessible text", () => {
+  it("is purely decorative: aria-hidden on the wrapper, the sentence only in a title", () => {
+    // `role="img"` is children-presentational, so a nested aria-label/sr-only span never
+    // reaches the accessibility tree — only aria-hidden does. AutonomyMeter, right below
+    // this in ContentCard.tsx, already announces the class textually, so this bar stays
+    // decorative rather than duplicating that announcement.
     const html = render(3, "Conditional");
-    expect(plainText(html)).toContain("Conditional");
-    expect(html).toContain('aria-label="Autonomy class Conditional, level 3 of 4"');
+    expect(html).toContain("aria-hidden");
+    expect(html).toContain('title="Autonomy class Conditional, level 3 of 4"');
+    expect(html).not.toContain("aria-label");
+    expect(html).not.toContain("role=\"img\"");
   });
 
   it("fills exactly the segments up to and including the level, each in its own color", () => {

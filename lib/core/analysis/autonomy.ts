@@ -39,6 +39,10 @@
    apart. `level` stays because the doc 3 §6 bands are arithmetic
    and an ordinal is what sorts; nothing user-facing prints it.
 
+   Amended 2026-07-29: `components/ui/AutonomyBar.tsx` is a deliberate, documented
+   exception — a segmented gauge on the blueprint card top renders `level` directly.
+   See `docs/superpowers/specs/2026-07-29-visual-polish-design.md` §1.
+
    `isDarkFactory` is the other half. A graph with no human node at
    all is *classed* a dark factory, the way a graph with no cycle
    is classed acyclic. It is counted from the contributions and
@@ -84,6 +88,9 @@ export type HumanReason = "requires-human-flag" | "human-in-the-loop-type";
  * describes one design decision and has none. A reader who saw "2" twice had every reason
  * to think they were the same 2. `AutonomyResult.level` stays, because the bands are
  * arithmetic and an ordinal is what sorts, and no user-facing surface prints it.
+ *
+ * Amended 2026-07-29: `components/ui/AutonomyBar.tsx` is the one named exception —
+ * see `docs/superpowers/specs/2026-07-29-visual-polish-design.md` §1.
  */
 export type AutonomyClass = "assisted" | "supervised" | "conditional" | "closed-loop";
 
@@ -119,6 +126,9 @@ export interface AutonomyResult {
    * `level` below is the same fact as an ordinal, kept for arithmetic and sorting; this is
    * the same fact under the name a reader can use. Every user-facing surface renders this
    * one (doc 2 §1.1), so that one number on this site means one thing.
+   *
+   * Amended 2026-07-29: `components/ui/AutonomyBar.tsx` is the one named exception —
+   * see `docs/superpowers/specs/2026-07-29-visual-polish-design.md` §1.
    */
   autonomyClass: AutonomyClass;
   /**
@@ -147,6 +157,10 @@ export interface AutonomyResult {
    * arithmetic and an ordinal is what a comparison, a filter boundary or a stable sort
    * needs. Anything printing this is printing a number that collides with the 1–5
    * organisational ladder, which is a different scale about a different subject.
+   *
+   * Amended 2026-07-29: `components/ui/AutonomyBar.tsx` is a deliberate, narrow
+   * exception — a segmented gauge on the blueprint card top renders this value
+   * directly. See `docs/superpowers/specs/2026-07-29-visual-polish-design.md` §1.
    */
   level: 1 | 2 | 3 | 4;
   /** The class in title case, ready to drop into a sentence. Doc 2 §1.1 governs it. */

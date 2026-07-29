@@ -34,10 +34,11 @@ Concretely, and enforced by tests that fail the build:
 
 - no badge, no leaderboard, no sorting by autonomy;
 - **no autonomy ordinal on any user-facing surface** — the class name is what a reader
-  sees, **except** the segmented gauge on the top edge of a blueprint card and the
-  `/build` score panel (`components/ui/AutonomyBar.tsx`), added 2026-07-29 as a
-  deliberate, informed exception — see `docs/superpowers/specs/2026-07-29-visual-polish-design.md`
-  §1 for why. Nowhere else on the site may add a second one without the same review;
+  sees, **except** the segmented gauge on the top edge of a blueprint card
+  (`components/ui/AutonomyBar.tsx`, rendered from `components/ui/ContentCard.tsx`),
+  added 2026-07-29 as a deliberate, informed exception — see
+  `docs/superpowers/specs/2026-07-29-visual-polish-design.md` §1 for why. Nowhere else
+  on the site may add a second one without the same review;
 - nothing that frames a human node as a shortfall or a step not yet taken;
 - where a person acts is drawn in violet, never in the alarm colour the site spends on
   defects.

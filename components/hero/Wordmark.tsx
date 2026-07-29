@@ -87,15 +87,25 @@ const CLAIM = "Specifications go in. Software comes out.";
 const RULE = { width: 900, height: 6 } as const;
 
 /** Cumulative x-offset of each letter, and the overlay's total width, in the same
-    100-unit em box `scripts/generate-wordmark-paths.ts` generated the paths in. */
+    100-unit em box `scripts/generate-wordmark-paths.ts` generated the paths in.
+
+    Each letter's `advance` is reduced by 3.5 units before accumulating: the real
+    `data-mark="mark"` text below renders with `tracking-[-0.035em]`, i.e. -3.5 units
+    of letter-spacing per character in this 100-unit em box, so the real text's
+    rendered width is narrower than the raw sum of `advance` (451.8 units for
+    "DarkPrint" vs. 420.3 actually rendered). Without this adjustment the overlay's
+    `viewBox` is wider than the box `preserveAspectRatio="xMidYMid meet"` fits it into
+    (the real, narrower text's box), so it gets scaled down ~7% instead of matching at
+    scale 1.0 — the trace would render visibly smaller than the letters it fades into. */
 const WORDMARK_LAYOUT = (() => {
   let x = 0;
   const offsets = WORDMARK_LETTER_PATHS.map((letter) => {
     const at = x;
-    x += letter.advance;
+    x += letter.advance - 3.5;
     return at;
   });
-  return { offsets, totalWidth: x };
+  // Rounded to avoid float noise (e.g. `420.30000000000007`) in the shipped `viewBox`.
+  return { offsets, totalWidth: Math.round(x * 100) / 100 };
 })();
 
 /**
@@ -126,7 +136,11 @@ const WORDMARK_INK = (() => {
     }
   }
   const pad = 6;
-  return { top: minY - pad, height: maxY - minY + pad * 2 };
+  // Rounded to avoid float noise (e.g. `-76.70000000000002`) in the shipped `viewBox`.
+  return {
+    top: Math.round((minY - pad) * 100) / 100,
+    height: Math.round((maxY - minY + pad * 2) * 100) / 100,
+  };
 })();
 
 /** Every element the timeline touches carries this, and the timeline finds them by it. */
