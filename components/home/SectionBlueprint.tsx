@@ -124,7 +124,7 @@ export function SectionBlueprint() {
         <SectionHeading
           eyebrow="The drawing"
           title="This is a blueprint"
-          lead="Which agents run, and what each one hands to the next."
+          lead="Which agents run, what each one hands to the next, and it is already yours to run."
           align="center"
           className="mx-auto"
         />

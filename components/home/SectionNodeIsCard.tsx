@@ -269,7 +269,7 @@ export function SectionNodeIsCard() {
         <SectionHeading
           eyebrow="One node"
           title="Every node is a card"
-          lead="Open one and it says which model runs it and what must never reach it."
+          lead="Open one and it says which model runs it, what must never reach it, and it pins into your own blueprint by version."
           align="center"
           className="mx-auto"
         />
