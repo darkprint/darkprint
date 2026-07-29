@@ -60,8 +60,22 @@ export function ContentCard({
         className="absolute right-2 top-2 z-20"
       />
 
+      {/* The name, over the drawing rather than under it (author's request,
+          2026-07-29). A shelf is scanned by name, and the drawing is what you look at
+          once a name has stopped you; underneath, every tile opened with an untitled
+          picture and the reader had to travel to the caption to find out whose it was.
+
+          `pr-8` on the heading and not on the block: the star is `absolute right-2
+          top-2`, so it now sits on this row, and padding the whole block would move the
+          drawing's left edge off the card's grid as well. */}
+      <div className="px-4 pb-3 pt-4">
+        <h3 className="pr-8 font-display text-lg font-semibold leading-snug text-fg group-hover:text-cyan">
+          {item.title}
+        </h3>
+      </div>
+
       {/* preview */}
-      <div className="relative h-40 overflow-hidden border-b border-line bg-blueprint-deep/40 bp-grid">
+      <div className="relative h-40 overflow-hidden border-y border-line bg-blueprint-deep/40 bp-grid">
         <GraphThumbnail
           graph={item.graph}
           className="h-full w-full p-2 opacity-90 transition-transform duration-300 group-hover:scale-[1.03]"
@@ -90,14 +104,11 @@ export function ContentCard({
           />
         </div>
 
-        <div className="flex-1">
-          <h3 className="font-display text-lg font-semibold leading-snug text-fg group-hover:text-cyan">
-            {item.title}
-          </h3>
-          <p className="mt-1 line-clamp-2 text-sm leading-snug text-muted">
-            {item.summary}
-          </p>
-        </div>
+        {/* `flex-1` stays on whatever sits between the badges and the tag row, so tiles
+            of unequal summary length still align their author rows across the grid. */}
+        <p className="flex-1 line-clamp-2 text-sm leading-snug text-muted">
+          {item.summary}
+        </p>
 
         <div className="flex flex-wrap gap-1.5">
           {item.tags.slice(0, 3).map((t) => (
