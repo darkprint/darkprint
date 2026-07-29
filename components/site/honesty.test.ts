@@ -36,7 +36,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import SpecCardPage from "@/app/spec/card/page";
-import InstallPage from "@/app/install/page";
+import InstallPage, { metadata as installMetadata } from "@/app/install/page";
 import { allBlueprints } from "@/lib/content";
 import { CARD_ROWS } from "@/components/spec/rows";
 import { ScoringModel } from "@/components/spec/ScoringModel";
@@ -67,6 +67,16 @@ const SPEC_CARD = renderToStaticMarkup(createElement(SpecCardPage as never));
  * (see the file header).
  */
 const INSTALL_PAGE = renderToStaticMarkup(createElement(InstallPage as never));
+/**
+ * `/install`'s `<head>` description, not its rendered body.
+ *
+ * A search result or a shared link quotes this string, never the JSX `INSTALL_PAGE`
+ * renders — `renderToStaticMarkup` walks the component tree, not the sibling `Metadata`
+ * export, so a claim held only over `INSTALL_PAGE` can go missing here without a single
+ * assertion noticing. `openText`/`plainText` pass a plain string through unchanged (there
+ * is no tag to strip), so the same ledger mechanism covers it with no new machinery.
+ */
+const INSTALL_METADATA_DESCRIPTION = installMetadata.description ?? "";
 const WHICH_TASKS = renderToStaticMarkup(createElement(WhichTasksChecks));
 const RECAP = renderToStaticMarkup(createElement(SectionComponentRecap));
 /**
@@ -182,6 +192,13 @@ const CLAIMS: Claim[] = [
     says: "not built yet: this is what setup will look like once the registry has an mcp server to point a client at",
     where: "open",
     html: INSTALL_PAGE,
+  },
+  {
+    surface: "/install · metadata.description",
+    why: "the same disclaimer where a reader who never opens the page reads it — a search result, a shared link's preview card, a browser history entry. Doc 2 §0.4 does not stop at the rendered body; the finding this guards was that the description could drop the qualifier and nothing would fail",
+    says: "not built yet: nothing here runs",
+    where: "open",
+    html: INSTALL_METADATA_DESCRIPTION,
   },
 ];
 

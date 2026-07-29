@@ -27,7 +27,7 @@ TypeScript strict.
 
 | route | what it is |
 |---|---|
-| `/` | the landing: five beats, ~466 visible words |
+| `/` | the landing: five beats, ~281 visible words |
 | `/spec` | the spec language: three layers, and what the engine checks |
 | `/spec/topology` | layer 1, the DOT graph + the five-roles figure |
 | `/spec/card` | layer 2, the node card + the scroll-annotated card |
@@ -64,6 +64,13 @@ Five beats, almost no prose. Everything technical lives on the page whose subjec
 | 3 | one node lighting up and opening into its card | `SectionNodeIsCard.tsx` |
 | 4 | the lights going out across the graph | `SectionLightsOut.tsx` |
 | 5 | two doors, with the archive counts | `SectionDoors.tsx` |
+
+The ~281 figure is `HomePage` rendered through `renderToStaticMarkup`, tags stripped and
+entities resolved, minus text a sighted reader never sees: `<style>` (CSS), `<desc>` (the
+SVG accessible description), any `sr-only`-classed element, and the always-`display:none`
+half of `SectionBlueprint`'s responsive narrow/wide drawing pair (both render at SSR; a
+reader only ever sees one, per that file's own comment). A raw count with none of that
+excluded reads 489 — the difference is invisible text, not added prose.
 
 Beat 4 is the constrained one. Lights going out **describes** a graph with no human node. It
 is not a reward for reaching one, and doc 2 §1.1 binds hardest there.
