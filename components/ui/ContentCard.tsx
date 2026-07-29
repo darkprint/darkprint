@@ -6,6 +6,7 @@ import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
 import { Avatar } from "./Avatar";
 import { KindBadge } from "./Badge";
 import { AutonomyMeter } from "./AutonomyMeter";
+import { FavoriteStar } from "./FavoriteStar";
 import { TagPill } from "./TagPill";
 
 /**
@@ -40,13 +41,25 @@ export function ContentCard({
   className?: string;
 }) {
   return (
-    <Link
-      href={contentHref(item)}
+    <article
       className={cx(
-        "group flex flex-col overflow-hidden rounded-lg border border-line bg-surface transition-all duration-200 hover:border-line-bright hover:shadow-[0_12px_40px_-24px_var(--color-cyan)]",
+        "group relative flex flex-col overflow-hidden rounded-lg border border-line bg-surface transition-all duration-200 hover:border-line-bright hover:shadow-[0_12px_40px_-24px_var(--color-cyan)]",
         className,
       )}
     >
+      {/* The whole card's click target. `z-10` and transparent: it sits above the
+          plain-flow content below for hit-testing (so clicking anywhere on the card
+          navigates), and below the star (`z-20`), which is the one thing on the card
+          that has to stay independently clickable. */}
+      <Link href={contentHref(item)} className="absolute inset-0 z-10">
+        <span className="sr-only">{item.title}</span>
+      </Link>
+
+      <FavoriteStar
+        id={`blueprint:${item.slug}`}
+        className="absolute right-2 top-2 z-20"
+      />
+
       {/* preview */}
       <div className="relative h-40 overflow-hidden border-b border-line bg-blueprint-deep/40 bp-grid">
         <GraphThumbnail
@@ -100,6 +113,6 @@ export function ContentCard({
           <Meta downloads={item.downloads} votes={item.votes} />
         </div>
       </div>
-    </Link>
+    </article>
   );
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { HUMAN_PRESENCE_MARK, cx } from "@/lib/format";
 import { nodeHref } from "@/lib/href";
 import { Badge } from "@/components/ui/Badge";
+import { FavoriteStar } from "@/components/ui/FavoriteStar";
 import { TagPill } from "@/components/ui/TagPill";
 
 /**
@@ -59,14 +60,22 @@ export function NodeCardSummary({
   const overflow = node.tools.length - TOOLS_SHOWN;
 
   return (
-    <Link
-      href={nodeHref(node.id)}
+    <article
       className={cx(
-        "group flex flex-col gap-3 rounded-lg border border-line bg-surface p-4 transition-all duration-200 hover:border-line-bright hover:shadow-[0_12px_40px_-24px_var(--color-amber)]",
+        "group relative flex flex-col gap-3 rounded-lg border border-line bg-surface p-4 transition-all duration-200 hover:border-line-bright hover:shadow-[0_12px_40px_-24px_var(--color-amber)]",
         className,
       )}
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      {/* The whole tile's click target, stretched under everything except the star.
+          See `FavoriteStar`'s own comment for why this is a sibling rather than a
+          `<button>` nested inside the link. */}
+      <Link href={nodeHref(node.id)} className="absolute inset-0 z-10">
+        <span className="sr-only">{node.name}</span>
+      </Link>
+
+      <FavoriteStar id={`node:${node.ref}`} className="absolute right-2 top-2 z-20" />
+
+      <div className="flex flex-wrap items-center justify-between gap-2 pr-8">
         <span className="flex flex-wrap items-center gap-1.5">
           <Badge color="var(--color-amber)">{node.typeLabel}</Badge>
           {/* Which stretch of the lifecycle this node works in. Named, not abbreviated
@@ -135,6 +144,6 @@ export function NodeCardSummary({
           </span>
         )}
       </div>
-    </Link>
+    </article>
   );
 }

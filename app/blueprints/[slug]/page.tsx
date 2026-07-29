@@ -26,6 +26,7 @@ import { AuthorChip } from "@/components/ui/Avatar";
 import { KindBadge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { AutonomyMeter } from "@/components/ui/AutonomyMeter";
+import { FavoriteStar } from "@/components/ui/FavoriteStar";
 import { TagPill } from "@/components/ui/TagPill";
 import { ScoreRadar } from "@/components/ui/ScoreRadar";
 import { MetricBars } from "@/components/ui/MetricBars";
@@ -180,6 +181,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               autonomy={bp.autonomy}
               contributions={bp.analysis.autonomy.contributions}
             />
+            <FavoriteStar id={`blueprint:${bp.slug}`} className="ml-auto" />
           </div>
           <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
             {bp.title}

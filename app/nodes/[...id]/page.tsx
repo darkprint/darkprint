@@ -15,6 +15,7 @@ import { contentHref, termHref } from "@/lib/href";
 import { AuthorChip } from "@/components/ui/Avatar";
 import { KindBadge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
+import { FavoriteStar } from "@/components/ui/FavoriteStar";
 import { SourcePanel } from "@/components/ui/SourcePanel";
 import { formatWeight } from "@/components/ontology/TermTable";
 import {
@@ -322,6 +323,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 {prohibitions.length} declared
               </span>
             )}
+            <FavoriteStar id={`node:${card.id}@${card.version}`} className="ml-auto" />
           </div>
           <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
             {card.name}
