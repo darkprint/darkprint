@@ -80,7 +80,7 @@ All gates green from a clean tree:
 npm run build     136 pages, 9 downloadable bundles
 npx tsc --noEmit  clean
 npm run lint      clean
-npm test          3235 tests, 71 files
+npm test          3221 tests, 71 files
 ```
 
 **`public/bundles` is generated *and* checked in.** A build writes all nine README files
@@ -186,7 +186,7 @@ size-only check could not see, and it covered the roles figure alone.
 
 Shipped as `components/viz/label-boxes.ts` (a plain module, not a test file) plus
 `components/viz/scene-labels.test.ts`, which walks `components/**` and `app/**` for
-`<FlowScene` and fails if a file that draws one is not in its roster. **16 drawers, 27
+`<FlowScene` and fails if a file that draws one is not in its roster. **15 drawers, 26
 frames.** Four more defects came out of it, all in `components/home/SectionLevels.tsx`,
 which was the largest unguarded set of drawings on the site.
 

@@ -44,17 +44,19 @@
    itself; every other rung is about a blueprint, a card or a
    ladder, and each of those now has a page.
 
-   ── What the five beats are ──
+   ── What the four beats are ──
    Spec §2: one illustration and roughly one sentence each. Beat 1
    is the wordmark and takes the animation budget, because it is the
-   thing the author missed and the first thing anyone sees. Beats 2,
-   3 and 4 carry one concept apiece in the luminous-flow register of
-   spec §1. Beat 5 is the two doors.
+   thing the author missed and the first thing anyone sees. Beats 2
+   and 3 carry one concept apiece in the luminous-flow register of
+   spec §1. Beat 4 is the two doors.
 
-   Beat 4 is the one doc 2 §1.1 constrains hardest. The lights going
-   out describe a graph in which no node waits for a person. A graph
-   with a person in it is a first-class blueprint and the beat says
-   so on the sheet, in the same words the rest of the site uses.
+   Beat 4 used to be a fifth beat, the lights going out across the
+   starter graph (`SectionLightsOut`), cut from the landing at the
+   author's request. Doc 2 §1.1's constraint that beat existed to
+   guard — a graph with a person in it is a first-class blueprint,
+   never a shortfall — still binds every autonomy reading on the
+   site; it is simply no longer illustrated on this page.
 
    No YAML, no scorecard, no term table and no code listing survive
    on this page. Spec §6 greps the built HTML for all four;
@@ -66,7 +68,6 @@ import { Hero } from "@/components/hero/Hero";
 import {
   SectionBlueprint,
   SectionNodeIsCard,
-  SectionLightsOut,
   SectionDoors,
 } from "@/components/home";
 
@@ -76,7 +77,6 @@ export default function HomePage() {
       <Hero />
       <SectionBlueprint />
       <SectionNodeIsCard />
-      <SectionLightsOut />
       <SectionDoors />
     </>
   );

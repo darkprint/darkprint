@@ -27,7 +27,7 @@ TypeScript strict.
 
 | route | what it is |
 |---|---|
-| `/` | the landing: five beats, ~281 visible words |
+| `/` | the landing: four beats, ~216 visible words |
 | `/spec` | the spec language: three layers, and what the engine checks |
 | `/spec/topology` | layer 1, the DOT graph + the five-roles figure |
 | `/spec/card` | layer 2, the node card + the scroll-annotated card |
@@ -55,25 +55,27 @@ All permanent (308): `/gallery → /blueprints`, `/parts → /nodes`, `/ontologi
 
 ## The landing
 
-Five beats, almost no prose. Everything technical lives on the page whose subject it is.
+Four beats, almost no prose. Everything technical lives on the page whose subject it is.
 
 | beat | shows | component |
 |---|---|---|
 | 1 | the animated **DarkPrint** wordmark | `components/hero/Wordmark.tsx` |
 | 2 | a graph drawing itself | `SectionBlueprint.tsx` |
 | 3 | one node lighting up and opening into its card | `SectionNodeIsCard.tsx` |
-| 4 | the lights going out across the graph | `SectionLightsOut.tsx` |
-| 5 | two doors, with the archive counts | `SectionDoors.tsx` |
+| 4 | two doors, with the archive counts | `SectionDoors.tsx` |
 
-The ~281 figure is `HomePage` rendered through `renderToStaticMarkup`, tags stripped and
+The ~216 figure is `HomePage` rendered through `renderToStaticMarkup`, tags stripped and
 entities resolved, minus text a sighted reader never sees: `<style>` (CSS), `<desc>` (the
 SVG accessible description), any `sr-only`-classed element, and the always-`display:none`
 half of `SectionBlueprint`'s responsive narrow/wide drawing pair (both render at SSR; a
 reader only ever sees one, per that file's own comment). A raw count with none of that
-excluded reads 489 — the difference is invisible text, not added prose.
+excluded reads 451 — the difference is invisible text, not added prose.
 
-Beat 4 is the constrained one. Lights going out **describes** a graph with no human node. It
-is not a reward for reaching one, and doc 2 §1.1 binds hardest there.
+There used to be a fifth beat here — the lights going out across the starter graph
+(`SectionLightsOut.tsx`), describing a blueprint with no human node. Cut from the landing
+at the author's request; doc 2 §1.1's constraint that beat existed to guard (a graph with
+a person in it is a first-class blueprint, never a shortfall) still binds every autonomy
+reading on the site, just no longer illustrated here.
 
 ### Where the old landing went
 

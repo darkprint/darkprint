@@ -1,10 +1,10 @@
 /* ============================================================
-   The landing's five beats, checked as the server writes them.
+   The landing's four beats, checked as the server writes them.
 
    Redesign spec §6 lists four properties of the built landing and
    every one of them is a property of the prerendered HTML:
 
-     the five beats' copy is in the page as text
+     the four beats' copy is in the page as text
      there is no YAML block, no scorecard and no term table
      every figure's labels are in the DOM at SSR
      the finished state is what a reader without JS gets
@@ -36,7 +36,6 @@ import { LANDING_NARROW, LANDING_WIDE } from "./graph";
 import { ROLE_ABSENCE, ROLE_BOXES } from "./roles";
 import { SectionBlueprint } from "./SectionBlueprint";
 import { SectionDoors } from "./SectionDoors";
-import { SectionLightsOut } from "./SectionLightsOut";
 import { SectionNodeIsCard } from "./SectionNodeIsCard";
 
 function render(beat: () => ReactNode): string {
@@ -47,8 +46,7 @@ const BEATS: [string, () => ReactNode][] = [
   ["1 the wordmark", Hero],
   ["2 the blueprint", SectionBlueprint],
   ["3 the card", SectionNodeIsCard],
-  ["4 the lights", SectionLightsOut],
-  ["5 the doors", SectionDoors],
+  ["4 the doors", SectionDoors],
 ];
 
 const HTML = new Map(BEATS.map(([name, beat]) => [name, render(beat)]));
@@ -109,47 +107,6 @@ describe("beat 2 draws the blueprint with its labels in the markup", () => {
   });
 });
 
-describe("beat 4 stays a description and never a verdict", () => {
-  const html = beat("4 the lights");
-  const words = readable(html).toLowerCase();
-
-  it("draws the run a person stands in beside the run nobody stands in", () => {
-    expect(html).toContain('data-viz="human"');
-    expect(html).toContain("waits for a person");
-    expect(html).toContain("waits for nobody");
-  });
-
-  it("says on the sheet that both drawings are blueprints", () => {
-    // Doc 2 §1.1's binding consequence, in the chrome rather than in a paragraph: "un
-    // grafo con un nodo di intervento umano è legittimo e benvenuto".
-    expect(words).toContain("both are blueprints");
-  });
-
-  it("hands out no prize for the graph with nobody in it", () => {
-    for (const phrase of [
-      "achiev",
-      "reward",
-      "congratul",
-      "goal",
-      "target",
-      "milestone",
-      "unlock",
-      "upgrade",
-      "level up",
-      "best practice",
-    ]) {
-      expect(words, `beat 4 says "${phrase}"`).not.toContain(phrase);
-    }
-  });
-
-  it("shows the finished drawing, which is the one with the lights already out", () => {
-    // Spec §1: the static markup is the finished state and animation is what is added to
-    // it. The room light is put back by the timeline and taken away again, so a reader
-    // without script never sees it at all.
-    expect(html).toMatch(/data-beat="wash"[^>]*opacity="0"/);
-  });
-});
-
 describe("the landing carries no page of the site it is introducing", () => {
   it.each(BEATS.map(([name]) => name))("%s writes no YAML, no table and no code block", (name) => {
     const html = beat(name);
@@ -177,7 +134,7 @@ describe("the landing carries no page of the site it is introducing", () => {
 });
 
 /**
- * Every link the five beats emit, resolved against the routes and the archive.
+ * Every link the four beats emit, resolved against the routes and the archive.
  *
  * Added after the landing shipped `href="/nodes/builder"`, which typechecks, renders,
  * passes every other case in this file and 404s. A `RoleBox` carries two identifiers:
@@ -232,7 +189,7 @@ describe("every link the landing draws goes somewhere", () => {
 });
 
 describe("every figure on the landing is reachable without a pointer", () => {
-  it.each(["2 the blueprint", "3 the card", "4 the lights"])(
+  it.each(["2 the blueprint", "3 the card"])(
     "%s shows its labels when nothing has written the hover attribute",
     (name) => {
       const html = beat(name);
@@ -249,7 +206,7 @@ describe("every figure on the landing is reachable without a pointer", () => {
     },
   );
 
-  it.each(["2 the blueprint", "3 the card", "4 the lights"])(
+  it.each(["2 the blueprint", "3 the card"])(
     "%s gives every labelled glyph a focus stop and an accessible name",
     (name) => {
       const html = beat(name);
@@ -265,15 +222,15 @@ describe("every figure on the landing is reachable without a pointer", () => {
 /**
  * The three counts, and the sentence that makes them worth printing.
  *
- * `PLATFORM_STATS` counts `content/` at build time, so the figures on beat 5 are the one
+ * `PLATFORM_STATS` counts `content/` at build time, so the figures on beat 4 are the one
  * thing on the landing a reader can check. The line saying so — "Counted off the archive
  * on the last deploy, and nothing here is rounded up" — went out with four paragraphs of
  * prose the beat was right to lose, and it was not one of them: it existed nowhere else on
  * the site afterwards, which leaves three numbers beside a call to action with nothing
  * behind them.
  */
-describe("beat 5 says where its numbers come from", () => {
-  const words = readable(beat("5 the doors"));
+describe("beat 4 says where its numbers come from", () => {
+  const words = readable(beat("4 the doors"));
 
   it("states that the counts are exact", () => {
     expect(words).toContain("nothing here is rounded up");

@@ -14,5 +14,4 @@
    `app/page.tsx` carries the table of where every rung went. */
 export { SectionBlueprint } from "./SectionBlueprint";
 export { SectionNodeIsCard } from "./SectionNodeIsCard";
-export { SectionLightsOut } from "./SectionLightsOut";
 export { SectionDoors } from "./SectionDoors";

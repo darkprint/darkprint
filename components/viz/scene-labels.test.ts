@@ -41,7 +41,6 @@ import { WhichTasksGlance } from "@/components/explain/WhichTasksGlance";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionLevels } from "@/components/home/SectionLevels";
 import { SectionLifecycle } from "@/components/home/SectionLifecycle";
-import { SectionLightsOut } from "@/components/home/SectionLightsOut";
 import { SectionNodeIsCard } from "@/components/home/SectionNodeIsCard";
 import { SectionRoles } from "@/components/home/SectionRoles";
 import { DezoomGraph } from "@/components/home/nodecard/DezoomGraph";
@@ -122,11 +121,6 @@ const ROSTER: readonly SceneEntry[] = [
     files: ["components/home/SectionNodeIsCard.tsx"],
     frames: 1,
     render: () => framesOf(createElement(SectionNodeIsCard)),
-  },
-  {
-    files: ["components/home/SectionLightsOut.tsx"],
-    frames: 1,
-    render: () => framesOf(createElement(SectionLightsOut)),
   },
   {
     files: ["components/home/SectionLevels.tsx"],
@@ -231,7 +225,7 @@ describe("the guard covers every scene the site draws", () => {
   });
 
   it("collects the furniture the box case compares against", () => {
-    // Three stroked rectangles are drawn across all 27 frames: level 4's harness, the
+    // Three stroked rectangles are drawn across all 26 frames: level 4's harness, the
     // card frame in `SpecLayers` and the prohibition block in `EnforcementFigure`. If the
     // walker stopped recognising a `<rect>` — a change of attribute order, a stroke moved
     // into a class — "draws no box edge through a word" would pass on every scene by
