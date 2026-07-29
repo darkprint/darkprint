@@ -14,6 +14,7 @@ export default function InstallPage() {
   return (
     <div className="container-page py-16 sm:py-24">
       <SectionHeading
+        as="h1"
         eyebrow="MCP access"
         title="Bring blueprints and nodes into your agent"
         lead="Not built yet: this is what setup will look like once the registry has an MCP server to point a client at."
