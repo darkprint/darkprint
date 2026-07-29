@@ -1,16 +1,13 @@
-import type { Diagnostic, DiagnosticLocation, Severity } from "@/lib/core";
+import type { Diagnostic, DiagnosticLocation } from "@/lib/core";
 import { sortDiagnostics, summarize } from "@/lib/core";
 import { cx } from "@/lib/format";
+import { SEVERITY_META, severityCount } from "@/components/ui/severity";
 
-/**
- * Severity presentation. The glyph and the word both carry the meaning — the colour
- * is decoration, so a reader who cannot see it loses nothing.
- */
-const SEVERITY_META: Record<Severity, { glyph: string; word: string; color: string }> = {
-  error: { glyph: "✕", word: "error", color: "var(--color-signal)" },
-  warning: { glyph: "▲", word: "warning", color: "var(--color-amber)" },
-  info: { glyph: "•", word: "info", color: "var(--color-cyan)" },
-};
+/* Severity presentation moved to `components/ui/severity.ts`. The rule it records — the
+   glyph and the word both carry the meaning — has to hold on every surface that prints a
+   diagnostic, and it stopped holding when PROJECT.md §3.1 routed the criteria notes to
+   `components/blueprint/Explainability.tsx`, which had its own glyph and no word. One
+   table, imported by all of them. */
 
 /**
  * Where a diagnostic points, in the most specific form the location carries:
@@ -76,13 +73,7 @@ function DiagnosticRow({ diagnostic }: { diagnostic: Diagnostic }) {
 /** "2 errors, 1 warning" — the one-line verdict, used bare and as the summary. */
 function countLine(diagnostics: readonly Diagnostic[]): string {
   if (diagnostics.length === 0) return "No problems found";
-  const counts = summarize(diagnostics);
-  const parts: string[] = [];
-  for (const severity of ["error", "warning", "info"] as const) {
-    const n = counts[severity];
-    if (n > 0) parts.push(`${n} ${SEVERITY_META[severity].word}${n === 1 ? "" : "s"}`);
-  }
-  return parts.join(" · ");
+  return severityCount(summarize(diagnostics));
 }
 
 function EmptyState() {

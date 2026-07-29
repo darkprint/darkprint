@@ -38,6 +38,30 @@ import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
    Four small scenes rather than one wide one: a 236-unit box in a
    phone-width card renders its labels larger than a 1000-unit box
    does, so the strip needs no second layout to stay legible.
+
+   ── The length pass, and the 128 words it found here ──
+   `/towards-a-dark-factory/the-climb` used to draw the strip and
+   then print four panels underneath it, one per phase, each with
+   its own "Phase N", its own title and a `goal` paragraph. Two
+   cards for one phase, and the goal said what the caption beside
+   the drawing already said: phase 3's read "One or two services,
+   chosen because their numbers hold ... every team member can still
+   block a merge" against `alone`'s "On the one or two services
+   whose numbers hold. Everyone can still stop a merge." Phase 4
+   stated "configuration rather than architecture" twice and
+   "nothing downstream of the merge changes" twice.
+
+   So the panel folded into the card that already carried the
+   phase. `body` is what the panel held, behind a disclosure, and
+   the two clauses the goals owned outright moved into it: phase
+   1's "the biggest return has nothing to do with autonomy" and
+   phase 3's "the configuration change is a single line". The rest
+   of the goal text was the caption again and is gone.
+
+   The disclosure is a native `<details>` for the reason
+   `components/ui/More.tsx` records: the text is in the prerendered
+   HTML, keyboard reachable and findable by find-in-page, so what
+   it changes is what is on screen before a click.
    ============================================================ */
 
 const FIG = {
@@ -61,6 +85,8 @@ interface Phase {
   doing: string;
   /** What the phase is worth on its own, in the account's terms. */
   alone: string;
+  /** What the phase actually involves. Behind the disclosure. */
+  body: string;
 }
 
 const PHASES: Phase[] = [
@@ -71,6 +97,7 @@ const PHASES: Phase[] = [
     at: 2,
     doing: "reads the diff",
     alone: "Better pull requests and fewer broken builds. Nobody's workflow changes.",
+    body: "The biggest return in the account has nothing to do with autonomy. Every repository gets an AGENTS.md, about a hundred lines, a table of contents over a docs/ folder holding coding patterns, API conventions, auth and testing. Two rules travel with it: the agent runs the build and the full suite before it pushes, so a broken change is fixed locally rather than across CI runs, and architectural rules move from the wiki into linters.",
   },
   {
     n: "Phase 2",
@@ -79,6 +106,7 @@ const PHASES: Phase[] = [
     at: 2,
     doing: "reads the report",
     alone: "A spec produces validated code in hours. The localhost testing ritual is gone.",
+    body: "An orchestrator clones the repository, hands the spec to the coding agent, runs the build and tests on what comes back, and opens a pull request. A failure goes onto the prompt and the agent retries on the same branch, behind an abstraction that makes swapping it a line of configuration. The approver reads a satisfaction report rather than a diff: five minutes against two hours.",
   },
   {
     n: "Phase 3",
@@ -87,6 +115,7 @@ const PHASES: Phase[] = [
     at: 2,
     doing: "may block",
     alone: "On the one or two services whose numbers hold. Everyone can still stop a merge.",
+    body: "The change is one line of configuration, and three measurements have to hold first: scenario pass rate over the last twenty pull requests above 90%, false positives below 5%, and human rejections of something the scenarios passed below 10%. On timing, wait for twenty or thirty pull requests where gate and human agreed. The phase adds maintenance agents too, weekly jobs opening cleanup pull requests for drift and stale documentation through the same gate, because generated code accumulates small inconsistencies and nothing about that is catastrophic until nobody has swept for a year.",
   },
   {
     n: "Phase 4",
@@ -95,6 +124,7 @@ const PHASES: Phase[] = [
     at: 0,
     doing: "writes both",
     alone: "Configuration rather than architecture. Nothing downstream of merge changes.",
+    body: "Auto-merge expands to every service whose scenario numbers hold, a tagged ticket generates a spec and enters the pipeline, and dashboards go up. One piece of infrastructure is genuinely new: digital twins, mock servers standing in for the external dependencies that make scenario evaluation flaky or expensive, built one at a time starting with whichever causes the most trouble.",
   },
 ];
 
@@ -182,6 +212,18 @@ export function PhaseStrip() {
             >
               {phase.alone}
             </p>
+            <details className="group mt-3">
+              <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden font-mono text-[11px] uppercase tracking-[0.14em] text-dim transition-colors hover:text-fg">
+                <span
+                  aria-hidden
+                  className="inline-block transition-transform group-open:rotate-90"
+                >
+                  ▸{" "}
+                </span>
+                What it involves
+              </summary>
+              <p className="mt-2.5 text-[13px] leading-relaxed text-muted">{phase.body}</p>
+            </details>
           </Sheet>
         </li>
       ))}

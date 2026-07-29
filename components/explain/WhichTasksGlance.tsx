@@ -178,7 +178,6 @@ export function WhichTasksGlance() {
       <Sheet
         label="Read this first"
         title="Four questions, asked in order"
-        note="a task enters at the left"
         className="lg:w-[30rem] lg:shrink-0"
         bodyClassName="p-3 sm:p-4"
       >
@@ -187,35 +186,39 @@ export function WhichTasksGlance() {
         </div>
       </Sheet>
 
+      {/* The length pass (PROJECT.md §3.1). Two sentences left this caption and both were
+          second copies: "that property belongs to the task, and it is fixed before you
+          draw a single node", which is the page's own lead one paragraph up, and the tally
+          reading's restatement of what a no on 04 does, which the paragraph directly above
+          it now carries alone. `WhichTasksRemedies` used to open its third card with this
+          caption's 04 sentence word for word; that copy is the one that went, and this is
+          the one that stayed, because it stands beside the branch it describes. */}
       <figcaption className="flex flex-col gap-4 text-sm leading-relaxed text-muted lg:pt-2">
         <p>
-          A dark factory runs with nobody watching it, which puts the weight of the whole
-          design on one property of the work: whether something other than your judgement
-          can tell the graph that it is finished. That property belongs to the task, and it
-          is fixed before you draw a single node.
+          A dark factory runs with nobody watching it, so the design rests on one property
+          of the work: whether something other than your judgement can tell the
+          graph it is finished.
         </p>
         <p>
           <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-amber">
             01 to 03{" "}
           </span>
-          name something missing you can go and supply. A harness nobody has written yet,
-          or a target nobody has decided. Answer them and ask again.
+          name something missing you can supply: a harness nobody has written, a target
+          nobody has decided. Answer them and ask again.
         </p>
         <p>
           <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-violet">
             04{" "}
           </span>
-          works differently. No amount of coverage makes a wrong answer cheap once it is
-          already in production, so the graph changes instead of the task: a node with a
-          person at it, positioned at the step where a mistake becomes expensive, and
-          everything upstream of it running unattended.
+          works differently. No amount of coverage makes a wrong answer cheap once it is in
+          production, so the graph changes instead of the task: a person at the step where a
+          mistake becomes expensive, everything upstream running unattended.
         </p>
         {/* The tally reading, denied where the four are first counted. Doc 2 §1.1 is about
             the autonomy class rather than this page, and the failure mode is the same
             shape: turn four questions into a score and people optimise the score. */}
         <p className="border-l-2 border-cyan/50 pl-4 text-dim">
-          So do not add these up. Four yeses mean the task is a good fit, and one no on 04
-          means the design changes rather than the task.
+          So do not add these up. Four yeses mean the task is a good fit.
         </p>
       </figcaption>
     </figure>

@@ -1,10 +1,10 @@
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { SkillComparison } from "./SectionSkillVsFactory";
 
 /* ============================================================
-   What it is, before the page spends four sections on what it
-   isn't.
+   What it is, and what the other object is, in one section.
 
-   Redesign spec §3 moves the landing's anchoring rung here:
+   Redesign spec §3 moved the landing's anchoring rung here:
    "«what it is» and «not a skill library» → /what-it-isnt,
    condensed." The landing keeps the picture and loses the
    paragraph: beat 4 draws the same room with the lights off, in one
@@ -23,9 +23,21 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 
    Doc 2 §2.1 rung 2, verbatim in its brief: "Ancoraggio. La
    fabbrica al buio. Una riga, e il nome del sito diventa
-   autoesplicativo." One line is the brief, so this section says
-   where the term comes from, makes `DarkPrint` decode itself, and
-   stops.
+   autoesplicativo." One line is the brief, so the anchoring part of
+   this section says where the term comes from, makes `DarkPrint`
+   decode itself, and stops.
+
+   ── Why the comparison is now inside this section ──
+   The length pass, and the author's reading of the page: three
+   sections that had been merged rather than one argument. What a
+   dark factory is and how it differs from a Skill were two
+   sections, each with its own eyebrow, title and lead, and the
+   second lead ("Both are things you can write down and hand to
+   somebody else…") restated the first before the table said
+   anything the first had not. `SkillComparison` renders the table
+   here instead, so the reader meets the object and the comparison
+   in one movement. Its file header records what the eyebrow, the
+   lead and the two panels carried and where each part went.
 
    ── What was left behind on the way over ──
    `SectionAnchor` carried a strip of the five phases under its
@@ -60,6 +72,8 @@ export function SectionWhatItIs() {
           <span className="text-fg">blueprint</span>. This site is where those drawings
           are kept.
         </p>
+
+        <SkillComparison />
       </div>
     </section>
   );

@@ -110,18 +110,60 @@ were the site quietly presenting seeded numbers as facts.
 
 Ordered by my read of the value. Nothing here is started.
 
-### 3.1 Finish the length pass (small, and already diagnosed)
+### 3.1 Finish the length pass
 
-The redesign cut the landing 79% and `/build` by up to 66% per step. Two pages did not follow:
+The redesign cut the landing from ~4,100 visible words to 216, and `/build` by 37–66% per
+step. Four explainer pages did not follow.
 
-| page | now | note |
+**Measure prose, not pixels and not raw word count.** Both cruder metrics give the wrong
+answer here, and both were acted on before being checked:
+
+- **Pixel height** ranks `/nodes` worst. It is a grid of 53 tiles — skimmed in seconds. Page
+  height measures scrolling, and the complaint was about reading.
+- **Raw word count** ranks `/blueprints/<slug>` worst at 3,283–3,790. About half of that is
+  the four-pane viewer rendering card YAML and DOT as styled spans, so a `<pre>`-based filter
+  misses it and counts source listing as prose. A registry detail page showing its own source
+  is doing its job.
+
+Prose only, at `340931e`:
+
+| prose words | page | |
 |---|---|---|
-| `/what-it-isnt` | ~13.1 viewport-heights | fell 13.8%; was asked to absorb two more sections |
-| `/towards-a-dark-factory/the-climb` | ~13.6 | fell 4.3%; a fourth route was declined as out-of-spec |
-| `/nodes` | ~17.0 | never in scope |
-| `/ontology` | ~13.7 | never in scope |
+| 2,054 | `/spec/card` | grew — the dezoom gained a second placement for phone legibility |
+| 2,048 | `/what-it-isnt` | fell only 13.8% while absorbing two landing sections |
+| 2,045 | `/towards-a-dark-factory/the-climb` | fell 4.3%; a fourth route was declined as out-of-spec |
+| 1,811 | `/towards-a-dark-factory/which-tasks` | |
+| ~1,700 | `/blueprints/<slug>` ×9 | the non-listing half: About, Security, Download, Registry stats |
 
-`/nodes` is now the longest page on the site. If "short pages" is meant site-wide, start there.
+**Done at `9c4e1e2`.** Measured on the rule above:
+
+| page | before | after | |
+|---|---|---|---|
+| `/towards-a-dark-factory/the-climb` | 2,045 | **1,197** | −41% |
+| `/towards-a-dark-factory/which-tasks` | 1,811 | **1,276** | −30% |
+| `/what-it-isnt` | 2,048 | **1,599** | −22%, and −42% of what reads without opening a disclosure |
+| `/spec/card` | 2,054 | **1,717** | −16%, −38% open |
+| `/blueprints/<slug>` ×9, non-listing half | 19,107 | **17,504** | −8%, −19% open |
+| `/towards-a-dark-factory` | 694 | 1,029 | **+48%** — it absorbed a block from its children; the three together fell 23% |
+
+`/nodes` (2,396) and `/ontology` (2,060) were left alone on purpose. They are lists.
+
+### What this pass taught, worth keeping
+
+Cutting for pace is how honesty statements disappear, and the danger is not deletion. It is
+**promotion to a disclosure**: the words stay in the HTML, every word-count check still passes,
+and the reader never sees them. Twelve findings came out of this pass and most were that shape
+— *"the absence of a finding here is silence, not a clean verdict"* went from open on eight
+blueprint pages to open on none, and the severity word `warning` vanished from all nine while
+an amber glyph carried the meaning alone.
+
+So `components/site/honesty.test.ts` now holds a ledger of named claims, each tagged **open**
+or **present**, and `components/ui/visible-text.ts` implements the difference by dropping the
+body of any `<details>` that lacks an `open` attribute. A claim tagged `open` fails the build
+if it moves behind a disclosure. Add to that ledger whenever a page starts stating a limit.
+
+To re-measure, strip `<script>`, `<style>`, `<svg>` and `<pre>` inside `<main>` and count
+words — but check by section first, because the pane listings do not sit in `<pre>`.
 
 ### 3.2 Apply the label guard to every scene
 

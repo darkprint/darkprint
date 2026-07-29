@@ -88,7 +88,12 @@ export function EnforcementFigure() {
       title="cards/code-builder@1.0.0.yaml · cannot"
       note="one entry refuses a graph, the other does not"
       scrollLabel="Fig. 2"
-      caption={`Both entries are published, both are shown on the card, and one of them refuses a graph. Which one it is follows from the vocabulary: ${RESOLVED_MARK} names a data type an edge can carry, ${FREE_TEXT_MARK} names no term at all.`}
+      /* PROJECT.md §3.1: the caption used to open by saying both entries are published
+         and shown, which is what the plate itself shows and what annotation 07 on the
+         card above says in words. What survives is the part only the caption can give a
+         reader who cannot resolve the two markers by colour (WCAG 1.4.1, the finding
+         Fig. 1 was fixed for): which glyph means which. */
+      caption={`Both entries are published and both are shown on the card. Which one refuses a graph follows from the vocabulary: ${RESOLVED_MARK} names a data type an edge can carry, ${FREE_TEXT_MARK} names no term at all.`}
     >
       <FlowScene
         {...flow.scene}

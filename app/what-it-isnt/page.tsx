@@ -6,7 +6,6 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 // only half of it would read as the directory's inventory while being one.
 import { isolationDemo } from "@/components/explain/starter-isolation";
 import { SectionWhatItIs } from "@/components/explain/SectionWhatItIs";
-import { SectionSkillVsFactory } from "@/components/explain/SectionSkillVsFactory";
 import { SectionIsolationRule } from "@/components/explain/SectionIsolationRule";
 import { SectionAbsentEdge } from "@/components/explain/SectionAbsentEdge";
 import { SectionComponentRecap } from "@/components/explain/SectionComponentRecap";
@@ -31,6 +30,25 @@ import { SectionComponentRecap } from "@/components/explain/SectionComponentReca
    the two sections that already made it. Every cut is recorded in
    the file it was made in.
 
+   ── The length pass ──
+   The author read the result: "too much text", "a very long single
+   page that makes the user leave". The page was five sections and
+   it read as three that had been merged, because the merge left
+   every arriving section its own eyebrow, title and lead. Four
+   openings said some version of "a Skill is one agent, a dark
+   factory is several" before the first table drew the distinction.
+
+   So the comparison is no longer a section. `SkillComparison`
+   renders inside `#what-it-is`, under the paragraph saying what a
+   dark factory is, and the page is four movements: what it is and
+   what the other object is, the rule, the rule enforced on a real
+   bundle, the vocabulary. Each deletion is recorded in the file it
+   was made in, with where the claim now lives.
+
+   `SectionAbsentEdge` is untouched. It is the strongest thing the
+   site can show, it was built over two passes, and its own header
+   records why each part of it is there.
+
    Static: everything the page shows is read off the archive at
    build time, including the leaked variant of the starter bundle,
    which is assembled and scored during the build and never
@@ -50,17 +68,19 @@ export default function WhatItIsntPage() {
     <>
       <header className="border-b border-line bg-void py-16 sm:py-20">
         <div className="container-page">
+          {/* The lead used to end on a sentence announcing the page's running order.
+              The first section is directly underneath, so the announcement described a
+              journey the reader could already see. Doc 2 §3's claim is what stays. */}
           <SectionHeading
             as="h1"
             eyebrow="What it isn't"
             title="A Skill gives one agent a capability"
-            lead="A dark factory is the architecture of several agents, and above all the isolation rules between them. This page says what one is, then settles the difference on the single example that decides it."
+            lead="A dark factory is the architecture of several agents, and above all the isolation rules between them."
           />
         </div>
       </header>
 
       <SectionWhatItIs />
-      <SectionSkillVsFactory />
       <SectionIsolationRule />
       {demo !== undefined && <SectionAbsentEdge demo={demo} />}
       <SectionComponentRecap />
@@ -84,7 +104,11 @@ export default function WhatItIsntPage() {
               is resolved against the core plus content/ontology/extensions.yaml. Dropping
               this release's own `frontline-triage` bundle into the wizard reports two
               unknown terms and scores it 4 where its page shows 2. Stated rather than
-              quietly dropped, because a reader who tries it deserves to know first. */}
+              quietly dropped, because a reader who tries it deserves to know first.
+
+              Not folded and not shortened by the length pass. It is the page's honesty
+              block: two HIGH findings in this project were disclaimers going missing
+              while somebody was cutting for pace. */}
           <p className="max-w-2xl text-sm leading-relaxed text-dim">
             The upload wizard runs the real validator and the real analyzers in your
             browser, on files that never leave the tab. It resolves them against the

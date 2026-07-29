@@ -14,6 +14,8 @@ import {
   CRITERIA_UNANCHORED_CODE,
   type CriteriaState,
 } from "@/lib/criteria-state";
+import { More } from "@/components/ui/More";
+import { SEVERITY_META } from "@/components/ui/severity";
 
 /**
  * The two computed metrics, showing their working. Doc 1 §8.3: an evaluation nobody
@@ -53,6 +55,23 @@ import {
  * Client-side only because of the highlight buttons — the analysis itself is computed
  * at build time and arrives as plain data. Every import from the engine is type-only,
  * so none of it is pulled into the browser bundle.
+ *
+ * **PROJECT.md §3.1, the length pass.** This panel was the longest prose block on a
+ * blueprint page, and the complaint it answers is that a reader gives up before the
+ * download. Two rules governed the cut and are worth stating, because the obvious way
+ * to shorten an explainability panel is the one that breaks it:
+ *
+ * - Nothing the engine wrote was removed. Every rationale, every diagnostic message and
+ *   every hint still renders verbatim. What was compressed is the panel's own framing
+ *   around them, and what was deleted is framing that restated a sentence already on the
+ *   page. A score with no reasoning is worse than a long explanation.
+ * - Reference depth about *how the check works* sits behind `More`, which is a native
+ *   `<details>`: still in the prerendered HTML, still keyboard-reachable, still found by
+ *   find-in-page. Anything about *this blueprint* stays in the open.
+ *
+ * The criteria diagnostics used to render twice on the page, here and again in the
+ * sidebar's validation notes. They render here only now; `BundlePanel` counts them and
+ * links up to this section. See `app/blueprints/[slug]/page.tsx` for the split.
  */
 
 /* --------------------- shared presentation --------------------- */
@@ -72,6 +91,73 @@ function tier(weight: number): { glyph: string; color: string } {
   if (weight >= 0.75) return { glyph: "▲", color: "var(--color-amber)" };
   if (weight > 0) return { glyph: "•", color: "var(--color-cyan)" };
   return { glyph: "◦", color: "var(--color-dim)" };
+}
+
+/**
+ * The engine's remediation advice on a row, folded.
+ *
+ * PROJECT.md §3.1. A finding's *working* is the marker, the node, the weight on the
+ * ledger and the sentence the engine wrote about it, and all of that stays in the open.
+ * The hint is what to do next, which is 24 to 55 words a reader who is deciding whether
+ * to download the bundle does not need and an author fixing it does. Measured on the
+ * archive the hints alone ran to between 80 and 235 words a page.
+ *
+ * A native `<details>` with the same "hint" label the row printed before, so the text is
+ * still in the prerendered HTML, still keyboard-reachable and still found by
+ * find-in-page. It is not `More`, only because that component is a block with its own
+ * border and this has to sit inline in a row.
+ *
+ * The pass that introduced the disclosure also collapsed an adjacent repeat of the same
+ * hint to the literal "hint as on the row above." That was a defect the moment the hint
+ * above it went behind a `<details>`: on `guarded-merge-bot` and `incident-commander` the
+ * pointer sat under a closed disclosure and referred to text nothing on screen was
+ * showing, a linear screen-reader pass reached a pointer with nothing behind it, and
+ * find-in-page for the advice returned one hit where the baseline returned two. Every row
+ * carries its own hint again. It costs no visible words, because a closed disclosure is
+ * the same one line either way.
+ */
+function Hint({ text }: { text: string }) {
+  return (
+    <details className="group">
+      <summary className="flex cursor-pointer list-none items-baseline gap-1.5 font-mono text-xs text-dim transition-colors hover:text-fg [&::-webkit-details-marker]:hidden">
+        <span
+          className="inline-block shrink-0 text-cyan transition-transform group-open:rotate-90"
+          aria-hidden
+        >
+          ▸
+        </span>
+        hint
+      </summary>
+      <p className="mt-1 text-xs leading-relaxed text-muted">{text}</p>
+    </details>
+  );
+}
+
+/**
+ * The severity the engine gave a diagnostic, as a word.
+ *
+ * `components/ui/severity.ts` records why this is not optional: the glyph and the word
+ * both carry the meaning, and the colour is decoration. PROJECT.md §3.1 routed the
+ * criteria notes out of the sidebar's `DiagnosticList` and into this panel, and the
+ * replacement rows printed an `aria-hidden` glyph alone — so the word "warning", which
+ * was on all nine blueprint pages, was on none of them. A screen-reader user got no
+ * severity, and the same ▲ meant "warning" here and "votes" in the panel below.
+ *
+ * The glyph beside it stays free to say something else. On these rows it carries the
+ * *kind* of note — amber ▲ for a channel worth acting on, dim ◌ for a limit on what was
+ * looked at — which is a distinction the severity does not make. Two readings, both
+ * written down.
+ */
+function SeverityWord({ severity }: { severity: Diagnostic["severity"] }) {
+  const meta = SEVERITY_META[severity];
+  return (
+    <span
+      className="font-mono text-[10px] uppercase tracking-[0.14em]"
+      style={{ color: meta.color }}
+    >
+      {meta.word}
+    </span>
+  );
 }
 
 /** The mono caption under each panel: the engine's own arithmetic, verbatim. */
@@ -279,10 +365,13 @@ function AutonomyPanel({
         </span>
       </div>
 
+      {/* PROJECT.md §3.1: the sentence that enumerated the three groups is gone. It
+          named them in the order the three tallies immediately below name them, so it
+          was a caption for a figure the reader can already read. The framing claim it
+          carried — the class is a description of a shape — is what is kept. */}
       <p className="text-sm leading-relaxed text-muted">
-        The class names the shape of this graph. What the breakdown below says is where
-        the people are: which nodes run unattended, which ones a person acts in, and
-        which ones the bundle has nothing to say about.
+        The class names the shape of this graph. The breakdown below says where the
+        people are.
       </p>
 
       {/* The second classification, stated where the counts behind it are on screen.
@@ -300,9 +389,8 @@ function AutonomyPanel({
             <span>
               <span className="text-fg">Classed a dark factory.</span>{" "}
               No node in this graph waits for a person, which is the whole of what the
-              word classifies.
-              It describes the drawing the way &ldquo;acyclic&rdquo; does, so it carries
-              no rank and nothing on this site orders blueprints by it.
+              word classifies. It describes the drawing the way &ldquo;acyclic&rdquo;
+              does: no rank, and nothing here orders blueprints by it.
             </span>
           </>
         ) : staffed.length > 0 ? (
@@ -315,12 +403,11 @@ function AutonomyPanel({
             </span>
             <span>
               <span className="text-fg">A person stands in this graph.</span>{" "}
-              The classification &ldquo;dark factory&rdquo; belongs to a graph where nobody
-              does, and it counts human nodes rather than measuring a share, so there is
-              no sense in which this graph is close to it or far from it. It has{" "}
+              &ldquo;Dark factory&rdquo; classifies a graph where nobody does, and it
+              counts human nodes rather than measuring a share, so nothing here is close
+              to it or far from it. This graph has{" "}
               {staffed.length === 1 ? "one" : staffed.length}, named below, and a factory
-              touching something irreversible is a factory whose author wanted a person
-              there.
+              touching something irreversible is one whose author wanted a person there.
             </span>
           </>
         ) : (
@@ -413,9 +500,9 @@ function AutonomyPanel({
             <span className="font-mono text-[11px] text-dim">{undescribed.length}</span>
           </div>
           <p className="text-sm leading-relaxed text-muted">
-            The graph draws these nodes and no card in the bundle describes them.
-            Nothing states how they run, so they count in the total the fraction is
-            taken over while belonging to neither group above.
+            No card in the bundle describes these nodes, so nothing states how they run.
+            They count in the total the fraction is taken over and belong to neither
+            group above.
           </p>
           <ul className="divide-y divide-line">
             {undescribed.map((c) => (
@@ -494,12 +581,7 @@ function FindingRow({
           </span>
         </div>
         <p className="text-sm leading-relaxed text-fg">{finding.explanation}</p>
-        {finding.hint !== undefined && (
-          <p className="text-xs leading-relaxed text-muted">
-            <span className="font-mono text-dim">hint </span>
-            {finding.hint}
-          </p>
-        )}
+        {finding.hint !== undefined && <Hint text={finding.hint} />}
         <div className="pt-0.5">
           <NodeButton
             nodeId={finding.nodeId}
@@ -610,13 +692,18 @@ function BlindChannelRow({
         {glyph}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        {/* The engine's own severity and identifier for this note. Both used to be
+            printed by the sidebar's validation list, which this panel replaced; neither
+            a code a reader can grep the archive for nor the word that says how the
+            engine graded it is something the length pass gets to drop. */}
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <SeverityWord severity={diagnostic.severity} />
+          <code className="font-mono text-[10px] break-all text-dim">
+            {diagnostic.code}
+          </code>
+        </div>
         <p className="text-sm leading-relaxed text-fg">{diagnostic.message}</p>
-        {diagnostic.hint !== undefined && (
-          <p className="text-xs leading-relaxed text-muted">
-            <span className="font-mono text-dim">hint </span>
-            {diagnostic.hint}
-          </p>
-        )}
+        {diagnostic.hint !== undefined && <Hint text={diagnostic.hint} />}
         {nodeId !== undefined && (
           <div className="pt-0.5">
             <NodeButton
@@ -672,15 +759,31 @@ function CriteriaIsolation({
         </span>
       </div>
 
+      {/* PROJECT.md §3.1. The principle stays in the open, because it is what the state
+          token beside it means. What the analyzer looks for is reference depth about the
+          check rather than about this blueprint, so it sits behind a disclosure: still
+          prerendered, still keyboard-reachable, still found by find-in-page. */}
       <p className="text-xs leading-relaxed text-dim">
-        Whoever writes the work must not see what it will be judged against. The analyzer
-        looks for a path from the node that produces the acceptance criteria to any node
-        feeding a validation node, for a card that declares both the criteria and the
-        artefact its judge reads, and for the criteria turning up in a generator&rsquo;s
-        own prose. It is the one check this registry exists to make possible, so what it
-        managed to conclude is stated here whether or not it found anything — including
-        where it could not look.
+        Whoever writes the work must not see what it will be judged against. What the
+        analyzer concluded is stated here, including where it could not look.
       </p>
+
+      <More summary="What the analyzer looks for">
+        <ul className="flex list-disc flex-col gap-1.5 pl-4 text-xs leading-relaxed text-dim">
+          <li>
+            A path from the node that produces the acceptance criteria to any node
+            feeding a validation node.
+          </li>
+          <li>
+            A card that declares both the criteria and the artefact its judge reads.
+          </li>
+          <li>The criteria turning up in a generator&rsquo;s own prose.</li>
+        </ul>
+        <p className="text-xs leading-relaxed text-dim">
+          It is the one check this registry exists to make possible, which is why the
+          result is on the page whether or not the analyzer found anything.
+        </p>
+      </More>
 
       <div className={cx("rounded-md border px-4 py-3", meta.border)}>
         {state === "leak" && (
@@ -695,22 +798,44 @@ function CriteriaIsolation({
           </p>
         )}
 
+        {/* PROJECT.md §3.1. Eight of the nine bundles land here, and the block ran to
+            about 180 words on every one of them. The headline and the fact that nothing
+            is charged stay in the open, because those are the two things a reader who
+            has just read the ledger needs. The engine's own message and hint, and the
+            paragraph about the state of the archive, go behind the disclosure: they name
+            the node and the port to type, which is what an author acts on and not what a
+            reader is deciding between. Nothing was deleted. A `<details>` keeps all of
+            it in the prerendered HTML, and a declared marker is loud enough to stay
+            outside it. */}
         {state === "unanchored" && unanchored !== undefined && (
           <div className="flex flex-col gap-2">
+            {/* The severity and the code, in the open. Both were printed by the sidebar's
+                validation list on all nine pages before §3.1 routed the note here, and
+                the replacement printed neither: severity reached the reader as an
+                aria-hidden glyph and the code went behind the disclosure below. */}
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <SeverityWord severity={unanchored.severity} />
+              <code className="font-mono text-[10px] break-all text-dim">
+                {unanchored.code}
+              </code>
+            </div>
             <p className="text-sm leading-relaxed text-fg">
               <span className="text-muted">
                 Nothing here says this blueprint leaks its acceptance criteria, and
                 nothing here says it does not.
               </span>{" "}
-              The analyzer had nowhere to start.
+              The analyzer had nowhere to start, and nothing is charged for it.{" "}
+              {/* The engine's own sharpest clause, promoted out of the hint and into the
+                  open. Eight of the nine bundles land in this state, and §3.1's pass put
+                  the whole of the engine's text behind the disclosure below, so the one
+                  sentence that stops silence reading as a pass went from always-read to
+                  never-read-unless-opened on eight pages at once. It is eleven words. It
+                  is quoted verbatim from `analysis/criteria-leak-unanchored`'s hint,
+                  where `lib/core/analysis/security.test.ts` pins it. */}
+              <span className="text-fg">
+                The absence of a finding here is silence, not a clean verdict.
+              </span>
             </p>
-            <p className="text-sm leading-relaxed text-muted">{unanchored.message}</p>
-            {unanchored.hint !== undefined && (
-              <p className="text-xs leading-relaxed text-muted">
-                <span className="font-mono text-dim">hint </span>
-                {unanchored.hint}
-              </p>
-            )}
             {/* A declared marker has no precondition at all, so it can sit on a bundle
                 the check never ran on. It used to outrank this block and hide it; now it
                 is stated inside it, as what it is. */}
@@ -720,17 +845,25 @@ function CriteriaIsolation({
                 <code className="font-mono">criteria-leak</code> on{" "}
                 {leaks.length === 1 ? "its" : "their"} own card, and{" "}
                 {leaks.length === 1 ? "is" : "are"} charged for it in the ledger above.
-                That is the author&rsquo;s statement, not a route the analyzer traced —
-                the analyzer could not trace one either way here.
+                That is the author&rsquo;s statement rather than a route the analyzer
+                traced, and the analyzer could not trace one either way here.
               </p>
             )}
-            <p className="text-xs leading-relaxed text-dim">
-              Most of the registry is in this state today, and it is a gap in what the
-              graphs declare rather than a fault in what they do — the criteria are real,
-              they are simply not typed on the port that carries them. It costs nothing
-              in points: the analyzer records that it does not know instead of charging
-              for a leak it never observed.
-            </p>
+            <More summary="What the analyzer reported, and what to change">
+              <p className="text-sm leading-relaxed text-muted">{unanchored.message}</p>
+              {unanchored.hint !== undefined && (
+                <p className="text-xs leading-relaxed text-muted">
+                  <span className="font-mono text-dim">hint </span>
+                  {unanchored.hint}
+                </p>
+              )}
+              <p className="text-xs leading-relaxed text-dim">
+                Most of the registry is in this state today: a gap in what the graphs
+                declare rather than a fault in what they do. The criteria are real, and
+                the port that carries them is not typed. The analyzer records that it
+                does not know rather than charge for a leak it never observed.
+              </p>
+            </More>
           </div>
         )}
 
@@ -750,8 +883,15 @@ function CriteriaIsolation({
             <p className="text-sm leading-relaxed text-fg">
               No criteria leak was reported, and the check did not see the whole graph.
             </p>
+            {/* The limit stated in full, in the open. §3.1's pass shortened this to "the
+                rows below name where it stopped, nothing there is charged", which says
+                what the score did and not what the silence means. The rest is the
+                engine's own clause from `analysis/criteria-relayed-through-judge`, which
+                after the pass was readable only inside a closed disclosure. */}
             <p className="text-xs leading-relaxed text-dim">
-              The rows below name where it stopped. Nothing there is charged.
+              The rows below name where it stopped. Nothing there is charged: a channel
+              the topology cannot follow is not evidence of a leak, and it is not evidence
+              of isolation either.
             </p>
           </div>
         )}
@@ -761,12 +901,19 @@ function CriteriaIsolation({
             <p className="text-sm leading-relaxed text-fg">
               No criteria leak was reported, and nothing stopped the check from looking.
             </p>
-            <p className="text-xs leading-relaxed text-dim">
-              Two graphs produce this: one where the criteria producer and the judged
-              node both exist and no path runs between them, and one where nothing in
-              the graph is being judged, so the check had no subject. The lifecycle rows
-              and the schematic above say which of the two this is.
-            </p>
+            {/* Behind the disclosure, not deleted: `quiet` is silence over two different
+                graphs and the panel cannot tell them apart, which is the whole reason
+                the state is not called "clean". A reader who wants to know which one
+                this is opens it; nobody is misled by leaving it closed, because the
+                headline claims no more than the engine said. */}
+            <More summary="Two different graphs produce this">
+              <p className="text-xs leading-relaxed text-dim">
+                One where the criteria producer and the judged node both exist and no
+                path runs between them, and one where nothing in the graph is being
+                judged, so the check had no subject. The lifecycle rows and the schematic
+                above say which of the two this is.
+              </p>
+            </More>
           </div>
         )}
       </div>
@@ -785,12 +932,16 @@ function CriteriaIsolation({
             <span className="font-mono text-[11px] text-dim">{suspected.length}</span>
           </div>
           <p className="text-xs leading-relaxed text-dim">
-            Doc 1 §3.2: isolation is not just an absent edge, it is the absence of the
-            content from the spec. The comparison is a proxy — the acceptance criteria
-            exist only at run time, so what is compared is the criteria producer&rsquo;s
-            instructions for writing them — which is why it is reported and not charged.
-            Read both texts before acting on it.
+            Reported, never charged. Read both texts before acting on it.
           </p>
+          <More summary="Why an overlap is reported and not charged">
+            <p className="text-xs leading-relaxed text-dim">
+              Doc 1 §3.2: isolation is the absence of the content from the spec, and an
+              absent edge is only half of it. The comparison here is a proxy, because the
+              acceptance criteria exist only at run time and what is actually compared is
+              the criteria producer&rsquo;s instructions for writing them.
+            </p>
+          </More>
           <ul className="divide-y divide-line">
             {suspected.map((d, i) => (
               <BlindChannelRow
@@ -813,13 +964,21 @@ function CriteriaIsolation({
             </h5>
             <span className="font-mono text-[11px] text-dim">{relayed.length}</span>
           </div>
+          {/* PROJECT.md §3.1 cut the feedback-against-gaming distinction from here on the
+              grounds that the engine writes it into the hint on every row of this list.
+              It does, and the same pass folded every hint into a closed disclosure, so
+              the distinction left the page: it is the reason the walk stopping here
+              matters at all, and a reader who never opens a row now has no idea what the
+              channel is dangerous for. Restated in the open, in the panel's own words.
+              The engine's version, with the doc's Italian and the iteration cap, stays on
+              the row. */}
           <p className="text-xs leading-relaxed text-dim">
             The walk stops at a validation node on purpose. Doc 2 §5.5 endorses the repair
-            loop <code className="font-mono">tester → debugger → tester</code> by name —
-            seeing the evidence of a failure you caused is feedback, seeing the criteria is
-            gaming — and forbids the same loop returning to the builder two sentences
-            later. In the graph those are the same shape, so the analyzer names the channel
-            rather than deciding what crosses it.
+            loop <code className="font-mono">tester → debugger → tester</code> by name and
+            forbids the same loop returning to the builder. What travels back decides it:
+            seeing the evidence of a failure you caused is feedback, seeing the criteria
+            is gaming. In the graph those are the same shape, so the analyzer names the
+            channel rather than deciding what crosses it.
           </p>
           <ul className="divide-y divide-line">
             {relayed.map((d, i) => (
@@ -847,10 +1006,10 @@ function CriteriaIsolation({
           </div>
           <p className="text-xs leading-relaxed text-dim">
             These nodes name their acceptance criteria in a parameter instead of
-            receiving them along an edge. Isolation is a property of the topology, so a
-            channel the topology does not carry is one the check cannot follow — on this
-            channel, for these nodes, the result above says nothing either way. It is not
-            charged: an unverifiable channel is not evidence of a leak.
+            receiving them along an edge. Isolation is a property of the topology, so the
+            check cannot follow that channel, and on it the result above says nothing
+            either way. Nothing is charged: an unverifiable channel is not evidence of a
+            leak.
           </p>
           <ul className="divide-y divide-line">
             {outOfBand.map((d, i) => (
@@ -900,9 +1059,9 @@ function SecurityPanel({
       </div>
 
       <p className="mb-3 text-sm leading-relaxed text-muted">
-        The score starts at four and every risk marker present subtracts its weight.
-        A marker carried by several nodes is charged once for the blueprint, and the
-        nodes that fired it are all named.
+        Four points to start, and every risk marker present subtracts its weight. A
+        marker carried by several nodes is charged once for the blueprint, and all the
+        nodes that fired it are named.
       </p>
 
       {/* Scrolls sideways on a narrow viewport and holds no focusable cell, so it
@@ -914,10 +1073,12 @@ function SecurityPanel({
         className="overflow-x-auto"
       >
         <table className="w-full min-w-[19rem] font-mono text-[12px]">
+          {/* Names the table. The charged-once rule was restated here and is in the
+              paragraph directly above, which a screen reader reaches first; the nodes
+              column carries the rest of what this used to spell out. */}
           <caption className="sr-only">
             Security ledger: four points to start, minus one row for every risk marker
-            present in this blueprint. Each marker is charged once however many nodes
-            carry it, and the nodes column says how many fired it.
+            present in this blueprint.
           </caption>
           <thead>
             <tr className="border-b border-line text-left">
@@ -1034,13 +1195,12 @@ function SecurityPanel({
             </span>
             <span>
               Nothing fired. No card in this bundle declares a risk marker and the
-              analyzer derived none from the graph, so the four points the score starts
-              with are the four it keeps.
+              analyzer derived none from the graph, so the score keeps all four points.
               {criteriaUnanchored && (
                 <>
                   {" "}
                   <span className="text-dim">
-                    One of the derivations did not run, though — the criteria-leak check
+                    One of the derivations did not run, though: the criteria-leak check
                     above found nothing to anchor on, so its silence is not a result.
                   </span>
                 </>
@@ -1058,7 +1218,7 @@ function SecurityPanel({
                 <span aria-hidden>{PROVENANCE_META.declared.glyph}</span>{" "}
                 {PROVENANCE_META.declared.word}
               </span>{" "}
-              means the node&rsquo;s own card lists the marker.{" "}
+              the node&rsquo;s own card lists it.{" "}
               <span
                 className="font-mono uppercase tracking-[0.12em]"
                 style={{ color: PROVENANCE_META.inferred.color }}
@@ -1066,9 +1226,9 @@ function SecurityPanel({
                 <span aria-hidden>{PROVENANCE_META.inferred.glyph}</span>{" "}
                 {PROVENANCE_META.inferred.word}
               </span>{" "}
-              means the analyzer read it off the graph, which it does for unbounded
-              loops, unvalidated external access and criteria leaks whether or not the
-              card mentions them.
+              the analyzer read it off the graph, which it does for unbounded loops,
+              unvalidated external access and criteria leaks whether or not the card
+              mentions them.
             </p>
             <ul className="divide-y divide-line">
               {security.findings.map((finding) => (
@@ -1119,12 +1279,13 @@ export function Explainability({
       >
         How the two computed scores were reached
       </h2>
+      {/* PROJECT.md §3.1: "the two scores the registry computes rather than collects"
+          came out. The heading says "the two computed scores" and the sidebar scorecard
+          states the computed-against-seeded split in full, so this was the third time
+          one page made the point. */}
       <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
-        Autonomy and Security are the two scores the registry computes rather than
-        collects. Both are read off the graph above without running it, and both show
-        their working: which nodes were counted, which markers were charged, which check
-        could not run, and the sentence the engine wrote for each. Select a node name to
-        find it in the schematic.
+        Autonomy and Security are read off the graph above without running it, and both
+        show their working below. Select a node name to find it in the schematic.
       </p>
       {/* Doc 3 §8: a score that does not name the vocabulary it was computed under is
           not comparable with any other score. Both results carry the same version,

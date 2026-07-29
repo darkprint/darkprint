@@ -34,6 +34,18 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    note `/towards-a-dark-factory/the-climb` and `/what-it-isnt`
    both carry; one copy survives, on the page most likely to read
    as a pitch. The links it held are the line under the pager.
+
+   ── The length pass (PROJECT.md §3.1): 1,763 prose words ──
+   The author's reading was that the page is long enough to skip.
+   The figure at the top was already carrying the argument, so what
+   went is what the figure or the eight examples had already said.
+   Each of the four components records its own cut in its header;
+   the one that happened in this file is the line under the pager,
+   which named three destinations and glossed each. It names two
+   now. The third gloss, "the isolation rules live in the topology
+   where no single agent can talk itself out of them", is what
+   `WhichTasksChecks`'s second card says at greater length, and its
+   link to `/what-it-isnt` is the same link.
    ============================================================ */
 
 export const metadata: Metadata = {
@@ -68,20 +80,15 @@ export default function WhichTasksPage() {
 
       <div className="flex flex-col gap-6">
         <p className="max-w-3xl text-sm leading-relaxed text-muted">
-          A yes now has somewhere to go. The{" "}
+          A yes now has somewhere to go: the{" "}
           <Link href="/build" className={INLINE}>
             guided path
-          </Link>{" "}
-          walks the choices that shape a starter factory and ends with a folder you
-          download and run yourself, the{" "}
+          </Link>
+          , and the{" "}
           <Link href="/blueprints" className={INLINE}>
             published graphs
-          </Link>{" "}
-          show how their authors handled the same four answers, and{" "}
-          <Link href="/what-it-isnt" className={INLINE}>
-            the isolation rules
-          </Link>{" "}
-          live in the topology where no single agent can talk itself out of them.
+          </Link>
+          , whose authors handled the same four answers.
         </p>
         <RoutePager href={HERE} />
       </div>

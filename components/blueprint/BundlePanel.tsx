@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Diagnostic } from "@/lib/core";
-import { shortDigest } from "@/lib/core";
+import { shortDigest, summarize } from "@/lib/core";
 import { cx } from "@/lib/format";
 import { nodeHref } from "@/lib/href";
 import { DiagnosticList } from "@/components/ui/DiagnosticList";
+import { SEVERITY_META, severityCount } from "@/components/ui/severity";
 
 /** One drawn node joined to the card version it instantiates. */
 export interface BundleNode {
@@ -34,6 +35,7 @@ export function BundlePanel({
   nodes,
   pinnedCards,
   diagnostics,
+  explainedNotes = [],
   className,
 }: {
   /** Full "sha256:…" bundle digest. */
@@ -58,8 +60,29 @@ export function BundlePanel({
   nodes: readonly BundleNode[];
   /** Distinct card refs pinned — lower than the node count when a card is reused. */
   pinnedCards: number;
-  /** Non-error notes the engine left on this bundle. */
+  /**
+   * Non-error notes the engine left on this bundle that no other surface renders.
+   *
+   * PROJECT.md §3.1: the criteria notes are not in here. They are printed in full,
+   * message and hint alike, inside the explainability panel's criteria block, and
+   * printing them again three inches away was one diagnostic making one point twice.
+   * The page splits them; `explainedNotes` is how many went the other way.
+   */
   diagnostics: readonly Diagnostic[];
+  /**
+   * The non-error notes the explainability panel renders instead of this list.
+   * Stated rather than dropped: a bundle whose only note went there must not read as a
+   * bundle the validator had nothing to say about.
+   *
+   * The notes themselves and not a count, because the count alone loses the severity.
+   * `DiagnosticList` prints "Validation notes — 1 warning" over a list it owns, and when
+   * PROJECT.md §3.1 routed these notes away this panel replaced that with an aria-hidden
+   * amber triangle. The word "warning" was then on none of the nine blueprint pages,
+   * where it had been on all nine. `components/ui/severity.ts` records the rule; passing
+   * the diagnostics lets this line obey it from the same table, and stay right if a note
+   * of another severity is ever routed here.
+   */
+  explainedNotes?: readonly Diagnostic[];
   className?: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -146,9 +169,11 @@ export function BundlePanel({
         {/* Doc 3 §8. Weights live in the configuration and retuning one is a PATCH of
             the ontology that still moves every score in the archive, so Autonomy and
             Security only mean something next to the vocabulary that produced them. */}
+        {/* The agreeing branch used to open by restating the two rows directly above it.
+            The claim that survives is the one the rows cannot make on their own. */}
         <p className="mt-2 text-xs leading-snug text-dim">
           {versionsAgree
-            ? "Autonomy and Security were computed against this vocabulary. Two scores from different ontology versions are not comparable."
+            ? "Two scores from different ontology versions are not comparable."
             : `The manifest is written against v${ontologyVersion} and the scores were computed against v${scoredOntologyVersion}. Read them against the second, and treat any comparison with a blueprint scored under a different version as a comparison of two different measurements.`}
         </p>
 
@@ -164,8 +189,8 @@ export function BundlePanel({
               so a row pinned to an older one is worth reading with its version in
               hand. */}
           <p className="text-xs leading-snug text-dim">
-            One row per drawn node. Each name opens that card, on the schematic above and
-            here, and the version beside it is the one this bundle pins.
+            One row per drawn node. Each name opens that card, and the version beside it
+            is the one this bundle pins.
           </p>
           <ul className="flex flex-col divide-y divide-line">
             {nodes.map((node) => (
@@ -197,8 +222,43 @@ export function BundlePanel({
           starter, carries `analysis/criteria-relayed-through-judge` for doc 2 §5.5's
           repair loop. Zero errors, and not one of these warnings costs a point. So this
           list is normally non-empty and normally the honest reading rather than the
-          affirmative one, which is exactly why it renders instead of hiding. */}
-      <DiagnosticList diagnostics={diagnostics} title="Validation notes" collapsible />
+          affirmative one, which is exactly why it renders instead of hiding.
+
+          PROJECT.md §3.1 moved the criteria notes to the one panel that interprets them
+          instead of deleting them, which is why the count and the route are stated here.
+          The list itself renders whenever it has something to say, and also when nothing
+          was routed away, so "no problems found" is only ever printed over a bundle that
+          really has none. */}
+      {explainedNotes.length > 0 && (
+        <p className="panel px-4 py-3 text-xs leading-relaxed text-dim">
+          {/* Glyph and word, from `components/ui/severity.ts`. The colour is decoration
+              and the triangle alone is not enough: two blocks below, in this same
+              sidebar, ▲ is the seeded vote count. */}
+          <span className="font-mono" style={{ color: SEVERITY_META.warning.color }} aria-hidden>
+            {SEVERITY_META.warning.glyph}{" "}
+          </span>
+          <span
+            className="font-mono text-[10px] uppercase tracking-[0.14em]"
+            style={{ color: SEVERITY_META.warning.color }}
+          >
+            {severityCount(summarize(explainedNotes))}
+          </span>
+          {explainedNotes.length === 1
+            ? ", from the criteria-leak check, is printed under "
+            : ", from the criteria-leak check, are printed under "}
+          <Link
+            href="#security-explained"
+            className="text-muted underline-offset-4 hover:text-cyan hover:underline"
+          >
+            Security
+          </Link>{" "}
+          with the {explainedNotes.length === 1 ? "node" : "nodes"} named. Nothing there
+          costs a point.
+        </p>
+      )}
+      {(diagnostics.length > 0 || explainedNotes.length === 0) && (
+        <DiagnosticList diagnostics={diagnostics} title="Validation notes" collapsible />
+      )}
     </div>
   );
 }

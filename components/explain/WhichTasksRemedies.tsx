@@ -15,6 +15,24 @@ import { contentHref } from "@/lib/href";
    the step where a mistake gets expensive. That graph reads at a
    lower autonomy band, and the band says where the person is.
    Nothing here may imply the author settled for something.
+
+   ── The length pass (PROJECT.md §3.1) ──
+   The third card used to open by describing that graph in the same
+   words `WhichTasksGlance`'s caption uses, four sections higher:
+   "a node with a person at it, positioned at the step where a
+   mistake becomes expensive, and everything upstream of it running
+   unattended". One copy of a sentence, and the one that stayed is
+   the one standing beside the branch of the figure it reads. The
+   same trim took the section lead's two-of-three signpost, which
+   the figure draws, and the first card's "questions 01 and 02 both
+   answer yes", which the caption states as "answer them and ask
+   again".
+
+   The §1.1 sentence at the end of the third card is shorter and it
+   is still here. `/towards-a-dark-factory#autonomy` states the rule
+   in full and this now links there, because a page that turns a
+   reader away on question 04 is the page where "you settled for
+   less" is easiest to read into the answer.
    ============================================================ */
 
 /**
@@ -50,6 +68,9 @@ function supervisedExample(): { blueprint: Blueprint; people: number } | undefin
 
 const EXAMPLE = supervisedExample();
 
+const INLINE =
+  "font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan";
+
 export function WhichTasksRemedies() {
   return (
     <section className="flex flex-col gap-6" aria-labelledby="remedies-heading">
@@ -61,8 +82,7 @@ export function WhichTasksRemedies() {
           What to do with a no
         </h2>
         <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
-          A no is about this task in its current shape. Two of the three moves below
-          change the task. The third changes the graph.
+          A no is about this task in its current shape.
         </p>
       </div>
 
@@ -75,15 +95,17 @@ export function WhichTasksRemedies() {
             Build the check, and call that the task
           </h3>
           <p className="text-sm leading-relaxed text-muted">
-            Work with no verifier is two pieces of work. The first is the verifier, and it
-            is usually the piece worth doing by hand, because writing it is where you find
-            out what you actually meant by correct. Once it exists, questions 01 and 02
-            both answer yes and the second piece is a candidate.
+            Work with no verifier is two pieces of work, and the verifier is the piece
+            worth doing by hand: writing it is where you find out what you meant by
+            correct.
           </p>
+          {/* The length pass folded the second paragraph into this one. It read "a
+              harness written after the code, by the thing that wrote the code, tests the
+              code that exists. The behaviour you wanted never gets checked", which is the
+              clause below at twice the length. */}
           <p className="text-sm leading-relaxed text-dim">
-            The order matters for a structural reason. A harness written after the code,
-            by the thing that wrote the code, tests the code that exists. The behaviour you
-            wanted never gets checked.
+            Written afterwards, by the thing that wrote the code, a harness only tests the
+            code that exists.
           </p>
         </li>
 
@@ -96,17 +118,15 @@ export function WhichTasksRemedies() {
           </h3>
           <p className="text-sm leading-relaxed text-muted">
             <em className="text-fg">Modernise the billing code</em> does not become
-            tractable by adding paragraphs to the prompt. It becomes tractable when it
-            turns into{" "}
+            tractable by adding paragraphs to the prompt. It becomes tractable as{" "}
             <em className="text-fg">
               move these forty call sites off this deprecated API
             </em>
-            , which has a first line and a last line, and a test that goes red when you get
-            it wrong.
+            , which has a first line, a last line and a test that goes red.
           </p>
           <p className="text-sm leading-relaxed text-dim">
-            If the smaller task feels too small to be worth automating, that is a useful
-            reading too. It is telling you the ambiguity was the whole job.
+            If the smaller task feels too small to be worth automating, the ambiguity was
+            the whole job.
           </p>
         </li>
 
@@ -118,26 +138,27 @@ export function WhichTasksRemedies() {
             Put a person where being wrong stops being cheap
           </h3>
           <p className="text-sm leading-relaxed text-muted">
-            A critical task is still buildable. The graph gets a node with a person at it,
-            positioned at the step where a mistake becomes expensive, and everything
-            upstream of that node runs unattended the way it would anywhere else. The
-            agents keep the toil. The irreversible call stays with whoever is accountable
-            for it.
+            A critical task is still buildable, in the shape the figure above draws. The
+            agents keep the toil, and the irreversible call stays with whoever is
+            accountable for it.
           </p>
           {EXAMPLE !== undefined && (
             <p className="text-sm leading-relaxed text-muted">
               <Link
                 href={contentHref(EXAMPLE.blueprint)}
-                className="font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan"
+                className={INLINE}
               >
                 {EXAMPLE.blueprint.title}
               </Link>{" "}
-              is that graph, published as it is. It reads{" "}
+              is that graph as published: it reads{" "}
               {EXAMPLE.blueprint.analysis.autonomy.label}, which states where its{" "}
-              {EXAMPLE.people === 1 ? "person stands" : "people stand"} and states nothing
-              else. The class is a description of a design decision. It is never a mark,
-              and nothing on this site ranks the four or rewards a blueprint for reading
-              as one of them rather than another.
+              {EXAMPLE.people === 1 ? "person stands" : "people stand"} and nothing else.
+              The class describes a design decision and never ranks one graph over
+              another,{" "}
+              <Link href="/towards-a-dark-factory#autonomy" className={INLINE}>
+                the rule in full
+              </Link>
+              .
             </p>
           )}
         </li>

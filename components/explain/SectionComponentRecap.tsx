@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CORE_PHASE_IDS, partitionTerms } from "@/lib/core";
 import { allNodeCards, getOntologyView, getRegistry } from "@/lib/content";
 import { kindHref, termHref } from "@/lib/href";
+import { More } from "@/components/ui/More";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
@@ -20,11 +21,45 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    cut: prose that says the same thing a second time. Every entry
    body lost the clause that restated its own first sentence. The
    third closing paragraph went entirely, because it was the phase
-   entry again — phase and node type as two dimensions of one card
-   is what that entry opens with, and the one claim the paragraph
-   added on top of it (a card may name several phases or none, and
-   a step outside all five is not a defect) has moved up into the
-   entry itself.
+   entry again.
+
+   ── The length pass ──
+   This was the second-longest block on the page and the one a
+   reader reaches last, after the demonstration has already made
+   the argument. Two things changed.
+
+   First, it is behind a `More`. The recap is reference: four words
+   and where each one lives. A reader who wants it opens it, and
+   the text stays in the prerendered HTML, keyboard reachable and
+   findable by find-in-page, which is the property that makes this
+   a cut in density rather than a cut in what the page says.
+
+   Second, every entry body that a linked page already carries in
+   full was cut down to the sentence this page needs, because the
+   entry is a signpost and the page it points at is the article.
+   What went, and where it lives:
+
+   - "and what stops two authors from naming one thing twice" —
+     `/ontology` and `/spec/ontology` both print that sentence, and
+     the ontology entry links to the first.
+   - "Versioned on its own, and pinnable by several blueprints
+     without being copied" — `/nodes` opens on "Every card is
+     versioned, content-addressed, and pinned by exact reference",
+     and the node entry links there.
+   - the phase entry's four sentences about the closed set, several
+     phases or none, phase coverage and a step outside all five —
+     `/ontology`'s Phases block says all four at greater length,
+     including "a sixth phase would be a different definition of
+     the thing being described" and "nothing scores a node for
+     standing outside them". The entry links straight at it.
+   - "There is one curated core, versioned as a whole, with room
+     for terms coined in somebody's own namespace" — `/ontology`
+     and `/spec/ontology` both describe the merge and the reserved
+     core version.
+
+   What stayed is what nothing else on the site says: the two
+   structural levels with the composite node between them that is
+   not built, and a term having no version of its own.
    ============================================================ */
 
 type Entry = {
@@ -60,7 +95,7 @@ function entries(): Entry[] {
       color: "var(--color-cyan)",
       count: `${registry.blueprints().length} in the archive`,
       title: "The whole factory, as one graph",
-      body: "A DOT file carrying the topology, plus one pinned card version for every node in it. Hashed and versioned as a unit, so a score can be reproduced years later against the exact cards it was computed from. This is the unit you take away.",
+      body: "A DOT file plus one pinned card version per node, hashed and versioned as a unit so a score stays checkable against the exact cards behind it.",
       href: kindHref("blueprint"),
       cta: "Browse blueprints",
     },
@@ -71,7 +106,7 @@ function entries(): Entry[] {
       color: "var(--color-amber)",
       count: `${allNodeCards().length} distinct cards`,
       title: "One step, fully described",
-      body: "A card stating what the step does, which model or tool does it, the typed ports it reads and writes, whether a person acts there, and the spec the agent is handed when the graph is instantiated. Versioned on its own, and pinnable by several blueprints without being copied.",
+      body: "What the step does, which model runs it, the typed ports it reads and writes, whether a person acts there, and the spec the agent is handed.",
       href: kindHref("node"),
       cta: "Browse node cards",
     },
@@ -82,7 +117,7 @@ function entries(): Entry[] {
       color: "var(--color-violet)",
       count: `${terms} curated terms`,
       title: "The vocabulary the cards are written in",
-      body: "Every structural field on a card points into it: the node's type, the data type on each port, the tools it needs, the risk markers it declares. It is what lets an analyzer read a graph it has never seen, and what stops two authors from naming one thing twice.",
+      body: "Every structural field on a card is a reference into it, which is what lets an analyzer read a graph it has never seen.",
       href: kindHref("ontology"),
       cta: "Read the ontology",
     },
@@ -93,7 +128,10 @@ function entries(): Entry[] {
       color: "var(--color-emerald)",
       count: `${PHASES.length}, and no more`,
       title: "Where a node stands in the lifecycle",
-      body: "A term in the ontology like any other, on its own dimension: a card says what kind of thing the node is and, separately, where in the arc it acts. A card may name several phases or none. These five are the one closed set in the vocabulary, because a sixth would be a different definition of the word factory. Which of them a blueprint has nodes in is its phase coverage, and an intake step standing outside all five is not a defect.",
+      // The distinction is the whole reason this entry is on a recap rather than only on
+      // `/ontology`: phase and node type are two dimensions of one card, and a reader who
+      // has met both words needs to be told they do not compete.
+      body: "A dimension of its own: a card says what kind of thing a node is and, separately, where in the arc it acts.",
       href: "/ontology#phases-heading",
       cta: "See the five phases",
     },
@@ -102,80 +140,80 @@ function entries(): Entry[] {
 
 export function SectionComponentRecap() {
   return (
-    <section id="components" className="bg-void py-20 sm:py-28">
+    // Shorter than the sections above it. Closed, this is a heading and one row, and the
+    // band it used to sit in was sized for four panels.
+    <section id="components" className="bg-void py-14 sm:py-16">
       <div className="container-page">
         <SectionHeading
           eyebrow="The vocabulary of this site"
           title="Four words used precisely"
-          lead="They get used loosely everywhere else. Here each one names exactly one thing, and the pages are built on the difference between them."
         />
 
-        <div className="mt-10 grid gap-5 md:grid-cols-2">
-          {entries().map((entry) => (
-            <article
-              key={entry.id}
-              className="panel flex flex-col gap-3 p-6"
-              style={{ borderTop: `2px solid ${entry.color}` }}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span
-                  className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em]"
+        <More
+          className="mt-8"
+          summary="Blueprint, node, ontology, phase: what each one names, and how they differ"
+        >
+          <div className="grid gap-5 md:grid-cols-2">
+            {entries().map((entry) => (
+              <article
+                key={entry.id}
+                className="panel flex flex-col gap-3 p-6"
+                style={{ borderTop: `2px solid ${entry.color}` }}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span
+                    className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em]"
+                    style={{ color: entry.color }}
+                  >
+                    <span className="text-base leading-none" aria-hidden>
+                      {entry.glyph}
+                    </span>
+                    {entry.label}
+                  </span>
+                  <span className="font-mono text-[11px] text-dim">{entry.count}</span>
+                </div>
+
+                <h3 className="font-display text-xl font-semibold leading-snug text-fg">
+                  {entry.title}
+                </h3>
+                <p className="flex-1 text-sm leading-relaxed text-muted">{entry.body}</p>
+
+                {entry.id === "phase" && (
+                  <ul className="flex flex-wrap gap-1.5">
+                    {PHASES.map((phase) => (
+                      <li key={phase.id}>
+                        <Link
+                          href={termHref(phase.id)}
+                          className="inline-flex rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-muted transition-colors hover:border-line-bright hover:text-cyan"
+                        >
+                          {phase.id}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <Link
+                  href={entry.href}
+                  className="mt-1 inline-flex w-fit items-center gap-1.5 font-mono text-xs transition-transform hover:translate-x-0.5"
                   style={{ color: entry.color }}
                 >
-                  <span className="text-base leading-none" aria-hidden>
-                    {entry.glyph}
-                  </span>
-                  {entry.label}
-                </span>
-                <span className="font-mono text-[11px] text-dim">{entry.count}</span>
-              </div>
+                  {entry.cta}
+                  <span aria-hidden>→</span>
+                </Link>
+              </article>
+            ))}
+          </div>
 
-              <h3 className="font-display text-xl font-semibold leading-snug text-fg">
-                {entry.title}
-              </h3>
-              <p className="flex-1 text-sm leading-relaxed text-muted">{entry.body}</p>
-
-              {entry.id === "phase" && (
-                <ul className="flex flex-wrap gap-1.5">
-                  {PHASES.map((phase) => (
-                    <li key={phase.id}>
-                      <Link
-                        href={termHref(phase.id)}
-                        className="inline-flex rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-muted transition-colors hover:border-line-bright hover:text-cyan"
-                      >
-                        {phase.id}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              <Link
-                href={entry.href}
-                className="mt-1 inline-flex w-fit items-center gap-1.5 font-mono text-xs transition-transform hover:translate-x-0.5"
-                style={{ color: entry.color }}
-              >
-                {entry.cta}
-                <span aria-hidden>→</span>
-              </Link>
-            </article>
-          ))}
-        </div>
-
-        <div className="mt-8 flex max-w-3xl flex-col gap-3 border-l-2 border-line-bright pl-4">
-          <p className="text-sm leading-relaxed text-muted">
-            Blueprint and node are the two structural levels, and nothing sits between
-            them. A reusable sub-graph would be a third, with an arbitrary line drawn
-            somewhere, so the format answers that need by letting one blueprint reference
-            another as a composite node. Nothing on the site does it today.
+          {/* The one distinction no linked page makes, and the one absence of a feature
+              that has to be stated wherever the composite node is mentioned. */}
+          <p className="max-w-3xl border-l-2 border-line-bright pl-4 text-sm leading-relaxed text-muted">
+            Blueprint and node are the two structural levels, with nothing between them:
+            the format lets one blueprint reference another as a composite node, and
+            nothing on the site does that today. The ontology sits under both, which is why
+            a term carries no version of its own the way a card does.
           </p>
-          <p className="text-sm leading-relaxed text-muted">
-            The ontology sits underneath both of them: it is the vocabulary the other two
-            are written in, which is why a term has no version of its own the way a card
-            does. There is one curated core, versioned as a whole, with room for terms
-            coined in somebody&apos;s own namespace.
-          </p>
-        </div>
+        </More>
       </div>
     </section>
   );

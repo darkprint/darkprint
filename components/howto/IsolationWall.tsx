@@ -161,7 +161,6 @@ export function IsolationWall() {
       <Sheet
         label="The wall"
         title="Generation and validation, held apart"
-        note="one absence carries the argument"
         bodyClassName="p-3 sm:p-4"
       >
         {/* The scene is wider than a phone. Rather than a second layout, the drawing
@@ -171,12 +170,15 @@ export function IsolationWall() {
           <WallScene />
         </div>
       </Sheet>
+      {/* The length pass: this caption used to end on "the evaluator reads the scenarios
+          and the agent never does, so an agent that fails a scenario is told which one
+          and gets no wording it could aim at". The panel a screen below states the same
+          rule at length and gives the reason for it, so the caption keeps the provenance
+          and the reading of the dashed run, which are the two things only it says. */}
       <figcaption className="max-w-3xl text-sm leading-relaxed text-muted">
-        The drawing is one team&apos;s pipeline, taken from the account linked at the foot
-        of this page. The dashed run is the one this site has a mark for: a connection
-        somebody decided against, which is where the quality gate gets its meaning. The
-        evaluator reads the scenarios and the agent never does, so an agent that fails a
-        scenario is told which one and gets no wording it could aim at.
+        The drawing is one team&apos;s pipeline, from the account linked below. The dashed
+        run is this site&apos;s mark for a connection somebody decided against, and where
+        the quality gate gets its meaning.
       </figcaption>
     </figure>
   );

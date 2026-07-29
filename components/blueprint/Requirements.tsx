@@ -66,13 +66,13 @@ export function Requirements({
         label="Agents"
         items={agents}
         accent="var(--color-cyan)"
-        emptyHint="No named agent roles — runs on a single generalist."
+        emptyHint="No named agent roles; runs on a single generalist."
       />
       <ChipList
         label="Tool scopes"
         items={tools}
         accent="var(--color-amber)"
-        emptyHint="No external tools — self-contained reasoning only."
+        emptyHint="No external tools; self-contained reasoning only."
       />
     </div>
   );

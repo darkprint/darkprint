@@ -28,6 +28,21 @@
    about to see anyway, three screens after they saw it. The
    sentences moved into the lead here, where the second column is
    in front of them.
+
+   ── The length pass (PROJECT.md §3.1) ──
+   The eight readings are now the only place the page works an
+   example: `WhichTasksChecks` carried a one-line yes and a one-line
+   no per question, and three of those eight lines were these
+   titles retyped. Its header comment records the fold. What that
+   costs this file is the obligation to be the worked half on its
+   own, so the bodies were tightened rather than shortened by
+   dropping one: each still names the mechanism that decides it, and
+   the second column of four is still four.
+
+   The unsuitable column's lead lost its second sentence, "a factory
+   pointed at any of these produces confident output that nothing in
+   the graph is able to reject", which is the sentence the section
+   lead above it ends on.
    ============================================================ */
 
 type Example = {
@@ -54,27 +69,27 @@ const COLUMNS: Column[] = [
     word: "fits",
     color: "var(--color-emerald)",
     heading: "Tasks a factory can take",
-    lead: "Four yeses each. The common shape is that the definition of done was already written down by somebody, usually by a compiler or a suite.",
+    lead: "Four yeses each. The common shape is that the definition of done was already written down, usually by a compiler or a suite.",
     items: [
       {
         title: "Port a suite off a deprecated assertion library",
         check: "01 · the verdict",
-        body: "Four hundred assertions, one mechanical transform, and the suite is its own oracle: it passed before the change and it has to pass after. A rewrite that quietly weakens an assertion shows up as a test that no longer fails when you break the code under it.",
+        body: "One mechanical transform across four hundred assertions, and the suite is its own oracle: it passed before the change and has to pass after. A weakened assertion shows up as a test that stops failing when the code under it breaks.",
       },
       {
         title: "Add a field end to end through a typed stack",
         check: "03 · the edges",
-        body: "Migration, model, handler, client. The task has a beginning and a visible end, the compiler finds every site you missed, and the existing suite covers the behaviour around it.",
+        body: "Migration, model, handler, client. The compiler finds every site you missed, and the existing suite covers the behaviour around it.",
       },
       {
         title: "Implement a format that publishes a conformance corpus",
         check: "02 · the harness",
-        body: "The check exists before a line is written and it did not come from the model: parse every sample, serialise it back, compare. Disagreement with the corpus is a failure with a file name on it.",
+        body: "The check exists before a line is written and did not come from the model: parse every sample, serialise it back, compare. Disagreement is a failure with a file name on it.",
       },
       {
         title: "Delete a feature flag that has been fully rolled out for a year",
         check: "04 · cost of being wrong",
-        body: "The surviving path is the one already serving production, the branch being deleted has not executed in months, and the worst outcome is a revert on a branch nobody merged.",
+        body: "The surviving path is the one already serving production, the branch being deleted has not executed in months, and the worst outcome is a revert nobody merged.",
       },
     ],
   },
@@ -84,27 +99,27 @@ const COLUMNS: Column[] = [
     word: "does not fit",
     color: "var(--color-signal)",
     heading: "Tasks it cannot take",
-    lead: "Each fails on one question, and each fails for a reason no prompt fixes. A factory pointed at any of these produces confident output that nothing in the graph is able to reject.",
+    lead: "Each fails for a reason no prompt fixes.",
     items: [
       {
         title: "Make the onboarding less confusing",
         check: "01 · the verdict",
-        body: "No command returns non-zero on confusing. The judgement is the work, it belongs to a person, and a tester node handed this task has nothing to test against, so it passes whatever it is given.",
+        body: "No command returns non-zero on confusing. The judgement is the work and it belongs to a person, so a tester handed this has nothing to test against and passes whatever it is given.",
       },
       {
         title: "Choose the datastore for a service that does not exist yet",
         check: "03 · the edges",
-        body: "The requirements are not ambiguous by accident. They have not been decided. A planner will decide them for you, phrase the decision as a recommendation, and every node downstream will build on it without ever knowing it was a guess.",
+        body: "The requirements are not ambiguous by accident. They have not been decided. A planner will decide for you, phrase it as a recommendation, and every node downstream will build on a guess.",
       },
       {
         title: "Backfill and rewrite production rows in place",
         check: "04 · cost of being wrong",
-        body: "A staging run proves the happy path and nothing else, the bug is discovered by whoever reads the wrong number first, and the rollback is restoring a backup. Being wrong once costs the entire budget of the exercise.",
+        body: "A staging run proves the happy path and nothing else, the bug is found by whoever reads the wrong number first, and the rollback is restoring a backup. Being wrong once costs the exercise.",
       },
       {
         title: "Tune the ranking until the results are better",
         check: "01 · the verdict",
-        body: "There is a metric, and the metric stands in for a judgement about people. Hand a proxy to a system that iterates against it a hundred times and you get the proxy, paid for with the thing it stood for. The scores go up. The results do not.",
+        body: "The metric stands in for a judgement about people. Hand a proxy to a system that iterates against it a hundred times and you get the proxy, paid for with the thing it stood for. The scores go up, the results do not.",
       },
     ],
   },
@@ -122,11 +137,10 @@ export function WhichTasksExamples() {
         </h2>
         <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
           Find the entry your task most resembles and read the check it turns on. The
-          second column is written at full strength on purpose. This page exists to
-          prevent one outcome: somebody picks a task nothing can verify, points a factory
-          at it, gets back fluent work that is wrong in a way no node in the graph can
-          detect, and concludes that dark factories do not work. The graph was fine. The
-          task was never a candidate.
+          second column is at full strength on purpose. This page exists to prevent one
+          outcome: a factory pointed at a task nothing can verify returns fluent work no
+          node in the graph can reject, and the reader concludes that dark factories do not
+          work. The graph was fine; the task was never a candidate.
         </p>
       </div>
 

@@ -83,16 +83,31 @@ export const TOPOLOGY_ROWS: readonly CheckRow[] = [
   },
 ];
 
-/** Layer 02. One node, fully described. */
+/**
+ * Layer 02. One node, fully described.
+ *
+ * ── The length pass, PROJECT.md §3.1 ──
+ * `/spec/card` opens with the scroll-annotated card, whose seven annotations already
+ * teach `id`/`type`/`phase`, `model`, `skill`, `tools`/`mcp`, `inputs`, `outputs` and
+ * `cannot` at length, from the same file. Every `what` below that restated one of them
+ * was cut back to the part the annotation does not carry, and no row lost a claim: the
+ * table's job here is the third column, which is the only place several of these
+ * diagnostic codes are named anywhere on the site.
+ *
+ * Two sentences moved rather than shrank, and both moved to a page whose subject they
+ * are: "a stylesheet can override `model`" is annotation 02 and the `model` row below,
+ * so the version-bump row no longer repeats it; "any number of them, including none" is
+ * `/spec/ontology`, which owns the phase list.
+ */
 export const CARD_ROWS: readonly CheckRow[] = [
   {
     name: "id · version · ontology_version",
-    what: "Identity. A lowercase hyphenated id, optionally namespaced, and two semantic versions: the card's own and the vocabulary it was written against.",
+    what: "A lowercase hyphenated id, optionally namespaced, and two semantic versions: the card's own and the vocabulary it was written against.",
     check: { codes: ["card/bad-id", "card/bad-version"], level: "error" },
   },
   {
     name: "type",
-    what: "What kind of node this is, as one node-type term. A type under human-in-the-loop is what the autonomy reading asks about, so it has to resolve.",
+    what: "One node-type term. A type under human-in-the-loop is what the autonomy reading asks about, so it has to resolve.",
     check: {
       codes: ["card/unknown-term", "card/wrong-term-kind"],
       level: "error",
@@ -100,7 +115,7 @@ export const CARD_ROWS: readonly CheckRow[] = [
   },
   {
     name: "phase",
-    what: "Which of the five lifecycle phases the node stands in. Any number of them, including none, and never namespaced: the five are closed.",
+    what: "Which of the five lifecycle phases the node stands in, any number of them, and never a namespaced one.",
     check: {
       codes: ["card/unknown-phase", "card/namespaced-phase"],
       level: "error",
@@ -108,11 +123,17 @@ export const CARD_ROWS: readonly CheckRow[] = [
   },
   {
     name: "tools · risk_markers",
-    what: "Capability terms the node needs from its host, and the risks it declares. Both are references into the vocabulary rather than labels.",
+    what: "Capability terms the node needs from its host, and the risks it declares. Both are vocabulary references rather than labels.",
     check: { codes: ["card/unknown-term"], level: "error" },
   },
   {
     name: "inputs · outputs",
+    // "This is what makes an edge checkable at all" was cut here by PROJECT.md §3.1's
+    // length pass as wording, and it is a claim: it is the reason typed ports exist and
+    // the premise the whole `cannot` demonstration rests on. Nothing else on the site
+    // said it — a grep for "checkable" over the built pages returned three hits, about
+    // the wiring being a file, about a score staying checkable, and about the card. Nine
+    // words, restored.
     what: "The ports, each with a data-type term. This is what makes an edge checkable at all, and port names are unique within a side.",
     check: {
       codes: ["card/unknown-term", "card/duplicate-port"],
@@ -121,22 +142,22 @@ export const CARD_ROWS: readonly CheckRow[] = [
   },
   {
     name: "dependencies",
-    what: "Which cards this one receives from. Held against the graph in both directions: a declared dependency needs an edge, and an edge wants a declaration.",
+    what: "Which cards this one receives from. Held both ways: a declared dependency needs an edge, and an edge wants a declaration.",
     check: { codes: ["bundle/missing-dependency"], level: "error" },
   },
   {
     name: "cannot",
-    what: "What the node must never receive. An entry naming a data-type term is enforced against every incoming edge; an entry naming no term is prose and is shown to a reader.",
+    what: "What the node must never receive, enforced whenever the entry names a data type.",
     check: { codes: ["bundle/prohibition-violated"], level: "error" },
   },
   {
     name: "requires_human",
-    what: "Whether a person acts here. A type that puts somebody in the loop and a flag that says otherwise describe two different nodes, and the analysis would believe the flag.",
+    what: "Whether a person acts here. A human-in-the-loop type beside a flag saying otherwise describes two different nodes, and the analysis believes the flag.",
     check: { codes: ["card/human-type-inconsistent"], level: "error" },
   },
   {
     name: "params",
-    what: "Nested configuration, free in shape and required to survive a JSON round-trip, because it is hashed as JSON into the card's digest.",
+    what: "Nested configuration, free in shape and required to survive a JSON round-trip: it is hashed as JSON into the digest.",
     check: { codes: ["card/bad-type"], level: "error" },
   },
   {
@@ -147,29 +168,29 @@ export const CARD_ROWS: readonly CheckRow[] = [
        there. Saying "the last published one" without saying where the last published one
        comes from was how a row on this page described an error nothing could raise. */
     name: "a second version of a card in one bundle",
-    what: "How far the version moved against the older one the bundle carries. Adding to cannot narrows the contract and is major; changing model is minor, since a stylesheet can override it.",
+    what: "How far the version moved against the older one the bundle carries. Adding to cannot narrows the contract and is major; changing model is minor.",
     check: { codes: ["card/version-bump-too-small"], level: "error" },
   },
   {
     name: "spec",
-    what: "The instruction handed to the agent when the graph runs. Only its length is checked: below forty characters it is a placeholder rather than something an agent can act on.",
+    what: "The instruction handed to the agent when the graph runs. Only its length is checked: under forty characters it is a placeholder.",
     check: { codes: ["card/spec-too-thin"], level: "warning" },
   },
   {
     name: "model",
-    what: "Which model the agent is instantiated with, written the way the provider writes the identifier. It rides into the exported graph as Attractor's llm_model, and a stylesheet on the graph can still override it.",
+    what: "Written the way the provider writes the identifier, and overridable by a stylesheet on the graph.",
   },
   {
     name: "mcp",
-    what: "The MCP servers this node needs, under the names they are registered with on the machine that runs the graph. A server is a process somebody installed, and the vocabulary names no such thing.",
+    what: "The MCP servers this node needs, under the names the machine running the graph registers them with. The vocabulary names no such thing.",
   },
   {
     name: "skill",
-    what: "Where the document defining this agent's behaviour lives, as a path inside the bundle. A pointer, and nothing in the engine reads what it points at.",
+    what: "A path inside the bundle. Nothing in the engine reads what it points at.",
   },
   {
     name: "name · action · notes · author",
-    what: "Prose for whoever reads the card. Shown on the node page, carried into the download, and checked by nothing.",
+    what: "Prose for whoever reads the card. Carried into the download and checked by nothing.",
   },
 ];
 

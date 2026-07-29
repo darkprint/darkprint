@@ -15,6 +15,12 @@ import {
   cardFilePath,
 } from "@/lib/content/bundle-export";
 import { parseCardRef } from "@/lib/core";
+import {
+  CRITERIA_OUT_OF_BAND_CODE,
+  CRITERIA_RELAYED_CODE,
+  CRITERIA_SUSPECTED_CODE,
+  CRITERIA_UNANCHORED_CODE,
+} from "@/lib/criteria-state";
 import { compact, prettyDate } from "@/lib/format";
 import { AuthorChip } from "@/components/ui/Avatar";
 import { KindBadge } from "@/components/ui/Badge";
@@ -122,7 +128,24 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
 
   // An error-severity diagnostic never reaches this page — the loader refuses to
   // publish a bundle carrying one — so what is left is the engine's own footnotes.
+  //
+  // PROJECT.md §3.1: those footnotes used to print twice at full length, once inside the
+  // explainability panel's criteria block and once again in the sidebar's validation
+  // notes, message and hint both. Measured on the archive it is every note there is:
+  // eight bundles carry `criteria-leak-unanchored`, two of those also carry
+  // `criteria-out-of-band`, and the starter carries `criteria-relayed-through-judge`.
+  // The panel is the better home because it says what the state means, so the sidebar
+  // counts them and links up. Anything the panel does not render still lists there,
+  // which is why this is a split rather than a filter.
   const notes = bp.analysis.diagnostics.filter((d) => d.severity !== "error");
+  const explainedCodes = new Set<string>([
+    CRITERIA_UNANCHORED_CODE,
+    CRITERIA_OUT_OF_BAND_CODE,
+    CRITERIA_SUSPECTED_CODE,
+    CRITERIA_RELAYED_CODE,
+  ]);
+  const explainedNotes = notes.filter((d) => explainedCodes.has(d.code));
+  const otherNotes = notes.filter((d) => !explainedCodes.has(d.code));
 
   // DOT node id → the name the schematic prints on it, so the phase rows and the
   // drawing above them call the same node the same thing. `BlueprintCanvas` builds the
@@ -247,25 +270,13 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             </div>
           </section>
 
-          {/* Doc 2 §5.1's four-pane synchronised view, in the slot the standalone DOT
-              panel used to occupy. It carries the same document, line-numbered and
-              copyable, and puts the three representations the panel had no way to show
-              beside it: the drawing, the card template, and the card. The anchor moves
-              with it, so a link to `#dot-source` still lands on the DOT.
+          {/* Long description.
 
-              §5.1 is explicit that this is not a tutorial fixture — "lo stesso
-              componente si riusa poi nella pagina di dettaglio di ogni blueprint della
-              galleria" — so it is here on every blueprint and not only the starter. */}
-          <section id="dot-source" className="scroll-mt-24">
-            <SynchronisedPanes
-              model={paneModel}
-              graph={bp.graph}
-              heading="The same bundle, four ways"
-              headingId="four-pane-heading"
-            />
-          </section>
-
-          {/* Long description */}
+              PROJECT.md §3.1 moved this above the four panes. Nothing was cut and no
+              anchor moved; what changed is that the author's account of the blueprint no
+              longer sits on the far side of the longest block on the page. The panes are
+              roughly 1,700 words of source listing, and a reader who wanted to know what
+              they were looking at had to scroll past all of it first. */}
           {paragraphs.length > 0 && (
             <section aria-labelledby="about-heading">
               <h2
@@ -286,6 +297,24 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               </div>
             </section>
           )}
+
+          {/* Doc 2 §5.1's four-pane synchronised view, in the slot the standalone DOT
+              panel used to occupy. It carries the same document, line-numbered and
+              copyable, and puts the three representations the panel had no way to show
+              beside it: the drawing, the card template, and the card. The anchor moves
+              with it, so a link to `#dot-source` still lands on the DOT.
+
+              §5.1 is explicit that this is not a tutorial fixture — "lo stesso
+              componente si riusa poi nella pagina di dettaglio di ogni blueprint della
+              galleria" — so it is here on every blueprint and not only the starter. */}
+          <section id="dot-source" className="scroll-mt-24">
+            <SynchronisedPanes
+              model={paneModel}
+              graph={bp.graph}
+              heading="The same bundle, four ways"
+              headingId="four-pane-heading"
+            />
+          </section>
 
           {/* Comments */}
           <Comments comments={bp.comments} />
@@ -386,7 +415,8 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             scoredOntologyVersion={bp.analysis.autonomy.ontologyVersion}
             nodes={bundleNodes}
             pinnedCards={record?.cardRefs.length ?? new Set(bp.cardRefs).size}
-            diagnostics={notes}
+            diagnostics={otherNotes}
+            explainedNotes={explainedNotes}
           />
 
           {/* Stats.

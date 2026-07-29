@@ -25,12 +25,12 @@ import Link from "next/link";
    a paragraph on what breaks came to four screenfuls, and the
    fourth question is the one that decides the most.
 
-   Not one sentence was cut. The four cards now sit two abreast
-   and show the question and the two readings, which is what a
-   reader compares their own task against; the probe and the
-   paragraph on what stops working move into a `<details>` under
-   each card. Both are prose that rewards the reader who has
-   already found their question and costs the reader who has not.
+   Not one sentence was cut at the time. The four cards sit two
+   abreast and show the question, which is what a reader compares
+   their own task against; the probe and the paragraph on what
+   stops working move into a `<details>` under each card. Both are
+   prose that rewards the reader who has already found their
+   question and costs the reader who has not.
 
    `<details>` and not a script: the content is in the prerendered
    HTML either way, it is searchable in the page, and it opens
@@ -43,6 +43,56 @@ import Link from "next/link";
    sentence that was not a repeat, the instruction not to add the
    four up, moved into that caption, where a reader meets the
    counting temptation first. Nothing else went.
+
+   ── The length pass (PROJECT.md §3.1): the two readings went ──
+   Each card carried a `yes` and a `no`, one line each, illustrating
+   the question with an example. `WhichTasksExamples` sits directly
+   above and does that at length, with eight worked tasks, and every
+   one of them is already tagged with the check it turns on. So the
+   readings were the same instrument applied twice on one screen,
+   and in two places three times over: `03`'s yes was "Move forty
+   call sites off a deprecated API. Add one field through migration,
+   model, handler and client", which is the titles of two of the
+   four suitable examples, and `03`'s no was "Modernise the billing
+   code", which `WhichTasksRemedies` quotes as the sentence it
+   rewrites. `04`'s pair named the branch nobody merged and the
+   migration that rewrites rows in place, which are two more example
+   titles.
+
+   One fragment of them was not a repeat and it moved rather than
+   went: `02`'s yes offered a second kind of oracle, the old
+   implementation still in the tree to diff every output against.
+   That is now the second half of `02`'s probe.
+
+   What each card keeps is the part the examples do not carry: the
+   question itself, something the reader can do in under a minute
+   to settle it, and what inside the factory stops working on a no.
+
+   ── `01` and `03` were cut and are back ──
+   That pass dropped both, on the reading that each was a second
+   statement of a sentence the examples above already make. Half of
+   each was. The other half was not, and nothing on the site picked
+   it up.
+
+   `01`: "a tester handed this has nothing to test against and
+   passes whatever it is given" is indeed in the doesn't-fit column
+   above. What is not anywhere else is why that matters — the tester
+   is the one node standing between generated code and the release
+   gate, and a graph whose only verdict rubber-stamps is an
+   expensive way to run one prompt. A grep for "release gate" over
+   the built pages returned one hit, the figure's description of the
+   starter wiring, which states the edge and not the tester's
+   position on it.
+
+   `03`: "every node downstream will build on a guess" is in the
+   examples. That ambiguity never surfaces as an error, and that the
+   run is over before anyone finds out, is the part that tells a
+   reader why this check is a veto rather than a caution, and it had
+   no home.
+
+   Both sit in the same `<details>` as the probe, so restoring them
+   costs no visible words: the disclosure is one summary line either
+   way.
    ============================================================ */
 
 type Check = {
@@ -55,10 +105,8 @@ type Check = {
   question: string;
   /** Something they can do in under a minute that settles it. */
   probe: string;
-  yes: string;
-  no: string;
-  /** What inside the factory stops working when the answer is no. */
-  breaks: React.ReactNode;
+  /** What inside the factory stops working when the answer is no, where nothing else says it. */
+  breaks?: React.ReactNode;
 };
 
 const CHECKS: Check[] = [
@@ -69,15 +117,12 @@ const CHECKS: Check[] = [
     color: "var(--color-cyan)",
     question: "Can something other than you decide whether the output is correct?",
     probe:
-      "Name the command that exits non-zero when the work is wrong. If you cannot name it, stop at this question.",
-    yes: "pytest exits 1, or tsc reports fourteen errors. The parser round-trips every sample in the corpus and the bytes match.",
-    no: "You read the output and it seems off. The criterion is in your head, and the only way to apply it is to look.",
+      "Name the command that exits non-zero when the work is wrong. If you cannot name it, stop here.",
     breaks: (
       <>
-        The tester is the one node standing between generated code and the release gate,
-        and it works by producing a verdict. Give it nothing to produce a verdict from
-        and it approves everything, which turns the whole graph into an expensive way to
-        run one prompt.
+        The tester is the one node standing between generated code and the release gate.
+        Give it nothing to produce a verdict from and it approves everything, which turns
+        the whole graph into an expensive way to run one prompt.
       </>
     ),
   },
@@ -88,15 +133,12 @@ const CHECKS: Check[] = [
     color: "var(--color-emerald)",
     question: "Does the check already exist, or can you write it before the work starts?",
     probe:
-      "Write the failing test now. If writing it takes longer than doing the task yourself, the factory is the slower route.",
-    yes: "A suite already covers the module. The old implementation is still in the tree and you can diff every output against it.",
-    no: "Nothing covers this code and nobody can say what correct looks like until they have seen the output.",
+      "Write the failing test now, or diff every output against the old implementation still in the tree. If that is slower than doing the task, so is the factory.",
     breaks: (
       <>
-        The rule that makes a verdict worth anything is that the builder never sees the
-        acceptance criteria, so the criteria have to live somewhere the builder cannot
-        reach. With no harness there is nowhere to put them, and the model that wrote the
-        change goes back to being the model that signs it off.{" "}
+        A verdict is worth something because the builder never sees the acceptance
+        criteria, so they have to live somewhere it cannot reach. With no harness there is
+        nowhere to put them, and the model that wrote the change signs it off.{" "}
         <Link
           href="/what-it-isnt"
           className="font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan"
@@ -114,9 +156,7 @@ const CHECKS: Check[] = [
     color: "var(--color-violet)",
     question: "Is the target written down, and does it stop somewhere?",
     probe:
-      "Say out loud what is out of scope. Name three files you do not want touched. If you cannot, the requirements are still being invented.",
-    yes: "Move forty call sites off a deprecated API. Add one field through migration, model, handler and client.",
-    no: "Modernise the billing code. Clean up the auth layer. The planner will return a plan, and it will be a competent plan for a task nobody has defined.",
+      "Name three files you do not want touched. If you cannot, the requirements are still being invented.",
     breaks: (
       <>
         Ambiguity never arrives as an error. It arrives as confident work in a direction
@@ -133,42 +173,14 @@ const CHECKS: Check[] = [
     question: "If this lands wrong, who finds out, and how long do you have?",
     probe:
       "Describe the rollback in one sentence. If the sentence contains the word incident, the answer is no.",
-    yes: "A red pipeline. A branch you abandon without merging it.",
-    no: "A migration that rewrites rows in place. A deploy that reaches customers before anyone has read the diff.",
     breaks: (
       <>
         Cheap failure is what pays for the debug loop, and the loop is most of the design.
-        A task that has to be right on the first attempt is a task with no loop, and what
-        is left is a code generator you are not watching.
+        A task with no loop leaves a code generator you are not watching.
       </>
     ),
   },
 ];
-
-function Side({
-  word,
-  glyph,
-  color,
-  text,
-}: {
-  word: string;
-  glyph: string;
-  color: string;
-  text: string;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <span
-        className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em]"
-        style={{ color }}
-      >
-        <span aria-hidden>{glyph}</span>
-        {word}
-      </span>
-      <p className="text-sm leading-relaxed text-muted">{text}</p>
-    </div>
-  );
-}
 
 export function WhichTasksChecks() {
   return (
@@ -203,37 +215,21 @@ export function WhichTasksChecks() {
               {c.question}
             </h3>
 
-            <div className="grid gap-4 border-t border-line pt-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-              <Side
-                word="reads as yes"
-                glyph="✓"
-                color="var(--color-emerald)"
-                text={c.yes}
-              />
-              <Side
-                word="reads as no"
-                glyph="✕"
-                color="var(--color-signal)"
-                text={c.no}
-              />
-            </div>
-
             <details className="group border-t border-line pt-3">
               <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden font-mono text-[11px] uppercase tracking-[0.14em] text-dim transition-colors hover:text-fg">
                 <span aria-hidden className="inline-block transition-transform group-open:rotate-90">
                   ▸{" "}
                 </span>
-                How to settle it, and what breaks on a no
+                {c.breaks === undefined ? "Settle it" : "Settle it, and what a no breaks"}
               </summary>
               <p className="mt-3 rounded border border-line bg-surface-2 px-4 py-3 text-sm leading-relaxed text-muted">
-                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
-                  Settle it{" "}
-                </span>
                 {c.probe}
               </p>
-              <p className="mt-3 border-l-2 border-line-bright pl-4 text-sm leading-relaxed text-dim">
-                {c.breaks}
-              </p>
+              {c.breaks !== undefined && (
+                <p className="mt-3 border-l-2 border-line-bright pl-4 text-sm leading-relaxed text-dim">
+                  {c.breaks}
+                </p>
+              )}
             </details>
           </li>
         ))}

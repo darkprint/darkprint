@@ -28,17 +28,17 @@ export const CLIMB_ROUTE: readonly RouteStop[] = [
   {
     href: "/towards-a-dark-factory",
     label: "Where you are today",
-    blurb: "The five levels, and the gap between level 2 and level 5.",
+    blurb: "The five levels, and the gap between 2 and 5.",
   },
   {
     href: "/towards-a-dark-factory/which-tasks",
     label: "Which tasks it can take",
-    blurb: "Four questions about the work, settled before you draw a node.",
+    blurb: "Four questions, settled before you draw a node.",
   },
   {
     href: "/towards-a-dark-factory/the-climb",
     label: "The climb",
-    blurb: "One team's account: four phases, holdout scenarios, and what it cost.",
+    blurb: "Four phases, holdout scenarios, and what it cost.",
   },
 ];
 
