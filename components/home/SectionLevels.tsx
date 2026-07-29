@@ -288,9 +288,13 @@ function WorkPath({
  * A group drawn around several nodes, for level 4's harness.
  *
  * A hairline rather than a dash: `VIZ.dash.absent` already means "this is not here", and
- * a harness is present. The caption sits at the top right because the traffic into a
- * group arrives at its top left, and a caption there is the first thing an incoming
- * leader runs over.
+ * a harness is present.
+ *
+ * The caption sits at the top *left*, which is the opposite of what it used to say and of
+ * why. The one leader that arrives at this box comes down from the constraints node and
+ * lands two thirds of the way along the top edge, so the right end is where an incoming
+ * arrowhead is: with the caption there, the arrow's tip was drawn inside the first letter
+ * of the word `harness`. The left end of the top edge has nothing arriving at it.
  */
 function Boundary({
   x,
@@ -319,9 +323,8 @@ function Boundary({
       />
       <text
         data-viz="label"
-        x={x + width - 8}
+        x={x + 8}
         y={y - 6}
-        textAnchor="end"
         fontSize={VIZ.font.sub}
         fill={toneColor("dim")}
       >
@@ -411,10 +414,19 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
           start="task"
           end="lands"
         />
+        {/* Bowed over the disc rather than under it, and the sign is the whole of the fix.
+            A `FlowEdge` writes its label above its own curve, so an arc bowing down put
+            "reads its own output" 11 units above "the agent" in a band that holds one line
+            of 13-unit type, and the two words were printed over each other on every screen.
+            `scene-labels.test.ts` found it. Bowing up moves the label into the empty half
+            of the frame, where levels 1 and 4 already put a glyph, and `labelT` was no help
+            because this arc is 31 units long and sliding a 156-unit label along it moves it
+            by five. The magnitude is the vocabulary's own `wide`, which is what level 5's
+            return arc takes, so the two loops on this page are mirror images. */}
         <FlowEdge
           from={[196, PATH.y]}
           to={[144, PATH.y]}
-          bend={-34}
+          bend={FLOW.edge.bend.wide}
           fromRadius={R}
           toRadius={R}
           tone="dim"
@@ -447,30 +459,61 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
           start="task"
           end="shipped"
         />
-        <Boundary x={128} y={72} width={154} height={32} label="harness" />
+        {/* Every number on this row is pinned by a word, and the box is pinned by the two
+            it must not touch.
+
+            `scene-labels.test.ts` first measured "evaluator" and the checkpoint mark's
+            label as 49 units of the same line, printed on top of each other. Sliding the
+            harness left cleared that and drew a second defect nothing was looking for: at
+            `x={82}` the rectangle's top-left corner was stroked across the last letters of
+            "task", and its left edge ran three units from the path's own start tick, which
+            at this frame's phone scale is two hairlines two pixels apart.
+            `labelsOverBoxEdges` is the case that now sees it.
+
+            The box cannot cross that word by moving up or down instead: "task" sits on a
+            baseline seven units above the discs and the node labels hang thirteen below
+            them, so a rectangle enclosing both discs has no vertical room to dodge either
+            band. It has to be horizontally clear of "task", and everything else follows.
+            The box starts at 103, eight units past where "task" ends; that puts the
+            orchestrator at 123, the evaluator at 216 to keep twelve and nine characters of
+            13-unit type apart, and the checkpoint mark at 325 — as far right as it can go
+            before its ring meets the end tick at 341. The margins around the two discs are
+            20 units, down from 32, which is what that chain leaves. */}
+        <Boundary x={103} y={74} width={133} height={28} label="harness" />
         <FlowEdge
-          from={[160, PATH.y]}
-          to={[250, PATH.y]}
+          from={[123, PATH.y]}
+          to={[216, PATH.y]}
           fromRadius={R}
           toRadius={R}
           pulse={false}
         />
-        <FlowNode x={160} y={PATH.y} r={R} tone="cyan" label="orchestrator" />
-        <FlowNode x={250} y={PATH.y} r={R} tone="cyan" label="evaluator" />
+        <FlowNode x={123} y={PATH.y} r={R} tone="cyan" label="orchestrator" />
+        <FlowNode x={216} y={PATH.y} r={R} tone="cyan" label="evaluator" />
         {/* The person is upstream of the harness rather than on the path. A label hangs
             directly under its own glyph, so the run out of the mark leaves sideways: an
             edge dropping away would be drawn straight through the words. */}
         <HumanFlowNode x={88} y={24} r={8} label="wrote the constraints" />
+        {/* Lands on the box's top edge, which moved down two units with the box. x=189 is
+            the one column free: sixteen units right of where "wrote the constraints" ends
+            and well clear of the caption, which is now at the other end of the same edge. */}
         <FlowEdge
           from={[189, 24]}
-          to={[189, 66]}
+          to={[189, 74]}
           fromRadius={R}
           toRadius={0}
           tone="dim"
           pulse={false}
         />
-        <FlowNode x={189} y={24} r={R} tone="dim" label="constraints" />
-        <HumanFlowNode x={318} y={PATH.y} r={8} label="reads at a checkpoint" />
+        {/* Named rather than labelled, on `SectionNodeIsCard`'s reasoning: the violet mark
+            100 units to the left already reads "wrote the constraints", so the word on this
+            disc was a second copy of it, and the two copies overlapped by 24 units.
+            `scene-labels.test.ts` found that one as well. */}
+        <FlowNode x={189} y={24} r={R} tone="dim" name="the constraints the harness runs inside" />
+        {/* "reads at a checkpoint" was 21 characters on a row that had room for 16. The
+            level's own sentence says people read the output at named checkpoints and the
+            title block under the drawing says at a checkpoint, so the word the glyph itself
+            has to carry is what the person does there. */}
+        <HumanFlowNode x={325} y={PATH.y} r={8} label="reads the output" />
       </>
     ),
   },

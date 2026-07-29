@@ -1,4 +1,4 @@
-import type { AutonomyInfo, Metric, MetricKey } from "@/lib/types";
+import type { Metric, MetricKey } from "@/lib/types";
 import { METRIC_SOURCE_META } from "@/lib/format";
 
 const SHORT: Record<MetricKey, string> = {
@@ -20,22 +20,22 @@ const SHORT: Record<MetricKey, string> = {
  * person in it is smaller than a graph without one; it is a different shape, and a
  * length cannot say that.
  *
- * So it is said in words instead, under the chart, where the class sits as a fact about
- * the design rather than as a coordinate. The name and not the ordinal behind it, for
- * the reason doc 2 §1.1 gives: the one number a reader meets on this site is the
- * organisational maturity ladder, and a second small integer beside it would read as the
- * same scale. The metric is not dropped: it
- * keeps its row in `MetricBars`, with the analyser's sentence naming which nodes hand
- * control back to a person.
+ * The metric is not dropped. It keeps its row in `MetricBars` directly below this chart,
+ * where the class is named, captioned "who is in the loop" and given the sentence saying
+ * what that class does with people. The caption here says why the sixth axis is missing
+ * and stops there: it used to open "Autonomy · Closed-loop", which put the class name
+ * three times inside one 228-word panel — caption, row value, and the engine rationale
+ * the row printed underneath. The class is the row's to state.
+ *
+ * The name and never the ordinal behind it, for the reason doc 2 §1.1 gives: the one
+ * number a reader meets on this site is the organisational maturity ladder, and a second
+ * small integer beside it would read as the same scale.
  */
 export function ScoreRadar({
   metrics,
-  autonomy,
   size = 320,
 }: {
   metrics: Metric[];
-  /** The band, when the caller has it (`blueprint.autonomy`). Stated in the caption. */
-  autonomy?: AutonomyInfo;
   size?: number;
 }) {
   // Doc 2 §1.1: the band is not a length, so it is not a spoke.
@@ -146,19 +146,10 @@ export function ScoreRadar({
     <figure className="flex w-full max-w-[340px] flex-col items-center gap-2">
       {chart}
 
-      {/* The sixth metric, stated rather than plotted. */}
+      {/* Why there are five spokes on a six-metric card. */}
       <figcaption className="text-balance px-2 text-center font-mono text-[10px] leading-relaxed text-dim">
-        {autonomy !== undefined ? (
-          <>
-            Autonomy · <span className="text-fg">{autonomy.label}</span>. A class names a
-            design choice, so it is stated here rather than plotted.
-          </>
-        ) : (
-          <>
-            Autonomy is a class. It names a design choice, so it is stated on the card
-            rather than plotted here.
-          </>
-        )}
+        A class names a design choice, so autonomy is stated in the rows below rather than
+        plotted.
       </figcaption>
     </figure>
   );

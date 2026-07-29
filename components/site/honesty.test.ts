@@ -38,6 +38,7 @@ import { describe, expect, it } from "vitest";
 import SpecCardPage from "@/app/spec/card/page";
 import { allBlueprints } from "@/lib/content";
 import { CARD_ROWS } from "@/components/spec/rows";
+import { ScoringModel } from "@/components/spec/ScoringModel";
 import { SectionComponentRecap } from "@/components/explain/SectionComponentRecap";
 import { WhichTasksChecks } from "@/components/explain/WhichTasksChecks";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
@@ -59,6 +60,14 @@ function canvas(slug: string): string {
 const SPEC_CARD = renderToStaticMarkup(createElement(SpecCardPage as never));
 const WHICH_TASKS = renderToStaticMarkup(createElement(WhichTasksChecks));
 const RECAP = renderToStaticMarkup(createElement(SectionComponentRecap));
+/**
+ * The scoring panel `/spec` mounts under `#scoring` (PROJECT.md §3.4).
+ *
+ * It is the first surface on the site to print `minRuns` and `outlierZScore`, and two
+ * named filters on cost and time read as a description of something running unless the
+ * page says otherwise beside them. That sentence is the claim below.
+ */
+const SCORING = renderToStaticMarkup(createElement(ScoringModel));
 
 /**
  * The starter is the one bundle whose criteria walk stops at a judge
@@ -116,6 +125,15 @@ const CLAIMS: Claim[] = [
     html: SPEC_CARD,
   },
 
+  /* ---- /spec#scoring ---- */
+  {
+    surface: "/spec · cost and time, if they are ever reported",
+    why: "the whole telemetry block is a design nothing implements. `minRuns 5` and `outlierZScore 3` are printed as engine configuration, which is what every other number in that section is, and those two are filters on a pipeline that has never had an input. PROJECT.md §3.5 is the point at which this stops being free, so the sentence has to be beside the numbers rather than behind a disclosure",
+    says: "nothing on this site measures a run, so these two filters describe a design rather than a behaviour",
+    where: "open",
+    html: SCORING,
+  },
+
   /* ---- /towards-a-dark-factory/which-tasks ---- */
   {
     surface: "/towards-a-dark-factory/which-tasks · check 01",
@@ -154,6 +172,7 @@ describe("the surfaces the ledger is read off", () => {
     // A ledger held over an empty string passes every case in it.
     for (const [name, html] of [
       ["/spec/card", SPEC_CARD],
+      ["/spec scoring panel", SCORING],
       ["which-tasks checks", WHICH_TASKS],
       ["the component recap", RECAP],
       ["the starter's canvas", STARTER],

@@ -190,12 +190,23 @@ export function SectionExample() {
               </h3>
               <span className="font-mono text-[11px] text-dim">three ways of knowing</span>
             </div>
+            {/* "The scorecard prints that subtraction" was written when there was one
+                scorecard. There are two renderings of it now: the one on this page, which
+                has no audit beside it and so still prints the engine's own sentence, and
+                the one on every `/blueprints/<slug>` page, where the row states the
+                reading and `Explainability` carries the subtraction. Those nine pages are
+                what links to this anchor, so the sentence a reader arrived at was true
+                only of the page they had landed on. Named by page rather than by
+                direction, because this panel is beside the card on a wide viewport and
+                under it on a narrow one. */}
             <p className="text-sm leading-relaxed text-muted">
               Two of the six fall out of the drawing. Autonomy is the share of nodes that
               run unattended. Security starts at four and loses the weight of every risk
-              marker the graph carries. The scorecard prints that subtraction under the
-              Security row and rescales the result onto the 0–100 axis the other five rows
-              use, so four out of four reads there as 100.
+              marker the graph carries. The card on this page prints that subtraction under
+              the Security row; a blueprint page prints the reading it lands on and keeps
+              the subtraction in the panel that shows the working. Either way the result is
+              rescaled onto the 0–100 axis the other five rows use, so four of four reads
+              there as 100.
             </p>
             <p className="mt-3 text-sm leading-relaxed text-muted">
               Both are computed at build time off this exact bundle, and both name the

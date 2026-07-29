@@ -178,6 +178,10 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
   // would print no cost for the whole dimension. `markerWeight` follows the engine's own
   // lookup order; `undefined` means nobody priced it anywhere.
   const weight = markerWeight(term);
+  // Which of the engine's three lookup steps produced that number. The block below used to
+  // state the first one unconditionally; `lupo/pii-handling` is priced by the second, and
+  // a page that says otherwise contradicts its own chip.
+  const configured = Object.keys(DARKPRINT_CONFIG.security.weights).includes(term.id);
   // Doc 3 §4.1 — three markers the analyzer derives from the graph even when no card
   // declares them, taken from the engine's own list rather than re-typed here.
   const inferred = INFERRED_MARKERS.includes(term.id);
@@ -468,12 +472,24 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                     : `Nothing in the topology can establish ${term.id} on its own — it is a fact about what the node does that only its author can state. The analyzer takes the card at its word and names the node in the explanation.`}
                 </p>
 
+                {/* Conditional, and it was not. The sentence asserted for every term that
+                    "the number lives in the engine's configuration and not in this
+                    vocabulary", which is false of a locally namespaced marker: doc 3 §7
+                    lets one carry its own `defaultWeight`, `markerWeight` reads it, and
+                    `content/ontology/extensions.yaml` ships `lupo/pii-handling` at 0.50 —
+                    a number this page had already chipped as "declared on the card" three
+                    paragraphs above the claim that no such number exists here. */}
                 <p className="text-sm leading-relaxed text-muted">
-                  The number lives in the engine&apos;s configuration and not in this
-                  vocabulary, so a recalibration touches one file and every blueprint is
-                  re-scored consistently. That is also why a score records which
-                  vocabulary version produced it: move a weight and two evaluations stop
-                  being comparable.
+                  {configured
+                    ? "The number lives in the engine's configuration and not in this vocabulary, so a recalibration touches one file and every blueprint is re-scored consistently. That is also why a score records which vocabulary version produced it: move a weight and two evaluations stop being comparable."
+                    : `The engine's configuration prices the curated markers and is silent about this one, so the number is the ${term.id.includes("/") ? "namespaced" : "local"} term's own declared weight, read from the vocabulary the bundle ships. That is why a score records which vocabulary version produced it: move a weight and two evaluations stop being comparable.`}{" "}
+                  <Link
+                    href="/spec#weights"
+                    className="text-muted underline decoration-line underline-offset-4 hover:text-cyan"
+                  >
+                    Every weight the engine knows
+                  </Link>
+                  .
                 </p>
               </div>
             </section>

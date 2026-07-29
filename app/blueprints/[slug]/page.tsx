@@ -330,18 +330,34 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
                 6-metric card
               </span>
             </div>
-            {/* Both take the band, and neither can name it without being handed it:
-                autonomy is not a spoke on the radar and not a bar in the list (doc 2
-                §1.1 — a length would state a shortfall), so it is *stated*, and the
-                caption and the row are the two places it gets stated. Left off, the
-                radar fell back to a caption pointing at a card row whose value slot
-                was empty. `bp.autonomy` is the same band the header meter prints. */}
+            {/* Autonomy is not a spoke on the radar and not a bar in the list (doc 2
+                §1.1 — a length would state a shortfall), so it is *stated*, and the row
+                in `MetricBars` is the one place on this card that states it. The radar
+                used to state it as well, in a caption reading "Autonomy · Closed-loop";
+                between the two of them and the engine sentence the row printed, one
+                sidebar panel named the class three times. `bp.autonomy` is the same band
+                the header meter prints. */}
             <div className="flex justify-center">
-              <ScoreRadar metrics={bp.metrics} autonomy={bp.autonomy} />
+              <ScoreRadar metrics={bp.metrics} />
             </div>
+            {/* `audit` is what makes this card a glance rather than a second audit. The
+                explainability panel in the main column prints the engine's rationale for
+                Autonomy and for Security verbatim, and this card was printing the same
+                two strings under its two computed rows, word for word, one screen away.
+                Handed the raw reading and the marker count, the Security row states where
+                the blueprint sits on the engine's own 0–4 scale instead of restating the
+                subtraction that got it there. `raw` and not `level`: the bar beside it is
+                a rescale of `raw`, and a rounded level printed next to it disagreed with
+                the bar on four of these nine pages (see `ScoreAudit`). The four seeded
+                rows are untouched: their detail carries the seeded marker and belongs
+                beside the figure. */}
             <MetricBars
               metrics={bp.metrics}
               autonomy={bp.autonomy}
+              audit={{
+                securityRaw: bp.analysis.security.raw,
+                securityMarkers: bp.analysis.security.penalties.length,
+              }}
               className="mt-4"
             />
             {/* The scorecard is the thing a reader actually consumes, so the split
@@ -354,8 +370,20 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               <span className="font-mono uppercase tracking-[0.12em] text-emerald">
                 computed
               </span>{" "}
-              — Autonomy and Security are read off this exact graph at build time, and
-              both show their working below.{" "}
+              — Autonomy and Security are read off this exact graph at build time.{" "}
+              {/* The route from the glance to the audit, and the only one now that the
+                  two rows above have stopped reprinting the rationale. It used to read
+                  "both show their working below", which was a copy of the sentence the
+                  panel itself opens with and was wrong about the direction in both
+                  layouts: the panel is in the main column, which is left of this card on
+                  a wide viewport and above it on a narrow one. A link is right either
+                  way. */}
+              <Link
+                href="#explainability-heading"
+                className="text-muted underline-offset-4 hover:text-cyan hover:underline"
+              >
+                See the working.
+              </Link>{" "}
               <span className="font-mono text-amber" aria-hidden>
                 ◐
               </span>{" "}

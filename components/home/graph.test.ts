@@ -25,6 +25,14 @@
 import { describe, expect, it } from "vitest";
 
 import { FLOW, flowRun, focusRadius, labelOffset } from "@/components/viz";
+/**
+ * Width of one character of the drawing's label face, as a fraction of its size.
+ *
+ * `VIZ.font.family` is the mono stack, and every mono face this site can land on advances
+ * between 0.6 and 0.62 em. Taking the upper end makes the estimate pessimistic, which is
+ * the direction a guard against overflow should be wrong in.
+ */
+import { ADVANCE } from "@/components/viz/label-boxes";
 
 import {
   LANDING_GRAPH_DESCRIPTION,
@@ -35,14 +43,10 @@ import {
 } from "./graph";
 import { ROLE_ABSENCE, ROLE_BOXES, ROLE_WIRES } from "./roles";
 
-/**
- * Width of one character of the drawing's label face, as a fraction of its size.
- *
- * `VIZ.font.family` is the mono stack, and every mono face this site can land on advances
- * between 0.6 and 0.62 em. Taking the upper end makes the estimate pessimistic, which is
- * the direction a guard against overflow should be wrong in.
- */
-const ADVANCE = 0.62;
+/* `ADVANCE` used to be declared here, at 0.62, while
+   `components/viz/label-boxes.ts` declared its own at 0.6 under a comment claiming the two
+   were the same number — so the shared guard that measures all 27 frames was three percent
+   more permissive than this one, which measures two. It is imported above now. */
 
 /** The absence draws its prohibition behind the mark `FlowAbsence` prefixes it with. */
 const ABSENCE_TEXT = `◌ ${ROLE_ABSENCE.prohibition}`;

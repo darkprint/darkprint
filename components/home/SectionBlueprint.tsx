@@ -113,9 +113,13 @@ function Drawing({ graph, className }: { graph: LandingGraph; className: string 
   );
 }
 
+/* `components/hero/Wordmark.tsx` links `#blueprint`. This section's own top padding
+   happens to be deeper than the sticky header, so nothing was hidden; the `scroll-mt-24`
+   is there so the rule in `components/site/anchors.test.ts` holds over every anchor
+   without an exemption list nobody would revisit. */
 export function SectionBlueprint() {
   return (
-    <section id="blueprint" className="bg-void py-20 sm:py-28">
+    <section id="blueprint" className="scroll-mt-24 bg-void py-20 sm:py-28">
       <div className="container-page">
         <SectionHeading
           eyebrow="The drawing"

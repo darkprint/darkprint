@@ -5,6 +5,7 @@ import { partitionTerms } from "@/lib/core";
 import { getOntologyView } from "@/lib/content";
 import { SectionExample } from "@/components/home/SectionExample";
 import { LABEL } from "@/components/spec/parts";
+import { ScoringModel } from "@/components/spec/ScoringModel";
 import { SPEC_LAYERS, SPEC_OVERVIEW } from "@/components/spec/sequence";
 import { SpecLayers } from "@/components/spec/SpecLayers";
 import { SpecPager } from "@/components/spec/SpecPager";
@@ -164,6 +165,16 @@ export default function SpecPage() {
 
       {/* ---------- what the engine checks, on a bundle in the archive ---------- */}
       <SectionExample />
+
+      {/* ---------- and what each of those checks is worth ----------
+          Directly under `SectionExample`, because the `#scoring` panel it ends on is
+          where every blueprint page links a reader who asks how a factory is graded.
+          That panel says security "starts at four and loses the weight of every risk
+          marker", and PROJECT.md §3.4 is the note that no page named a weight: the
+          reader landed on the sentence and the numbers in it lived only in
+          `lib/core/config.ts`. Placing it here means the anchor and the arithmetic are
+          one scroll apart rather than one route apart. */}
+      <ScoringModel />
 
       <div className="container-page py-14">
         <SpecPager href={SPEC_OVERVIEW.href} />

@@ -1050,7 +1050,9 @@ function SecurityPanel({
   return (
     <section className="panel p-5" aria-labelledby="security-explained">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h3 id="security-explained" className={LABEL}>
+        {/* `components/blueprint/BundlePanel.tsx` links this id, so it needs the same
+            offset every other anchor target on the site carries (`anchors.test.ts`). */}
+        <h3 id="security-explained" className={cx("scroll-mt-24", LABEL)}>
           Security — what it gets to touch
         </h3>
         <span className="font-mono text-[11px] text-dim">
@@ -1273,9 +1275,13 @@ export function Explainability({
       aria-labelledby="explainability-heading"
       className={cx("flex flex-col", className)}
     >
+      {/* `scroll-mt-24`, like every other in-page anchor on the site. The scorecard in the
+          sidebar links here by id, and `components/site/SiteHeader.tsx` is `sticky top-0`
+          over a 4rem row, so without the offset the heading a reader is sent to lands
+          under the chrome. */}
       <h2
         id="explainability-heading"
-        className="font-display text-xl font-semibold text-fg"
+        className="scroll-mt-24 font-display text-xl font-semibold text-fg"
       >
         How the two computed scores were reached
       </h2>

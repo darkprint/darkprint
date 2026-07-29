@@ -69,14 +69,20 @@ unreserved attributes, which is why `card="id@version"` rides along without brea
 
 ## 2. Where it stands
 
-All gates green from a clean tree, verified at `340931e`:
+All gates green from a clean tree:
 
 ```
 npm run build     135 pages, 9 downloadable bundles
 npx tsc --noEmit  clean
 npm run lint      clean
-npm test          3045 tests, 60 files
+npm test          3202 tests, 66 files
 ```
+
+**`public/bundles` is generated *and* checked in.** A build writes all nine README files
+from the current `lib/core/config.ts`, so a commit taken from a tree that was last built
+under an edited calibration ships published bundles whose scores no page agrees with. Run
+`rm -rf .next public/bundles && npm run build` before committing and check `git status` on
+that directory.
 
 | | |
 |---|---|
@@ -108,7 +114,9 @@ were the site quietly presenting seeded numbers as facts.
 
 ## 3. Next steps
 
-Ordered by my read of the value. Nothing here is started.
+Ordered by my read of the value. **§3.2 is done and §3.4 is answered in a shape its own
+entry did not ask for**; both are marked below with what shipped and what it cost. The
+rest is not started.
 
 ### 3.1 Finish the length pass
 
@@ -165,14 +173,32 @@ if it moves behind a disclosure. Add to that ledger whenever a page starts stati
 To re-measure, strip `<script>`, `<style>`, `<svg>` and `<pre>` inside `<main>` and count
 words — but check by section first, because the pane listings do not sit in `<pre>`.
 
-### 3.2 Apply the label guard to every scene
+### 3.2 Apply the label guard to every scene — **done**
 
 `components/home/roles-labels.test.ts` renders a figure, resolves each `<text>` through its
 translations, and fails on overlapping or clipped labels. It caught four defects the
-size-only check could not see. **It currently covers the roles figure alone.** Every other
-scene — the landing beats, the levels, the lifecycle panels, the dezoom, the spec figures — is
-unguarded, and the fixer's own notes flag the lifecycle panel's labels as "tight". Generalise
-the helper and point it at all of them.
+size-only check could not see, and it covered the roles figure alone.
+
+Shipped as `components/viz/label-boxes.ts` (a plain module, not a test file) plus
+`components/viz/scene-labels.test.ts`, which walks `components/**` and `app/**` for
+`<FlowScene` and fails if a file that draws one is not in its roster. **16 drawers, 27
+frames.** Four more defects came out of it, all in `components/home/SectionLevels.tsx`,
+which was the largest unguarded set of drawings on the site.
+
+Three things about it are worth keeping in mind before touching a figure:
+
+- **The advance constant is `0.62` and lives in one place.** The shipped mono face measures
+  0.600 exactly (`next/font`'s Geist Mono fallback is `local(Arial)` at `size-adjust:
+  134.59%`, and 0.4458 × 1.3459 = 0.600), so a guard using the measurement has no margin at
+  all. `graph.test.ts` imports it rather than declaring a second one; that divergence is
+  how the shared guard ended up three percent more permissive than its sibling.
+- **It compares text against text, and text against a stroked `<rect>`.** Curves,
+  arrowheads and node rings are not collected. The rect case exists because the first fix
+  to level 4 slid the harness box onto the word `task` while every text-only case stayed
+  green.
+- **It throws rather than guessing.** A transform it cannot compose, a transform on an
+  element it does not resolve them for, a `<text>` with no size, a markup string with no
+  scene: all four fail the run with the value named.
 
 ### 3.3 Calibrate the weights (needs a decision, not code)
 
@@ -185,11 +211,39 @@ mis-set against real content:
 
 Changing any of these is a PATCH of the ontology version, because it re-scores every blueprint.
 
-### 3.4 Give the scoring model a home
+### 3.4 Give the scoring model a home — **delivered as a section, and it costs length**
 
-The security weights table and the telemetry design are documented nowhere a reader can reach.
-A `/how-it-scores` page under `/spec` would close it, and `/spec` is already the four-page
-sequence that would host it.
+The security weights table and the telemetry design were documented nowhere a reader could
+reach. This entry asked for a `/how-it-scores` page under `/spec`.
+
+What shipped is `components/spec/ScoringModel.tsx`, a `#weights` section mounted on `/spec`
+directly under the `#scoring` anchor all nine blueprint pages link to, so the sentence a
+reader arrives at and the numbers in it are one scroll apart. It publishes the seven core
+weights, the markers this archive's vocabulary prices itself (doc 3 §7's middle rung —
+`lupo/pii-handling` at 0.50, which `frontline-triage` charges), the zero row, the four
+autonomy cuts, the criteria-leak threshold and the two telemetry filters. Every number is
+read from `DARKPRINT_CONFIG` and from `getOntologyView()`, and `scoring-model.test.ts`
+renders the panel a second time under a calibration where every value differs.
+
+**The reason it is a section and not a fifth route** is that `SpecPager` numbers the
+sequence `00 Overview · 01 Topology · 02 Node card · 03 Ontology`, and a scoring page is
+not a fourth layer of the spec language.
+
+**The cost, measured on a clean build, prose words as §3.1 defines them:**
+
+| page | before | after | |
+|---|---|---|---|
+| `/spec` | 883 / 883 open | **1,638 / 1,454 open** | +86%; the section itself is 763 / 579 |
+| `/what-it-isnt` | | 1,599 / 929 open | the page §3.1 cut by 22% |
+| `/spec/card` | | 1,717 / 1,277 open | |
+
+So `/spec` is now the longest **open**-prose page on the site by 177 words over its nearest
+rival, on a route the redesign split into four *because* one long page made readers leave
+(§4.1 of the redesign spec). Two things are true at once and both belong in the record: the
+open figure is high partly because this section hides almost nothing, which is the
+behaviour §3.1 wants, and 1,638 total is still 39 words past the page the length pass had
+already cut. **The open question is placement, not content.** A `/spec/scoring` route would
+take `/spec` back to 883 and would need the pager renumbered.
 
 ### 3.5 Fase 4 — the backend, if it is ever wanted
 
