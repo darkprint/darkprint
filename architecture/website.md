@@ -1,7 +1,7 @@
 # The website
 
 Next.js 16 App Router, **SSG only** — `generateStaticParams` + `dynamicParams = false`, typed
-`PageProps<"/route/[param]">`. 18 route files prerender to **135 pages**. React 19, Tailwind v4,
+`PageProps<"/route/[param]">`. 19 route files prerender to **136 pages**. React 19, Tailwind v4,
 TypeScript strict.
 
 > `AGENTS.md` is not boilerplate: this is Next.js 16 with real breaking changes. Read
@@ -27,7 +27,7 @@ TypeScript strict.
 
 | route | what it is |
 |---|---|
-| `/` | the landing: five beats, ~394 visible words |
+| `/` | the landing: five beats, ~466 visible words |
 | `/spec` | the spec language: three layers, and what the engine checks |
 | `/spec/topology` | layer 1, the DOT graph + the five-roles figure |
 | `/spec/card` | layer 2, the node card + the scroll-annotated card |
@@ -43,6 +43,7 @@ TypeScript strict.
 |---|---|
 | `/build` | a 7-step guided path over 80 pre-resolved combinations, ending in a download |
 | `/upload` | validates and scores a bundle **in the tab**, and stops there |
+| `/install` | previews per-client MCP setup behind tabs (`InstallTabs`); coming soon, no server exists yet |
 
 ### Redirects — `next.config.ts`
 
@@ -141,7 +142,7 @@ on the server).
 | `components/home/graph.test.ts` | labels render ≥10 CSS px on the narrowest phone frame |
 | `components/home/roles-labels.test.ts` | **renders the figure and compares label boxes** — no overlap, nothing clipped |
 | `components/ui/autonomy-surfaces.test.ts` | no alarm colour near the human-presence glyph; `contributions` passed at every call site |
-| `components/build/path.test.ts` | doc 2 §2.5 copy rules across 74 files |
+| `components/build/path.test.ts` | doc 2 §2.5 copy rules across 93 files |
 | `components/site/nav.test.ts` | header and footer agree; every top-level route is in the nav |
 
 `roles-labels.test.ts` **covers the roles figure only.** Generalising it is

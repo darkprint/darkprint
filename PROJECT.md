@@ -77,10 +77,10 @@ unreserved attributes, which is why `card="id@version"` rides along without brea
 All gates green from a clean tree:
 
 ```
-npm run build     135 pages, 9 downloadable bundles
+npm run build     136 pages, 9 downloadable bundles
 npx tsc --noEmit  clean
 npm run lint      clean
-npm test          3202 tests, 66 files
+npm test          3235 tests, 71 files
 ```
 
 **`public/bundles` is generated *and* checked in.** A build writes all nine README files
@@ -94,7 +94,7 @@ that directory.
 | engine | 30 modules under `lib/core`, isomorphic (no `node:*`, no `Date.now`, no `Math.random`) |
 | content | 9 blueprints, 57 card files (53 distinct nodes, 4 with two versions) |
 | ontology | v0.1.0, 49 curated terms + namespaced local extensions |
-| routes | 18 route files → 135 prerendered pages, SSG only |
+| routes | 19 route files → 136 prerendered pages, SSG only |
 | figures | luminous-flow SVG scenes driven by anime.js v4.5 |
 
 ### What is built
