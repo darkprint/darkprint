@@ -1,0 +1,161 @@
+# The website
+
+Next.js 16 App Router, **SSG only** — `generateStaticParams` + `dynamicParams = false`, typed
+`PageProps<"/route/[param]">`. 18 route files prerender to **135 pages**. React 19, Tailwind v4,
+TypeScript strict.
+
+> `AGENTS.md` is not boilerplate: this is Next.js 16 with real breaking changes. Read
+> `node_modules/next/dist/docs/` before touching a route or the config.
+
+---
+
+## Routes
+
+### The registry — what the site holds
+
+| route | pages | what it is |
+|---|---|---|
+| `/blueprints` | 1 | the shelf. Download / fork / update sits **below** the grid (above it, the first tile was 7 screens down) |
+| `/blueprints/[slug]` | 9 | one blueprint: schematic, scorecard, explainability, download panel |
+| `/nodes` | 1 | the card library |
+| `/nodes/[...id]` | 53 | one card in full: interfaces, params, `mcp`, `skill`, `cannot`, risk markers, version history, raw YAML |
+| `/ontology` | 1 | the vocabulary |
+| `/ontology/[...term]` | 50 | one term: meaning, where it sits in the lattice, who uses it |
+| `/u/[username]` | 6 | an author's shelf |
+
+### Learn — what it means
+
+| route | what it is |
+|---|---|
+| `/` | the landing: five beats, ~394 visible words |
+| `/spec` | the spec language: three layers, and what the engine checks |
+| `/spec/topology` | layer 1, the DOT graph + the five-roles figure |
+| `/spec/card` | layer 2, the node card + the scroll-annotated card |
+| `/spec/ontology` | layer 3, the vocabulary |
+| `/towards-a-dark-factory` | the 1–5 organisational ladder |
+| `/towards-a-dark-factory/which-tasks` | which tasks a dark factory can take |
+| `/towards-a-dark-factory/the-climb` | the four phases, holdouts, progressive disclosure |
+| `/what-it-isnt` | why a prompt library cannot hold this, with the prohibition demonstrated live |
+
+### Do
+
+| route | what it is |
+|---|---|
+| `/build` | a 7-step guided path over 80 pre-resolved combinations, ending in a download |
+| `/upload` | validates and scores a bundle **in the tab**, and stops there |
+
+### Redirects — `next.config.ts`
+
+All permanent (308): `/gallery → /blueprints`, `/parts → /nodes`, `/ontologies → /ontology`,
+`/which-tasks → /towards-a-dark-factory/which-tasks`,
+`/how-to-build-a-dark-factory → /towards-a-dark-factory/the-climb`.
+
+---
+
+## The landing
+
+Five beats, almost no prose. Everything technical lives on the page whose subject it is.
+
+| beat | shows | component |
+|---|---|---|
+| 1 | the animated **DarkPrint** wordmark | `components/hero/Wordmark.tsx` |
+| 2 | a graph drawing itself | `SectionBlueprint.tsx` |
+| 3 | one node lighting up and opening into its card | `SectionNodeIsCard.tsx` |
+| 4 | the lights going out across the graph | `SectionLightsOut.tsx` |
+| 5 | two doors, with the archive counts | `SectionDoors.tsx` |
+
+Beat 4 is the constrained one. Lights going out **describes** a graph with no human node. It
+is not a reward for reaching one, and doc 2 §1.1 binds hardest there.
+
+### Where the old landing went
+
+The landing used to carry doc 2 §2.1's six rungs. They moved to the pages they belong to:
+
+| what | now at |
+|---|---|
+| the annotated node card | `/spec/card` |
+| the five roles + the absent edge | `/spec/topology` |
+| the 1–5 ladder | `/towards-a-dark-factory` |
+| the analyzer on a real bundle | `/spec` |
+| download / fork / update | `/blueprints` |
+| "what it is" / "not a skill library" | `/what-it-isnt` |
+
+`app/page.tsx`'s header comment records this, so nobody "restores" the spine.
+
+---
+
+## The figure language: luminous flow
+
+**Source of truth:** `components/viz/`.
+
+The author rejected the earlier CAD-box register by name while keeping the blueprint grid. So:
+a node is a **lit disc with a halo**, an edge is a **curve with a light travelling it**, an
+absence is a dashed hairline, and the graticule is untouched.
+
+```
+components/viz/
+  flow.ts            metrics, tones, the stylesheet, geometry (flowRun, pointAtT)
+  FlowGlyphs.tsx     FlowScene, FlowNode, HumanFlowNode, FlowEdge, FlowAbsence, FlowLift
+  useLuminousFlow.ts the anime.js entrance
+  useReveal.ts       the three-state motion gate
+  useScrollProgress.ts
+  Sheet.tsx          the blueprint sheet and its tick frame
+  tokens.ts          colours, never a hex at a call site
+```
+
+### Four rules that are load-bearing
+
+1. **`static` is the finished drawing.** `useReveal` returns `static | armed | shown`. `static`
+   is the server, no-JS and `prefers-reduced-motion`, and in that state the markup is already
+   complete. Animation is what gets *added*, never what reveals.
+
+2. **Labels are never `display:none`.** They are real text at SSR, revealed by opacity. Hover
+   is a reveal, not existence. `FLOW_CSS` hides them **only** inside
+   `@media (hover:hover) and (pointer:fine) and (min-width:48rem) and (prefers-reduced-motion:no-preference)`
+   — so touch, narrow viewports and reduced motion show every label unconditionally. Every
+   node is focusable, so a keyboard reveals what a pointer reveals.
+
+3. **`role="group"`, not `role="img"`.** An `img` role makes the subtree presentational, which
+   would silence the focusable nodes inside it.
+
+4. **Never animate an element that carries its own `transform` attribute.** anime.js writes
+   `style.transform`, and a CSS transform *replaces* an SVG presentation attribute outright.
+   That shipped once: beat 3's card was drawn at the SVG origin, half off-canvas, for everyone
+   with motion enabled — and the prerendered HTML was correct, so no SSR test could see it.
+   `FlowLift` is the anchor/inner-group pattern that fixes it, and `flow.test.ts` fails if any
+   scene animates a transformed element.
+
+### anime.js v4.5
+
+The v3 default export **does not exist** in this package. What is used:
+`animate`, `createTimeline`, `createScope` (React cleanup + media queries), `onScroll`,
+`stagger`, `svg.createDrawable` (edges drawing), `svg.createMotionPath` (the pulse),
+`text.splitText` (the wordmark), `createSeededRandom` (**never `Math.random`** — scenes render
+on the server).
+
+### Guards worth knowing about
+
+| test | what it holds |
+|---|---|
+| `components/viz/flow.test.ts` | the absent edge clears WCAG 1.4.11 3:1; no rectangle nodes anywhere; no animated transformed element |
+| `components/home/graph.test.ts` | labels render ≥10 CSS px on the narrowest phone frame |
+| `components/home/roles-labels.test.ts` | **renders the figure and compares label boxes** — no overlap, nothing clipped |
+| `components/ui/autonomy-surfaces.test.ts` | no alarm colour near the human-presence glyph; `contributions` passed at every call site |
+| `components/build/path.test.ts` | doc 2 §2.5 copy rules across 74 files |
+| `components/site/nav.test.ts` | header and footer agree; every top-level route is in the nav |
+
+`roles-labels.test.ts` **covers the roles figure only.** Generalising it is
+`../PROJECT.md` §3.2, and it is the highest-value small task on the list — it caught four
+defects the size-only check could not see.
+
+---
+
+## What breaks if you change this
+
+| change | what goes stale |
+|---|---|
+| **add a route** | `SiteHeader`, `SiteFooter` and `nav.test.ts`, which fails until the route is in the header |
+| **rename or remove a route** | add a redirect in `next.config.ts`; internal links; and grep the *comments* — stale route references have survived three passes |
+| **move a section between pages** | `app/page.tsx`'s header comment, and any test naming the file |
+| **add a figure** | point `roles-labels.test.ts`'s approach at it, or it ships unguarded |
+| **touch autonomy rendering** | the ordinal must not reappear: `grep -rniE "autonomy (level\|score\|rank\|rating\|tier\|[0-9])" .next/server/app public/bundles` must return nothing |
