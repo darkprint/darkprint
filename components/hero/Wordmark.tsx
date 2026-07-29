@@ -56,6 +56,7 @@
    ============================================================ */
 
 import Link from "next/link";
+import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import {
   animate,
   createScope,
@@ -192,6 +193,7 @@ export function Wordmark() {
 
       const eyebrow = root.querySelectorAll<HTMLElement>(handle("eyebrow"));
       const claim = root.querySelectorAll<HTMLElement>(handle("claim"));
+      const cli = root.querySelectorAll<HTMLElement>(handle("cli"));
       const cue = root.querySelectorAll<HTMLElement>(handle("cue"));
       const aura = root.querySelectorAll<HTMLElement>(handle("aura"));
       const rule = svg.createDrawable(root.querySelectorAll(FLOW_SELECTOR.line));
@@ -218,7 +220,7 @@ export function Wordmark() {
       utils.set(rule, { draw: "0 0" });
       utils.set(traceDrawable, { draw: "0 0" });
       utils.set(travelling, { opacity: 0 });
-      utils.set([...eyebrow, ...claim, ...cue], { opacity: 0, translateY: 10 });
+      utils.set([...eyebrow, ...claim, ...cli, ...cue], { opacity: 0, translateY: 10 });
 
       createTimeline({ defaults: { ease: "outQuad" } })
         .add(aura, { opacity: 1, scale: 1, duration: 1400, ease: "outCubic" }, 0)
@@ -267,6 +269,7 @@ export function Wordmark() {
         )
         .add(claim, { opacity: 1, translateY: 0, duration: 700 }, AT.claim)
         .add(travelling, { opacity: 1, duration: 420 }, AT.claim)
+        .add(cli, { opacity: 1, translateY: 0, duration: 700 }, AT.claim)
         .add(cue, { opacity: 1, translateY: 0, duration: 600 }, AT.cue);
 
       /* The one thing that keeps moving after the entrance, and it is the register's
@@ -390,12 +393,25 @@ export function Wordmark() {
         </span>
       </h1>
 
+      {/* The CLI mention, moved here 2026-07-29 from the section's top-right corner —
+          directly under the claim once it was actually on screen. It carries its own
+          "coming soon" disclosure (doc 2 §0.4 — an MCP server for the registry does not
+          exist yet) rather than borrowing the claim's own sentence as cover for one. */}
+      <Link
+        data-mark="cli"
+        href="/install"
+        className="mt-6 inline-flex items-center gap-2 rounded-md border border-line bg-surface-2/80 px-3 py-1.5 font-mono text-xs text-muted transition-colors hover:text-fg"
+      >
+        <span>$ npx darkprint setup</span>
+        <ComingSoonBadge />
+      </Link>
+
       {/* The way down. A real link rather than a chevron, so the first thing a keyboard
           reader reaches says where it goes. */}
       <Link
         data-mark="cue"
         href="#blueprint"
-        className="mt-12 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-dim transition-colors hover:text-fg sm:mt-16"
+        className="mt-8 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-dim transition-colors hover:text-fg sm:mt-10"
       >
         what a blueprint is
         <span aria-hidden>&darr;</span>
