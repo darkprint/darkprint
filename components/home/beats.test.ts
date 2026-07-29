@@ -164,7 +164,15 @@ describe("the landing carries no page of the site it is introducing", () => {
     // `useReveal`'s `static` phase covers the server, a reader with JS off and a reader
     // who asked for reduced motion. A scene that shipped `opacity-0` in the HTML would be
     // invisible to all three.
-    expect(beat(name)).not.toContain("opacity-0");
+    //
+    // One deliberate exception, added 2026-07-29: beat 1's wordmark trace overlay
+    // (`data-mark="trace"`, the wiring-draw entrance's letter-outline layer) is a
+    // JS-only decorative effect whose own finished/resting state is invisible — the
+    // trace has already faded out once the entrance settles, leaving only the solid
+    // letters `data-mark="mark"` carries, which this same check still covers. Stripped
+    // out before the check runs; every other element in every beat is still held to it.
+    const html = beat(name).replace(/<svg[^>]*data-mark="trace"[\s\S]*?<\/svg>/, "");
+    expect(html).not.toContain("opacity-0");
   });
 });
 

@@ -11,10 +11,20 @@
    the whole of the landing's animation budget is spent here, on
    four beats and nothing else:
 
-     1. the name arrives a letter at a time      text.splitText
+     1. each letter draws, then instantiates     splitText + svg.createDrawable
      2. a rule is drawn under it                 svg.createDrawable
      3. the name settles                         createSpring
      4. one pass of light crosses the letters    stagger
+
+   Beat 1's own two steps, added when the letter arrival became a
+   "wiring-draw" (Task 6 of the visual-polish plan): a `data-mark="trace"`
+   overlay — nine letterform outlines traced from
+   `components/hero/wordmark-paths.ts` — draws in stroke-only, center out,
+   then cross-fades into the real, solid `dp-char` letters beneath it and
+   fades back out. The overlay is `opacity-0` by default in the markup: it
+   is a JS-only decorative layer, and its own resting state (after the
+   entrance settles, and for a reader who never runs the timeline) is
+   invisible, leaving only the real letters `data-mark="mark"` carries.
 
    ── What stays true with no script ──
    Spec §0: text is real DOM at SSR time and animation only moves
@@ -60,6 +70,8 @@ import {
 import { FLOW, FLOW_SELECTOR, FlowEdge } from "@/components/viz";
 import { useIsomorphicLayoutEffect, useReveal } from "@/components/viz/useReveal";
 
+import { WORDMARK_LETTER_PATHS } from "./wordmark-paths";
+
 /** The site's name, and the only word this beat is about. */
 const MARK = "DarkPrint";
 
@@ -73,6 +85,49 @@ const CLAIM = "Specifications go in. Software comes out.";
 
 /** The rule under the name, in scene units. Tall enough for the pulse's stroke. */
 const RULE = { width: 900, height: 6 } as const;
+
+/** Cumulative x-offset of each letter, and the overlay's total width, in the same
+    100-unit em box `scripts/generate-wordmark-paths.ts` generated the paths in. */
+const WORDMARK_LAYOUT = (() => {
+  let x = 0;
+  const offsets = WORDMARK_LETTER_PATHS.map((letter) => {
+    const at = x;
+    x += letter.advance;
+    return at;
+  });
+  return { offsets, totalWidth: x };
+})();
+
+/**
+ * The vertical box the trace overlay's `viewBox` uses, derived from where the letterforms
+ * actually put ink rather than from the generator comment's nominal "100 units tall."
+ *
+ * `getPath` scales each glyph to a baseline at y=0 with ascenders in negative y (SVG is
+ * y-down); "DarkPrint" has no descenders, so every coordinate in `WORDMARK_LETTER_PATHS`
+ * falls in roughly [-71, 1.5]. A `viewBox` of `0 0 W 100` — spanning only positive y — would
+ * put almost the whole glyph above the visible box and draw nothing. Scanning the actual
+ * path data for its true bounds (rather than hand-picking a number that would go stale the
+ * moment the wordmark or font changes) keeps this correct if `wordmark-paths.ts` is ever
+ * regenerated.
+ *
+ * Only `M`/`L`/`Q` appear in the generated data (a TrueType, quadratic-curve font), and
+ * every argument list for those three commands is a whole number of `(x, y)` pairs, so the
+ * numbers alternate x, y, x, y, ... across the whole path regardless of command boundaries.
+ */
+const WORDMARK_INK = (() => {
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const letter of WORDMARK_LETTER_PATHS) {
+    const numbers = letter.d.match(/-?\d+\.?\d*/g)?.map(Number) ?? [];
+    for (let i = 1; i < numbers.length; i += 2) {
+      const y = numbers[i];
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  const pad = 6;
+  return { top: minY - pad, height: maxY - minY + pad * 2 };
+})();
 
 /** Every element the timeline touches carries this, and the timeline finds them by it. */
 function handle(id: string): string {
@@ -89,11 +144,11 @@ function handle(id: string): string {
 const AT = {
   eyebrow: 120,
   letters: 240,
-  settle: 900,
-  rule: 820,
-  light: 1180,
-  claim: 1320,
-  cue: 1900,
+  settle: 980,
+  rule: 900,
+  light: 1260,
+  claim: 1400,
+  cue: 1980,
 } as const;
 
 export function Wordmark() {
@@ -109,7 +164,8 @@ export function Wordmark() {
 
     const scope = createScope({ root }).add(() => {
       const mark = root.querySelector<HTMLElement>(handle("mark"));
-      if (mark === null) return;
+      const traceOverlay = root.querySelector<SVGSVGElement>(handle("trace"));
+      if (mark === null || traceOverlay === null) return;
 
       /* `accessible` defaults on, which inserts a visually-hidden copy of the original
          text and marks every generated span `aria-hidden`. That is what lets the heading
@@ -124,25 +180,52 @@ export function Wordmark() {
       const rule = svg.createDrawable(root.querySelectorAll(FLOW_SELECTOR.line));
       const travelling = root.querySelectorAll<SVGPathElement>(FLOW_SELECTOR.pulse);
 
+      /* The wiring-draw overlay (Task 6): each letter's outline traces in, then the real
+         letter beneath it cross-fades in and the trace fades out. `traceOverlay` is the
+         whole `<svg>`, faded in and out as one unit for the beat's duration; `traceDrawable`
+         wraps its nine letterform `<path>`s so each can be drawn with `svg.createDrawable`,
+         the same mechanic the rule under the name already uses. */
+      const traceLetters = root.querySelectorAll<SVGPathElement>(
+        `${handle("trace")} [data-mark="trace-letter"]`,
+      );
+      const traceDrawable = svg.createDrawable(traceLetters);
+
       /* Set rather than declared as `from` values: a layout effect runs before paint, so
          the hidden state is what the reader's first frame shows and there is no finished
          heading flashing up before it collapses. */
-      utils.set(letters, { opacity: 0, translateY: "0.42em", scale: 0.92 });
+      // Letters no longer slide or scale in — they stay in their final position and
+      // simply wait, invisible, for the trace overlay to draw and then cross-fade
+      // into them.
+      utils.set(letters, { opacity: 0 });
       utils.set(aura, { opacity: 0, scale: 0.62 });
       utils.set(rule, { draw: "0 0" });
+      utils.set(traceDrawable, { draw: "0 0" });
       utils.set(travelling, { opacity: 0 });
       utils.set([...eyebrow, ...claim, ...cue], { opacity: 0, translateY: 10 });
 
       createTimeline({ defaults: { ease: "outQuad" } })
         .add(aura, { opacity: 1, scale: 1, duration: 1400, ease: "outCubic" }, 0)
         .add(eyebrow, { opacity: 1, translateY: 0, duration: 520 }, AT.eyebrow)
-        /* From the centre out, so the two halves of the name arrive together and the
-           word reads as one object landing rather than as a line of type being set. */
+        /* The wiring-draw entrance (Task 6): the trace overlay fades in, each letter's
+           outline draws in from the centre out — like a circuit trace being sketched,
+           the same `svg.createDrawable` mechanic the rule under the name already uses —
+           and then each letter "instantiates": its stroke-only trace fades out while the
+           real, solid DOM letter fades in underneath it, in place. The overlay fades out
+           again once every letter has taken over, just before the settle. */
+        .add(traceOverlay, { opacity: 1, duration: 200 }, AT.letters)
         .add(
-          letters,
-          { opacity: 1, translateY: 0, scale: 1, duration: 880, ease: "outExpo" },
+          traceDrawable,
+          { draw: "0 1", duration: 260, ease: "inOutQuad" },
           stagger(58, { from: "center", start: AT.letters }),
         )
+        /* `AT.letters + 260` is the trace's own draw duration, so the cross-fade for the
+           centre letters starts exactly as their outline finishes drawing. */
+        .add(
+          letters,
+          { opacity: 1, duration: 220, ease: "outQuad" },
+          stagger(58, { from: "center", start: AT.letters + 260 }),
+        )
+        .add(traceOverlay, { opacity: 0, duration: 200 }, AT.settle - 200)
         /* The settle. A spring rather than an ease because the overshoot is the point:
            the name arrives slightly large and comes to rest, which is what makes it read
            as having weight. A spring ignores `duration` and stops when it stops.
@@ -214,22 +297,51 @@ export function Wordmark() {
       </p>
 
       <h1 className="mt-5 flex flex-col items-center gap-3 sm:gap-4">
-        <span
-          data-mark="mark"
-          suppressHydrationWarning
-          className="block font-display font-semibold leading-[0.92] tracking-[-0.035em] text-fg"
-          style={{
-            /* The lower bound is what a 390-pixel phone gets, and it is set from the word
-               rather than from a scale: nine characters of the display face at 15vw fill
-               a phone's text column and stop, so the name never wraps and never shrinks
-               to a caption. */
-            fontSize: "clamp(3.4rem, 15vw, 9rem)",
-            textShadow:
-              "0 0 32px color-mix(in oklab, var(--color-cyan) 32%, transparent), 0 0 120px color-mix(in oklab, var(--color-blueprint-line) 22%, transparent)",
-          }}
-        >
-          {MARK}
-        </span>
+        {/* `relative`, sized to nothing but the name itself (the overlay below is
+            `absolute` and so does not add to it) — the wiring-draw trace has to land on
+            top of exactly the letters, not the whole heading (which also carries the rule
+            and the claim beneath it). */}
+        <div className="relative">
+          <span
+            data-mark="mark"
+            suppressHydrationWarning
+            className="block font-display font-semibold leading-[0.92] tracking-[-0.035em] text-fg"
+            style={{
+              /* The lower bound is what a 390-pixel phone gets, and it is set from the word
+                 rather than from a scale: nine characters of the display face at 15vw fill
+                 a phone's text column and stop, so the name never wraps and never shrinks
+                 to a caption. */
+              fontSize: "clamp(3.4rem, 15vw, 9rem)",
+              textShadow:
+                "0 0 32px color-mix(in oklab, var(--color-cyan) 32%, transparent), 0 0 120px color-mix(in oklab, var(--color-blueprint-line) 22%, transparent)",
+            }}
+          >
+            {MARK}
+          </span>
+
+          {/* The wiring-draw overlay. Invisible by default (`opacity-0`, no JS needed) —
+              a reader with no JS or reduced motion never sees a half-drawn letter, only
+              the finished `data-mark="mark"` text above. JS-only readers get this faded
+              in for the draw beat and back out again once the real letters take over. */}
+          <svg
+            aria-hidden
+            data-mark="trace"
+            viewBox={`0 ${WORDMARK_INK.top} ${WORDMARK_LAYOUT.totalWidth} ${WORDMARK_INK.height}`}
+            preserveAspectRatio="xMidYMid meet"
+            className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
+            fill="none"
+            stroke="var(--color-cyan-bright)"
+            strokeWidth={2.4}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            {WORDMARK_LETTER_PATHS.map((letter, i) => (
+              <g key={`${letter.char}-${i}`} transform={`translate(${WORDMARK_LAYOUT.offsets[i]}, 0)`}>
+                <path data-mark="trace-letter" d={letter.d} />
+              </g>
+            ))}
+          </svg>
+        </div>
 
         {/* The rule, drawn. `aria-hidden` because the heading says everything it says;
             a decorative line with an accessible name is a second announcement of the
