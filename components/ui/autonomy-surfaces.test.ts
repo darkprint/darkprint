@@ -78,6 +78,20 @@ describe("the file tree renders something", () => {
   });
 });
 
+describe("the card's autonomy bar sits above the thumbnail, not inside AutonomyMeter", () => {
+  it("ContentCard renders AutonomyBar and AutonomyMeter as siblings, not nested", () => {
+    const card = STRIPPED.find((f) => f.path === "components/ui/ContentCard.tsx");
+    expect(card).toBeDefined();
+    expect(card!.text).toContain("<AutonomyBar");
+    expect(card!.text).toContain("<AutonomyMeter");
+    // AutonomyBar must not be inside AutonomyMeter.tsx itself — the two surfaces stay
+    // separate (see the visual-polish spec §1: additive, not a replacement).
+    const meter = STRIPPED.find((f) => f.path === "components/ui/AutonomyMeter.tsx");
+    expect(meter).toBeDefined();
+    expect(meter!.text).not.toContain("<AutonomyBar");
+  });
+});
+
 /* --------------------- 1. the indicator's colour --------------------- */
 
 /**

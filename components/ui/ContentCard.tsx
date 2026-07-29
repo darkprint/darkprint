@@ -5,6 +5,7 @@ import { contentHref } from "@/lib/href";
 import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
 import { Avatar } from "./Avatar";
 import { KindBadge } from "./Badge";
+import { AutonomyBar } from "./AutonomyBar";
 import { AutonomyMeter } from "./AutonomyMeter";
 import { PhaseCoverageBadge } from "./PhaseCoverage";
 import { TagPill } from "./TagPill";
@@ -44,12 +45,17 @@ export function ContentCard({
     <Link
       href={contentHref(item)}
       className={cx(
-        "group flex flex-col overflow-hidden rounded-lg border border-line bg-surface transition-all duration-200 hover:border-line-bright hover:shadow-[0_12px_40px_-24px_var(--color-cyan)]",
+        "group flex flex-col overflow-hidden rounded-lg border border-line bg-surface bp-grid transition-all duration-200 hover:border-line-bright hover:shadow-[0_12px_40px_-24px_var(--color-cyan)]",
         className,
       )}
     >
       {/* preview */}
       <div className="relative h-40 overflow-hidden border-b border-line bg-blueprint-deep/40 bp-grid">
+        <AutonomyBar
+          level={item.autonomy.level}
+          label={item.autonomy.label}
+          className="absolute inset-x-0 top-0 z-10"
+        />
         <GraphThumbnail
           graph={item.graph}
           className="h-full w-full p-2 opacity-90 transition-transform duration-300 group-hover:scale-[1.03]"
