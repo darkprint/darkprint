@@ -135,7 +135,7 @@ Prose only, at `340931e`:
 | 1,811 | `/towards-a-dark-factory/which-tasks` | |
 | ~1,700 | `/blueprints/<slug>` ×9 | the non-listing half: About, Security, Download, Registry stats |
 
-**Done at `9c4e1e2`.** Measured on the rule above:
+**Done at `2d70354`.** Measured on the rule above:
 
 | page | before | after | |
 |---|---|---|---|
