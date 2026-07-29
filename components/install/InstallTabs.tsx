@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { cx } from "@/lib/format";
 import { MCP_CLIENTS } from "./clients";
@@ -12,30 +12,59 @@ export function InstallTabs() {
   // `aria-labelledby` triangle `components/build/BuildPanes.tsx` uses for its own tabs.
   const tabsId = useId();
 
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  /**
+   * Arrow keys across the tablist, with selection following focus — the same
+   * automatic-activation tablist `components/build/BuildPanes.tsx`'s `onTabKeyDown`
+   * implements for its own three readings, ported here rather than reinvented for this
+   * simpler, single-row list of clients.
+   */
+  function onTabKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const at = MCP_CLIENTS.findIndex((client) => client.id === active);
+    let next = -1;
+    if (event.key === "ArrowRight") next = (at + 1) % MCP_CLIENTS.length;
+    else if (event.key === "ArrowLeft") next = (at - 1 + MCP_CLIENTS.length) % MCP_CLIENTS.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = MCP_CLIENTS.length - 1;
+    else return;
+    event.preventDefault();
+    setActive(MCP_CLIENTS[next].id);
+    tabRefs.current[next]?.focus();
+  }
+
   return (
     <div className="panel p-4 sm:p-6">
       <div
         className="flex flex-wrap gap-2 border-b border-line pb-3"
         role="tablist"
         aria-label="MCP client"
+        onKeyDown={onTabKeyDown}
       >
-        {MCP_CLIENTS.map((client) => (
-          <button
-            key={client.id}
-            type="button"
-            role="tab"
-            id={`${tabsId}-tab-${client.id}`}
-            aria-selected={client.id === active}
-            aria-controls={`${tabsId}-panel`}
-            onClick={() => setActive(client.id)}
-            className={cx(
-              "rounded-md px-3 py-1.5 font-mono text-xs uppercase tracking-[0.1em] transition-colors",
-              client.id === active ? "bg-surface-2 text-fg" : "text-dim hover:text-fg",
-            )}
-          >
-            {client.label}
-          </button>
-        ))}
+        {MCP_CLIENTS.map((client, index) => {
+          const isActive = client.id === active;
+          return (
+            <button
+              key={client.id}
+              type="button"
+              role="tab"
+              id={`${tabsId}-tab-${client.id}`}
+              aria-selected={isActive}
+              aria-controls={`${tabsId}-panel`}
+              tabIndex={isActive ? 0 : -1}
+              ref={(element) => {
+                tabRefs.current[index] = element;
+              }}
+              onClick={() => setActive(client.id)}
+              className={cx(
+                "rounded-md px-3 py-1.5 font-mono text-xs uppercase tracking-[0.1em] transition-colors",
+                isActive ? "bg-surface-2 text-fg" : "text-dim hover:text-fg",
+              )}
+            >
+              {client.label}
+            </button>
+          );
+        })}
       </div>
 
       <div
