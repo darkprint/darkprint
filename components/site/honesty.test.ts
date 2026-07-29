@@ -36,6 +36,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import SpecCardPage from "@/app/spec/card/page";
+import InstallPage from "@/app/install/page";
 import { allBlueprints } from "@/lib/content";
 import { CARD_ROWS } from "@/components/spec/rows";
 import { ScoringModel } from "@/components/spec/ScoringModel";
@@ -58,6 +59,14 @@ function canvas(slug: string): string {
 }
 
 const SPEC_CARD = renderToStaticMarkup(createElement(SpecCardPage as never));
+/**
+ * The one page whose whole subject is a capability that does not exist yet — an MCP
+ * server. `InstallTabs`'s own `ComingSoonBadge` says so beside the config it previews,
+ * but a badge is not a sentence; this is the page's lead, asserted so the disclaimer
+ * cannot go missing from `/install` the way it went missing from other pages before
+ * (see the file header).
+ */
+const INSTALL_PAGE = renderToStaticMarkup(createElement(InstallPage as never));
 const WHICH_TASKS = renderToStaticMarkup(createElement(WhichTasksChecks));
 const RECAP = renderToStaticMarkup(createElement(SectionComponentRecap));
 /**
@@ -164,6 +173,15 @@ const CLAIMS: Claim[] = [
     says: "reference another as a composite node, and nothing on the site does that today",
     where: "present",
     html: RECAP,
+  },
+
+  /* ---- /install ---- */
+  {
+    surface: "/install · the page's own lead sentence",
+    why: "doc 2 §0.4's disclaimer on the page a reader lands on specifically to set up MCP access. A tab strip previewing a client config reads as something to run unless the page says, in the open and beside it, that nothing here is live yet",
+    says: "not built yet: this is what setup will look like once the registry has an mcp server to point a client at",
+    where: "open",
+    html: INSTALL_PAGE,
   },
 ];
 
