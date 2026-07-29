@@ -106,10 +106,21 @@ export function ContentCard({
         </div>
 
         <div className="mt-1 flex items-center justify-between border-t border-line pt-3">
-          <div className="flex items-center gap-2">
+          {/* The author row reaches its own profile (author's request, 2026-07-29).
+              `relative z-20` for the same reason `FavoriteStar` has it: the card's
+              stretched `<Link>` sits at `z-10` over everything in plain flow, so a
+              nested link without a stacking context of its own is covered by it and
+              the whole tile navigates to the blueprint instead. `w-fit` keeps the hit
+              area on the name rather than across the empty half of the row. */}
+          <Link
+            href={`/u/${item.author.username}`}
+            className="group/author relative z-20 flex w-fit items-center gap-2"
+          >
             <Avatar author={item.author} size="sm" />
-            <span className="text-xs text-muted">{item.author.displayName}</span>
-          </div>
+            <span className="text-xs text-muted group-hover/author:text-fg">
+              {item.author.displayName}
+            </span>
+          </Link>
           <Meta downloads={item.downloads} votes={item.votes} />
         </div>
       </div>

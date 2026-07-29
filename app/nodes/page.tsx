@@ -3,6 +3,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { NodeBrowser } from "@/components/nodes/NodeBrowser";
 import type { NodeSummary } from "@/components/nodes/NodeCardSummary";
 import { allNodeCards, getOntologyView, getRegistry } from "@/lib/content";
+import { getAuthor } from "@/lib/data/users";
 
 export const metadata: Metadata = {
   title: "Nodes",
@@ -37,6 +38,11 @@ export default function NodesPage() {
       (marker) => ontology.resolve(marker, "risk-marker")?.term.label ?? marker,
     ),
     usedIn: registry.usersOf(record.id).length,
+    /* Resolved here rather than in the tile, and left `undefined` when the table does
+       not hold the name. The tile turns this into a link to `/u/<username>`, and that
+       route is `dynamicParams = false`, so an unresolved author has to fall out before
+       it reaches the markup. Same lookup the card's own page does. */
+    author: record.card.author === undefined ? undefined : getAuthor(record.card.author),
   }));
 
   const blueprints = registry.blueprints().length;
@@ -47,7 +53,7 @@ export default function NodesPage() {
         as="h1"
         eyebrow="Registry"
         title="Node cards"
-        lead={`The reusable unit is not a sub-graph, it is a node. One card says what a node does, what it takes in, what it hands on and what it puts at risk — and the ${blueprints} blueprints in the registry are assembled out of these ${nodes.length}. Every card is versioned, content-addressed, and pinned by exact reference.`}
+        lead={`One card says what a node does, what it takes in, what it hands on and what it puts at risk — and the ${blueprints} blueprints in the registry are assembled out of these ${nodes.length}. Every card is versioned, content-addressed, and pinned by exact reference.`}
         className="mb-10"
       />
       <NodeBrowser nodes={nodes} />

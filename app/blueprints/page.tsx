@@ -27,29 +27,25 @@ export const metadata: Metadata = {
  * forking is a property of the format and nothing this site runs. A shorter retelling of
  * that section is how that row goes missing.
  *
- * The lead names what the controls do, and it has to keep naming it correctly. Doc 2
- * §1.1: "Nella galleria l'autonomia è un **filtro**, non un ordinamento di merito."
- * Autonomy and phase coverage are ways *in* — they narrow the grid the way a category
- * does — and neither is a key the grid can be ordered by. The sentence used to offer
- * "sort by autonomy", which advertised the league table the principle rules out and
- * had also outlived the control: `SortKey` in `GalleryBrowser` is recency, downloads
- * and votes, and autonomy was deliberately dropped from it.
+ * The lead says what a blueprint *is*, at the author's request (2026-07-29), and that is
+ * the one job it has now. It used to count the shelf and split it by whether a graph had
+ * a person in it, which put a classification in front of a reader before the thing being
+ * classified had been described.
  *
- * The two remaining orderings are named with what stands behind them, because nothing
- * does. Doc 2 §0.4 and the honesty rule: there is no ballot and no download counter, and
- * a lead offering to order the shelf "by what is downloaded or upvoted" described two
- * counters the site does not have, one click from a page saying so outright. That
- * sentence is one of four places the seeded figures are marked on this route, with the
- * two sort options that say `seeded` in the option itself, the `◐ seeded` note in the
- * control bar, and the tooltip on every tile's two counts in `ContentCard`.
- *
- * The lead also has to keep describing the shelf correctly. It used to open "Every dark
+ * Two earlier drafts of this lead are worth not rediscovering. It once opened "Every dark
  * factory in the registry", which made a classification into a condition of entry and was
- * false about three of the nine besides. Doc 2 §1.1 names that exact reading as the
- * barrier the principle exists to remove — somebody looks at their own pipeline, sees a
- * manual step, and concludes they are not far enough along to publish. So the count of
- * graphs with nobody in them is stated as a count, the rest are described by what they do
- * say, and neither sentence is phrased as a rank.
+ * false about three of the nine besides; doc 2 §1.1 names that exact reading as the
+ * barrier the principle exists to remove, where somebody looks at their own pipeline,
+ * sees a manual step, and concludes they are not far enough along to publish. It later
+ * offered to order the shelf "by what is downloaded or upvoted", which advertised two
+ * counters this site does not have. Neither idea belongs in a sentence that only has to
+ * define the noun.
+ *
+ * Doc 2 §1.1 still governs the controls under it: "Nella galleria l'autonomia è un
+ * **filtro**, non un ordinamento di merito." Autonomy and phase coverage narrow the grid
+ * the way a category does, and neither is a key it can be ordered by — `SortKey` in
+ * `GalleryBrowser` is recency, downloads and votes, and autonomy was deliberately
+ * dropped from it.
  *
  * It lives at `app/blueprints/page.tsx`, the sibling of
  * `app/blueprints/[slug]/page.tsx`: a route segment folder holds both its own
@@ -68,10 +64,6 @@ export default function BlueprintsPage() {
   const registry = getRegistry();
   const tags = registry.tags();
   const categories = registry.categories();
-  // Counted off the archive rather than asserted, so the sentence cannot outlive the shelf
-  // it describes. It is a count of a shape, and the clause beside it says what the others
-  // carry instead: doc 2 §1.1 rules out phrasing either group as short of the other.
-  const darkFactories = blueprints.filter((b) => b.autonomy.isDarkFactory).length;
 
   return (
     <>
@@ -84,30 +76,24 @@ export default function BlueprintsPage() {
           as="h1"
           eyebrow="Registry"
           title="Blueprints"
-          lead={`${blueprints.length} complete pipelines you can read as a graph and take away as a folder. ${darkFactories} of them carry no human node and are classed dark factories; the rest name the node where a person acts.`}
+          lead="A blueprint is an agent pipeline written down as a graph: every node pinned to a card that says what it runs, what it takes in, what it hands on and what it must never receive. It is a folder of text you can read here and take away."
         />
       </div>
 
-      {/* The grid's own controls, introduced where they are rather than in the lead a
-          section above them. The seeded sentence stays with the two orderings it is
-          about: doc 2 §0.4 wants the marker at the point of offer, and the control bar
-          repeats it beside the select. */}
       <div className="container-page py-16 sm:py-20">
-        <h2 className="font-display text-2xl font-semibold tracking-tight text-fg">
-          The shelf
-        </h2>
-        <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-muted">
-          Narrow the grid by tag, category, the phases a factory covers or its autonomy
-          class. It also orders by downloads and by votes, and both of those are seeded
-          rows in the index rather than anything this site counted.
-        </p>
-        <div className="mt-8">
-          <GalleryBrowser
-            blueprints={blueprints}
-            tags={tags}
-            categories={categories}
-          />
-        </div>
+        {/* Visually gone at the author's request, and still in the outline. The browser
+            below labels each of its controls and carries no heading of its own, so
+            deleting this outright would leave the grid as the one region on the page a
+            screen reader reaches with no name, under an `h1` that names the whole route.
+            `sr-only` is the version of this heading that costs a sighted reader nothing.
+
+            The sentence that stood here described the two orderings and said both are
+            seeded. Doc 2 §0.4 wants that marker at the point of offer, and it is still
+            made three times where the offer actually is: both options say `seeded` in
+            the option text, the control bar repeats it beside the select, and every
+            tile's two counts carry it in `ContentCard`. */}
+        <h2 className="sr-only">The shelf</h2>
+        <GalleryBrowser blueprints={blueprints} tags={tags} categories={categories} />
       </div>
 
       {/* Below the shelf, and that is a deliberate departure from redesign spec §3, which

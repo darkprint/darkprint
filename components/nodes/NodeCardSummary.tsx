@@ -1,6 +1,8 @@
 import Link from "next/link";
+import type { Author } from "@/lib/types";
 import { HUMAN_PRESENCE_MARK, cx } from "@/lib/format";
 import { nodeHref } from "@/lib/href";
+import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { FavoriteStar } from "@/components/ui/FavoriteStar";
 import { TagPill } from "@/components/ui/TagPill";
@@ -39,6 +41,16 @@ export interface NodeSummary {
   riskMarkers: string[];
   /** Blueprints pinning any version of this card. */
   usedIn: number;
+  /**
+   * Who published this card, resolved against the user table on the server.
+   *
+   * `undefined` covers two different things and the tile renders both the same way: a
+   * card that declares no `author`, and one naming somebody the table does not hold.
+   * The second is the reason this is a resolved `Author` rather than the raw string —
+   * `/u/[username]` is `dynamicParams = false` over the six known profiles, so linking
+   * an unresolved name would ship a 404 from a grid of 53 tiles.
+   */
+  author?: Author;
 }
 
 /** How many tool chips fit before the rest collapse into a count. */
@@ -118,6 +130,26 @@ export function NodeCardSummary({
             <span className="font-mono text-[11px] text-dim">+{overflow} more</span>
           )}
         </div>
+      )}
+
+      {/* Who published it, linked to their profile (author's request, 2026-07-29). Its
+          own row above the counts: the row below is a wrapping mono strip of three
+          independent facts, and a name inside it reads as a fourth one.
+
+          `relative z-20` for the same reason `FavoriteStar` carries it — the tile's
+          stretched `<Link>` sits at `z-10` over everything in plain flow, so a nested
+          link without its own stacking context is covered and the click opens the node
+          instead. `w-fit` keeps the target on the name. */}
+      {node.author !== undefined && (
+        <Link
+          href={`/u/${node.author.username}`}
+          className="group/author relative z-20 flex w-fit items-center gap-2"
+        >
+          <Avatar author={node.author} size="sm" />
+          <span className="text-xs text-muted group-hover/author:text-fg">
+            {node.author.displayName}
+          </span>
+        </Link>
       )}
 
       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-line pt-3 font-mono text-[11px] text-dim">
