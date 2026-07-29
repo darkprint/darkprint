@@ -4,6 +4,7 @@ import type { AutonomyResult, Diagnostic, SecurityResult } from "@/lib/core";
 import { shortDigest } from "@/lib/core";
 import type { StarterRunBudget } from "@/lib/starter/variants";
 import { autonomyStatement, cx } from "@/lib/format";
+import { AutonomyBar } from "@/components/ui/AutonomyBar";
 
 /* ============================================================
    The panel that never leaves the screen.
@@ -29,6 +30,15 @@ import { autonomyStatement, cx } from "@/lib/format";
    the findings and the digest come straight off `loadBundle`; the
    run bound is arithmetic over the topology and the cap, and it
    prints its own working.
+
+   ── The one named exception ──
+   Added 2026-07-29: `AutonomyBar` (a separate component,
+   `components/ui/AutonomyBar.tsx`) now renders a segmented gauge next to the class
+   label above and in `ScoreStrip` below — the same deliberate, documented exception to
+   the no-ordinal rule made for the blueprint card top
+   (`docs/superpowers/specs/2026-07-29-visual-polish-design.md` §1). This file's own
+   `Band`/`Was` treatment is unchanged: no fill, no track, no ordinal printed as a
+   number anywhere else on this panel.
    ============================================================ */
 
 const LABEL = "font-mono text-[10px] uppercase tracking-[0.18em] text-dim";
@@ -102,8 +112,9 @@ export function ScoreStrip({
     >
       <span className="uppercase tracking-[0.16em] text-dim">Your factory</span>
       {autonomy !== undefined && (
-        <span className="text-muted">
+        <span className="flex items-center gap-2 text-muted">
           autonomy <span className="text-fg">{autonomy.label}</span>
+          <AutonomyBar level={autonomy.level} label={autonomy.label} className="w-16" />
         </span>
       )}
       {security !== undefined && (
@@ -230,6 +241,11 @@ export function ScorePanel({
                 {autonomy.label}
               </Band>
             </div>
+            <AutonomyBar
+              level={autonomy.level}
+              label={autonomy.label}
+              className="max-w-40"
+            />
             <p className="text-[11px] leading-relaxed text-muted">
               {people.length === 0 ? (
                 "No node in this graph hands control to a person."
