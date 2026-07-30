@@ -1,59 +1,87 @@
 "use client";
 
 /* ============================================================
-   Drawing 1 of 3 — what comes down, and which file runs.
+   Drawing 1 of 3 — one point, arriving.
 
-   The folder is four rows because that is what `exportBundle`
-   writes (`lib/content/bundle-export.ts`), and only the first row
-   is wired to the runner because only the first row is what
-   Attractor is given. `factory.dot` carries every card's `spec`
-   inlined as its node's prompt, so the other three are there to be
-   read and checked rather than to be executed, and a drawing that
-   ran an arrow from all four would say the opposite.
+   The author's verdict on the first version of this file and its sibling opposite it:
+   "I expected avoiding the use of a blueprint but a more minimal illustration." That
+   drawing depicted four named files and a runner they fed into — a topology, nodes and an
+   edge and a direction — dressed in the same luminous register the site's actual
+   blueprints are drawn in two beats earlier and one page away. Showing a graph to
+   illustrate "you get a folder" was the mismatch: the concept is a single motion, arrive,
+   and a single glowing point settling onto a resting mark draws that motion directly,
+   with nothing left over to misread as a pipeline.
 
-   ── Why this is a column of discs and not a column of boxes ──
-   Redesign spec §1, on the author's instruction: "the look of [the
-   roles figure] and related figure using the same style, I don't
-   like at all. What I like is the pattern on the background but not
-   the style of the graph." This drawing was one of the three that
-   still shipped the CAD register after that instruction, on
-   `/blueprints`, which is where the landing's own primary door
-   goes. A file is a lit point with its name under it, the run into
-   the runner carries a travelling light, and the graticule behind
-   it is untouched.
+   The point carries `name` and no `label`: an accessible name with nothing visible under
+   it. `FlowNode` only renders a `<text>` when `label` is set, so the point stays wordless
+   on screen while `focusProps` still gives it a focus stop and an `aria-label` — the
+   first cut of this file gave it neither, on the reasoning that an unlabelled glyph is
+   decorative, and `beats.test.ts`'s "every figure on the landing is reachable without a
+   pointer" caught the regression that reasoning actually was: a keyboard or screen reader
+   is not owed less of this drawing than a mouse gets. `Caption` is the one *visible* word
+   in the frame, which is what satisfies `scene-labels.test.ts`'s "a scene rendered with no
+   words in it" floor without turning the point itself back into a named thing.
+
+   ── Why the point moves inside `FlowLift` rather than being animated directly ──
+   This file's own history: a CSS `transform` written by anime.js *replaces* an SVG
+   `transform` presentation attribute rather than composing with it — `SectionNodeIsCard`'s
+   card shipped drawn at the origin once for exactly this reason. `FlowNode`'s outer anchor
+   carries a static `transform="translate(x y)"`, so animating its position directly would
+   repeat that bug. `FlowLift` is the fix already built for it: the outer `lift-anchor`
+   holds the point's rest position — where the static, no-JS, reduced-motion frame shows
+   it, already arrived — and the inner `lift` group carries no static transform, so
+   `onScene` can safely give it a starting `translateY` above that rest position and
+   animate it back to zero, which is the one custom beat this drawing needs beyond the
+   shared entrance `useLuminousFlow` already plays.
    ============================================================ */
 
-import { FLOW, FlowEdge, FlowNode, FlowScene } from "@/components/viz";
+import { animate, utils } from "animejs";
+import { FLOW, FlowLift, FlowNode, FlowScene, toneColor, VIZ } from "@/components/viz";
 import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
 
-/**
- * The frame.
- *
- * 340 and not 420: these three panels render 270 CSS px wide inside a `panel` on a phone,
- * measured off a running build, and `FLOW.frame` carries the arithmetic that turns that
- * into a label size. At 420 the labels landed at 8.4 CSS px; at 340 they clear
- * `FLOW.frame.legible`.
- */
+/** 340×202: this file's original arithmetic, unchanged. These panels render 270 CSS px
+    wide, and `FLOW.frame` is what keeps a label legible at that width. */
 const FIGURE = { width: 340, height: 202 } as const;
 
-/** Row centres, top to bottom. `exportBundle` sorts by path; this reads runnable first. */
-const FILES: readonly { id: string; label: string; y: number }[] = [
-  { id: "factory", label: "factory.dot", y: 32 },
-  { id: "topology", label: "blueprint.dot", y: 78 },
-  { id: "cards", label: "cards/*.yaml", y: 124 },
-  { id: "readme", label: "README.md", y: 170 },
-];
+/** Where the point rests, arrived. The one position this drawing states. */
+const REST = { x: 170, y: 118 } as const;
 
-const COLUMN_X = 87;
-const RUNNER_X = 258;
-const RUNNER_Y = 78;
+/** How far above rest the point starts, and how long it takes to settle. Custom rather
+    than the shared entrance's stagger: that entrance fades and scales every node
+    together, and this drawing has exactly one thing in it, arriving on its own beat. */
+const DROP = 74;
+const DROP_MS = 640;
 
-/** The runnable file and the runner, larger than the three rows that are read rather than run. */
-const LIT_R = 8;
-const REST_R = 5;
+/** Half-width of the plain line the point settles onto. Not a node, not an edge — a
+    baseline, the way a shelf under a dropped object is a shelf and not a second object. */
+const TRAY_HALF = 30;
+const TRAY_Y = REST.y + FLOW.node.r + 8;
+
+function Caption({ x, y, children }: { x: number; y: number; children: string }) {
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor="middle"
+      fontSize={VIZ.font.sub}
+      fill={toneColor("dim")}
+      letterSpacing="0.08em"
+    >
+      {children}
+    </text>
+  );
+}
 
 export function DownloadScene() {
-  const flow = useLuminousFlow({ amount: 0.3 });
+  const flow = useLuminousFlow({
+    amount: 0.3,
+    onScene: ({ root }) => {
+      const lift = root.querySelector<SVGGElement>('[data-viz-id="download-point"]');
+      if (lift === null) return;
+      utils.set(lift, { translateY: -DROP });
+      animate(lift, { translateY: 0, duration: DROP_MS, ease: "outCubic", delay: 120 });
+    },
+  });
 
   return (
     <FlowScene
@@ -61,45 +89,46 @@ export function DownloadScene() {
       width={FIGURE.width}
       height={FIGURE.height}
       id="lifecycle-download"
-      label="A published bundle as four files, with one run from factory.dot to a runner"
-      description="A bundle is four files: factory.dot, blueprint.dot, the cards directory and a README. One run goes from factory.dot to Attractor on the reader's own machine. The other three files are read rather than executed."
+      label="A single point, come to rest on a line"
+      description="One glowing point settles onto a plain baseline and stays there. It stands for a folder of files that has finished arriving."
     >
-      <FlowEdge
-        from={[COLUMN_X, FILES[0].y]}
-        to={[RUNNER_X, RUNNER_Y]}
-        bend={-FLOW.edge.bend.gentle}
-        fromRadius={LIT_R}
-        toRadius={LIT_R}
-        label="runs this"
-        id="run"
+      {/* The guide the point travels: a dim dashed vertical, decorative and un-lit, the
+          way a shelf's supporting wall is not itself the shelf. Static — it needs no
+          animation of its own to say "downward". */}
+      <line
+        x1={REST.x}
+        y1={16}
+        x2={REST.x}
+        y2={REST.y - FLOW.node.r - 4}
+        stroke={toneColor("dim")}
+        strokeWidth={FLOW.edge.line}
+        strokeOpacity={FLOW.edge.lineOpacity}
+        strokeDasharray={VIZ.dash.leader}
       />
 
-      {FILES.map((file, index) => (
+      <line
+        x1={REST.x - TRAY_HALF}
+        y1={TRAY_Y}
+        x2={REST.x + TRAY_HALF}
+        y2={TRAY_Y}
+        stroke={toneColor("dim")}
+        strokeWidth={FLOW.edge.line}
+        strokeOpacity={FLOW.edge.lineOpacity}
+      />
+
+      <FlowLift x={REST.x} y={REST.y} id="download-point">
         <FlowNode
-          key={file.id}
-          id={file.id}
-          x={COLUMN_X}
-          y={file.y}
-          r={index === 0 ? LIT_R : REST_R}
-          lit={index === 0}
+          x={0}
+          y={0}
           tone="cyan"
-          label={file.label}
           reveal="always"
+          name="A point, arrived and at rest"
         />
-      ))}
+      </FlowLift>
 
-      {/* One disc and one string for the half this site has no part in. The old drawing
-          spent a box, a sub-label and a caption on the same sentence. */}
-      <FlowNode
-        id="runner"
-        x={RUNNER_X}
-        y={RUNNER_Y}
-        r={LIT_R}
-        tone="line"
-        label="attractor run"
-        name="attractor run, on your own machine with your own keys"
-        reveal="always"
-      />
+      <Caption x={REST.x} y={TRAY_Y + 26}>
+        arrived
+      </Caption>
     </FlowScene>
   );
 }

@@ -34,6 +34,19 @@
    section the way the server does and checks the same four properties every other beat is
    held to: no YAML, no table, no code block, full opacity with no script, and every link
    resolving.
+
+   ── The three drawings, redone ──
+   The author's verdict on the first pass at this section: "I don't totally like the
+   blueprints you used for download and compose. I expected avoiding the use of a
+   blueprint but a more minimal illustration. Same for the upload yours card." All three
+   scenes drew a graph — files wired to a runner, a small graph wired into a bigger one —
+   to illustrate ideas that are not about topology, one page after the landing's own beat
+   draws an actual blueprint and one beat after it opens a real card. Read `DownloadScene`,
+   `ComposeScene` and `UploadScene`'s own headers for what replaced each: a single point
+   arriving, two points travelling into the one between them, one point rising and fading
+   before it reaches the top. `UploadScene` is new outright — the panel had no drawing
+   before, and it is held to the same standard as the other two now rather than left as
+   the one panel that stayed a wall of text.
    ============================================================ */
 
 import Link from "next/link";
@@ -43,6 +56,7 @@ import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { Sheet } from "@/components/viz";
 import { DownloadScene } from "./lifecycle/DownloadScene";
 import { ComposeScene } from "./lifecycle/ComposeScene";
+import { UploadScene } from "./lifecycle/UploadScene";
 
 const STARTER = "/blueprints/starter-software-factory";
 
@@ -80,9 +94,9 @@ export function SectionLifecycle() {
 
             <Sheet
               register="blueprint"
-              label="bundles/starter-software-factory"
-              title="factory.dot runs as it stands"
-              note="written at build time"
+              label="a folder of files"
+              title="one point, come to rest"
+              note="already arrived"
             >
               <DownloadScene />
             </Sheet>
@@ -103,8 +117,8 @@ export function SectionLifecycle() {
 
             <Sheet
               register="blueprint"
-              label="one graph, wired into another"
-              title="one edge, crossing into a bigger pipeline"
+              label="two things, joined"
+              title="travelling into the one between them"
               note="a property of the format"
             >
               <ComposeScene />
@@ -126,6 +140,15 @@ export function SectionLifecycle() {
               <PanelHeading index="03" title="Upload yours" />
               <ComingSoonBadge />
             </div>
+
+            <Sheet
+              register="blueprint"
+              label="/upload"
+              title="rising, fading before it lands"
+              note="not built: publishing"
+            >
+              <UploadScene />
+            </Sheet>
 
             {/* Doc 2 §0.4, and §1 of this pass's own spec: this is the landing's one
                 highest-honesty-risk sentence, so it says what `/upload` does and stops

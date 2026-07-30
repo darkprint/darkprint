@@ -89,8 +89,8 @@ function latticeProps(): { chain: string[]; kin: string[] } {
  *
  * Four figures take their geometry from props, so the entry renders whatever the site
  * renders rather than the leaf: a leaf handed invented numbers is a drawing nobody ships.
- * `SectionLifecycle` reads the published card out of the archive and puts its two panels
- * on one page, which is why one entry names two files (`DownloadScene`, `ComposeScene`);
+ * `SectionLifecycle` puts three panels on one page, which is why one entry names three
+ * files (`DownloadScene`, `ComposeScene`, `UploadScene`);
  * `SectionAbsentEdge` runs two bundles through the engine and draws both with
  * `AbsentEdgeGraph`; `LatticeFigure` is laid out from the vocabulary.
  *
@@ -138,8 +138,9 @@ const ROSTER: readonly SceneEntry[] = [
     files: [
       "components/home/lifecycle/DownloadScene.tsx",
       "components/home/lifecycle/ComposeScene.tsx",
+      "components/home/lifecycle/UploadScene.tsx",
     ],
-    frames: 2,
+    frames: 3,
     render: () => framesOf(createElement(SectionLifecycle)),
   },
   {
