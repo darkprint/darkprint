@@ -1,5 +1,5 @@
 /* ============================================================
-   Spec §1, held to this section's three drawings.
+   Spec §1, held to this directory's drawings.
 
    "The content must be in the prerendered HTML. Text, YAML, labels
    and headings are real DOM at SSR time; animation only changes
@@ -17,33 +17,40 @@
    this suite under `environment: "node"` on purpose, and the
    question here is what the server writes, which is exactly what
    this function answers.
+
+   ── Why three drawings, and not the same three as before ──
+   `UpdateScene.tsx` is gone from this directory (the lifecycle-scoring pass, §2.3): the
+   synthetic `inferBump` demo it drew is not this site's only versioning story, and
+   `components/nodes/VersionHistory.tsx` tells the real one, off real published cards, on
+   every multi-version node page. `ComposeScene.tsx` (new) took its seat in `SectionLifecycle`
+   instead. `ForkScene.tsx` is still checked here even though `SectionLifecycle` no longer
+   renders it — it lives in this directory and a different page now draws it (the blueprint
+   detail page's `ForkAction`), and this suite is about what this directory's scenes render
+   at SSR, not about which page currently reaches for which file.
    ============================================================ */
 
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { framesOf } from "@/components/viz/label-boxes";
+import { ComposeScene } from "./ComposeScene";
 import { DownloadScene } from "./DownloadScene";
 import { ForkScene } from "./ForkScene";
-import { UpdateScene } from "./UpdateScene";
 
 const download = renderToStaticMarkup(createElement(DownloadScene));
 const fork = renderToStaticMarkup(createElement(ForkScene));
-const update = renderToStaticMarkup(
-  createElement(UpdateScene, {
-    cardId: "code-builder",
-    from: "1.0.0",
-    to: "2.0.0",
-    added: "report",
-    source: "tester",
-  }),
-);
+const compose = renderToStaticMarkup(createElement(ComposeScene));
 
 describe("the drawings render their finished state on the server", () => {
   it.each([
     ["download", download, ["factory.dot", "blueprint.dot", "README.md", "attractor run"]],
     ["fork", fork, ["as published", "your copy", "deployer", "a person approves"]],
-    ["update", update, ["code-builder", "@1.0.0", "@2.0.0", "+ report", "refused"]],
+    [
+      "compose",
+      compose,
+      ["your blueprint", "a bigger pipeline", "builder", "tester", "assemble", "wires in"],
+    ],
   ])("%s carries its labels as text", (_name, markup, labels) => {
     for (const label of labels) expect(markup).toContain(label);
   });
@@ -54,13 +61,13 @@ describe("the drawings render their finished state on the server", () => {
    * above legible rather than merely present.
    *
    * The class rather than an inline style since the conversion out of the CAD register:
-   * these three drawings hung their own `<g style={{opacity}}>` off `useSceneReveal`, and
+   * these drawings hung their own `<g style={{opacity}}>` off `useSceneReveal`, and
    * the luminous scene owns the same decision on the `<svg>` so a scene cannot forget it.
    */
   it.each([
     ["download", download],
     ["fork", fork],
-    ["update", update],
+    ["compose", compose],
   ])("%s is not held at nothing", (_name, markup) => {
     expect(markup).toContain("opacity-100");
     expect(markup).not.toContain("opacity-0");
@@ -74,32 +81,33 @@ describe("the drawings render their finished state on the server", () => {
   it.each([
     ["download", download],
     ["fork", fork],
-    ["update", update],
+    ["compose", compose],
   ])("%s reserves its box", (_name, markup) => {
     expect(markup).toContain("viewBox=");
     expect(markup).toContain("aspect-ratio:");
   });
 });
 
-describe("the update drawing takes its numbers from its caller", () => {
+describe("the compose drawing crosses into the bigger cluster, not before it", () => {
   /**
-   * The panel's whole claim is that the version and the verdict are computed. A scene with
-   * "2.0.0" written into it would keep printing 2.0.0 after `inferBump` changed its mind,
-   * which is the failure this file exists to make impossible.
+   * The whole argument of the drawing (`ComposeScene`'s own header comment): the crossing
+   * edge lands on the pipeline's second node, `assemble`, rather than its first, `intake`,
+   * which is what draws "joins a pipeline" rather than "runs before one". None of the
+   * checks above read where an edge actually goes, so a future edit that slid the landing
+   * point back onto the first node would pass every one of them; this reads the label's
+   * own position instead of trusting the id it was given.
    */
-  it("prints whatever version it is handed", () => {
-    const other = renderToStaticMarkup(
-      createElement(UpdateScene, {
-        cardId: "spec-planner",
-        from: "3.1.4",
-        to: "3.2.0",
-        added: "plan",
-        source: "router",
-      }),
-    );
-    expect(other).toContain("@3.1.4");
-    expect(other).toContain("@3.2.0");
-    expect(other).toContain("+ plan");
-    expect(other).not.toContain("code-builder");
+  it("places the crossing edge's label nearer assemble than intake", () => {
+    const [frame] = framesOf(createElement(ComposeScene));
+    const wiresIn = frame.labels.find((label) => label.text === "wires in");
+    const assemble = frame.labels.find((label) => label.text === "assemble");
+    const intake = frame.labels.find((label) => label.text === "intake");
+    expect(wiresIn, "the crossing edge's label is gone").toBeDefined();
+    expect(assemble, "the pipeline lost its assemble node").toBeDefined();
+    expect(intake, "the pipeline lost its intake node").toBeDefined();
+    const midpoint = (wiresIn!.left + wiresIn!.right) / 2;
+    const toAssemble = Math.abs(midpoint - (assemble!.left + assemble!.right) / 2);
+    const toIntake = Math.abs(midpoint - (intake!.left + intake!.right) / 2);
+    expect(toAssemble).toBeLessThan(toIntake);
   });
 });

@@ -1,10 +1,10 @@
 /* ============================================================
-   The landing's four beats, checked as the server writes them.
+   The landing's five beats, checked as the server writes them.
 
    Redesign spec §6 lists four properties of the built landing and
    every one of them is a property of the prerendered HTML:
 
-     the four beats' copy is in the page as text
+     the five beats' copy is in the page as text
      there is no YAML block, no scorecard and no term table
      every figure's labels are in the DOM at SSR
      the finished state is what a reader without JS gets
@@ -36,6 +36,7 @@ import { LANDING_NARROW, LANDING_WIDE } from "./graph";
 import { ROLE_ABSENCE, ROLE_BOXES } from "./roles";
 import { SectionBlueprint } from "./SectionBlueprint";
 import { SectionDoors } from "./SectionDoors";
+import { SectionLifecycle } from "./SectionLifecycle";
 import { SectionNodeIsCard } from "./SectionNodeIsCard";
 
 function render(beat: () => ReactNode): string {
@@ -46,7 +47,8 @@ const BEATS: [string, () => ReactNode][] = [
   ["1 the wordmark", Hero],
   ["2 the blueprint", SectionBlueprint],
   ["3 the card", SectionNodeIsCard],
-  ["4 the doors", SectionDoors],
+  ["4 the lifecycle", SectionLifecycle],
+  ["5 the doors", SectionDoors],
 ];
 
 const HTML = new Map(BEATS.map(([name, beat]) => [name, render(beat)]));
@@ -195,7 +197,7 @@ describe("every link the landing draws goes somewhere", () => {
 });
 
 describe("every figure on the landing is reachable without a pointer", () => {
-  it.each(["2 the blueprint", "3 the card"])(
+  it.each(["2 the blueprint", "3 the card", "4 the lifecycle"])(
     "%s shows its labels when nothing has written the hover attribute",
     (name) => {
       const html = beat(name);
@@ -212,7 +214,7 @@ describe("every figure on the landing is reachable without a pointer", () => {
     },
   );
 
-  it.each(["2 the blueprint", "3 the card"])(
+  it.each(["2 the blueprint", "3 the card", "4 the lifecycle"])(
     "%s gives every labelled glyph a focus stop and an accessible name",
     (name) => {
       const html = beat(name);
@@ -228,15 +230,15 @@ describe("every figure on the landing is reachable without a pointer", () => {
 /**
  * The three counts, and the sentence that makes them worth printing.
  *
- * `PLATFORM_STATS` counts `content/` at build time, so the figures on beat 4 are the one
+ * `PLATFORM_STATS` counts `content/` at build time, so the figures on beat 5 are the one
  * thing on the landing a reader can check. The line saying so — "Counted off the archive
  * on the last deploy, and nothing here is rounded up" — went out with four paragraphs of
  * prose the beat was right to lose, and it was not one of them: it existed nowhere else on
  * the site afterwards, which leaves three numbers beside a call to action with nothing
  * behind them.
  */
-describe("beat 4 says where its numbers come from", () => {
-  const words = readable(beat("4 the doors"));
+describe("beat 5 says where its numbers come from", () => {
+  const words = readable(beat("5 the doors"));
 
   it("states that the counts are exact", () => {
     expect(words).toContain("nothing here is rounded up");

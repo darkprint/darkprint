@@ -169,67 +169,34 @@ export function SectionExample() {
           </div>
         </div>
 
-        {/* ---------- the scorecard, and what is real about it ---------- */}
-        <div className="mt-5 grid gap-5 md:grid-cols-2">
-          <div className="panel p-6">
-            <div className="mb-3 flex items-baseline justify-between gap-3">
-              <h3 className="font-display text-lg font-semibold text-fg">
-                Its scorecard
-              </h3>
-              <span className="font-mono text-[11px] text-dim">six axes</span>
-            </div>
-            <MetricBars metrics={bp.metrics} autonomy={bp.autonomy} />
+        {/* ---------- the scorecard, and where the rest of it lives ----------
+            Lifecycle-scoring spec §4.1 moves the qualitative "How a factory is graded"
+            panel that used to sit beside this one to `/spec/scoring`, along with
+            `ScoringModel`'s quantitative detail: it walked all six axes without naming
+            this bundle, so it detached cleanly. Losing that second column leaves one
+            panel in what was a two-up grid, so this is full-width now rather than a lone
+            half-width card. */}
+        <div className="mt-5 panel p-6">
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <h3 className="font-display text-lg font-semibold text-fg">
+              Its scorecard
+            </h3>
+            <span className="font-mono text-[11px] text-dim">six axes</span>
           </div>
-
-          {/* The blueprint pages link here by name, so the heading stays the one they
-              point at: "How a factory is graded". */}
-          <div id="scoring" className="panel scroll-mt-24 p-6">
-            <div className="mb-3 flex items-baseline justify-between gap-3">
-              <h3 className="font-display text-lg font-semibold text-fg">
-                How a factory is graded
-              </h3>
-              <span className="font-mono text-[11px] text-dim">three ways of knowing</span>
-            </div>
-            {/* "The scorecard prints that subtraction" was written when there was one
-                scorecard. There are two renderings of it now: the one on this page, which
-                has no audit beside it and so still prints the engine's own sentence, and
-                the one on every `/blueprints/<slug>` page, where the row states the
-                reading and `Explainability` carries the subtraction. Those nine pages are
-                what links to this anchor, so the sentence a reader arrived at was true
-                only of the page they had landed on. Named by page rather than by
-                direction, because this panel is beside the card on a wide viewport and
-                under it on a narrow one. */}
-            <p className="text-sm leading-relaxed text-muted">
-              Two of the six fall out of the drawing. Autonomy is the share of nodes that
-              run unattended. Security starts at four and loses the weight of every risk
-              marker the graph carries. The card on this page prints that subtraction under
-              the Security row; a blueprint page prints the reading it lands on and keeps
-              the subtraction in the panel that shows the working. Either way the result is
-              rescaled onto the 0–100 axis the other five rows use, so four of four reads
-              there as 100.
-            </p>
-            <p className="mt-3 text-sm leading-relaxed text-muted">
-              Both are computed at build time off this exact bundle, and both name the
-              nodes behind the number. The DOT and the five cards it pins are published as
-              source on this site, so the arithmetic can be checked against them.
-            </p>
-            <p className="mt-4 border-t border-line pt-4 text-sm leading-relaxed text-muted">
-              The other four cannot be read off a graph. Cost and time need somebody to
-              run the factory, and that happens on their machine, so the platform can
-              only ever be told the result. Efficacy, reliability and transparency are
-              judgement calls that need a ballot.
-            </p>
-            <p className="mt-3 flex flex-wrap items-center gap-2 text-sm leading-relaxed text-dim">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-dim">
-                <span aria-hidden>○</span>
-                not built
-              </span>
-              <span>
-                There is no runner, no endpoint and no ballot. Those four numbers are
-                seeded rows, and every card that shows one says so.
-              </span>
-            </p>
-          </div>
+          <MetricBars metrics={bp.metrics} autonomy={bp.autonomy} />
+          <p className="mt-4 border-t border-line pt-4 text-sm leading-relaxed text-muted">
+            {/* Kept true for `components/ui/MetricBars.tsx`'s own comment on this call
+                site: no `audit` prop, so the two computed rows above still print the
+                engine's rationale rather than a glance. */}
+            The scorecard prints the subtraction under the Security row and the fraction
+            under Autonomy.{" "}
+            <Link
+              href="/spec/scoring"
+              className="text-cyan underline decoration-cyan/40 underline-offset-4 hover:decoration-cyan"
+            >
+              How a factory is graded →
+            </Link>
+          </p>
         </div>
 
         <div className="mt-8 flex flex-wrap items-center gap-4">

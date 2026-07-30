@@ -1,7 +1,7 @@
 # The website
 
 Next.js 16 App Router, **SSG only** — `generateStaticParams` + `dynamicParams = false`, typed
-`PageProps<"/route/[param]">`. 19 route files prerender to **136 pages**. React 19, Tailwind v4,
+`PageProps<"/route/[param]">`. 20 route files prerender to **137 pages**. React 19, Tailwind v4,
 TypeScript strict.
 
 > `AGENTS.md` is not boilerplate: this is Next.js 16 with real breaking changes. Read
@@ -15,8 +15,8 @@ TypeScript strict.
 
 | route | pages | what it is |
 |---|---|---|
-| `/blueprints` | 1 | the shelf. Download / fork / update sits **below** the grid (above it, the first tile was 7 screens down) |
-| `/blueprints/[slug]` | 9 | one blueprint: schematic, scorecard, explainability, download panel |
+| `/blueprints` | 1 | the shelf. Download / compose / upload moved to the landing (lifecycle-scoring pass); this index is the grid and nothing under it |
+| `/blueprints/[slug]` | 9 | one blueprint: schematic, Score card (radar, right column on wide, right under the schematic on narrow — CSS grid `order`/`row-start`, not duplicated markup), explainability, `ForkAction` + download buttons, download panel |
 | `/nodes` | 1 | the card library |
 | `/nodes/[...id]` | 53 | one card in full: interfaces, params, `mcp`, `skill`, `cannot`, risk markers, version history, raw YAML |
 | `/ontology` | 1 | the vocabulary |
@@ -27,11 +27,12 @@ TypeScript strict.
 
 | route | what it is |
 |---|---|
-| `/` | the landing: four beats, ~216 visible words |
+| `/` | the landing: five beats, ~370 visible words |
 | `/spec` | the spec language: three layers, and what the engine checks |
 | `/spec/topology` | layer 1, the DOT graph + the five-roles figure |
 | `/spec/card` | layer 2, the node card + the scroll-annotated card |
 | `/spec/ontology` | layer 3, the vocabulary |
+| `/spec/scoring` | not a fourth layer — how all six radar axes are read, weights included, `id="scoring"` kept on `/spec` as the old anchor's landing spot |
 | `/towards-a-dark-factory` | the 1–5 organisational ladder |
 | `/towards-a-dark-factory/which-tasks` | which tasks a dark factory can take |
 | `/towards-a-dark-factory/the-climb` | the four phases, holdouts, progressive disclosure |
@@ -55,19 +56,31 @@ All permanent (308): `/gallery → /blueprints`, `/parts → /nodes`, `/ontologi
 
 ## The landing
 
-Four beats, almost no prose. Everything technical lives on the page whose subject it is.
+Five beats, almost no prose. Everything technical lives on the page whose subject it is.
 
 | beat | shows | component |
 |---|---|---|
 | 1 | the animated **DarkPrint** wordmark | `components/hero/Wordmark.tsx` |
 | 2 | a graph drawing itself | `SectionBlueprint.tsx` |
 | 3 | one node lighting up and opening into its card | `SectionNodeIsCard.tsx` |
-| 4 | two doors, with the archive counts | `SectionDoors.tsx` |
+| 4 | what you can do with one: download, compose, upload | `SectionLifecycle.tsx` |
+| 5 | two doors, with the archive counts | `SectionDoors.tsx` |
 
-The ~216 figure is `HomePage` rendered through `renderToStaticMarkup`, tags stripped and
-entities resolved, minus text a sighted reader never sees: `<style>` (CSS), `<desc>` (the
-SVG accessible description), any `sr-only`-classed element, and the always-`display:none`
-half of `SectionBlueprint`'s responsive narrow/wide drawing pair (both render at SSR; a
+Beat 4 is the lifecycle-scoring pass's rewrite of the three-panel section that used to sit
+below the `/blueprints` grid (download / **fork** / update). Fork is not one of its three
+panels any more — it moved to the blueprint detail page as `ForkAction`, a real
+interaction beside the graph it applies to, closer than a landing panel three clicks from
+any one blueprint. The three panels here are download (unchanged), **compose** (new —
+composing/wiring one graph into another is a property of the DOT format, true today, no
+disclaimer needed), and **upload** (links to `/upload`, states plainly that publishing so
+others can find it is not built). See `PROJECT.md` §4 for the honesty pattern this
+established: describe the real interaction an ask maps to, never the account system it
+was phrased in terms of.
+
+The ~370-word figure is `HomePage` rendered through `renderToStaticMarkup`, tags stripped
+and entities resolved, minus text a sighted reader never sees: `<style>` (CSS), `<desc>`
+(the SVG accessible description), any `sr-only`-classed element, and the always-`display:
+none` half of `SectionBlueprint`'s responsive narrow/wide drawing pair (both render at SSR; a
 reader only ever sees one, per that file's own comment). A raw count with none of that
 excluded reads 451 — the difference is invisible text, not added prose.
 
@@ -87,10 +100,15 @@ The landing used to carry doc 2 §2.1's six rungs. They moved to the pages they 
 | the five roles + the absent edge | `/spec/topology` |
 | the 1–5 ladder | `/towards-a-dark-factory` |
 | the analyzer on a real bundle | `/spec` |
-| download / fork / update | `/blueprints` |
 | "what it is" / "not a skill library" | `/what-it-isnt` |
 
 `app/page.tsx`'s header comment records this, so nobody "restores" the spine.
+
+**Download / fork / update went to `/blueprints`, then came back.** The redesign moved it
+there; the lifecycle-scoring pass moved it back to the landing (beat 4, above), rewritten
+as download / compose / upload with fork relocated again — to the blueprint detail page,
+as `ForkAction`, beside the graph it actually applies to. `/blueprints` carries none of it
+now: the shelf, and nothing under it.
 
 ---
 

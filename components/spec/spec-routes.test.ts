@@ -1,5 +1,5 @@
 /* ============================================================
-   The four spec pages, held against the list they are a sequence
+   The five spec pages, held against the list they are a sequence
    in.
 
    Redesign spec §4.1 split one long page into four and asked that
@@ -10,6 +10,16 @@
    somebody writes a route and leaves it out of the list. Either
    one ships a pager with an arrow pointing at a 404, and neither
    is visible in a build that passes.
+
+   The lifecycle-scoring pass's own §4.2 appended a fifth,
+   `SPEC_SCORING`, after the three layers rather than among them —
+   `sequence.ts` has the reasoning for why it is a `SpecPage` and not
+   a fourth `SpecLayerPage`. Every check below still holds over
+   whatever `SPEC_SEQUENCE` contains, so the count grew without this
+   file's assertions needing to grow with it, except the one place
+   below that had frozen the old last page's `next` at `undefined`
+   by name rather than by position — the shape this file exists to
+   catch, this time in itself.
 
    So this file walks `app/spec` and holds the two directions
    against each other. It also checks that each page renders the
@@ -26,14 +36,18 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import {
   SPEC_LAYERS,
   SPEC_OVERVIEW,
+  SPEC_SCORING,
   SPEC_SEQUENCE,
   specNeighbours,
 } from "./sequence";
+import { SpecPager } from "./SpecPager";
 
 /** Repo root: this file is `<root>/components/spec/`. */
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
@@ -92,9 +106,14 @@ describe("the sequence and the filesystem agree", () => {
 });
 
 describe("next and previous", () => {
-  it("links the four into one chain, with no arrow off either end", () => {
+  it("links the five into one chain, with no arrow off either end", () => {
     expect(specNeighbours("/spec").previous).toBeUndefined();
-    expect(specNeighbours("/spec/ontology").next).toBeUndefined();
+    // The end of the chain moved with the lifecycle-scoring pass's §4.2 append: `/spec/
+    // ontology` used to be the last stop and is now the third of five, with a `next` of
+    // its own. Asserting both — the old last page now has one, and the new last page
+    // does not — is what would have caught this the day the append landed.
+    expect(specNeighbours("/spec/ontology").next).toEqual(SPEC_SCORING);
+    expect(specNeighbours("/spec/scoring").next).toBeUndefined();
 
     for (const [i, page] of SPEC_SEQUENCE.entries()) {
       const { position, total, previous, next } = specNeighbours(page.href);
@@ -187,6 +206,31 @@ describe("the figures each layer page opens with", () => {
  * can carry one onto the child route it became, and an external link or a bookmark landed
  * silently at the top of `/spec`. Each layer's door carries its old id.
  */
+/**
+ * The rail's `aria-label` used to spell the count out as a literal string ("in four
+ * parts"), which this pass's own append of `SPEC_SCORING` left stale: reviewed and
+ * reproduced against the built `/spec/scoring` HTML, whose `<nav>` announced a four-stop
+ * rail over the five `<li>`s directly under it. `SpecPager.tsx` now reads the count off
+ * `SPEC_SEQUENCE.length`, so this renders the actual component rather than scanning its
+ * source — a source scan for the digit would pass unchanged if the label were reverted to
+ * a hardcoded string that happened to still be correct today.
+ */
+describe("the pager's aria-label names the true count", () => {
+  it("agrees with SPEC_SEQUENCE.length, not a remembered number", () => {
+    const html = renderToStaticMarkup(
+      createElement(SpecPager, { href: SPEC_OVERVIEW.href }),
+    );
+    expect(html).toContain(
+      `aria-label="The spec language, in ${SPEC_SEQUENCE.length} parts"`,
+    );
+    // The failure mode this guards: a hardcoded count that was right when written and
+    // silently wrong after the next append. Asserting the wrong-today literal is absent
+    // is what a hardcoded string would fail on.
+    expect(SPEC_SEQUENCE.length).not.toBe(4);
+    expect(html).not.toContain("in four parts");
+  });
+});
+
 describe("the anchors the split would otherwise have broken", () => {
   const OVERVIEW = readFileSync(join(ROOT, "app/spec/page.tsx"), "utf8");
 

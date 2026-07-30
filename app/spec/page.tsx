@@ -5,10 +5,10 @@ import { partitionTerms } from "@/lib/core";
 import { getOntologyView } from "@/lib/content";
 import { SectionExample } from "@/components/home/SectionExample";
 import { LABEL } from "@/components/spec/parts";
-import { ScoringModel } from "@/components/spec/ScoringModel";
-import { SPEC_LAYERS, SPEC_OVERVIEW } from "@/components/spec/sequence";
+import { SPEC_LAYERS, SPEC_OVERVIEW, SPEC_SCORING } from "@/components/spec/sequence";
 import { SpecLayers } from "@/components/spec/SpecLayers";
 import { SpecPager } from "@/components/spec/SpecPager";
+import { ButtonLink } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
@@ -42,6 +42,16 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    security weights off the engine, so the numbers under it are the
    build's rather than a pair typed into a page. It is owned by the
    landing this pass and imported by path.
+
+   ── Where the scoring model went ──
+   The lifecycle-scoring pass moved `ScoringModel` off this page onto
+   its own route, `/spec/scoring`, along with the qualitative panel
+   `SectionExample` used to show beside its scorecard. PROJECT.md
+   §3.4 records why it was a section here in the first place — the
+   pager numbered three layers and a scoring page was not a fourth —
+   and the answer to the "open question" that entry left is the door
+   below the three layers' own: a `SpecPage`, not a `SpecLayerPage`,
+   appended after `SPEC_LAYERS` rather than counted among them.
 
    ── No route config ──
    `/spec` has no dynamic segment, so there is no
@@ -161,20 +171,42 @@ export default function SpecPage() {
             here is copying a file that loads.
           </p>
         </section>
+
+        {/* ---------- the door to how it's graded: not a fourth layer ----------
+            Lifecycle-scoring spec §4.3: `/spec#scoring` was a live in-page anchor before
+            this pass moved `ScoringModel` off this page onto `/spec/scoring`. A fragment
+            never reaches the server, so nothing can redirect an old bookmark or an
+            external link the way a real route can, and this callout is what either now
+            lands on, one click from the content that moved — the same fix `layer.anchor`
+            gives the three doors above. Framed apart from them on purpose: the heading
+            above says three and `SPEC_LAYERS` is the length-three list it counts, so a
+            fourth item in that `<ol>` would make the count a lie. This is a different
+            question, over the same three layers, so it gets its own door. */}
+        <section
+          id="scoring"
+          className="panel scroll-mt-24 flex flex-col gap-3 p-6 sm:flex-row sm:items-center sm:justify-between"
+          aria-labelledby="scoring-door-heading"
+        >
+          <div className="flex flex-col gap-1.5">
+            <span className={LABEL}>How it&apos;s graded</span>
+            <h2
+              id="scoring-door-heading"
+              className="font-display text-lg font-semibold text-fg"
+            >
+              {SPEC_SCORING.title}
+            </h2>
+            <p className="max-w-2xl text-sm leading-relaxed text-muted">
+              {SPEC_SCORING.question}
+            </p>
+          </div>
+          <ButtonLink href={SPEC_SCORING.href} variant="outline" className="shrink-0">
+            Read it
+          </ButtonLink>
+        </section>
       </div>
 
       {/* ---------- what the engine checks, on a bundle in the archive ---------- */}
       <SectionExample />
-
-      {/* ---------- and what each of those checks is worth ----------
-          Directly under `SectionExample`, because the `#scoring` panel it ends on is
-          where every blueprint page links a reader who asks how a factory is graded.
-          That panel says security "starts at four and loses the weight of every risk
-          marker", and PROJECT.md §3.4 is the note that no page named a weight: the
-          reader landed on the sentence and the numbers in it lived only in
-          `lib/core/config.ts`. Placing it here means the anchor and the arithmetic are
-          one scroll apart rather than one route apart. */}
-      <ScoringModel />
 
       <div className="container-page py-14">
         <SpecPager href={SPEC_OVERVIEW.href} />

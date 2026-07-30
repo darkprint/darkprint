@@ -346,6 +346,18 @@ const COPY_FILES = [
  * predates the rule, so adding them here would fail on text nobody in this pass wrote.
  * They are a copy edit, not a guard, and putting them in the list before the edit would
  * only produce a skipped test.
+ *
+ * `components/blueprint/ForkAction.tsx` is the one file under an exempt tree this rule
+ * does hold, named explicitly in `EM_DASH_FILES` below rather than folded into
+ * `COPY_TREES`. It is brand new copy from the lifecycle-scoring pass (spec §3.2, doc 2
+ * §2.5), not text that predates the rule like the rest of `components/blueprint` — a
+ * reviewer found that the directory-level exemption above, written before this pass
+ * existed, silently covered it too, so a pause dash typed into this file today would
+ * ship past a guard the constraint sheet cites as enforcing exactly that. Naming the file
+ * rather than the tree keeps the fix scoped to the new copy and leaves the sibling
+ * files' pre-existing violations (`Explainability.tsx`, `Comments.tsx`, `Requirements.tsx`,
+ * `BundlePanel.tsx`, `DownloadPanel.tsx`, `BlueprintCanvas.tsx`) as the copy edit they
+ * still are, not a guard this fix is not scoped to make.
  */
 const COPY_TREES = [
   "components/home",
@@ -443,6 +455,9 @@ const EM_DASH_FILES = [
     "components/panes/SkeletonPane.tsx",
     "components/panes/SourcePane.tsx",
     "components/panes/SynchronisedPanes.tsx",
+    // New copy from this pass inside an otherwise-exempt tree — see the comment on
+    // `COPY_TREES` above for why it is named here rather than by widening that list.
+    "components/blueprint/ForkAction.tsx",
     ...COPY_TREES.flatMap(sourcesUnder),
     ...appPages(),
   ]),

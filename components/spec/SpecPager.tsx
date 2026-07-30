@@ -1,24 +1,34 @@
 /* ============================================================
-   The four spec pages, made into a sequence a reader can walk.
+   The spec pages, made into a sequence a reader can walk.
 
    Redesign spec §4.1: the pages "carry next / previous links so the
    four read as a sequence". This is that, and it is one component
-   rather than four hand-written footers for the reason `sequence.ts`
-   gives: the split was made because the single page was long, and
-   four pagers that disagree about the order would be a worse
-   failure than the length.
+   rather than one hand-written footer per page for the reason
+   `sequence.ts` gives: the split was made because the single page
+   was long, and pagers that disagree about the order would be a
+   worse failure than the length.
 
    Two surfaces, and the rail is the one worth arguing for. A pager
    with two arrows tells a reader what is adjacent and never how far
    through they are, which is the question somebody who left the
-   long page is actually asking. The rail names all four, marks the
+   long page is actually asking. The rail names every stop, marks the
    one they are on, and lets them jump, so the sequence is a shape
    rather than a corridor.
 
    Server-rendered markup, no state. The current page is passed in
    rather than read from `usePathname`, because that hook would make
-   every one of the four routes carry a client component to render
-   its own footer.
+   every one of the routes carry a client component to render its own
+   footer.
+
+   The rail's `aria-label` used to spell the count out ("in four
+   parts") as a literal string. The lifecycle-scoring pass appended a
+   fifth page (`SPEC_SCORING`) to `SPEC_SEQUENCE` and the literal was
+   never touched, so it kept announcing a four-stop rail to a screen
+   reader over a five-item `<ol>` — reproduced against the built
+   `/spec/scoring` HTML, which rendered five `<li>`s under the stale
+   label. Read off `SPEC_SEQUENCE.length` instead, so a sixth page
+   appended the same way updates the label by construction rather
+   than by whoever remembers to grep for "four" a second time.
    ============================================================ */
 
 import Link from "next/link";
@@ -96,7 +106,7 @@ export function SpecPager({ href }: { href: string }) {
 
   return (
     <nav
-      aria-label="The spec language, in four parts"
+      aria-label={`The spec language, in ${SPEC_SEQUENCE.length} parts`}
       className="flex flex-col gap-6 border-t border-line pt-8"
     >
       <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px]">

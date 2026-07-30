@@ -94,11 +94,43 @@ function sourcesUnder(dir: string): string[] {
 }
 
 /**
+ * A barrel's own re-exports, resolved to the files they name.
+ *
+ * `components/home/index.ts` is `export { X } from "./Y"` and nothing else — no JSX, no
+ * id, ever — so a barrel that resolves as a candidate below and stops there always reads
+ * as "renders nothing", whether or not the file it re-exports does. Lifecycle-scoring
+ * pass §5 found this the hard way: `app/page.tsx` imports `SectionLifecycle` through
+ * `@/components/home`, the one-level walk opened the barrel and found no `id="lifecycle"`
+ * in it, and `/#lifecycle` reported dangling on a page that renders the id fine. One more
+ * hop through the barrel's own specifiers is what a re-export is *for*.
+ */
+function barrelReexports(barrelPath: string, text: string): string[] {
+  const dir = barrelPath.slice(0, barrelPath.lastIndexOf("/"));
+  const specifiers = [...text.matchAll(/export\s*\{[^}]*\}\s*from\s*"(\.[^"]+)"/g)].map(
+    (m) => m[1],
+  );
+  const resolved: string[] = [];
+  for (const specifier of specifiers) {
+    const stem = join(dir, specifier);
+    for (const ext of [".tsx", ".ts"]) {
+      const candidate = `${stem}${ext}`;
+      if (statSync(join(ROOT, candidate), { throwIfNoEntry: false }) !== undefined) {
+        resolved.push(candidate);
+        break;
+      }
+    }
+  }
+  return resolved;
+}
+
+/**
  * Of `hrefs`, the ones whose fragment no component on the destination route renders.
  *
- * One level of imports, and that is the whole point: an anchor in the chrome is meant to
- * reach a section the destination page itself puts on the screen. A page that only
- * reaches the id three components deep is a page whose anchor nobody can maintain.
+ * One level of imports, plus one more through a barrel a candidate resolves to (see
+ * `barrelReexports`): an anchor in the chrome is meant to reach a section the destination
+ * page itself puts on the screen, by way of at most one re-export in between. A page that
+ * only reaches the id three components deep, past its own direct import, is a page whose
+ * anchor nobody can maintain.
  *
  * A route with a dynamic segment is skipped rather than guessed at. `[slug]` is a
  * directory name and the href carries a slug, so resolving one to the other means running
@@ -122,7 +154,11 @@ function unrenderedFragments(hrefs: readonly string[]): string[] {
     for (const [, spec] of read(page).matchAll(/from "@\/(components\/[^"]+)"/g)) {
       for (const candidate of [`${spec}.tsx`, `${spec}.ts`, `${spec}/index.ts`]) {
         if (statSync(join(ROOT, candidate), { throwIfNoEntry: false })) {
-          sources.push(read(candidate));
+          const text = read(candidate);
+          sources.push(text);
+          if (candidate.endsWith("/index.ts")) {
+            for (const reexport of barrelReexports(candidate, text)) sources.push(read(reexport));
+          }
           break;
         }
       }

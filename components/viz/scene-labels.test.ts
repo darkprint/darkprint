@@ -41,6 +41,7 @@ import { WhichTasksGlance } from "@/components/explain/WhichTasksGlance";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionLevels } from "@/components/home/SectionLevels";
 import { SectionLifecycle } from "@/components/home/SectionLifecycle";
+import { ForkScene } from "@/components/home/lifecycle/ForkScene";
 import { SectionNodeIsCard } from "@/components/home/SectionNodeIsCard";
 import { SectionRoles } from "@/components/home/SectionRoles";
 import { DezoomGraph } from "@/components/home/nodecard/DezoomGraph";
@@ -88,15 +89,21 @@ function latticeProps(): { chain: string[]; kin: string[] } {
  *
  * Four figures take their geometry from props, so the entry renders whatever the site
  * renders rather than the leaf: a leaf handed invented numbers is a drawing nobody ships.
- * `SectionLifecycle` reads the published card out of the archive and puts all three
- * lifecycle panels on one page, which is why one entry names three files;
+ * `SectionLifecycle` reads the published card out of the archive and puts its two panels
+ * on one page, which is why one entry names two files (`DownloadScene`, `ComposeScene`);
  * `SectionAbsentEdge` runs two bundles through the engine and draws both with
  * `AbsentEdgeGraph`; `LatticeFigure` is laid out from the vocabulary.
  *
- * `DezoomGraph` is rendered directly, and it is the one place that is a judgement call.
- * Its two props are a link and a classification that no glyph is placed from, and its
- * parent is a scroll stage whose hooks do nothing on the server, so rendering the stage
- * would buy the same two frames through more machinery.
+ * `DezoomGraph` and `ForkScene` are each rendered directly, and both are a judgement call
+ * for the same reason. `DezoomGraph`'s two props are a link and a classification that no
+ * glyph is placed from, and its parent is a scroll stage whose hooks do nothing on the
+ * server, so rendering the stage would buy the same two frames through more machinery.
+ * `ForkScene` takes no props at all, but its one caller in the built site,
+ * `components/blueprint/ForkAction.tsx`, is a disclosure that defaults closed
+ * (lifecycle-scoring pass §3.2): `renderToStaticMarkup` on that component returns the
+ * toggle button alone and no `<svg>`, which would measure a figure the site draws on
+ * every open click as zero frames. Rendering the leaf is the only way this file measures
+ * it at all.
  */
 interface SceneEntry {
   /** Repo-relative paths of the files whose `<FlowScene` this entry measures. */
@@ -130,11 +137,17 @@ const ROSTER: readonly SceneEntry[] = [
   {
     files: [
       "components/home/lifecycle/DownloadScene.tsx",
-      "components/home/lifecycle/ForkScene.tsx",
-      "components/home/lifecycle/UpdateScene.tsx",
+      "components/home/lifecycle/ComposeScene.tsx",
     ],
-    frames: 3,
+    frames: 2,
     render: () => framesOf(createElement(SectionLifecycle)),
+  },
+  {
+    // Rendered as a leaf, not through `ForkAction` — see the comment on `SceneEntry`
+    // above for why the disclosure it actually sits inside cannot be measured here.
+    files: ["components/home/lifecycle/ForkScene.tsx"],
+    frames: 1,
+    render: () => framesOf(createElement(ForkScene)),
   },
   {
     files: ["components/home/nodecard/DezoomGraph.tsx"],

@@ -80,7 +80,10 @@ const INSTALL_METADATA_DESCRIPTION = installMetadata.description ?? "";
 const WHICH_TASKS = renderToStaticMarkup(createElement(WhichTasksChecks));
 const RECAP = renderToStaticMarkup(createElement(SectionComponentRecap));
 /**
- * The scoring panel `/spec` mounts under `#scoring` (PROJECT.md §3.4).
+ * The scoring panel `/spec/scoring` mounts (PROJECT.md §3.4; moved off `/spec` onto its
+ * own route by the lifecycle-scoring pass, spec §4 — `ScoringModel` itself is unchanged
+ * and this still renders it directly, so the assertions below hold regardless of which
+ * route mounts it).
  *
  * It is the first surface on the site to print `minRuns` and `outlierZScore`, and two
  * named filters on cost and time read as a description of something running unless the
@@ -144,7 +147,7 @@ const CLAIMS: Claim[] = [
     html: SPEC_CARD,
   },
 
-  /* ---- /spec#scoring ---- */
+  /* ---- /spec/scoring ---- */
   {
     surface: "/spec · cost and time, if they are ever reported",
     why: "the whole telemetry block is a design nothing implements. `minRuns 5` and `outlierZScore 3` are printed as engine configuration, which is what every other number in that section is, and those two are filters on a pipeline that has never had an input. PROJECT.md §3.5 is the point at which this stops being free, so the sentence has to be beside the numbers rather than behind a disclosure",

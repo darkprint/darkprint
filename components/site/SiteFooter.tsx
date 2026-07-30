@@ -21,8 +21,16 @@ import Link from "next/link";
  *     /#node-card   → /spec/card                 (SectionNodeCard, the page's centrepiece)
  *     /#roles       → /spec/topology             (SectionRoles, the page's opening figure)
  *     /#examples    → /spec                      (SectionExample)
- *     /#scoring     → /spec#scoring              (the same panel, same id)
- *     /#lifecycle   → /blueprints#lifecycle      (SectionLifecycle)
+ *     /#scoring     → /spec/scoring              (moved off /spec onto its own route,
+ *                                                  lifecycle-scoring spec §4; the fragment
+ *                                                  it used to be is gone with it, so this
+ *                                                  is a route link now rather than one)
+ *     /#lifecycle   → /#lifecycle                (SectionLifecycle, moved again: redesign
+ *                                                  spec §3 put it on `/blueprints`, the
+ *                                                  lifecycle-scoring pass's own §2 brought
+ *                                                  it back to the landing as beat 4, so the
+ *                                                  fragment survived two moves and landed
+ *                                                  back where its first link pointed)
  *
  * Four of them lost their fragment on the way. `#node-card`, `#roles` and `#examples`
  * are now the first figure on a page that exists for them, so linking the route says
@@ -48,10 +56,10 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
       { href: "/blueprints", label: "Blueprints" },
       { href: "/nodes", label: "Nodes" },
       { href: "/ontology", label: "Ontology" },
-      // Download, fork and update. Spec §3 put the lifecycle above the blueprint grid,
-      // so the link that used to reach it on the landing reaches it on the index whose
-      // objects it is about.
-      { href: "/blueprints#lifecycle", label: "What you can do with one" },
+      // Download, compose and upload. The lifecycle-scoring pass's own §2 brought this
+      // section back to the landing as its fourth beat, so the footer reaches it there
+      // again rather than on `/blueprints`, which renders no such id any more.
+      { href: "/#lifecycle", label: "What you can do with one" },
       // Not "Share a blueprint": publishing has no backend, and this link is rendered
       // on the landing too. The header and both doors use the same wording.
       { href: "/upload", label: "Validate a bundle" },
@@ -76,7 +84,7 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
       { href: "/spec/topology", label: "The topology, in DOT" },
       { href: "/spec/card", label: "The node card, in YAML" },
       { href: "/spec/ontology", label: "The vocabulary" },
-      { href: "/spec#scoring", label: "How a factory is graded" },
+      { href: "/spec/scoring", label: "How a factory is graded" },
     ],
   },
   {

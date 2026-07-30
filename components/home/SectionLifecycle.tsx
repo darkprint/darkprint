@@ -1,62 +1,55 @@
 /* ============================================================
-   Spec §3.5 — what you can do with a blueprint.
+   The landing's fourth beat — what you can do with one.
 
-   The author asked for the GitHub mental model: download, fork,
-   update. It is the right model for the *artefact* and it is one
-   sentence away from being a lie about this site, which is why
-   every panel below ends with the same two rows. There is no
-   backend here: no accounts, no publishing, nowhere your fork
-   lives, no push to accept. Constraint 0.4 of the spec is enforced
-   by tests, and the register the site uses for this is the one on
-   `/what-it-isnt` and on the download step of `/build`, where the
-   sentence about what is missing sits next to the thing that works
-   rather than in a disclaimer underneath.
+   Lifecycle-scoring pass, §2. This used to be a heavier, six-hundred-word section that
+   lived on `/blueprints` (redesign spec §3 put it there, below the shelf). The author
+   asked for its three panels back — download, fork, update, in the GitHub mental model —
+   and to have them read at the landing's own length rather than the shelf's:
 
-   So the three panels are honest in different ways, and the "Built
-   / On your machine" pair is what makes the difference visible at a
-   glance:
+     "delete from the blueprints page the sections update, fork, and download."
 
-     download  built, and the files are on disk before the page is;
-     fork      a property of the format, and nothing this site does;
-     update    the arithmetic is built and runs here, and there is
-               nowhere to publish the result.
+   So this is a rewrite, not a move, and two of the three panels are not what stood here
+   before. **Fork is gone from this page entirely.** The blueprint detail page now carries
+   its own `ForkAction`, a disclosure that draws the same `ForkScene` beside the download
+   button on the graph it applies to — a better place for it than a landing three clicks
+   away from any one blueprint, and this file no longer imports that scene at all. **Update
+   is gone for a different reason**: it demonstrated `inferBump` on a synthetic edit
+   (`lifecycle/bump-demo.ts`, deleted with it), and that narrative already has a home with
+   real content — `components/nodes/VersionHistory.tsx` computes the same bump, off real
+   published versions, on every multi-version node card page. A synthetic demo beside a
+   real one is the second telling redesign spec §5 keeps cutting.
 
-   The update panel's numbers are computed rather than typed.
-   `tightenProhibition` takes the published `code-builder@1.0.0`,
-   adds one entry to `cannot`, and asks the engine's own `inferBump`
-   what that costs. The answer is major, the reason quoted is the
-   engine's own sentence, and `bump-demo.test.ts` holds the rest of
-   the paragraph to the archive: that the entry names a core data
-   type, that the tester really does emit that type, and that no
-   `code-builder@2.0.0` exists.
+   What replaced fork's seat is **compose** (`lifecycle/ComposeScene.tsx`, new): a DOT file
+   is text, so wiring one graph's exit into another's entry, or lifting a card whole into a
+   pipeline already being written, is a property of the format today, the same register
+   `ForkScene`'s own caption uses for editing a copy. What replaced update's seat is
+   **upload**, because §1 of the pass locks in exactly what that claim may say: `/upload`
+   parses and scores a bundle in the reader's own tab, and publishing it so someone else
+   can find it is not built. Neither of the two honesty risks in this rewrite gets a
+   backend; both get a real interaction that already exists.
 
-   A server component. The archive read and the bump inference both
-   happen at build time; only the three drawings are client
-   components, and each of them renders its finished state without
-   JS (see `lifecycle/scene-reveal.ts`).
+   Three panels, each a sentence or two and a graphic, not the old paragraphs-and-`Split`
+   register — this is the landing, and `architecture/website.md` records the ~216-word
+   measurement the redesign fought to hold. `components/home/beats.test.ts` renders this
+   section the way the server does and checks the same four properties every other beat is
+   held to: no YAML, no table, no code block, full opacity with no script, and every link
+   resolving.
    ============================================================ */
 
 import Link from "next/link";
 
-import { getNodeCard } from "@/lib/content";
-import { nodeHref } from "@/lib/href";
-import { Sheet } from "@/components/viz";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { Ticked } from "@/components/nodes/VersionHistory";
+import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
+import { Sheet } from "@/components/viz";
 import { DownloadScene } from "./lifecycle/DownloadScene";
-import { ForkScene } from "./lifecycle/ForkScene";
-import { UpdateScene } from "./lifecycle/UpdateScene";
-import {
-  DEMO_CARD_ID,
-  DEMO_CARD_VERSION,
-  DEMO_PROHIBITION,
-  tightenProhibition,
-} from "./lifecycle/bump-demo";
+import { ComposeScene } from "./lifecycle/ComposeScene";
 
 const STARTER = "/blueprints/starter-software-factory";
 
-/** The node whose output the demonstrated prohibition would refuse. */
-const EVIDENCE_SOURCE = "tester";
+/** Inline code, for the one file name and the one route each panel names. */
+function Mono({ children }: { children: string }) {
+  return <code className="font-mono text-[0.92em] text-fg">{children}</code>;
+}
 
 function PanelHeading({ index, title }: { index: string; title: string }) {
   return (
@@ -67,41 +60,17 @@ function PanelHeading({ index, title }: { index: string; title: string }) {
   );
 }
 
-/**
- * The two rows every panel ends on.
- *
- * A `dl` rather than two sentences, because the distinction is the same one every time and
- * a reader who has read it once should be able to skip to the second row on the next
- * panel. `Built` is what exists on this site today; `On your machine` is the half DarkPrint
- * has no part in.
- */
-function Split({ built, yours }: { built: React.ReactNode; yours: React.ReactNode }) {
-  return (
-    <dl className="mt-auto grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 border-t border-line pt-4 text-[13px] leading-relaxed">
-      <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-cyan">Built</dt>
-      <dd className="text-muted">{built}</dd>
-      <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">Yours</dt>
-      <dd className="text-muted">{yours}</dd>
-    </dl>
-  );
-}
-
-function Mono({ children }: { children: string }) {
-  return <code className="font-mono text-[0.92em] text-fg">{children}</code>;
-}
+const linkCls =
+  "mt-auto font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan";
 
 export function SectionLifecycle() {
-  const record = getNodeCard(DEMO_CARD_ID, DEMO_CARD_VERSION);
-  const demo =
-    record === undefined ? undefined : tightenProhibition(record.card, DEMO_PROHIBITION);
-
   return (
     <section id="lifecycle" className="border-t border-line bg-void py-20 sm:py-28">
       <div className="container-page">
         <SectionHeading
           eyebrow="What you can do with one"
           title="A blueprint is a folder you can take away"
-          lead="The registry publishes files. Everything after the download happens in your own repository, with your own tools, the way any other directory of text does."
+          lead="The registry publishes files. Everything after the download runs on your machine, with your own tools."
         />
 
         <div className="mt-10 grid gap-5 lg:grid-cols-3">
@@ -118,192 +87,61 @@ export function SectionLifecycle() {
               <DownloadScene />
             </Sheet>
 
-            {/* One paragraph where there were two. Every blueprint page prints the same
-                inventory beside the files themselves (`components/blueprint/DownloadPanel`
-                names each one and what it is for), so the long version here was the second
-                printing redesign spec §5 allows removing. The clauses kept are the two that
-                panel does not carry: the cards are the published bytes, and the vocabulary
-                file is what makes the README's scores recomputable. */}
             <p className="text-sm leading-relaxed text-muted">
-              A blueprint is published as its files, and <Mono>factory.dot</Mono> is the one
-              that runs. <Mono>cards/</Mono> holds the published cards byte for byte, and a
-              bundle reaching for a term from the archive&rsquo;s vocabulary carries{" "}
-              <Mono>ontology/extensions.yaml</Mono> as well, without which the scores its
-              README quotes cannot be recomputed from the folder.
+              The folder is real, and <Mono>factory.dot</Mono> runs. Nothing here executes
+              it for you.
             </p>
 
-            <Split
-              built={
-                <>
-                  The folder is generated into <Mono>public/bundles/</Mono> before the site
-                  builds, and the blueprint page links each file. They come down one at a
-                  time, since there is no server here to assemble an archive on request.
-                </>
-              }
-              yours={
-                <>
-                  You keep the directory and run <Mono>attractor run factory.dot</Mono>.
-                  Execution happens on your side with your provider keys, and DarkPrint
-                  watches no run.
-                </>
-              }
-            />
-
-            <Link
-              href={`${STARTER}#download`}
-              className="font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
-            >
+            <Link href={`${STARTER}#download`} className={linkCls}>
               Take the starter folder
             </Link>
           </article>
 
-          {/* ---------- 02 · fork ---------- */}
+          {/* ---------- 02 · compose ---------- */}
           <article className="panel flex flex-col gap-4 p-6">
-            <PanelHeading index="02" title="Fork" />
+            <PanelHeading index="02" title="Compose" />
 
             <Sheet
               register="blueprint"
-              label="cp -r · git init"
-              title="the same folder, edited"
+              label="one graph, wired into another"
+              title="one edge, crossing into a bigger pipeline"
               note="a property of the format"
             >
-              <ForkScene />
+              <ComposeScene />
             </Sheet>
 
-            {/* Two paragraphs folded into one. What went is the sentence describing the
-                drawing, which the drawing now says for itself: the edited card is the lit
-                disc and the person is the violet mark. Doc 2 §1.1's sentence stays, and it
-                is the last one, because a reader who stops early has to have read it. */}
             <p className="text-sm leading-relaxed text-muted">
-              Forking a blueprint is copying a directory. The whole thing is text under
-              version control, so an edit shows up in a diff like any other: pin a card at a
-              different version, rewrite a <Mono>spec</Mono>, add a node, delete an edge.
-              The autonomy class the analyzer reads follows from where the people are in the
-              graph, so a copy that puts somebody at the release boundary reads differently
-              from the one it came from. Both are complete factories, and either one runs on
-              your machine.
+              A DOT file is text. Wire one graph&rsquo;s exit into another&rsquo;s entry, or
+              drop a card into a pipeline you&rsquo;re already writing.
             </p>
 
-            <Split
-              built={
-                <>
-                  Nothing. DarkPrint hosts no copy of your work, has no accounts and accepts
-                  no push. What it publishes is the folder, and that is the whole of the
-                  handover.
-                </>
-              }
-              yours={
-                <>
-                  You copy the directory into a repository of your own and edit it in the
-                  editor you already use. This site never learns that you did.
-                </>
-              }
-            />
-
-            <Link
-              href="/build"
-              className="font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
-            >
-              Make those choices on the starter
+            <Link href="/build" className={linkCls}>
+              Start building one
             </Link>
           </article>
 
-          {/* ---------- 03 · update ---------- */}
+          {/* ---------- 03 · upload ---------- */}
           <article className="panel flex flex-col gap-4 p-6">
-            <PanelHeading index="03" title="Update" />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <PanelHeading index="03" title="Upload yours" />
+              <ComingSoonBadge />
+            </div>
 
-            {demo !== undefined && (
-              <Sheet
-                register="blueprint"
-                label={`${demo.ref} → @${demo.nextVersion}`}
-                title="one entry added to cannot"
-                note={`inferBump: ${demo.level}`}
-              >
-                <UpdateScene
-                  cardId={DEMO_CARD_ID}
-                  from={DEMO_CARD_VERSION}
-                  to={demo.nextVersion}
-                  added={demo.added}
-                  source={EVIDENCE_SOURCE}
-                />
-              </Sheet>
-            )}
-
+            {/* Doc 2 §0.4, and §1 of this pass's own spec: this is the landing's one
+                highest-honesty-risk sentence, so it says what `/upload` does and stops
+                where `/upload` stops, in the open rather than behind a disclosure. A
+                bundle, not a lone card — `UploadFlow`'s own content-type selector marks a
+                node card `not ready` today, and a sentence that implied otherwise here
+                would be wrong about the one flow this panel links to. */}
             <p className="text-sm leading-relaxed text-muted">
-              A published version is never edited in place. Every change is a new version,
-              and how large that bump has to be follows from what changed.
+              <Mono>/upload</Mono> reads a whole bundle, the topology and the cards it pins,
+              not a single card alone, inside your browser tab. It names the autonomy class
+              and scores the security. Nothing leaves the tab, and publishing so other
+              people can find it is not built yet.
             </p>
 
-            {demo !== undefined && (
-              <>
-                {/* Shortened to the two sentences the demonstration needs. What the starter
-                    does about that evidence today is drawn in the panel's own figure and
-                    stated at length on `/spec/topology`, which is where the absence lives. */}
-                <p className="text-sm leading-relaxed text-muted">
-                  Add one entry to <Mono>{demo.ref}</Mono>&rsquo;s prohibitions:{" "}
-                  <Mono>{demo.added}</Mono>, the data type the tester emits its failure
-                  evidence on. From then on an edge carrying one fails the bundle with{" "}
-                  <Mono>bundle/prohibition-violated</Mono>.
-                </p>
-
-                {/* The list as the file carries it, with the one added line marked. Real
-                    text rather than a picture of text: it is short, it is the substance of
-                    the paragraph above, and a reader should be able to select it. */}
-                <ul className="flex flex-col gap-1 rounded-md border border-line bg-surface-2 p-3 font-mono text-[12px] leading-relaxed">
-                  <li className="text-dim">cannot:</li>
-                  {demo.after.map((entry) => {
-                    const isNew = entry === demo.added;
-                    return (
-                      <li
-                        key={entry}
-                        className={isNew ? "flex gap-2 pl-2 text-cyan" : "flex gap-2 pl-2 text-muted"}
-                      >
-                        <span aria-hidden className={isNew ? "text-cyan" : "text-faint"}>
-                          -
-                        </span>
-                        <span className="min-w-0">{entry}</span>
-                        {isNew && (
-                          <span className="ml-auto shrink-0 text-[10px] uppercase tracking-[0.14em] text-cyan">
-                            added
-                          </span>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-
-                <p className="text-sm leading-relaxed text-muted">
-                  <Mono>inferBump</Mono> reads that diff as <Mono>{demo.level}</Mono>:{" "}
-                  <Ticked text={demo.reason} />, so the next version is{" "}
-                  <Mono>{demo.nextVersion}</Mono>. The published starter stays pinned to{" "}
-                  <Mono>{demo.ref}</Mono> and scores exactly as it did, because a pin names
-                  one exact version.
-                </p>
-              </>
-            )}
-
-            <Split
-              built={
-                <>
-                  The inference. The level and the reason above came out of{" "}
-                  <Mono>inferBump</Mono> during this build, and every node page runs the
-                  same comparison over each pair of versions the archive has published.
-                </>
-              }
-              yours={
-                <>
-                  You make the edit, give the file its new version number and keep both
-                  files. There is nowhere on this site to publish the result, so the history
-                  lives in your repository.
-                </>
-              }
-            />
-
-            <Link
-              href={nodeHref(DEMO_CARD_ID)}
-              className="font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
-            >
-              Read the card this edits
+            <Link href="/upload" className={linkCls}>
+              Try it on your own bundle
             </Link>
           </article>
         </div>

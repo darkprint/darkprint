@@ -38,6 +38,7 @@ import { SynchronisedPanes } from "@/components/panes/SynchronisedPanes";
 import { BundlePanel, type BundleNode } from "@/components/blueprint/BundlePanel";
 import { DownloadPanel, type DownloadCard } from "@/components/blueprint/DownloadPanel";
 import { Comments } from "@/components/blueprint/Comments";
+import { ForkAction } from "@/components/blueprint/ForkAction";
 import { Requirements } from "@/components/blueprint/Requirements";
 
 /** Every slug is known at build time; an unknown one is a 404, not an on-demand render. */
@@ -77,6 +78,13 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
   // names them through the same helpers the generator writes them with, so a link here
   // and a file there cannot drift apart.
   const factoryHref = bundleHref(bp.slug, FACTORY_DOT);
+  // Spec §3.1: the header's quick download used to point at `factoryHref` under a
+  // "Download factory.dot" label and got renamed to "Download blueprint.dot" without
+  // moving what it saves — a label and a saved filename that disagree is a defect this
+  // project has fixed before. Computed once, here, so the header button and
+  // `DownloadPanel`'s own topology row can never point at two different hrefs for the
+  // same file.
+  const topologyHref = bundleHref(bp.slug, TOPOLOGY_DOT);
   const downloadCards: DownloadCard[] = [...new Set(bp.cardRefs)]
     .sort()
     .map((ref) => ({ ref, href: bundleHref(bp.slug, cardFilePath(ref)) }));
@@ -198,24 +206,32 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           </span>
           {/* Marked here as well as in the sidebar panel, because this line sits beside
               the author and the date and reads as a fact about the artefact. Doc 2 §0.4:
-              no counter produced it. */}
-          <span className="font-mono text-xs text-dim">
-            ↓ {compact(bp.downloads)} downloads{" "}
+              no counter produced it. Spec §3.3: the arrow, the number and the word are
+              emerald, matching the Votes row in "Registry stats" below rather than
+              introducing a new accent for the same kind of fact. The seeded marker stays
+              amber and outside the emerald span on purpose — the honesty glyph must not
+              read as part of a "this is good" green. */}
+          <span className="font-mono text-xs">
+            <span className="text-emerald">↓ {compact(bp.downloads)} downloads</span>{" "}
             <span className="text-amber" title="Seeded — no counter stands behind it">
               <span aria-hidden>◐ </span>seeded
             </span>
           </span>
-          {/* The runnable artefact, not a `data:` URI of the topology: doc 2 §11 item 10
-              asks for something that starts from a command line, and `factory.dot` is
-              that file. The rest of the bundle is in the sidebar panel it points at. */}
-          <ButtonLink
-            href={factoryHref}
-            download={FACTORY_DOT}
-            prefetch={false}
-            className="ml-auto"
-          >
-            Download factory.dot
-          </ButtonLink>
+          {/* Fork first, download second — spec §3.2, both grouped at the row's right
+              end. `ForkAction` is the disclosure spec §1 locks in rather than a second
+              file download of its own; the button beside it is the one real download this
+              row promises. */}
+          <div className="ml-auto flex items-center gap-2">
+            <ForkAction />
+            {/* The topology, not the runnable pipeline: doc 2 §11 item 10's command-line
+                artefact is `factory.dot`, which the sidebar `DownloadPanel` still leads
+                with. This is a second, quicker entry point to `blueprint.dot`
+                specifically, so the label and the file it saves have to name the same
+                thing — `topologyHref`/`TOPOLOGY_DOT`, not `factoryHref`/`FACTORY_DOT`. */}
+            <ButtonLink href={topologyHref} download={TOPOLOGY_DOT} prefetch={false}>
+              Download blueprint.dot
+            </ButtonLink>
+          </div>
         </div>
 
         {bp.tags.length > 0 && (
@@ -232,14 +248,116 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
       </header>
 
       {/* ---------- Body ---------- */}
+      {/* Spec §3.5: four grid items rather than two flex columns wrapping everything,
+          so the Score card can be placed independently of the rest of the sidebar.
+          Below `lg` the grid is one column and source order is visual order, which is
+          what puts the Score card — second in the tree — right after the schematic and
+          before Phase coverage; at `lg`+ its own `col-start-3 row-start-1` pulls it into
+          the top of the right column, sticky, the same spot the old single sidebar put
+          it in. The other two items keep `row-start-2` so their relative order — main
+          content below the schematic, sidebar below the Score card — does not move. */}
       <div className="mt-10 grid gap-8 lg:grid-cols-3">
-        {/* MAIN */}
-        <div className="flex flex-col gap-8 lg:col-span-2">
+        {/* Schematic. Row 1 of the main column at every width. */}
+        <div className="flex flex-col gap-8 lg:col-span-2 lg:row-start-1">
           {/* Interactive schematic + the explanation of its two computed scores.
               One client boundary, because clicking a node name in a finding has to
               reach the schematic above it. */}
           <BlueprintCanvas graph={bp.graph} analysis={bp.analysis} />
+        </div>
 
+        {/* Score card. Doc 2 §1.1: autonomy is stated in `MetricBars`, never scored, so
+            the radar carries only the five metrics the engine reads as a spoke. Spec
+            §3.5 pulls this whole section out of the old sidebar so it can sit on its own
+            row: right after the schematic below `lg`, sticky at the top of the right
+            column from `lg` up. */}
+        <section className="panel p-5 lg:col-start-3 lg:row-start-1 lg:sticky lg:top-20 lg:self-start">
+          <div className="mb-3 flex items-center justify-between">
+            <PanelLabel>Score</PanelLabel>
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
+              6-metric card
+            </span>
+          </div>
+          {/* Autonomy is not a spoke on the radar and not a bar in the list (doc 2
+              §1.1 — a length would state a shortfall), so it is *stated*, and the row
+              in `MetricBars` is the one place on this card that states it. The radar
+              used to state it as well, in a caption reading "Autonomy · Closed-loop";
+              between the two of them and the engine sentence the row printed, one
+              sidebar panel named the class three times. `bp.autonomy` is the same band
+              the header meter prints. */}
+          <div className="flex justify-center">
+            <ScoreRadar metrics={bp.metrics} />
+          </div>
+          {/* `audit` is what makes this card a glance rather than a second audit. The
+              explainability panel in the main column prints the engine's rationale for
+              Autonomy and for Security verbatim, and this card was printing the same
+              two strings under its two computed rows, word for word, one screen away.
+              Handed the raw reading and the marker count, the Security row states where
+              the blueprint sits on the engine's own 0–4 scale instead of restating the
+              subtraction that got it there. `raw` and not `level`: the bar beside it is
+              a rescale of `raw`, and a rounded level printed next to it disagreed with
+              the bar on four of these nine pages (see `ScoreAudit`). The four seeded
+              rows are untouched: their detail carries the seeded marker and belongs
+              beside the figure. */}
+          <MetricBars
+            metrics={bp.metrics}
+            autonomy={bp.autonomy}
+            audit={{
+              securityRaw: bp.analysis.security.raw,
+              securityMarkers: bp.analysis.security.penalties.length,
+            }}
+            className="mt-4"
+          />
+          {/* The scorecard is the thing a reader actually consumes, so the split
+              between what was computed and what was seeded belongs here and not
+              only on the homepage. Glyph and word, never colour alone. */}
+          <p className="mt-3 border-t border-line pt-3 text-xs leading-relaxed text-dim">
+            <span className="font-mono text-emerald" aria-hidden>
+              ✓
+            </span>{" "}
+            <span className="font-mono uppercase tracking-[0.12em] text-emerald">
+              computed
+            </span>{" "}
+            — Autonomy and Security are read off this exact graph at build time.{" "}
+            {/* The route from the glance to the audit, and the only one now that the
+                two rows above have stopped reprinting the rationale. It used to read
+                "both show their working below", which was a copy of the sentence the
+                panel itself opens with and was wrong about the direction in both
+                layouts: the panel is in the main column, which is left of this card on
+                a wide viewport and above it on a narrow one. A link is right either
+                way. */}
+            <Link
+              href="#explainability-heading"
+              className="text-muted underline-offset-4 hover:text-cyan hover:underline"
+            >
+              See the working.
+            </Link>{" "}
+            <span className="font-mono text-amber" aria-hidden>
+              ◐
+            </span>{" "}
+            <span className="font-mono uppercase tracking-[0.12em] text-amber">
+              seeded
+            </span>{" "}
+            — the other four are rows in the index. Voting and run telemetry are
+            designed and neither is built, so no ballot and no execution stands behind
+            those numbers.{" "}
+            {/* This pass (spec §4) splits the scoring panel off `/spec` onto its own
+                `/spec/scoring` route — "how a factory is graded" covers all six radar
+                axes, and a page walking six things beside an unrelated four-door
+                overview was the wrong shape for it. `/spec#scoring` still resolves (§4.3
+                keeps a compatibility door at that id) but a direct route is the honest
+                one to point a reader at from here. */}
+            <Link
+              href="/spec/scoring"
+              className="text-muted underline-offset-4 hover:text-cyan hover:underline"
+            >
+              How a factory is graded
+            </Link>
+          </p>
+        </section>
+
+        {/* Phase coverage / About / four-pane / Comments. Row 2 of the main column at
+            every width, so the Score card's move above it does not reorder any of this. */}
+        <div className="flex flex-col gap-8 lg:col-span-2 lg:row-start-2">
           {/* Phase coverage — doc 2 §8. Computed off the same bundle as the two scores
               and sitting next to them, but carrying no number: which of the five
               lifecycle phases this graph acts in, and which node stands in each. Doc 2
@@ -322,89 +440,11 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           <Comments comments={bp.comments} />
         </div>
 
-        {/* SIDEBAR */}
-        <aside className="flex flex-col gap-6 lg:sticky lg:top-20 lg:self-start">
-          {/* Score card */}
-          <section className="panel p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <PanelLabel>Score</PanelLabel>
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
-                6-metric card
-              </span>
-            </div>
-            {/* Autonomy is not a spoke on the radar and not a bar in the list (doc 2
-                §1.1 — a length would state a shortfall), so it is *stated*, and the row
-                in `MetricBars` is the one place on this card that states it. The radar
-                used to state it as well, in a caption reading "Autonomy · Closed-loop";
-                between the two of them and the engine sentence the row printed, one
-                sidebar panel named the class three times. `bp.autonomy` is the same band
-                the header meter prints. */}
-            <div className="flex justify-center">
-              <ScoreRadar metrics={bp.metrics} />
-            </div>
-            {/* `audit` is what makes this card a glance rather than a second audit. The
-                explainability panel in the main column prints the engine's rationale for
-                Autonomy and for Security verbatim, and this card was printing the same
-                two strings under its two computed rows, word for word, one screen away.
-                Handed the raw reading and the marker count, the Security row states where
-                the blueprint sits on the engine's own 0–4 scale instead of restating the
-                subtraction that got it there. `raw` and not `level`: the bar beside it is
-                a rescale of `raw`, and a rounded level printed next to it disagreed with
-                the bar on four of these nine pages (see `ScoreAudit`). The four seeded
-                rows are untouched: their detail carries the seeded marker and belongs
-                beside the figure. */}
-            <MetricBars
-              metrics={bp.metrics}
-              autonomy={bp.autonomy}
-              audit={{
-                securityRaw: bp.analysis.security.raw,
-                securityMarkers: bp.analysis.security.penalties.length,
-              }}
-              className="mt-4"
-            />
-            {/* The scorecard is the thing a reader actually consumes, so the split
-                between what was computed and what was seeded belongs here and not
-                only on the homepage. Glyph and word, never colour alone. */}
-            <p className="mt-3 border-t border-line pt-3 text-xs leading-relaxed text-dim">
-              <span className="font-mono text-emerald" aria-hidden>
-                ✓
-              </span>{" "}
-              <span className="font-mono uppercase tracking-[0.12em] text-emerald">
-                computed
-              </span>{" "}
-              — Autonomy and Security are read off this exact graph at build time.{" "}
-              {/* The route from the glance to the audit, and the only one now that the
-                  two rows above have stopped reprinting the rationale. It used to read
-                  "both show their working below", which was a copy of the sentence the
-                  panel itself opens with and was wrong about the direction in both
-                  layouts: the panel is in the main column, which is left of this card on
-                  a wide viewport and above it on a narrow one. A link is right either
-                  way. */}
-              <Link
-                href="#explainability-heading"
-                className="text-muted underline-offset-4 hover:text-cyan hover:underline"
-              >
-                See the working.
-              </Link>{" "}
-              <span className="font-mono text-amber" aria-hidden>
-                ◐
-              </span>{" "}
-              <span className="font-mono uppercase tracking-[0.12em] text-amber">
-                seeded
-              </span>{" "}
-              — the other four are rows in the index. Voting and run telemetry are
-              designed and neither is built, so no ballot and no execution stands behind
-              those numbers.{" "}
-              {/* Redesign spec §3 moved `SectionExample` and the `#scoring` panel inside
-                  it off the landing and onto `/spec`. The id came with it verbatim; only
-                  the route in front of it changed, and `/#scoring` was left pointing at a
-                  fragment the five-beat landing no longer renders. */}
-              <Link href="/spec#scoring" className="text-muted underline-offset-4 hover:text-cyan hover:underline">
-                How a factory is graded
-              </Link>
-            </p>
-          </section>
-
+        {/* Requirements / Download / Bundle / Registry stats. Row 2 of the right
+            column — sticky in its own row the same way the Score card is sticky in row
+            1, so the two hand off as a reader scrolls from the schematic into the rest
+            of the main column. */}
+        <aside className="flex flex-col gap-6 lg:col-start-3 lg:row-start-2 lg:sticky lg:top-20 lg:self-start">
           {/* Requirements */}
           <section className="panel p-5">
             <div className="mb-4">
@@ -421,7 +461,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               that states the digest, because the digest is what those files hash to. */}
           <DownloadPanel
             factoryHref={factoryHref}
-            topologyHref={bundleHref(bp.slug, TOPOLOGY_DOT)}
+            topologyHref={topologyHref}
             readmeHref={bundleHref(bp.slug, BUNDLE_README)}
             {...(vocabulary === undefined
               ? {}
@@ -473,7 +513,9 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               </div>
               <div className="flex items-center justify-between py-2.5">
                 <dt className="text-sm text-muted">Downloads</dt>
-                <dd className="font-mono text-sm tabular-nums text-fg">
+                {/* Spec §3.3: emerald, matching the Votes row above it, so Downloads
+                    reads as the same kind of fact rather than one accent short of it. */}
+                <dd className="font-mono text-sm tabular-nums text-emerald">
                   ↓ {compact(bp.downloads)}
                 </dd>
               </div>

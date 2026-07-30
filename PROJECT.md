@@ -214,39 +214,34 @@ mis-set against real content:
 
 Changing any of these is a PATCH of the ontology version, because it re-scores every blueprint.
 
-### 3.4 Give the scoring model a home — **delivered as a section, and it costs length**
+### 3.4 Give the scoring model a home — **done: it is now `/spec/scoring`, its own route**
 
-The security weights table and the telemetry design were documented nowhere a reader could
-reach. This entry asked for a `/how-it-scores` page under `/spec`.
+The previous entry here shipped the content as a section on `/spec` and left the
+placement as an open question: that page had become the longest open-prose page on the
+site, +86% over its own post-length-pass figure, on a route the redesign split into four
+specifically because one long page made readers leave.
 
-What shipped is `components/spec/ScoringModel.tsx`, a `#weights` section mounted on `/spec`
-directly under the `#scoring` anchor all nine blueprint pages link to, so the sentence a
-reader arrives at and the numbers in it are one scroll apart. It publishes the seven core
-weights, the markers this archive's vocabulary prices itself (doc 3 §7's middle rung —
-`lupo/pii-handling` at 0.50, which `frontline-triage` charges), the zero row, the four
-autonomy cuts, the criteria-leak threshold and the two telemetry filters. Every number is
-read from `DARKPRINT_CONFIG` and from `getOntologyView()`, and `scoring-model.test.ts`
-renders the panel a second time under a calibration where every value differs.
+That question is resolved. `SectionExample`'s `#scoring` panel ("How a factory is
+graded", the qualitative walk through all six radar axes) and `ScoringModel` (the
+quantitative weights, bands and thresholds, still read live from `DARKPRINT_CONFIG` and
+`getOntologyView()`, never transcribed) both moved onto a new `app/spec/scoring/page.tsx`.
+`/spec` itself is back near its original length; the new page carries the weight instead,
+on a route whose whole subject is exactly this.
 
-**The reason it is a section and not a fifth route** is that `SpecPager` numbers the
-sequence `00 Overview · 01 Topology · 02 Node card · 03 Ontology`, and a scoring page is
-not a fourth layer of the spec language.
+**It is a fifth entry in the spec *sequence*, not a fourth *layer*.**
+`components/spec/sequence.ts`'s `SPEC_LAYERS` stays three items (topology, card,
+ontology — the site says "three layers" in enough places that a fourth would contradict
+itself), and `SPEC_SCORING` is appended to `SPEC_SEQUENCE` as a plain `SpecPage` instead.
+`/spec` itself keeps a small, separately-framed "How it's graded" callout — not a fourth
+door in the three-layer grid — carrying `id="scoring"` so the anchor every blueprint page
+already links (`/spec/scoring` directly now; the id itself is preserved as the bookmark
+target for anyone still holding the old `/spec#scoring` fragment) lands one click from the
+real content, same precedent as the topology/card/ontology anchors.
 
-**The cost, measured on a clean build, prose words as §3.1 defines them:**
-
-| page | before | after | |
-|---|---|---|---|
-| `/spec` | 883 / 883 open | **1,638 / 1,454 open** | +86%; the section itself is 763 / 579 |
-| `/what-it-isnt` | | 1,599 / 929 open | the page §3.1 cut by 22% |
-| `/spec/card` | | 1,717 / 1,277 open | |
-
-So `/spec` is now the longest **open**-prose page on the site by 177 words over its nearest
-rival, on a route the redesign split into four *because* one long page made readers leave
-(§4.1 of the redesign spec). Two things are true at once and both belong in the record: the
-open figure is high partly because this section hides almost nothing, which is the
-behaviour §3.1 wants, and 1,638 total is still 39 words past the page the length pass had
-already cut. **The open question is placement, not content.** A `/spec/scoring` route would
-take `/spec` back to 883 and would need the pager renumbered.
+The pager's own aria-label was found reading "in four parts" against a five-item rail
+after the split — a reviewer caught it, and it's fixed by deriving the count
+(`SPEC_SEQUENCE.length`) rather than a second hand-typed copy of it, which is now the
+pattern: nothing about this sequence should be stated twice in two places that can drift.
 
 ### 3.5 Fase 4 — the backend, if it is ever wanted
 
@@ -284,3 +279,16 @@ says so. That was a false attribution once; do not let it come back.
 - **When you add a guard, falsify it.** Break the code on purpose, watch the test fail with
   the right message, restore. Several tests in this repo exist because that step caught a
   check that was silently passing.
+- **When an ask describes a feature in account/hosting terms this site doesn't have,
+  don't build the account system and don't quietly rewrite the ask into something smaller
+  either — say so, then ship the honest version of the same interaction.** The precedent:
+  "fork blueprint... into the user account, download it, edit it, upload it back" became
+  `components/blueprint/ForkAction.tsx`, a disclosure holding the existing `ForkScene`
+  drawing, two sentences saying what forking a text bundle actually means, and a link to
+  the `DownloadPanel` that already lists every file — no account, no server-side copy, no
+  claim that one exists. Reused an existing honest component rather than inventing a
+  second, differently-scoped download button under a name that would have overclaimed.
+  Even a disclosure this small needs the same scrutiny as any other new UI: it shipped
+  once with its popover positioned to overflow the viewport by 92px on a phone, caught
+  only by rendering it and reading `getBoundingClientRect()` — a class name is not
+  evidence of where something actually draws.

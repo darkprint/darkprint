@@ -1,10 +1,6 @@
 import type { Metadata } from "next";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { GalleryBrowser } from "@/components/gallery/GalleryBrowser";
-// Imported by path rather than through `components/home`'s barrel. That barrel is the
-// landing's running order and this page is not on the landing; reaching through it would
-// make the index depend on a list whose whole job is to describe a different route.
-import { SectionLifecycle } from "@/components/home/SectionLifecycle";
 import { allBlueprints, getRegistry } from "@/lib/content";
 
 export const metadata: Metadata = {
@@ -17,15 +13,11 @@ export const metadata: Metadata = {
  * The index of the Blueprints surface — doc 1 §0 names the section **Blueprints**
  * and gives "Gallery" only as its former name.
  *
- * Redesign spec §3 moves the landing's download / fork / update rung onto this page: it
- * answers what a reader can do with one of these things at the moment they are looking at
- * nine of them, and it was the last technical block standing between the landing's
- * wordmark and its doors. §3 said "above the grid" and it is below it; the note on the
- * component's own placement below carries the measurement that decided that. `SectionLifecycle` is rendered unchanged, and its
- * honesty is the reason it is rendered unchanged rather than summarised here: the three
- * panels each end on the same two rows, and the middle one says "Built: Nothing" because
- * forking is a property of the format and nothing this site runs. A shorter retelling of
- * that section is how that row goes missing.
+ * Redesign spec §3 moved the landing's download / fork / update rung onto this page,
+ * below the grid. The lifecycle-scoring pass's own §2 moved it again, rewritten as
+ * download / compose / upload, back onto the landing itself as a fifth beat — the author
+ * asked for those three panels off this page entirely, and this index is back to being
+ * what it was before spec §3 touched it: the shelf, and nothing under it.
  *
  * The lead says what a blueprint *is*, at the author's request (2026-07-29), and that is
  * the one job it has now. It used to count the shelf and split it by whether a graph had
@@ -69,9 +61,9 @@ export default function BlueprintsPage() {
     <>
       <div className="container-page pt-12 sm:pt-16">
         {/* `h1`, which every other index on the site passes and this one did not. It
-            mattered less when the page was one heading; with the lifecycle section and
-            the grid's own heading under it, a page whose outline starts at level two
-            gives a screen reader three sibling `h2`s and no title. */}
+            mattered less while this page was one heading; the sr-only "The shelf" `h2`
+            under it means a page whose outline starts at level two gives a screen reader
+            a sibling `h2` and no title. */}
         <SectionHeading
           as="h1"
           eyebrow="Registry"
@@ -95,17 +87,6 @@ export default function BlueprintsPage() {
         <h2 className="sr-only">The shelf</h2>
         <GalleryBrowser blueprints={blueprints} tags={tags} categories={categories} />
       </div>
-
-      {/* Below the shelf, and that is a deliberate departure from redesign spec §3, which
-          put it "above the grid".
-
-          Measured on a phone, above the grid it pushed the first blueprint tile from 1.9
-          screens down to 7.0 and took the page from 5908px to 9789px. This index exists to
-          be browsed, and five screens of preamble in front of nine tiles is the boredom the
-          author named as the whole problem with the old pages. The material stays on the
-          page, in full, where a reader who has just looked at the shelf arrives at it
-          asking the question it answers: what can I do with one of these. */}
-      <SectionLifecycle />
     </>
   );
 }

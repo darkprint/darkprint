@@ -1,5 +1,5 @@
 /* ============================================================
-   The four spec routes, as one ordered list.
+   The five spec routes, as one ordered list.
 
    Redesign spec §4.1 splits `/spec` into an overview and three
    layer pages, and asks that they "read as a sequence". A sequence
@@ -10,10 +10,15 @@
    and four pages whose pagers disagree about the order is a worse
    failure than the length was.
 
+   The lifecycle-scoring pass adds a fifth stop, `SPEC_SCORING`, for
+   how the engine grades what the first three describe. It is not a
+   fourth layer — `SPEC_LAYERS` stays the three it always was — so it
+   is appended to `SPEC_SEQUENCE` rather than folded in among them.
+
    So this file owns the order, the labels and the one-line question
-   each layer answers, and every surface reads it: the overview's
-   three doors, each child's crumb, and the previous/next pager at
-   the foot of all four.
+   each page answers, and every surface reads it: the overview's
+   three doors and its scoring callout, each child's crumb, and the
+   previous/next pager at the foot of all five.
 
    Plain TypeScript, no JSX and no React, so `spec-routes.test.ts`
    can import it under `environment: "node"` and hold the pages on
@@ -122,8 +127,35 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
   },
 ];
 
-/** The reading order, overview first. */
-export const SPEC_SEQUENCE: readonly SpecPage[] = [SPEC_OVERVIEW, ...SPEC_LAYERS];
+/**
+ * How the engine grades what the three layers describe.
+ *
+ * A plain `SpecPage`, not a `SpecLayerPage`: it names no `format`, no `file` inside a
+ * bundle and no engine `source`, because it is not a fourth document a blueprint is
+ * written in. `SPEC_LAYERS` stays length three and the site's "three layers" copy stays
+ * true; this is a different kind of page, added after the layers rather than folded among
+ * them. Lifecycle-scoring spec §4.2.
+ *
+ * `title` reuses the exact phrase every blueprint page already links this content with,
+ * "How a factory is graded" (`components/blueprint/Explainability.tsx`'s link text and
+ * the sidebar Score card's), so the text a reader clicks and the heading they land on are
+ * the same words.
+ */
+export const SPEC_SCORING: SpecPage = {
+  href: "/spec/scoring",
+  step: "04",
+  nav: "Scoring",
+  eyebrow: "The six radar axes",
+  title: "How a factory is graded",
+  question: "How the six radar axes are read, and which four are seeded.",
+};
+
+/** The reading order, overview first, scoring last. */
+export const SPEC_SEQUENCE: readonly SpecPage[] = [
+  SPEC_OVERVIEW,
+  ...SPEC_LAYERS,
+  SPEC_SCORING,
+];
 
 /** Where a page sits in the sequence, and what stands on either side of it. */
 export interface SpecNeighbours {

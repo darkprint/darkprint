@@ -29,7 +29,7 @@ export interface ScoreAudit {
  * Doc 3 §5's ceiling. The floor is deliberately not printed here: `raw` is stated before
  * the clamp, and a row reading "0.00 of 4" beside a page that says the published reading
  * is held at 1 is the honest pair — the arithmetic ran past the floor and the number
- * stopped, which is what `/spec#weights` says in as many words.
+ * stopped, which is what `/spec/scoring#weights` says in as many words.
  */
 const SECURITY_CEILING = 4;
 

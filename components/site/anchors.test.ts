@@ -104,7 +104,14 @@ describe("the walk finds both halves", () => {
 
   it("finds the anchors this rule was written for", () => {
     const ids = new Set(LINKS.map((link) => link.id));
-    for (const id of ["explainability-heading", "security-explained", "scoring", "weights"]) {
+    /* Lifecycle-scoring spec §4.4: every internal `href="/spec#scoring"` was corrected to
+       `href="/spec/scoring"`, the real route, on purpose — `#scoring` is no longer a
+       fragment anything links to. The id still exists, on the compatibility door
+       `app/spec/page.tsx` carries at `id="scoring"` for an old bookmark or an external
+       link that still has the fragment (spec-routes.test.ts and honesty.test.ts hold that
+       door and the route it points at); this walk just has nothing left to find it by,
+       since a walk is built from `href`s and the door's own id is never one. */
+    for (const id of ["explainability-heading", "security-explained", "weights"]) {
       expect(ids, `nothing links #${id} any more`).toContain(id);
     }
   });

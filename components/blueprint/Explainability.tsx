@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type {
   AutonomyContribution,
   AutonomyResult,
@@ -1283,15 +1284,23 @@ export function Explainability({
         id="explainability-heading"
         className="scroll-mt-24 font-display text-xl font-semibold text-fg"
       >
-        How the two computed scores were reached
+        Where these numbers come from
       </h2>
-      {/* PROJECT.md §3.1: "the two scores the registry computes rather than collects"
-          came out. The heading says "the two computed scores" and the sidebar scorecard
-          states the computed-against-seeded split in full, so this was the third time
-          one page made the point. */}
+      {/* This pass (spec §3.4) moved the generic methodology sentence — "read off the
+          graph without running it, both show their working", true of every blueprint and
+          not only this one — onto `/spec/scoring`, the page that explains the model once
+          for all nine rather than here on each of them. What is left is the one
+          instruction specific to *this* interactive page: there is no schematic to click
+          through on a static methodology page, so that page gets the model and this one
+          keeps the pointer into its own drawing, plus a way to reach the model from here. */}
       <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
-        Autonomy and Security are read off the graph above without running it, and both
-        show their working below. Select a node name to find it in the schematic.
+        Select a node name to find it in the schematic.{" "}
+        <Link
+          href="/spec/scoring"
+          className="text-muted underline-offset-4 hover:text-cyan hover:underline"
+        >
+          How a factory is graded →
+        </Link>
       </p>
       {/* Doc 3 §8: a score that does not name the vocabulary it was computed under is
           not comparable with any other score. Both results carry the same version,
