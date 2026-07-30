@@ -19,44 +19,51 @@
    published versions, on every multi-version node card page. A synthetic demo beside a
    real one is the second telling redesign spec §5 keeps cutting.
 
-   What replaced fork's seat is **compose** (`lifecycle/ComposeScene.tsx`, new): a DOT file
-   is text, so wiring one graph's exit into another's entry, or lifting a card whole into a
-   pipeline already being written, is a property of the format today, the same register
-   `ForkScene`'s own caption uses for editing a copy. What replaced update's seat is
-   **upload**, because §1 of the pass locks in exactly what that claim may say: `/upload`
-   parses and scores a bundle in the reader's own tab, and publishing it so someone else
-   can find it is not built. Neither of the two honesty risks in this rewrite gets a
-   backend; both get a real interaction that already exists.
+   What replaced fork's seat is **compose**: a DOT file is text, so wiring one graph's
+   exit into another's entry, or lifting a card whole into a pipeline already being
+   written, is a property of the format today, the same register `ForkScene`'s own
+   caption uses for editing a copy. What replaced update's seat is **upload**, because §1
+   of the pass locks in exactly what that claim may say: `/upload` parses and scores a
+   bundle in the reader's own tab, and publishing it so someone else can find it is not
+   built. Neither of the two honesty risks in this rewrite gets a backend; both get a real
+   interaction that already exists.
 
-   Three panels, each a sentence or two and a graphic, not the old paragraphs-and-`Split`
+   Three panels, each a sentence or two and a mark, not the old paragraphs-and-`Split`
    register — this is the landing, and `architecture/website.md` records the ~216-word
    measurement the redesign fought to hold. `components/home/beats.test.ts` renders this
    section the way the server does and checks the same four properties every other beat is
    held to: no YAML, no table, no code block, full opacity with no script, and every link
    resolving.
 
-   ── The three drawings, redone ──
-   The author's verdict on the first pass at this section: "I don't totally like the
-   blueprints you used for download and compose. I expected avoiding the use of a
-   blueprint but a more minimal illustration. Same for the upload yours card." All three
-   scenes drew a graph — files wired to a runner, a small graph wired into a bigger one —
-   to illustrate ideas that are not about topology, one page after the landing's own beat
-   draws an actual blueprint and one beat after it opens a real card. Read `DownloadScene`,
-   `ComposeScene` and `UploadScene`'s own headers for what replaced each: a single point
-   arriving, two points travelling into the one between them, one point rising and fading
-   before it reaches the top. `UploadScene` is new outright — the panel had no drawing
-   before, and it is held to the same standard as the other two now rather than left as
-   the one panel that stayed a wall of text.
+   ── What each panel shows, and why it stopped being a drawing ──
+   Two rounds of illustration came off this section, both by the author's own verdict.
+   First: three `FlowScene` drawings — files wired to a runner, a small graph wired into a
+   bigger one — drew a topology to illustrate ideas that were never about topology. Second,
+   after those became a single glowing point apiece: "you still used too fancy for the
+   download and compose and upload yours; I'd lean toward a solution without the use of
+   blueprint as images." The luminous-flow register — the halo, the glow, the graticule
+   `Sheet` draws every one of its scenes on — is the site's blueprint register full stop,
+   whatever sits inside it; a lone point still arrives inside a technical drawing sheet.
+
+   So there is no `Sheet` here and no scene. `Glyph` is a plain bordered box in the site's
+   ordinary tokens (`border-line`, `bg-surface-2`), the same register `DownloadPanel`'s
+   file rows already use elsewhere on this page's neighbours, holding one large, static
+   monospace character and nothing else — no glow, no motion, no client component. `↓` and
+   `↑` are not invented for this panel: `ContentCard`'s download count and every "seeded"
+   row already use them, so the panel borrows a mark the reader has seen mean the same
+   thing rather than teaching a new one. `⋈`, the relational-algebra join, is the one
+   glyph chosen for what it names rather than reused from elsewhere on the site, because
+   nothing else here already means "two things becoming one".
+
+   `aria-hidden`, all three: the glyph adds no information a screen reader needs beyond
+   what `PanelHeading` already gives it, and a lone Unicode character with no context is a
+   worse announcement than the heading beside it.
    ============================================================ */
 
 import Link from "next/link";
 
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
-import { Sheet } from "@/components/viz";
-import { DownloadScene } from "./lifecycle/DownloadScene";
-import { ComposeScene } from "./lifecycle/ComposeScene";
-import { UploadScene } from "./lifecycle/UploadScene";
 
 const STARTER = "/blueprints/starter-software-factory";
 
@@ -70,6 +77,21 @@ function PanelHeading({ index, title }: { index: string; title: string }) {
     <div className="flex items-baseline gap-3">
       <span className="font-mono text-[11px] tracking-[0.18em] text-dim">{index}</span>
       <h3 className="font-display text-xl font-semibold text-fg">{title}</h3>
+    </div>
+  );
+}
+
+/**
+ * One static character, in a plain box. No `Sheet`, no glow, no animation — see this
+ * file's header for why the previous two rounds of illustration both came off.
+ */
+function Glyph({ mark }: { mark: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="flex h-32 items-center justify-center rounded-lg border border-line bg-surface-2 sm:h-36"
+    >
+      <span className="font-mono text-5xl text-cyan">{mark}</span>
     </div>
   );
 }
@@ -92,14 +114,7 @@ export function SectionLifecycle() {
           <article className="panel flex flex-col gap-4 p-6">
             <PanelHeading index="01" title="Download" />
 
-            <Sheet
-              register="blueprint"
-              label="a folder of files"
-              title="one point, come to rest"
-              note="already arrived"
-            >
-              <DownloadScene />
-            </Sheet>
+            <Glyph mark="↓" />
 
             <p className="text-sm leading-relaxed text-muted">
               The folder is real, and <Mono>factory.dot</Mono> runs. Nothing here executes
@@ -115,14 +130,7 @@ export function SectionLifecycle() {
           <article className="panel flex flex-col gap-4 p-6">
             <PanelHeading index="02" title="Compose" />
 
-            <Sheet
-              register="blueprint"
-              label="two things, joined"
-              title="travelling into the one between them"
-              note="a property of the format"
-            >
-              <ComposeScene />
-            </Sheet>
+            <Glyph mark="⋈" />
 
             <p className="text-sm leading-relaxed text-muted">
               A DOT file is text. Wire one graph&rsquo;s exit into another&rsquo;s entry, or
@@ -141,14 +149,7 @@ export function SectionLifecycle() {
               <ComingSoonBadge />
             </div>
 
-            <Sheet
-              register="blueprint"
-              label="/upload"
-              title="rising, fading before it lands"
-              note="not built: publishing"
-            >
-              <UploadScene />
-            </Sheet>
+            <Glyph mark="↑" />
 
             {/* Doc 2 §0.4, and §1 of this pass's own spec: this is the landing's one
                 highest-honesty-risk sentence, so it says what `/upload` does and stops

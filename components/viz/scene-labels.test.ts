@@ -40,7 +40,6 @@ import { isolationDemo } from "@/components/explain/starter-isolation";
 import { WhichTasksGlance } from "@/components/explain/WhichTasksGlance";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionLevels } from "@/components/home/SectionLevels";
-import { SectionLifecycle } from "@/components/home/SectionLifecycle";
 import { ForkScene } from "@/components/home/lifecycle/ForkScene";
 import { SectionNodeIsCard } from "@/components/home/SectionNodeIsCard";
 import { SectionRoles } from "@/components/home/SectionRoles";
@@ -89,8 +88,11 @@ function latticeProps(): { chain: string[]; kin: string[] } {
  *
  * Four figures take their geometry from props, so the entry renders whatever the site
  * renders rather than the leaf: a leaf handed invented numbers is a drawing nobody ships.
- * `SectionLifecycle` puts three panels on one page, which is why one entry names three
- * files (`DownloadScene`, `ComposeScene`, `UploadScene`);
+ * `SectionLifecycle` has no entry here any more — its three panels drew `DownloadScene`,
+ * `ComposeScene` and `UploadScene` through two rewrites and then lost the drawings
+ * outright, on the author's verdict that the luminous-flow register itself reads as "a
+ * blueprint" whatever is drawn inside it; the section now holds one static, aria-hidden
+ * character per panel and nothing this file has anything to measure.
  * `SectionAbsentEdge` runs two bundles through the engine and draws both with
  * `AbsentEdgeGraph`; `LatticeFigure` is laid out from the vocabulary.
  *
@@ -133,15 +135,6 @@ const ROSTER: readonly SceneEntry[] = [
     files: ["components/home/SectionLevels.tsx"],
     frames: 5,
     render: () => framesOf(createElement(SectionLevels)),
-  },
-  {
-    files: [
-      "components/home/lifecycle/DownloadScene.tsx",
-      "components/home/lifecycle/ComposeScene.tsx",
-      "components/home/lifecycle/UploadScene.tsx",
-    ],
-    frames: 3,
-    render: () => framesOf(createElement(SectionLifecycle)),
   },
   {
     // Rendered as a leaf, not through `ForkAction` — see the comment on `SceneEntry`

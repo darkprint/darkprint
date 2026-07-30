@@ -1,7 +1,7 @@
 "use client";
 
 /* ============================================================
-   Drawing 2 of 3 — the same folder, copied and changed.
+   The same folder, copied and changed.
 
    Two rows of the same three nodes, so the only thing the eye has
    to do is spot the difference: one card edited, and the last node
@@ -15,14 +15,25 @@
    one on the first.
 
    Converted out of the CAD register on the author's instruction
-   (redesign spec §1); `DownloadScene` beside it carries the note.
+   (redesign spec §1). It once had two siblings drawn the same way,
+   `DownloadScene` and `ComposeScene` on the landing's lifecycle
+   panels — both are gone now, replaced by a plain static glyph, on
+   a later verdict that the luminous-flow register itself reads as
+   "a blueprint" whatever is drawn inside it (see
+   `SectionLifecycle`'s header). This one stayed: its one caller,
+   `components/blueprint/ForkAction.tsx`, is a disclosure on a
+   blueprint's own detail page, drawing the graph the fork applies
+   to is exactly on topic there, and nobody has said otherwise about
+   it.
    ============================================================ */
 
 import { FlowEdge, FlowNode, FlowScene, HumanFlowNode, toneColor } from "@/components/viz";
 import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
 import { VIZ } from "@/components/viz";
 
-/** 340 for the reason `DownloadScene` records: these panels render 270 CSS px wide. */
+/** 340×202: this size rendered legibly inside a landing panel and renders just as
+    legibly inside `ForkAction`'s popover, so the frame never had a reason to change when
+    the drawing moved from one to the other. */
 const FIGURE = { width: 340, height: 202 } as const;
 
 /** Column centres, shared by both rows so the two graphs sit exactly on top of each other. */

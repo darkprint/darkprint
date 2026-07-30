@@ -197,7 +197,11 @@ describe("every link the landing draws goes somewhere", () => {
 });
 
 describe("every figure on the landing is reachable without a pointer", () => {
-  it.each(["2 the blueprint", "3 the card", "4 the lifecycle"])(
+  // Beat 4 held to this contract while its three panels were `FlowScene` drawings. It
+  // has none left (this file's own header, and `SectionLifecycle`'s in full): the author's
+  // second verdict took the luminous-flow register itself off this beat, and what
+  // replaced it is checked in its own describe block below rather than here.
+  it.each(["2 the blueprint", "3 the card"])(
     "%s shows its labels when nothing has written the hover attribute",
     (name) => {
       const html = beat(name);
@@ -214,7 +218,7 @@ describe("every figure on the landing is reachable without a pointer", () => {
     },
   );
 
-  it.each(["2 the blueprint", "3 the card", "4 the lifecycle"])(
+  it.each(["2 the blueprint", "3 the card"])(
     "%s gives every labelled glyph a focus stop and an accessible name",
     (name) => {
       const html = beat(name);
@@ -225,6 +229,37 @@ describe("every figure on the landing is reachable without a pointer", () => {
       expect(html).toContain('role="group"');
     },
   );
+});
+
+describe("beat 4's three marks carry no information a screen reader needs", () => {
+  /**
+   * The opposite property from the describe block above, and just as load-bearing. A
+   * `FlowNode` earns a focus stop because it is the only place its meaning lives; these
+   * three characters are not — `PanelHeading` already names "Download", "Compose" and
+   * "Upload yours" in real text next to each one, so a glyph that also grabbed a tab stop
+   * would announce nothing a screen reader has not already been told, once per panel, for
+   * no reason. `aria-hidden="true"` is what keeps it out of that tree, and this is the
+   * test that would fail if a future edit dropped it — the accessibility bug this file
+   * has caught before ran in the direction of forgetting a name; a glyph that forgot to
+   * hide itself would be the same bug from the other side.
+   */
+  it("marks all three ↓ ⋈ ↑ as decorative", () => {
+    const html = beat("4 the lifecycle");
+    for (const mark of ["↓", "⋈", "↑"]) {
+      const at = html.indexOf(`>${mark}<`);
+      expect(at, `${mark} is not in the markup`).toBeGreaterThan(0);
+      const wrapper = html.lastIndexOf("<div", at);
+      expect(
+        html.slice(wrapper, at),
+        `${mark}'s wrapper does not carry aria-hidden`,
+      ).toContain('aria-hidden="true"');
+    }
+  });
+
+  it("carries the panel titles as real, visible text instead", () => {
+    const html = beat("4 the lifecycle");
+    for (const title of ["Download", "Compose", "Upload yours"]) expect(html).toContain(title);
+  });
 });
 
 /**
