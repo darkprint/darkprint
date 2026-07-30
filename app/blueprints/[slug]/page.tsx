@@ -31,6 +31,7 @@ import { TagPill } from "@/components/ui/TagPill";
 import { ScoreRadar } from "@/components/ui/ScoreRadar";
 import { MetricBars } from "@/components/ui/MetricBars";
 import { PhaseCoverageList } from "@/components/ui/PhaseCoverage";
+import { More } from "@/components/ui/More";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
 import { absencesFor } from "@/components/panes/absences";
 import { buildPaneModel, type PaneNodeInput } from "@/components/panes/build";
@@ -248,29 +249,32 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
       </header>
 
       {/* ---------- Body ---------- */}
-      {/* Spec §3.5: four grid items rather than two flex columns wrapping everything,
-          so the Score card can be placed independently of the rest of the sidebar.
-          Below `lg` the grid is one column and source order is visual order, which is
-          what puts the Score card — second in the tree — right after the schematic and
-          before Phase coverage; at `lg`+ its own `col-start-3 row-start-1` pulls it into
-          the top of the right column, sticky, the same spot the old single sidebar put
-          it in. The other two items keep `row-start-2` so their relative order — main
-          content below the schematic, sidebar below the Score card — does not move. */}
-      <div className="mt-10 grid gap-8 lg:grid-cols-3">
-        {/* Schematic. Row 1 of the main column at every width. */}
-        <div className="flex flex-col gap-8 lg:col-span-2 lg:row-start-1">
-          {/* Interactive schematic + the explanation of its two computed scores.
-              One client boundary, because clicking a node name in a finding has to
-              reach the schematic above it. */}
-          <BlueprintCanvas graph={bp.graph} analysis={bp.analysis} />
-        </div>
+      {/* Radar-layout fix spec §0: the old body split Score and the Requirements/
+          Download/Bundle/Registry-stats aside across two `lg:sticky` items in the same
+          `lg:grid-cols-3` column — row 1 and row 2 of one grid. `position: sticky`'s
+          containing block is the nearest scrolling ancestor, not a grid row or cell, so
+          both were sticky in the same column at once: past the point where a reader had
+          scrolled both of them to their `top: 80px`, they rendered on top of each other
+          (measured live: Requirements text drawn over the radar's Transparency row).
+          There is no `top` offset or `overflow` fix for two siblings sharing one sticky
+          slot — the fix is a single linear column, never sticky, so nothing here is ever
+          positioned against anything but its place in the flow. `max-w-4xl` bounds the
+          schematic and prose on a wide monitor, the same width `SectionBlueprint`'s
+          landing schematic and `NodeCardStage`'s graph use for the same kind of content. */}
+      <div className="mx-auto mt-10 flex max-w-4xl flex-col gap-8">
+        {/* Interactive schematic + the explanation of its two computed scores.
+            One client boundary, because clicking a node name in a finding has to
+            reach the schematic above it. */}
+        <BlueprintCanvas graph={bp.graph} analysis={bp.analysis} />
 
         {/* Score card. Doc 2 §1.1: autonomy is stated in `MetricBars`, never scored, so
-            the radar carries only the five metrics the engine reads as a spoke. Spec
-            §3.5 pulls this whole section out of the old sidebar so it can sit on its own
-            row: right after the schematic below `lg`, sticky at the top of the right
-            column from `lg` up. */}
-        <section className="panel p-5 lg:col-start-3 lg:row-start-1 lg:sticky lg:top-20 lg:self-start">
+            the radar carries only the five metrics the engine reads as a spoke.
+            Radar-layout fix spec §1.1: a plain block directly after the schematic, in
+            normal document flow, at every viewport width — never its own grid cell,
+            never sticky. That is what makes "right below the schematic" hold
+            unconditionally instead of only above one breakpoint, which is what the old
+            sticky-sidebar version was quietly failing to guarantee. */}
+        <section className="panel p-5">
           <div className="mb-3 flex items-center justify-between">
             <PanelLabel>Score</PanelLabel>
             <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
@@ -321,10 +325,9 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             {/* The route from the glance to the audit, and the only one now that the
                 two rows above have stopped reprinting the rationale. It used to read
                 "both show their working below", which was a copy of the sentence the
-                panel itself opens with and was wrong about the direction in both
-                layouts: the panel is in the main column, which is left of this card on
-                a wide viewport and above it on a narrow one. A link is right either
-                way. */}
+                panel itself opens with and was wrong about the direction: the panel is
+                in `BlueprintCanvas`, above this card in the single column at every
+                width, never below it. */}
             <Link
               href="#explainability-heading"
               className="text-muted underline-offset-4 hover:text-cyan hover:underline"
@@ -355,96 +358,99 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           </p>
         </section>
 
-        {/* Phase coverage / About / four-pane / Comments. Row 2 of the main column at
-            every width, so the Score card's move above it does not reorder any of this. */}
-        <div className="flex flex-col gap-8 lg:col-span-2 lg:row-start-2">
-          {/* Phase coverage — doc 2 §8. Computed off the same bundle as the two scores
-              and sitting next to them, but carrying no number: which of the five
-              lifecycle phases this graph acts in, and which node stands in each. Doc 2
-              §1.1's last bullet puts it under the autonomy rule, so nothing here counts
-              or completes — a phase with no node is where this factory stops, stated as
-              a fact. The gallery card's strip says only which phases; this says which
-              node, which is the half that earns the dimension.
+        {/* Phase coverage — doc 2 §8. Computed off the same bundle as the two scores
+            and sitting next to them, but carrying no number: which of the five
+            lifecycle phases this graph acts in, and which node stands in each. Doc 2
+            §1.1's last bullet puts it under the autonomy rule, so nothing here counts
+            or completes — a phase with no node is where this factory stops, stated as
+            a fact. The gallery card's strip says only which phases; this says which
+            node, which is the half that earns the dimension.
 
-              It also names the nodes that stand in none of the five, below the
-              lifecycle and outside it. A node may declare several phases or none: the
-              five describe the factory, not every node in it, so the rows cover the
-              graph without partitioning it and nothing on this page adds them up. */}
-          <section
-            className="panel overflow-hidden"
-            aria-labelledby="phase-coverage-heading"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
-              <h2 id="phase-coverage-heading">
-                <PanelLabel>Phase coverage</PanelLabel>
-              </h2>
-              <span className="font-mono text-[11px] text-dim">
-                the lifecycle, in order
-              </span>
-            </div>
-            <div className="p-4 sm:p-5">
-              <PhaseCoverageList
-                coverage={bp.analysis.phaseCoverage}
-                nodeLabels={nodeLabels}
-              />
-            </div>
-          </section>
-
-          {/* Long description.
-
-              PROJECT.md §3.1 moved this above the four panes. Nothing was cut and no
-              anchor moved; what changed is that the author's account of the blueprint no
-              longer sits on the far side of the longest block on the page. The panes are
-              roughly 1,700 words of source listing, and a reader who wanted to know what
-              they were looking at had to scroll past all of it first. */}
-          {paragraphs.length > 0 && (
-            <section aria-labelledby="about-heading">
-              <h2
-                id="about-heading"
-                className="mb-4 font-display text-xl font-semibold text-fg"
-              >
-                About this blueprint
-              </h2>
-              <div className="flex flex-col gap-4">
-                {paragraphs.map((p, i) => (
-                  <p
-                    key={`${i}-${p.slice(0, 16)}`}
-                    className="text-[15px] leading-relaxed text-muted"
-                  >
-                    {p}
-                  </p>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Doc 2 §5.1's four-pane synchronised view, in the slot the standalone DOT
-              panel used to occupy. It carries the same document, line-numbered and
-              copyable, and puts the three representations the panel had no way to show
-              beside it: the drawing, the card template, and the card. The anchor moves
-              with it, so a link to `#dot-source` still lands on the DOT.
-
-              §5.1 is explicit that this is not a tutorial fixture — "lo stesso
-              componente si riusa poi nella pagina di dettaglio di ogni blueprint della
-              galleria" — so it is here on every blueprint and not only the starter. */}
-          <section id="dot-source" className="scroll-mt-24">
-            <SynchronisedPanes
-              model={paneModel}
-              graph={bp.graph}
-              heading="The same bundle, four ways"
-              headingId="four-pane-heading"
+            It also names the nodes that stand in none of the five, below the
+            lifecycle and outside it. A node may declare several phases or none: the
+            five describe the factory, not every node in it, so the rows cover the
+            graph without partitioning it and nothing on this page adds them up. */}
+        <section
+          className="panel overflow-hidden"
+          aria-labelledby="phase-coverage-heading"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
+            <h2 id="phase-coverage-heading">
+              <PanelLabel>Phase coverage</PanelLabel>
+            </h2>
+            <span className="font-mono text-[11px] text-dim">
+              the lifecycle, in order
+            </span>
+          </div>
+          <div className="p-4 sm:p-5">
+            <PhaseCoverageList
+              coverage={bp.analysis.phaseCoverage}
+              nodeLabels={nodeLabels}
             />
+          </div>
+        </section>
+
+        {/* Long description.
+
+            PROJECT.md §3.1 moved this above the four panes. Nothing was cut and no
+            anchor moved; what changed is that the author's account of the blueprint no
+            longer sits on the far side of the longest block on the page. The panes are
+            roughly 1,700 words of source listing, and a reader who wanted to know what
+            they were looking at had to scroll past all of it first. */}
+        {paragraphs.length > 0 && (
+          <section aria-labelledby="about-heading">
+            <h2
+              id="about-heading"
+              className="mb-4 font-display text-xl font-semibold text-fg"
+            >
+              About this blueprint
+            </h2>
+            <div className="flex flex-col gap-4">
+              {paragraphs.map((p, i) => (
+                <p
+                  key={`${i}-${p.slice(0, 16)}`}
+                  className="text-[15px] leading-relaxed text-muted"
+                >
+                  {p}
+                </p>
+              ))}
+            </div>
           </section>
+        )}
 
-          {/* Comments */}
-          <Comments comments={bp.comments} />
-        </div>
+        {/* Doc 2 §5.1's four-pane synchronised view, in the slot the standalone DOT
+            panel used to occupy. It carries the same document, line-numbered and
+            copyable, and puts the three representations the panel had no way to show
+            beside it: the drawing, the card template, and the card. The anchor moves
+            with it, so a link to `#dot-source` still lands on the DOT.
 
-        {/* Requirements / Download / Bundle / Registry stats. Row 2 of the right
-            column — sticky in its own row the same way the Score card is sticky in row
-            1, so the two hand off as a reader scrolls from the schematic into the rest
-            of the main column. */}
-        <aside className="flex flex-col gap-6 lg:col-start-3 lg:row-start-2 lg:sticky lg:top-20 lg:self-start">
+            §5.1 is explicit that this is not a tutorial fixture — "lo stesso
+            componente si riusa poi nella pagina di dettaglio di ogni blueprint della
+            galleria" — so it is here on every blueprint and not only the starter. */}
+        <section id="dot-source" className="scroll-mt-24">
+          <SynchronisedPanes
+            model={paneModel}
+            graph={bp.graph}
+            heading="The same bundle, four ways"
+            headingId="four-pane-heading"
+          />
+        </section>
+
+        {/* Comments */}
+        <Comments comments={bp.comments} />
+
+        {/* Requirements / Download / Bundle / Registry stats. Radar-layout fix spec
+            §1.2: "below the radar I want a collapsable part where u provide the other
+            details that by default is collapsed and below the comments of the user." No
+            longer a sticky sidebar column — one disclosure, collapsed by default, after
+            `Comments`, at the end of the page's content. `More` is a native `<details>`
+            (already used by `DownloadPanel` and `DiagnosticList`), which keeps every
+            string below in the prerendered HTML regardless of `open`, so the
+            honesty-sensitive lines — `DownloadPanel`'s "nowhere to save this yet",
+            Registry stats' `◐ seeded` marker and its disclaimer — stay readable by
+            find-in-page while the panel is closed. Nothing inside is cut or reworded:
+            this is a relocation. */}
+        <More summary="Requirements, download and registry stats">
           {/* Requirements */}
           <section className="panel p-5">
             <div className="mb-4">
@@ -531,7 +537,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               step stands behind them.
             </p>
           </section>
-        </aside>
+        </More>
       </div>
     </div>
   );
