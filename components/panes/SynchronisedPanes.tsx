@@ -188,6 +188,14 @@ export function SynchronisedPanes({
         </p>
       )}
 
+      {/* 780, not the historical 460: with the aside now holding only the compact
+          Score card (`MetricBars`' `compact` prop folds its six sentences behind
+          one disclosure — see that file), Score's own height is fixed at ~746px
+          regardless of which blueprint this is, measured live and identical across
+          every one checked. 780 is the smallest round number whose total section
+          height (780 plus this pane's own ~114px of header/footer chrome) clears
+          746 with real margin, so `position: sticky` on the aside (below) has
+          genuine room to move rather than nothing to do. */}
       <div className={cx("grid gap-4", aside !== undefined && "lg:grid-cols-3")}>
         <div className={cx("min-w-0", aside !== undefined && "lg:col-span-2")}>
           <GraphPane
@@ -196,12 +204,16 @@ export function SynchronisedPanes({
             model={model}
             focus={focus}
             graphId={`panes-${model.slug}`}
-            height={460}
+            height={780}
             onSelectNode={selectNode}
           />
         </div>
 
-        {aside !== undefined && <div className="min-w-0 lg:col-span-1">{aside}</div>}
+        {aside !== undefined && (
+          <div className="min-w-0 lg:sticky lg:top-20 lg:col-span-1 lg:self-start">
+            {aside}
+          </div>
+        )}
       </div>
 
       <div className="flex min-w-0 flex-col gap-2">

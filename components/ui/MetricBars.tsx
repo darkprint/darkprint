@@ -1,6 +1,7 @@
 import type { AutonomyInfo, Metric } from "@/lib/types";
-import { METRIC_SOURCE_META, cx } from "@/lib/format";
+import { METRIC_SOURCE_META } from "@/lib/format";
 import { SourceBadge } from "./Badge";
+import { More } from "./More";
 
 /**
  * What the two computed rows need in order to state where the blueprint sits without
@@ -91,6 +92,7 @@ export function MetricBars({
   metrics,
   autonomy,
   audit,
+  compact = false,
   className,
 }: {
   metrics: Metric[];
@@ -112,60 +114,91 @@ export function MetricBars({
    * that "the scorecard prints that subtraction under the Security row".
    */
   audit?: ScoreAudit;
+  /**
+   * Moves every row's sentence out of the row and into one `<details>` below the list,
+   * collapsed by default, instead of leaving it under the row it explains. Set only by
+   * the blueprint page's Score card, which sits sticky beside the graph — six rows'
+   * worth of sentences made that card taller than the graph beside it, leaving
+   * `position: sticky` nothing to do (a box already as tall as the row it shares has no
+   * slack to move within). Nothing is cut: every sentence is still in the prerendered
+   * HTML, findable and readable, just gathered under one summary instead of six.
+   * `SectionExample` leaves this off on purpose — `/spec` has nothing beside this card
+   * competing for scroll room, so there is no reason to fold anything there.
+   */
+  compact?: boolean;
   className?: string;
 }) {
   return (
-    <ul className={cx("flex flex-col divide-y divide-line", className)}>
-      {metrics.map((m) => {
-        const color = METRIC_SOURCE_META[m.source].color;
-        const isBand = m.key === "autonomy";
-        return (
-          <li key={m.key} className="py-3">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-sm font-medium text-fg">{m.label}</span>
-              <div className="flex items-center gap-2">
-                <SourceBadge source={m.source} />
-                {isBand ? (
-                  autonomy !== undefined ? (
-                    <span className="font-mono text-xs text-fg">
-                      <span className="sr-only">Autonomy class </span>
-                      {autonomy.label}
+    <div className={className}>
+      <ul className="flex flex-col divide-y divide-line">
+        {metrics.map((m) => {
+          const color = METRIC_SOURCE_META[m.source].color;
+          const isBand = m.key === "autonomy";
+          return (
+            <li key={m.key} className="py-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-sm font-medium text-fg">{m.label}</span>
+                <div className="flex items-center gap-2">
+                  <SourceBadge source={m.source} />
+                  {isBand ? (
+                    autonomy !== undefined ? (
+                      <span className="font-mono text-xs text-fg">
+                        <span className="sr-only">Autonomy class </span>
+                        {autonomy.label}
+                      </span>
+                    ) : null
+                  ) : (
+                    <span
+                      className="w-9 text-right font-mono text-sm tabular-nums"
+                      style={{ color }}
+                    >
+                      {m.value}
                     </span>
-                  ) : null
-                ) : (
-                  <span
-                    className="w-9 text-right font-mono text-sm tabular-nums"
-                    style={{ color }}
-                  >
-                    {m.value}
-                  </span>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-            {isBand ? (
-              /* What the row answers, in the register the explainability panel already
-                 uses. It replaces the track: the reader is being told where the people
-                 are, not how full something is. */
-              <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
-                who is in the loop
-              </p>
-            ) : (
-              <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-line">
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${m.value}%`,
-                    background: `linear-gradient(90deg, color-mix(in oklab, ${color} 55%, transparent), ${color})`,
-                  }}
-                />
+              {isBand ? (
+                /* What the row answers, in the register the explainability panel
+                   already uses. It replaces the track: the reader is being told
+                   where the people are, not how full something is. */
+                <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
+                  who is in the loop
+                </p>
+              ) : (
+                <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-line">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${m.value}%`,
+                      background: `linear-gradient(90deg, color-mix(in oklab, ${color} 55%, transparent), ${color})`,
+                    }}
+                  />
+                </div>
+              )}
+              {!compact && (
+                <p className="mt-1.5 text-xs leading-snug text-dim">
+                  {glance(m, autonomy, audit)}
+                </p>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      {compact && (
+        <More summary="What each row means" className="mt-3">
+          <dl className="flex flex-col gap-3">
+            {metrics.map((m) => (
+              <div key={m.key}>
+                <dt className="text-xs font-medium text-fg">{m.label}</dt>
+                <dd className="mt-0.5 text-xs leading-snug text-dim">
+                  {glance(m, autonomy, audit)}
+                </dd>
               </div>
-            )}
-            <p className="mt-1.5 text-xs leading-snug text-dim">
-              {glance(m, autonomy, audit)}
-            </p>
-          </li>
-        );
-      })}
-    </ul>
+            ))}
+          </dl>
+        </More>
+      )}
+    </div>
   );
 }
