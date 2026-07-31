@@ -35,9 +35,11 @@ import { cx } from "@/lib/format";
  * child, so putting five more items in this row would make the header a table of contents
  * for two pages that already have one.
  *
- * Eight again: the content-cli plan added `/install` after `/build`, one setup action
- * for a factory the reader just downloaded. It is the shortest label in the group, so it
- * costs the row less width than the item it follows.
+ * Nine now: the lifecycle-scoring pass gave `/spec/scoring` its own route right after
+ * `/spec`, since it grades what the three layers describe rather than adding a fourth one
+ * of its own. Its label is the same phrase the page's own `h1` and every inline link to it
+ * already use, "How a blueprint is graded", so a reader who has met the phrase on any of
+ * those recognises it here too.
  */
 export const NAV = [
   { href: "/blueprints", label: "Blueprints", group: "registry" },
@@ -56,6 +58,9 @@ export const NAV = [
   // graph and a card, and this is what the three layers they were writing in actually
   // are.
   { href: "/spec", label: "Spec", group: "learn" },
+  // A child of `/spec`, not a fifth `learn` destination in its own right: it grades what
+  // the three layers above it describe. Placed directly after `/spec` for that reason.
+  { href: "/spec/scoring", label: "How a blueprint is graded", group: "learn" },
   // The author named this label: "/which-tasks should be placed in The climb part which
   // I'd rename Towards a Dark Factory". It is also the page's own `h1`, character for
   // character, which is what `nav.test.ts` holds it to. The label a reader clicks is the
@@ -89,12 +94,13 @@ export function SiteHeader() {
           <span className="text-cyan">Print</span>
         </Link>
 
-        {/* Eight items again in 976px of container at `lg`, so the row tightens by two
+        {/* Nine items now in 976px of container at `lg`, so the row tightens by two
             pixels of padding and one of type there and relaxes at `xl`, where there is
-            1152px and no reason to crowd. The seven-item version of this row was measured
-            at 1024, 1280 and 1440; `/install` adds "Install", the shortest label in
-            either group, so it costs less width than any item already accounted for
-            there — not independently re-measured in a live browser since. */}
+            1152px and no reason to crowd. The eight-item version of this row was measured
+            at 1024, 1280 and 1440; `/spec/scoring` adds "How a blueprint is graded", the
+            longest label in either group, so it costs the row more width than any item
+            already accounted for there — not independently re-measured in a live browser
+            since. */}
         <nav className="hidden items-center gap-1 lg:flex">
           {NAV.map((item) => (
             <Link

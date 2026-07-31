@@ -369,7 +369,7 @@ export function bundleReadme(input: BundleExportInput): string {
       ...wrap(
         [
           modelled.length === 1
-            ? "One node in this factory names the model it runs on, and carries it as `llm_model`."
+            ? "One node in this blueprint names the model it runs on, and carries it as `llm_model`."
             : `${modelled.length} of the ${blueprint.nodes.length} nodes name the model they run on, and carry it as \`llm_model\`.`,
           "That is Attractor's own attribute for it, so the run uses those models as they stand and",
           "your provider has to serve them. A node attribute outranks a graph-level",
@@ -425,7 +425,7 @@ export function bundleReadme(input: BundleExportInput): string {
             : `${skills.length} of the nodes in this bundle name a skill document.`,
           "There is no `skills/` directory above and there is not meant to be: DarkPrint stores the",
           "pointer and reads nothing at the other end of it, so a skill document is never part of a",
-          "bundle. The paths are relative to the repository you run this factory from, and writing the",
+          "bundle. The paths are relative to the repository you run this blueprint from, and writing the",
           "documents is yours to do.",
         ].join(" "),
       ),
@@ -514,7 +514,7 @@ export function bundleReadme(input: BundleExportInput): string {
   // this file: the class is a name, and the one ordinal a reader meets on DarkPrint is
   // the 1-to-5 organisational ladder, which describes an organisation and not a graph.
   push(
-    "The autonomy class says what this factory automates and where a person stands in it.",
+    "The autonomy class says what this blueprint automates and where a person stands in it.",
     "Nothing here is a grade.",
     "",
   );

@@ -619,7 +619,7 @@ function approver(p: StarterProfile): StarterCardSpec {
     // a single graph, which is the collision the class exists to end. The class name is
     // the same fact, and `variants.test.ts` holds the sentence to the class the engine
     // actually computes for the bundle this card ships in.
-    notes: `With this node the blueprint is classed conditional. Without it, closed-loop. The class records where a person acts in the run, and this is where. A factory that touches something you cannot roll back is a factory you want this node in, and the class names which of the two designs you are holding. \`requires_human\` is redundant with the node type and set anyway, so the gate is legible without an ontology lookup.`,
+    notes: `With this node the blueprint is classed conditional. Without it, closed-loop. The class records where a person acts in the run, and this is where. A blueprint that touches something you cannot roll back is a blueprint you want this node in, and the class names which of the two designs you are holding. \`requires_human\` is redundant with the node type and set anyway, so the gate is legible without an ontology lookup.`,
     version: BASE_VERSION,
     provenance: PROVENANCE,
     ontologyVersion: ONTOLOGY_VERSION,

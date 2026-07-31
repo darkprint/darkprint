@@ -41,11 +41,12 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
       nothing it prints.
 
    ── The h1 is a link target, not just a title ──
-   "How a factory is graded" is the exact phrase every blueprint page
-   already links this content with (`Explainability`'s inline link
-   and the sidebar Score card's). Keeping it as this page's `h1`
-   means the text a reader clicks and the heading they land on read
-   as the same sentence.
+   "How a blueprint is graded" is the phrase every inline link to this
+   content uses — `Explainability`'s (redesign spec §A3) and
+   `SectionExample`'s (this lane's own step 4), both renamed from
+   "How a factory is graded" alongside this page. Keeping it as this
+   page's `h1` means the text a reader clicks and the heading they
+   land on read as the same sentence.
 
    ── No route config ──
    A static leaf segment, so there is no `generateStaticParams` and
@@ -55,7 +56,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    ============================================================ */
 
 export const metadata: Metadata = {
-  title: "How a factory is graded",
+  title: "How a blueprint is graded",
   description:
     "The six axes on a DarkPrint blueprint's radar: autonomy and security, read off the graph and the cards at build time; cost, time, efficacy, reliability and transparency, seeded rows with no runner or ballot behind them yet.",
 };

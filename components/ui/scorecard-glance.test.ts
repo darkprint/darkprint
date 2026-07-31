@@ -23,8 +23,13 @@
    to go wrong, one per case below:
 
      1. the glance eats the audit. The rationale has to survive in
-        the panel, in the open — a score nobody can check is doc 1
-        §8.3's rumour with a number attached;
+        the panel — a score nobody can check is doc 1 §8.3's rumour
+        with a number attached. The blueprint-page redesign folds
+        Autonomy and Security behind a closed-by-default `<details>`
+        now, so "survives" no longer means "in the open" the way it
+        did when this suite was written — it means present in the
+        prerendered HTML the site's other disclosures are held to
+        (`components/ui/More.tsx`'s own licence: folded, not gone);
      2. the glance eats an honesty statement. Only the two `auto`
         rows change. The other four say the figure is seeded, which
         doc 2 §0.4 makes a product rule and which has to stay
@@ -50,7 +55,7 @@ import { describe, expect, it } from "vitest";
 import { allBlueprints } from "@/lib/content";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
 import { MetricBars } from "@/components/ui/MetricBars";
-import { openText, plainText } from "@/components/ui/visible-text";
+import { plainText } from "@/components/ui/visible-text";
 
 const BLUEPRINTS = allBlueprints();
 
@@ -75,7 +80,7 @@ function unaudited(bp: (typeof BLUEPRINTS)[number]): string {
   );
 }
 
-/** The audit surface: the schematic and the panel that shows the working. */
+/** The audit surface: the panel that shows the working (Autonomy, Security). */
 function panel(bp: (typeof BLUEPRINTS)[number]): string {
   return renderToStaticMarkup(
     createElement(BlueprintCanvas, { graph: bp.graph, analysis: bp.analysis }),
@@ -98,9 +103,11 @@ describe("the engine's working is on the audit surface and nowhere else", () => 
       // what both surfaces print; `lib/content/index.test.ts` holds that identity.
       const rationales = [bp.metrics[0].detail, bp.metrics[5].detail];
       const glance = plainText(card(bp));
-      // Open, not merely present: a rationale folded into a `<details>` is a score whose
-      // working a reader has to go looking for.
-      const audit = openText(panel(bp));
+      // Present, not necessarily open: Autonomy and Security are their own closed-by-
+      // default `<details>` since the radar-layout redesign, so the rationale is folded
+      // away like everything else in one of the site's disclosures — still in the
+      // prerendered HTML, still findable, just not visible without a click.
+      const audit = plainText(panel(bp));
 
       for (const text of rationales) {
         expect(audit, "the panel dropped the engine's own sentence").toContain(text);

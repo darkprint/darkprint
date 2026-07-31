@@ -9,9 +9,11 @@ import {
   getRegistry,
   nodeCardVersions,
 } from "@/lib/content";
+import { downloadsFor } from "@/lib/data/node-community";
 import { getAuthor } from "@/lib/data/users";
-import { cx } from "@/lib/format";
+import { compact, cx } from "@/lib/format";
 import { contentHref, termHref } from "@/lib/href";
+import { ForkAction } from "@/components/blueprint/ForkAction";
 import { AuthorChip } from "@/components/ui/Avatar";
 import { KindBadge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
@@ -258,6 +260,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   const author = card.author === undefined ? undefined : getAuthor(card.author);
   const source = cardSource(record.ref);
   const params_ = Object.entries(card.params);
+  const downloads = downloadsFor(card.id);
 
   return (
     <div className="container-page py-10 lg:py-12">
@@ -272,6 +275,9 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
         </nav>
 
         <div className="flex flex-col gap-3">
+          <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
+            {card.name}
+          </h1>
           <div className="flex flex-wrap items-center gap-3">
             <KindBadge kind="node" />
             {/* The two dimensions, side by side and each named. They are the same kind
@@ -325,9 +331,6 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             )}
             <FavoriteStar id={`node:${card.id}@${card.version}`} className="ml-auto" />
           </div>
-          <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
-            {card.name}
-          </h1>
           <p className="max-w-3xl text-lg leading-relaxed text-muted">
             {card.action}
           </p>
@@ -345,16 +348,37 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           <span className="font-mono text-xs text-dim">
             used in {usedIn.length} blueprint{usedIn.length === 1 ? "" : "s"}
           </span>
-          {source !== undefined && (
-            <ButtonLink
-              href={`data:text/yaml;charset=utf-8,${encodeURIComponent(source)}`}
-              download={`${record.ref}.yaml`}
-              prefetch={false}
-              className="ml-auto"
-            >
-              Download card
-            </ButtonLink>
-          )}
+          {/* Same emerald figure the blueprint page's header uses, but the "seeded"
+              marker stays here rather than following that page's redesign: the
+              blueprint page can drop it from its header line because the Score panel
+              below still says "seeded" in the same file (doc 2 §0.4's rule is per
+              file, not per line — `autonomy-surfaces.test.ts`). This page has no other
+              paragraph that names it, so the marker has to live beside the figure it
+              governs or the page prints a seeded number as a fact. */}
+          <span className="font-mono text-xs">
+            <span className="text-emerald">↓ {compact(downloads)} downloads</span>{" "}
+            <span className="text-amber" title="Seeded — no counter stands behind it">
+              <span aria-hidden>◐ </span>seeded
+            </span>
+          </span>
+          {/* Fork first, download second — the same grouping and the same reasoning
+              the blueprint page's header row uses: `ForkAction` is the disclosure, the
+              button beside it is the one real download this row promises. The group
+              carries `id="download"` (with `scroll-mt-24`, matching every other
+              in-page anchor target — `anchors.test.ts`) since this page has no
+              separate `DownloadPanel` for `ForkAction`'s `#download` link to target. */}
+          <div id="download" className="ml-auto flex scroll-mt-24 items-center gap-2">
+            <ForkAction kind="node" />
+            {source !== undefined && (
+              <ButtonLink
+                href={`data:text/yaml;charset=utf-8,${encodeURIComponent(source)}`}
+                download={`${record.ref}.yaml`}
+                prefetch={false}
+              >
+                Download card
+              </ButtonLink>
+            )}
+          </div>
         </div>
       </header>
 
@@ -652,7 +676,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   {phases.length === 0 ? (
                     <p className="text-[15px] leading-relaxed text-muted">
                       <span className="text-fg">Outside the five.</span> The lifecycle
-                      phases describe the shape of a factory, not every node inside
+                      phases describe the shape of a blueprint, not every node inside
                       one: intake, retrieval, routing and hand-off are real work that
                       none of the five names. This card declares no phase, which is an
                       answer rather than a blank.
@@ -671,7 +695,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   )}
                   <p className="text-xs leading-relaxed text-dim">
                     A blueprint&apos;s phase coverage is the union of the phases its
-                    nodes declare. It says what a factory covers, not how complete it
+                    nodes declare. It says what a blueprint covers, not how complete it
                     is, and a node standing outside the five takes nothing away from
                     it.
                   </p>

@@ -15,10 +15,9 @@ import { More } from "@/components/ui/More";
  * list takes, and it is the same `◐ seeded` the scorecard and `/u/` use.
  *
  * PROJECT.md §3.1: the first note is open and the rest sit behind a disclosure. The
- * count in the heading is of all of them, the `◐ seeded` marker and the sentence about
- * there being no form, no account and no ballot are outside the disclosure, and every
- * note is still in the prerendered HTML for find-in-page. Nothing here is folded that a
- * reader would be misled by not seeing.
+ * count in the heading is of all of them, the `◐ seeded` marker is outside the
+ * disclosure, and every note is still in the prerendered HTML for find-in-page. Nothing
+ * here is folded that a reader would be misled by not seeing.
  */
 /** How many notes stand open before the rest go behind the disclosure. */
 const OPEN_NOTES = 1;
@@ -40,12 +39,6 @@ export function Comments({ comments }: { comments: Comment[] }) {
           <span aria-hidden>◐ </span>seeded
         </span>
       </h2>
-      {comments.length > 0 && (
-        <p className="-mt-2 mb-4 text-xs leading-relaxed text-dim">
-          Rows in the index, authors included. There is no form on this page, no account
-          behind a name and no ballot behind a count.
-        </p>
-      )}
 
       {comments.length === 0 ? (
         <div className="panel px-5 py-8 text-center">

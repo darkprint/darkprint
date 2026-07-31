@@ -39,7 +39,7 @@ export const AUTHORS = {
     avatarHue: 350,
     validator: true,
     reputation: 3570,
-    bio: "Ontologist. If it isn't a typed graph, it isn't a factory — it's a vibe.",
+    bio: "Ontologist. If it isn't a typed graph, it isn't a blueprint — it's a vibe.",
   },
   hachi: {
     username: "hachi",

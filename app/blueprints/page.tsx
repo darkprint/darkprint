@@ -6,7 +6,7 @@ import { allBlueprints, getRegistry } from "@/lib/content";
 export const metadata: Metadata = {
   title: "Blueprints",
   description:
-    "Browse the DarkPrint registry of AI factory blueprints. Filter by tag, category and autonomy class, read each pipeline as a graph, and take the folder away.",
+    "Browse the DarkPrint registry of AI blueprints. Filter by tag, category and autonomy class, read each pipeline as a graph, and take the folder away.",
 };
 
 /**

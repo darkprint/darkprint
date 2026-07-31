@@ -84,7 +84,7 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
       { href: "/spec/topology", label: "The topology, in DOT" },
       { href: "/spec/card", label: "The node card, in YAML" },
       { href: "/spec/ontology", label: "The vocabulary" },
-      { href: "/spec/scoring", label: "How a factory is graded" },
+      { href: "/spec/scoring", label: "How a blueprint is graded" },
     ],
   },
   {

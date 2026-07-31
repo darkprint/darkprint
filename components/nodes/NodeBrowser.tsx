@@ -334,7 +334,7 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
       {phase === UNPHASED && (
         <p className="border-l-2 border-line-bright pl-4 text-sm leading-relaxed text-muted">
           These cards name no phase, and that is a complete answer. The five phases
-          describe the shape of a factory, not every node inside one — intake,
+          describe the shape of a blueprint, not every node inside one — intake,
           retrieval, routing and hand-off are real work that none of the five names.
         </p>
       )}

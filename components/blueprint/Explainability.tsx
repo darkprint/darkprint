@@ -355,16 +355,23 @@ function AutonomyPanel({
   const undescribed = autonomy.contributions.filter((c) => !c.resolved && !c.requiresHuman);
 
   return (
-    <section className="panel p-5" aria-labelledby="autonomy-explained">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h3 id="autonomy-explained" className={LABEL}>
-          Autonomy — who is in the loop
-        </h3>
-        <span className="font-mono text-[11px] text-dim">
-          <span className="sr-only">Autonomy class </span>
-          {autonomy.label}
+    <details className="group panel p-5" aria-labelledby="autonomy-explained">
+      <summary className="mb-4 flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center gap-2">
+          <span
+            className="inline-block shrink-0 text-cyan transition-transform group-open:rotate-90"
+            aria-hidden
+          >
+            ▸
+          </span>
+          <h3 id="autonomy-explained" className={LABEL}>
+            Autonomy — who is in the loop
+          </h3>
         </span>
-      </div>
+        <span className="font-mono text-[11px] text-dim">
+          Autonomy level: {autonomy.label}
+        </span>
+      </summary>
 
       {/* PROJECT.md §3.1: the sentence that enumerated the three groups is gone. It
           named them in the order the three tallies immediately below name them, so it
@@ -520,7 +527,7 @@ function AutonomyPanel({
           </ul>
         </div>
       )}
-    </section>
+    </details>
   );
 }
 
@@ -1049,17 +1056,26 @@ function SecurityPanel({
   );
 
   return (
-    <section className="panel p-5" aria-labelledby="security-explained">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        {/* `components/blueprint/BundlePanel.tsx` links this id, so it needs the same
-            offset every other anchor target on the site carries (`anchors.test.ts`). */}
-        <h3 id="security-explained" className={cx("scroll-mt-24", LABEL)}>
-          Security — what it gets to touch
-        </h3>
-        <span className="font-mono text-[11px] text-dim">
-          security level {security.level}
+    <details className="group panel p-5" aria-labelledby="security-explained">
+      <summary className="mb-4 flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center gap-2">
+          <span
+            className="inline-block shrink-0 text-cyan transition-transform group-open:rotate-90"
+            aria-hidden
+          >
+            ▸
+          </span>
+          {/* `components/blueprint/BundlePanel.tsx` links this id, so it needs the same
+              offset every other anchor target on the site carries (`anchors.test.ts`). */}
+          <h3 id="security-explained" className={cx("scroll-mt-24", LABEL)}>
+            Security — what it gets to touch
+          </h3>
         </span>
-      </div>
+        <span className="flex flex-col items-end gap-0.5 font-mono text-[11px] text-dim">
+          <span>Security: {security.raw.toFixed(2)} / 4.00</span>
+          <span>security level {security.level}</span>
+        </span>
+      </summary>
 
       <p className="mb-3 text-sm leading-relaxed text-muted">
         Four points to start, and every risk marker present subtracts its weight. A
@@ -1248,7 +1264,7 @@ function SecurityPanel({
           </>
         )}
       </div>
-    </section>
+    </details>
   );
 }
 
@@ -1299,7 +1315,7 @@ export function Explainability({
           href="/spec/scoring"
           className="text-muted underline-offset-4 hover:text-cyan hover:underline"
         >
-          How a factory is graded →
+          How a blueprint is graded →
         </Link>
       </p>
       {/* Doc 3 §8: a score that does not name the vocabulary it was computed under is

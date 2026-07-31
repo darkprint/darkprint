@@ -102,12 +102,12 @@ export interface StepDef {
 }
 
 export const STEPS: readonly StepDef[] = [
-  { id: "whole", nav: "The factory", title: "Five nodes, one factory", reading: "dot" },
+  { id: "whole", nav: "The blueprint", title: "Five nodes, one blueprint", reading: "dot" },
   { id: "node", nav: "One node", title: "One node, four blocks", reading: "skeleton" },
   {
     id: "output",
     nav: "What it builds",
-    title: "What does your factory build?",
+    title: "What does your blueprint build?",
     choiceNode: STARTER_NODES.builder,
     reading: "card",
   },
@@ -132,7 +132,7 @@ export const STEPS: readonly StepDef[] = [
     choiceNode: STARTER_NODES.debugger,
     reading: "card",
   },
-  { id: "download", nav: "Take it away", title: "Your factory, as files", reading: "dot" },
+  { id: "download", nav: "Take it away", title: "Your blueprint, as files", reading: "dot" },
 ];
 
 /* --------------------- shared bits --------------------- */
@@ -228,7 +228,7 @@ export function OutputStep({ digest }: { digest?: string }) {
   return (
     <>
       <p className={P}>
-        Pick what this factory produces. The graph does not change and neither computed score
+        Pick what this blueprint produces. The graph does not change and neither computed score
         moves. The prose in every card does, and the prose is what the agent is handed when
         the graph runs.
       </p>
@@ -391,13 +391,13 @@ export function ApprovalIntro() {
         the release boundary, read the report, and answer before anything ships.
       </p>
       <p className={P}>
-        Both are complete factories and both belong in the gallery. Nothing on DarkPrint
+        Both are complete blueprints and both belong in the gallery. Nothing on DarkPrint
         ranks the two, and the autonomy class records which one you drew.
       </p>
       <More summary="Choosing between them">
         <p className={SMALL}>
-          If this factory touches something you cannot take back, the approver is the design
-          you want. The other class describes a different factory. The panel beside you names
+          If this blueprint touches something you cannot take back, the approver is the design
+          you want. The other class describes a different blueprint. The panel beside you names
           the class for the graph on screen along with the arithmetic behind it, and it
           describes the shape of the graph.
         </p>

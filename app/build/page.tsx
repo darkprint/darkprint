@@ -6,9 +6,9 @@ import { ALL_COMBINATIONS } from "@/components/build/choices";
 import { GuidedPath } from "@/components/build/GuidedPath";
 
 export const metadata: Metadata = {
-  title: "Build your own factory",
+  title: "Build your own blueprint",
   description:
-    "The guided path. Start from the five-node starter, make three choices that stay in the artefact, and finish holding a factory that runs from your own command line. Every score on the page is computed by the same static analysis the registry uses. Nothing is uploaded and there is nowhere to save it yet.",
+    "The guided path. Start from the five-node starter, make three choices that stay in the artefact, and finish holding a blueprint that runs from your own command line. Every score on the page is computed by the same static analysis the registry uses. Nothing is uploaded and there is nowhere to save it yet.",
 };
 
 /* ============================================================
@@ -82,13 +82,13 @@ function verifyEveryVariant(): number {
   if (problems.length > 0) {
     throw new Error(
       [
-        `The guided path can produce a factory that does not resolve: ${problems.length} problem${
+        `The guided path can produce a blueprint that does not resolve: ${problems.length} problem${
           problems.length === 1 ? "" : "s"
         } across ${ALL_COMBINATIONS.length} combinations.`,
         "",
         ...problems,
         "",
-        "Doc 2 §5.3: every combination of choices has to produce a working factory. Fix lib/starter/ before shipping /build.",
+        "Doc 2 §5.3: every combination of choices has to produce a working blueprint. Fix lib/starter/ before shipping /build.",
       ].join("\n"),
     );
   }
@@ -112,8 +112,8 @@ export default function BuildPage() {
         <SectionHeading
           className="mt-3"
           as="h1"
-          title="Build your own factory"
-          lead="About an hour. Start from the five-node starter, make three choices, and leave with a factory that runs from your own command line."
+          title="Build your own blueprint"
+          lead="About an hour. Start from the five-node starter, make three choices, and leave with a blueprint that runs from your own command line."
         />
         <p className="mt-4 text-[15px] leading-relaxed text-muted">
           Every score is computed in this tab, by the analysis the gallery runs, on the

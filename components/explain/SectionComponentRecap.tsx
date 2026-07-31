@@ -94,7 +94,7 @@ function entries(): Entry[] {
       glyph: "▧",
       color: "var(--color-cyan)",
       count: `${registry.blueprints().length} in the archive`,
-      title: "The whole factory, as one graph",
+      title: "The whole blueprint, as one graph",
       body: "A DOT file plus one pinned card version per node, hashed and versioned as a unit so a score stays checkable against the exact cards behind it.",
       href: kindHref("blueprint"),
       cta: "Browse blueprints",

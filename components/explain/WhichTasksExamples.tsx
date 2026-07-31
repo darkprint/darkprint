@@ -68,7 +68,7 @@ const COLUMNS: Column[] = [
     glyph: "✓",
     word: "fits",
     color: "var(--color-emerald)",
-    heading: "Tasks a factory can take",
+    heading: "Tasks a blueprint can take",
     lead: "Four yeses each. The common shape is that the definition of done was already written down, usually by a compiler or a suite.",
     items: [
       {
@@ -138,7 +138,7 @@ export function WhichTasksExamples() {
         <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
           Find the entry your task most resembles and read the check it turns on. The
           second column is at full strength on purpose. This page exists to prevent one
-          outcome: a factory pointed at a task nothing can verify returns fluent work no
+          outcome: a blueprint pointed at a task nothing can verify returns fluent work no
           node in the graph can reject, and the reader concludes that dark factories do not
           work. The graph was fine; the task was never a candidate.
         </p>

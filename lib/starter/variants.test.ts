@@ -876,7 +876,7 @@ describe("the surfaces the guided path reads", () => {
   /**
    * The README opens with this sentence and prints `nodes N` three lines below it
    * (`lib/content/bundle-export.ts`). A count written into the profile rather than taken
-   * off the graph put "A five-node factory" above a table of six rows for every variant
+   * off the graph put "A five-node blueprint" above a table of six rows for every variant
    * with an approver in it, which writes the node the reader chose out of the description
    * of their own artefact.
    */
@@ -887,7 +887,7 @@ describe("the surfaces the guided path reads", () => {
       const count = blueprint.nodes.length;
       expect(count, starterSlug(variant)).toBe(variant.approval === "human" ? 6 : 5);
       expect(bundle.manifest.summary, starterSlug(variant)).toContain(
-        `A ${WORDS[count]}-node factory that `,
+        `A ${WORDS[count]}-node blueprint that `,
       );
       // And no other count is asserted anywhere in the sentence.
       for (const word of WORDS.filter((w) => w !== WORDS[count])) {

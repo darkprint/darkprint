@@ -133,7 +133,7 @@ const CHECKS: Check[] = [
     color: "var(--color-emerald)",
     question: "Does the check already exist, or can you write it before the work starts?",
     probe:
-      "Write the failing test now, or diff every output against the old implementation still in the tree. If that is slower than doing the task, so is the factory.",
+      "Write the failing test now, or diff every output against the old implementation still in the tree. If that is slower than doing the task, so is the blueprint.",
     breaks: (
       <>
         A verdict is worth something because the builder never sees the acceptance

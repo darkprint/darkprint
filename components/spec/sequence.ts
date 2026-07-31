@@ -136,17 +136,17 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
  * true; this is a different kind of page, added after the layers rather than folded among
  * them. Lifecycle-scoring spec §4.2.
  *
- * `title` reuses the exact phrase every blueprint page already links this content with,
- * "How a factory is graded" (`components/blueprint/Explainability.tsx`'s link text and
- * the sidebar Score card's), so the text a reader clicks and the heading they land on are
- * the same words.
+ * `title` reuses the exact phrase every inline link to this content already uses,
+ * "How a blueprint is graded" (`components/blueprint/Explainability.tsx`'s link text and
+ * `components/home/SectionExample.tsx`'s), so the text a reader clicks and the heading
+ * they land on are the same words.
  */
 export const SPEC_SCORING: SpecPage = {
   href: "/spec/scoring",
   step: "04",
   nav: "Scoring",
   eyebrow: "The six radar axes",
-  title: "How a factory is graded",
+  title: "How a blueprint is graded",
   question: "How the six radar axes are read, and which four are seeded.",
 };
 

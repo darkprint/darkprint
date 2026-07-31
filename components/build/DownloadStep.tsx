@@ -86,7 +86,7 @@ export function DownloadStep({
     return (
       <p className={cx("text-[15px] leading-relaxed text-muted", className)}>
         There are no files to hand over. The bundle behind these choices did not resolve,
-        and a factory the engine cannot vouch for is not one to download.
+        and a blueprint the engine cannot vouch for is not one to download.
       </p>
     );
   }
@@ -100,7 +100,7 @@ export function DownloadStep({
           names. What the panel does not say, the README's quotation of both computed
           readings, moved down to the paragraph about checking the digest. */}
       <p className="text-[15px] leading-relaxed text-muted">
-        This is your factory, in the same folder shape as every blueprint in the gallery.{" "}
+        This is your blueprint, in the same folder shape as everything else in the gallery.{" "}
         {summary}
       </p>
 

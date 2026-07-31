@@ -194,7 +194,7 @@ export function SectionExample() {
               href="/spec/scoring"
               className="text-cyan underline decoration-cyan/40 underline-offset-4 hover:decoration-cyan"
             >
-              How a factory is graded →
+              How a blueprint is graded →
             </Link>
           </p>
         </div>

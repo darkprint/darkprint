@@ -100,7 +100,7 @@ export function ScoreStrip({
         className,
       )}
     >
-      <span className="uppercase tracking-[0.16em] text-dim">Your factory</span>
+      <span className="uppercase tracking-[0.16em] text-dim">Your blueprint</span>
       {autonomy !== undefined && (
         <span className="text-muted">
           autonomy <span className="text-fg">{autonomy.label}</span>
@@ -169,7 +169,7 @@ export function ScorePanel({
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="score-panel-heading" className={LABEL}>
-          Your factory
+          Your blueprint
         </h2>
         {digest !== undefined && (
           <span className="font-mono text-[10px] text-dim" title={digest}>
@@ -184,7 +184,7 @@ export function ScorePanel({
       {demo && (
         <p className="rounded border border-dashed border-signal/50 bg-signal/5 px-2.5 py-1.5 text-[11px] leading-relaxed text-muted">
           <span className="font-mono text-signal">demonstration on</span>. The readings
-          below describe the graph with the extra edge in it. Your factory is unchanged,
+          below describe the graph with the extra edge in it. Your blueprint is unchanged,
           and the download does not carry the edge.
         </p>
       )}

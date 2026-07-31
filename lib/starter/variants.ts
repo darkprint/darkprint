@@ -150,7 +150,7 @@ function manifestFor(choices: StarterVariant, nodeCount: number): BundleManifest
   const human = choices.approval === "human";
   const tags = ["guided-path", "starter", "isolation", choices.output];
   if (human) tags.push("human-in-the-loop");
-  const summary = `A ${countWord(nodeCount)}-node factory that ${p.summaryTail}`;
+  const summary = `A ${countWord(nodeCount)}-node blueprint that ${p.summaryTail}`;
   return {
     slug: starterSlug(choices),
     title: human ? `${p.title} with approval` : p.title,

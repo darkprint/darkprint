@@ -328,18 +328,6 @@ export function GalleryBrowser({
             />
           ))}
         </div>
-
-        {/* The same marker `/u/` and the blueprint scorecard already use, at the one
-            control that offers to order the shelf by a figure nobody counted. Glyph and
-            word, never colour alone. */}
-        <p className="border-t border-line pt-3 text-xs leading-relaxed text-dim">
-          <span className="font-mono text-amber" aria-hidden>
-            ◐
-          </span>{" "}
-          <span className="font-mono uppercase tracking-[0.12em] text-amber">seeded</span>.
-          The download and vote counts on every tile are rows in the index. There is no
-          ballot and no counter behind them, and the two orderings above sort those rows.
-        </p>
       </div>
 
       {/* result count + reset */}

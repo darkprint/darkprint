@@ -5,7 +5,6 @@ import Link from "next/link";
 import type { Diagnostic } from "@/lib/core";
 import { shortDigest, summarize } from "@/lib/core";
 import { cx } from "@/lib/format";
-import { nodeHref } from "@/lib/href";
 import { DiagnosticList } from "@/components/ui/DiagnosticList";
 import { SEVERITY_META, severityCount } from "@/components/ui/severity";
 
@@ -23,8 +22,7 @@ export interface BundleNode {
 /**
  * What this blueprint actually is on disk: a digest over the DOT source and the exact
  * card versions it pins. §4 makes that digest the bundle's identity, so it is the first
- * thing shown and the one thing worth copying — and every node under it is a link back
- * to the card it came from.
+ * thing shown and the one thing worth copying.
  *
  * A client component only for the copy button; everything it renders is plain data.
  */
@@ -176,43 +174,6 @@ export function BundlePanel({
             ? "Two scores from different ontology versions are not comparable."
             : `The manifest is written against v${ontologyVersion} and the scores were computed against v${scoredOntologyVersion}. Read them against the second, and treat any comparison with a blueprint scored under a different version as a comparison of two different measurements.`}
         </p>
-
-        <div className="mt-4 flex flex-col gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">
-            Node cards
-          </span>
-          {/* Two routes to the same page, and this is the one that is always there. The
-              schematic above links a node by its name, which a reader finds by looking
-              at the drawing; this list is the index, and it names the pinned version
-              next to each row, which the drawing has no room for. Both land on
-              `/nodes/<id>`, which resolves the bare id to the newest published version,
-              so a row pinned to an older one is worth reading with its version in
-              hand. */}
-          <p className="text-xs leading-snug text-dim">
-            One row per drawn node. Each name opens that card, and the version beside it
-            is the one this bundle pins.
-          </p>
-          <ul className="flex flex-col divide-y divide-line">
-            {nodes.map((node) => (
-              <li key={node.nodeId} className="py-2 first:pt-0 last:pb-0">
-                <Link
-                  href={nodeHref(node.cardId)}
-                  className="group flex items-baseline justify-between gap-2"
-                >
-                  <span className="min-w-0 truncate text-sm text-fg transition-colors group-hover:text-cyan">
-                    {node.label}
-                  </span>
-                  <span className="shrink-0 font-mono text-[11px] text-dim">
-                    {node.version === "" ? "unpinned" : node.version}
-                  </span>
-                </Link>
-                <span className="font-mono text-[10px] text-dim">
-                  {node.nodeId} · {node.cardId}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
       </section>
 
       {/* Warnings are information, not something to tuck away. Measured on the archive as

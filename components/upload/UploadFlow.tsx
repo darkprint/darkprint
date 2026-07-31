@@ -58,7 +58,7 @@ const KINDS: {
   {
     key: "blueprint",
     label: "Blueprint",
-    hint: "Full factory graph",
+    hint: "Full blueprint graph",
     color: "var(--color-cyan)",
     ready: true,
   },
@@ -564,7 +564,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                 value={details.description}
                 onChange={(e) => setField("description", e.target.value)}
                 rows={5}
-                placeholder="What the factory does, its acceptance criteria, and where the closed loop makes its judgement calls."
+                placeholder="What the blueprint does, its acceptance criteria, and where the closed loop makes its judgement calls."
                 className={cx(inputCls, "resize-y")}
               />
             </div>

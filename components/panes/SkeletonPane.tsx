@@ -1,6 +1,8 @@
 "use client";
 
 import { Fragment, useMemo } from "react";
+import Link from "next/link";
+import { nodeHref } from "@/lib/href";
 import { cx } from "@/lib/format";
 import { useRovingListbox } from "./listbox";
 import { CARD_BLOCKS, type PaneFocus, type PaneModel } from "./model";
@@ -28,6 +30,10 @@ import { CARD_BLOCKS, type PaneFocus, type PaneModel } from "./model";
    markers has said what it needed to say, and nothing here draws
    it as a form left half-filled: the slot states what the card
    says instead of counting what it does not.
+
+   `linkToCard` turns the header's ref into a real link out to that
+   card's own page, for the blueprint detail page's merged panel —
+   see the prop's own doc comment for who leaves it off and why.
    ============================================================ */
 
 export function SkeletonPane({
@@ -36,6 +42,7 @@ export function SkeletonPane({
   focus,
   onSelectField,
   onSelectAbsence,
+  linkToCard = false,
   className,
 }: {
   paneNumber: number;
@@ -43,6 +50,16 @@ export function SkeletonPane({
   focus: PaneFocus;
   onSelectField: (key: string) => void;
   onSelectAbsence: (absenceId: string) => void;
+  /**
+   * Blueprint detail page's merged panel: the focused card's ref becomes a real
+   * `<Link>` to that card's own `/nodes/<id>` page, via the same `nodeHref` helper
+   * `BundlePanel` uses for its own per-card links. Off by default, and left off by
+   * `components/build/BuildPanes.tsx`'s guided-path mount — a step's focused card
+   * there is not guaranteed to have a published page yet, so a link would sometimes
+   * point at a 404. There is nothing to link to for an absence-focused state either
+   * way, `card` being `undefined` covers that.
+   */
+  linkToCard?: boolean;
   className?: string;
 }) {
   const card = focus.card;
@@ -121,9 +138,19 @@ export function SkeletonPane({
           </span>
           <span className="text-dim">{paneNumber}</span> The card skeleton
         </h3>
-        <span className="font-mono text-[11px] text-dim">
-          {card === undefined ? focus.node.nodeId : card.ref}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-[11px] text-dim">
+            {card === undefined ? focus.node.nodeId : card.ref}
+          </span>
+          {linkToCard && card !== undefined && (
+            <Link
+              href={nodeHref(card.id)}
+              className="font-mono text-[11px] text-cyan underline-offset-4 hover:underline"
+            >
+              Open card →
+            </Link>
+          )}
+        </div>
       </div>
 
       {card === undefined ? (

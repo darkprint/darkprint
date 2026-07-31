@@ -57,7 +57,7 @@ and you are back to the topology.
 9 of the nodes in this bundle name a skill document. There is no `skills/` directory above and
 there is not meant to be: DarkPrint stores the pointer and reads nothing at the other end of
 it, so a skill document is never part of a bundle. The paths are relative to the repository
-you run this factory from, and writing the documents is yours to do.
+you run this blueprint from, and writing the documents is yours to do.
 
 ```
 job          skills/job-intake.md
@@ -104,7 +104,7 @@ Both readings come from the topology and the cards, with nothing executed. These
 that produced them, so the same arithmetic on your side gives the same class and the same
 security level.
 
-The autonomy class says what this factory automates and where a person stands in it.
+The autonomy class says what this blueprint automates and where a person stands in it.
 Nothing here is a grade.
 
 ## What gets reported back

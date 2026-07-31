@@ -1,25 +1,46 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type {
   BlueprintAnalysisView,
   BlueprintGraph as BlueprintGraphData,
 } from "@/lib/types";
-import { BlueprintGraph } from "@/components/graph/BlueprintGraph";
 import { Explainability } from "./Explainability";
 
 /**
- * The schematic and the explanation of its scores, sharing one piece of state: which
- * node a finding is pointing at. That is the only reason this boundary exists — the
- * page stays a server component and hands down analysis that was computed at build
- * time; everything below the `"use client"` line is the click.
+ * A shared-state wrapper around Explainability, not a schematic anymore.
+ *
+ * This component used to also draw its own "Pipeline schematic" panel here, above
+ * Explainability, with a shared `highlighted` node id linking a click on a schematic
+ * node to the matching contribution/finding row lighting up below (and back). The
+ * blueprint detail page's own schematic now lives in the merged, interactive graph
+ * panel at the top of the page (`SynchronisedPanes`/`GraphPane`) instead — a
+ * different client component with its own `selection` state, driving a card
+ * skeleton rather than this highlight. Rendering the old schematic here too drew the
+ * same graph a second time in a row with different click behavior, so it was
+ * removed; `BlueprintGraph`/`highlighted` styling on the schematic drawing itself
+ * went with it.
+ *
+ * `highlighted` stays, because it is not only a schematic's feature: the same node
+ * id recurs across Explainability's own sub-lists (a contribution row in Autonomy, a
+ * finding row in Security), and clicking one still lights up every other row naming
+ * the same node — a piece of Explainability's own cross-referencing, independent of
+ * any drawing. `nodeNames` stays for the same reason (`Explainability` still needs
+ * node ids resolved to labels for that cross-referencing).
+ *
+ * `children`, when given, renders before Explainability — this is how the blueprint
+ * detail page hands in its Score panel to read Score → Explainability. Left out, as
+ * `ValidationReport.tsx` and this file's own tests still do, `children` is simply
+ * absent and Explainability renders on its own.
  */
 export function BlueprintCanvas({
   graph,
   analysis,
+  children,
 }: {
   graph: BlueprintGraphData;
   analysis: BlueprintAnalysisView;
+  children?: ReactNode;
 }) {
   const [highlighted, setHighlighted] = useState<string | undefined>(undefined);
 
@@ -29,53 +50,9 @@ export function BlueprintCanvas({
     return names;
   }, [graph]);
 
-  const litName =
-    highlighted === undefined ? undefined : (nodeNames[highlighted] ?? highlighted);
-
   return (
     <>
-      <section className="panel overflow-hidden">
-        <div className="flex items-center justify-between border-b border-line px-4 py-3">
-          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
-            Pipeline schematic
-          </span>
-          <span className="font-mono text-[11px] text-dim">
-            {graph.nodes.length} nodes · {graph.edges.length} edges
-          </span>
-        </div>
-
-        {/* Mounted whether or not anything is highlighted: a live region added to the
-            page at the moment its content changes is a region screen readers miss. */}
-        <p aria-live="polite" className="sr-only">
-          {litName === undefined
-            ? "No node is highlighted in the schematic."
-            : `${litName}, node ${highlighted}, is highlighted in the schematic.`}
-        </p>
-
-        {litName !== undefined && (
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-line bg-surface-2 px-4 py-2">
-            <span className="font-mono text-[11px] text-cyan" aria-hidden>
-              ◎
-            </span>
-            <span className="font-mono text-[11px] text-muted">
-              Highlighted <span className="text-fg">{litName}</span>{" "}
-              <span className="text-dim">{highlighted}</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => setHighlighted(undefined)}
-              aria-label="Clear the schematic highlight"
-              className="ml-auto rounded border border-line px-2 py-0.5 font-mono text-[11px] text-muted transition-colors hover:border-cyan hover:text-cyan"
-            >
-              clear
-            </button>
-          </div>
-        )}
-
-        <div className="p-3">
-          <BlueprintGraph graph={graph} highlighted={highlighted} />
-        </div>
-      </section>
+      {children}
 
       <Explainability
         autonomy={analysis.autonomy}

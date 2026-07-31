@@ -313,7 +313,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   </ol>
                   <p className="text-xs leading-relaxed text-dim">
                     Read left to right as the arc of a piece of work. The order is the
-                    lifecycle, not a ranking, and the arrows are the sequence a factory
+                    lifecycle, not a ranking, and the arrows are the sequence a blueprint
                     tends to run in rather than one it is obliged to.
                   </p>
                 </div>
@@ -326,15 +326,15 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                 </p>
                 <p className="text-sm leading-relaxed text-muted">
                   A card may name one of them, several, or none. The five describe the
-                  factory rather than every node inside it, so an intake or a retrieval
+                  blueprint rather than every node inside it, so an intake or a retrieval
                   step declares no phase at all and a node that both builds and repairs
                   declares two. Neither is a card with something missing from it.
                 </p>
                 <p className="text-sm leading-relaxed text-muted">
                   Which phases a blueprint has nodes in is its <em>phase coverage</em>, and
-                  it is shown as a description of scope — <em>this factory covers planning,
+                  it is shown as a description of scope — <em>this blueprint covers planning,
                   implementation and testing</em> — not as boxes ticked out of five. A
-                  factory that stops before deployment has decided where it stops.
+                  blueprint that stops before deployment has decided where it stops.
                 </p>
               </div>
             </section>

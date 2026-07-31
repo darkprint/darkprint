@@ -515,7 +515,7 @@ describe("the README", () => {
       for (const banned of ["autonomy level", "the same two numbers", "both numbers come"]) {
         expect([slug, banned, lower.includes(banned)]).toEqual([slug, banned, false]);
       }
-      expect([slug, text.includes("The autonomy class says what this factory automates")]).toEqual(
+      expect([slug, text.includes("The autonomy class says what this blueprint automates")]).toEqual(
         [slug, true],
       );
       expect([slug, text.includes(`Security level ${entry.analysis.security.level}.`)]).toEqual([

@@ -141,7 +141,7 @@ export const COMMUNITY: Record<string, CommunitySignals> = {
       {
         id: "c1",
         author: AUTHORS.mara,
-        body: "This is the part everyone skips and then wonders why their factory can't run for more than 20 minutes. Reliability 94 is earned.",
+        body: "This is the part everyone skips and then wonders why their blueprint can't run for more than 20 minutes. Reliability 94 is earned.",
         createdAt: "2026-04-14",
         votes: 52,
       },
@@ -262,7 +262,7 @@ export const COMMUNITY: Record<string, CommunitySignals> = {
         // said 0 runs and named the same figure a placeholder — the row was honest and
         // the note next to it undid the row. Nobody has run anything, so the note talks
         // about the shape of the graph, which is the part a reader can check.
-        body: "Handed this to two non-engineers as a first factory. Both got the debug loop immediately once they saw it never goes back to the builder. Five nodes and one loop is about as small as a factory gets before it stops being one.",
+        body: "Handed this to two non-engineers as a first blueprint. Both got the debug loop immediately once they saw it never goes back to the builder. Five nodes and one loop is about as small as a blueprint gets before it stops being one.",
         createdAt: "2026-07-24",
         votes: 18,
       },

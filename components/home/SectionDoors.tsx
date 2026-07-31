@@ -134,7 +134,7 @@ export function SectionDoors() {
 
           <Door
             title="Build your own"
-            line="An hour of choices, and a factory that downloads to your machine."
+            line="An hour of choices, and a blueprint that downloads to your machine."
             href="/build"
             cta="Start the guided path"
           />

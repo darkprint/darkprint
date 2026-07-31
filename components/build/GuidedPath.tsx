@@ -208,10 +208,10 @@ export function GuidedPath() {
     if (step.id === "output") {
       choice = {
         nodeId: step.choiceNode,
-        title: "What does this factory build?",
+        title: "What does this blueprint build?",
         children: (
           <RadioChoice
-            legend="What does this factory build?"
+            legend="What does this blueprint build?"
             options={OUTPUT_OPTIONS}
             value={choices.output}
             onChange={(output) => applyChoices({ ...choices, output })}
@@ -437,7 +437,7 @@ export function GuidedPath() {
               </Button>
             ) : (
               <span className="font-mono text-[11px] text-dim">
-                step {stepIndex + 1} of {STEPS.length} · the factory is yours
+                step {stepIndex + 1} of {STEPS.length} · the blueprint is yours
               </span>
             )}
           </div>

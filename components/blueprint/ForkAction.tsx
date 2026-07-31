@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/viz";
 import { ForkScene } from "@/components/home/lifecycle/ForkScene";
 
+/** Which page this action renders on, so its copy names the right thing. */
+type ForkKind = "blueprint" | "node";
+
 /**
  * "Fork blueprint", built to the locked design in this pass's spec §1 rather than to the
  * author's own words for it.
@@ -26,8 +29,20 @@ import { ForkScene } from "@/components/home/lifecycle/ForkScene";
  * `relative` wrapper so it can float below the button without stretching the header row
  * it shares with the download button (see the `absolute` panel below), and a `<summary>`
  * built to look like `Button`'s outline variant is more surface than a controlled toggle.
+ *
+ * `kind` is the one thing that differs between the two pages this renders on: a
+ * blueprint is a folder and its whole-folder download lives at `#download` on its own
+ * page; a node card is a single file and this page's own "Download card" button carries
+ * that same anchor instead. Defaulting to `"blueprint"` keeps the existing call on
+ * `app/blueprints/[slug]/page.tsx` rendering exactly what it did before this prop existed.
  */
-export function ForkAction({ className }: { className?: string }) {
+export function ForkAction({
+  className,
+  kind = "blueprint",
+}: {
+  className?: string;
+  kind?: ForkKind;
+}) {
   const [open, setOpen] = useState(false);
   // A stable id across renders, so `aria-controls` always names the element that exists,
   // not a guess a second instance of this component on the same page could collide with.
@@ -42,7 +57,7 @@ export function ForkAction({ className }: { className?: string }) {
         aria-controls={panelId}
         onClick={() => setOpen((o) => !o)}
       >
-        Fork blueprint
+        {kind === "node" ? "Fork card" : "Fork blueprint"}
         <span
           aria-hidden
           className={cx(
@@ -66,7 +81,11 @@ export function ForkAction({ className }: { className?: string }) {
         <div
           id={panelId}
           role="region"
-          aria-label="What forking this blueprint means"
+          aria-label={
+            kind === "node"
+              ? "What forking this card means"
+              : "What forking this blueprint means"
+          }
           className="absolute left-1/2 top-[calc(100%+0.5rem)] z-20 flex w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-3 rounded-lg border border-line-bright bg-surface-2 p-4 shadow-xl shadow-black/40"
         >
           {/* Same drawing, same caption, `SectionLifecycle` used before this pass
@@ -83,18 +102,29 @@ export function ForkAction({ className }: { className?: string }) {
             <ForkScene />
           </Sheet>
 
-          <p className="text-xs leading-relaxed text-muted">
-            Forking a blueprint means copying this folder into one of your own, the same
-            edit the drawing above shows: a card changed, or a person put where the
-            release goes out, and either copy is a complete blueprint. This site holds no
-            copy of it, and no account stands behind a fork.
-          </p>
+          {kind === "node" ? (
+            <p className="text-xs leading-relaxed text-muted">
+              Forking a card means copying this file into one of your own, the same edit
+              the drawing above shows: a line changed, or a person put where a step in the
+              graph hands off, and either copy is a complete card. This site holds no copy
+              of it, and no account stands behind a fork.
+            </p>
+          ) : (
+            <p className="text-xs leading-relaxed text-muted">
+              Forking a blueprint means copying this folder into one of your own, the same
+              edit the drawing above shows: a card changed, or a person put where the
+              release goes out, and either copy is a complete blueprint. This site holds no
+              copy of it, and no account stands behind a fork.
+            </p>
+          )}
 
           <Link
             href="#download"
             className="inline-flex items-center gap-1.5 self-start font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
           >
-            Take the whole folder from Download
+            {kind === "node"
+              ? "Take the card from Download"
+              : "Take the whole folder from Download"}
             <span aria-hidden>↓</span>
           </Link>
         </div>
