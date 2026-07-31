@@ -22,10 +22,10 @@ const SHORT: Record<MetricKey, string> = {
  *
  * The metric is not dropped. It keeps its row in `MetricBars` directly below this chart,
  * where the class is named, captioned "who is in the loop" and given the sentence saying
- * what that class does with people. The caption here says why the sixth axis is missing
- * and stops there: it used to open "Autonomy · Closed-loop", which put the class name
- * three times inside one 228-word panel — caption, row value, and the engine rationale
- * the row printed underneath. The class is the row's to state.
+ * what that class does with people. This chart used to carry its own caption explaining
+ * why the sixth axis is missing; the panel reorg pass cut it (the row below already
+ * states the class), so nothing here says why anymore — that reasoning lives only in
+ * this comment now.
  *
  * The name and never the ordinal behind it, for the reason doc 2 §1.1 gives: the one
  * number a reader meets on this site is the organisational maturity ladder, and a second
@@ -145,12 +145,6 @@ export function ScoreRadar({
   return (
     <figure className="flex w-full max-w-[340px] flex-col items-center gap-2">
       {chart}
-
-      {/* Why there are five spokes on a six-metric card. */}
-      <figcaption className="text-balance px-2 text-center font-mono text-[10px] leading-relaxed text-dim">
-        A class names a design choice, so autonomy is stated in the rows below rather than
-        plotted.
-      </figcaption>
     </figure>
   );
 }

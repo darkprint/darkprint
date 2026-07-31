@@ -72,9 +72,9 @@ export function AgentNode({ data }: NodeProps<AgentFlowNode>) {
     <div
       className="group relative min-w-[150px] rounded-md border bg-surface-2/95 px-3 py-2 backdrop-blur-sm"
       style={{
-        borderColor: lit ? "var(--color-cyan)" : "var(--color-line-bright)",
+        borderColor: lit ? "var(--color-amber)" : "var(--color-line-bright)",
         boxShadow: lit
-          ? "0 0 0 2px var(--color-cyan), 0 0 30px -6px var(--color-cyan)"
+          ? "0 0 0 2px var(--color-amber), 0 0 30px -6px var(--color-amber)"
           : `0 0 0 1px color-mix(in oklab, ${meta.color} 18%, transparent), 0 8px 24px -12px ${meta.color}`,
       }}
     >
@@ -90,7 +90,7 @@ export function AgentNode({ data }: NodeProps<AgentFlowNode>) {
           {meta.glyph} {meta.label}
         </span>
         {lit && (
-          <span className="ml-auto whitespace-nowrap rounded-full border border-cyan/60 bg-cyan/10 px-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-cyan">
+          <span className="ml-auto whitespace-nowrap rounded-full border border-amber/60 bg-amber/10 px-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-amber">
             ◎ highlighted
           </span>
         )}

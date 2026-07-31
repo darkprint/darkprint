@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import type {
   BlueprintAnalysisView,
   BlueprintGraph as BlueprintGraphData,
@@ -28,19 +28,20 @@ import { Explainability } from "./Explainability";
  * any drawing. `nodeNames` stays for the same reason (`Explainability` still needs
  * node ids resolved to labels for that cross-referencing).
  *
- * `children`, when given, renders before Explainability — this is how the blueprint
- * detail page hands in its Score panel to read Score → Explainability. Left out, as
- * `ValidationReport.tsx` and this file's own tests still do, `children` is simply
- * absent and Explainability renders on its own.
+ * This component used to also take a `children` slot, rendered before Explainability,
+ * for the blueprint detail page's Score panel. Panel reorg spec §A2 moved that panel
+ * into `SynchronisedPanes`'s own `aside`, beside the graph, so nothing hands this
+ * component a Score panel to render ahead of Explainability anymore — the slot went
+ * with it. `ValidationReport.tsx` and this file's own tests already called this
+ * component with no `children`, so both keep rendering Explainability on its own,
+ * unchanged.
  */
 export function BlueprintCanvas({
   graph,
   analysis,
-  children,
 }: {
   graph: BlueprintGraphData;
   analysis: BlueprintAnalysisView;
-  children?: ReactNode;
 }) {
   const [highlighted, setHighlighted] = useState<string | undefined>(undefined);
 
@@ -51,16 +52,12 @@ export function BlueprintCanvas({
   }, [graph]);
 
   return (
-    <>
-      {children}
-
-      <Explainability
-        autonomy={analysis.autonomy}
-        security={analysis.security}
-        nodeNames={nodeNames}
-        highlighted={highlighted}
-        onHighlight={setHighlighted}
-      />
-    </>
+    <Explainability
+      autonomy={analysis.autonomy}
+      security={analysis.security}
+      nodeNames={nodeNames}
+      highlighted={highlighted}
+      onHighlight={setHighlighted}
+    />
   );
 }

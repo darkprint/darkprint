@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
+import { useState, type ChangeEvent, type ReactNode } from "react";
 import { cx } from "@/lib/format";
 import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
 import { GraphPane } from "./GraphPane";
@@ -66,12 +66,15 @@ function focusedOptionValue(focus: PaneFocus): string {
 export function SynchronisedPanes({
   model,
   graph,
+  aside,
   className,
 }: {
   /** Built at build time by `./build.ts` from a resolved bundle. */
   model: PaneModel;
   /** The same graph the drawing renders. */
   graph: BlueprintGraphData;
+  /** Rendered beside the graph, in the remaining column of row 1, when given. */
+  aside?: ReactNode;
   className?: string;
 }) {
   const [selection, setSelection] = useState<PaneSelection>(() => ({
@@ -135,7 +138,7 @@ export function SynchronisedPanes({
           it is on screen rather than left to be inferred from two highlights. */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-line bg-surface-2 px-3 py-2 font-mono text-[11px]">
         <span className="uppercase tracking-[0.14em] text-dim">Selected</span>
-        <span className="text-cyan">{focus.node.nodeId}</span>
+        <span className="text-amber">{focus.node.nodeId}</span>
         <span className="text-faint" aria-hidden>
           ›
         </span>
@@ -153,7 +156,7 @@ export function SynchronisedPanes({
             <span className="text-faint" aria-hidden>
               ›
             </span>
-            <span className="text-cyan">{focus.field.key}</span>
+            <span className="text-amber">{focus.field.key}</span>
           </>
         )}
         {focus.absence !== undefined && (
@@ -185,60 +188,64 @@ export function SynchronisedPanes({
         </p>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <GraphPane
-          paneNumber={1}
-          graph={graph}
-          model={model}
-          focus={focus}
-          graphId={`panes-${model.slug}`}
-          height={460}
-          onSelectNode={selectNode}
-        />
+      <div className={cx("grid gap-4", aside !== undefined && "lg:grid-cols-3")}>
+        <div className={cx("min-w-0", aside !== undefined && "lg:col-span-2")}>
+          <GraphPane
+            paneNumber={1}
+            graph={graph}
+            model={model}
+            focus={focus}
+            graphId={`panes-${model.slug}`}
+            height={460}
+            onSelectNode={selectNode}
+          />
+        </div>
 
-        <div className="flex min-w-0 flex-col gap-2">
-          {/* The "Drawn"/"Not drawn" index used to sit under the drawing, as a listbox.
-              It is a dropdown here instead, above the card skeleton it drives — same
-              `selectNode`/`selectAbsence` calls the drawing's own click uses, so there is
-              one selection and not a second state machine beside it. */}
-          <label className="flex flex-col gap-1">
-            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
-              Jump to a node
-            </span>
-            <select
-              value={focusedOptionValue(focus)}
-              onChange={onIndexChange}
-              aria-label={`Nodes of ${model.title}, and what the graph does not draw`}
-              className="rounded-md border border-line bg-surface-2 px-3 py-2 font-mono text-xs text-fg outline-none transition-colors focus:border-line-bright"
-            >
-              <optgroup label="Drawn">
-                {model.nodes.map((node) => (
-                  <option key={node.nodeId} value={optionValue("node", node.nodeId)}>
-                    {node.label} ({node.nodeId})
+        {aside !== undefined && <div className="min-w-0 lg:col-span-1">{aside}</div>}
+      </div>
+
+      <div className="flex min-w-0 flex-col gap-2">
+        {/* The "Drawn"/"Not drawn" index used to sit under the drawing, as a listbox.
+            It is a dropdown here instead, above the card skeleton it drives — same
+            `selectNode`/`selectAbsence` calls the drawing's own click uses, so there is
+            one selection and not a second state machine beside it. */}
+        <label className="flex flex-col gap-1">
+          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
+            Jump to a node
+          </span>
+          <select
+            value={focusedOptionValue(focus)}
+            onChange={onIndexChange}
+            aria-label={`Nodes of ${model.title}, and what the graph does not draw`}
+            className="rounded-md border border-line bg-surface-2 px-3 py-2 font-mono text-xs text-fg outline-none transition-colors focus:border-line-bright"
+          >
+            <optgroup label="Drawn">
+              {model.nodes.map((node) => (
+                <option key={node.nodeId} value={optionValue("node", node.nodeId)}>
+                  {node.label} ({node.nodeId})
+                </option>
+              ))}
+            </optgroup>
+            {model.absences.length > 0 && (
+              <optgroup label="Not drawn">
+                {model.absences.map((absence) => (
+                  <option key={absence.id} value={optionValue("absence", absence.id)}>
+                    {absence.label}
                   </option>
                 ))}
               </optgroup>
-              {model.absences.length > 0 && (
-                <optgroup label="Not drawn">
-                  {model.absences.map((absence) => (
-                    <option key={absence.id} value={optionValue("absence", absence.id)}>
-                      {absence.label}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
-          </label>
+            )}
+          </select>
+        </label>
 
-          <SkeletonPane
-            paneNumber={2}
-            model={model}
-            focus={focus}
-            onSelectField={selectField}
-            onSelectAbsence={selectAbsence}
-            linkToCard
-          />
-        </div>
+        <SkeletonPane
+          paneNumber={2}
+          model={model}
+          focus={focus}
+          onSelectField={selectField}
+          onSelectAbsence={selectAbsence}
+          linkToCard
+        />
       </div>
     </section>
   );

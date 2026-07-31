@@ -116,7 +116,7 @@ export default function SpecScoringPage() {
           </p>
           <p className="border-t border-line pt-4 text-[15px] leading-relaxed text-muted">
             The other four cannot be read off a graph. Cost and time need
-            somebody to run the factory, and that happens on their machine,
+            somebody to run the blueprint, and that happens on their machine,
             so the platform can only ever be told the result. Efficacy,
             reliability and transparency are judgement calls that need a
             ballot.

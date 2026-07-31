@@ -5,10 +5,17 @@
    row, so a fragment link scrolls its target to y=0 and the header
    is drawn on top of it. The house fix is `scroll-mt-24` on the
    element the id is on, and it was applied one anchor at a time by
-   whoever noticed. Two shipped without it: `#explainability-heading`,
-   which is the scorecard's only route to the audit and lands the
-   heading under the chrome, and `#security-explained`, which the
-   bundle panel links from the same page.
+   whoever noticed. Two shipped without it: `#explainability-heading`
+   and `#security-explained`, which the bundle panel links from the
+   same page.
+
+   `#explainability-heading` no longer has a link pointing at it —
+   the panel reorg pass removed the Score panel's "See the working."
+   paragraph, which was its only route in — but the id and its
+   `scroll-mt-24` stay on the heading regardless, the same way
+   `/spec#scoring` (below) keeps its compatibility door after nothing
+   on the site links it anymore. The rule below no longer names it as
+   one of its known-good examples for exactly that reason.
 
    Nothing could see either one. A link and its target are in
    different files, often in different trees, and no render test
@@ -111,7 +118,7 @@ describe("the walk finds both halves", () => {
        link that still has the fragment (spec-routes.test.ts and honesty.test.ts hold that
        door and the route it points at); this walk just has nothing left to find it by,
        since a walk is built from `href`s and the door's own id is never one. */
-    for (const id of ["explainability-heading", "security-explained", "weights"]) {
+    for (const id of ["security-explained", "weights"]) {
       expect(ids, `nothing links #${id} any more`).toContain(id);
     }
   });

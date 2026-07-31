@@ -193,6 +193,26 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           </p>
         </div>
 
+        {/* Long description, collapsed by default. PROJECT.md §3.1 first moved this
+            above the four panes; this pass moves it once more, into the header itself —
+            between the summary paragraph and the author/date row — so it reads as more
+            of the same claim rather than a separate body section below the schematic.
+            `More` is a native `<details>` (already used by `DownloadPanel` and the
+            disclosures further down), which keeps the prose in the prerendered HTML
+            regardless of `open`. */}
+        {paragraphs.length > 0 && (
+          <More summary="Read more">
+            {paragraphs.map((p, i) => (
+              <p
+                key={`${i}-${p.slice(0, 16)}`}
+                className="text-[15px] leading-relaxed text-muted"
+              >
+                {p}
+              </p>
+            ))}
+          </More>
+        )}
+
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
           <AuthorChip author={bp.author} />
           <span className="font-mono text-xs text-dim">
@@ -202,11 +222,24 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               the artefact. Doc 2 §0.4: no counter produced any of these three. Votes and
               Comments joined Downloads here once the "Registry stats" panel that used
               to hold them was removed — same emerald accent across all three, since
-              they are the same kind of fact. */}
-          <span className="font-mono text-xs text-emerald">
+              they are the same kind of fact. The visible "◐ seeded" pill that used to
+              sit beside Downloads is gone (the author asked for it removed from this
+              row specifically), and the Score panel's own "seeded" paragraph that used
+              to carry the word elsewhere on this page is gone too (panel reorg pass).
+              A `title` on the two seeded figures keeps the word in the rendered page
+              honestly — `components/ui/autonomy-surfaces.test.ts` holds every file that
+              reads `.votes`/`.downloads` to saying so somewhere in it — without
+              reintroducing a visible marker nobody asked to see back. */}
+          <span
+            className="font-mono text-xs text-emerald"
+            title="Seeded — no counter stands behind it"
+          >
             ↓ {compact(bp.downloads)} downloads
           </span>
-          <span className="font-mono text-xs text-emerald">
+          <span
+            className="font-mono text-xs text-emerald"
+            title="Seeded — no ballot stands behind it"
+          >
             ▲ {compact(bp.votes)} votes
           </span>
           <span className="font-mono text-xs text-emerald">
@@ -243,182 +276,120 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
       </header>
 
       {/* ---------- Body ---------- */}
-      {/* Radar-layout fix spec §0: the old body split Score and the Requirements/
-          Download/Bundle/Registry-stats aside across two `lg:sticky` items in the same
-          `lg:grid-cols-3` column — row 1 and row 2 of one grid. `position: sticky`'s
-          containing block is the nearest scrolling ancestor, not a grid row or cell, so
-          both were sticky in the same column at once: past the point where a reader had
-          scrolled both of them to their `top: 80px`, they rendered on top of each other
-          (measured live: Requirements text drawn over the radar's Transparency row).
-          There is no `top` offset or `overflow` fix for two siblings sharing one sticky
-          slot — the fix is a single linear column, never sticky, so nothing here is ever
-          positioned against anything but its place in the flow. `max-w-4xl` bounds the
-          schematic and prose on a wide monitor, the same width `SectionBlueprint`'s
-          landing schematic and `NodeCardStage`'s graph use for the same kind of content. */}
+      {/* Panel reorg spec §A2: the Score card now sits beside the graph rather than
+          below it — `SynchronisedPanes`'s `aside` slot (lane A1) holds Score, stacked
+          above Requirements and Bundle, each of the latter two behind their own
+          collapsed-by-default `<More>`. Score itself stays always visible; it is the
+          glance this column exists to give. `max-w-4xl` bounds the schematic, the
+          graph-plus-aside row, and every panel below it alike — the same width
+          `SectionBlueprint`'s landing schematic and `NodeCardStage`'s graph use for the
+          same kind of content — so the 2:1 graph/aside split (`SynchronisedPanes`'s own
+          `lg:grid-cols-3`) happens inside this one column, not wider than it. */}
       <div className="mx-auto mt-10 flex max-w-4xl flex-col gap-8">
-        {/* Long description, collapsed by default. PROJECT.md §3.1 first moved this
-            above the four panes; this pass moves it once more, ahead of the schematic
-            itself, so it is the first thing in the body after the header. `More` is a
-            native `<details>` (already used by `DownloadPanel` and the disclosure
-            below), which keeps the prose in the prerendered HTML regardless of
-            `open`. */}
-        {paragraphs.length > 0 && (
-          <More summary="About this blueprint">
-            {paragraphs.map((p, i) => (
-              <p
-                key={`${i}-${p.slice(0, 16)}`}
-                className="text-[15px] leading-relaxed text-muted"
-              >
-                {p}
-              </p>
-            ))}
-          </More>
-        )}
-
         {/* The graph and the card skeleton, consolidated: doc 2 §5.1's pane 1 and
-            pane 2, now the first thing in the body after the header's own
-            disclosure rather than a separate four-pane block lower down. Clicking a
+            pane 2, the first thing in the body after the header. Clicking a
             node — or picking one from the dropdown beside the card skeleton — moves
             the same `selection` both panes share, and the card it resolves opens
             its own page through the skeleton's "Open card" link. The raw DOT and
             the raw card YAML (the four-pane view's panes 3 and 4) are not redrawn
-            here; `DownloadPanel` below already links to those exact bytes. */}
-        <SynchronisedPanes model={paneModel} graph={bp.graph} />
+            here; `DownloadPanel` below already links to those exact bytes.
 
-        {/* The Score panel and the explanation of the two computed scores, in that
-            order. `BlueprintCanvas` no longer draws its own schematic (the merged
-            panel above already covers that) — it now only owns the client boundary
-            that shares a `highlighted` node id across Explainability's own
-            sub-lists, so clicking a contribution row and a finding row naming the
-            same node still cross-light each other. The Score panel is handed in as
-            `children`, a slot that renders before Explainability without joining
-            that shared state. `ValidationReport.tsx` (and this component's own
-            tests) render the same `BlueprintCanvas` with no children and still get
-            Explainability on its own, exactly as before this slot existed. */}
-        <BlueprintCanvas graph={bp.graph} analysis={bp.analysis}>
-          {/* Score card. Doc 2 §1.1: autonomy is stated in `MetricBars`, never scored, so
-              the radar carries only the five metrics the engine reads as a spoke.
-              Radar-layout fix spec §1.1: a plain block directly after the schematic, in
-              normal document flow, at every viewport width — never its own grid cell,
-              never sticky. That is what makes "right below the schematic" hold
-              unconditionally instead of only above one breakpoint, which is what the old
-              sticky-sidebar version was quietly failing to guarantee. */}
-          <section className="panel p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <PanelLabel>Score</PanelLabel>
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
-                6-metric card
-              </span>
+            The Score card rides along in `aside`, beside the graph rather than under
+            it, with Requirements and Bundle stacked beneath Score inside the same
+            column — see the panel reorg spec §A2 for why: a reader gets the glance
+            (the graph, what it draws) and the grade (Score) in one glance of the page,
+            with the two "more, if you want them" panels collapsed directly under the
+            score that they support. */}
+        <SynchronisedPanes
+          model={paneModel}
+          graph={bp.graph}
+          aside={
+            <div className="flex flex-col gap-4">
+              {/* Score card. Doc 2 §1.1: autonomy is stated in `MetricBars`, never
+                  scored, so the radar carries only the five metrics the engine reads
+                  as a spoke. `bp.autonomy` is the same band the header meter prints.
+                  `size` is smaller than `ScoreRadar`'s own 320 default because this
+                  column is roughly a third of the page width now, not the full body
+                  width — `ScoreRadar` is plain SVG on a `viewBox`, so it scales
+                  cleanly at a narrower size without redrawing anything. */}
+              <section className="panel p-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <PanelLabel>Score</PanelLabel>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
+                    6-metric card
+                  </span>
+                </div>
+                <div className="flex justify-center">
+                  <ScoreRadar metrics={bp.metrics} size={240} />
+                </div>
+                {/* `audit` is what makes this card a glance rather than a second audit.
+                    The explainability panel below prints the engine's rationale for
+                    Autonomy and for Security verbatim, and this card was printing the
+                    same two strings under its two computed rows, word for word, one
+                    screen away. Handed the raw reading and the marker count, the
+                    Security row states where the blueprint sits on the engine's own
+                    0–4 scale instead of restating the subtraction that got it there.
+                    `raw` and not `level`: the bar beside it is a rescale of `raw`, and
+                    a rounded level printed next to it disagreed with the bar on four
+                    of these nine pages (see `ScoreAudit`). The four seeded rows are
+                    untouched: their detail carries the seeded marker and belongs
+                    beside the figure. */}
+                <MetricBars
+                  metrics={bp.metrics}
+                  autonomy={bp.autonomy}
+                  audit={{
+                    securityRaw: bp.analysis.security.raw,
+                    securityMarkers: bp.analysis.security.penalties.length,
+                  }}
+                  className="mt-4"
+                />
+              </section>
+
+              <More summary="Requirements">
+                <Requirements agents={bp.requiredAgents} tools={bp.requiredTools} />
+              </More>
+
+              {/* What the bundle is, on disk */}
+              <More summary="Bundle">
+                <BundlePanel
+                  digest={bp.digest}
+                  ontologyVersion={record?.manifest.ontologyVersion ?? "unknown"}
+                  // Doc 3 §8: the version a score was computed under, which the engine
+                  // takes from the view the bundle was resolved against and not from
+                  // the manifest. Both metrics carry the same value; a test in
+                  // `lib/core` asserts they and `BlueprintAnalysis.ontologyVersion`
+                  // can never disagree.
+                  scoredOntologyVersion={bp.analysis.autonomy.ontologyVersion}
+                  nodes={bundleNodes}
+                  pinnedCards={record?.cardRefs.length ?? new Set(bp.cardRefs).size}
+                  diagnostics={otherNotes}
+                  explainedNotes={explainedNotes}
+                />
+              </More>
             </div>
-            {/* Autonomy is not a spoke on the radar and not a bar in the list (doc 2
-                §1.1 — a length would state a shortfall), so it is *stated*, and the row
-                in `MetricBars` is the one place on this card that states it. The radar
-                used to state it as well, in a caption reading "Autonomy · Closed-loop";
-                between the two of them and the engine sentence the row printed, one
-                sidebar panel named the class three times. `bp.autonomy` is the same band
-                the header meter prints. */}
-            <div className="flex justify-center">
-              <ScoreRadar metrics={bp.metrics} />
-            </div>
-            {/* `audit` is what makes this card a glance rather than a second audit. The
-                explainability panel below prints the engine's rationale for Autonomy
-                and for Security verbatim, and this card was printing the same two
-                strings under its two computed rows, word for word, one screen away.
-                Handed the raw reading and the marker count, the Security row states where
-                the blueprint sits on the engine's own 0–4 scale instead of restating the
-                subtraction that got it there. `raw` and not `level`: the bar beside it is
-                a rescale of `raw`, and a rounded level printed next to it disagreed with
-                the bar on four of these nine pages (see `ScoreAudit`). The four seeded
-                rows are untouched: their detail carries the seeded marker and belongs
-                beside the figure. */}
-            <MetricBars
-              metrics={bp.metrics}
-              autonomy={bp.autonomy}
-              audit={{
-                securityRaw: bp.analysis.security.raw,
-                securityMarkers: bp.analysis.security.penalties.length,
-              }}
-              className="mt-4"
-            />
-            {/* The scorecard is the thing a reader actually consumes, so the split
-                between what was computed and what was seeded belongs here and not
-                only on the homepage. Glyph and word, never colour alone. */}
-            <p className="mt-3 border-t border-line pt-3 text-xs leading-relaxed text-dim">
-              <span className="font-mono text-emerald" aria-hidden>
-                ✓
-              </span>{" "}
-              <span className="font-mono uppercase tracking-[0.12em] text-emerald">
-                computed
-              </span>{" "}
-              — Autonomy and Security are read off this exact graph at build time.{" "}
-              {/* The route from the glance to the audit. It used to read "both show
-                  their working below", which was wrong about the direction back when
-                  Explainability rendered above this card — now that Explainability
-                  renders below it (this stage moved the Score panel ahead of it), a
-                  literal "below" would read true again, but "See the working" already
-                  covers both directions without needing to know which one holds, so
-                  it stays as-is. */}
-              <Link
-                href="#explainability-heading"
-                className="text-muted underline-offset-4 hover:text-cyan hover:underline"
-              >
-                See the working.
-              </Link>{" "}
-              <span className="font-mono text-amber" aria-hidden>
-                ◐
-              </span>{" "}
-              <span className="font-mono uppercase tracking-[0.12em] text-amber">
-                seeded
-              </span>{" "}
-              — the other four are rows in the index. Voting and run telemetry are
-              designed and neither is built, so no ballot and no execution stands behind
-              those numbers.{" "}
-              {/* This pass (spec §4) splits the scoring panel off `/spec` onto its own
-                  `/spec/scoring` route — "how a blueprint is graded" covers all six radar
-                  axes, and a page walking six things beside an unrelated four-door
-                  overview was the wrong shape for it. `/spec#scoring` still resolves (§4.3
-                  keeps a compatibility door at that id) but a direct route is the honest
-                  one to point a reader at from here. */}
-              <Link
-                href="/spec/scoring"
-                className="text-muted underline-offset-4 hover:text-cyan hover:underline"
-              >
-                How a blueprint is graded
-              </Link>
-            </p>
-          </section>
-        </BlueprintCanvas>
+          }
+        />
+
+        {/* Explainability: the engine's own working for Autonomy and Security, in
+            that order. `BlueprintCanvas` no longer draws its own schematic (the
+            merged graph panel above already covers that) and no longer takes a Score
+            panel as `children` either, now that Score lives in the aside beside the
+            graph instead — it owns only the client boundary that shares a
+            `highlighted` node id across Explainability's own sub-lists, so clicking a
+            contribution row and a finding row naming the same node still cross-light
+            each other. */}
+        <BlueprintCanvas graph={bp.graph} analysis={bp.analysis} />
 
         {/* Comments */}
         <Comments comments={bp.comments} />
 
-        {/* Requirements / Download / Bundle. Radar-layout fix spec
-            §1.2: "below the radar I want a collapsable part where u provide the other
-            details that by default is collapsed and below the comments of the user." No
-            longer a sticky sidebar column — one disclosure, collapsed by default, after
-            `Comments`, at the end of the page's content. `More` is a native `<details>`
-            (already used by `DownloadPanel` and `DiagnosticList`), which keeps every
-            string below in the prerendered HTML regardless of `open`, so the
-            honesty-sensitive lines — `DownloadPanel`'s "nowhere to save this yet" —
-            stay readable by find-in-page while the panel is closed. Votes and Downloads
-            moved up to the header, beside Comments, so the "Registry stats" panel that
-            used to hold them is gone; nothing else here is cut or reworded, this is a
-            relocation. */}
-        <More summary="Requirements, download and bundle details">
-          {/* Requirements */}
-          <section className="panel p-5">
-            <div className="mb-4">
-              <PanelLabel>Requirements</PanelLabel>
-            </div>
-            <Requirements
-              agents={bp.requiredAgents}
-              tools={bp.requiredTools}
-            />
-          </section>
-
-          {/* Doc 2 §11 item 10 — the bundle as files, generated at build time under
-              `public/bundles/<slug>/` and linked here. It sits directly above the panel
-              that states the digest, because the digest is what those files hash to. */}
+        {/* Doc 2 §11 item 10 — the bundle as files, generated at build time under
+            `public/bundles/<slug>/` and linked here. Its own disclosure, collapsed by
+            default, after `Comments`, at the end of the page's content — Requirements
+            and Bundle used to share this same `<More>` with it; each of those two now
+            has its own disclosure instead, stacked under Score in the aside above, so
+            this one holds only the download. */}
+        <More summary="Download">
           <DownloadPanel
             factoryHref={factoryHref}
             topologyHref={topologyHref}
@@ -432,21 +403,6 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
                   },
                 })}
             cards={downloadCards}
-          />
-
-          {/* What the bundle is, on disk */}
-          <BundlePanel
-            digest={bp.digest}
-            ontologyVersion={record?.manifest.ontologyVersion ?? "unknown"}
-            // Doc 3 §8: the version a score was computed under, which the engine takes
-            // from the view the bundle was resolved against and not from the manifest.
-            // Both metrics carry the same value; a test in `lib/core` asserts they and
-            // `BlueprintAnalysis.ontologyVersion` can never disagree.
-            scoredOntologyVersion={bp.analysis.autonomy.ontologyVersion}
-            nodes={bundleNodes}
-            pinnedCards={record?.cardRefs.length ?? new Set(bp.cardRefs).size}
-            diagnostics={otherNotes}
-            explainedNotes={explainedNotes}
           />
         </More>
       </div>

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import type {
   AutonomyContribution,
   AutonomyResult,
@@ -373,22 +372,12 @@ function AutonomyPanel({
         </span>
       </summary>
 
-      {/* PROJECT.md §3.1: the sentence that enumerated the three groups is gone. It
-          named them in the order the three tallies immediately below name them, so it
-          was a caption for a figure the reader can already read. The framing claim it
-          carried — the class is a description of a shape — is what is kept. */}
-      <p className="text-sm leading-relaxed text-muted">
-        The class names the shape of this graph. The breakdown below says where the
-        people are.
-      </p>
-
       {/* The second classification, stated where the counts behind it are on screen.
           Three branches, because `isDarkFactory` is false for two quite different
           reasons and collapsing them would print "a person stands in this graph" over a
-          graph where nobody does. Each branch says what this graph is. None of them says
-          what it is short of, and the second is written so a reader who put a gate in on
-          purpose finds their decision described rather than counted against them. */}
-      <p className="mt-3 flex items-start gap-2 rounded border border-line bg-surface-2 px-3 py-2 text-sm leading-relaxed text-muted">
+          graph where nobody does. Each branch says what this graph is, in one
+          sentence; the tallies and the named nodes below carry the rest. */}
+      <p className="flex items-start gap-2 rounded border border-line bg-surface-2 px-3 py-2 text-sm leading-relaxed text-muted">
         {autonomy.isDarkFactory ? (
           <>
             <span className="mt-0.5 font-mono text-fg" aria-hidden>
@@ -396,9 +385,7 @@ function AutonomyPanel({
             </span>
             <span>
               <span className="text-fg">Classed a dark factory.</span>{" "}
-              No node in this graph waits for a person, which is the whole of what the
-              word classifies. It describes the drawing the way &ldquo;acyclic&rdquo;
-              does: no rank, and nothing here orders blueprints by it.
+              No node in this graph waits for a person.
             </span>
           </>
         ) : staffed.length > 0 ? (
@@ -411,11 +398,8 @@ function AutonomyPanel({
             </span>
             <span>
               <span className="text-fg">A person stands in this graph.</span>{" "}
-              &ldquo;Dark factory&rdquo; classifies a graph where nobody does, and it
-              counts human nodes rather than measuring a share, so nothing here is close
-              to it or far from it. This graph has{" "}
-              {staffed.length === 1 ? "one" : staffed.length}, named below, and a factory
-              touching something irreversible is one whose author wanted a person there.
+              &ldquo;Dark factory&rdquo; classifies a graph where nobody does. This one
+              has {staffed.length === 1 ? "one" : staffed.length}, named below.
             </span>
           </>
         ) : (
@@ -427,10 +411,9 @@ function AutonomyPanel({
               <span className="text-fg">
                 Nothing here classifies this graph either way.
               </span>{" "}
-              &ldquo;Dark factory&rdquo; is a claim about every node, and{" "}
               {autonomy.totalNodes === 0
-                ? "this bundle draws no nodes for it to be about."
-                : "some of these nodes have no card in the bundle, so what runs them is unstated."}
+                ? "This bundle draws no nodes for it to be about."
+                : "Some of these nodes have no card in the bundle, so what runs them is unstated."}
             </span>
           </>
         )}
@@ -772,8 +755,8 @@ function CriteriaIsolation({
           check rather than about this blueprint, so it sits behind a disclosure: still
           prerendered, still keyboard-reachable, still found by find-in-page. */}
       <p className="text-xs leading-relaxed text-dim">
-        Whoever writes the work must not see what it will be judged against. What the
-        analyzer concluded is stated here, including where it could not look.
+        The work must not see what will judge it. Below is what the analyzer concluded,
+        including where it could not look.
       </p>
 
       <More summary="What the analyzer looks for">
@@ -787,10 +770,6 @@ function CriteriaIsolation({
           </li>
           <li>The criteria turning up in a generator&rsquo;s own prose.</li>
         </ul>
-        <p className="text-xs leading-relaxed text-dim">
-          It is the one check this registry exists to make possible, which is why the
-          result is on the page whether or not the analyzer found anything.
-        </p>
       </More>
 
       <div className={cx("rounded-md border px-4 py-3", meta.border)}>
@@ -981,12 +960,9 @@ function CriteriaIsolation({
               The engine's version, with the doc's Italian and the iteration cap, stays on
               the row. */}
           <p className="text-xs leading-relaxed text-dim">
-            The walk stops at a validation node on purpose. Doc 2 §5.5 endorses the repair
-            loop <code className="font-mono">tester → debugger → tester</code> by name and
-            forbids the same loop returning to the builder. What travels back decides it:
-            seeing the evidence of a failure you caused is feedback, seeing the criteria
-            is gaming. In the graph those are the same shape, so the analyzer names the
-            channel rather than deciding what crosses it.
+            The walk stops at a validation node on purpose: seeing the evidence of a
+            failure you caused is feedback, seeing the criteria is gaming, and the
+            analyzer names the channel rather than deciding what crosses it.
           </p>
           <ul className="divide-y divide-line">
             {relayed.map((d, i) => (
@@ -1078,9 +1054,8 @@ function SecurityPanel({
       </summary>
 
       <p className="mb-3 text-sm leading-relaxed text-muted">
-        Four points to start, and every risk marker present subtracts its weight. A
-        marker carried by several nodes is charged once for the blueprint, and all the
-        nodes that fired it are named.
+        Four points to start, minus the weight of every risk marker present — charged
+        once for the blueprint, whichever nodes fired it.
       </p>
 
       {/* Scrolls sideways on a narrow viewport and holds no focusable cell, so it
@@ -1300,31 +1275,8 @@ export function Explainability({
         id="explainability-heading"
         className="scroll-mt-24 font-display text-xl font-semibold text-fg"
       >
-        Where these numbers come from
+        Autonomy and security
       </h2>
-      {/* This pass (spec §3.4) moved the generic methodology sentence — "read off the
-          graph without running it, both show their working", true of every blueprint and
-          not only this one — onto `/spec/scoring`, the page that explains the model once
-          for all nine rather than here on each of them. What is left is the one
-          instruction specific to *this* interactive page: there is no schematic to click
-          through on a static methodology page, so that page gets the model and this one
-          keeps the pointer into its own drawing, plus a way to reach the model from here. */}
-      <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
-        Select a node name to find it in the schematic.{" "}
-        <Link
-          href="/spec/scoring"
-          className="text-muted underline-offset-4 hover:text-cyan hover:underline"
-        >
-          How a blueprint is graded →
-        </Link>
-      </p>
-      {/* Doc 3 §8: a score that does not name the vocabulary it was computed under is
-          not comparable with any other score. Both results carry the same version,
-          taken from the view the bundle was resolved against. */}
-      <p className="mt-2 font-mono text-[11px] text-dim">
-        scored under ontology v{security.ontologyVersion}. Two scores computed under
-        different vocabulary versions are not comparable.
-      </p>
 
       <div className="mt-5 flex flex-col gap-4">
         <AutonomyPanel
