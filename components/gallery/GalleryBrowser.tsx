@@ -112,6 +112,13 @@ export function GalleryBrowser({
   const [category, setCategory] = useState<string | null>(null);
   const [phase, setPhase] = useState<string | null>(null);
   const [autonomy, setAutonomy] = useState<AutonomyClass | null>(null);
+  /* Doc 2 §1.1 permits autonomy as a way in and forbids it as a ranking, and this is the
+     same shape: a filter, never a sort, and the tiles still hide the token itself
+     (`showDarkFactory={false}` in `ContentCard`). What it selects became a real question
+     on 2026-08-04, when `isDarkFactory` started requiring all five lifecycle phases as
+     well as an unattended graph. Before that it meant "nobody stands in this graph",
+     which the autonomy class beside it already said. */
+  const [darkFactory, setDarkFactory] = useState(false);
   const [sort, setSort] = useState<SortKey>("recent");
 
   /*
@@ -167,6 +174,7 @@ export function GalleryBrowser({
       if (category && bp.category !== category) return false;
       if (phase && !bp.analysis.phaseCoverage.covered.includes(phase)) return false;
       if (autonomy !== null && bp.autonomy.autonomyClass !== autonomy) return false;
+      if (darkFactory && !bp.autonomy.isDarkFactory) return false;
       if (tag && !bp.tags.includes(tag)) return false;
       if (q) {
         const haystack =
@@ -200,17 +208,19 @@ export function GalleryBrowser({
       }
     });
     return sorted;
-  }, [blueprints, search, tag, category, phase, autonomy, sort]);
+  }, [blueprints, search, tag, category, phase, autonomy, darkFactory, sort]);
 
   const hasFilters =
     search.trim() !== "" ||
     tag !== null ||
     category !== null ||
     phase !== null ||
-    autonomy !== null;
+    autonomy !== null ||
+    darkFactory;
 
   function clearFilters() {
     setSearch("");
+    setDarkFactory(false);
     setTag(null);
     setCategory(null);
     setPhase(null);
@@ -298,6 +308,29 @@ export function GalleryBrowser({
                 </option>
               ))}
             </select>
+          </label>
+
+          {/* A toggle rather than a fifth dropdown: it is one yes/no property, and a
+              select reading "All blueprints / Dark factories" would put a second
+              all-or-one control beside the class one that already offers a subset. The
+              tiles do not print the token, so this is the only place on the shelf the
+              property is reachable at all. */}
+          <label
+            className={cx(
+              "flex cursor-pointer select-none items-center gap-2 rounded-md border px-3 py-2 font-mono text-xs transition-colors",
+              darkFactory
+                ? "border-line-bright bg-surface-3 text-fg"
+                : "border-line bg-surface-2 text-muted hover:text-fg",
+            )}
+          >
+            <input
+              type="checkbox"
+              checked={darkFactory}
+              onChange={(e) => setDarkFactory(e.target.checked)}
+              className="h-3.5 w-3.5 accent-cyan"
+            />
+            <span aria-hidden>◼</span>
+            dark factory
           </label>
 
           <label className="flex items-center gap-2">

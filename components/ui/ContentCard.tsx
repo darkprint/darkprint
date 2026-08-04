@@ -68,10 +68,18 @@ export function ContentCard({
           `pr-8` on the heading and not on the block: the star is `absolute right-2
           top-2`, so it now sits on this row, and padding the whole block would move the
           drawing's left edge off the card's grid as well. */}
-      <div className="px-4 pb-3 pt-4">
+      <div className="flex flex-col gap-1.5 px-4 pb-3 pt-4">
         <h3 className="pr-8 font-display text-lg font-semibold leading-snug text-fg group-hover:text-cyan">
           {item.title}
         </h3>
+        {/* What it is for, directly under the name and above the drawing.
+            It used to sit fourth, under the preview and the two badges, clamped to two
+            lines. A name and a picture are what a reader recognises once they already
+            know the registry; somebody arriving with a goal has neither, and the sentence
+            saying what the thing does was the one part of the tile they needed first.
+            Doc 2 §0: the site exists to get people downloading these, and a shelf nobody
+            can scan by purpose does not. */}
+        <p className="line-clamp-2 pr-8 text-sm leading-snug text-muted">{item.summary}</p>
       </div>
 
       {/* preview */}
@@ -105,12 +113,9 @@ export function ContentCard({
         </div>
 
         {/* `flex-1` stays on whatever sits between the badges and the tag row, so tiles
-            of unequal summary length still align their author rows across the grid. */}
-        <p className="flex-1 line-clamp-2 text-sm leading-snug text-muted">
-          {item.summary}
-        </p>
-
-        <div className="flex flex-wrap gap-1.5">
+            of unequal summary length still align their author rows across the grid. The
+            summary moved above the drawing, so the tags carry the stretch now. */}
+        <div className="flex flex-1 flex-wrap content-start gap-1.5">
           {item.tags.slice(0, 3).map((t) => (
             <TagPill key={t} label={t} />
           ))}
