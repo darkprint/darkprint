@@ -48,7 +48,7 @@ import { parseOntologyTerms } from "./ontology-file";
  */
 if (typeof window !== "undefined") {
   throw new Error(
-    "lib/content/read.ts is build-time only — it reads the archive off disk. Import lib/content from a server component instead.",
+    "lib/content/read.ts is build-time only, it reads the archive off disk. Import lib/content from a server component instead.",
   );
 }
 
@@ -281,7 +281,7 @@ function loadAll(): readonly LoadedBundle[] {
         "",
         ...problems,
         "",
-        "Fix the archive — a blueprint the engine cannot vouch for must not ship.",
+        "Fix the archive, a blueprint the engine cannot vouch for must not ship.",
       ].join("\n"),
     );
   }

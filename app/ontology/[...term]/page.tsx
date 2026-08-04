@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: PageProps<"/ontology/[...term
   const found = getOntologyView().get(term.join("/"));
   if (!found) return { title: "Term not found" };
   return {
-    title: `${found.label} — ${TERM_KIND_META[found.kind].label}`,
+    title: `${found.label}: ${TERM_KIND_META[found.kind].label}`,
     description: found.description,
   };
 }
@@ -253,7 +253,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                 <p className="text-sm leading-relaxed text-muted">
                   Deprecated in v{term.deprecated.since}. The term stays in the
                   vocabulary and stays valid: a card that names it still resolves, still
-                  type-checks and still scores — the resolver simply follows the pointer
+                  type-checks and still scores, the resolver simply follows the pointer
                   once and carries on.
                   {term.deprecated.note !== undefined && ` ${term.deprecated.note}`}
                 </p>
@@ -332,8 +332,8 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                 </p>
                 <p className="text-sm leading-relaxed text-muted">
                   Which phases a blueprint has nodes in is its <em>phase coverage</em>, and
-                  it is shown as a description of scope — <em>this blueprint covers planning,
-                  implementation and testing</em> — not as boxes ticked out of five. A
+                  it is shown as a description of scope, <em>this blueprint covers planning,
+                  implementation and testing</em>, not as boxes ticked out of five. A
                   blueprint that stops before deployment has decided where it stops.
                 </p>
               </div>
@@ -395,7 +395,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   </div>
                 ) : (
                   <p className="text-sm text-dim">
-                    Nothing specialises {term.id} — it is a leaf of its branch.
+                    Nothing specialises {term.id}, it is a leaf of its branch.
                   </p>
                 )}
               </div>
@@ -440,7 +440,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                       {formatWeight(DARKPRINT_CONFIG.security.unknownMarkerWeight)}
                     </span>
                     <span className="text-xs uppercase tracking-[0.14em] text-dim">
-                      points — no weight configured
+                      points, no weight configured
                     </span>
                   </div>
                 ) : (
@@ -462,21 +462,21 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   {weight === undefined
                     ? children.length > 0
                       ? `${term.id} is a category, not a marker a card declares: it exists so a rule can be written about ${children.length === 1 ? "the marker" : "the markers"} underneath it and catch ${children.length === 1 ? "it" : "them all"}. It carries no weight and never moves a score; the terms narrower than it carry theirs.`
-                      : `No weight is configured for ${term.id} anywhere, so it counts ${formatWeight(DARKPRINT_CONFIG.security.unknownMarkerWeight)} and does not move a score. A locally namespaced marker has to declare one, or it documents a risk without pricing it — and the author is told so rather than silently charged a number nobody chose.`
-                    : `A blueprint starts at a clean 4, loses the weight of every marker present, and the result is clamped into 1–4. ${term.id} is charged once for the whole blueprint however many nodes carry it — gravity, not frequency — and the explanation still lists every node that established it.`}
+                      : `No weight is configured for ${term.id} anywhere, so it counts ${formatWeight(DARKPRINT_CONFIG.security.unknownMarkerWeight)} and does not move a score. A locally namespaced marker has to declare one, or it documents a risk without pricing it, and the author is told so rather than silently charged a number nobody chose.`
+                    : `A blueprint starts at a clean 4, loses the weight of every marker present, and the result is clamped into 1–4. ${term.id} is charged once for the whole blueprint however many nodes carry it, gravity, not frequency, and the explanation still lists every node that established it.`}
                 </p>
 
                 <p className="text-sm leading-relaxed text-muted">
                   {inferred
-                    ? `${term.id} is one of the three markers the analyzer derives from the graph itself, so it can fire on a blueprint whose cards never mention it — that is the point, since the author who most needs to hear it is the one who did not see it. A card that declares it and a graph that implies it are the same marker and are charged once; the finding records which way round it was established.`
-                    : `Nothing in the topology can establish ${term.id} on its own — it is a fact about what the node does that only its author can state. The analyzer takes the card at its word and names the node in the explanation.`}
+                    ? `${term.id} is one of the three markers the analyzer derives from the graph itself, so it can fire on a blueprint whose cards never mention it, that is the point, since the author who most needs to hear it is the one who did not see it. A card that declares it and a graph that implies it are the same marker and are charged once; the finding records which way round it was established.`
+                    : `Nothing in the topology can establish ${term.id} on its own, it is a fact about what the node does that only its author can state. The analyzer takes the card at its word and names the node in the explanation.`}
                 </p>
 
                 {/* Conditional, and it was not. The sentence asserted for every term that
                     "the number lives in the engine's configuration and not in this
                     vocabulary", which is false of a locally namespaced marker: doc 3 §7
                     lets one carry its own `defaultWeight`, `markerWeight` reads it, and
-                    `content/ontology/extensions.yaml` ships `lupo/pii-handling` at 0.50 —
+                    `content/ontology/extensions.yaml` ships `lupo/pii-handling` at 0.50,
                     a number this page had already chipped as "declared on the card" three
                     paragraphs above the claim that no such number exists here. */}
                 <p className="text-sm leading-relaxed text-muted">
@@ -522,10 +522,10 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                       </span>
                       <span>
                         Nothing in the archive spells it {term.id} any more. A card
-                        that did would still load, still type-check and still score —
+                        that did would still load, still type-check and still score,
                         the resolver follows the pointer to{" "}
                         {term.deprecated.replacedBy ?? "its successor"} and carries on
-                        — so the zero is not a gap, it is what a finished rename looks
+                        so the zero is not a gap, it is what a finished rename looks
                         like, and the count is the only way to tell.
                       </span>
                     </>
@@ -535,7 +535,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                         ↳
                       </span>
                       <span>
-                        No card names {term.id} directly — it sits above the terms that
+                        No card names {term.id} directly, it sits above the terms that
                         do. The {reach.terms} term{reach.terms === 1 ? "" : "s"}{" "}
                         narrower than it are named by {reach.cards} card
                         {reach.cards === 1 ? "" : "s"} between them, and a rule written
@@ -549,7 +549,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                       </span>
                       <span>
                         No card in the registry names {term.id} yet, and none names
-                        anything narrower. A term with no takers is not a broken term —
+                        anything narrower. A term with no takers is not a broken term,
                         it is vocabulary waiting for a use.
                       </span>
                     </>
@@ -630,7 +630,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                     label="Broader"
                     value={
                       term.broader === undefined ? (
-                        <span className="text-dim">— root</span>
+                        <span className="text-dim">root</span>
                       ) : (
                         <Link
                           href={termHref(term.broader)}
@@ -659,7 +659,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   label="Weight"
                   value={
                     weight === undefined ? (
-                      <span className="text-dim">— not priced</span>
+                      <span className="text-dim">not priced</span>
                     ) : (
                       formatWeight(weight)
                     )

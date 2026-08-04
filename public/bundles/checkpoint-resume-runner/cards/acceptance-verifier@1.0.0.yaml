@@ -10,7 +10,7 @@ spec: >-
   Check the finished artefact you are handed against every criterion in the set registered as
   `acceptance-criteria@1`, one at a time, using the supporting material supplied alongside it
   wherever a criterion calls for evidence. Emit the artefact unchanged on `accepted` only once
-  every criterion has cleared — nothing ships on a partial result, and a criterion you cannot
+  every criterion has cleared, nothing ships on a partial result, and a criterion you cannot
   evaluate has not cleared. There is no failure exit from this node: when a criterion is
   missed, record which one and stop the run there rather than passing the work anywhere.
 model: claude-sonnet-5

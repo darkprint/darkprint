@@ -207,7 +207,7 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
             "bundle/digest-mismatch",
             `Card \`${ref}\` is declared twice with different content, in \`${existing.file}\` and \`${file}\`.`,
             {
-              hint: "A published version is never edited in place — give the second one a new version.",
+              hint: "A published version is never edited in place, give the second one a new version.",
               location: { file, cardRef: ref },
             },
           ),
@@ -370,7 +370,7 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
             "bundle/digest-mismatch",
             `Node \`${stmt.id}\` pins digest \`${pin}\`, but card \`${ref}\` hashes to something else.`,
             {
-              hint: `The card hashes to \`${entry.digest}\` — pin that, or drop the \`digest\` attribute.`,
+              hint: `The card hashes to \`${entry.digest}\`, pin that, or drop the \`digest\` attribute.`,
               location: { ...nodeLocation(stmt), cardRef: ref },
             },
           ),
@@ -682,7 +682,7 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
     if (graph.sources().length === 0) {
       ds.push(
         warning("bundle/no-entry", "Every node has an incoming edge, so the blueprint has no entry point.", {
-          hint: "A run has to start somewhere: give one node — a trigger — no incoming edges.",
+          hint: "A run has to start somewhere: give one node, a trigger, no incoming edges.",
           location: { file: DOT_FILE },
         }),
       );
@@ -703,7 +703,7 @@ export function resolveBundle(bundle: Bundle, ontology: OntologyView): ResolveRe
     if (graph.sinks().length === 0) {
       ds.push(
         warning("bundle/no-exit", "Every node has an outgoing edge, so the blueprint has no exit point.", {
-          hint: "A run has to end somewhere: give one node — a sink — no outgoing edges.",
+          hint: "A run has to end somewhere: give one node, a sink, no outgoing edges.",
           location: { file: DOT_FILE },
         }),
       );

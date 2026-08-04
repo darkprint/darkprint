@@ -10,7 +10,7 @@ spec: >-
   `how-to` or `account-access` it is. Emit the lane you picked on `lane` with the confidence
   you had in it, and emit the event on `routed` with its label added and payload and metadata
   otherwise untouched. If your confidence in the best label is below 0.6, route to the
-  `general` lane instead of committing to a guess — every event leaves this node down some
+  `general` lane instead of committing to a guess, every event leaves this node down some
   lane, because anything unrouted falls on the floor.
 agent: Classifier
 tools: []

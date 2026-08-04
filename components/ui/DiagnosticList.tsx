@@ -82,7 +82,7 @@ function EmptyState() {
       <span className="font-mono text-emerald" aria-hidden>
         ✓
       </span>
-      No problems found — the validator had nothing to say about this bundle.
+      No problems found, the validator had nothing to say about this bundle.
     </p>
   );
 }
@@ -130,7 +130,7 @@ export function DiagnosticList({
             ▸
           </span>
           {title ?? "Validation notes"}
-          <span className="text-dim">— {summary}</span>
+          <span className="text-dim">{summary}</span>
         </summary>
         <div className="mt-3 border-t border-line pt-3">{body}</div>
       </details>

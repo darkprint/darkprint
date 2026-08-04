@@ -9,11 +9,11 @@ action: >-
 spec: >-
   Work through the entries on `violations` one at a time. Each entry names one field and the
   specific constraint that field broke, and that constraint is your whole brief for what the
-  value has to become — rewrite that field and leave every other field of the record exactly as
+  value has to become, rewrite that field and leave every other field of the record exactly as
   you received it. Emit the mended record on `repaired`, whole: never emit a partial record, and
   never delete a field or blank it out to make a violation go away, because a silently dropped
   field is worse than a rejected one. When a violation cannot be mended from what the record
-  itself contains — the value is missing rather than malformed — leave the field alone and note
+  itself contains, the value is missing rather than malformed, leave the field alone and note
   the reason on the record, so the next pass fails on something true instead of on your guess.
 model: claude-sonnet-5
 agent: Repair worker

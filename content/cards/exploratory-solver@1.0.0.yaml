@@ -13,7 +13,7 @@ spec: >-
   proposal on `proposal` that answers every sub-task in the brief's order, and for each point
   where you left the cautious reading behind, state the departure, what it buys and what it
   costs if you turn out to be wrong. A proposal that lands exactly where the careful route
-  would have landed has wasted its pass — but do not manufacture a difference where the brief
+  would have landed has wasted its pass, but do not manufacture a difference where the brief
   admits only one reading; record that the sub-task offered no room instead.
 agent: Solver B (high-temp)
 tools: []

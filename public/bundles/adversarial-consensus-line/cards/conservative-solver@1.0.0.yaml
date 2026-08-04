@@ -4,7 +4,7 @@ type: agent
 phase: implementation
 
 action: >-
-  Work the brief the safe way — the reading of the sub-tasks with the fewest assumptions — and
+  Work the brief the safe way, the reading of the sub-tasks with the fewest assumptions, and
   emit one proposal with the evidence for every choice it made.
 spec: >-
   You are handed an ordered list of sub-tasks on `brief`, each carrying its own done condition.
@@ -39,7 +39,7 @@ cannot:
 requires_human: false
 risk_markers: []
 notes: >-
-  Half of an adversarial pair. It is only useful next to the exploratory solver — run alone it is
+  Half of an adversarial pair. It is only useful next to the exploratory solver, run alone it is
   just a single model being confidently wrong more cheaply.
 
 version: 1.0.0

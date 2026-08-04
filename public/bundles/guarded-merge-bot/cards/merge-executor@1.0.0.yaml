@@ -10,7 +10,7 @@ spec: >-
   You act on one thing only: the approval signal you are handed. If it is anything other than an
   approval, stop and emit nothing. On an approval, merge the pull request's head into its base as
   a single squashed commit whose message is the pull-request title and body, then delete the
-  source branch. If the base has moved and the squash does not apply cleanly, abort — leave the
+  source branch. If the base has moved and the squash does not apply cleanly, abort, leave the
   base untouched, leave the source branch in place, and report the conflict instead of resolving
   it yourself. Emit the resulting commit on `merge_commit` with its SHA, its parents and the
   branch it landed on. Use the repository write token scoped to this repository alone, and never
@@ -27,7 +27,7 @@ params:
 inputs:
   - name: approval
     type: status
-    description: The maintainer's verdict. No approval, no merge — this is the only trigger.
+    description: The maintainer's verdict. No approval, no merge, this is the only trigger.
 outputs:
   - name: merge_commit
     type: json
@@ -44,7 +44,7 @@ risk_markers:
   - unchecked-write
 notes: >-
   This is the node that holds the repo write token, and a token is not something an upstream
-  control node can take away — the human gate in front of it bounds when it fires, not what it
+  control node can take away, the human gate in front of it bounds when it fires, not what it
   could reach. Scope the token to the one repository and the branches you actually merge into.
 
 version: 1.0.0

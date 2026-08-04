@@ -32,7 +32,7 @@ export function ProfileHeader({ author }: { author: Author }) {
               </h1>
               {author.validator && (
                 <span
-                  title="Seeded badge — votes are designed to carry extra weight, but voting is not built"
+                  title="Seeded badge, votes are designed to carry extra weight, but voting is not built"
                   className="inline-flex"
                 >
                   <Badge
@@ -57,7 +57,7 @@ export function ProfileHeader({ author }: { author: Author }) {
 
             {author.validator && (
               <span className="mt-1 font-mono text-[11px] tracking-wide text-cyan/80">
-                ✦ Validator — designed to weight votes; voting is not built
+                ✦ Validator, designed to weight votes; voting is not built
               </span>
             )}
           </div>
@@ -73,7 +73,7 @@ export function ProfileHeader({ author }: { author: Author }) {
             <span className="text-amber" aria-hidden>
               ◐
             </span>{" "}
-            <span className="uppercase tracking-[0.12em] text-amber">seeded</span> —
+            <span className="uppercase tracking-[0.12em] text-amber">seeded</span>:
             nothing accrues it yet
           </span>
         </div>

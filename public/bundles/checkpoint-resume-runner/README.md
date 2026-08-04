@@ -4,7 +4,7 @@ A staged pipeline that snapshots state after every stage, so a failure at stage 
 
 ```
 blueprint      checkpoint-resume-runner
-bundle digest  sha256:bdfb0b1d52638772a74cbb2a446fb827f057cc146c8600afcd8cee002739974b
+bundle digest  sha256:22a716912a0dbebb3bd2b68f00abec1e0d0e6e32eca68b81ecf1ee33cb5145f5
 ontology       v0.1.0
 nodes          9
 cards pinned   9

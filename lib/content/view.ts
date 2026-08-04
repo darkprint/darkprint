@@ -169,7 +169,7 @@ function metricsFor(analysis: BlueprintAnalysis, community: CommunitySignals): M
       label: "Efficacy",
       value: community.efficacy,
       source: "community",
-      detail: "Would be community-rated task success on real runs. Seeded — no ballot exists.",
+      detail: "Would be community-rated task success on real runs. Seeded, no ballot exists.",
     },
     {
       key: "reliability",
@@ -177,7 +177,7 @@ function metricsFor(analysis: BlueprintAnalysis, community: CommunitySignals): M
       value: community.reliability,
       source: "community",
       detail:
-        "Would be rated across repeated executions without error. Seeded — no ballot exists.",
+        "Would be rated across repeated executions without error. Seeded, no ballot exists.",
     },
     {
       key: "transparency",
@@ -185,7 +185,7 @@ function metricsFor(analysis: BlueprintAnalysis, community: CommunitySignals): M
       value: community.transparency,
       source: "community",
       detail:
-        "Would be a vote on how well the internal decisions are documented. Seeded — no ballot exists.",
+        "Would be a vote on how well the internal decisions are documented. Seeded, no ballot exists.",
     },
     {
       key: "cost",
@@ -230,7 +230,7 @@ function reportedDetail(community: CommunitySignals): string {
   const r = community.reported;
   if (r === undefined) {
     return (
-      "Reported by whoever runs the blueprint, never measured here — execution happens " +
+      "Reported by whoever runs the blueprint, never measured here, execution happens " +
       "on their machine. 0 runs reported: no median, no spread, no model. The figure is " +
       "a seeded placeholder, not a measurement."
     );

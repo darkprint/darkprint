@@ -307,7 +307,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 keeps them together, which is the whole of what that rule asks. */}
             <span className="font-mono text-xs">
               <span className="text-emerald">↓ {compact(downloads)} downloads</span>{" "}
-              <span className="text-amber" title="Seeded — no counter stands behind it">
+              <span className="text-amber" title="Seeded, no counter stands behind it">
                 <span aria-hidden>◐ </span>seeded
               </span>
             </span>
@@ -837,7 +837,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 </p>
                 <p className="text-xs leading-relaxed text-dim">
                   The hash is taken over the card&apos;s content, with the author
-                  and provenance fields left out — two people contributing the same
+                  and provenance fields left out, two people contributing the same
                   node land on the same digest, and any edit at all lands on a
                   different one.
                 </p>
@@ -882,7 +882,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                       <span className="text-violet">A person acts here.</span> The run
                       holds at this node until somebody supplies or approves what it
                       asks for. The autonomy analyzer reads that to say where the
-                      people are in a graph — it describes the design, and a blueprint
+                      people are in a graph, it describes the design, and a blueprint
                       that keeps a person on this step is a blueprint that decided to.
                     </span>
                   </>

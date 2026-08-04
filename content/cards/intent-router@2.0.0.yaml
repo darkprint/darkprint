@@ -3,12 +3,12 @@ name: Intent Router
 type: decision
 
 action: >-
-  Classify the inbound event against the label set — overridden by a taxonomy supplied for this
-  run, when there is one — and dispatch it down the matching lane, sending anything below the
+  Classify the inbound event against the label set, overridden by a taxonomy supplied for this
+  run, when there is one, and dispatch it down the matching lane, sending anything below the
   confidence threshold to the escalation lane instead of guessing.
 spec: >-
   Read the inbound alert as it arrived and decide which one of `outage`, `degradation`,
-  `capacity`, `security` or `noise` it is — unless a label set is supplied for this run, in
+  `capacity`, `security` or `noise` it is, unless a label set is supplied for this run, in
   which case classify against that one instead and ignore the configured labels entirely.
   Emit the lane you picked on `lane` with the confidence you had in it, and emit the alert on
   `routed` with its label added and payload and metadata otherwise untouched. If your

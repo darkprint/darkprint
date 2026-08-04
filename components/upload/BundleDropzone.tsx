@@ -490,12 +490,12 @@ export function BundleDropzone({
         </span>
         <div className="flex flex-col gap-1">
           <p className="text-sm text-fg">
-            Drop the whole bundle here — the{" "}
+            Drop the whole bundle here, the{" "}
             <span className="font-mono text-cyan">.dot</span> graph and the{" "}
             <span className="font-mono text-cyan">.yaml</span> cards it pins
           </p>
           <p className="text-xs text-dim">
-            or click to browse — the files are read in this tab and nothing is uploaded
+            or click to browse, the files are read in this tab and nothing is uploaded
           </p>
           <p className="text-xs text-dim">
             A folder downloaded from a blueprint page works as it stands. Bring{" "}

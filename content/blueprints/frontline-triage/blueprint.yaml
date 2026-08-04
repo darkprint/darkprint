@@ -7,7 +7,7 @@ description: >-
   A support line that handles the long tail on its own and knows when it's out of its depth. The
   router classifies each ticket, simple cases get an auto-resolution backed by a knowledge-base
   lookup, and a QA step checks the drafted reply before it goes out. Low-confidence replies
-  escalate to a human instead of being sent — so the escalation is a safety valve, not the default.
+  escalate to a human instead of being sent, so the escalation is a safety valve, not the default.
 category: Operations
 tags:
   - support

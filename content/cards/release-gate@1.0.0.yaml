@@ -11,7 +11,7 @@ spec: >-
   anything arriving without the sign-off is refused and the run ends there, unreleased. For a
   build that carries it, write the artefact byte-for-byte as you received it to the release
   target named in the run configuration, under a tag made from the run id, and record the digest
-  of exactly what you wrote beside it. Alter nothing on the way through — no reformatting, no
+  of exactly what you wrote beside it. Alter nothing on the way through, no reformatting, no
   last-minute fix, no substitution of a build you think is better. Emit nothing onward: this is
   the end of the run, and the tag plus the digest are the whole of what it leaves behind.
 tools: []
@@ -38,8 +38,8 @@ requires_human: false
 risk_markers: []
 notes: >-
   No `irreversible-action`, deliberately, and the same judgement call `result-delivery@1.0.0`
-  records. Doc 3 §4 prices that marker for actions that cannot be undone — publishing, sending,
-  deleting — and this node's declared destination is the run's own release target: it writes one
+  records. Doc 3 §4 prices that marker for actions that cannot be undone, publishing, sending,
+  deleting, and this node's declared destination is the run's own release target: it writes one
   tagged, digest-stamped artefact, sends nothing to a third party and deletes nothing. Applying
   the marker to every node that writes an output would make the qualifier vacuous. If the review
   decides a release target counts as publication, the marker costs this blueprint 1.5 and takes

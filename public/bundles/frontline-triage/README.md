@@ -4,7 +4,7 @@ Classifies inbound tickets, auto-resolves the simple ones with a KB lookup, QAs 
 
 ```
 blueprint      frontline-triage
-bundle digest  sha256:b0d2a966deafbacbad41714f4eff55cbb030e8ad09d0e5344362a8b8b25726fa
+bundle digest  sha256:a4c9d09c6acdb62d082cd870546eb2dc4d9564435e0a91b0f1d9467f81a108d1
 ontology       v0.1.0
 nodes          7
 cards pinned   7

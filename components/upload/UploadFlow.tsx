@@ -279,8 +279,8 @@ function StepIndicator({
               disabled={locked}
               aria-label={
                 locked
-                  ? `Step ${s.id} — ${s.label}. Not available yet: add a .dot topology on step 1 first.`
-                  : `Step ${s.id} — ${s.label}`
+                  ? `Step ${s.id}: ${s.label}. Not available yet: add a .dot topology on step 1 first.`
+                  : `Step ${s.id}: ${s.label}`
               }
               className={cx(
                 "group flex items-center gap-2.5 text-left",
@@ -477,8 +477,8 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                       aria-pressed={active}
                       aria-label={
                         k.ready
-                          ? `${k.label} — ${k.hint}`
-                          : `${k.label} — ${k.hint}. This flow does not accept one yet.`
+                          ? `${k.label}: ${k.hint}`
+                          : `${k.label}: ${k.hint}. This flow does not accept one yet.`
                       }
                       className={cx(
                         "flex items-center gap-2 rounded-md px-3.5 py-2 text-sm transition-colors",
@@ -533,7 +533,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                 id="bp-title"
                 value={details.title}
                 onChange={(e) => setField("title", e.target.value)}
-                placeholder="Consensus line — multi-agent conflict resolution"
+                placeholder="Consensus line, multi-agent conflict resolution"
                 className={inputCls}
               />
               <p className="font-mono text-[11px] text-dim">
@@ -596,7 +596,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
               <p className="max-w-xl text-sm leading-relaxed text-muted">
                 <span className="text-fg">Read off your cards.</span> What the graph
                 needs is a property of the nodes it instantiates, not something to
-                declare by hand — so the registry computes it instead of asking.
+                declare by hand, so the registry computes it instead of asking.
               </p>
 
               <DerivedChips
@@ -632,7 +632,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
               </h3>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
                 A bundle without a <span className="font-mono text-cyan">.dot</span> is
-                not an incomplete bundle — it is not one at all. Go back to the first
+                not an incomplete bundle, it is not one at all. Go back to the first
                 step and add the topology.
               </p>
             </div>
@@ -654,7 +654,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                   This is where it would be published
                 </h3>
                 <p className="text-sm leading-relaxed text-muted">
-                  <span className="font-mono text-amber">demo</span> — nothing was sent
+                  <span className="font-mono text-amber">demo</span>: nothing was sent
                   and nothing was saved. There is no registry backend yet. In the real
                   one your {KIND_NOUN[kind]} would now be live with the two
                   static-analysis scores you just saw attached, awaiting community votes.
@@ -679,7 +679,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                   {details.title || `Untitled ${KIND_NOUN[kind]}`}
                 </h3>
                 <p className="text-sm leading-relaxed text-muted">
-                  {details.summary || "No summary yet — add one on the Details step."}
+                  {details.summary || "No summary yet, add one on the Details step."}
                 </p>
                 {details.category && (
                   <p className="font-mono text-xs text-dim">
@@ -701,7 +701,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                         {/* The class, not the band: "A4" is the same ordinal wearing a
                             prefix, and doc 2 §1.1 keeps it off every surface. */}
                         <dd className="text-muted">
-                          {result.analysis.autonomy.label} —{" "}
+                          {result.analysis.autonomy.label}:{" "}
                           {result.analysis.autonomy.autonomousNodes} of{" "}
                           {result.analysis.autonomy.totalNodes} nodes unattended
                         </dd>
@@ -738,8 +738,8 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                   <span style={{ color: METRIC_SOURCE_META.reported.color }}>
                     Cost / time
                   </span>{" "}
-                  is reported by whoever runs it — the platform never sees the
-                  execution — and arrives with its run count, its spread and the
+                  is reported by whoever runs it, the platform never sees the
+                  execution, and arrives with its run count, its spread and the
                   model it was obtained on.
                 </p>
               </div>
@@ -759,7 +759,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                 >
                   {blocked ? (
                     <>
-                      <span className="font-mono text-signal">blocked</span> —{" "}
+                      <span className="font-mono text-signal">blocked</span>:{" "}
                       {result === undefined
                         ? "there is no bundle to publish yet."
                         : `the validator reported ${errorCount} error${
@@ -768,7 +768,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                     </>
                   ) : (
                     <>
-                      <span className="font-mono text-amber">not wired up</span> —
+                      <span className="font-mono text-amber">not wired up</span>:
                       publishing has no backend. This button ends the wizard and shows
                       you what the registry entry would look like. Nothing leaves this
                       tab.

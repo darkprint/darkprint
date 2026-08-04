@@ -28,12 +28,12 @@ function next(patch: Partial<NodeCard>): NodeCard {
   return { ...BASE, ...patch };
 }
 
-describe("inferBump — no change", () => {
+describe("inferBump, no change", () => {
   it("is none for an identical card", () => {
     expect(inferBump(BASE, { ...BASE })).toEqual({ level: "none", reasons: [] });
   });
 
-  it("ignores the version itself — that is the thing being decided", () => {
+  it("ignores the version itself, that is the thing being decided", () => {
     expect(inferBump(BASE, next({ version: "9.9.9" })).level).toBe("none");
   });
 
@@ -48,7 +48,7 @@ describe("inferBump — no change", () => {
   });
 });
 
-describe("inferBump — major", () => {
+describe("inferBump, major", () => {
   it.each<[string, NodeCard, RegExp]>([
     [
       "an input is removed",
@@ -115,7 +115,7 @@ describe("inferBump — major", () => {
 
   it("falls back to a patch when only the written form of a default changes", () => {
     // `required: true` is what an absent `required` already meant, so nothing
-    // breaks — but the bytes differ, so the safety net still demands a bump.
+    // breaks, but the bytes differ, so the safety net still demands a bump.
     const after = next({ inputs: [{ name: "task", type: "text", required: true }] });
     expect(inferBump(BASE, after)).toEqual({ level: "patch", reasons: ["card content changed"] });
   });
@@ -143,7 +143,7 @@ describe("inferBump — major", () => {
   });
 });
 
-describe("inferBump — minor", () => {
+describe("inferBump, minor", () => {
   it.each<[string, NodeCard, RegExp]>([
     [
       "an optional input is added",
@@ -181,7 +181,7 @@ describe("inferBump — minor", () => {
     [
       "the spec is rewritten",
       next({ spec: "Read the sub-task and write a solution. Never open the criteria." }),
-      /`spec` changed — the instruction handed to the agent is different/,
+      /`spec` changed, the instruction handed to the agent is different/,
     ],
     [
       "a dependency is added",
@@ -215,7 +215,7 @@ describe("inferBump — minor", () => {
     );
     expect(analysis.level).toBe("minor");
     expect(analysis.reasons).toEqual([
-      "`spec` changed — the instruction handed to the agent is different",
+      "`spec` changed, the instruction handed to the agent is different",
       "`action` wording changed",
     ]);
   });
@@ -227,11 +227,11 @@ describe("inferBump — minor", () => {
   });
 });
 
-describe("inferBump — the phase set (the documented reversal)", () => {
+describe("inferBump, the phase set (the documented reversal)", () => {
   // `inferBump` used to call any phase change MAJOR: phase coverage re-buckets, and a
   // blueprint that covered five phases would silently cover four. That reasoning rested on
-  // the phase being a required, exactly-one field. The author's ruling withdrew it — the
-  // five phases describe the factory, not every node in it — so the field is optional and
+  // the phase being a required, exactly-one field. The author's ruling withdrew it, the
+  // five phases describe the factory, not every node in it, so the field is optional and
   // repeatable, coverage is a description of scope rather than a figure anyone pinned, and
   // a phase edit breaks no wiring and invalidates no published score. Minor, both ways.
   it("is minor when the phase moves", () => {
@@ -252,7 +252,7 @@ describe("inferBump — the phase set (the documented reversal)", () => {
   it("is minor when the only phase is dropped, not patch", () => {
     // Deliberately not folded into `compareList`, whose convention makes a removal a patch
     // because "the card claims less" and nothing a blueprint wired against moved. A phase
-    // is not a wiring claim, so dropping one is the same size of edit as adding one — and
+    // is not a wiring claim, so dropping one is the same size of edit as adding one, and
     // treating it as a patch would let the sixteen cards the content sweep unphases ship
     // as bugfix releases.
     const analysis = inferBump(BASE, next({ phases: [] }));
@@ -292,7 +292,7 @@ describe("inferBump — the phase set (the documented reversal)", () => {
   });
 });
 
-describe("inferBump — `cannot`, whose two directions are inverted", () => {
+describe("inferBump, `cannot`, whose two directions are inverted", () => {
   // Every other list on the card is a claim, so `compareList` makes growth minor and
   // shrinkage patch. A prohibition constrains what may be wired *into* the node, so both
   // directions turn over: adding narrows the contract and can start failing a graph
@@ -360,14 +360,14 @@ describe("inferBump — `cannot`, whose two directions are inverted", () => {
   });
 });
 
-describe("inferBump — `mcp`, `skill` and `model`", () => {
+describe("inferBump, `mcp`, `skill` and `model`", () => {
   it("is minor when an MCP server is added, exactly as for a tool", () => {
     const analysis = inferBump(BASE, next({ mcp: ["filesystem", "github"] }));
     expect(analysis.level).toBe("minor");
     expect(analysis.reasons).toEqual(["MCP server `github` was added"]);
   });
 
-  it("is patch when an MCP server is removed — the card asks for less", () => {
+  it("is patch when an MCP server is removed, the card asks for less", () => {
     const analysis = inferBump(BASE, next({ mcp: [] }));
     expect(analysis.level).toBe("patch");
     expect(analysis.reasons).toEqual(["MCP server `filesystem` was removed"]);
@@ -473,7 +473,7 @@ describe("inferBump — `mcp`, `skill` and `model`", () => {
   });
 });
 
-describe("inferBump — patch", () => {
+describe("inferBump, patch", () => {
   it.each<[string, NodeCard, string]>([
     ["the name changes", next({ name: "Solver B" }), '`name` changed: "Solver A" → "Solver B"'],
     ["the action is reworded", next({ action: "Draft a solution" }), "`action` wording changed"],
@@ -562,7 +562,7 @@ describe("inferBump — patch", () => {
   });
 });
 
-describe("inferBump — combinations and edge cases", () => {
+describe("inferBump, combinations and edge cases", () => {
   it("keeps every reason, not just the decisive one", () => {
     const analysis = inferBump(
       BASE,
@@ -727,7 +727,7 @@ describe("the §5 version-bump check these three compose into", () => {
     expect(isBigEnough(BASE, next({ version: "2.0.0", inputs: [] }))).toBe(true);
   });
 
-  it("accepts a major bump on a trivial change — stronger is always allowed", () => {
+  it("accepts a major bump on a trivial change, stronger is always allowed", () => {
     expect(isBigEnough(BASE, next({ version: "2.0.0", notes: "typo" }))).toBe(true);
   });
 

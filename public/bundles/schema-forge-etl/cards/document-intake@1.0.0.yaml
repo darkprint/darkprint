@@ -7,8 +7,8 @@ action: >-
   content hash, and hand the batch downstream as the unit of work everything else is keyed to.
 spec: >-
   Collect the source documents waiting in the intake location and open a run over them, in
-  batches of at most 100 documents. For each document record three things — the origin path it
-  came from, its full content, and a stable hash of that content — and emit the batch on
+  batches of at most 100 documents. For each document record three things, the origin path it
+  came from, its full content, and a stable hash of that content, and emit the batch on
   `documents` as one entry per document. Use that hash as the document's identity for the rest
   of the run: bytes you have seen before must hash to the same value, because that is what lets
   a re-run land on the record already written instead of a second copy of it. You are done when

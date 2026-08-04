@@ -111,7 +111,7 @@ export function SourcePanel({
         <div
           tabIndex={0}
           role="group"
-          aria-label={`${label} — scrollable`}
+          aria-label={`${label}, scrollable`}
           className="max-h-80 overflow-auto bg-void/60"
         >
           <pre className="w-max min-w-full p-4 text-xs leading-relaxed">

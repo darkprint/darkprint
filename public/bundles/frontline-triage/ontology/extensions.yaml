@@ -1,5 +1,5 @@
 # ============================================================
-# DarkPrint content — local namespace extensions (doc 3 §7)
+# DarkPrint content, local namespace extensions (doc 3 §7)
 # Terms this release adds outside the curated core, layered over
 # CORE_ONTOLOGY by `ontologyView(CORE_ONTOLOGY, terms)`.
 #

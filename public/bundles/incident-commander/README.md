@@ -4,7 +4,7 @@ Triages alerts, routes to the right runbook, drafts a mitigation, QAs it against
 
 ```
 blueprint      incident-commander
-bundle digest  sha256:0027d8911fdb6373b911f691a841b627f944c095355cf483fc1a60abf8b60976
+bundle digest  sha256:b12640e489411112a5298a4565e9ce7b8760d6a677208731e66cf395ac650ace
 ontology       v0.1.0
 nodes          7
 cards pinned   7

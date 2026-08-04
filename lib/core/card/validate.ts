@@ -218,7 +218,7 @@ export function validateCard(value: unknown, opts: ValidateCardOptions): CardVal
         "card/human-type-inconsistent",
         `Type \`${type}\` puts a person in the loop, but \`requires_human\` is not \`true\`.`,
         {
-          hint: `\`${type}\` is a \`${HUMAN_CATEGORY}\` node, so set \`requires_human: true\` — or pick a type that runs without a person.`,
+          hint: `\`${type}\` is a \`${HUMAN_CATEGORY}\` node, so set \`requires_human: true\`, or pick a type that runs without a person.`,
           location: at(file, path),
         },
       ),
@@ -327,7 +327,7 @@ function read(
       info("card/bad-type", `Fields \`${wire}\` and \`${camel}\` are both present; \`${wire}\` is used.`, {
         // Not "snake_case is the wire spelling": the alias pairs are no longer all
         // snake/camel. `phase`/`phases` is a singular and a plural of the same field.
-        hint: `Delete \`${camel}\` — \`${wire}\` is the spelling this schema reads.`,
+        hint: `Delete \`${camel}\`, \`${wire}\` is the spelling this schema reads.`,
         location: at(file, camel),
       }),
     );

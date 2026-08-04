@@ -11,7 +11,7 @@ spec: >-
   `forge-records` dataset, tagged with the last batch boundary the receipt reports. Post one
   announcement to the `data-releases` channel naming that version, its row count and the schema
   reference the records were checked against. Cut the version before you announce it, and
-  announce it exactly once — the channel has human subscribers and neither the published version
+  announce it exactly once, the channel has human subscribers and neither the published version
   nor the message can be recalled once it lands. The run closes when the channel has accepted
   the announcement; if the version cannot be cut, announce nothing and report the failure.
 tools:

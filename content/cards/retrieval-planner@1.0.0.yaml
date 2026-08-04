@@ -10,8 +10,8 @@ spec: >-
   You are handed one research question on `question`, with the asker's scope appended to it. Split
   it into at most three retrieval strands, one for each corpus that could hold an answer: the
   public web, the internal vector store, and the indexed code repositories. Write every strand as
-  a standalone query plan — the search terms, the filters that follow from the stated scope, and
-  how many results that strand should return — worded so whoever runs it needs nothing but that
+  a standalone query plan, the search terms, the filters that follow from the stated scope, and
+  how many results that strand should return, worded so whoever runs it needs nothing but that
   plan. Do not chain the strands: none of them may be phrased in terms of what another is expected
   to find, because they run at the same time and any of them may come back empty. Emit all the
   plans together on `strands`; you are done when every corpus that could hold an answer has
@@ -41,7 +41,7 @@ cannot:
 requires_human: false
 risk_markers: []
 notes: >-
-  The strands are written to be independent on purpose — they fan out in parallel and nothing
+  The strands are written to be independent on purpose, they fan out in parallel and nothing
   downstream assumes a particular one came back, so a dead corpus costs coverage, not the run.
 
 version: 1.0.0

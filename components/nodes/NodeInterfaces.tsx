@@ -168,14 +168,14 @@ export function NodeInterfaces({
         ports={inputs}
         accent={INPUT_ACCENT}
         showRequired
-        empty="No inputs declared — nothing upstream feeds this node."
+        empty="No inputs declared, nothing upstream feeds this node."
       />
       <PortTable
         label="Outputs"
         ports={outputs}
         accent={OUTPUT_ACCENT}
         showRequired={false}
-        empty="No outputs declared — whatever this node produces leaves the graph."
+        empty="No outputs declared, whatever this node produces leaves the graph."
       />
 
       <div className="flex flex-col gap-2.5">
@@ -194,7 +194,7 @@ export function NodeInterfaces({
         </div>
         {dependencies.length === 0 ? (
           <p className="text-xs leading-relaxed text-dim">
-            None declared — no edge has to arrive for this node to run.
+            None declared, no edge has to arrive for this node to run.
           </p>
         ) : (
           <>

@@ -56,7 +56,7 @@ Emits: `staged`: `json`
 
 ### `stage2` — Transform Stage
 
-Apply the plan's transformation to the staged working set — or to the snapshot the resume controller hands back — and emit the transformed set with the diff against what it started from.
+Apply the plan's transformation to the staged working set, or to the snapshot the resume controller hands back, and emit the transformed set with the diff against what it started from.
 
 type `agent` · phase `implementation` · model `claude-sonnet-5`
 

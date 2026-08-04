@@ -1,7 +1,7 @@
 # Starter Software Factory, for an agent
 
-You are being handed a DarkPrint blueprint: a pattern for the canonical five-node factory —
-plan, build, test, debug, release — and the one edge it deliberately does not have: nothing
+You are being handed a DarkPrint blueprint: a pattern for the canonical five-node factory,
+plan, build, test, debug, release, and the one edge it deliberately does not have: nothing
 carries the acceptance criteria to the builder.
 
 Everything below is read off `blueprint.dot` and the cards in this folder. It describes the
@@ -32,7 +32,7 @@ Stated by the author and checked by nothing. Read them; do not assume a tool wil
 
 ### `planner` — Spec Planner
 
-Turn the incoming request into two separate artefacts — an ordered build brief, and the acceptance criteria the finished work will be judged against.
+Turn the incoming request into two separate artefacts, an ordered build brief, and the acceptance criteria the finished work will be judged against.
 
 type `agent` · phase `planning` · model `claude-opus-5`
 

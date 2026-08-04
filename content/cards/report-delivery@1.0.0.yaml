@@ -10,10 +10,10 @@ spec: >-
   Publish the verified document on `report` to the `research-desk` destination, addressed to the
   person whose question opened the run. Carry the citation trail across unchanged: every sentence
   keeps the inline citation it arrived with, and the reference list keeps each source's identifier
-  — URL, document id, or repository path and commit sha — together with the time it was retrieved,
+  URL, document id, or repository path and commit sha, together with the time it was retrieved,
   so a reader can walk any sentence back to the text behind it. Do not reorder, reword, shorten or
   reformat the content; you are delivering a verified artefact, not editing one. Publish exactly
-  once, and only after the whole document and its reference list have arrived — once it has gone
+  once, and only after the whole document and its reference list have arrived, once it has gone
   out it cannot be recalled or amended, so an incomplete input is a reason to stop, not to send a
   partial report.
 tools: []

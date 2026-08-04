@@ -5,13 +5,13 @@ phase: deployment
 
 action: >-
   Advance the watermark to the end of the swept window, refresh the downstream views, and post
-  the night's counts — rows cleaned, rows repaired, rows quarantined — to the ops channel.
+  the night's counts, rows cleaned, rows repaired, rows quarantined, to the ops channel.
 spec: >-
   Read the commit receipt on `dataset`, refresh the downstream views over the target table, and
   only then advance the watermark to the end of the window this run swept. Keep that order: if
   the refresh fails, leave the watermark exactly where it was, so the next night re-sweeps the
   same window instead of stepping over it. Post one digest to the `nightly-ops` channel giving
-  the night's counts — rows cleaned, rows repaired, rows quarantined — and stay silent when
+  the night's counts, rows cleaned, rows repaired, rows quarantined, and stay silent when
   nothing was repaired and nothing was quarantined, because a message every night trains people
   to ignore the one that matters. The run is done when the watermark has moved and, on any night
   that was not clean, the digest has been posted.

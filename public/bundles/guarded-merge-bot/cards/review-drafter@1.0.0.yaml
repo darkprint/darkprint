@@ -4,8 +4,8 @@ type: agent
 phase: implementation
 
 action: >-
-  Turn the triage record into a review a maintainer can act on — one comment per finding, anchored
-  to a file and a line — and fold the last test failure into the draft when the suite came back red.
+  Turn the triage record into a review a maintainer can act on, one comment per finding, anchored
+  to a file and a line, and fold the last test failure into the draft when the suite came back red.
 spec: >-
   You are handed a triage record listing, per changed file, a risk band, the reasoning behind it,
   and the test suites the change is expected to move. Write a review a maintainer can act on:

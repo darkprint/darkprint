@@ -4,7 +4,7 @@ Fans a question across web, vector and code search, synthesizes one answer, and 
 
 ```
 blueprint      grounded-research-desk
-bundle digest  sha256:22650d903612e521952d737a11e9659da3df5c7d958c1b0301c4408c2aee804f
+bundle digest  sha256:3f0c67eefe58bc915804c069ce37c9f7af59a23143d3190a2681ccad8a27eeba
 ontology       v0.1.0
 nodes          8
 cards pinned   8

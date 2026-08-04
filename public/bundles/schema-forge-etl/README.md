@@ -4,7 +4,7 @@ Extracts, normalizes and schema-validates messy documents, repairing anything th
 
 ```
 blueprint      schema-forge-etl
-bundle digest  sha256:3a6feedc1bcfea35562ac1dde9d0f2e37f12373316b07565d80d64669bd315f9
+bundle digest  sha256:3e17d7751d10fb872c9390ce966fe53baca8655540a1aa2b34c701696fba10bf
 ontology       v0.1.0
 nodes          7
 cards pinned   7

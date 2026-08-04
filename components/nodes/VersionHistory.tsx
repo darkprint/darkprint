@@ -109,8 +109,11 @@ function Changelog({
               key={reason}
               className="flex gap-2 text-[13px] leading-relaxed text-muted"
             >
+              {/* A bullet, not a pause. It was an em dash, which the author asked off
+                  the site; a list marker is the one place the character was doing a job,
+                  so it becomes the mark the rest of the site uses for one. */}
               <span className="text-faint" aria-hidden>
-                —
+                ·
               </span>
               <span className="min-w-0">
                 <Ticked text={reason} />
@@ -235,7 +238,7 @@ export function VersionHistory({
             ✓
           </span>
           <span>
-            First published version — there is nothing to compare it against yet.
+            First published version, there is nothing to compare it against yet.
             A version is never edited in place, so the next change arrives as a new
             one and the diff between them shows up here, worked out from the two
             documents.

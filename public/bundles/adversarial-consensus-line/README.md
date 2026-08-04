@@ -1,10 +1,10 @@
 # Adversarial Consensus Line
 
-Two agents solve the same task from opposite temperatures, then a consensus node negotiates a single answer — re-opening the debate when they clash.
+Two agents solve the same task from opposite temperatures, then a consensus node negotiates a single answer, re-opening the debate when they clash.
 
 ```
 blueprint      adversarial-consensus-line
-bundle digest  sha256:38ffe516c0d8bcf716ce2aca19a836ec579b033b65819ead27f1a40547c0ea75
+bundle digest  sha256:69bcfb1ebb45c1c86598c199ef6c3984fe8737855a6d5241a927d6e5a6808658
 ontology       v0.1.0
 nodes          8
 cards pinned   8

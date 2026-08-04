@@ -8,7 +8,7 @@ action: >-
   the report to the maintainer, red hands the failing cases back to the drafter for another pass.
 spec: >-
   Read the drafted review you are handed, take the test suites it names, and run exactly those
-  against the pull request's head ref — no more, no fewer. Give the whole run thirty minutes; a
+  against the pull request's head ref, no more, no fewer. Give the whole run thirty minutes; a
   suite still executing when that expires counts as a failure, not as a pass. Emit `green` on
   `result` when every suite passes and `red` otherwise, carrying the failing-case count so the
   branch downstream can read the outcome without opening the write-up. Emit that write-up on
@@ -34,10 +34,10 @@ inputs:
 outputs:
   - name: result
     type: status
-    description: Green or red, plus the failing case count — the signal the red edge branches on.
+    description: Green or red, plus the failing case count, the signal the red edge branches on.
   - name: report
     type: report
-    description: The run write-up a maintainer reads — suites, durations, failures, coverage delta.
+    description: The run write-up a maintainer reads, suites, durations, failures, coverage delta.
 dependencies:
   - review-drafter
 cannot:

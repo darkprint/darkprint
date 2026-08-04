@@ -1,8 +1,8 @@
 # Nightly Data Janitor, for an agent
 
 You are being handed a DarkPrint blueprint: a pattern for an unattended overnight cleanup
-line: extract deltas, normalize, validate against schema, and publish — repairing dirty rows
-in place.
+line: extract deltas, normalize, validate against schema, and publish, repairing dirty rows in
+place.
 
 Everything below is read off `blueprint.dot` and the cards in this folder. It describes the
 pattern and nothing else: it has not seen the codebase you are about to change, and it carries
@@ -44,7 +44,7 @@ Emits: `rows`: `table`
 
 ### `normalize` — Field Normalizer
 
-Coerce the extracted fields onto the target shape — units, dates, casing, null spellings — and emit one canonical record per input row, re-folding anything the repair pass has sent back.
+Coerce the extracted fields onto the target shape, units, dates, casing, null spellings, and emit one canonical record per input row, re-folding anything the repair pass has sent back.
 
 type `agent` · phase `implementation` · model `claude-haiku-4-5`
 
@@ -74,7 +74,7 @@ Emits: `repaired`: `json`
 
 ### `store` — Record Store
 
-Upsert the accepted records into the target store in batches keyed on the upsert key, and return the commit receipt — row counts, keys written, and the batch the run can resume from.
+Upsert the accepted records into the target store in batches keyed on the upsert key, and return the commit receipt, row counts, keys written, and the batch the run can resume from.
 
 type `tool` · phase `deployment` · tools `sql`
 
@@ -84,7 +84,7 @@ Emits: `stored`: `json`
 
 ### `publish` — Warehouse Publisher
 
-Advance the watermark to the end of the swept window, refresh the downstream views, and post the night's counts — rows cleaned, rows repaired, rows quarantined — to the ops channel.
+Advance the watermark to the end of the swept window, refresh the downstream views, and post the night's counts, rows cleaned, rows repaired, rows quarantined, to the ops channel.
 
 type `tool` · phase `deployment` · tools `messaging`
 

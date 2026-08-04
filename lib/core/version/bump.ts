@@ -307,7 +307,7 @@ export function inferBump(previous: NodeCard, next: NodeCard): BumpAnalysis {
   };
 
   if (previous.id !== next.id) {
-    push("major", `card id changed: ${previous.id} → ${next.id} — these are different cards`);
+    push("major", `card id changed: ${previous.id} → ${next.id}, these are different cards`);
   }
   if (previous.type !== next.type) {
     push("major", `node type changed: ${previous.type} → ${next.type}`);
@@ -408,7 +408,7 @@ export function inferBump(previous: NodeCard, next: NodeCard): BumpAnalysis {
   // without touching the interface — minor. The text itself is not quoted: specs are
   // paragraphs, and a diff belongs in the UI, not in a one-line reason.
   if (previous.spec !== next.spec) {
-    push("minor", "`spec` changed — the instruction handed to the agent is different");
+    push("minor", "`spec` changed, the instruction handed to the agent is different");
   }
   // Same reasoning as `spec` and the same level: the skill document is where the agent's
   // behaviour is defined, so repointing it, setting it or dropping it changes what the node

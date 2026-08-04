@@ -22,12 +22,12 @@ import { TagPill } from "./TagPill";
 function Meta({ downloads, votes }: { downloads: number; votes: number }) {
   return (
     <div className="flex items-center gap-2 font-mono text-[11px] text-dim">
-      <span className="text-amber" aria-hidden title="Seeded — no ballot and no counter">
+      <span className="text-amber" aria-hidden title="Seeded, no ballot and no counter">
         ◐
       </span>
       <span className="sr-only">Seeded index figures, with no ballot or counter behind them:</span>
-      <span title="Downloads — a seeded row in the index">↓ {compact(downloads)}</span>
-      <span title="Votes — a seeded row in the index">▲ {compact(votes)}</span>
+      <span title="Downloads, a seeded row in the index">↓ {compact(downloads)}</span>
+      <span title="Votes, a seeded row in the index">▲ {compact(votes)}</span>
     </div>
   );
 }

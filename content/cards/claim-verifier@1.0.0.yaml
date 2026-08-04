@@ -12,7 +12,7 @@ spec: >-
   weigh how plausible the sentence is, and do not go looking for a different source that would
   rescue it. Emit on `grounded` the same document reduced to the sentences that survived, their
   citations untouched. Emit on `gaps` one entry per sentence that failed, quoting the sentence and
-  stating exactly why it failed — the source says something narrower, the source contradicts it,
+  stating exactly why it failed, the source says something narrower, the source contradicts it,
   the source does not mention it, or there was no citation at all. Never edit a sentence to make
   it pass and never supply a citation of your own; your output is a verdict with the evidence
   behind it, and the rewriting belongs to someone else. After the third pass over the same

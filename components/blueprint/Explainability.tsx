@@ -387,7 +387,7 @@ function AutonomyPanel({
             ▸
           </span>
           <h3 id="autonomy-explained" className={LABEL}>
-            Autonomy — who is in the loop
+            Autonomy, who is in the loop
           </h3>
         </span>
         <span className="font-mono text-[11px] text-dim">
@@ -1160,7 +1160,7 @@ function SecurityPanel({
           {/* `components/blueprint/BundlePanel.tsx` links this id, so it needs the same
               offset every other anchor target on the site carries (`anchors.test.ts`). */}
           <h3 id="security-explained" className={cx("scroll-mt-24", LABEL)}>
-            Security — what it gets to touch
+            Security, what it gets to touch
           </h3>
         </span>
         <span className="flex flex-col items-end gap-0.5 font-mono text-[11px] text-dim">
@@ -1189,7 +1189,7 @@ function SecurityPanel({
       <div
         tabIndex={0}
         role="group"
-        aria-label="Security ledger — scrollable"
+        aria-label="Security ledger, scrollable"
         className="overflow-x-auto"
       >
         <table className="w-full min-w-[19rem] font-mono text-[12px]">
@@ -1227,7 +1227,7 @@ function SecurityPanel({
               <th scope="row" className="py-2 text-left font-normal text-muted">
                 Clean start
               </th>
-              <td className="py-2 pl-3 text-right text-dim">—</td>
+              <td className="py-2 pl-3 text-right text-dim"><span className="sr-only">not applicable</span></td>
               <td className="py-2 pl-3 text-right tabular-nums text-fg">4.00</td>
             </tr>
             {security.penalties.map((p) => {
@@ -1263,7 +1263,7 @@ function SecurityPanel({
               <th scope="row" className="pt-2 text-left font-normal text-muted">
                 Raw total
               </th>
-              <td className="pt-2 pl-3 text-right text-dim">—</td>
+              <td className="pt-2 pl-3 text-right text-dim"><span className="sr-only">not applicable</span></td>
               <td className="pt-2 pl-3 text-right tabular-nums text-fg">
                 {security.raw.toFixed(2)}
               </td>
@@ -1274,7 +1274,7 @@ function SecurityPanel({
               <th scope="row" className="pt-1 text-left font-normal text-muted">
                 Security level
               </th>
-              <td className="pt-1 pl-3 text-right text-dim">—</td>
+              <td className="pt-1 pl-3 text-right text-dim"><span className="sr-only">not applicable</span></td>
               <td className="pt-1 pl-3 text-right tabular-nums text-fg">
                 {security.level}
               </td>

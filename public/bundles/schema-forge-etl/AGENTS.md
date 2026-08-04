@@ -45,7 +45,7 @@ Emits: `fields`: `json`
 
 ### `normalize` — Field Normalizer
 
-Coerce the extracted fields onto the target shape — units, dates, casing, null spellings — and emit one canonical record per input row, re-folding anything the repair pass has sent back.
+Coerce the extracted fields onto the target shape, units, dates, casing, null spellings, and emit one canonical record per input row, re-folding anything the repair pass has sent back.
 
 type `agent` · phase `implementation` · model `claude-haiku-4-5`
 
@@ -75,7 +75,7 @@ Emits: `repaired`: `json`
 
 ### `store` — Record Store
 
-Upsert the accepted records into the target store in batches keyed on the upsert key, and return the commit receipt — row counts, keys written, and the batch the run can resume from.
+Upsert the accepted records into the target store in batches keyed on the upsert key, and return the commit receipt, row counts, keys written, and the batch the run can resume from.
 
 type `tool` · phase `deployment` · tools `sql`
 

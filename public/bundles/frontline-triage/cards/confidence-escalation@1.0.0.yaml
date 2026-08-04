@@ -9,8 +9,8 @@ spec: >-
   Read the confidence figure on the verdict you are handed. At 0.7 or above, pass the work
   through on `accepted` exactly as it reached you and take no other action. Below 0.7, decide
   nothing yourself: assemble the parked case on `escalated` with the work that was graded
-  attached — taken from the context you were given, or pulled from the run record when none
-  was wired — put a fifteen-minute deadline on it, notify the reviewer on call, and wait.
+  attached, taken from the context you were given, or pulled from the run record when none
+  was wired, put a fifteen-minute deadline on it, notify the reviewer on call, and wait.
   Nothing reaches `accepted` that has not either cleared 0.7 or been approved by that person.
 tools:
   - human-review
@@ -24,7 +24,7 @@ params:
 inputs:
   - name: verdict
     type: status
-    description: The upstream check's confidence signal — the number this node reads.
+    description: The upstream check's confidence signal, the number this node reads.
   - name: context
     type: json
     required: false
@@ -46,7 +46,7 @@ risk_markers: []
 notes: >-
   `context` is optional because an edge carries a single value: the QA step wires its verdict,
   and the escalation pulls the draft it graded from the run record. The `requires_human` flag is
-  redundant with the node type and set anyway — the human gate should be legible without an
+  redundant with the node type and set anyway, the human gate should be legible without an
   ontology lookup.
 
 version: 1.0.0

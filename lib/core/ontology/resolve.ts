@@ -352,7 +352,7 @@ export function ontologyView(base: Ontology, extensions?: readonly OntologyTerm[
             error(
               "ontology/cyclic-broader",
               `Term \`${cycle[0]}\` is its own ancestor: ${[...cycle, cycle[0]].map((id) => `\`${id}\``).join(" → ")}.`,
-              { hint: "Break the loop — one term in a `broader` chain must have no parent." },
+              { hint: "Break the loop, one term in a `broader` chain must have no parent." },
             ),
           );
           break;

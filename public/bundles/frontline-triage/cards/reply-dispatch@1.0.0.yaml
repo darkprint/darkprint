@@ -10,7 +10,7 @@ spec: >-
   Post the reply you are handed on `approved` to the ticket thread named inside it, over the
   channel that thread arrived on and over no other. Send it exactly as it reached you: you are not
   authorised to edit, shorten, re-tone or append to a reply that has already been cleared. Send it
-  exactly once — a sent message cannot be recalled, so if the provider has not answered within
+  exactly once, a sent message cannot be recalled, so if the provider has not answered within
   fifteen seconds, report the timeout and stop rather than sending again. Emit the provider's
   acknowledgement on `receipt` in the provider's own terms, delivered, deferred or rejected, and
   never upgrade a deferral or a rejection into a success. You are done when a receipt is on
@@ -32,7 +32,7 @@ inputs:
 outputs:
   - name: receipt
     type: status
-    description: The provider's acknowledgement — delivered, deferred or rejected.
+    description: The provider's acknowledgement, delivered, deferred or rejected.
 dependencies:
   - reply-qa-check
 cannot:

@@ -114,7 +114,7 @@ export const COMMUNITY: Record<string, CommunitySignals> = {
       {
         id: "c2",
         author: AUTHORS.hachi,
-        body: "1,000 executions, 12 hard conflicts, all resolved without escalation. Cost is the weak metric — the debate loop roughly doubles tokens when it triggers.",
+        body: "1,000 executions, 12 hard conflicts, all resolved without escalation. Cost is the weak metric, the debate loop roughly doubles tokens when it triggers.",
         createdAt: "2026-05-18",
         votes: 27,
       },
@@ -148,7 +148,7 @@ export const COMMUNITY: Record<string, CommunitySignals> = {
       {
         id: "c2",
         author: AUTHORS.hachi,
-        body: "Checkpoint granularity is a real knob — per-stage is the sweet spot. Went finer once and the storage writes dominated the cost metric.",
+        body: "Checkpoint granularity is a real knob, per-stage is the sweet spot. Went finer once and the storage writes dominated the cost metric.",
         createdAt: "2026-05-29",
         votes: 33,
       },
@@ -167,7 +167,7 @@ export const COMMUNITY: Record<string, CommunitySignals> = {
       {
         id: "c1",
         author: AUTHORS.lupo,
-        body: "Transparency 90 is fair — the citation trail per claim makes it trivial to audit. Wish more blueprints did this.",
+        body: "Transparency 90 is fair, the citation trail per claim makes it trivial to audit. Wish more blueprints did this.",
         createdAt: "2026-06-03",
         votes: 22,
       },
@@ -249,7 +249,7 @@ export const COMMUNITY: Record<string, CommunitySignals> = {
       {
         id: "c2",
         author: AUTHORS.sol,
-        body: "The bit people miss is the second half. Deleting the edge isn't isolation on its own — paste the planner's wording into the builder's spec and the similarity check picks it up with the DOT untouched. This bundle is the one that keeps both halves honest.",
+        body: "The bit people miss is the second half. Deleting the edge isn't isolation on its own, paste the planner's wording into the builder's spec and the similarity check picks it up with the DOT untouched. This bundle is the one that keeps both halves honest.",
         createdAt: "2026-07-19",
         votes: 44,
       },
@@ -280,7 +280,7 @@ export const COMMUNITY: Record<string, CommunitySignals> = {
       {
         id: "c1",
         author: AUTHORS.sol,
-        body: "Security 19 is the lowest in the gallery for a reason — this thing can execute runbooks. Read the required scopes before you run it.",
+        body: "Security 19 is the lowest in the gallery for a reason, this thing can execute runbooks. Read the required scopes before you run it.",
         createdAt: "2026-06-25",
         votes: 24,
       },

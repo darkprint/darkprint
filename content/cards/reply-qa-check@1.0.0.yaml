@@ -36,7 +36,7 @@ outputs:
     description: The reply cleared for sending, unchanged apart from the QA stamp.
   - name: confidence
     type: status
-    description: The graded score — what the escalation branch reads.
+    description: The graded score, what the escalation branch reads.
 dependencies:
   - resolution-composer
 cannot:
@@ -47,7 +47,7 @@ risk_markers:
   - lupo/pii-handling
 notes: >-
   The customer's details ride through this node inside the draft, which is what the
-  `lupo/pii-handling` marker records — a local term, because doc 3 §4 has no marker for personal
+  `lupo/pii-handling` marker records, a local term, because doc 3 §4 has no marker for personal
   data. The threshold is the one dial that trades escalation volume against send quality; raising
   it moves work to people rather than improving the replies.
 

@@ -1,10 +1,10 @@
 # Starter Software Factory
 
-The canonical five-node factory — plan, build, test, debug, release — and the one edge it deliberately does not have: nothing carries the acceptance criteria to the builder.
+The canonical five-node factory, plan, build, test, debug, release, and the one edge it deliberately does not have: nothing carries the acceptance criteria to the builder.
 
 ```
 blueprint      starter-software-factory
-bundle digest  sha256:b7938870caaa28a19adc56926eba61da80923e790361f37cf0123116da580fcb
+bundle digest  sha256:945448e03d7997e279f30ccb0f020ce0575cb2fa7cebed510c7b84f5e68e39af
 ontology       v0.1.0
 nodes          5
 cards pinned   5

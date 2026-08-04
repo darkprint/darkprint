@@ -10,10 +10,10 @@ spec: >-
   You are given the evidence from a run that failed: the assertions that did not hold, the stack
   traces underneath them, and the expected value beside the one actually obtained. Find the
   smallest change to the existing source that accounts for those failures and emit it on `patch`
-  — a patch, not a rewrite, leaving every part of the code the evidence does not implicate
+  a patch, not a rewrite, leaving every part of the code the evidence does not implicate
   exactly as it is. Do not special-case the literal values in the trace: a change that satisfies
   only the example in front of you has fixed nothing, and it will come straight back. Stop after
-  three attempts, and stop earlier if two consecutive runs hand you the same evidence — that
+  three attempts, and stop earlier if two consecutive runs hand you the same evidence, that
   means you are circling, and another pass costs a round without buying information.
 model: claude-opus-5
 agent: Debugger
@@ -27,7 +27,7 @@ params:
 inputs:
   - name: evidence
     type: report
-    description: One run's failure output — assertions, traces, expected beside obtained.
+    description: One run's failure output, assertions, traces, expected beside obtained.
 outputs:
   - name: patch
     type: code

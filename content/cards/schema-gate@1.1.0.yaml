@@ -9,7 +9,7 @@ action: >-
 spec: >-
   Check the normalized record you are handed against the schema registered as
   `schema-registry://forge-record@2`, and against any extra rules handed to you alongside it
-  — cross-field invariants included. Emit the record byte-for-byte unchanged on `accepted`
+  cross-field invariants included. Emit the record byte-for-byte unchanged on `accepted`
   only when it clears both; a field the schema does not name is a failure, not a tolerance.
   Otherwise emit one entry per breach on `violations`, each naming the field and the specific
   constraint it broke, and stop at twenty-five entries so one unparseable batch cannot flood

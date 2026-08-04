@@ -2,9 +2,9 @@ slug: adversarial-consensus-line
 title: Adversarial Consensus Line
 summary: >-
   Two agents solve the same task from opposite temperatures, then a consensus node negotiates a
-  single answer — re-opening the debate when they clash.
+  single answer, re-opening the debate when they clash.
 description: |-
-  The hardest part of a multi-agent factory isn't getting work done — it's what happens when two competent agents disagree. This blueprint runs a deliberate adversarial pair: Solver A stays conservative, Solver B explores. A consensus node scores both proposals against the acceptance criteria and, on a genuine conflict, re-opens a bounded debate instead of silently picking one. The loop closes only when the verifier signs off, so no human ever has to arbitrate.
+  The hardest part of a multi-agent factory isn't getting work done, it's what happens when two competent agents disagree. This blueprint runs a deliberate adversarial pair: Solver A stays conservative, Solver B explores. A consensus node scores both proposals against the acceptance criteria and, on a genuine conflict, re-opens a bounded debate instead of silently picking one. The loop closes only when the verifier signs off, so no human ever has to arbitrate.
 
   Use it wherever a single model is confidently wrong too often: spec interpretation, refactor strategy, or any judgement call where a second, differently-tuned opinion catches the blind spot.
 category: Coordination

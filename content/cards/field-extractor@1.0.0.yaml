@@ -9,7 +9,7 @@ action: >-
 spec: >-
   For every entry on `documents`, read the document's content and pull out the target fields
   named in the extraction schema you are configured with. Copy each value verbatim from the
-  source text — do not paraphrase it, do not tidy it, do not convert a unit or a date format —
+  source text, do not paraphrase it, do not tidy it, do not convert a unit or a date format,
   and record next to it the span of the document the value was taken from, so a reviewer can
   check the extraction instead of trusting it. Emit one object per document on `fields`, keyed
   by field name and carrying that document's hash, so a later step can key back to the source.
@@ -27,7 +27,7 @@ params:
 inputs:
   - name: documents
     type: json
-    description: The intake batch — one entry per source document, with its content and hash.
+    description: The intake batch, one entry per source document, with its content and hash.
 outputs:
   - name: fields
     type: json

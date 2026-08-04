@@ -8,7 +8,7 @@ import { getAuthor } from "@/lib/data/users";
 export const metadata: Metadata = {
   title: "Nodes",
   description:
-    "The DarkPrint node-card library — every reusable node in the registry, with its ontology type, the lifecycle phases it stands in, declared interface, tools and risk markers. Filter by type, by phase, by human involvement or by risk.",
+    "The DarkPrint node-card library, every reusable node in the registry, with its ontology type, the lifecycle phases it stands in, declared interface, tools and risk markers. Filter by type, by phase, by human involvement or by risk.",
 };
 
 export default function NodesPage() {
@@ -53,7 +53,7 @@ export default function NodesPage() {
         as="h1"
         eyebrow="Registry"
         title="Node cards"
-        lead={`One card says what a node does, what it takes in, what it hands on and what it puts at risk — and the ${blueprints} blueprints in the registry are assembled out of these ${nodes.length}. Every card is versioned, content-addressed, and pinned by exact reference.`}
+        lead={`One card says what a node does, what it takes in, what it hands on and what it puts at risk, and the ${blueprints} blueprints in the registry are assembled out of these ${nodes.length}. Every card is versioned, content-addressed, and pinned by exact reference.`}
         className="mb-10"
       />
       <NodeBrowser nodes={nodes} />

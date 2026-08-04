@@ -24,7 +24,7 @@ inputs: []
 outputs:
   - name: request
     type: json
-    description: The task as the line will see it — goal, constraints, and the criteria set it must clear.
+    description: The task as the line will see it, goal, constraints, and the criteria set it must clear.
 dependencies: []
 cannot:
   - forward a request that failed the schema check

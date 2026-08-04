@@ -11,7 +11,7 @@ spec: >-
   snippet with six lines of context either side of the match, pinned to its repository, file path,
   line range and the commit sha the file was read at. Include matches under test directories: a
   test is often the clearest statement of what the code is meant to do. Check nothing out, run
-  nothing, and write nothing back — the index is read-only, and the commit sha is what keeps a hit
+  nothing, and write nothing back, the index is read-only, and the commit sha is what keeps a hit
   resolvable after the branch has moved on. You are done when every match you kept carries all
   five of those coordinates.
 tools:
@@ -27,7 +27,7 @@ params:
 inputs:
   - name: query
     type: plan
-    description: The code strand of the retrieval plan — symbols, paths and language filters.
+    description: The code strand of the retrieval plan, symbols, paths and language filters.
 outputs:
   - name: passages
     type: json

@@ -14,7 +14,7 @@ const opts = { ontology };
  * The minimal valid card, as a fresh mutable wire document.
  *
  * Ontology v0.1 made `phase` and `spec` required, so "minimal" now carries both: a card
- * without them is not a card. The spec is written the way doc 1 §3.2 asks for — it says
+ * without them is not a card. The spec is written the way doc 1 §3.2 asks for, it says
  * what to read, what to produce, and what not to look at.
  */
 function minimal(): Record<string, unknown> {
@@ -51,7 +51,7 @@ function paths(ds: readonly Diagnostic[]): (string | undefined)[] {
    Happy paths
    ============================================================ */
 
-describe("validateCard — the minimal card", () => {
+describe("validateCard, the minimal card", () => {
   it("accepts it and applies every documented default", () => {
     const { card, diagnostics } = validateCard(minimal(), opts);
     expect(diagnostics).toEqual([]);
@@ -120,7 +120,7 @@ describe("validateCard — the minimal card", () => {
   });
 });
 
-describe("validateCard — a fully populated card", () => {
+describe("validateCard, a fully populated card", () => {
   const full = {
     id: "berti/auditor",
     name: "Auditor",
@@ -200,7 +200,7 @@ describe("validateCard — a fully populated card", () => {
   });
 });
 
-describe("validateCard — snake_case and camelCase", () => {
+describe("validateCard, snake_case and camelCase", () => {
   it("accepts the camelCase spellings silently", () => {
     const doc = minimal();
     doc["requiresHuman"] = true;
@@ -225,7 +225,7 @@ describe("validateCard — snake_case and camelCase", () => {
     expect(diagnostics[0].location?.path).toBe("requiresHuman");
   });
 
-  it("has no camelCase alias for `phase` or `spec` — both are already plain names", () => {
+  it("has no camelCase alias for `phase` or `spec`, both are already plain names", () => {
     const { diagnostics } = validateCard({ ...minimal(), Phase: "planning" }, opts);
     expect(codes(diagnostics)).toEqual(["card/bad-type"]);
     expect(diagnostics[0].severity).toBe("info");
@@ -235,8 +235,8 @@ describe("validateCard — snake_case and camelCase", () => {
   it("reads the plural `phases`, which is the spelling the field now invites", () => {
     // `phase` became optional and repeatable and the model calls the field `phases`, so
     // `phases: [implementation]` is the obvious thing to write. Without the alias that
-    // card loaded *clean* — `ok: true`, one `info` nobody reads, and every declared phase
-    // silently dropped — so a blueprint shipped with its coverage quietly reduced. Loading
+    // card loaded *clean*, `ok: true`, one `info` nobody reads, and every declared phase
+    // silently dropped, so a blueprint shipped with its coverage quietly reduced. Loading
     // it wrong in silence is worse than either accepting it or rejecting it.
     const doc: Record<string, unknown> = { ...minimal() };
     delete doc.phase;
@@ -267,9 +267,9 @@ describe("validateCard — snake_case and camelCase", () => {
     expect(diagnostics[0].message).toContain(
       "Fields `phase` and `phases` are both present; `phase` is used.",
     );
-    // Not "snake_case is the wire spelling" — these two are a singular and a plural.
+    // Not "snake_case is the wire spelling", these two are a singular and a plural.
     expect(diagnostics[0].hint).toBe(
-      "Delete `phases` — `phase` is the spelling this schema reads.",
+      "Delete `phases`, `phase` is the spelling this schema reads.",
     );
   });
 });
@@ -278,7 +278,7 @@ describe("validateCard — snake_case and camelCase", () => {
    Shape and required fields
    ============================================================ */
 
-describe("validateCard — the document is not a mapping", () => {
+describe("validateCard, the document is not a mapping", () => {
   it.each([
     ["null", null],
     ["undefined", undefined],
@@ -300,10 +300,10 @@ describe("validateCard — the document is not a mapping", () => {
   });
 });
 
-describe("validateCard — missing required fields", () => {
+describe("validateCard, missing required fields", () => {
   // `phase` is absent from this list on purpose: it is not required at all. The five
   // phases describe the factory, not every node in it, so a card that names none is
-  // complete — the block below asserts that absence produces no diagnostic whatsoever.
+  // complete, the block below asserts that absence produces no diagnostic whatsoever.
   const required = [
     "id",
     "name",
@@ -363,7 +363,7 @@ describe("validateCard — missing required fields", () => {
   });
 });
 
-describe("validateCard — wrong JS types", () => {
+describe("validateCard, wrong JS types", () => {
   it.each<[string, unknown]>([
     ["id", 42],
     ["name", []],
@@ -417,7 +417,7 @@ describe("validateCard — wrong JS types", () => {
    Identity and versions
    ============================================================ */
 
-describe("validateCard — bad ids", () => {
+describe("validateCard, bad ids", () => {
   it.each([
     "Solver A",
     "SOLVER",
@@ -447,13 +447,13 @@ describe("validateCard — bad ids", () => {
     },
   );
 
-  it("does not apply the id grammar to dependencies — the bundle resolves those", () => {
+  it("does not apply the id grammar to dependencies, the bundle resolves those", () => {
     const { diagnostics } = validateCard({ ...minimal(), dependencies: ["Solver A"] }, opts);
     expect(diagnostics).toEqual([]);
   });
 });
 
-describe("validateCard — bad versions", () => {
+describe("validateCard, bad versions", () => {
   it.each(["1.0", "v1.0.0", "latest", "1.0.0.0", "01.0.0", "1", "1.0.0-", "1.2.3 "])(
     "rejects version `%s`",
     (version) => {
@@ -485,11 +485,11 @@ describe("validateCard — bad versions", () => {
 });
 
 /* ============================================================
-   phase — optional (the author's ruling), repeatable, and still
+   phase, optional (the author's ruling), repeatable, and still
    closed to the five (doc 3 §2) and to local namespaces (doc 3 §7)
    ============================================================ */
 
-describe("validateCard — phase, when the card declares one", () => {
+describe("validateCard, phase, when the card declares one", () => {
   it.each(["planning", "implementation", "testing", "debugging", "deployment"])(
     "accepts the scalar `%s`",
     (phase) => {
@@ -579,11 +579,11 @@ describe("validateCard — phase, when the card declares one", () => {
   });
 });
 
-describe("validateCard — phase, when the card declares none", () => {
+describe("validateCard, phase, when the card declares none", () => {
   // The author's ruling, which supersedes doc 3 §1's cardinality row: the five phases are
   // "the expected high level phases a dark factory should have, but do not necessarily
   // have to stick to nodes". A node outside all five is normal, and this validator is the
-  // last place where a "gap" could be invented — so these tests assert silence, not a
+  // last place where a "gap" could be invented, so these tests assert silence, not a
   // gentler diagnostic.
   it("accepts an absent `phase` with no diagnostic at all", () => {
     const doc = minimal();
@@ -602,7 +602,7 @@ describe("validateCard — phase, when the card declares none", () => {
     expect(card?.phases).toEqual([]);
   });
 
-  it("emits nothing of any severity — not an info, not a hint about phases", () => {
+  it("emits nothing of any severity, not an info, not a hint about phases", () => {
     // Deliberately stronger than "no error". An `info` saying "consider adding a phase"
     // is exactly the nudge the ruling forbids: it would push an author to invent a phase
     // for an intake node, which is how sixteen nodes ended up in phases they do not occupy.
@@ -630,7 +630,7 @@ describe("validateCard — phase, when the card declares none", () => {
   });
 });
 
-describe("validateCard — phase, when the card declares several", () => {
+describe("validateCard, phase, when the card declares several", () => {
   it("accepts a sequence and keeps the author's order", () => {
     const { card, diagnostics } = validateCard(
       { ...minimal(), phase: ["implementation", "debugging"] },
@@ -692,10 +692,10 @@ describe("validateCard — phase, when the card declares several", () => {
 });
 
 /* ============================================================
-   spec — doc 1 §3.2
+   spec, doc 1 §3.2
    ============================================================ */
 
-describe("validateCard — spec", () => {
+describe("validateCard, spec", () => {
   it("is required: a card with no spec cannot be instantiated", () => {
     const doc = minimal();
     delete doc["spec"];
@@ -727,7 +727,7 @@ describe("validateCard — spec", () => {
     expect(diagnostics).toHaveLength(expected);
   });
 
-  it("measures the trimmed length — padding is not instruction", () => {
+  it("measures the trimmed length, padding is not instruction", () => {
     const { diagnostics } = validateCard(
       { ...minimal(), spec: `${" ".repeat(40)}Draft it.${" ".repeat(40)}` },
       opts,
@@ -762,7 +762,7 @@ describe("validateCard — spec", () => {
    mcp, skill and cannot
    ============================================================ */
 
-describe("validateCard — mcp", () => {
+describe("validateCard, mcp", () => {
   it("defaults to an empty list", () => {
     const { card, diagnostics } = validateCard(minimal(), opts);
     expect(diagnostics).toEqual([]);
@@ -808,7 +808,7 @@ describe("validateCard — mcp", () => {
   });
 });
 
-describe("validateCard — skill", () => {
+describe("validateCard, skill", () => {
   it("is absent rather than undefined when the card names none", () => {
     const { card } = validateCard(minimal(), opts);
     expect(card && "skill" in card).toBe(false);
@@ -830,7 +830,7 @@ describe("validateCard — skill", () => {
   });
 });
 
-describe("validateCard — cannot", () => {
+describe("validateCard, cannot", () => {
   it("defaults to an empty list", () => {
     const { card, diagnostics } = validateCard(minimal(), opts);
     expect(diagnostics).toEqual([]);
@@ -884,10 +884,10 @@ describe("validateCard — cannot", () => {
 });
 
 /* ============================================================
-   requires_human and the human types — doc 3 §3
+   requires_human and the human types, doc 3 §3
    ============================================================ */
 
-describe("validateCard — human types and requires_human", () => {
+describe("validateCard, human types and requires_human", () => {
   it.each(["human-gate", "human-input"])(
     "rejects `%s` when requires_human is not set",
     (type) => {
@@ -958,7 +958,7 @@ describe("validateCard — human types and requires_human", () => {
   });
 
   it("asks the category, never a list of ids: a local human subtype is caught too", () => {
-    // This is the test doc 3 §3 exists for — a human type added after this file was
+    // This is the test doc 3 §3 exists for, a human type added after this file was
     // written must change the answer without the validator being touched.
     const localHuman: OntologyTerm = {
       id: "berti/design-review",
@@ -1022,7 +1022,7 @@ describe("validateCard — human types and requires_human", () => {
    Ontology terms (§6.1)
    ============================================================ */
 
-describe("validateCard — ontology terms", () => {
+describe("validateCard, ontology terms", () => {
   it.each<[string, Record<string, unknown>, string]>([
     ["type", { type: "wizard" }, "type"],
     ["a tool", { tools: ["hammer"] }, "tools[0]"],
@@ -1061,7 +1061,7 @@ describe("validateCard — ontology terms", () => {
   });
 
   it("warns on a deprecated term but still returns the card (§6.2)", () => {
-    // v0.1 deprecates nothing — doc 1 §6.2 starts applying from this version — so the
+    // v0.1 deprecates nothing, doc 1 §6.2 starts applying from this version, so the
     // rule is exercised against a local vocabulary that does deprecate one.
     const successor: OntologyTerm = {
       id: "berti/memory-leak",
@@ -1134,7 +1134,7 @@ describe("validateCard — ontology terms", () => {
    Ports
    ============================================================ */
 
-describe("validateCard — ports", () => {
+describe("validateCard, ports", () => {
   it("rejects duplicate input names", () => {
     const { card, diagnostics } = validateCard(
       {
@@ -1233,7 +1233,7 @@ describe("validateCard — ports", () => {
     expect(paths(diagnostics)).toEqual(["inputs[0].description"]);
   });
 
-  it("accepts `acceptance-criteria` as a port type — §4.1 needs it nameable", () => {
+  it("accepts `acceptance-criteria` as a port type, §4.1 needs it nameable", () => {
     const { card, diagnostics } = validateCard(
       {
         ...minimal(),
@@ -1252,7 +1252,7 @@ describe("validateCard — ports", () => {
    params
    ============================================================ */
 
-describe("validateCard — params", () => {
+describe("validateCard, params", () => {
   it("keeps arbitrarily nested JSON", () => {
     const params = {
       a: [1, "two", false, null, { deep: { deeper: [1, 2] } }],
@@ -1370,7 +1370,7 @@ describe("validateCard — params", () => {
    Unknown keys
    ============================================================ */
 
-describe("validateCard — unknown top-level keys", () => {
+describe("validateCard, unknown top-level keys", () => {
   it("reports them as info and still returns the card", () => {
     const { card, diagnostics } = validateCard(
       { ...minimal(), future_field: 1, another: { deep: true } },
@@ -1393,7 +1393,7 @@ describe("validateCard — unknown top-level keys", () => {
    One pass over everything
    ============================================================ */
 
-describe("validateCard — reports every problem at once", () => {
+describe("validateCard, reports every problem at once", () => {
   it("does not stop at the first error", () => {
     const { card, diagnostics } = validateCard(
       {
@@ -1444,7 +1444,7 @@ describe("validateCard — reports every problem at once", () => {
   });
 });
 
-describe("validateCard — locations", () => {
+describe("validateCard, locations", () => {
   it("carries the file when one is given", () => {
     const { diagnostics } = validateCard({ ...minimal(), id: "Bad" }, { ontology, file: "a.yaml" });
     expect(diagnostics[0].location).toEqual({ file: "a.yaml", path: "id" });
@@ -1460,7 +1460,7 @@ describe("validateCard — locations", () => {
    Version bump (§4)
    ============================================================ */
 
-describe("validateCard — version bump", () => {
+describe("validateCard, version bump", () => {
   it("passes when nothing about the interface changed and the patch moved", () => {
     const previous = minimalCard();
     const { card, diagnostics } = validateCard(
@@ -1495,7 +1495,7 @@ describe("validateCard — version bump", () => {
     expect(diagnostics[0].location?.path).toBe("version");
   });
 
-  it("demands a minor bump when the phase moves — the documented reversal", () => {
+  it("demands a minor bump when the phase moves, the documented reversal", () => {
     // This used to demand a *major* bump, on the reasoning that phase coverage re-buckets.
     // That reasoning depended on the phase being a required, exactly-one field, which the
     // author's ruling withdrew: the five phases describe the factory, not every node, so a
@@ -1534,7 +1534,7 @@ describe("validateCard — version bump", () => {
 
   it("demands a minor bump when the last phase is dropped", () => {
     // The content sweep does exactly this to sixteen cards. It claims less about the same
-    // node, and doc 2 §1.1 forbids reading the result as a shortfall — so it is not a break.
+    // node, and doc 2 §1.1 forbids reading the result as a shortfall, so it is not a break.
     const previous = minimalCard();
     const doc = { ...minimal(), version: "1.0.1" };
     delete (doc as Record<string, unknown>)["phase"];
@@ -1650,7 +1650,7 @@ describe("validateCard — version bump", () => {
 
   it("still runs when the only complaint is a warning", () => {
     // `card/spec-too-thin` does not block a result, so the bump check must still see
-    // the card — otherwise a thin spec would be a way to smuggle a breaking change out.
+    // the card, otherwise a thin spec would be a way to smuggle a breaking change out.
     const previous = minimalCard();
     const { diagnostics } = validateCard(
       { ...minimal(), version: "1.0.1", spec: "Draft it." },

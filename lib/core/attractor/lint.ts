@@ -332,7 +332,7 @@ function scanAttrList(tokens: readonly Token[], start: number, report: Reporter)
     report.report(
       "attractor/attr-separator",
       "Attributes are not separated by a comma.",
-      "`AttrBlock ::= '[' Attr ( ',' Attr )* ']'` — write `[a=1, b=2]`. Graphviz accepts a semicolon or a space; Attractor does not.",
+      "`AttrBlock ::= '[' Attr ( ',' Attr )* ']'`, write `[a=1, b=2]`. Graphviz accepts a semicolon or a space; Attractor does not.",
       { line: separator.line, column: separator.column },
     );
     // The offending separator is stepped over so the rest of the block is still

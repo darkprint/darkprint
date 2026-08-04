@@ -8,7 +8,7 @@ action: >-
   full tally, so the choice is auditable rather than a black box.
 spec: >-
   Score each of the competing proposals you are handed, weighting every one by the reputation
-  of the validator behind it — or by the scoring rubric supplied for this run, when there is
+  of the validator behind it, or by the scoring rubric supplied for this run, when there is
   one, which replaces the default weighting entirely. Emit the highest scorer on `chosen`,
   tagged with the margin it won by, and settle an exact tie in favour of the more conservative
   proposal rather than picking arbitrarily. Emit every proposal with its score and the weights

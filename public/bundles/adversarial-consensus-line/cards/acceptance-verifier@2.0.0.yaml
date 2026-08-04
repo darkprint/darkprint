@@ -14,7 +14,7 @@ spec: >-
   every criterion has cleared. When one is missed, judge which kind of miss it is: if the work
   is simply wrong, record the criterion and stop the run; if the candidates it was chosen from
   answered the brief in genuinely different ways, emit that on `conflict` so the choice can be
-  reopened. `conflict` is for real disagreement only — never use it as a second failure exit.
+  reopened. `conflict` is for real disagreement only, never use it as a second failure exit.
 model: claude-opus-5
 agent: Verifier
 tools: []
@@ -38,7 +38,7 @@ outputs:
     description: The candidate unchanged, now signed off against the named criteria set.
   - name: conflict
     type: status
-    description: The second exit — the criteria held but the proposals genuinely disagreed.
+    description: The second exit, the criteria held but the proposals genuinely disagreed.
 dependencies:
   - weighted-vote
 cannot:
@@ -49,7 +49,7 @@ requires_human: false
 risk_markers: []
 notes: >-
   `conflict` is not a second failure exit. A candidate can miss a criterion because the work is
-  wrong, or because the proposals it was chosen from read the brief differently — only the
+  wrong, or because the proposals it was chosen from read the brief differently, only the
   second is worth reopening, and separating the two is the whole reason this version exists.
   The model moved with the job: 1.0.0 decides pass or fail and names `claude-sonnet-5`, this
   one has to tell a defect from a disagreement and names `claude-opus-5`. On its own that is a

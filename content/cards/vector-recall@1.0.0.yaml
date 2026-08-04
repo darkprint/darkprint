@@ -11,7 +11,7 @@ spec: >-
   cosine similarity falls below 0.7. Emit them on `passages`, nearest first, each carrying its
   stored text, its document id and its similarity score, so a reader downstream can weigh a close
   match against a distant one. Read only: never embed or write this run's own text back into the
-  store. If fewer than twelve passages clear the threshold, emit the ones that do and stop —
+  store. If fewer than twelve passages clear the threshold, emit the ones that do and stop,
   padding the budget with weaker matches is worse than returning less.
 tools:
   - vector-store

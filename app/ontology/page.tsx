@@ -15,7 +15,7 @@ import {
 export const metadata: Metadata = {
   title: "Ontology",
   description:
-    "The controlled vocabulary every DarkPrint node card is written against — the five lifecycle phases, node types, risk markers, data types and tool capabilities, with the subsumption hierarchy the static analyzers read.",
+    "The controlled vocabulary every DarkPrint node card is written against, the five lifecycle phases, node types, risk markers, data types and tool capabilities, with the subsumption hierarchy the static analyzers read.",
 };
 
 /** A term id quoted inside prose, in the same mono the rows use. */
@@ -110,7 +110,7 @@ export default function OntologyPage() {
       status: "in this build",
       glyph: "✓",
       color: "var(--color-emerald)",
-      body: `The ${coreTerms} curated terms, versioned as one vocabulary. Small on purpose, changed rarely and never in place — every card and every blueprint in the registry resolves against this exact set, which is the only reason two pipelines by two authors can be compared at all.`,
+      body: `The ${coreTerms} curated terms, versioned as one vocabulary. Small on purpose, changed rarely and never in place, every card and every blueprint in the registry resolves against this exact set, which is the only reason two pipelines by two authors can be compared at all.`,
     },
     {
       id: "local",
@@ -119,7 +119,7 @@ export default function OntologyPage() {
       status: "resolver only",
       glyph: "◐",
       color: "var(--color-amber)",
-      body: `Anyone can coin a node type or a risk marker inside their own namespace — ${localTerms[0]?.id ?? "berti/memory-risk"} — without touching the common nucleus. Not a phase: those five are closed. The resolver merges local terms over the core, keeps the core's version so a card can still declare ontology_version ${version}, refuses one the core does not subsume, and warns when it shadows a curated id or ships without a weight. This archive carries ${localTerms.length === 0 ? "no local term yet" : `${localTerms.length} local ${localTerms.length === 1 ? "term" : "terms"}, listed below alongside the curated ones`}.`,
+      body: `Anyone can coin a node type or a risk marker inside their own namespace, ${localTerms[0]?.id ?? "berti/memory-risk"} for instance, without touching the common nucleus. Not a phase: those five are closed. The resolver merges local terms over the core, keeps the core's version so a card can still declare ontology_version ${version}, refuses one the core does not subsume, and warns when it shadows a curated id or ships without a weight. This archive carries ${localTerms.length === 0 ? "no local term yet" : `${localTerms.length} local ${localTerms.length === 1 ? "term" : "terms"}, listed below alongside the curated ones`}.`,
     },
     {
       id: "promotion",
@@ -138,7 +138,7 @@ export default function OntologyPage() {
         as="h1"
         eyebrow="The shared vocabulary"
         title="Ontology"
-        lead="Every structural field on a node card — the lifecycle phase it belongs to, its type, the data type on each port, the tools it needs, the risks it declares — is a reference into this vocabulary rather than free text. That is what lets a static analyzer reason about a graph it has never seen, and what stops two authors from naming the same thing twice."
+        lead="Every structural field on a node card, the lifecycle phase it belongs to, its type, the data type on each port, the tools it needs, the risks it declares, is a reference into this vocabulary rather than free text. That is what lets a static analyzer reason about a graph it has never seen, and what stops two authors from naming the same thing twice."
       />
 
       {/* The line names the curated set, so it counts the curated set. It printed
@@ -184,7 +184,7 @@ export default function OntologyPage() {
           <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
             A vocabulary everybody writes against has to hold two things at once:
             stability for the common good, and freedom to experiment. DarkPrint splits
-            the difference in three layers — and they are not equally real yet, so each
+            the difference in three layers, and they are not equally real yet, so each
             one below says where it actually stands.
           </p>
         </div>
@@ -225,9 +225,9 @@ export default function OntologyPage() {
           />
           <div className="flex flex-col gap-5 px-5 py-5">
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
-              These five are what the word <em>blueprint</em> means here — from the request
+              These five are what the word <em>blueprint</em> means here, from the request
               to a plan, from the plan to an artefact, to the checks, to the fix, to the
-              release — so they are listed in that order rather than alphabetically, and
+              release, so they are listed in that order rather than alphabetically, and
               they are the one dimension a local namespace cannot extend. A node type or
               a risk marker can be coined by anybody; a sixth phase would be a different
               definition of the thing being described.
@@ -238,8 +238,8 @@ export default function OntologyPage() {
               retrieval step and a router each do work that none of the five names, and a
               node that both builds and repairs stands in two. Which phases a blueprint
               has nodes in is read off its cards and shown on the blueprint as a
-              statement of scope — <em>this blueprint covers planning, implementation and
-              testing</em> — in the same way the autonomy class is, not as a checklist
+              statement of scope, <em>this blueprint covers planning, implementation and
+              testing</em>, in the same way the autonomy class is, not as a checklist
               with two boxes left empty. Nothing on DarkPrint scores a blueprint for the
               phases it leaves to somebody else, and nothing scores a node for standing
               outside them.
@@ -262,7 +262,7 @@ export default function OntologyPage() {
               <Id>broader</Id> relation, and it is load-bearing: a node typed{" "}
               <Id>human-input</Id> puts a person in the loop because <Id>human-input</Id>{" "}
               is a kind of <Id>human-in-the-loop</Id>, which is the only question the
-              autonomy metric asks — not because anybody remembered to tick a flag. Write
+              autonomy metric asks, not because anybody remembered to tick a flag. Write
               a rule about the parent and it catches every child that ships later.
             </p>
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
@@ -278,7 +278,7 @@ export default function OntologyPage() {
                 <Id>{renamed.deprecated.replacedBy}</Id>; the old id stays in the
                 vocabulary, keeps resolving, and carries a pointer at its successor, so
                 a card written against it still loads and still scores. It is marked
-                below rather than hidden — a deprecated term is a redirect, not a broken
+                below rather than hidden, a deprecated term is a redirect, not a broken
                 row.{" "}
                 {stillSpelledThatWay === 0
                   ? "No card in the registry spells it that way any more, which is what a finished rename looks like."
@@ -302,8 +302,8 @@ export default function OntologyPage() {
               What a node puts at stake. The security analyzer starts every blueprint at a
               clean 4 and subtracts the weight of every marker present, then clamps the
               result into 1–4. A marker counts <strong className="font-medium text-fg">
-              once for the whole blueprint</strong> however many nodes carry it — gravity,
-              not frequency — and the explanation still lists every node that fired it.
+              once for the whole blueprint</strong> however many nodes carry it, gravity,
+              not frequency, and the explanation still lists every node that fired it.
               Three of them are also inferred from the graph when the card is silent:{" "}
               <Id>unbounded-loop</Id>, <Id>unvalidated-external-access</Id> and{" "}
               <Id>criteria-leak</Id>.
@@ -315,7 +315,7 @@ export default function OntologyPage() {
               because nobody but its author knows what it should cost.{" "}
               <Id>execution-risk</Id> and <Id>isolation-breach</Id> carry no weight
               at all: they are categories a rule can be written about, not markers a card
-              declares. Read the figures as the shipped calibration and not as a law —
+              declares. Read the figures as the shipped calibration and not as a law,
               changing one is a patch of the ontology version, because it re-scores every
               blueprint in the archive.
             </p>
@@ -351,8 +351,8 @@ export default function OntologyPage() {
           <KindHeader id="tools-heading" kind="tool" count={tools.length} />
           <div className="flex flex-col gap-5 px-5 py-5">
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
-              What a node needs from its host. A card lists capabilities, not vendors —{" "}
-              <Id>web-search</Id> rather than the name of one search API — so the same
+              What a node needs from its host. A card lists capabilities, not vendors,{" "}
+              <Id>web-search</Id> rather than the name of one search API, so the same
               blueprint can be run on a different stack without rewriting a single card.
               They sit flat under one root, unlike the hierarchies above. Note the
               deliberate name collision: the node type <Id>tool</Id> is a node that does

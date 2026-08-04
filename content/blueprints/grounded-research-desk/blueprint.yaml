@@ -5,7 +5,7 @@ summary: >-
   through a fact-checker until every claim is grounded.
 description: >-
   A research agent that won't ship an unsupported sentence. The planner splits the question into
-  retrieval strands that run in parallel — web, an internal vector store, and a code index — then
+  retrieval strands that run in parallel, web, an internal vector store, and a code index, then
   a synthesizer drafts a single grounded answer. The fact-checker verifies each claim against the
   retrieved evidence and bounces anything unsupported back for another pass. Only a
   fully-grounded report reaches the reader.

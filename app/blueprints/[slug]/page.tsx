@@ -198,13 +198,13 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
                 — without reintroducing a visible marker nobody asked to see back. */}
             <span
               className="font-mono text-xs text-emerald"
-              title="Seeded — no counter stands behind it"
+              title="Seeded, no counter stands behind it"
             >
               ↓ {compact(bp.downloads)} downloads
             </span>
             <span
               className="font-mono text-xs text-emerald"
-              title="Seeded — no ballot stands behind it"
+              title="Seeded, no ballot stands behind it"
             >
               ▲ {compact(bp.votes)} votes
             </span>

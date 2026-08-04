@@ -10,7 +10,7 @@ spec: >-
   starts at the watermark and ends at the moment you run. Emit that window on `window` as an
   explicit start and end timestamp in UTC, together with the watermark value you derived them
   from. Never clip the window back to the nominal 24 hours when the watermark is older than
-  that — a night that did not run has to widen the next window, not quietly lose its rows. If
+  that, a night that did not run has to widen the next window, not quietly lose its rows. If
   there is no watermark at all, emit a window covering the last 24 hours and mark it as a cold
   start so the reader knows the bound was assumed rather than recorded.
 tools: []
@@ -25,7 +25,7 @@ inputs: []
 outputs:
   - name: window
     type: json
-    description: The time window to sweep — its bounds, and the watermark they were derived from.
+    description: The time window to sweep, its bounds, and the watermark they were derived from.
 dependencies: []
 cannot:
   - clip the window when the watermark is older than it

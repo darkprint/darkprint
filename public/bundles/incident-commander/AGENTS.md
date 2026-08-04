@@ -37,7 +37,7 @@ Emits: `event`: `json`
 
 ### `classify` — Intent Router
 
-Classify the inbound event against the label set — overridden by a taxonomy supplied for this run, when there is one — and dispatch it down the matching lane, sending anything below the confidence threshold to the escalation lane instead of guessing.
+Classify the inbound event against the label set, overridden by a taxonomy supplied for this run, when there is one, and dispatch it down the matching lane, sending anything below the confidence threshold to the escalation lane instead of guessing.
 
 type `decision`
 
@@ -77,7 +77,7 @@ Emits: `mitigation`: `json`, `risk`: `status`
 
 ### `send` — Runbook Executor
 
-Run the cleared mitigation's steps against the resolved targets — dry run first, then for real — and return the command log with every exit code in order.
+Run the cleared mitigation's steps against the resolved targets, dry run first, then for real, and return the command log with every exit code in order.
 
 type `tool` · phase `deployment` · tools `shell`
 

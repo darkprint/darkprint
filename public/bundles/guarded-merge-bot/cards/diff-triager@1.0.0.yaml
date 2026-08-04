@@ -10,7 +10,7 @@ spec: >-
   You are handed a pull-request payload with the base and head refs, the changed-file list and
   the unified diff. Read the diff hunk by hunk and put every changed file in exactly one band:
   `high` for public interfaces, authentication, data migrations and concurrency, `mechanical`
-  for renames, formatting and generated output, `normal` for everything else — with one line of
+  for renames, formatting and generated output, `normal` for everything else, with one line of
   reasoning per file naming the hunk that decided it. Then work out the blast radius: which
   modules import what the diff touched, and which test suites cover them. Emit a single JSON
   record on `triage` holding the per-file bands with their reasons, the blast radius, and the
@@ -43,7 +43,7 @@ cannot:
 requires_human: false
 risk_markers: []
 notes: >-
-  Read scope on the repository only — the triager clones and diffs, it never pushes. The write
+  Read scope on the repository only, the triager clones and diffs, it never pushes. The write
   scope this line needs lives on `merge-executor`, at the far end of the human gate.
 
 version: 1.0.0

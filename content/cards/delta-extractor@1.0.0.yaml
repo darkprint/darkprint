@@ -43,7 +43,7 @@ notes: >-
   This node only reads, but the vocabulary's `sql` capability does not distinguish a read from a
   write and the analyzer cannot tell the difference. Under ontology v0.1 that shows up as an
   inferred `unvalidated-external-access` on every `sql` node whose consumer is not a validation
-  node — here it is arguably fair, since the rows really do come from outside the graph.
+  node, here it is arguably fair, since the rows really do come from outside the graph.
 
 version: 1.0.0
 author: k0bra

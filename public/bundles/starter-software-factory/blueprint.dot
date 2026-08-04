@@ -2,7 +2,7 @@ digraph starter_software_factory {
   rankdir=LR;
   node [shape=box, style=rounded];
 
-  // Doc 2 §5.2 — five nodes, one phase each.
+  // Doc 2 §5.2, five nodes, one phase each.
   planner  [card="spec-planner@1.0.0"];
   builder  [card="code-builder@1.0.0"];
   tester   [card="acceptance-tester@1.0.0"];
@@ -12,12 +12,12 @@ digraph starter_software_factory {
   // The lesson of this blueprint is the edge that is NOT written below.
   // Nothing runs from `planner` to `builder`: the acceptance criteria reach the node
   // that judges the work and never the node that produces it. Add `planner -> builder`
-  // and doc 3 §4.1's `criteria-leak` fires on `builder`, taking security from 4 to 2 —
+  // and doc 3 §4.1's `criteria-leak` fires on `builder`, taking security from 4 to 2,
   // that is doc 2 §5.4's demonstration switch, and it is meant to stay off.
   planner  -> tester   [label="acceptance criteria"];
   builder  -> tester   [label="build"];
 
-  // Doc 2 §5.5 — the loop is tester -> debugger -> tester and never returns to the
+  // Doc 2 §5.5, the loop is tester -> debugger -> tester and never returns to the
   // builder: the work already done is preserved, and the builder stays isolated from
   // every fact about the failures for the whole run. The cap lives on the debugger card.
   tester   -> debugger [label="failure evidence", style=dashed];

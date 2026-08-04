@@ -45,7 +45,7 @@ Emits: `triage`: `json`
 
 ### `draft` — Review Drafter
 
-Turn the triage record into a review a maintainer can act on — one comment per finding, anchored to a file and a line — and fold the last test failure into the draft when the suite came back red.
+Turn the triage record into a review a maintainer can act on, one comment per finding, anchored to a file and a line, and fold the last test failure into the draft when the suite came back red.
 
 type `agent` · phase `implementation` · model `claude-sonnet-5`
 

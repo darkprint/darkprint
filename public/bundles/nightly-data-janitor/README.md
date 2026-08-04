@@ -1,10 +1,10 @@
 # Nightly Data Janitor
 
-An unattended overnight cleanup line: extract deltas, normalize, validate against schema, and publish — repairing dirty rows in place.
+An unattended overnight cleanup line: extract deltas, normalize, validate against schema, and publish, repairing dirty rows in place.
 
 ```
 blueprint      nightly-data-janitor
-bundle digest  sha256:dbef1e27b43359b7016f66ae48991b48dfd145d136d2ff917578594e68392f3b
+bundle digest  sha256:bdc1e438ac76355c2629ee2b67a244471ff834db68df47278e6cdb3d8cde8b17
 ontology       v0.1.0
 nodes          7
 cards pinned   7

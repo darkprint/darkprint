@@ -144,14 +144,14 @@ export default async function Page({ params }: PageProps<"/u/[username]">) {
           <span className="font-mono uppercase tracking-[0.12em] text-emerald">
             counted
           </span>{" "}
-          — Published is the archive, read at build time.{" "}
+          Published is the archive, read at build time.{" "}
           <span className="font-mono text-amber" aria-hidden>
             ◐
           </span>{" "}
           <span className="font-mono uppercase tracking-[0.12em] text-amber">
             seeded
           </span>{" "}
-          — downloads, reputation and the validator mark are rows in the index. There is
+          Downloads, reputation and the validator mark are rows in the index. There is
           no ballot, no reputation that accrues and no badge to earn yet.
         </p>
       </div>

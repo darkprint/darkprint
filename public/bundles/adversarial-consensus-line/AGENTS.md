@@ -1,8 +1,8 @@
 # Adversarial Consensus Line, for an agent
 
 You are being handed a DarkPrint blueprint: a pattern for two agents solve the same task from
-opposite temperatures, then a consensus node negotiates a single answer — re-opening the
-debate when they clash.
+opposite temperatures, then a consensus node negotiates a single answer, re-opening the debate
+when they clash.
 
 Everything below is read off `blueprint.dot` and the cards in this folder. It describes the
 pattern and nothing else: it has not seen the codebase you are about to change, and it carries
@@ -45,7 +45,7 @@ Emits: `subtasks`: `plan`
 
 ### `solverA` — Conservative Solver
 
-Work the brief the safe way — the reading of the sub-tasks with the fewest assumptions — and emit one proposal with the evidence for every choice it made.
+Work the brief the safe way, the reading of the sub-tasks with the fewest assumptions, and emit one proposal with the evidence for every choice it made.
 
 type `agent` · phase `implementation`
 

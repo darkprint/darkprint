@@ -91,7 +91,7 @@ export function ValidationReport({
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
             {blueprint === undefined
               ? "The DOT could not be parsed into a directed graph, so there is no topology to draw and nothing to analyse."
-              : "The bundle resolved far enough to report on, but it still carries errors. DarkPrint will not put a number on a graph whose references it could not check — fix the errors above and the schematic, the autonomy fraction and the security ledger appear here."}
+              : "The bundle resolved far enough to report on, but it still carries errors. DarkPrint will not put a number on a graph whose references it could not check, fix the errors above and the schematic, the autonomy fraction and the security ledger appear here."}
           </p>
         </div>
       ) : (
@@ -103,7 +103,7 @@ export function ValidationReport({
               </h3>
               <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted">
                 Two of the six scores are produced by static analysis of the schematic
-                the moment it validates — no run required.
+                the moment it validates, no run required.
               </p>
             </div>
 

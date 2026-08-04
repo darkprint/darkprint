@@ -5,7 +5,7 @@ phase: deployment
 
 action: >-
   Upsert the accepted records into the target store in batches keyed on the upsert key, and
-  return the commit receipt — row counts, keys written, and the batch the run can resume from.
+  return the commit receipt, row counts, keys written, and the batch the run can resume from.
 spec: >-
   Upsert the records arriving on `records` into the target table in batches of at most 500 rows,
   matching an existing row on `record_id` and inserting when no row matches. Commit each batch
@@ -30,7 +30,7 @@ inputs:
 outputs:
   - name: stored
     type: json
-    description: The commit receipt — keys written, rows affected, and the batch boundary.
+    description: The commit receipt, keys written, rows affected, and the batch boundary.
 dependencies:
   - validate
 cannot:
@@ -43,7 +43,7 @@ notes: >-
   The write scope is the whole target table: the node can overwrite any row its upsert key
   resolves to. The schema gate immediately upstream is the only thing standing between a
   malformed record and a durable one, which is why the edge into this node is pinned to the
-  gate's `accepted` port and never to `violations` — read `unchecked-write` here as a statement
+  gate's `accepted` port and never to `violations`, read `unchecked-write` here as a statement
   about the breadth of the write, not as a claim that nothing checks the records first.
 
 version: 1.0.0

@@ -7,7 +7,7 @@ import { UploadFlow, type ExampleBundle } from "@/components/upload/UploadFlow";
 export const metadata: Metadata = {
   title: "Share a blueprint",
   description:
-    "Upload the DOT graph of your pipeline. DarkPrint parses it in your browser, names its autonomy class and scores its security by static analysis. Publishing to the registry is not built yet — nothing leaves the tab.",
+    "Upload the DOT graph of your pipeline. DarkPrint parses it in your browser, names its autonomy class and scores its security by static analysis. Publishing to the registry is not built yet, nothing leaves the tab.",
 };
 
 /**
@@ -66,7 +66,7 @@ export default function UploadPage() {
         <SectionHeading
           className="mt-3"
           title="Share a blueprint"
-          lead="Upload the DOT graph of your pipeline. DarkPrint parses the schematic in this tab and statically analyses it, naming the autonomy class and scoring the security with no forms to guess your way through. A graph with a person standing in it resolves like one without and names the node where they act. The other four axes stay empty: efficacy, reliability and transparency are meant to come from community votes and cost and time from a real run, and neither the ballot nor the runner is built. Nor is publishing — nothing here leaves your browser."
+          lead="Upload the DOT graph of your pipeline. DarkPrint parses the schematic in this tab and statically analyses it, naming the autonomy class and scoring the security with no forms to guess your way through. A graph with a person standing in it resolves like one without and names the node where they act. The other four axes stay empty: efficacy, reliability and transparency are meant to come from community votes and cost and time from a real run, and neither the ballot nor the runner is built. Nor is publishing, nothing here leaves your browser."
         />
         {/* The vocabulary asymmetry, moved here from `/what-it-isnt` when that page was
             removed. It is a statement about this page, and it was the only unconditional

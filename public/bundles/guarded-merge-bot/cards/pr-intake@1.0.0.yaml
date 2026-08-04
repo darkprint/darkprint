@@ -11,7 +11,7 @@ spec: >-
   anything when the pull request is still a draft. For an accepted event, assemble one JSON
   payload on `pull_request` carrying the base ref, the head ref, the changed-file list with
   per-file diff stats, the unified diff itself, and the title and body the author wrote as their
-  declared intent. You are done the moment that payload is emitted — do not read the repository
+  declared intent. You are done the moment that payload is emitted, do not read the repository
   beyond the two refs the event names, and do not form an opinion about the change.
 tools: []
 mcp:
@@ -28,7 +28,7 @@ inputs: []
 outputs:
   - name: pull_request
     type: json
-    description: The PR as the line sees it — refs, changed files, diff stats and the description.
+    description: The PR as the line sees it, refs, changed files, diff stats and the description.
 dependencies: []
 cannot:
   - read the repository beyond the two refs the event names

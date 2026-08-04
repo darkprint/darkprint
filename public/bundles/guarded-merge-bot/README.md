@@ -4,7 +4,7 @@ An agent line triages the PR and drafts the review, iterating with the test runn
 
 ```
 blueprint      guarded-merge-bot
-bundle digest  sha256:4dfcd33cf0900c3c90fcdbe932f2dab8a03846bb03f4f92ee91656837fddcf7a
+bundle digest  sha256:3e12918b0be5bfb932011edc8b5f3ff96d448cab3620d87f4c4a36869d3484fa
 ontology       v0.1.0
 nodes          6
 cards pinned   6

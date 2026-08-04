@@ -12,7 +12,7 @@ spec: >-
   so a resubmission carrying a `job_id` already in flight must return the run already open rather
   than starting a second one. Emit on `job` a single record holding the job's stated goal, the
   references to its payload and the run id you minted, and nothing beyond those three. You are
-  done when that record is emitted — do not begin any of the work the job describes.
+  done when that record is emitted, do not begin any of the work the job describes.
 tools: []
 mcp: []
 skill: skills/job-intake.md
@@ -24,7 +24,7 @@ inputs: []
 outputs:
   - name: job
     type: json
-    description: The submitted job — its goal, its payload references and the run id assigned here.
+    description: The submitted job, its goal, its payload references and the run id assigned here.
 dependencies: []
 cannot:
   - begin any of the work the job describes

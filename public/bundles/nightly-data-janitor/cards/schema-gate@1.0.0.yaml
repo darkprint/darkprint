@@ -9,7 +9,7 @@ action: >-
 spec: >-
   Check the normalized record you are handed against the schema registered as
   `schema-registry://warehouse-record@3`. Emit it byte-for-byte unchanged on `accepted` only
-  when it conforms exactly — a field the schema does not name is a failure, not a tolerance.
+  when it conforms exactly, a field the schema does not name is a failure, not a tolerance.
   When it does not conform, emit one entry per breach on `violations`, each naming the field
   and the specific constraint it broke: the repair step works from the constraint and can do
   nothing with a bare rejection.

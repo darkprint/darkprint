@@ -12,7 +12,7 @@ spec: >-
   doubling the wait on every retry after it. Emit each re-issued attempt on `attempt` with
   its attempt number, so whoever receives it can tell a retry from a first run. Give up
   after three retries: emit the error from the final attempt on `last_error` and issue
-  nothing further — do not keep circling, and do not swallow the error.
+  nothing further, do not keep circling, and do not swallow the error.
 agent: Retry controller
 tools: []
 mcp: []
