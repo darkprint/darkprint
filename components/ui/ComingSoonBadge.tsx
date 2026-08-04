@@ -7,7 +7,7 @@ export function ComingSoonBadge({ className }: { className?: string }) {
   return (
     <span
       className={cx(
-        "inline-flex items-center rounded-full border border-amber/40 bg-amber/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.16em] text-amber",
+        "inline-flex items-center rounded-full border border-amber/40 bg-amber/10 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-amber",
         className,
       )}
     >

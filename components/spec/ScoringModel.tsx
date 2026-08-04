@@ -176,7 +176,7 @@ function bandRows(config: DarkprintConfig): { rule: string; label: string }[] {
   ];
 }
 
-const TH = "pb-2 text-left font-normal uppercase tracking-[0.14em] text-[10px] text-dim";
+const TH = "pb-2 text-left font-normal uppercase tracking-[0.14em] text-[11px] text-dim";
 
 export function ScoringModel({
   /* Defaulted the way `computeSecurity` and `computeAutonomy` are defaulted, and passed by
@@ -260,7 +260,7 @@ export function ScoringModel({
                         {row.id}
                       </Link>
                       {row.local && (
-                        <span className="ml-2 text-[10px] uppercase tracking-[0.12em] text-dim">
+                        <span className="ml-2 text-[11px] uppercase tracking-[0.12em] text-dim">
                           from the vocabulary
                         </span>
                       )}
@@ -423,7 +423,7 @@ export function ScoringModel({
               untouched here. What changes is that the qualifier and the qualified thing
               are now one block instead of two separated by a definition list. */}
           <p className="flex flex-wrap items-center gap-2 text-sm leading-relaxed text-muted">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-dim">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
               <span aria-hidden>○</span>
               not built
             </span>

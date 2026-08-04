@@ -85,7 +85,7 @@ export function LifecycleStrip({
                is one expression that follows it. */
             style={{ animationDelay: `${i * STEP}ms` }}
           >
-            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim">
+            <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
               {phase}
             </span>
             {covered ? (

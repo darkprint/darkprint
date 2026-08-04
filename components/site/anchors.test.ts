@@ -75,12 +75,25 @@ interface FragmentLink {
  * Every fragment a link points at, whether the route in front of it is this page or
  * another. `href="/spec#scoring"` is the same rule as `href="#scoring"`: it lands on an
  * element under the same header.
+ *
+ * **Two spellings, because a component may build its links from a table.**
+ * `components/ontology/VocabularyShapes.tsx` renders five links into the vocabulary
+ * sections from an `ENTRIES` array whose members carry `href: "#phases"`, and the JSX
+ * therefore reads `href={entry.href}` — invisible to a walk looking only for
+ * `href="…"`. That regression was real: this suite silently dropped from 14 cases to 9
+ * the moment those links moved into a table, and five anchors stopped being checked
+ * while still resolving. The second pattern is the fix, and it widens what the guard
+ * sees rather than lowering what it demands.
  */
+const HREF_PATTERNS = [
+  /href="[^"#]*#([A-Za-z][\w-]*)"/g, // written in JSX: href="#phases"
+  /\bhref:\s*"[^"#]*#([A-Za-z][\w-]*)"/g, // written in a table: { href: "#phases" }
+] as const;
+
 const LINKS: FragmentLink[] = [...SOURCE].flatMap(([path, text]) =>
-  [...text.matchAll(/href="[^"#]*#([A-Za-z][\w-]*)"/g)].map((match) => ({
-    id: match[1],
-    from: path,
-  })),
+  HREF_PATTERNS.flatMap((pattern) =>
+    [...text.matchAll(pattern)].map((match) => ({ id: match[1], from: path })),
+  ),
 );
 
 /**

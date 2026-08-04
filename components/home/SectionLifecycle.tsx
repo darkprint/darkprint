@@ -101,8 +101,15 @@ const linkCls =
   "mt-auto font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan";
 
 export function SectionLifecycle() {
+  // `scroll-mt-24` because `SiteFooter` links `/#lifecycle` from every page and the
+  // header is `sticky top-0` over a 4rem row. It was missing: the anchor guard walks the
+  // source for `href="…"` literals and the footer builds its links from a table, so this
+  // one was never checked. Widening that walk found it.
   return (
-    <section id="lifecycle" className="border-t border-line bg-void py-20 sm:py-28">
+    <section
+      id="lifecycle"
+      className="scroll-mt-24 border-t border-line bg-void py-20 sm:py-28"
+    >
       <div className="container-page">
         <SectionHeading
           eyebrow="What you can do with one"

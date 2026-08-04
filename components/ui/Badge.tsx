@@ -38,7 +38,7 @@ export function SourceBadge({ source }: { source: MetricSource }) {
   const meta = METRIC_SOURCE_META[source];
   return (
     <span
-      className="inline-flex items-center gap-1 rounded font-mono text-[10px] uppercase tracking-[0.12em]"
+      className="inline-flex items-center gap-1 rounded font-mono text-[11px] uppercase tracking-[0.12em]"
       style={{ color: meta.color }}
       title={meta.blurb}
     >

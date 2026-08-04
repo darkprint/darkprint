@@ -216,7 +216,11 @@ body {
    a route box the label is part of the signpost rather than a section heading. */
 .route-label {
   font-family: var(--font-mono), monospace;
-  font-size: 0.66rem;
+  /* 0.6875rem = 11px. At 0.66rem this computed to 10.56px — the site's own floor is
+     11px mono, and this token sits on every wayfinding box there is: the `/spec` doors,
+     both pagers, `RoutePager`, `SpecPager`. The one label whose job is to tell a reader
+     where they can go was the smallest live text on the page. */
+  font-size: 0.6875rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--color-amber);

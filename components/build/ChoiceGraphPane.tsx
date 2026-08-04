@@ -186,7 +186,7 @@ export function ChoiceGraphPane({
       {choice !== undefined && (
         <div className="border-t border-line bg-surface-2/40 px-3 py-3">
           <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-            <h4 className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan">
+            <h4 className="font-mono text-[11px] uppercase tracking-[0.16em] text-cyan">
               {choice.title}
             </h4>
             <code className="font-mono text-[11px] text-dim">{choice.nodeId}</code>
@@ -222,7 +222,7 @@ export function ChoiceGraphPane({
           <div role="group" aria-label="Drawn in this graph">
             <div
               role="presentation"
-              className="border-b border-line bg-surface-2 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-dim"
+              className="border-b border-line bg-surface-2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-dim"
             >
               Drawn
             </div>
@@ -259,7 +259,7 @@ export function ChoiceGraphPane({
                   </span>
                   <span className="font-mono text-[11px] text-dim">{entry.id}</span>
                   {owns && (
-                    <span className="rounded border border-cyan/40 px-1 font-mono text-[10px] uppercase tracking-[0.12em] text-cyan">
+                    <span className="rounded border border-cyan/40 px-1 font-mono text-[11px] uppercase tracking-[0.12em] text-cyan">
                       your choice
                     </span>
                   )}
@@ -277,7 +277,7 @@ export function ChoiceGraphPane({
             <div role="group" aria-label="Not drawn in this graph">
               <div
                 role="presentation"
-                className="border-y border-dashed border-line-bright bg-surface-2 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-dim"
+                className="border-y border-dashed border-line-bright bg-surface-2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-dim"
               >
                 Not drawn
               </div>

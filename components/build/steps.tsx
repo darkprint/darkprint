@@ -166,7 +166,7 @@ function Aside({
         tone === "signal" ? "border-signal/40 bg-signal/5" : "border-line bg-surface-2/50",
       )}
     >
-      <h3 className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim">{title}</h3>
+      <h3 className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim">{title}</h3>
       {children}
     </div>
   );

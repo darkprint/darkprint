@@ -134,7 +134,7 @@ export function CapSlider({
         aria-describedby={readings.length === 0 ? undefined : readingsId}
         className="w-full accent-[var(--color-cyan)]"
       />
-      <div className="flex justify-between font-mono text-[10px] text-dim">
+      <div className="flex justify-between font-mono text-[11px] text-dim">
         <span>{MIN_ITERATIONS}</span>
         <span>{MAX_ITERATIONS}</span>
       </div>
@@ -152,14 +152,14 @@ export function CapSlider({
                 <span className="font-mono text-sm tabular-nums text-cyan">
                   {reading.value}
                 </span>
-                <span className="text-[10px] leading-snug text-dim">{reading.label}</span>
+                <span className="text-[11px] leading-snug text-dim">{reading.label}</span>
               </dd>
             </div>
           ))}
         </dl>
       )}
       {footnote !== undefined && (
-        <p className="text-[10px] leading-relaxed text-dim">{footnote}</p>
+        <p className="text-[11px] leading-relaxed text-dim">{footnote}</p>
       )}
     </div>
   );

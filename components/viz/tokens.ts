@@ -93,11 +93,32 @@ export const VIZ = {
     /** A leader line from an annotation to the thing it annotates. */
     leader: "3 4",
   },
+  /**
+   * Sizes in **viewBox units**, not CSS pixels — which is the whole hazard.
+   *
+   * A label inside an `<svg>` renders at its units times (rendered CSS width ÷ viewBox
+   * width). `components/viz/flow.ts` already writes this down for the `FLOW` figures and
+   * gives the floor, `FLOW.frame.legible = 10`, with the note that treating the viewport
+   * as the rendered width once shipped the landing's labels at 8.1 CSS px. The same
+   * reasoning was never applied to these tokens.
+   *
+   * Measured across the site before this change, all on a 378px viewport and none
+   * `aria-hidden`: `SpecLayers` put 44 text nodes at 8.44px and its term-kind row at
+   * 6.76px; `EnforcementFigure` put the two sentences carrying its entire argument at
+   * 6.76px; `LatticeFigure`'s annotations landed at 8.44px; `SectionLevels` reached
+   * 6.98px. Every one of those is `sub`, and every one is below the floor the same repo
+   * had already written down.
+   *
+   * `sub` is 12 so a figure rendering as small as 0.85 scale still clears 10 CSS px.
+   * `label` follows it up to keep the two tiers distinct. This makes figures wider
+   * rather than smaller, which the sheets absorb: they already scroll inside labelled
+   * `role="group"` containers on a phone.
+   */
   font: {
     family: "var(--font-mono), monospace",
-    label: 12,
-    sub: 10,
-    mark: 13,
+    label: 14,
+    sub: 12,
+    mark: 15,
   },
 } as const;
 

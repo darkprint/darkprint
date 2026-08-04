@@ -57,7 +57,7 @@ export function More({
         className,
       )}
     >
-      <summary className="flex cursor-pointer list-none items-baseline gap-2 text-[13px] text-muted transition-colors hover:text-fg [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-baseline gap-2 text-[13px] text-muted transition-colors hover:text-fg [&::-webkit-details-marker]:hidden py-1 -my-1">
         <span
           className="inline-block shrink-0 text-cyan transition-transform group-open:rotate-90"
           aria-hidden

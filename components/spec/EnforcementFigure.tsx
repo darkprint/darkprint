@@ -62,14 +62,20 @@ import { FREE_TEXT_MARK, RESOLVED_MARK } from "./SpecLayers";
 import { Leader, fadeInFurniture, furniture } from "./furniture";
 
 const W = 720;
-const H = 262;
+const H = 292;
 
 /** The two nodes the edge runs between. Centres, in scene units. */
 const PLANNER = { x: 120, y: 56 } as const;
 const BUILDER = { x: 420, y: 56 } as const;
 
 /** The `cannot:` panel the leader from the builder drops into. */
-const PANEL = { left: 180, top: 112, right: 668, bottom: 244 } as const;
+/* `bottom` 274, not 244. When `VIZ.font.sub` rose from 10 to 12 units so these notes
+   would clear the legibility floor on a phone — they were rendering at 6.76 CSS px, and
+   they are the two sentences this whole figure exists to state — the first note stopped
+   fitting on one line inside the panel. It wraps to two now, and the panel gains the row
+   that costs. `scene-labels.test.ts` caught the overrun as a box edge drawn through a
+   word; it is the reason the numbers below moved rather than the type shrinking back. */
+const PANEL = { left: 180, top: 112, right: 668, bottom: 274 } as const;
 
 /** Left edge of the two entries, and of the note under each of them. */
 const ENTRY_X = PANEL.left + 28;
@@ -184,19 +190,22 @@ export function EnforcementFigure() {
           >
             {`- ${RESOLVED_MARK} acceptance-criteria`}
           </text>
-          <text x={NOTE_X} y={PANEL.top + 62} fontSize={8} fill={toneColor("dim")}>
-            names a data type, so every incoming edge is checked against it
+          <text x={NOTE_X} y={PANEL.top + 62} fontSize={VIZ.font.sub} fill={toneColor("dim")}>
+            names a data type, so every incoming edge
+          </text>
+          <text x={NOTE_X} y={PANEL.top + 80} fontSize={VIZ.font.sub} fill={toneColor("dim")}>
+            is checked against it
           </text>
 
           <text
             x={ENTRY_X}
-            y={PANEL.top + 92}
+            y={PANEL.top + 112}
             fontSize={VIZ.font.sub}
             fill={toneColor("ink")}
           >
             {`- ${FREE_TEXT_MARK} read the checks the work will be run against`}
           </text>
-          <text x={NOTE_X} y={PANEL.top + 108} fontSize={8} fill={toneColor("dim")}>
+          <text x={NOTE_X} y={PANEL.top + 132} fontSize={VIZ.font.sub} fill={toneColor("dim")}>
             names no term, so nothing holds the graph to it
           </text>
         </g>

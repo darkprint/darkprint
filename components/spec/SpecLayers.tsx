@@ -334,7 +334,7 @@ export function SpecLayers() {
               x={term.x}
               y={TERM_KIND_Y}
               textAnchor="middle"
-              fontSize={8}
+              fontSize={VIZ.font.sub}
               fill={toneColor("dim")}
             >
               {term.kind}

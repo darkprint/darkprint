@@ -149,7 +149,7 @@ export default function SpecScoringPage() {
             ballot.
           </p>
           <p className="flex flex-wrap items-center gap-2 text-[15px] leading-relaxed text-dim">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-dim">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
               <span aria-hidden>○</span>
               not built
             </span>

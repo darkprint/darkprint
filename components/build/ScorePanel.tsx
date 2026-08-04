@@ -178,6 +178,32 @@ export function ScorePanel({
       aria-labelledby="score-panel-heading"
       className={cx("panel flex flex-col gap-4 p-4", className)}
     >
+      {/* The readings, as one announced sentence.
+          ------------------------------------------------------------
+          Doc 2 §5.7 is quoted at the top of this file: if the panel disappears "il ciclo
+          di feedback si spezza e le scelte tornano a essere un form burocratico". For a
+          reader using a screen reader the panel had disappeared. Moving a radio, the cap
+          slider or the demo switch changed the autonomy class, the security level, the
+          `was …` markers and the run budget with no announcement and no focus move —
+          `/build` carried exactly one live region and it described *node selection*.
+
+          Polite and atomic, so a run of slider steps settles into one utterance rather
+          than narrating every intermediate value. The visible readings below stay as
+          they are; this says the same thing in a sentence, which is the form that
+          survives being heard rather than scanned. */}
+      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {autonomy === undefined && security === undefined
+          ? "No readings yet."
+          : [
+              autonomy === undefined ? null : `Autonomy: ${autonomy.label}.`,
+              security === undefined ? null : `Security: level ${security.level} of 4.`,
+              people.length === 0
+                ? null
+                : `${people.length} node${people.length === 1 ? "" : "s"} with a person in the loop.`,
+            ]
+              .filter(Boolean)
+              .join(" ")}
+      </p>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         {/* `h3` on a page that already has an `h2` for the step. /build's step 7 had three
             sibling `h2`s: the step's own, this one, and `DownloadPanel`'s, so the outline

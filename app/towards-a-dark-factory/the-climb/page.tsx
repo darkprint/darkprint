@@ -199,9 +199,21 @@ const LABEL = "font-mono text-[11px] uppercase tracking-[0.18em] text-dim";
 const INLINE =
   "font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan";
 
+/**
+ * One named source file, as a scrollable code block.
+ *
+ * `min-w-0` on the wrapper is load-bearing. This sits in a `lg:grid-cols-2` grid, and a
+ * grid item defaults to `min-width: auto`, so it refuses to shrink below its own
+ * min-content — here, the longest line of the sample inside it. Measured at 378px with
+ * the disclosure above open, the page ran to `scrollWidth` 561 against a 367 viewport,
+ * and `body { overflow-x: hidden }` clipped the difference: the right ~28% of every
+ * sample was lost rather than merely off-screen, because the `<pre>`'s own
+ * `overflow-x-auto` had nothing to scroll once the box had grown instead of
+ * constraining. Same defect, same one-class fix, as the node card page's main column.
+ */
 function Source({ children, name }: { children: string; name: string }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex min-w-0 flex-col gap-2">
       <span className={LABEL}>{name}</span>
       <pre className="overflow-x-auto rounded-lg border border-line bg-surface-2 px-4 py-3 font-mono text-[12px] leading-relaxed text-fg">
         <code>{children}</code>
@@ -279,7 +291,7 @@ export default function TheClimbPage() {
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded border border-line bg-surface-2 px-4 py-3">
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal">
+                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-signal">
                   a description
                 </span>
                 <p className="mt-1.5 font-mono text-[12px] leading-relaxed text-muted">
@@ -287,7 +299,7 @@ export default function TheClimbPage() {
                 </p>
               </div>
               <div className="rounded border border-line bg-surface-2 px-4 py-3">
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-emerald">
+                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-emerald">
                   an instruction
                 </span>
                 <p className="mt-1.5 font-mono text-[12px] leading-relaxed text-fg">
@@ -450,7 +462,7 @@ export default function TheClimbPage() {
                     {source.where}
                   </span>
                   <span
-                    className="w-fit rounded-full border border-line px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em]"
+                    className="w-fit rounded-full border border-line px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em]"
                     style={{
                       color: source.read
                         ? "var(--color-emerald)"

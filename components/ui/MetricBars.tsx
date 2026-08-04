@@ -161,7 +161,7 @@ export function MetricBars({
                 /* What the row answers, in the register the explainability panel
                    already uses. It replaces the track: the reader is being told
                    where the people are, not how full something is. */
-                <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
+                <p className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
                   who is in the loop
                 </p>
               ) : (

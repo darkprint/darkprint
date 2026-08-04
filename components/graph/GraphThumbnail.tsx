@@ -1,5 +1,6 @@
 import type { BlueprintGraph, FlowEdgeSeed, FlowNodeSeed } from "@/lib/types";
 import { NODE_KIND_META } from "@/lib/format";
+import { VIZ } from "@/components/viz/tokens";
 
 const NW = 118;
 const NH = 42;
@@ -91,7 +92,7 @@ export function GraphThumbnail({
   graph,
   className,
   labels = false,
-  nodeLabels = true,
+  nodeLabels = false,
   ariaLabel = "Pipeline graph preview",
 }: {
   graph: BlueprintGraph;
@@ -105,7 +106,14 @@ export function GraphThumbnail({
   /**
    * Print the node names and their kind labels.
    *
-   * Off on a gallery tile, and the arithmetic is the reason. The viewBox is 570×220
+   * **Off by default**, and a caller that wants labels has to ask. The first version of
+   * this prop defaulted to `true` and opted the gallery tile out, which fixed the tile
+   * and left `/what-a-blueprint-is` — the first figure a cold reader is handed — drawing
+   * the same labels at a *smaller* scale: 0.517, so 11 units landed at **5.69 CSS px**,
+   * and 4.69 on a phone. Preserving the old behaviour preserved the bug everywhere
+   * nobody was looking. A legibility default belongs on the safe side.
+   *
+   * The arithmetic, for the gallery tile that first exposed it. The viewBox is 570×220
    * and `ContentCard` renders it into a 369×158 frame with `preserveAspectRatio`, a
    * uniform scale of **0.647**: the 11px node name lands at **7.1 effective CSS
    * pixels** and the 10px kind label at 6.5px, and on a phone thumbnail those become
@@ -203,7 +211,7 @@ export function GraphThumbnail({
                 key={e.edge.id}
                 x={e.mid.x}
                 y={e.mid.y}
-                fontSize={8}
+                fontSize={VIZ.font.sub}
                 textAnchor="middle"
                 dominantBaseline="middle"
                 fill="var(--color-muted)"

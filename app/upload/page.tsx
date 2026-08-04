@@ -61,12 +61,21 @@ function exampleBundle(): ExampleBundle {
 export default function UploadPage() {
   return (
     <div className="container-page py-12">
-      <header className="max-w-2xl">
+      {/* `as="h1"`. The page a contributor lands on had no level-one heading at all: its
+          outline opened at `h2` and a screen reader reached the route with no title.
+
+          The lead was 89 words and did five jobs in one breath: what to drop, what comes
+          back, how a human node resolves, which four axes stay empty and why, and that
+          publishing is not built. Four of those five qualify things further down the
+          page, so they now sit beside what they qualify. `max-w-2xl` came off with them,
+          the same full-width rule the other heroes follow. */}
+      <header>
         <Eyebrow>Contribute</Eyebrow>
         <SectionHeading
+          as="h1"
           className="mt-3"
           title="Share a blueprint"
-          lead="Upload the DOT graph of your pipeline. DarkPrint parses the schematic in this tab and statically analyses it, naming the autonomy class and scoring the security with no forms to guess your way through. A graph with a person standing in it resolves like one without and names the node where they act. The other four axes stay empty: efficacy, reliability and transparency are meant to come from community votes and cost and time from a real run, and neither the ballot nor the runner is built. Nor is publishing, nothing here leaves your browser."
+          lead="Drop the DOT graph of your pipeline. This page parses it in your own tab, names the autonomy class and scores the security, with no form to guess your way through."
         />
         {/* The vocabulary asymmetry, moved here from `/what-it-isnt` when that page was
             removed. It is a statement about this page, and it was the only unconditional
@@ -89,6 +98,16 @@ export default function UploadPage() {
           unknown and a security score computed without it.
         </p>
       </header>
+
+      {/* The two facts the lead used to carry about the result, moved to where the
+          result appears. Both qualify what the reader is about to look at, which is the
+          one place a limit belongs: a graph with a person in it is read, not penalised,
+          and the scorecard that comes back has four axes nothing can fill. */}
+      <p className="mt-5 text-sm leading-relaxed text-dim">
+        A graph with a person standing in it resolves like one without, and names the node
+        where they act. Two of the six axes are read off the graph; efficacy, reliability
+        and transparency need votes, and cost and time need a run.
+      </p>
 
       <div className="mt-10">
         <UploadFlow example={exampleBundle()} />

@@ -134,7 +134,7 @@ export default function SpecPage() {
           <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
             A bundle is a folder holding all three: the graph, the cards it
             pins, and the local vocabulary when its cards reach for a term the
-            curated core does not have. Every example on these four pages is
+            curated core does not have. Every example in this sequence is
             read out of that folder during the build, so a reader copying from
             here is copying a file that loads.
           </p>
@@ -156,7 +156,7 @@ export default function SpecPage() {
                   <div className="flex items-center justify-between gap-2">
                     <span className="route-label">{layer.step}</span>
                     <span
-                      className="rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em]"
+                      className="rounded-full border border-line bg-surface-2 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em]"
                       style={{ color: layer.color }}
                     >
                       {layer.format}
@@ -221,16 +221,25 @@ export default function SpecPage() {
           without this renders it full-bleed. `id="scoring"` and `scroll-mt-24` travel with
           it: `/spec#scoring` is a bookmark `anchors.test.ts` holds. */}
       <div className="container-page pb-14">
+      {/* `route-box`, like the three doors above it. `globals.css` states the law in its
+          own words — "a box whose job is to send a reader somewhere else wears this, and
+          nothing else does" — and names "the three layer doors on `/spec`" as users. This
+          is the fourth door and was the one exception, dressed as a concept panel. The
+          argument for keeping it framed apart from the other three is about *placement*,
+          so the count of layers stays true; it was never an argument about hue. */}
       <section
         id="scoring"
-        className="panel scroll-mt-24 flex flex-col gap-3 p-6 sm:flex-row sm:items-center sm:justify-between"
+        className="route-box scroll-mt-24 flex flex-col gap-3 p-6 sm:flex-row sm:items-center sm:justify-between"
         aria-labelledby="scoring-door-heading"
       >
         <div className="flex flex-col gap-1.5">
-          <span className={LABEL}>How it&apos;s graded</span>
+          <span className="route-label">How it&apos;s graded</span>
           <h2
             id="scoring-door-heading"
-            className="font-display text-lg font-semibold text-fg"
+            /* `text-2xl`, matching "Three layers, three questions". At `text-lg` this
+               `h2` rendered at 18px — smaller than the `h3` above it, so the page's last
+               exit read as subordinate to a scorecard sub-panel. */
+            className="font-display text-2xl font-semibold text-fg"
           >
             {SPEC_SCORING.title}
           </h2>

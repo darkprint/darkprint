@@ -154,7 +154,7 @@ export function WhichTasksExamples() {
             <div className="flex flex-col gap-2 border-b border-line px-5 py-4">
               <div className="flex flex-wrap items-center gap-2">
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em]"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em]"
                   style={{ color: col.color }}
                 >
                   <span aria-hidden>{col.glyph}</span>

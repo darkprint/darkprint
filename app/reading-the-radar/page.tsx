@@ -113,21 +113,18 @@ export default function ReadingTheRadarPage() {
 
           <ol className="flex flex-col gap-7">
             <Callout n="01" title={`${spokes.length} spokes, one per scored axis`}>
-              {spokes.map((m) => m.label).join(", ")}. Each vertex sits at that axis&rsquo;s
-              value on a 0 to 100 scale, and the shape between them is only the shape those
-              five points make. A larger polygon is not a better blueprint; it is a
-              blueprint that scores higher on these five, which is a different sentence.
+              {spokes.map((m) => m.label).join(", ")}, each vertex at that axis&rsquo;s
+              value on a 0 to 100 scale. A larger polygon is not a better blueprint, it is
+              one that scores higher on these five.
             </Callout>
 
             {autonomyRow !== undefined && (
               <Callout n="02" title="Autonomy has no spoke, on purpose">
-                The card carries six readings and the drawing has five. Autonomy is a{" "}
-                <span className="text-fg">name</span>, not a magnitude: this blueprint is{" "}
-                <span className="font-mono text-fg">{sample.autonomy.label}</span>. Putting
-                it on a spoke would put a class on the same axis as a percentage and invite
-                a reader to grow it, and where a person acts in a graph is a decision its
-                author made rather than a shortfall. It is printed beside the chart in
-                words instead.
+                Six readings, five spokes. Autonomy is a{" "}
+                <span className="text-fg">name</span>, not a magnitude: this one is{" "}
+                <span className="font-mono text-fg">{sample.autonomy.label}</span>. A spoke
+                would invite a reader to grow it, and where a person acts is a decision, not
+                a shortfall. It is printed beside the chart in words.
               </Callout>
             )}
 

@@ -64,8 +64,17 @@ const H = 360;
    The fan sits in the rightmost column, which is the narrow end, because everything in
    it is a kind of the term one column to its left. */
 
-/** Centre of the leftmost column. */
-const LEFT = 96;
+/**
+ * Centre of the leftmost column.
+ *
+ * 104 rather than 96 because the caption centred under it, "the top of the lattice", is
+ * the widest thing in this column and it is centred on this x. When `VIZ.font.sub` rose
+ * from 10 to 12 units — so the annotations would clear the legibility floor on a phone
+ * rather than rendering at 8.44 CSS px — the caption grew past the left edge of the
+ * viewBox and `scene-labels.test.ts` caught it starting 4 units outside. The column
+ * moves in by 8; nothing else in the figure is anchored to it.
+ */
+const LEFT = 104;
 /** Distance between columns. */
 const STEP = 228;
 /** The row the chain sits on. */

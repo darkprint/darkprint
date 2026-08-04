@@ -298,7 +298,7 @@ export function NodeCardStage({
                         >
                           {annotation.title}
                         </h3>
-                        <span className="ml-auto shrink-0 font-mono text-[10px] text-dim">
+                        <span className="ml-auto shrink-0 font-mono text-[11px] text-dim">
                           {annotation.from === annotation.to
                             ? `L${annotation.from}`
                             : `L${annotation.from}–${annotation.to}`}

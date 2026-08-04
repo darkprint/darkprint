@@ -4,11 +4,29 @@ import { METRIC_SOURCE_META } from "@/lib/format";
 /**
  * Room on each side of the square geometry for an axis label to run into.
  *
- * 12 characters ("Transparency") at `fontSize` 11 in the mono face is about 79 units,
- * and the anchor sits inside the box, so ~56 clears it. 64 is that with a character of
- * slack for a face whose advance is wider than assumed.
+ * 112, not 64, and the two numbers below solve together. The pad widens the viewBox, and
+ * `LABEL_UNITS` sizes the label against that same widened box so it lands at 11 CSS px —
+ * so a bigger pad needs a bigger label, which needs a bigger pad. Solving the pair for
+ * `size = 300`: the label ends at 19.2 units, "Transparency" is about 138 units wide at
+ * that size, and the anchor sits inside the box, so 112 clears it with a character of
+ * slack, exactly as 64 did for the old 11-unit label.
+ *
+ * This trades chart area for legible names: the geometry now renders at about 173px
+ * inside the 340px figure instead of 212px. On the one page whose whole subject is
+ * reading this chart, five names nobody can read cost more than 39px of radius.
  */
-const LABEL_PAD = 64;
+const LABEL_PAD = 112;
+
+/**
+ * What an axis label should measure once it is on screen, and what that costs in units.
+ *
+ * The site's floor for live mono text is 11px, which is what `Sheet`'s own captions use;
+ * a name inside a drawing has no business being smaller than the caption under it. The
+ * viewBox is `size + 2 * LABEL_PAD` wide and renders into `size` worth of column, so a
+ * label written at `n` units arrives at `n * size / (size + 2 * LABEL_PAD)`. Inverting
+ * that is the whole fix.
+ */
+const LABEL_CSS_PX = 11;
 
 const SHORT: Record<MetricKey, string> = {
   autonomy: "Autonomy",
@@ -90,10 +108,18 @@ export function ScoreRadar({
            "rity".
 
            So the box gains `LABEL_PAD` on each side and the drawing keeps its origin.
-           The pad is a constant rather than a fraction of `size` because the thing it
-           has to clear is a fixed pixel length: the label is 11px mono whatever the
-           chart is scaled to, so the overflow is worst at the smallest size and a
-           proportional pad would under-provide exactly there.
+
+           The premise that used to sit here was wrong, and it cost the labels a third of
+           their size: it read "the label is 11px mono whatever the chart is scaled to".
+           It is not. `fontSize` inside an `<svg>` is in **viewBox units**, so it scales
+           with the geometry exactly like everything else. Widening the box from `size` to
+           `size + 2 * LABEL_PAD` to stop the clipping therefore shrank every label by the
+           same 29% — measured on `/reading-the-radar`, the page whose entire subject is
+           reading this chart, the five axis names rendered at **7.76 CSS px**, and the
+           `max-w-[340px]` cap put the ceiling anywhere on the site at 8.74.
+
+           `LABEL_UNITS` below compensates: the label is sized in units so that after the
+           box's own scale it lands at `LABEL_CSS_PX`.
 
            Widening the column this card sits in does not help and was tried: the labels
            are cut by the figure's own bounds, not by anything around it. */
@@ -158,7 +184,7 @@ export function ScoreRadar({
                 y={lp.y}
                 textAnchor={anchor}
                 dominantBaseline="middle"
-                fontSize={11}
+                fontSize={(LABEL_CSS_PX * (size + LABEL_PAD * 2)) / size}
                 fontFamily="var(--font-mono), monospace"
                 fill="var(--color-muted)"
               >

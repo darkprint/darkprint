@@ -23,10 +23,20 @@ export function SectionHeading({
   lead?: React.ReactNode;
   align?: "left" | "center";
   /**
-   * The element the title renders as. A section inside a page is an `h2` and that is
-   * the default; a route that uses this block *as* its page title passes `h1`, so the
-   * document has a level-one heading instead of starting the outline at two. Purely
-   * semantic — the type scale is the same either way.
+   * The element the title renders as, and now the size it renders at.
+   *
+   * It used to be "purely semantic — the type scale is the same either way", and that
+   * was the defect. Both levels drew at `text-3xl sm:text-4xl`, so on any page using
+   * this block for its title *and* for a section, the two were pixel-identical at 36px
+   * and the page appeared to start twice. Measured on `/spec`: `h1` 36 → `h2` 24 → `h2`
+   * 24 → `h2` **36**, three sizes at one level. `/spec/scoring` had already tried to
+   * cure the same boundary by deleting a second eyebrow, recording that it "made the
+   * page look like it started twice" — the eyebrow went and the 36px stayed, which was
+   * the louder half of the signal.
+   *
+   * A page title now steps up rather than a section stepping down, so nothing that was
+   * legible gets smaller: `h1` gains a size at `sm` and above, `h2` keeps exactly what
+   * every section already had.
    */
   as?: "h1" | "h2";
   className?: string;
@@ -40,7 +50,12 @@ export function SectionHeading({
       )}
     >
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-      <Title className="font-display text-3xl font-semibold leading-tight tracking-tight text-fg sm:text-4xl">
+      <Title
+        className={cx(
+          "font-display font-semibold leading-tight tracking-tight text-fg",
+          Title === "h1" ? "text-3xl sm:text-5xl" : "text-3xl sm:text-4xl",
+        )}
+      >
         {title}
       </Title>
       {/* Full width, not `max-w-2xl`. The measure was set for readability and the author

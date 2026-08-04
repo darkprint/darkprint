@@ -214,7 +214,7 @@ export default function SpecOntologyPage() {
             Write one, or read one
           </h2>
           <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
-            The validator and the analyzers behind these four pages run in the
+            The validator and the analyzers behind this sequence run in the
             browser tab as well as at build time. Nothing is uploaded anywhere,
             there is no account and no publishing step, and a bundle dropped into
             the wizard is checked and scored in the tab and stops there.

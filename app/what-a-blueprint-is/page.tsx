@@ -63,7 +63,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 export const metadata: Metadata = {
   title: "What a blueprint is",
   description:
-    "A blueprint is a reusable pattern for getting work done by agents: a graph of automations, one versioned card per node, written against a shared vocabulary. Download one, hand it to Claude Code, publish what you build.",
+    "A blueprint is a reusable pattern for getting work done by agents: a graph of automations, one versioned card per node, written against a shared vocabulary. Download one and hand it to Claude Code.",
 };
 
 /** The blueprint every worked example on this site opens with. */
@@ -115,7 +115,7 @@ function Part({
 /** One line of the card figure: a field name and what this card put in it. */
 function CardRow({ field, value }: { field: string; value: string }) {
   return (
-    <div className="flex items-baseline gap-2 font-mono text-[10px] leading-[1.45]">
+    <div className="flex items-baseline gap-2 font-mono text-[11px] leading-[1.45]">
       <span className="w-14 shrink-0 text-dim">{field}</span>
       <span className="truncate text-fg">{value}</span>
     </div>
@@ -125,7 +125,7 @@ function CardRow({ field, value }: { field: string; value: string }) {
 /** One line of the vocabulary figure: a term and the kind it belongs to. */
 function TermRow({ kind, id }: { kind: string; id: string }) {
   return (
-    <div className="flex items-baseline gap-2 font-mono text-[10px] leading-[1.45]">
+    <div className="flex items-baseline gap-2 font-mono text-[11px] leading-[1.45]">
       <span className="w-[4.5rem] shrink-0 text-violet">{kind}</span>
       <span className="truncate text-fg">{id}</span>
     </div>

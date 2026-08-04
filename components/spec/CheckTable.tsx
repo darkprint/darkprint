@@ -38,8 +38,11 @@ export interface CheckRow {
   };
 }
 
+/* 11px, not 10px. These three are the only labels telling a reader what each column
+   holds, and the third one names the diagnostic codes this component exists to publish.
+   Uppercase at 10px with wide tracking is the least legible combination available. */
 const TH =
-  "pb-2 text-left font-normal uppercase tracking-[0.14em] text-[10px] text-dim";
+  "pb-2 text-left font-normal uppercase tracking-[0.14em] text-[11px] text-dim";
 
 export function CheckTable({
   rows,
@@ -53,7 +56,18 @@ export function CheckTable({
     /* The three columns do not fold usefully on a phone: the point of a row is the pair
        of first and last cell read together. So the table keeps its shape and scrolls
        inside its own box rather than collapsing. */
-    <div className="overflow-x-auto">
+    /* `tabIndex`, `role` and a name, because this scrolls. Measured at 378px the table
+       is 608px inside a 319px box, so 48% of every row — including the diagnostic-code
+       column, the whole point of the table — sits off the right edge. Touch reaches it;
+       a keyboard could not, because the wrapper was `tabIndex -1` with nothing focusable
+       inside it (WCAG 2.1.1). `SourcePanel` already solved this exact case in this repo,
+       and this is the same three attributes. */
+    <div
+      tabIndex={0}
+      role="group"
+      aria-label={`${caption}, scrollable`}
+      className="overflow-x-auto"
+    >
       <table className="w-full min-w-[38rem] border-collapse text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead>
@@ -104,7 +118,7 @@ export function CheckTable({
                         {code}
                       </code>
                     ))}
-                    <span className="font-mono text-[10px] text-dim">
+                    <span className="font-mono text-[11px] text-dim">
                       {row.check.level === "error"
                         ? "refuses the bundle"
                         : "reported, still loads"}

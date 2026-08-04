@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { InstallTabs } from "@/components/install/InstallTabs";
 
@@ -22,9 +21,13 @@ export default function InstallPage() {
         className="mx-auto"
       />
 
-      <div className="mx-auto mt-4 flex justify-center">
-        <ComingSoonBadge />
-      </div>
+      {/* A second `ComingSoonBadge` floated here, under a lead that already opens "Not
+          built yet". Two markers on one screen for one fact is the repetition the author
+          asked off the site, and this was the one qualifying nothing in particular. The
+          badge that stays is in `InstallTabs`, attached to the configuration snippet,
+          which is the thing on this page a reader would otherwise copy into a client and
+          expect to work. The lead sentence and `metadata.description` are both pinned in
+          `components/site/honesty.test.ts` and are untouched. */}
 
       <div className="mx-auto mt-10 max-w-2xl">
         <InstallTabs />
