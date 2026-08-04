@@ -11,12 +11,14 @@ import {
 } from "@/lib/core";
 
 import {
+  BUNDLE_AGENTS,
   BUNDLE_README,
   BUNDLE_VOCABULARY,
   FACTORY_DOT,
   TOPOLOGY_DOT,
   bundleDir,
   bundleHref,
+  bundleAgents,
   bundleReadme,
   cardFilePath,
   exportBundle,
@@ -86,6 +88,7 @@ describe("exportBundle over content/", () => {
       const refs = [...new Set(entry.blueprint.nodes.map((n) => n.ref))].sort();
       const expected = [
         BUNDLE_README,
+        BUNDLE_AGENTS,
         TOPOLOGY_DOT,
         FACTORY_DOT,
         ...refs.map(cardFilePath),
@@ -665,6 +668,114 @@ describe("the README", () => {
   it("is the same text whether it is asked for directly or through exportBundle", () => {
     for (const { input, files } of EXPORTS) {
       expect(fileMap(files).get(BUNDLE_README)).toBe(bundleReadme(input));
+    }
+  });
+});
+
+/* --------------------- AGENTS.md --------------------- */
+
+/**
+ * The agent-facing file, over the real archive.
+ *
+ * `README.md` addresses a person deciding whether to run the folder; this addresses the
+ * agent being asked to fit the pattern into a codebase. The cases below are the ones
+ * where a generator can be wrong in a way nobody notices: a prohibition printed as
+ * checkable when nothing checks it, a claim about the codebase this file has never seen,
+ * or a node whose declared input no edge feeds going unmentioned so an agent draws the
+ * edge the pattern exists to leave out.
+ */
+describe("bundleAgents", () => {
+  it("ships one with every bundle, and lists it in the README's own folder table", () => {
+    for (const { slug, files } of EXPORTS) {
+      const map = fileMap(files);
+      expect(map.has(BUNDLE_AGENTS), slug).toBe(true);
+      expect(map.get(BUNDLE_README), slug).toContain(BUNDLE_AGENTS);
+    }
+  });
+
+  it("is deterministic, like every other exported file", () => {
+    for (const { input, files } of EXPORTS) {
+      expect(fileMap(files).get(BUNDLE_AGENTS)).toBe(bundleAgents(input));
+    }
+  });
+
+  it("keeps enforced prohibitions apart from free text", () => {
+    const starter = EXPORTS.find((e) => e.slug === "starter-software-factory");
+    const text = fileMap(starter!.files).get(BUNDLE_AGENTS) ?? "";
+
+    // `acceptance-criteria` is a data-type, so the resolver holds the graph to it.
+    expect(text).toContain("`builder` must never receive `acceptance-criteria`.");
+    expect(flat(text)).toContain("These are enforced.");
+
+    // "read the checks the work will be run against" names no term. Nothing checks it,
+    // and a file that implied otherwise would be telling an agent it has a guardrail it
+    // does not have.
+    expect(flat(text)).toContain("Stated by the author and checked by nothing.");
+    expect(text).toContain("read the checks the work will be run against");
+  });
+
+  it("never prints a free-text prohibition under the enforced heading", () => {
+    for (const { slug, input, files } of EXPORTS) {
+      const text = fileMap(files).get(BUNDLE_AGENTS) ?? "";
+      const enforcedBlock = text.slice(
+        text.indexOf("These are enforced."),
+        text.indexOf("Stated by the author"),
+      );
+      if (enforcedBlock === "") continue;
+      const view = input.blueprint.ontology;
+      for (const node of input.blueprint.nodes) {
+        for (const entry of node.card.cannot) {
+          const term = view.resolve(entry)?.term;
+          if (term?.kind === "data-type") continue;
+          expect(enforcedBlock, `${slug}: ${entry}`).not.toContain(entry);
+        }
+      }
+    }
+  });
+
+  /** `wrap()` lays the prose out at 94 columns, so a sentence assertion has to run over
+      the flattened text. Matching the file as written would pass or fail on where a line
+      happened to break. */
+  const flat = (text: string) => text.replace(/\s+/g, " ");
+
+  it("names the nodes whose declared inputs no edge feeds", () => {
+    // The starter's `builder` is the case: its brief arrives with the run, and the edge
+    // that is not there is the whole pattern. An agent told only "Takes: brief" is one
+    // step from drawing it.
+    const starter = EXPORTS.find((e) => e.slug === "starter-software-factory");
+    const text = fileMap(starter!.files).get(BUNDLE_AGENTS) ?? "";
+    expect(flat(text)).toContain("`builder`");
+    expect(flat(text)).toContain("no edge in this graph feeds");
+    expect(flat(text)).toContain("That is not a gap to fill.");
+  });
+
+  it("says it has not seen the codebase, on every bundle", () => {
+    // The one claim this file must never make. It knows the pattern and nothing else.
+    for (const { slug, files } of EXPORTS) {
+      const text = fileMap(files).get(BUNDLE_AGENTS) ?? "";
+      expect(flat(text), slug).toContain("it has not seen the codebase you are about to change");
+      expect(text, slug).toContain("## What this file does not tell you");
+    }
+  });
+
+  it("leaves no empty heading for the notes an uploader has not written", () => {
+    // A heading with nothing under it reads as a section somebody forgot to fill in,
+    // which is a promise the folder does not keep. The file states what it does not know
+    // in prose instead.
+    for (const { slug, files } of EXPORTS) {
+      const text = fileMap(files).get(BUNDLE_AGENTS) ?? "";
+      // Top-level sections only. `## The nodes` is a container whose body is its `###`
+      // subsections, so a rule that demanded prose directly under every heading would be
+      // asserting a layout rather than the thing that matters.
+      const headings = [...text.matchAll(/^## .+$/gm)].map((m) => ({
+        title: m[0],
+        at: m.index ?? 0,
+      }));
+      for (const [i, heading] of headings.entries()) {
+        const end = headings[i + 1]?.at ?? text.length;
+        const body = text.slice(heading.at, end).split("\n").slice(1).join("\n").trim();
+        expect(body, `${slug}: ${heading.title} is empty`).not.toBe("");
+      }
     }
   });
 });

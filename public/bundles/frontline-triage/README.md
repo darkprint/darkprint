@@ -49,6 +49,7 @@ blueprint.dot              the DarkPrint topology: node ids, edges, the card ver
 cards/                     the pinned cards, byte for byte as the registry stores them
 ontology/extensions.yaml   the local terms these cards declare, and the weights that price them
 README.md                  this file
+AGENTS.md                  the same folder addressed to an agent adapting it, generated from the cards
 ```
 
 Two DOT files, because they answer different questions. `blueprint.dot` is what the registry

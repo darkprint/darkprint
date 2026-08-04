@@ -47,6 +47,7 @@ factory.dot     the pipeline Attractor runs, each card's spec inlined as a promp
 blueprint.dot   the DarkPrint topology: node ids, edges, the card version pinned on each node
 cards/          the pinned cards, byte for byte as the registry stores them
 README.md       this file
+AGENTS.md       the same folder addressed to an agent adapting it, generated from the cards
 ```
 
 Two DOT files, because they answer different questions. `blueprint.dot` is what the registry

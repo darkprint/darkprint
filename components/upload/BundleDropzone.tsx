@@ -10,6 +10,11 @@ import {
   type OntologyTerm,
 } from "@/lib/core";
 import { parseOntologyTerms } from "@/lib/content/ontology-file";
+// The two names by their definitions rather than as literals here: this file explains
+// what a reader's own download contains, and a second spelling of either would drift.
+// Both are plain string constants, and `bundle-export` is isomorphic like the rest of
+// what `/upload` runs in the tab.
+import { BUNDLE_AGENTS, BUNDLE_README } from "@/lib/content/bundle-export";
 import { cx } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 
@@ -160,7 +165,7 @@ export function classifyBundle(files: readonly UploadFile[]): BundleParts {
       roles.push({ file, role });
       continue;
     }
-    roles.push({ file, role, note: "not a .dot, .yaml, .yml or .json document" });
+    roles.push({ file, role, note: prosePartNote(file) });
   }
 
   const parts: BundleParts = { cards, roles, terms: [] };
@@ -178,6 +183,27 @@ export function classifyBundle(files: readonly UploadFile[]): BundleParts {
     if (read.problem !== undefined) parts.vocabularyProblem = read.problem;
   }
   return parts;
+}
+
+/**
+ * Why a file the validator does not read is in the folder anyway.
+ *
+ * The ordinary case here is a reader dropping a whole downloaded bundle, which ships two
+ * documents addressed to people rather than to the engine: `README.md` for whoever is
+ * deciding whether to run it, and `AGENTS.md` for the agent being asked to adapt it.
+ * Neither is a defect and neither is missing anything, so the chip says what the file is
+ * instead of what it is not. "Not a .dot, .yaml, .yml or .json document" was true of both
+ * and told a reader nothing about why their own download contains it.
+ */
+function prosePartNote(file: UploadFile): string {
+  const base = baseName(file.name).toLowerCase();
+  if (base === BUNDLE_README.toLowerCase()) {
+    return "the bundle's readme, written for a person. The validator reads the graph and the cards.";
+  }
+  if (base === BUNDLE_AGENTS.toLowerCase()) {
+    return "the bundle's notes for an agent adapting it, generated from the cards. Nothing here is read back.";
+  }
+  return "not a .dot, .yaml, .yml or .json document";
 }
 
 /**

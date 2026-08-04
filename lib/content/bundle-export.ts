@@ -45,6 +45,7 @@ import {
   type BlueprintAnalysis,
   type CardRef,
   type OntologyTerm,
+  type Port,
   type ResolvedBlueprint,
 } from "@/lib/core";
 import { autonomyStatement } from "@/lib/format";
@@ -59,6 +60,12 @@ export const FACTORY_DOT = "factory.dot";
 export const TOPOLOGY_DOT = "blueprint.dot";
 
 export const BUNDLE_README = "README.md";
+
+/**
+ * The agent-facing file. `README.md` addresses a person deciding whether to run this;
+ * this addresses the agent being asked to fit the pattern into a codebase.
+ */
+export const BUNDLE_AGENTS = "AGENTS.md";
 
 /** Directory the pinned cards go in, bundle-relative. */
 export const BUNDLE_CARDS_DIR = "cards";
@@ -162,6 +169,7 @@ export function exportBundle(input: BundleExportInput): readonly ExportedFile[] 
 
   const files: ExportedFile[] = [
     { path: BUNDLE_README, text: bundleReadme(input) },
+    { path: BUNDLE_AGENTS, text: bundleAgents(input) },
     // Verbatim, both of them. The digest is taken over this DOT source and these card
     // digests, so any normalisation here would break the one claim the README makes
     // that a reader can check on their own machine.
@@ -288,6 +296,200 @@ function pinnedCards(input: BundleExportInput): ExportedCard[] {
   return [...out.values()].sort((a, b) => (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0));
 }
 
+/* --------------------- the agent file --------------------- */
+
+/**
+ * `AGENTS.md` — the bundle, addressed to the agent adapting it.
+ *
+ * `README.md` is for a person deciding whether to run this folder. This is for Claude
+ * Code, Gemini, Codex or anything else being handed the folder and asked to fit the
+ * pattern into a codebase that already exists.
+ *
+ * ── Generated, and only the generated half ──
+ * Everything here is read off `blueprint.dot` and the cards. Nothing is typed, for the
+ * reason `ScoringModel.tsx` states about numbers: a second description of the graph is a
+ * second description that drifts from the first, and this one would drift silently
+ * because no reader opens both.
+ *
+ * The half a generator cannot write — what problem this pattern solves, what to look for
+ * in the codebase, when not to use it — is the uploader's, and there is no field for it
+ * yet. So this file does not leave a heading for it. An empty "How to adapt this" section
+ * is a promise the folder does not keep, and the file says plainly what it does not know
+ * rather than implying somebody forgot to fill it in.
+ *
+ * ── Why the prohibitions lead ──
+ * They are the one thing an agent adapting a pattern is most likely to get wrong, because
+ * they are the part with no positive trace in the code: a connection nobody drew looks
+ * exactly like a connection nobody thought of. Doc 2 §3's whole argument is that isolation
+ * is a property of the topology, and the topology is what an agent is about to rewrite.
+ *
+ * ── Enforced against free text ──
+ * `NodeCard.cannot` mixes two things. An entry naming an ontology `data-type` is a rule
+ * `bundle/resolve.ts` checks and will fail the bundle over; an entry naming anything else
+ * is a sentence addressed to a reader and checked by nothing. Collapsing them here would
+ * tell an agent that "never opens a shell" is verifiable, and it is not. They are printed
+ * under separate headings for that reason, and the free-text ones say so in the open.
+ */
+export function bundleAgents(input: BundleExportInput): string {
+  const { blueprint } = input;
+  const { manifest } = blueprint;
+  const view = blueprint.ontology;
+
+  const out: string[] = [];
+  const push = (...lines: string[]): void => {
+    out.push(...lines);
+  };
+
+  push(`# ${manifest.title}, for an agent`, "");
+  push(
+    ...wrap(
+      `You are being handed a DarkPrint blueprint: a pattern for ${manifest.summary
+        .trim()
+        .replace(/\.$/, "")
+        .toLowerCase()}.`,
+    ),
+    "",
+  );
+  push(
+    ...wrap(
+      "Everything below is read off `blueprint.dot` and the cards in this folder. It describes " +
+        "the pattern and nothing else: it has not seen the codebase you are about to change, and " +
+        "it carries no instructions from whoever published it.",
+    ),
+    "",
+  );
+
+  /* ---- the prohibitions, first ---- */
+  const enforced: [string, string][] = [];
+  const freeText: [string, string][] = [];
+  for (const node of blueprint.nodes) {
+    for (const entry of node.card.cannot) {
+      const term = view.resolve(entry)?.term;
+      if (term !== undefined && term.kind === "data-type") enforced.push([node.nodeId, entry]);
+      else freeText.push([node.nodeId, entry]);
+    }
+  }
+
+  push("## What must never be connected", "");
+  if (enforced.length === 0 && freeText.length === 0) {
+    push(
+      ...wrap(
+        "No node in this blueprint declares a prohibition. Nothing here is an isolation rule, " +
+          "so the wiring below carries the whole of the design.",
+      ),
+      "",
+    );
+  }
+  if (enforced.length > 0) {
+    push(
+      ...wrap(
+        "These are enforced. Each names a data type the node must never be handed, and the " +
+          "resolver fails the bundle if an incoming edge could carry it. Rewiring this pattern " +
+          "in a way that breaks one of them does not produce a variant of the pattern; it " +
+          "produces a bundle that will not resolve.",
+      ),
+      "",
+    );
+    for (const [nodeId, entry] of enforced) {
+      push(`- \`${nodeId}\` must never receive \`${entry}\`.`);
+    }
+    push("");
+  }
+  if (freeText.length > 0) {
+    push("Stated by the author and checked by nothing. Read them; do not assume a tool will.", "");
+    for (const [nodeId, entry] of freeText) {
+      push(`- \`${nodeId}\`: ${entry}`);
+    }
+    push("");
+  }
+
+  /* ---- the nodes ---- */
+  push("## The nodes", "");
+  for (const node of blueprint.nodes) {
+    const card = node.card;
+    push(`### \`${node.nodeId}\` — ${card.name}`, "");
+    push(card.action.trim(), "");
+    const facts: string[] = [`type \`${card.type}\``];
+    if (card.phases.length > 0) facts.push(`phase ${card.phases.map((p) => `\`${p}\``).join(", ")}`);
+    if ((card.model ?? "").trim() !== "") facts.push(`model \`${card.model}\``);
+    if (card.tools.length > 0) facts.push(`tools ${card.tools.map((t) => `\`${t}\``).join(", ")}`);
+    if (card.requiresHuman) facts.push("**a person acts here**");
+    push(facts.join(" · "), "");
+    const ports = (label: string, list: readonly Port[]): void => {
+      if (list.length === 0) return;
+      push(
+        `${label}: ${list
+          .map((p) => `\`${p.name}\`: \`${p.type}\`${p.required === true ? " (required)" : ""}`)
+          .join(", ")}`,
+        "",
+      );
+    };
+    ports("Takes", card.inputs);
+    ports("Emits", card.outputs);
+  }
+
+  /* ---- the wiring ---- */
+  push("## The wiring", "");
+  if (blueprint.edges.length === 0) {
+    push("No edges. Every node in this graph stands alone.", "");
+  } else {
+    push("```");
+    for (const edge of blueprint.edges) {
+      const carried = edge.fromPort?.type ?? edge.toPort?.type;
+      push(`${edge.source} -> ${edge.target}${carried === undefined ? "" : `   ${carried}`}`);
+    }
+    push("```", "");
+    push(
+      ...wrap(
+        "An edge that is absent is as much a part of this pattern as one that is present. Before " +
+          "adding a connection the graph does not have, check it against the prohibitions above.",
+      ),
+      "",
+    );
+
+    /* The trap this exists to close: a node can declare an input that no edge feeds. On the
+       starter that is `builder`, whose brief arrives when the run is instantiated, and the
+       missing edge is the entire point of the pattern. An agent reading "Takes: brief" with
+       nothing pointing at the node is one step from drawing the edge that breaks it. */
+    const fed = new Set(blueprint.edges.map((edge) => edge.target));
+    const unfed = blueprint.nodes.filter(
+      (node) => node.card.inputs.length > 0 && !fed.has(node.nodeId),
+    );
+    if (unfed.length > 0) {
+      push(
+        ...wrap(
+          `${unfed.length === 1 ? "One node declares an input" : `${unfed.length} nodes declare inputs`} ` +
+            "that no edge in this graph feeds: " +
+            `${unfed.map((node) => `\`${node.nodeId}\``).join(", ")}. ` +
+            "That is not a gap to fill. What they take arrives when the run is instantiated, and " +
+            "on some patterns the absent edge is the design.",
+        ),
+        "",
+      );
+    }
+  }
+
+  /* ---- what this file does not know ---- */
+  push("## What this file does not tell you", "");
+  push(
+    ...wrap(
+      "Where this pattern belongs in the codebase, what to look for before wiring it in, and " +
+        "when not to use it at all. Those depend on the code, and nothing in this folder has " +
+        "seen it. Read the graph, read the cards, then read the code.",
+    ),
+    "",
+  );
+  push(
+    ...wrap(
+      `\`${BUNDLE_README}\` covers running the pattern as it stands, including the command and the ` +
+        "digest that confirms these files are the ones the registry read.",
+    ),
+    "",
+  );
+
+  return `${out.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd()}\n`;
+}
+
 /* --------------------- the README --------------------- */
 
 /**
@@ -401,6 +603,7 @@ export function bundleReadme(input: BundleExportInput): string {
           ] as const,
         ]),
     [BUNDLE_README, "this file"],
+    [BUNDLE_AGENTS, "the same folder addressed to an agent adapting it, generated from the cards"],
   ];
   const column = Math.max(...folder.map(([name]) => name.length)) + 3;
   push("```");

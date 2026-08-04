@@ -46,9 +46,10 @@ function downloadOf(slug: string): { files: UploadFile[]; autonomy: number; secu
   };
 
   return {
-    files: exportBundle(input)
-      .filter((file) => file.path !== "README.md")
-      .map((file) => ({ name: file.path, text: file.text })),
+    // The whole folder, prose files included. Filtering them out here modelled a reader
+    // who tidied the download before dropping it, which is not the ordinary case and hid
+    // the fact that the wizard had nothing useful to say about either of them.
+    files: exportBundle(input).map((file) => ({ name: file.path, text: file.text })),
     autonomy: entry.analysis.autonomy.level,
     security: entry.analysis.security.level,
   };
@@ -66,12 +67,25 @@ describe("the wizard, given a downloaded bundle", () => {
     expect(parts.vocabulary?.name).toBe("ontology/extensions.yaml");
     expect(parts.vocabularyProblem).toBeUndefined();
     expect(parts.terms.map((term) => term.id)).toEqual(["lupo/pii-handling"]);
-    // One file in the folder is deliberately not read: `factory.dot` is the same graph
-    // prepared for a runner, and a bundle carries one topology. It is the only ignored
-    // file, and it says which of the two it is rather than reading as a rejection.
+    // Three files in the folder are deliberately not read, and each says why rather than
+    // reading as a rejection: `factory.dot` is the same graph prepared for a runner, and
+    // the two prose documents address a person and an agent respectively.
     const ignored = parts.roles.filter((entry) => entry.role === "ignored");
-    expect(ignored.map((entry) => entry.file.name)).toEqual(["factory.dot"]);
-    expect(ignored[0].note).toContain("blueprint.dot");
+    expect(ignored.map((entry) => entry.file.name).sort()).toEqual([
+      "AGENTS.md",
+      "README.md",
+      "factory.dot",
+    ]);
+    const noteFor = (name: string) =>
+      ignored.find((entry) => entry.file.name === name)?.note ?? "";
+    expect(noteFor("factory.dot")).toContain("blueprint.dot");
+    expect(noteFor("README.md")).toContain("written for a person");
+    expect(noteFor("AGENTS.md")).toContain("agent adapting it");
+    // The old catch-all said what these files are not, which told a reader nothing about
+    // why their own download contains them.
+    for (const name of ["README.md", "AGENTS.md"]) {
+      expect(noteFor(name), name).not.toContain("not a .dot");
+    }
   });
 
   it("reproduces the two levels the blueprint page shows", () => {
