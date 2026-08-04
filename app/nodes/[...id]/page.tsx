@@ -12,10 +12,11 @@ import {
 import { commentsFor, downloadsFor } from "@/lib/data/node-community";
 import { getAuthor } from "@/lib/data/users";
 import { compact, cx } from "@/lib/format";
-import { contentHref, termHref } from "@/lib/href";
+import { termHref } from "@/lib/href";
 import { Comments } from "@/components/blueprint/Comments";
 import { ForkAction } from "@/components/blueprint/ForkAction";
 import { AuthorChip } from "@/components/ui/Avatar";
+import { ReachList, ReachRow } from "@/components/ui/ReachList";
 import { KindBadge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { FavoriteStar } from "@/components/ui/FavoriteStar";
@@ -385,7 +386,8 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             )}
             <FavoriteStar id={`node:${card.id}@${card.version}`} className="ml-auto" />
           </div>
-          <p className="max-w-3xl text-lg leading-relaxed text-muted">
+          {/* Full width, same ask as the blueprint hero and `SectionHeading`. */}
+          <p className="text-lg leading-relaxed text-muted">
             {card.action}
           </p>
         </div>
@@ -425,27 +427,18 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             {prohibitions.length === 0 ? (
               <div className="flex flex-col gap-2">
                 <p className="text-[15px] leading-relaxed text-muted">
-                  <span className="text-fg">None declared.</span>{" "}
-                  This card states no prohibition, which is the ordinary case. A node is
-                  normally isolated by
-                  the edges its graph does not draw, and writing the rule down here is
-                  what turns that into something the analyzer can hold a graph to.
-                </p>
-                <p className="text-xs leading-relaxed text-dim">
-                  An entry naming a data type from the vocabulary is checked against every
-                  incoming edge. An entry naming nothing in the vocabulary is a sentence
-                  for whoever reads the card, and both belong here.
+                  <span className="text-fg">None declared.</span> The ordinary case: a
+                  node is usually isolated by the edges its graph does not draw. Writing
+                  the rule down here is what makes it checkable.
                 </p>
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                <p className="text-[15px] leading-relaxed text-muted">
-                  What this node must never be handed. The interfaces above say what
-                  arrives; these say what may not, and the first kind below is a rule the
-                  resolver applies to the graph rather than a convention an author has to
-                  remember.
-                </p>
-
+                {/* The paragraph that stood here restated the panel: the label says
+                    "Cannot receive", the meta counts enforced against free text, and each
+                    row below carries a badge saying which kind it is. The author asked it
+                    off. The `none declared` branch above keeps its explanation, because
+                    there the panel is empty and there are no rows to read it off. */}
                 <ul className="flex flex-col gap-2.5">
                   {prohibitions.map((p) =>
                     p.term === undefined ? (
@@ -464,8 +457,8 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                           </span>
                         </span>
                         <span className="text-xs leading-relaxed text-dim">
-                          The vocabulary carries no data type by this name, so nothing
-                          checks it. It is addressed to whoever reads the card.
+                          No data type by this name, so nothing checks it. It speaks to
+                          whoever reads the card.
                         </span>
                       </li>
                     ) : (
@@ -489,13 +482,13 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                           </span>
                         )}
                         <span className="text-xs leading-relaxed text-dim">
-                          An edge into this node able to carry{" "}
-                          <code className="font-mono text-muted">{p.term.id}</code>,
-                          meaning that type or a narrower kind of it, is reported as{" "}
+                          Any edge that could carry{" "}
+                          <code className="font-mono text-muted">{p.term.id}</code>, or a
+                          narrower type, fails the bundle with{" "}
                           <code className="font-mono text-muted">
                             bundle/prohibition-violated
-                          </code>{" "}
-                          and the bundle does not resolve.
+                          </code>
+                          .
                           {p.entry !== p.term.id && (
                             <>
                               {" "}
@@ -512,9 +505,8 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 </ul>
 
                 <p className="text-xs leading-relaxed text-dim">
-                  A data type is the only kind of term enforced here, because it is the
-                  only kind an edge carries. An entry naming any other kind of term reads
-                  as free text, and so does a sentence.
+                  Only a data type can be enforced, because only a data type travels on an
+                  edge. Anything else here is free text.
                 </p>
               </div>
             )}
@@ -536,129 +528,66 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             label="Model, skill and servers"
             meta={card.model ?? "no model named"}
           >
-            <div className="flex flex-col gap-5">
-              <div className="flex flex-col gap-2">
-                <span className={LABEL}>Model</span>
+            {/* Three stacked blocks of two and three paragraphs each stood here, every
+                one of them opening by naming its own field again. The author asked for
+                the `/concepts` figure wherever it helps reorganise a page, and this is
+                the shape it was built for: named things that point outward. The limit
+                statements the paragraphs carried are all still here and still open, in
+                the glosses and the footnote. */}
+            <ReachList
+              label="Before it can run"
+              caption="What has to exist on the machine that runs this node."
+            >
+              <ReachRow field="model" value={card.model ?? "not named"}>
                 {card.model === undefined ? (
-                  <p className="text-xs leading-relaxed text-dim">
-                    None named. This node runs on whatever the graph or the runner
-                    supplies, which is the ordinary case. A card names a model when it was
-                    written against one.
-                  </p>
+                  <>Whatever the graph or the runner supplies. The ordinary case.</>
                 ) : (
                   <>
-                    <div className="flex flex-wrap gap-1.5">
-                      <span className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg">
-                        <span
-                          className="h-1 w-1 rounded-full"
-                          style={{ background: "var(--color-cyan)" }}
-                          aria-hidden
-                        />
-                        {card.model}
-                      </span>
-                    </div>
-                    <p className="text-xs leading-relaxed text-dim">
-                      The model this node&apos;s agent is instantiated with. Download a
-                      blueprint that uses this card and{" "}
-                      <code className="font-mono text-muted">factory.dot</code> carries the
-                      name on the node as{" "}
-                      <code className="font-mono text-muted">llm_model</code>, which is
-                      Attractor&apos;s own attribute for it, so the factory runs on it
-                      without anybody configuring anything.
-                    </p>
-                    {/* Doc 2 §1.1's sibling problem: a field rendered as a hard fact
-                        invites a reader to treat it as one. `llm_model` resolves from the
-                        node attribute, then the graph's stylesheet, then the graph
-                        default, so what the card names is where that resolution starts. */}
-                    <p className="text-xs leading-relaxed text-dim">
-                      It is the default this card was written against. A graph can set the
-                      model for a whole class of nodes with a{" "}
-                      <code className="font-mono text-muted">model_stylesheet</code>, and
-                      nodes naming none take theirs from it.
-                    </p>
+                    What its agent runs on.{" "}
+                    <span className="text-fg">A default, not a fixed fact:</span> a
+                    graph&apos;s{" "}
+                    <code className="font-mono text-[12px] text-muted">
+                      model_stylesheet
+                    </code>{" "}
+                    can override it.
                   </>
                 )}
-              </div>
+              </ReachRow>
 
-              <div className="flex flex-col gap-2 border-t border-line pt-5">
-                <span className={LABEL}>Skill</span>
+              <ReachRow field="skill" value={card.skill ?? "not named"}>
                 {card.skill === undefined ? (
-                  <p className="text-xs leading-relaxed text-dim">
-                    No skill document named. The card&apos;s own{" "}
-                    <code className="font-mono text-muted">spec</code> is the whole of
-                    this node&apos;s instruction, which is the ordinary case.
-                  </p>
+                  <>
+                    None. The card&apos;s{" "}
+                    <code className="font-mono text-[12px] text-muted">spec</code> is the
+                    whole instruction.
+                  </>
                 ) : (
                   <>
-                    <div className="flex flex-wrap gap-1.5">
-                      <span className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg">
-                        <span
-                          className="h-1 w-1 rounded-full"
-                          style={{ background: "var(--color-cyan)" }}
-                          aria-hidden
-                        />
-                        {card.skill}
-                      </span>
-                    </div>
-                    <p className="text-xs leading-relaxed text-dim">
-                      Where the document defining this agent&apos;s behaviour lives,
-                      relative to the repository you run the factory from. DarkPrint keeps
-                      the pointer and reads nothing at the other end of it: a skill hands
-                      one agent a capability, and the blueprint decides who is wired to
-                      whom.
-                    </p>
-                    {/* The pointer is dangling in every folder the site hands out, and
-                        saying so here is cheaper than letting somebody find out by
-                        opening the download. The bundle README lists the same paths under
-                        the folder listing for the same reason. */}
-                    <p className="text-xs leading-relaxed text-dim">
-                      No skill document travels in a DarkPrint bundle. Download this
-                      node&apos;s blueprint and you get the cards, the two DOT files and
-                      the vocabulary, with this path pointing at a file you write. Nothing
-                      needs it to run: <code className="font-mono text-muted">spec</code>{" "}
-                      is inlined into{" "}
-                      <code className="font-mono text-muted">factory.dot</code> as the
-                      prompt this node&apos;s agent receives.
-                    </p>
+                    Where its written procedure lives, relative to the repository you run
+                    from.{" "}
+                    <span className="text-fg">
+                      A pointer only: no skill document travels in a DarkPrint bundle.
+                    </span>{" "}
+                    You write the file it names.
                   </>
                 )}
-              </div>
+              </ReachRow>
 
-              <div className="flex flex-col gap-2 border-t border-line pt-5">
-                <span className={LABEL}>MCP servers</span>
+              <ReachRow
+                field="mcp"
+                value={card.mcp.length === 0 ? "none" : card.mcp.join(", ")}
+              >
                 {card.mcp.length === 0 ? (
-                  <p className="text-xs leading-relaxed text-dim">
-                    None. Nothing this node does needs a server registered on the machine
-                    that runs the graph.
-                  </p>
+                  <>None. It reaches no server.</>
                 ) : (
                   <>
-                    <div className="flex flex-wrap gap-1.5">
-                      {card.mcp.map((server) => (
-                        <span
-                          key={server}
-                          className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg"
-                        >
-                          <span
-                            className="h-1 w-1 rounded-full"
-                            style={{ background: "var(--color-emerald)" }}
-                            aria-hidden
-                          />
-                          {server}
-                        </span>
-                      ))}
-                    </div>
-                    <p className="text-xs leading-relaxed text-dim">
-                      The names these servers are registered under on the machine that
-                      runs the graph. They are free text by design, since an MCP server is
-                      a process somebody installed and the vocabulary has no term for one.
-                      The tools below are vocabulary terms and answer a different
-                      question: what the node is permitted to do.
-                    </p>
+                    Servers it reaches, named as they are registered on your machine. Free
+                    text: the vocabulary has no term for a process somebody installed.
                   </>
                 )}
-              </div>
-            </div>
+              </ReachRow>
+            </ReachList>
+
           </Panel>
 
           <Panel
@@ -687,11 +616,10 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                       about to invent a phase for their intake node. */}
                   {phases.length === 0 ? (
                     <p className="text-[15px] leading-relaxed text-muted">
-                      <span className="text-fg">Outside the five.</span> The lifecycle
-                      phases describe the shape of a blueprint, not every node inside
-                      one: intake, retrieval, routing and hand-off are real work that
-                      none of the five names. This card declares no phase, which is an
-                      answer rather than a blank.
+                      <span className="text-fg">Outside the five.</span> The phases
+                      describe a blueprint&apos;s shape, not every node in one: intake,
+                      retrieval and routing are real work none of the five names.
+                      Declaring none is an answer, not a blank.
                     </p>
                   ) : (
                     phases.map((phase) => (
@@ -706,10 +634,8 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                     ))
                   )}
                   <p className="text-xs leading-relaxed text-dim">
-                    A blueprint&apos;s phase coverage is the union of the phases its
-                    nodes declare. It says what a blueprint covers, not how complete it
-                    is, and a node standing outside the five takes nothing away from
-                    it.
+                    A blueprint covers the union of its nodes&apos; phases. That is scope,
+                    not completeness.
                   </p>
                 </div>
 
@@ -738,9 +664,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                         </span>
                       </div>
                       <p className="text-xs leading-relaxed text-dim">
-                        The role the author gave this node, in their own words. Free text
-                        that no part of the engine reads. Which model it runs on is the
-                        panel above.
+                        A label the author chose. Nothing in the engine reads it.
                       </p>
                     </>
                   )}
@@ -764,14 +688,6 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                       None. The node asks for no external capability.
                     </p>
                   )}
-                  {/* The distinction the two fields exist to keep. Stated on the one
-                      that is a vocabulary term, because that is the half a reader can
-                      click into and therefore the half they meet first. */}
-                  <p className="text-xs leading-relaxed text-dim">
-                    Capability terms from the vocabulary, saying what this node is
-                    permitted to do. Which server supplies them is a separate question,
-                    answered by the MCP list above.
-                  </p>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -836,10 +752,9 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   <span className="break-all text-muted">{record.digest}</span>
                 </p>
                 <p className="text-xs leading-relaxed text-dim">
-                  The hash is taken over the card&apos;s content, with the author
-                  and provenance fields left out, two people contributing the same
-                  node land on the same digest, and any edit at all lands on a
-                  different one.
+                  Hashed over the card&apos;s content, author and provenance left out:
+                  the same node from two people lands on the same digest, any edit lands
+                  on a different one.
                 </p>
               </>
             ) : (
@@ -880,10 +795,8 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                     </span>
                     <span>
                       <span className="text-violet">A person acts here.</span> The run
-                      holds at this node until somebody supplies or approves what it
-                      asks for. The autonomy analyzer reads that to say where the
-                      people are in a graph, it describes the design, and a blueprint
-                      that keeps a person on this step is a blueprint that decided to.
+                      holds until somebody supplies or approves what this node asks for.
+                      The autonomy reading describes that; it does not charge for it.
                     </span>
                   </>
                 ) : (
@@ -892,9 +805,8 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                       ▸
                     </span>
                     <span>
-                      <span className="text-cyan">Runs unattended.</span> Nothing on
-                      this card asks for a person, so a run passing through it does not
-                      stop and wait.
+                      <span className="text-cyan">Runs unattended.</span> Nothing on this
+                      card asks for a person, so a run does not stop here.
                     </span>
                   </>
                 )}
@@ -942,9 +854,8 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                       ))}
                     </ul>
                     <p className="text-xs leading-relaxed text-dim">
-                      The weight is the vocabulary&apos;s default: what the security
-                      analyzer subtracts from a clean 4 each time the marker shows
-                      up in a graph. A deployment may recalibrate it.
+                      The vocabulary&apos;s default, subtracted from a clean 4 when the
+                      marker appears in a graph. A deployment may recalibrate it.
                     </p>
                   </>
                 ) : (
@@ -952,38 +863,20 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                     <span className="font-mono text-emerald" aria-hidden>
                       ✓
                     </span>
-                    None declared. Nothing this node does costs a blueprint any
-                    security points.
+                    None declared. Nothing here costs a blueprint security points.
                   </p>
                 )}
               </div>
             </div>
           </SidePanel>
 
-          <SidePanel id="used-in" label="Used in">
-            {usedIn.length > 0 ? (
-              <ul className="flex flex-col divide-y divide-line">
-                {usedIn.map((slug) => (
-                  <li key={slug} className="py-2.5 first:pt-0 last:pb-0">
-                    <Link
-                      href={contentHref({ kind: "blueprint", slug })}
-                      className="group flex flex-col gap-0.5"
-                    >
-                      <span className="text-sm text-fg group-hover:text-cyan">
-                        {titleOf(slug)}
-                      </span>
-                      <span className="font-mono text-[11px] text-dim">{slug}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm leading-relaxed text-muted">
-                No blueprint in the registry pins this card yet.
-              </p>
-            )}
-          </SidePanel>
-
+          {/* "Used in" stood here, listing every blueprint pinning this card. The
+              author asked it off: "very unmanageable when a given node is used in a lot
+              of blueprints", and a sidebar column is the worst place for a list with no
+              ceiling on it. The count survives in the header strip near the top of the
+              page ("used in N blueprints"), and `VersionHistory` still names the
+              blueprints pinning each *specific* version, which is the bounded and more
+              useful version of the same question. */}
           <SidePanel id="identity" label="Identity">
             <dl className="flex flex-col divide-y divide-line">
               <div className="flex items-center justify-between gap-3 py-2.5 first:pt-0">

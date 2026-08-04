@@ -40,7 +40,7 @@ import { BundlePanel, type BundleNode } from "@/components/blueprint/BundlePanel
 import { DownloadPanel, type DownloadCard } from "@/components/blueprint/DownloadPanel";
 import { Comments } from "@/components/blueprint/Comments";
 import { ForkAction } from "@/components/blueprint/ForkAction";
-import { SuggestedModels, ToolScopes } from "@/components/blueprint/Requirements";
+import { ToolScopes } from "@/components/blueprint/Requirements";
 
 /** Every slug is known at build time; an unknown one is a 404, not an on-demand render. */
 export const dynamicParams = false;
@@ -245,7 +245,8 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             />
             <FavoriteStar id={`blueprint:${bp.slug}`} className="ml-auto" />
           </div>
-          <p className="max-w-3xl text-lg leading-relaxed text-muted">
+          {/* Full width: same ask as `SectionHeading`'s lead. */}
+          <p className="text-lg leading-relaxed text-muted">
             {bp.summary}
           </p>
         </div>
@@ -355,11 +356,16 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             always open and not collapsed." Both are short, both answer a question a
             reader has while looking at the graph beside them, and a disclosure over four
             lines costs a click to save nothing. */}
-        <section className="panel flex flex-col gap-3 p-5">
-          <PanelLabel>Suggested models</PanelLabel>
-          <SuggestedModels agents={bp.requiredAgents} />
-        </section>
+        {/* "Suggested models" stood here and is gone. The author: the model "should be
+            listed in the node description as a entry", and it already is: `model` is a
+            Behaviour row in the card skeleton directly above, per node, read off the card
+            it belongs to. The panel aggregated the same field across the graph and put a
+            second answer on the same screen.
 
+            `Tool scopes` stays, and the difference is worth stating rather than assuming:
+            what a graph is allowed to reach is the input to the security reading, so the
+            union of it is a fact about the blueprint and not just a per-node one. If that
+            reasoning does not hold for you either, the panel goes the same way. */}
         <section className="panel flex flex-col gap-3 p-5">
           <PanelLabel>Tool scopes</PanelLabel>
           <ToolScopes tools={bp.requiredTools} />
@@ -416,25 +422,23 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             />
           </section>
 
-          <section className="panel p-5">
-            <PanelLabel>Bundle</PanelLabel>
-            <div className="mt-3">
-            <BundlePanel
-              digest={bp.digest}
-              ontologyVersion={record?.manifest.ontologyVersion ?? "unknown"}
-              // Doc 3 §8: the version a score was computed under, which the engine
-              // takes from the view the bundle was resolved against and not from
-              // the manifest. Both metrics carry the same value; a test in
-              // `lib/core` asserts they and `BlueprintAnalysis.ontologyVersion`
-              // can never disagree.
-              scoredOntologyVersion={bp.analysis.autonomy.ontologyVersion}
-              nodes={bundleNodes}
-              pinnedCards={record?.cardRefs.length ?? new Set(bp.cardRefs).size}
-              diagnostics={otherNotes}
-              explainedNotes={explainedNotes}
-            />
-            </div>
-          </section>
+          {/* No wrapper. `BundlePanel` draws its own bordered panel with its own
+              "Bundle" header, so putting it inside a `panel` titled "Bundle" printed the
+              word twice, one box inside another. Mine, from the two-column pass. */}
+          <BundlePanel
+            digest={bp.digest}
+            ontologyVersion={record?.manifest.ontologyVersion ?? "unknown"}
+            // Doc 3 §8: the version a score was computed under, which the engine
+            // takes from the view the bundle was resolved against and not from
+            // the manifest. Both metrics carry the same value; a test in
+            // `lib/core` asserts they and `BlueprintAnalysis.ontologyVersion`
+            // can never disagree.
+            scoredOntologyVersion={bp.analysis.autonomy.ontologyVersion}
+            nodes={bundleNodes}
+            pinnedCards={record?.cardRefs.length ?? new Set(bp.cardRefs).size}
+            diagnostics={otherNotes}
+            explainedNotes={explainedNotes}
+          />
         </aside>
       </div>
 

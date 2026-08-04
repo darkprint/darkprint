@@ -8,6 +8,7 @@ import { HUMAN_PRESENCE_MARK, compact } from "@/lib/format";
 import { nodeHref } from "@/lib/href";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { Badge } from "@/components/ui/Badge";
+import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { Stat } from "@/components/ui/Stat";
 import { ContentCard } from "@/components/ui/ContentCard";
 import { ButtonLink } from "@/components/ui/Button";
@@ -210,6 +211,26 @@ export default async function Page({ params }: PageProps<"/u/[username]">) {
             )}
           </>
         )}
+
+        {/* Forks. The author settled the model this pass: "the fork can be private to a
+            user, the idea follows exactly the idea of github", and said it lands on this
+            page. It does, eventually — a fork belongs to an account and the owner's
+            profile is where their own would be listed. Nothing of that exists, so this
+            states the shape and marks it, rather than rendering an empty section that
+            reads as "this builder has forked nothing". Same treatment as the seeded stats
+            above: say which half is real. */}
+        <section className="flex flex-col gap-4 rounded-xl border border-dashed border-amber/30 bg-amber/5 p-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="font-display text-xl font-semibold text-fg">Forks</h2>
+            <ComingSoonBadge />
+          </div>
+          <p className="max-w-2xl text-sm leading-relaxed text-muted">
+            Forking will work the way it does on GitHub: a copy that belongs to the person
+            who made it, private until they publish it, listed here when they do. Today
+            there are no accounts, so forking a blueprint means copying its folder onto
+            your own machine and this site never learns that you did.
+          </p>
+        </section>
       </div>
     </div>
   );

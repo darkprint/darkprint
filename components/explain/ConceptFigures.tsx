@@ -1,188 +1,197 @@
-"use client";
-
-import type { Point } from "@/components/viz";
-import {
-  FlowAbsence,
-  FlowEdge,
-  FlowNode,
-  FlowScene,
-  Sheet,
-} from "@/components/viz";
-import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
+import { ReachList, ReachRow } from "@/components/ui/ReachList";
 
 /* ============================================================
-   The two drawings on /concepts.
+   The two drawings on /concepts, second attempt.
 
-   The page shipped with labelled text boxes and a fade, and the
-   author asked why there were no graphics. Fair: they had asked
-   for "a graphic illustraction where we are in a node card ...
-   when we zoom out, we observe that a node can be connected to
-   others", and a box with a heading in it is not that.
+   ── What was wrong with the first ──
+   The author called them "very wrong", and they were. Both were
+   `FlowScene` graphs, and in the luminous-flow register a lit
+   circle joined by an edge means one thing on this site: a node,
+   a step in a run. So drawing `model`, `skill` and `tool` as
+   circles wired to a node said those are steps too. They are not.
+   A node is a step; the card is the document *describing* that
+   step, and its fields point at things that are not in the graph
+   at all. The figure contradicted the model the page exists to
+   explain.
 
-   So the two claims the page turns on are drawn rather than
-   stated, in the site's own luminous-flow register:
+   A second error travelled with it: `cannot` was drawn as a
+   missing edge from a node labelled "judge". `cannot` names a
+   data type, not a neighbour. Any edge able to carry that type is
+   refused, whichever node draws it, so inventing a judge to draw
+   the absence from asserted a topology the card never mentions.
 
-   1. **Inside one card.** The node at the centre, and the four
-      lines that decide what it can do drawn as what they are:
-      `mcp` is a wire out to a server, `skill` is a document
-      attached to the node, `model` is the ceiling above it, and
-      `cannot` is an edge that is not there, drawn with
-      `FlowAbsence` because that is this site's mark for a
-      connection somebody decided against.
+   ── And why the register changed ──
+   "adopt graphics and animations that are not necessarly drawn
+   from a 'blueprint' style". So neither of these is a `FlowScene`
+   and neither sits on the graticule. They are boxes and rules: a
+   card drawn as the document it is, and two nested frames. Nothing
+   here is in `components/viz/scene-labels.test.ts`'s roster,
+   because nothing here draws a scene.
 
-   2. **Zoom out.** The same node among others, and the harness
-      drawn as the thing wrapped around them rather than as one of
-      them. That is the page's first correction made structural:
-      a reader can see that the graph is one object and the runner
-      is another.
+   The first figure's row/connector/gloss layout lives in
+   `components/ui/ReachList.tsx`, because the author asked for it
+   on the ontology and node pages too and one implementation is
+   the only way those three stay the same drawing.
 
-   `useLuminousFlow` gates every bit of motion through `useReveal`,
-   which is the site's single motion switch: on the server, without
-   JS and under `prefers-reduced-motion: reduce` the markup is
-   already the finished drawing. `reveal="always"` on the labels
-   because in a figure this size the labels are the argument, and
-   spec §1 allows a scene to spend `always` on the ones that carry
-   it.
+   Motion is `anim-strip-in` from `globals.css`, whose resting
+   style is the finished one and which only plays under
+   `prefers-reduced-motion: no-preference`. Server components: no
+   hooks, no client bundle.
    ============================================================ */
 
-const CARD = { width: 460, height: 260 } as const;
-const OUT = { width: 460, height: 260 } as const;
+/** Stagger between the two frames of the second figure, ms. Matches `ReachList`. */
+const STEP = 90;
 
-/** Inside one node card: what each line of it reaches, or refuses. */
-export function InsideACardFigure() {
-  const flow = useLuminousFlow<SVGSVGElement>({ amount: 0.3 });
-
-  /* `Point` is a tuple in this tree, not an object. */
-  const node: Point = [214, 132];
-  const model: Point = [214, 40];
-  const server: Point = [392, 132];
-  const skill: Point = [214, 226];
-  const judge: Point = [44, 132];
-
+/**
+ * A card drawn as what it is: a document. Its rows point outward, at things that are
+ * not nodes and are not in the graph.
+ *
+ * Values are the caller's, read off a real published card, so the figure cannot end up
+ * teaching a schema nobody ships.
+ */
+export function WhatACardReaches({
+  model,
+  tools,
+  mcp,
+  skill,
+  cannot,
+}: {
+  model: string;
+  tools: string;
+  mcp: string;
+  skill: string;
+  cannot: string;
+}) {
+  // No caption. "The card is a document. None of these is a step in the run." stood in
+  // that slot and the author asked it off: the rows say it.
   return (
-    <Sheet label="Zoom in" title="One node, and what it reaches" bodyClassName="p-3 sm:p-4">
-      <FlowScene
-        {...flow.scene}
-        width={CARD.width}
-        height={CARD.height}
-        label="A node card: the model above it, an MCP server it can reach, a skill it follows, and the acceptance criteria it must never receive."
-        description="The model sits above the node. A run goes out to an MCP server, which is how the node reaches a tool. A skill document hangs below it. An edge from the judge is drawn as absent, because the card forbids it."
-      >
-        {/* Edges first: a node is drawn over the ends of its own curves. */}
-        {/* No label on this wire: the node at its tail already says "model", and the
-            scene-label guard caught the two words landing on each other. `mcp` keeps its
-            label because there the wire *is* the thing being named. */}
-        <FlowEdge from={model} to={node} tone="cyan" arrow reveal="always" id="model-in" />
-        <FlowEdge
-          from={node}
-          to={server}
-          tone="emerald"
-          arrow
-          label="mcp"
-          reveal="always"
-          id="mcp-out"
-        />
-        {/* Same: the node below is labelled "skill", and this label was landing on "the
-            node". No arrowhead and no pulse, because nothing flows down it: a skill is
-            read, not handed on. */}
-        <FlowEdge
-          from={node}
-          to={skill}
-          tone="dim"
-          arrow={false}
-          pulse={false}
-          reveal="always"
-          id="skill-down"
-        />
-        {/* The guardrail, drawn as the thing it is: a connection that is not there.
-            `FlowAbsence` is the site's mark for one, and using anything else here would
-            draw a forbidden edge as an edge. */}
-        <FlowAbsence
-          from={judge}
-          to={node}
-          label="cannot"
-          name="The acceptance criteria never reach this node. The card forbids it and the resolver enforces it."
-          id="cannot-in"
-        />
-
-        <FlowNode x={model[0]} y={model[1]} label="model" tone="cyan" reveal="always" id="model" />
-        <FlowNode x={node[0]} y={node[1]} label="the node" tone="line" lit r={16} reveal="always" id="node" />
-        <FlowNode x={server[0]} y={server[1]} label="tool" tone="emerald" reveal="always" id="tool" />
-        <FlowNode x={skill[0]} y={skill[1]} label="skill" tone="dim" reveal="always" id="skill" />
-        <FlowNode x={judge[0]} y={judge[1]} label="judge" tone="faint" reveal="always" id="judge" />
-      </FlowScene>
-    </Sheet>
+    <ReachList label="One card, five rows">
+      <ReachRow field="model" value={model}>
+        The model it thinks with. The ceiling on what this step can be trusted to attempt.
+      </ReachRow>
+      <ReachRow field="tools" value={tools}>
+        Capabilities it may reach for: a shell, a search index, a browser.
+      </ReachRow>
+      <ReachRow field="mcp" value={mcp}>
+        A server exposing one. MCP is the wire, so this row is the reach a run has.
+      </ReachRow>
+      <ReachRow field="skill" value={skill}>
+        A written procedure it follows. A pointer only: the document does not travel in
+        the download.
+      </ReachRow>
+      <ReachRow field="cannot" value={cannot} barred>
+        What must never arrive. Naming a data type makes it a rule the resolver holds
+        every incoming edge to, whichever node draws one.
+      </ReachRow>
+    </ReachList>
   );
 }
 
-/** Zoom out: the graph is one object, the harness is another around it. */
-export function TheHarnessFigure() {
-  const flow = useLuminousFlow<SVGSVGElement>({ amount: 0.3 });
-
-  const a: Point = [128, 128];
-  const b: Point = [230, 96];
-  const c: Point = [230, 168];
-  const d: Point = [332, 128];
+/**
+ * Three frames, one inside the next, to the author's own sketch: "a third box containing
+ * the harness that is defined as eval, and it contains the harness which contains the
+ * blueprint, and the eval contains also a box named rubric."
+ *
+ * That is the whole page in one drawing. **Eval** is the outermost thing, because an eval
+ * is the act of running something and grading it. It holds two things: the **harness**
+ * that does the running, and the **rubric** it grades against. The harness in turn holds
+ * the **blueprint**, which is the graph and its cards. Containment carries every relation,
+ * so nothing has to be asserted in a sentence underneath.
+ *
+ * The rubric is a sibling of the harness rather than inside it on purpose: what the work
+ * is judged against is decided before a run and does not belong to the runner. On this
+ * site it has a name and a type, `acceptance-criteria`, which is why the analyzer can
+ * follow it through a graph.
+ */
+export function EvalHarnessBlueprint() {
+  const nodes = ["plan", "build", "test", "ship"];
 
   return (
-    <Sheet
-      label="Zoom out"
-      title="The blueprint, and the harness around it"
-      bodyClassName="p-3 sm:p-4"
-    >
-      <FlowScene
-        {...flow.scene}
-        width={OUT.width}
-        height={OUT.height}
-        label="Four connected nodes inside a dashed boundary. The nodes and their edges are the blueprint; the boundary is the harness that runs them."
-        description="The blueprint is the graph: four nodes and the edges between them. The harness is drawn as a boundary around the whole graph, because it runs the graph rather than being part of it."
-      >
-        {/* The harness: around the graph, not in it. A dashed rule rather than a node,
-            because it is not a step in the run. This is the page's first correction, made
-            structural: a reader can see the graph is one object and the runner another. */}
-        <rect
-          x={72}
-          y={56}
-          width={316}
-          height={148}
-          rx={14}
-          fill="none"
-          stroke="var(--color-amber)"
-          strokeOpacity={0.45}
-          strokeDasharray="6 5"
-          strokeWidth={1.4}
-        />
-        <text
-          x={80}
-          y={46}
-          fill="var(--color-amber)"
-          fontSize={11}
-          fontFamily="var(--font-mono), monospace"
-        >
-          harness: runs it, judges it
-        </text>
+    <figure className="flex flex-col gap-4 rounded-xl border border-line bg-surface/70 p-5 sm:p-6">
+      <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
+          Three things, one inside the next
+        </span>
+        <span className="text-[13px] text-muted">
+          A blueprint is what you download from here. Give it a harness and it runs.
+        </span>
+      </figcaption>
 
-        <FlowEdge from={a} to={b} tone="cyan" arrow reveal="always" id="a-b" />
-        <FlowEdge from={a} to={c} tone="cyan" arrow reveal="always" id="a-c" />
-        <FlowEdge from={b} to={d} tone="cyan" arrow reveal="always" id="b-d" />
-        <FlowEdge from={c} to={d} tone="cyan" arrow reveal="always" id="c-d" />
+      {/* eval */}
+      <div className="anim-strip-in flex flex-col gap-3 rounded-lg border border-violet/40 p-4 sm:p-5">
+        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-violet">
+          eval
+        </p>
 
-        <FlowNode x={a[0]} y={a[1]} label="plan" tone="cyan" reveal="always" id="n-a" />
-        <FlowNode x={b[0]} y={b[1]} label="build" tone="cyan" reveal="always" id="n-b" />
-        <FlowNode x={c[0]} y={c[1]} label="test" tone="cyan" reveal="always" id="n-c" />
-        <FlowNode x={d[0]} y={d[1]} label="ship" tone="cyan" reveal="always" id="n-d" />
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
+          {/* harness */}
+          <div
+            className="anim-strip-in flex flex-1 flex-col gap-3 rounded-lg border border-amber/45 p-4"
+            style={{ animationDelay: `${STEP}ms` }}
+          >
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-amber">
+              harness
+            </p>
 
-        <text
-          x={230}
-          y={228}
-          textAnchor="middle"
-          fill="var(--color-cyan)"
-          fontSize={11}
-          fontFamily="var(--font-mono), monospace"
-        >
-          blueprint: the graph and its cards
-        </text>
-      </FlowScene>
-    </Sheet>
+            {/* blueprint */}
+            <div
+              className="anim-strip-in flex flex-col gap-3 rounded-lg border border-cyan/40 bg-void/50 p-4"
+              style={{ animationDelay: `${STEP * 2}ms` }}
+            >
+              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-cyan">
+                blueprint
+              </p>
+              <ol className="flex flex-wrap items-center gap-1.5">
+                {nodes.map((n, i) => (
+                  <li key={n} className="flex items-center gap-1.5">
+                    {i > 0 && (
+                      <span aria-hidden className="font-mono text-[12px] text-line-bright">
+                        &rarr;
+                      </span>
+                    )}
+                    <span
+                      className="anim-strip-in rounded border border-line bg-surface-2 px-3 py-1.5 font-mono text-[12px] text-fg"
+                      style={{ animationDelay: `${(i + 3) * STEP}ms` }}
+                    >
+                      {n}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              <p className="text-[13px] leading-snug text-muted">
+                The graph and the cards it pins. Text, versioned, checkable.
+              </p>
+            </div>
+
+            <p className="text-[13px] leading-snug text-muted">
+              What executes the graph: a runner that takes each node in turn, and an
+              evaluator that reads the result.
+            </p>
+          </div>
+
+          {/* rubric, a sibling of the harness inside the eval */}
+          <div
+            className="anim-strip-in flex flex-col gap-3 rounded-lg border border-emerald/40 p-4 lg:w-[16rem]"
+            style={{ animationDelay: `${STEP * 2}ms` }}
+          >
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-emerald">
+              rubric
+            </p>
+            <p className="text-[13px] leading-snug text-muted">
+              What the result is graded against. Here it has a name and a type,{" "}
+              <code className="font-mono text-[12px] text-emerald">
+                acceptance-criteria
+              </code>
+              , so the analyzer can follow it through a graph.
+            </p>
+          </div>
+        </div>
+
+        <p className="text-[13px] leading-snug text-muted">
+          One run of a blueprint through a harness, graded against a rubric. That is an
+          eval.
+        </p>
+      </div>
+    </figure>
   );
 }

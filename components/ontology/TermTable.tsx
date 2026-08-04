@@ -1,10 +1,32 @@
 /* ============================================================
-   DarkPrint — the ontology term row, and the flat table of them
+   DarkPrint — the ontology term card, and the flat grid of them
    One presentation for one vocabulary entry, shared by the flat
-   table below and by the indented tree in `TermTree.tsx`, so a
+   grid below and by the grouped forest in `TermTree.tsx`, so a
    term looks the same wherever the page happens to arrange it.
-   Doc 1 §6 (the vocabulary) and §7 (the usage counts), doc 3 §1
-   (the three dimensions a node declares).
+   Doc 1 §6 (the vocabulary), doc 3 §1 (the three dimensions a node
+   declares).
+
+   ── Why this is a card and not a row ──
+   It was a row: label, id, a usage count pushed to the right edge,
+   and a description under all three, stacked in a `divide-y` list.
+   The author, on the node-type section: the four roots, their
+   descriptions and their subtypes "are too mixed visually", and
+   the same on risk markers, data types and tool capabilities. A
+   flat stack of rows separated by hairlines gives a root and its
+   child identical weight, so the one relation the vocabulary
+   exists to carry was the one thing the layout hid.
+
+   A card has an edge, so a group of terms is one object on the
+   page and a subterm drawn inside its parent's edge is visibly
+   inside it.
+
+   ── The usage counts are gone ──
+   "if on the right of each field, the numbers refer to the number
+   of blueprint where those components are used, delete them". They
+   did, and they are. `termUsageIndex` stays and is still exported,
+   because each term's own page answers "who uses it" in full and
+   the `/ontology` copy still counts how many cards spell a
+   deprecated id.
 
    Server components. `Registry`, `OntologyTerm` and
    `DARKPRINT_CONFIG` are the engine's own and carry no
@@ -13,7 +35,7 @@
    ============================================================ */
 
 import Link from "next/link";
-import type { OntologyTerm, OntologyView, Registry, TermKind } from "@/lib/core";
+import type { OntologyTerm, Registry, TermKind } from "@/lib/core";
 import { DARKPRINT_CONFIG } from "@/lib/core";
 import { Badge } from "@/components/ui/Badge";
 import { cx } from "@/lib/format";
@@ -223,66 +245,37 @@ export function DeprecationMark({ term }: { term: OntologyTerm }) {
   );
 }
 
+/* --------------------- the card --------------------- */
+
 /**
- * "12 cards · 6 blueprints", or an explicit nobody-yet.
+ * One vocabulary entry: what it is called, what it is spelled, whether it is still the
+ * current spelling, what it costs if anything, and what it means.
  *
- * `narrower` is the count of terms this one subsumes. A term with children and no cards
- * of its own is an abstract category — `human-in-the-loop`, `evaluative`,
- * `execution-risk`, `isolation-breach` — and no card ever declares one directly; that is
- * the point of it. Printing "unused" over such a row says the opposite of what is true,
- * since a rule written about the category catches every card under it.
+ * `subterms` is what the term subsumes, rendered inside this card's own border. Nesting
+ * is the `broader` relation and nothing else carries it, so a card with children reads as
+ * one group and a reader never has to work out whether two adjacent entries are siblings.
  */
-export function UsageMeta({
-  usage,
-  narrower = 0,
-  className,
-}: {
-  usage: TermUsage;
-  narrower?: number;
-  className?: string;
-}) {
-  if (usage.cards.length === 0) {
-    return (
-      <span className={cx("font-mono text-[11px] text-dim", className)}>
-        {narrower > 0
-          ? `category · ${narrower} narrower`
-          : "not declared in this archive"}
-      </span>
-    );
-  }
-  return (
-    <span className={cx("font-mono text-[11px] tabular-nums text-dim", className)}>
-      {usage.cards.length} card{usage.cards.length === 1 ? "" : "s"} ·{" "}
-      {usage.blueprints.length} blueprint{usage.blueprints.length === 1 ? "" : "s"}
-    </span>
-  );
-}
-
-/* --------------------- the row --------------------- */
-
-/**
- * One vocabulary entry: what it is called, what it is spelled, whether it is still
- * the current spelling, how much of the registry leans on it, and what it means.
- */
-export function TermRow({
+export function TermCard({
   term,
-  usage,
-  narrower = 0,
   showWeight = false,
+  subterms,
   className,
 }: {
   term: OntologyTerm;
-  usage: TermUsage;
-  /** How many terms this one subsumes — see `UsageMeta`. */
-  narrower?: number;
   /** Show the doc 3 §5 weight. Only risk markers carry one, and only a priced one shows. */
   showWeight?: boolean;
+  subterms?: React.ReactNode;
   className?: string;
 }) {
   const weight = showWeight ? markerWeight(term) : undefined;
   return (
-    <div className={cx("flex flex-col gap-1", className)}>
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
+    <li
+      className={cx(
+        "flex flex-col gap-1.5 rounded-lg border border-line bg-surface-2/50 p-4",
+        className,
+      )}
+    >
+      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <Link
           href={termHref(term.id)}
           className="font-display text-[15px] font-semibold leading-snug text-fg transition-colors hover:text-cyan"
@@ -291,37 +284,34 @@ export function TermRow({
         </Link>
         <code className="font-mono text-[11px] text-dim">{term.id}</code>
         {term.deprecated !== undefined && <DeprecationMark term={term} />}
-        {weight !== undefined && <WeightChip weight={weight} />}
-        <UsageMeta usage={usage} narrower={narrower} className="ml-auto" />
+        {weight !== undefined && (
+          <span className="ml-auto">
+            <WeightChip weight={weight} />
+          </span>
+        )}
       </div>
-      <p className="max-w-3xl text-sm leading-relaxed text-muted">{term.description}</p>
-    </div>
+      <p className="text-sm leading-relaxed text-muted">{term.description}</p>
+      {subterms}
+    </li>
   );
 }
 
-/* --------------------- the flat table --------------------- */
+/* --------------------- the flat grid --------------------- */
 
 /**
- * A list of terms with no hierarchy worth drawing — the five phases, which doc 3 §2
- * keeps flat and closed, and the tool capabilities, which sit one level under a single
- * root. The kinds that *are* deep (node types, risk markers, data types) get `TermTree`.
+ * A list of terms with no hierarchy worth drawing: the five phases, which doc 3 §2 keeps
+ * flat and closed. The kinds that *are* deep (node types, risk markers, data types, tool
+ * capabilities) get `TermTree`, which groups them by `broader`.
  *
  * `terms` is taken as given rather than re-sorted: the phases have to read in doc 3 §2's
  * lifecycle order, which is not the alphabetical order `byKind` returns.
- *
- * `ontology` is optional and only used to count what each term subsumes, so an abstract
- * category is labelled as one instead of as an unused term.
  */
 export function TermTable({
   terms,
-  usage,
-  ontology,
   showWeight = false,
   className,
 }: {
   terms: readonly OntologyTerm[];
-  usage: ReadonlyMap<string, TermUsage>;
-  ontology?: OntologyView;
   showWeight?: boolean;
   className?: string;
 }) {
@@ -329,20 +319,9 @@ export function TermTable({
     return <p className="text-sm text-dim">This vocabulary declares no terms of that kind.</p>;
   }
   return (
-    <ul className={cx("divide-y divide-line", className)}>
+    <ul className={cx("grid gap-3 sm:grid-cols-2", className)}>
       {terms.map((term) => (
-        <li key={term.id} className="py-3 first:pt-0 last:pb-0">
-          <TermRow
-            term={term}
-            usage={usage.get(term.id) ?? NO_USAGE}
-            narrower={
-              ontology === undefined
-                ? 0
-                : ontology.children(term.id).filter((c) => c.kind === term.kind).length
-            }
-            showWeight={showWeight}
-          />
-        </li>
+        <TermCard key={term.id} term={term} showWeight={showWeight} />
       ))}
     </ul>
   );

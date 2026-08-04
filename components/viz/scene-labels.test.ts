@@ -36,13 +36,8 @@ import { describe, expect, it } from "vitest";
 
 import { getNodeCard, getOntologyView } from "@/lib/content";
 import { WhichTasksGlance } from "@/components/explain/WhichTasksGlance";
-import {
-  InsideACardFigure,
-  TheHarnessFigure,
-} from "@/components/explain/ConceptFigures";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionLevels } from "@/components/home/SectionLevels";
-import { ForkScene } from "@/components/home/lifecycle/ForkScene";
 import { SectionNodeIsCard } from "@/components/home/SectionNodeIsCard";
 import { SectionRoles } from "@/components/home/SectionRoles";
 import { DezoomGraph } from "@/components/home/nodecard/DezoomGraph";
@@ -97,16 +92,10 @@ function latticeProps(): { chain: string[]; kin: string[] } {
  * character per panel and nothing this file has anything to measure.
  * `LatticeFigure` is laid out from the vocabulary.
  *
- * `DezoomGraph` and `ForkScene` are each rendered directly, and both are a judgement call
- * for the same reason. `DezoomGraph`'s two props are a link and a classification that no
- * glyph is placed from, and its parent is a scroll stage whose hooks do nothing on the
- * server, so rendering the stage would buy the same two frames through more machinery.
- * `ForkScene` takes no props at all, but its one caller in the built site,
- * `components/blueprint/ForkAction.tsx`, is a disclosure that defaults closed
- * (lifecycle-scoring pass §3.2): `renderToStaticMarkup` on that component returns the
- * toggle button alone and no `<svg>`, which would measure a figure the site draws on
- * every open click as zero frames. Rendering the leaf is the only way this file measures
- * it at all.
+ * `DezoomGraph` is rendered directly, which is a judgement call: its two props are a link
+ * and a classification that no glyph is placed from, and its parent is a scroll stage
+ * whose hooks do nothing on the server, so rendering the stage would buy the same two
+ * frames through more machinery.
  */
 interface SceneEntry {
   /** Repo-relative paths of the files whose `<FlowScene` this entry measures. */
@@ -137,13 +126,9 @@ const ROSTER: readonly SceneEntry[] = [
     frames: 5,
     render: () => framesOf(createElement(SectionLevels)),
   },
-  {
-    // Rendered as a leaf, not through `ForkAction` — see the comment on `SceneEntry`
-    // above for why the disclosure it actually sits inside cannot be measured here.
-    files: ["components/home/lifecycle/ForkScene.tsx"],
-    frames: 1,
-    render: () => framesOf(createElement(ForkScene)),
-  },
+  // `components/home/lifecycle/ForkScene.tsx` had an entry here and the file is gone.
+  // `ForkAction` was its only caller and the author asked the drawing out of that panel,
+  // which left the scene with nowhere to render.
   {
     files: ["components/home/nodecard/DezoomGraph.tsx"],
     frames: 2,
@@ -161,16 +146,11 @@ const ROSTER: readonly SceneEntry[] = [
     frames: 1,
     render: () => framesOf(createElement(WhichTasksGlance)),
   },
-  {
-    // Two scenes in one file, so both are rendered and their frames counted together:
-    // one inside a node card, one zoomed out to the graph with the harness around it.
-    files: ["components/explain/ConceptFigures.tsx"],
-    frames: 2,
-    render: () => [
-      ...framesOf(createElement(InsideACardFigure)),
-      ...framesOf(createElement(TheHarnessFigure)),
-    ],
-  },
+  // `components/explain/ConceptFigures.tsx` had an entry here, for two `FlowScene`
+  // drawings. Both are gone: they drew card fields as lit nodes, which in this register
+  // says a field is a step in the run, and the author asked for figures outside the
+  // blueprint style. What replaced them is boxes and rules with no scene in the file, so
+  // the derived roster below stops expecting one.
   {
     files: ["components/howto/IsolationWall.tsx"],
     frames: 1,
@@ -226,9 +206,14 @@ const DRAWERS = [...sourcesUnder("components"), ...sourcesUnder("app")]
 describe("the guard covers every scene the site draws", () => {
   it("finds the drawings by walking the tree", () => {
     // A grep that matched nothing would leave every case below with nothing to check.
-    // Was 12. `AbsentEdgeGraph.tsx` was deleted with `/what-it-isnt`, its only mount, so
-    // the tree really does draw one fewer scene. The floor guards the walk, not the count.
-    expect(DRAWERS.length).toBeGreaterThan(11);
+    // Was 12, then 11 when `AbsentEdgeGraph.tsx` went with `/what-it-isnt`, its only
+    // mount. Two more scenes have gone since, both on the author's word rather than
+    // through refactoring: `ConceptFigures.tsx` was rebuilt out of this register entirely
+    // ("graphics that are not necessarly drawn from a 'blueprint' style") and no longer
+    // contains a `<FlowScene`, and `lifecycle/ForkScene.tsx` was deleted when the drawing
+    // was asked out of `ForkAction`, its only caller. The floor guards the walk, not the
+    // count: lower it when a scene is genuinely deleted, never to make a case pass.
+    expect(DRAWERS.length).toBeGreaterThan(8);
     expect(DRAWERS).toContain("components/home/SectionRoles.tsx");
     expect(DRAWERS).toContain("components/spec/LatticeFigure.tsx");
   });

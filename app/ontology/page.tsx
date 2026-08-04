@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { OntologyTerm, TermKind } from "@/lib/core";
 import { CORE_PHASE_IDS, partitionTerms } from "@/lib/core";
 import { getOntologyView, getRegistry } from "@/lib/content";
+import { ReachList, ReachRow } from "@/components/ui/ReachList";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Stat } from "@/components/ui/Stat";
 import { TermTree, termRootIds } from "@/components/ontology/TermTree";
@@ -19,6 +20,26 @@ export const metadata: Metadata = {
 };
 
 /** A term id quoted inside prose, in the same mono the rows use. */
+/**
+ * A link from the figure above into the section that holds those terms.
+ *
+ * It points at the `<section>`, which carries its own id and `scroll-mt-24`, rather than
+ * at the `<h2>` the section is labelled by. Two reasons, and the second is the guard's:
+ * landing on the panel's top edge reads better than landing on its heading, and the
+ * heading's id is written inside `KindHeader`, where `components/site/anchors.test.ts`
+ * cannot see the offset class that would have to sit beside it.
+ */
+function KindLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      className="text-fg underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan hover:decoration-cyan"
+    >
+      {children}
+    </a>
+  );
+}
+
 function Id({ children }: { children: string }) {
   return <code className="font-mono text-[0.92em] text-fg">{children}</code>;
 }
@@ -83,7 +104,6 @@ export default function OntologyPage() {
   // Stated in the copy beside each tree rather than guessed at: v0.1 draws exactly the
   // subsumption edges doc 3 §3 and §4 draw, which leaves several kinds with many roots.
   const nodeTypeRoots = termRootIds(view, "node-type").length;
-  const dataTypeRoots = termRootIds(view, "data-type").length;
 
   // What arrived through the local-namespace channel of doc 3 §7, counted rather than
   // asserted: this archive ships an overlay, and a page claiming it does not would be
@@ -128,7 +148,7 @@ export default function OntologyPage() {
       status: "not built",
       glyph: "○",
       color: "var(--color-dim)",
-      body: "A local term that recurs across enough distinct authors is meant to be flagged, reviewed by validators, and adopted into the core with an equivalence pointer left behind so nothing that referenced it breaks. That workflow does not exist. The usage figures on this page are the evidence its first phase would read; nothing acts on them, no threshold has been calibrated, and no term has ever been promoted.",
+      body: "A local term that recurs across enough distinct authors is meant to be flagged, reviewed by validators, and adopted into the core with an equivalence pointer left behind so nothing that referenced it breaks. That workflow does not exist. The usage figures on each term's own page are the evidence its first phase would read; nothing acts on them, no threshold has been calibrated, and no term has ever been promoted.",
     },
   ];
 
@@ -171,6 +191,51 @@ export default function OntologyPage() {
         />
         <Stat value={`v${version}`} label="Version" accent="var(--color-cyan-bright)" />
       </div>
+
+      {/* ---------- Which card line each list supplies ---------- */}
+      {/* The five sections below are five separate lists, and until this figure the only
+          way to learn which line of a card each one is reached from was to read the
+          paragraph at the head of every section. That is the labyrinth the author keeps
+          naming. The row → gloss drawing from `/concepts` answers it in one screen, and
+          each row links to the section that holds the terms, so it doubles as the page's
+          table of contents. Counts are read off the vocabulary, not typed. */}
+      <ReachList
+        className="mt-12"
+        label="Five lists, five fields"
+        caption="Where a card reaches into the vocabulary."
+        footnote={
+          <>
+            Everything above is a reference, not free text, which is what lets an analyzer
+            reason about a graph it has never seen. Two fields on a card are deliberately
+            not in here: <code className="font-mono text-muted">mcp</code> names a process
+            somebody installed, and <code className="font-mono text-muted">agent</code> is
+            a label the engine never reads.
+          </>
+        }
+      >
+        <ReachRow field="phase" value={`${phases.length} terms`}>
+          <KindLink href="#phases">Phases</KindLink>, the lifecycle. The one
+          dimension a local namespace cannot extend.
+        </ReachRow>
+        <ReachRow field="type" value={`${nodeTypes.length} terms`}>
+          <KindLink href="#node-types">Node types</KindLink>, what kind of step
+          this is. Arranged by <Id>broader</Id>, so a rule about a parent catches every
+          child that ships later.
+        </ReachRow>
+        <ReachRow field="tools" value={`${tools.length} terms`}>
+          <KindLink href="#tools">Tools</KindLink>, what the node is permitted to
+          do.
+        </ReachRow>
+        <ReachRow field="risk_markers" value={`${riskMarkers.length} terms`}>
+          <KindLink href="#risk-markers">Risk markers</KindLink>, what it could
+          damage. Each one carries a weight the security metric charges.
+        </ReachRow>
+        <ReachRow field="inputs · outputs" value={`${dataTypes.length} terms`}>
+          <KindLink href="#data-types">Data types</KindLink>, what travels along
+          an edge. The only kind of term a <code className="font-mono text-muted">cannot</code>{" "}
+          entry can be enforced against.
+        </ReachRow>
+      </ReachList>
 
       {/* ---------- §7 layered governance ---------- */}
       <section className="mt-12 flex flex-col gap-5" aria-labelledby="governance-heading">
@@ -216,7 +281,11 @@ export default function OntologyPage() {
       {/* ---------- The vocabulary ---------- */}
       <div className="mt-12 flex flex-col gap-8">
         {/* Phases — doc 3 §1–§2, doc 2 §8 */}
-        <section className="panel overflow-hidden" aria-labelledby="phases-heading">
+        <section
+          id="phases"
+          className="panel overflow-hidden scroll-mt-24"
+          aria-labelledby="phases-heading"
+        >
           <KindHeader
             id="phases-heading"
             kind="phase"
@@ -227,10 +296,9 @@ export default function OntologyPage() {
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
               These five are what the word <em>blueprint</em> means here, from the request
               to a plan, from the plan to an artefact, to the checks, to the fix, to the
-              release, so they are listed in that order rather than alphabetically, and
-              they are the one dimension a local namespace cannot extend. A node type or
-              a risk marker can be coined by anybody; a sixth phase would be a different
-              definition of the thing being described.
+              release, so they are listed in that order rather than alphabetically. A node
+              type or a risk marker can be coined by anybody; a sixth phase would be a
+              different definition of the thing being described.
             </p>
             <p className="max-w-3xl border-l-2 border-violet/50 pl-4 text-sm leading-relaxed text-muted">
               A card&apos;s <Id>phase</Id> names one of them, several of them, or none.
@@ -244,26 +312,30 @@ export default function OntologyPage() {
               phases it leaves to somebody else, and nothing scores a node for standing
               outside them.
             </p>
-            <TermTable terms={phases} usage={usage} ontology={view} />
+            <TermTable terms={phases} />
           </div>
         </section>
 
         {/* Node types */}
-        <section className="panel overflow-hidden" aria-labelledby="node-types-heading">
+        <section
+          id="node-types"
+          className="panel overflow-hidden scroll-mt-24"
+          aria-labelledby="node-types-heading"
+        >
           <KindHeader
             id="node-types-heading"
             kind="node-type"
             count={nodeTypes.length}
-            meta={`indented by broader · ${nodeTypeRoots} roots`}
+            meta={`${nodeTypeRoots} roots · subtypes inside`}
           />
           <div className="flex flex-col gap-5 px-5 py-5">
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
-              A card&apos;s <Id>type</Id> names one of these. Indentation is the{" "}
-              <Id>broader</Id> relation, and it is load-bearing: a node typed{" "}
-              <Id>human-input</Id> puts a person in the loop because <Id>human-input</Id>{" "}
-              is a kind of <Id>human-in-the-loop</Id>, which is the only question the
-              autonomy metric asks, not because anybody remembered to tick a flag. Write
-              a rule about the parent and it catches every child that ships later.
+              A subtype drawn inside a card is <Id>broader</Id>&apos;s other end, and the
+              relation is load-bearing: a node typed <Id>human-input</Id> puts a person in
+              the loop because{" "}
+              <Id>human-input</Id> is a kind of <Id>human-in-the-loop</Id>, which is the
+              only question the autonomy metric asks, not because anybody remembered to
+              tick a flag.
             </p>
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
               There are {nodeTypeRoots} roots below, not one. <Id>agent</Id> and{" "}
@@ -285,22 +357,25 @@ export default function OntologyPage() {
                   : `${stillSpelledThatWay} card${stillSpelledThatWay === 1 ? "" : "s"} in the registry still spell it that way, and nothing forces them to change.`}
               </p>
             )}
-            <TermTree kind="node-type" ontology={view} usage={usage} />
+            <TermTree kind="node-type" ontology={view} />
           </div>
         </section>
 
         {/* Risk markers */}
-        <section className="panel overflow-hidden" aria-labelledby="risk-markers-heading">
+        <section
+          id="risk-markers"
+          className="panel overflow-hidden scroll-mt-24"
+          aria-labelledby="risk-markers-heading"
+        >
           <KindHeader
             id="risk-markers-heading"
             kind="risk-marker"
             count={riskMarkers.length}
-            meta="heaviest first"
+            meta="grouped by category · heaviest first"
           />
           <div className="flex flex-col gap-5 px-5 py-5">
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
-              What a node puts at stake. The security analyzer starts every blueprint at a
-              clean 4 and subtracts the weight of every marker present, then clamps the
+              The security analyzer starts every blueprint at a clean 4 and subtracts the weight of every marker present, then clamps the
               result into 1–4. A marker counts <strong className="font-medium text-fg">
               once for the whole blueprint</strong> however many nodes carry it, gravity,
               not frequency, and the explanation still lists every node that fired it.
@@ -319,22 +394,25 @@ export default function OntologyPage() {
               changing one is a patch of the ontology version, because it re-scores every
               blueprint in the archive.
             </p>
-            <TermTable terms={riskMarkers} usage={usage} ontology={view} showWeight />
+            <TermTree kind="risk-marker" ontology={view} showWeight />
           </div>
         </section>
 
         {/* Data types */}
-        <section className="panel overflow-hidden" aria-labelledby="data-types-heading">
+        <section
+          id="data-types"
+          className="panel overflow-hidden scroll-mt-24"
+          aria-labelledby="data-types-heading"
+        >
           <KindHeader
             id="data-types-heading"
             kind="data-type"
             count={dataTypes.length}
-            meta={`indented by broader · ${dataTypeRoots} root${dataTypeRoots === 1 ? "" : "s"}`}
+            meta="grouped under any"
           />
           <div className="flex flex-col gap-5 px-5 py-5">
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
-              What travels along an edge. Every port on every card declares one, and the
-              resolver checks both ends before a blueprint is allowed to load: an edge
+              Every port on every card declares one, and the resolver checks both ends before a blueprint is allowed to load: an edge
               type-checks when the producer&apos;s type is the consumer&apos;s, or
               something narrower than it. <Id>any</Id> sits at the top and accepts
               everything, which is also the last thing you want on a port that matters.{" "}
@@ -342,25 +420,29 @@ export default function OntologyPage() {
               the analyzer finds the node that produces the criteria, and therefore how it
               can tell whether the node being judged can see them.
             </p>
-            <TermTree kind="data-type" ontology={view} usage={usage} />
+            <TermTree kind="data-type" ontology={view} />
           </div>
         </section>
 
         {/* Tools */}
-        <section className="panel overflow-hidden" aria-labelledby="tools-heading">
+        <section
+          id="tools"
+          className="panel overflow-hidden scroll-mt-24"
+          aria-labelledby="tools-heading"
+        >
           <KindHeader id="tools-heading" kind="tool" count={tools.length} />
           <div className="flex flex-col gap-5 px-5 py-5">
             <p className="max-w-3xl text-sm leading-relaxed text-muted">
-              What a node needs from its host. A card lists capabilities, not vendors,{" "}
+              A card lists capabilities, not vendors,{" "}
               <Id>web-search</Id> rather than the name of one search API, so the same
               blueprint can be run on a different stack without rewriting a single card.
-              They sit flat under one root, unlike the hierarchies above. Note the
-              deliberate name collision: the node type <Id>tool</Id> is a node that does
+              They sit flat under one root, unlike the kinds above. Note the deliberate
+              name collision: the node type <Id>tool</Id> is a node that does
               something deterministic, and these are the capabilities such a node needs
               from its host. The two live in different dimensions and never resolve to
               each other.
             </p>
-            <TermTable terms={tools} usage={usage} ontology={view} />
+            <TermTree kind="tool" ontology={view} />
           </div>
         </section>
       </div>

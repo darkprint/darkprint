@@ -43,9 +43,12 @@ export function SectionHeading({
       <Title className="font-display text-3xl font-semibold leading-tight tracking-tight text-fg sm:text-4xl">
         {title}
       </Title>
-      {lead && (
-        <p className="max-w-2xl text-base leading-relaxed text-muted">{lead}</p>
-      )}
+      {/* Full width, not `max-w-2xl`. The measure was set for readability and the author
+          overruled it twice by pointing at the wrapped result: "the subdescription of the
+          title ... should occupy the full horizontal span ... the text should reach the
+          right." A centred block keeps its measure through `align`, and a caller that
+          genuinely wants a narrow lead can pass one on `className`. */}
+      {lead && <p className="text-base leading-relaxed text-muted">{lead}</p>}
     </div>
   );
 }

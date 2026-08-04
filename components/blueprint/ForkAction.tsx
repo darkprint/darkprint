@@ -4,8 +4,7 @@ import { useId, useState } from "react";
 import Link from "next/link";
 import { cx } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
-import { Sheet } from "@/components/viz";
-import { ForkScene } from "@/components/home/lifecycle/ForkScene";
+import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 
 /** Which page this action renders on, so its copy names the right thing. */
 type ForkKind = "blueprint" | "node";
@@ -14,16 +13,22 @@ type ForkKind = "blueprint" | "node";
  * "Fork blueprint", built to the locked design in this pass's spec §1 rather than to the
  * author's own words for it.
  *
- * The author's ask was the GitHub model verbatim: "the blueprint is forked in the user
- * account and then the user can download it, edit it and upload it back." There is no
- * account system, no server-side fork and none is being built this pass (Fase 4,
- * PROJECT.md §3.5) — so a button that fired a second download under a "fork" label would
- * either lie about what just happened or duplicate `DownloadPanel` under a worse name.
- * What ships instead is a real interaction: a disclosure holding `ForkScene` (already
- * built, already honest — "a property of the format", "either one runs on your machine"),
- * two sentences saying the same thing in words, and a link to `#download`, which already
- * lists every file a fork actually needs. "Get the files" has one honest answer on this
- * page, and this button points at it rather than inventing a second one.
+ * The author's ask is the GitHub model, restated this pass and sharpened: "the fork can
+ * be private to a user, the idea follows exactly the idea of github". So a fork belongs to
+ * an account, is visible only to its owner until they publish it, and the profile at
+ * `/u/[username]` is where it would be listed.
+ *
+ * None of that is built. There is no account system and none is being built this pass
+ * (Fase 4, PROJECT.md §3.5), so this panel says both halves and marks which is which: what
+ * forking does today, in the present tense, and what it is meant to become, behind
+ * `ComingSoonBadge`. A button that fired a second download under a "fork" label would
+ * either lie about what just happened or duplicate `DownloadPanel` under a worse name, so
+ * the link still points at `#download`, which already lists every file a fork needs.
+ *
+ * `ForkScene` used to hang at the top of this panel and the author asked it out. Its job
+ * was to show that a fork is a copied folder, which the sentence below says in fewer
+ * pixels, and drawing a published graph beside a forked one implied both copies exist
+ * somewhere on this site. They do not: one is yours, on your disk.
  *
  * A toggle button with `aria-expanded`, not a `<details>`: the panel has to sit inside a
  * `relative` wrapper so it can float below the button without stretching the header row
@@ -88,35 +93,25 @@ export function ForkAction({
           }
           className="absolute left-1/2 top-[calc(100%+0.5rem)] z-20 flex w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-3 rounded-lg border border-line-bright bg-surface-2 p-4 shadow-xl shadow-black/40"
         >
-          {/* Same drawing, same caption, `SectionLifecycle` used before this pass
-              retired that section (spec §2.1) — reused unmodified rather than resized,
-              because `FlowScene`'s `<svg>` is `w-full h-auto` over a `viewBox`: it already
-              scales to whatever this panel's width turns out to be, so shrinking the
-              frame here would only shrink it a second time. */}
-          <Sheet
-            register="blueprint"
-            label="cp -r · git init"
-            title="the same folder, edited"
-            note="a property of the format"
-          >
-            <ForkScene />
-          </Sheet>
+          <p className="text-xs leading-relaxed text-muted">
+            {kind === "node"
+              ? "Forking a card means copying this file into one of your own and editing it there: a line changed, or a person put where a step in the graph hands off. Either copy is a complete card."
+              : "Forking a blueprint means copying this folder into one of your own and editing it there: a card changed, or a person put where the release goes out. Either copy is a complete blueprint."}{" "}
+            <span className="text-fg">
+              This site holds no copy of it, and no account stands behind a fork.
+            </span>
+          </p>
 
-          {kind === "node" ? (
+          {/* The intended model, kept apart from the paragraph above so the present tense
+              and the future one are never read as one claim. */}
+          <div className="flex flex-col gap-1.5 rounded-md border border-amber/30 bg-amber/5 p-3">
+            <ComingSoonBadge className="self-start" />
             <p className="text-xs leading-relaxed text-muted">
-              Forking a card means copying this file into one of your own, the same edit
-              the drawing above shows: a line changed, or a person put where a step in the
-              graph hands off, and either copy is a complete card. This site holds no copy
-              of it, and no account stands behind a fork.
+              Forks are meant to work the way they do on GitHub: yours, kept private until
+              you publish, and listed on your profile. Accounts are not built, so today a
+              fork is a folder on your machine and nothing here knows about it.
             </p>
-          ) : (
-            <p className="text-xs leading-relaxed text-muted">
-              Forking a blueprint means copying this folder into one of your own, the same
-              edit the drawing above shows: a card changed, or a person put where the
-              release goes out, and either copy is a complete blueprint. This site holds no
-              copy of it, and no account stands behind a fork.
-            </p>
-          )}
+          </div>
 
           <Link
             href="#download"

@@ -10,9 +10,10 @@
 
    So this is a rewrite, not a move, and two of the three panels are not what stood here
    before. **Fork is gone from this page entirely.** The blueprint detail page now carries
-   its own `ForkAction`, a disclosure that draws the same `ForkScene` beside the download
-   button on the graph it applies to — a better place for it than a landing three clicks
-   away from any one blueprint, and this file no longer imports that scene at all. **Update
+   its own `ForkAction`, a disclosure sitting beside the download button on the graph it
+   applies to — a better place for it than a landing three clicks away from any one
+   blueprint. (`ForkScene`, the drawing that panel opened with, has since been asked out
+   of it and deleted; this file never imported it.) **Update
    is gone for a different reason**: it demonstrated `inferBump` on a synthetic edit
    (`lifecycle/bump-demo.ts`, deleted with it), and that narrative already has a home with
    real content — `components/nodes/VersionHistory.tsx` computes the same bump, off real
@@ -21,8 +22,8 @@
 
    What replaced fork's seat is **compose**: a DOT file is text, so wiring one graph's
    exit into another's entry, or lifting a card whole into a pipeline already being
-   written, is a property of the format today, the same register `ForkScene`'s own
-   caption uses for editing a copy. What replaced update's seat is **upload**, because §1
+   written, is a property of the format today, the same register `ForkAction` uses for
+   editing a copy. What replaced update's seat is **upload**, because §1
    of the pass locks in exactly what that claim may say: `/upload` parses and scores a
    bundle in the reader's own tab, and publishing it so someone else can find it is not
    built. Neither of the two honesty risks in this rewrite gets a backend; both get a real
