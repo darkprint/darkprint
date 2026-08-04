@@ -91,6 +91,7 @@ export function GraphThumbnail({
   graph,
   className,
   labels = false,
+  nodeLabels = true,
   ariaLabel = "Pipeline graph preview",
 }: {
   graph: BlueprintGraph;
@@ -101,6 +102,24 @@ export function GraphThumbnail({
    * meant to study.
    */
   labels?: boolean;
+  /**
+   * Print the node names and their kind labels.
+   *
+   * Off on a gallery tile, and the arithmetic is the reason. The viewBox is 570×220
+   * and `ContentCard` renders it into a 369×158 frame with `preserveAspectRatio`, a
+   * uniform scale of **0.647**: the 11px node name lands at **7.1 effective CSS
+   * pixels** and the 10px kind label at 6.5px, and on a phone thumbnail those become
+   * 5.8px and 5.2px. The names were then clipped at 15 characters, so a reader got
+   * `Acceptance Test…` at seven pixels — the ellipsis asserting the text was meant to
+   * be read while the size denied it.
+   *
+   * This is the same argument `labels` already makes for the edges one field above,
+   * applied to the thing it was never applied to. What survives at 0.647 is the part
+   * that carries the information anyway: the kind stripe's colour, the glyph, and the
+   * topology. The tile's `aria-label` names the blueprint, and the title sits directly
+   * under the drawing, so nothing legible is lost.
+   */
+  nodeLabels?: boolean;
   ariaLabel?: string;
 }) {
   const byId = new Map(graph.nodes.map((n) => [n.id, n]));
@@ -217,24 +236,41 @@ export function GraphThumbnail({
                 strokeWidth={1}
               />
               <rect width={4} height={NH} rx={2} fill={meta.color} />
-              <text
-                x={14}
-                y={17}
-                fontSize={10}
-                fill={meta.color}
-                fontFamily="var(--font-mono), monospace"
-              >
-                {meta.glyph} {meta.label}
-              </text>
-              <text
-                x={14}
-                y={31}
-                fontSize={11}
-                fill="var(--color-fg)"
-                fontFamily="var(--font-sans), sans-serif"
-              >
-                {n.label.length > 16 ? n.label.slice(0, 15) + "…" : n.label}
-              </text>
+              {nodeLabels ? (
+                <>
+                  <text
+                    x={14}
+                    y={17}
+                    fontSize={10}
+                    fill={meta.color}
+                    fontFamily="var(--font-mono), monospace"
+                  >
+                    {meta.glyph} {meta.label}
+                  </text>
+                  <text
+                    x={14}
+                    y={31}
+                    fontSize={11}
+                    fill="var(--color-fg)"
+                    fontFamily="var(--font-sans), sans-serif"
+                  >
+                    {n.label.length > 16 ? n.label.slice(0, 15) + "…" : n.label}
+                  </text>
+                </>
+              ) : (
+                /* The glyph alone, centred and at a size that survives the scale. It
+                   still says what kind of node this is, in the same colour as the
+                   stripe beside it, which is the fact the tile is carrying. */
+                <text
+                  x={14}
+                  y={NH / 2 + 5}
+                  fontSize={14}
+                  fill={meta.color}
+                  fontFamily="var(--font-mono), monospace"
+                >
+                  {meta.glyph}
+                </text>
+              )}
             </g>
           );
         })}

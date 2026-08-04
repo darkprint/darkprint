@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { cx } from "@/lib/format";
+import { useQueryState } from "@/components/ui/useQueryState";
 import { PHASE_ORDER } from "@/components/ui/PhaseCoverage";
 import { NodeCardSummary, type NodeSummary } from "./NodeCardSummary";
 
@@ -57,54 +58,6 @@ function phaseRank(phases: readonly { id: string }[]): number {
  * that collides with this.
  */
 const UNPHASED = "unphased";
-
-/* --------------------- the query string as a store --------------------- */
-
-/**
- * The address bar, as an external store React can subscribe to.
- *
- * `history.replaceState` fires no event, so anything that writes the URL has to tell
- * subscribers itself; `emit` is that. `popstate` covers the back and forward buttons,
- * which the browser does announce.
- *
- * Why a store and not `useState` seeded in an effect: seeding state from the URL inside
- * `useEffect` is `react-hooks/set-state-in-effect`, and the rule is right — it is a
- * cascading render, and the correct shape is the one its message describes, "subscribe
- * for updates from some external system, calling setState in a callback". Why not a
- * lazy `useState` initialiser reading `window.location`: it renders something the
- * server did not, which is a hydration mismatch on every shared link.
- *
- * `useSyncExternalStore` is the primitive built for exactly this. Its server snapshot is
- * the empty query, so the prerendered HTML is the whole unfiltered shelf, and React
- * re-renders once after hydration if the real URL carries filters. That re-render is
- * documented behaviour, not an error.
- */
-let queryListeners: Array<() => void> = [];
-
-function subscribeToQuery(onChange: () => void): () => void {
-  queryListeners = [...queryListeners, onChange];
-  window.addEventListener("popstate", onChange);
-  return () => {
-    queryListeners = queryListeners.filter((listener) => listener !== onChange);
-    window.removeEventListener("popstate", onChange);
-  };
-}
-
-const readQuery = (): string => window.location.search;
-
-/** The server has no address bar; an unfiltered shelf is what it can honestly render. */
-const readServerQuery = (): string => "";
-
-function writeQuery(next: string): void {
-  const url = next === "" ? window.location.pathname : `${window.location.pathname}?${next}`;
-  if (url === `${window.location.pathname}${window.location.search}`) return;
-  /* `replaceState`, not `pushState`: typing four characters into the search box should
-     not cost four presses of Back to undo. Because it replaces, the entry a reader
-     leaves behind when they open a card already carries their filters, so Back from
-     that card restores them for free. */
-  window.history.replaceState(null, "", url);
-  for (const listener of queryListeners) listener();
-}
 
 /* --------------------- the filter set --------------------- */
 
@@ -223,34 +176,23 @@ function FilterChip({
  * plain props from the server — the whole library is a few dozen rows, so there is
  * nothing to fetch and nothing to page.
  *
- * ── The filters live in the URL, written with history APIs ──
+ * ── The filters live in the URL ──
  * They used to live in five `useState` calls and nowhere else, which broke the one loop
  * this page exists for: filter, open a card, come back, open the next. Measured before
  * the change — narrow to `1 of 53`, open the card, press Back, and the grid returned
- * `53 of 53` with an empty query, no type, and scroll at 0. No filtered view could be
- * linked to from `/blueprints` or `/ontology`, bookmarked, or shared.
+ * `53 of 53` with an empty query, no type, and scroll at 0.
  *
- * **Not `useSearchParams`.** That is the framework's answer and it was tried first. The
- * Next docs require a `Suspense` boundary around it or the production build fails, and
- * then say why: the client tree up to that boundary becomes client-rendered. Measured
- * against `next start`, that shipped `/nodes` as 56KB containing **zero `<article>`
- * elements** — every one of the 53 cards left the prerendered HTML, on a static archive
- * whose whole claim is that it can be read. The URL here is being used as *storage*,
- * not as routing input, so the browser's own history API is the right size of tool and
- * costs the page nothing.
- *
- * `replaceState` rather than `pushState`, because typing four characters into the
- * search box should not cost four presses of Back to undo. Because it replaces, the
- * history entry a reader leaves when they open a card already carries their filters, so
- * Back restores them for free.
+ * `useQueryState` holds the mechanism and the reasoning, including why this is not
+ * `useSearchParams`. It is shared with `GalleryBrowser`, which had the same defect in a
+ * worse form. Two registry browsers solving one problem two ways was itself the bug
+ * under the bug.
  *
  * The server renders the unfiltered shelf, so a reader arriving on a shared link sees
  * the full grid narrow to their selection once React hydrates. That is the price of
  * keeping all 53 cards in the static HTML, and it is the right way round.
  */
 export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
-  const query = useSyncExternalStore(subscribeToQuery, readQuery, readServerQuery);
-  const params = useMemo(() => new URLSearchParams(query), [query]);
+  const { params, set: setParam, clear } = useQueryState();
 
   /* Every filter is read from the URL rather than mirrored into React state, so there
      is one source of truth and Back cannot disagree with the grid. */
@@ -273,13 +215,6 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
    */
   const [draft, setDraft] = useState<string | null>(null);
   const search = draft ?? (params.get("q") ?? "");
-
-  const setParam = useCallback((key: string, value: string | null) => {
-    const next = new URLSearchParams(window.location.search);
-    if (value === null || value === "") next.delete(key);
-    else next.set(key, value);
-    writeQuery(next.toString());
-  }, []);
 
   /* Debounced write for the typed query only. Setting state from a subscription
      callback is the pattern the effect rule asks for, so `draft` is released back to
@@ -435,10 +370,8 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
      narrowing of it, and clearing a search should not also re-sort the page. */
   const clearFilters = useCallback(() => {
     setDraft("");
-    const next = new URLSearchParams(window.location.search);
-    for (const key of ["q", "type", "phase", "human", "risk"]) next.delete(key);
-    writeQuery(next.toString());
-  }, []);
+    clear(["q", "type", "phase", "human", "risk"]);
+  }, [clear]);
 
   return (
     <div className="flex flex-col gap-6">

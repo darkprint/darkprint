@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQueryState } from "@/components/ui/useQueryState";
 import type { AutonomyClass, Blueprint } from "@/lib/types";
 import { cx } from "@/lib/format";
 import { ContentCard } from "@/components/ui/ContentCard";
@@ -43,83 +43,57 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 const controlClass =
   "rounded-md border border-line bg-surface-2 px-3 py-2 font-mono text-xs text-fg outline-none transition-colors focus:border-line-bright";
 
-/** Interactive tag chip — mirrors TagPill styling but toggles on click. */
-function TagChip({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cx(
-        "inline-flex cursor-pointer items-center rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors",
-        active
-          ? "border-cyan/60 bg-cyan/10 text-cyan"
-          : "border-line text-muted hover:border-line-bright hover:text-fg",
-      )}
-    >
-      #{label}
-    </button>
-  );
-}
-
-/**
- * Applies the `?tag=` deep link (a blueprint page links here with one of its tags).
- *
- * `useSearchParams` cannot be called while prerendering, so it lives in this leaf
- * behind its own Suspense boundary: the bail-out to client rendering stops at that
- * boundary and the browser above — controls, counts, card grid — still ships as
- * static HTML. Renders nothing; it only seeds state.
- */
-function TagFromQuery({
-  tags,
-  onTag,
-}: {
-  tags: readonly string[];
-  onTag: (tag: string) => void;
-}) {
-  const raw = useSearchParams().get("tag");
-
-  useEffect(() => {
-    // Ignore a tag that no blueprint carries, so a stale link cannot render an
-    // empty gallery with a filter the user never chose.
-    if (raw !== null && tags.includes(raw)) onTag(raw);
-  }, [raw, tags, onTag]);
-
-  return null;
-}
 
 export function GalleryBrowser({
   blueprints,
-  tags,
   categories,
 }: {
   /* Readonly throughout: these arrive frozen from the registry, and nothing here
      needs to write to them. */
   blueprints: readonly Blueprint[];
-  tags: readonly string[];
   categories: readonly string[];
 }) {
-  const [search, setSearch] = useState("");
-  const [tag, setTag] = useState<string | null>(null);
-  const [category, setCategory] = useState<string | null>(null);
-  const [phase, setPhase] = useState<string | null>(null);
-  const [autonomy, setAutonomy] = useState<AutonomyClass | null>(null);
+  const { params, set: setParam, clear } = useQueryState();
+
+  /* Every filter is read from the address bar rather than mirrored into React state, so
+     there is one source of truth and Back cannot disagree with the shelf. `?tag=` used
+     to be read once at mount and never written, which left `Clear filters` showing all
+     nine blueprints under a URL still reading `?tag=RAG`. */
+  const tag = params.get("tag");
+  const category = params.get("cat");
+  const phase = params.get("phase");
+  const rawAutonomy = params.get("autonomy");
+  const autonomy = (rawAutonomy as AutonomyClass | null) ?? null;
+
+  /* The search box is the one control that does not write on every keystroke: `draft`
+     is what has been typed since the last write, `null` means "follow the URL", and the
+     write is debounced because Safari throttles `replaceState`. */
+  const [draft, setDraft] = useState<string | null>(null);
+  const search = draft ?? (params.get("q") ?? "");
+
+  useEffect(() => {
+    if (draft === null) return;
+    const timer = setTimeout(
+      () => setParam("q", draft.trim() === "" ? null : draft),
+      250,
+    );
+    return () => clearTimeout(timer);
+  }, [draft, setParam]);
   /* Doc 2 §1.1 permits autonomy as a way in and forbids it as a ranking, and this is the
      same shape: a filter, never a sort, and the tiles still hide the token itself
      (`showDarkFactory={false}` in `ContentCard`). What it selects became a real question
      on 2026-08-04, when `isDarkFactory` started requiring all five lifecycle phases as
      well as an unattended graph. Before that it meant "nobody stands in this graph",
      which the autonomy class beside it already said. */
-  const [darkFactory, setDarkFactory] = useState(false);
-  const [sort, setSort] = useState<SortKey>("recent");
+  const darkFactory = params.get("df") === "1";
+  const rawSort = params.get("sort");
+  const sort: SortKey = SORT_OPTIONS.some((o) => o.value === rawSort)
+    ? (rawSort as SortKey)
+    : "recent";
+  /* The disclosure below is open when a filter inside it is set, so a reader can never
+     have an active filter they cannot see. `TagFromQuery` sets one from `?tag=`, which is
+     exactly that case. */
+  const [narrowOpen, setNarrowOpen] = useState(false);
 
   /*
    * Doc 2 §1.1 — autonomy as a way in, and never as a league table. The list offers only
@@ -210,6 +184,13 @@ export function GalleryBrowser({
     return sorted;
   }, [blueprints, search, tag, category, phase, autonomy, darkFactory, sort]);
 
+  /** How many of the filters behind the disclosure are set. Printed on the summary. */
+  const narrowCount =
+    (tag !== null ? 1 : 0) +
+    (phase !== null ? 1 : 0) +
+    (autonomy !== null ? 1 : 0) +
+    (darkFactory ? 1 : 0);
+
   const hasFilters =
     search.trim() !== "" ||
     tag !== null ||
@@ -218,25 +199,40 @@ export function GalleryBrowser({
     autonomy !== null ||
     darkFactory;
 
-  function clearFilters() {
-    setSearch("");
-    setDarkFactory(false);
-    setTag(null);
-    setCategory(null);
-    setPhase(null);
-    setAutonomy(null);
-  }
+  /** The filters actually on, named the way the reader set them, for the empty state. */
+  const activeFilters = [
+    search.trim() !== "" && `“${search.trim()}”`,
+    category !== null && category,
+    tag !== null && `#${tag}`,
+    phase !== null && phase,
+    autonomy !== null && autonomy,
+    darkFactory && "dark factory",
+  ].filter((label): label is string => typeof label === "string");
+
+  /* The sort survives a reset: it is how the reader chose to read the shelf, not a
+     narrowing of it. One write, so one history entry rather than six. */
+  const clearFilters = useCallback(() => {
+    setDraft("");
+    clear(["q", "tag", "cat", "phase", "autonomy", "df"]);
+  }, [clear]);
 
   return (
     <div className="flex flex-col gap-6">
-      <Suspense fallback={null}>
-        <TagFromQuery tags={tags} onTag={setTag} />
-      </Suspense>
+      {/* ---------------- control bar ----------------
 
-      {/* control bar */}
+          It carried **37 interactive controls before the first of 9 blueprints**, 30 of
+          them tag pills. Measured against the archive: 24 of those 30 tags match exactly
+          one blueprint and none matches more than two, so four fifths of the row was a
+          one-item lookup wearing a facet's clothes. A shelf of nine does not need
+          faceting sized for thousands, and the reader arriving from the landing's
+          argument met a wall instead of the work.
+
+          Three controls stay in the open, because they are the three questions somebody
+          browsing nine things actually asks: what is it called, what kind is it, what
+          order do I want them in. Everything else moves behind one disclosure that says
+          how many filters are active, so nothing is hidden and nothing is lost. */}
       <div className="panel flex flex-col gap-4 p-4">
-        {/* Four controls now, so the row wraps rather than crushing the selects. */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative min-w-[14rem] flex-1">
             <span
               aria-hidden
@@ -247,10 +243,14 @@ export function GalleryBrowser({
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => setDraft(e.target.value)}
               placeholder="Search blueprints, summaries, tags…"
               aria-label="Search blueprints"
-              className="w-full rounded-md border border-line bg-surface-2 py-2 pl-8 pr-3 text-sm text-fg placeholder:text-faint outline-none transition-colors focus:border-line-bright"
+              /* `text-dim` (5.43:1), not `text-faint` (1.83:1). The twin control in
+                 `components/nodes/NodeBrowser.tsx` already carried this fix and a comment
+                 explaining it; it was never applied to this file. A placeholder is the
+                 only hint of what the field accepts. */
+              className="w-full rounded-md border border-line bg-surface-2 py-2 pl-8 pr-3 text-sm text-fg placeholder:text-dim outline-none transition-colors focus:border-line-bright"
             />
           </div>
 
@@ -258,7 +258,7 @@ export function GalleryBrowser({
             <span className="sr-only">Filter by category</span>
             <select
               value={category ?? ""}
-              onChange={(e) => setCategory(e.target.value || null)}
+              onChange={(e) => setParam("cat", e.target.value || null)}
               aria-label="Filter by category"
               className={controlClass}
             >
@@ -272,72 +272,10 @@ export function GalleryBrowser({
           </label>
 
           <label className="flex items-center gap-2">
-            <span className="sr-only">Filter by phase covered</span>
-            <select
-              value={phase ?? ""}
-              onChange={(e) => setPhase(e.target.value || null)}
-              aria-label="Filter by phase covered"
-              className={controlClass}
-            >
-              <option value="">All phases</option>
-              {phases.map((id) => (
-                <option key={id} value={id}>
-                  Covers {phaseLabel(id).toLowerCase()}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {/* Doc 2 §1.1: the class picks a subset, it never orders the page. */}
-          <label className="flex items-center gap-2">
-            <span className="sr-only">Filter by autonomy class</span>
-            <select
-              value={autonomy ?? ""}
-              onChange={(e) =>
-                setAutonomy(
-                  e.target.value === "" ? null : (e.target.value as AutonomyClass),
-                )
-              }
-              aria-label="Filter by autonomy class"
-              className={controlClass}
-            >
-              <option value="">All autonomy classes</option>
-              {classes.map(([value, { label }]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {/* A toggle rather than a fifth dropdown: it is one yes/no property, and a
-              select reading "All blueprints / Dark factories" would put a second
-              all-or-one control beside the class one that already offers a subset. The
-              tiles do not print the token, so this is the only place on the shelf the
-              property is reachable at all. */}
-          <label
-            className={cx(
-              "flex cursor-pointer select-none items-center gap-2 rounded-md border px-3 py-2 font-mono text-xs transition-colors",
-              darkFactory
-                ? "border-line-bright bg-surface-3 text-fg"
-                : "border-line bg-surface-2 text-muted hover:text-fg",
-            )}
-          >
-            <input
-              type="checkbox"
-              checked={darkFactory}
-              onChange={(e) => setDarkFactory(e.target.checked)}
-              className="h-3.5 w-3.5 accent-cyan"
-            />
-            <span aria-hidden>◼</span>
-            dark factory
-          </label>
-
-          <label className="flex items-center gap-2">
             <span className="sr-only">Sort blueprints</span>
             <select
               value={sort}
-              onChange={(e) => setSort(e.target.value as SortKey)}
+              onChange={(e) => setParam("sort", e.target.value === "recent" ? null : e.target.value)}
               aria-label="Sort blueprints"
               className={controlClass}
             >
@@ -350,25 +288,130 @@ export function GalleryBrowser({
           </label>
         </div>
 
-        {/* tag chips */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          {tags.map((t) => (
-            <TagChip
-              key={t}
-              label={t}
-              active={tag === t}
-              onClick={() => setTag((prev) => (prev === t ? null : t))}
-            />
-          ))}
-        </div>
+        {/* Controlled rather than a bare `<details>`: `TagFromQuery` can set a tag from a
+            deep link, and a filter the reader did not choose and cannot see is worse than
+            the row this replaced. */}
+        <details
+          open={narrowOpen || narrowCount > 0}
+          onToggle={(e) => setNarrowOpen(e.currentTarget.open)}
+          className="group/narrow border-t border-line pt-3"
+        >
+          <summary className="flex cursor-pointer list-none items-center gap-2 font-mono text-xs text-muted transition-colors hover:text-fg">
+            <span aria-hidden className="transition-transform group-open/narrow:rotate-90">
+              ▸
+            </span>
+            Narrow further
+            {narrowCount > 0 && (
+              <span className="rounded-full border border-cyan/50 bg-cyan/10 px-2 py-0.5 text-[10px] text-cyan">
+                {narrowCount} active
+              </span>
+            )}
+          </summary>
+
+          <div className="mt-4 flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <label className="flex items-center gap-2">
+                <span className="sr-only">Filter by phase covered</span>
+                <select
+                  value={phase ?? ""}
+                  onChange={(e) => setParam("phase", e.target.value || null)}
+                  aria-label="Filter by phase covered"
+                  className={controlClass}
+                >
+                  <option value="">All phases</option>
+                  {phases.map((id) => (
+                    <option key={id} value={id}>
+                      Covers {phaseLabel(id).toLowerCase()}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {/* Doc 2 §1.1: the class picks a subset, it never orders the page. */}
+              <label className="flex items-center gap-2">
+                <span className="sr-only">Filter by autonomy class</span>
+                <select
+                  value={autonomy ?? ""}
+                  onChange={(e) => setParam("autonomy", e.target.value || null)}
+                  aria-label="Filter by autonomy class"
+                  className={controlClass}
+                >
+                  <option value="">All autonomy classes</option>
+                  {classes.map(([value, { label }]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label
+                className={cx(
+                  "flex cursor-pointer select-none items-center gap-2 rounded-md border px-3 py-2 font-mono text-xs transition-colors",
+                  darkFactory
+                    ? "border-line-bright bg-surface-3 text-fg"
+                    : "border-line bg-surface-2 text-muted hover:text-fg",
+                )}
+              >
+                <input
+                  type="checkbox"
+                  checked={darkFactory}
+                  onChange={(e) => setParam("df", e.target.checked ? "1" : null)}
+                  className="h-3.5 w-3.5 accent-cyan"
+                />
+                <span aria-hidden>◼</span>
+                dark factory
+              </label>
+            </div>
+
+            {/* One removable chip, not thirty.
+                ------------------------------------------------------------
+                The row rendered every tag in the archive, alphabetically, uncounted.
+                Measured against every `blueprint.yaml` in the archive: of 30 tags, **24
+                match exactly one blueprint and 6 match two — none matches three**. The
+                best narrowing any chip could deliver was 9 → 2, on a shelf a reader
+                scrolls past in one screen. That is a hyperlink with extra steps, and
+                every one of those hyperlinks is already printed on the tile it points
+                at and on the detail page it opens.
+
+                It also cost the most: 308px tall at phone width, thirteen wrapped rows,
+                43% of a 714px viewport — and the disclosure auto-opens on the `?tag=`
+                path that every blueprint detail page links through, so the wall sat on
+                the busiest road into this page. The chips were single-select behaving
+                as thirty `aria-pressed` toggles, so pressing one silently unpressed
+                another with nothing announced.
+
+                What remains is the part that was load-bearing: the deep link stays
+                legible and removable. Tags are still reachable — the search box matches
+                `tags.join(" ")`, and every tile prints its own. */}
+            {tag !== null && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-[11px] text-dim">Tag</span>
+                <button
+                  type="button"
+                  onClick={() => setParam("tag", null)}
+                  aria-label={`Remove the ${tag} tag filter`}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-cyan/60 bg-cyan/10 px-2.5 py-1 font-mono text-[11px] text-cyan transition-colors hover:border-cyan"
+                >
+                  #{tag}
+                  <span aria-hidden>×</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </details>
       </div>
 
-      {/* result count + reset */}
+      {/* result count + reset.
+          `role="status"` so the number is announced when it changes. Every filter here
+          swapped the grid in silence: a reader using a screen reader typed a query and
+          had no way to tell whether it matched nine, one, or none. The sibling browser
+          already carried this fix; it was never brought across. */}
       <div className="flex items-center justify-between gap-3 font-mono text-xs text-dim">
-        <span>
+        <p role="status" aria-live="polite" aria-atomic="true">
           <span className="text-fg">{results.length}</span> of{" "}
           {blueprints.length} blueprint{blueprints.length === 1 ? "" : "s"}
-        </span>
+        </p>
         {hasFilters && (
           <button
             type="button"
@@ -389,12 +432,28 @@ export function GalleryBrowser({
         </div>
       ) : (
         <div className="panel flex flex-col items-center gap-3 px-6 py-16 text-center">
-          <p className="font-display text-lg font-semibold text-fg">
+          {/* An `h2`, so the outline does not run `h1` straight to the footer's `h3`
+              when the nine tile headings unmount with the last result. */}
+          <h2 className="font-display text-lg font-semibold text-fg">
             No blueprints match
-          </p>
+          </h2>
+          {/* Names the filters that are actually on, rather than guessing. The line
+              read "Try a broader query or drop a tag" to a reader who had typed a query
+              and set no tag — advice for a filter they did not have, while the one they
+              did have went unmentioned. */}
           <p className="max-w-md text-sm text-muted">
-            Nothing in the registry matches these filters. Try a broader query
-            or drop a tag.
+            Nothing in the registry matches{" "}
+            {activeFilters.length === 0 ? (
+              <>these filters</>
+            ) : (
+              activeFilters.map((f, i) => (
+                <span key={f}>
+                  {i > 0 && (i === activeFilters.length - 1 ? " and " : ", ")}
+                  <span className="text-fg">{f}</span>
+                </span>
+              ))
+            )}
+            .
           </p>
           {hasFilters && (
             <button

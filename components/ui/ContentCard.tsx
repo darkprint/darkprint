@@ -84,8 +84,14 @@ export function ContentCard({
 
       {/* preview */}
       <div className="relative h-40 overflow-hidden border-y border-line bg-blueprint-deep/40 bp-grid">
+        {/* `nodeLabels={false}`: this frame is 369×158 and the drawing's viewBox is
+            570×220, a uniform scale of 0.647, so the node names rendered at 7.1
+            effective pixels and their kind labels at 6.5 — 5.8 and 5.2 on a phone —
+            clipped at 15 characters. The glyph, the kind colour and the topology all
+            survive that scale; the words did not. See the prop's own comment. */}
         <GraphThumbnail
           graph={item.graph}
+          nodeLabels={false}
           className="h-full w-full p-2 opacity-90 transition-transform duration-300 group-hover:scale-[1.03]"
           ariaLabel={`${item.title} pipeline preview`}
         />

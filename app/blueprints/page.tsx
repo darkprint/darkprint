@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { GalleryBrowser } from "@/components/gallery/GalleryBrowser";
 import { allBlueprints, getRegistry } from "@/lib/content";
@@ -54,7 +56,6 @@ export const metadata: Metadata = {
 export default function BlueprintsPage() {
   const blueprints = allBlueprints();
   const registry = getRegistry();
-  const tags = registry.tags();
   const categories = registry.categories();
 
   return (
@@ -64,11 +65,27 @@ export default function BlueprintsPage() {
             mattered less while this page was one heading; the sr-only "The shelf" `h2`
             under it means a page whose outline starts at level two gives a screen reader
             a sibling `h2` and no title. */}
+        {/* The lead was 49 words defining the noun, on the surface a reader reaches
+            after deciding they want one. `/what-a-blueprint-is` is a nav item one click
+            away whose entire job is that definition, and the landing spends five beats on
+            it before anybody arrives here. What this page owes a visitor is what is on
+            the shelf and what to do with it. */}
         <SectionHeading
           as="h1"
           eyebrow="Registry"
           title="Blueprints"
-          lead="A blueprint is an agent pipeline written down as a graph: every node pinned to a card that says what it runs, what it takes in, what it hands on and what it must never receive. It is a folder of text you can read here and take away."
+          lead={
+            <>
+              Every one is a folder of text: read the graph here, take it away, run it
+              with your own tools.{" "}
+              <Link
+                href="/what-a-blueprint-is"
+                className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"
+              >
+                What a blueprint is <span aria-hidden>&rarr;</span>
+              </Link>
+            </>
+          }
         />
       </div>
 
@@ -85,7 +102,7 @@ export default function BlueprintsPage() {
             the option text, the control bar repeats it beside the select, and every
             tile's two counts carry it in `ContentCard`. */}
         <h2 className="sr-only">The shelf</h2>
-        <GalleryBrowser blueprints={blueprints} tags={tags} categories={categories} />
+        <GalleryBrowser blueprints={blueprints} categories={categories} />
       </div>
     </>
   );
