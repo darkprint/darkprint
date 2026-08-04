@@ -162,10 +162,11 @@ export function DownloadStep({
             is §5's duplication, so what is left here is the part the panel does not say:
             that nothing was recorded, and how to check the bytes against the page. */}
         <div className="flex flex-col gap-3">
-          <p className="text-[13px] leading-relaxed text-muted">
-            Nothing was uploaded and nothing was recorded. The graph was assembled and
-            scored in this tab.
-          </p>
+          {/* "Nothing was uploaded and nothing was recorded" is gone from here. It was
+              the fourth telling on this route and the second on this screen:
+              `DownloadPanel`, twenty lines above, already says execution happens on the
+              reader's machine and that the site holds none of their keys, which is the
+              same claim and more of it. */}
           <p className="text-[13px] leading-relaxed text-muted">
             The <code className="font-mono text-fg">{BUNDLE_README}</code>{" "}states the
             digest these files hash to and quotes both computed readings in the

@@ -36,6 +36,23 @@ import { CARD_BLOCKS, type PaneFocus, type PaneModel } from "./model";
    see the prop's own doc comment for who leaves it off and why.
    ============================================================ */
 
+/* ── Why this pane is amber and not cyan ──
+   The author's call, 2026-08-04: "I want also identity, behaviour and the subfield all in
+   orange like Open card."
+
+   It started with `Open card →` alone, on the rule `app/globals.css` records: amber marks
+   the things that leave the page. I stopped there and said so, because on the rest of the
+   site amber also means "not built yet" and I did not want the field marks reading as
+   warnings. The author looked at the result and wanted the block whole.
+
+   That is a defensible line and worth stating so nobody quietly re-blues it: this pane is
+   *about* a node, and everything in it points at one. The section labels name the card's
+   blocks, the `▪`/`◌` marks say which fields that card writes, and the link opens the
+   card's own page. One warm block reads as one subject, where a warm link inside a cool
+   panel read as an exception.
+
+   The collision globals.css warns about does not arise here. `ComingSoonBadge` is a pill
+   and never renders in these panes, and nothing in this component states a limit. */
 export function SkeletonPane({
   paneNumber,
   model,
@@ -133,7 +150,7 @@ export function SkeletonPane({
           id={`pane-${paneNumber}-heading`}
           className="flex items-center gap-2 font-mono text-xs text-muted"
         >
-          <span className="text-cyan" aria-hidden>
+          <span className="text-amber" aria-hidden>
             ▦
           </span>
           <span className="text-dim">{paneNumber}</span> The card skeleton
@@ -192,7 +209,7 @@ export function SkeletonPane({
                     blockIndex === 0 ? "border-b" : "border-y",
                   )}
                 >
-                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-cyan">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-amber">
                     {block.label}
                   </span>
                   <span className="font-mono text-[10px] text-dim">{block.ref}</span>
@@ -259,14 +276,14 @@ export function SkeletonPane({
                       className={cx(
                         "flex cursor-pointer items-baseline gap-2 border-l-2 px-3 py-1.5",
                         chosen
-                          ? "border-cyan bg-cyan/10"
+                          ? "border-amber bg-amber/10"
                           : "border-transparent hover:bg-surface-2/60",
                       )}
                     >
                       <span
                         className={cx(
                           "font-mono text-[11px]",
-                          field.filled ? "text-cyan" : "text-dim",
+                          field.filled ? "text-amber" : "text-dim",
                         )}
                         aria-hidden
                       >
@@ -275,7 +292,7 @@ export function SkeletonPane({
                       <code
                         className={cx(
                           "shrink-0 font-mono text-[12px]",
-                          chosen ? "text-cyan" : "text-fg",
+                          chosen ? "text-amber" : "text-fg",
                         )}
                       >
                         {field.key}
@@ -301,7 +318,7 @@ export function SkeletonPane({
           </div>
 
           <p className="border-t border-line px-3 py-2 text-[11px] leading-relaxed text-dim">
-            <span className="font-mono text-cyan" aria-hidden>
+            <span className="font-mono text-amber" aria-hidden>
               ▪
             </span>{" "}
             the card writes a value.{" "}
