@@ -85,17 +85,48 @@ export function BlueprintGraph({
     [graph, highlighted],
   );
 
+  /* Where each node sits, so an edge can tell whether it runs forward or back. */
+  const positionOf = useMemo(() => {
+    const at = new Map<string, { x: number; y: number }>();
+    for (const n of graph.nodes) at.set(n.id, n.position);
+    return at;
+  }, [graph]);
+
   const edges: Edge[] = useMemo(
     () =>
       graph.edges.map((e) => {
         const variant = e.variant ?? "flow";
         const color = EDGE_COLOR[variant];
+        /* A return edge, and why it needs its own curvature.
+           ------------------------------------------------------------
+           React Flow's default bezier bends by a quarter of the horizontal span. Running
+           forward that reads as a wire. Running *back* the span is negative, so the curve
+           collapses into a shallow S that leaves the source's right port, crosses under
+           the nodes between, and arrives at the target's left port having spent most of
+           its length hidden behind the boxes it passes. On the starter that is the
+           debugger's `patch` edge returning to the tester, and the author read it as a
+           visual typo: the loop, which is the most interesting thing the graph says, was
+           the least visible line in it.
+
+           Curvature scales with how far back the edge reaches, so a short return arcs
+           just enough to clear the gap and a long one lifts clear of everything under it.
+           Capped, because past about 1.2 the curve overshoots the frame the panel
+           reserves. Every blueprint gets this: it keys on the geometry, not on a slug. */
+        const from = positionOf.get(e.source);
+        const to = positionOf.get(e.target);
+        const backwards = from !== undefined && to !== undefined && to.x <= from.x;
+        const reach = backwards && from !== undefined && to !== undefined
+          ? Math.abs(from.x - to.x)
+          : 0;
         return {
           id: e.id,
           source: e.source,
           target: e.target,
           label: e.label,
           animated: variant === "flow",
+          ...(backwards
+            ? { pathOptions: { curvature: Math.min(1.2, 0.55 + reach / 900) } }
+            : {}),
           style: {
             stroke: color,
             strokeWidth: 1.6,
@@ -110,7 +141,7 @@ export function BlueprintGraph({
           markerEnd: { type: MarkerType.ArrowClosed, color, width: 16, height: 16 },
         } satisfies Edge;
       }),
-    [graph],
+    [graph, positionOf],
   );
 
   const instance = useRef<ReactFlowInstance<AgentFlowNode, Edge> | null>(null);

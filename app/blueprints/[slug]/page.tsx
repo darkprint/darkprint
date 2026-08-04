@@ -40,7 +40,7 @@ import { BundlePanel, type BundleNode } from "@/components/blueprint/BundlePanel
 import { DownloadPanel, type DownloadCard } from "@/components/blueprint/DownloadPanel";
 import { Comments } from "@/components/blueprint/Comments";
 import { ForkAction } from "@/components/blueprint/ForkAction";
-import { Requirements } from "@/components/blueprint/Requirements";
+import { SuggestedModels, ToolScopes } from "@/components/blueprint/Requirements";
 
 /** Every slug is known at build time; an unknown one is a 404, not an on-demand render. */
 export const dynamicParams = false;
@@ -376,8 +376,16 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             out of the sticky aside column (see the comment above) so the graph and
             Score keep their own natural sizes instead of the column being stretched
             to hold three panels' worth of content. */}
-        <More summary="Requirements">
-          <Requirements agents={bp.requiredAgents} tools={bp.requiredTools} />
+        {/* Two panels where there was one called "Requirements". The models are a
+            suggestion the author ran on and a reader may override; what the graph is
+            allowed to reach is a fact about its blast radius and the input to the
+            security reading, so it stands on its own. */}
+        <More summary="Suggested models">
+          <SuggestedModels agents={bp.requiredAgents} />
+        </More>
+
+        <More summary="Tool scopes">
+          <ToolScopes tools={bp.requiredTools} />
         </More>
 
         <More summary="Bundle">

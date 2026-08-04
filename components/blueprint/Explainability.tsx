@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import type {
   AutonomyContribution,
   AutonomyResult,
@@ -747,6 +749,36 @@ function BlindChannelRow({
  * carries the engine's own sentence, the nodes and the hint. Saying it twice on one
  * screen reads as two leaks.
  */
+/**
+ * One of the three isolation checks, and what it found.
+ *
+ * `finding === undefined` is the clean case and it is a real answer, not an absence: the
+ * check ran and had nothing to report. It gets the emerald tick the rest of the site uses
+ * for a figure the engine read, never a colour that would make a clean check look like an
+ * achievement or a dirty one like a fault (doc 2 §1.1's register).
+ *
+ * "Could not be traced" is neither pass nor fail and says so in its own words. The panel
+ * above already carries `◌ partly traced` for that state; this row is what makes it
+ * specific.
+ */
+function CriteriaCheck({ label, finding }: { label: string; finding?: string }) {
+  const clean = finding === undefined;
+  return (
+    <li className="flex items-baseline gap-2 text-xs leading-relaxed">
+      <span
+        aria-hidden
+        className={cx("font-mono", clean ? "text-emerald" : "text-amber")}
+      >
+        {clean ? "✓" : "▲"}
+      </span>
+      <span className="text-dim">{label}</span>
+      <span className={cx("ml-auto shrink-0 font-mono text-[11px]", clean ? "text-emerald" : "text-amber")}>
+        {clean ? "nothing found" : finding}
+      </span>
+    </li>
+  );
+}
+
 function CriteriaIsolation({
   security,
   nodeNames,
@@ -783,18 +815,41 @@ function CriteriaIsolation({
         including where it could not look.
       </p>
 
-      <More summary="What the analyzer looks for">
-        <ul className="flex list-disc flex-col gap-1.5 pl-4 text-xs leading-relaxed text-dim">
-          <li>
-            A path from the node that produces the acceptance criteria to any node
-            feeding a validation node.
-          </li>
-          <li>
-            A card that declares both the criteria and the artefact its judge reads.
-          </li>
-          <li>The criteria turning up in a generator&rsquo;s own prose.</li>
-        </ul>
-      </More>
+      {/* The three checks with what each one found, in the open.
+
+          This was a `<More summary="What the analyzer looks for">` listing the checks and
+          stopping there, so a reader learned what the analyzer hunts for and never which
+          of them came back clean. The author: "here you should report those aspect that
+          where checked and are ok."
+
+          Each result is read off the verdict rather than restated: `unanchored` means the
+          walk could not run, an inferred leak means it found a route, a declared leak is
+          the card's own statement, and `suspected` is the content detector. A check with
+          nothing against it says so, which is the whole point of showing them. */}
+      <ul className="flex flex-col gap-1.5">
+        <CriteriaCheck
+          label="A path from the criteria to a node feeding a validation node"
+          finding={
+            unanchored !== undefined
+              ? "could not be traced"
+              : inferred
+                ? "a route was found"
+                : undefined
+          }
+        />
+        <CriteriaCheck
+          label="A card declaring both the criteria and the artefact its judge reads"
+          finding={leaks.length > 0 && !inferred ? "declared on a card" : undefined}
+        />
+        <CriteriaCheck
+          label="The criteria turning up in a generator's own prose"
+          finding={
+            suspected.length > 0
+              ? `${suspected.length} overlap${suspected.length === 1 ? "" : "s"} reported`
+              : undefined
+          }
+        />
+      </ul>
 
       <div className={cx("rounded-md border px-4 py-3", meta.border)}>
         {state === "leak" && (
@@ -964,6 +1019,7 @@ function CriteriaIsolation({
               />
             ))}
           </ul>
+
         </div>
       )}
 
@@ -983,11 +1039,6 @@ function CriteriaIsolation({
               channel is dangerous for. Restated in the open, in the panel's own words.
               The engine's version, with the doc's Italian and the iteration cap, stays on
               the row. */}
-          <p className="text-xs leading-relaxed text-dim">
-            The walk stops at a validation node on purpose: seeing the evidence of a
-            failure you caused is feedback, seeing the criteria is gaming, and the
-            analyzer names the channel rather than deciding what crosses it.
-          </p>
           <ul className="divide-y divide-line">
             {relayed.map((d, i) => (
               <BlindChannelRow
@@ -1001,6 +1052,28 @@ function CriteriaIsolation({
               />
             ))}
           </ul>
+
+          {/* Under the list, not above it.
+
+              The author asked for this sentence gone: it reads as an explanation of how
+              the check works, and this panel is meant to report what the check found.
+              They are right about the position and it cannot simply go. It is a ledger
+              claim held `open` (`components/site/honesty.test.ts`), and the reason is in
+              the entry: the engine writes the same thing into the hint on every row of
+              the list above, and every one of those hints is behind a closed disclosure.
+              Delete this and the distinction between feedback and gaming leaves the
+              visible page entirely, which is PROJECT.md §3.1's failure exactly.
+
+              So it moves rather than goes. Above the list it was a preamble a reader had
+              to get through before the findings; below it, it is the footnote that says
+              why the findings above are worth naming. Removing it outright means removing
+              the ledger entry, which is the author's call to make knowingly and not one
+              to take inside a layout pass. */}
+          <p className="text-xs leading-relaxed text-dim">
+            The walk stops at a validation node on purpose: seeing the evidence of a
+            failure you caused is feedback, seeing the criteria is gaming, and the
+            analyzer names the channel rather than deciding what crosses it.
+          </p>
         </div>
       )}
 
@@ -1077,9 +1150,19 @@ function SecurityPanel({
         </span>
       </summary>
 
+      {/* The arithmetic used to be restated here: "Four points to start, minus the
+          weight of every risk marker present". `/spec/scoring` describes the whole
+          scale, every weight and both cuts, and the author's ruling is that it belongs
+          there rather than on each of nine blueprint pages. What this panel is for is
+          the ledger underneath, which says what *this* graph was charged. */}
       <p className="mb-3 text-sm leading-relaxed text-muted">
-        Four points to start, minus the weight of every risk marker present — charged
-        once for the blueprint, whichever nodes fired it.
+        What this graph was charged, and for what.{" "}
+        <Link
+          href="/spec/scoring#weights"
+          className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"
+        >
+          How a blueprint is graded <span aria-hidden>→</span>
+        </Link>
       </p>
 
       {/* Scrolls sideways on a narrow viewport and holds no focusable cell, so it

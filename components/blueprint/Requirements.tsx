@@ -76,13 +76,24 @@ function ChipList({
   );
 }
 
-export function Requirements({
+/**
+ * The models this blueprint's cards name.
+ *
+ * Called `Requirements` once, with the tool scopes folded in beside it. Both halves of
+ * that were wrong. A card's `model` line is what its author ran it on, and Attractor
+ * takes it as written, but a reader is free to point the graph at something else: a node
+ * attribute is overridable and the README says so. "Requirements" said the bundle would
+ * not work otherwise, which is a stronger claim than the format makes.
+ *
+ * And the tool scopes were never the same subject. What a graph is allowed to reach is a
+ * fact about its blast radius, and it is what the security reading is computed from, so
+ * it stands on its own rather than sharing a box with a suggestion.
+ */
+export function SuggestedModels({
   agents,
-  tools,
   className,
 }: {
   agents: string[];
-  tools: string[];
   className?: string;
 }) {
   return (
@@ -94,6 +105,20 @@ export function Requirements({
         emptyHint="No named agent roles; runs on a single generalist."
         contextWindows={MODEL_CONTEXT_WINDOW}
       />
+    </div>
+  );
+}
+
+/** What the graph is allowed to reach. Its own panel; see `SuggestedModels`. */
+export function ToolScopes({
+  tools,
+  className,
+}: {
+  tools: string[];
+  className?: string;
+}) {
+  return (
+    <div className={cx("flex flex-col gap-5", className)}>
       <ChipList
         label="Tool scopes"
         items={tools}
