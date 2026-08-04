@@ -142,10 +142,21 @@ export function SkeletonPane({
           <span className="font-mono text-[11px] text-dim">
             {card === undefined ? focus.node.nodeId : card.ref}
           </span>
+          {/* Amber, not cyan. This is the one control in the block that leaves the page:
+              it goes to the node's own route. `app/globals.css` records the rule the
+              `.route-box` boxes follow, and this is the same rule at inline scale, so a
+              reader who has learned that amber-with-an-arrow means "you are leaving"
+              reads it the same way here.
+
+              Deliberately the only thing recoloured. The select above it says "Jump to a
+              node" but jumps *within* these panes, so amber on it would promise a
+              departure that never happens. The `▪` and `◌` marks on the field rows encode
+              whether the card writes a value, which is a fact about the card and not a
+              destination. */}
           {linkToCard && card !== undefined && (
             <Link
               href={nodeHref(card.id)}
-              className="font-mono text-[11px] text-cyan underline-offset-4 hover:underline"
+              className="font-mono text-[11px] text-amber underline-offset-4 transition-colors hover:text-amber-bright hover:underline"
             >
               Open card →
             </Link>

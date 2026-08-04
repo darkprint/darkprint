@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SectionLevels } from "@/components/home/SectionLevels";
-import { CLIMB_ROUTE, RoutePager } from "@/components/howto";
+import { RoutePager } from "@/components/howto";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
@@ -92,8 +92,6 @@ const AROUND: { title: string; body: string }[] = [
 ];
 
 export default function TowardsPage() {
-  const [, ...onwards] = CLIMB_ROUTE;
-
   return (
     <>
       <header className="border-b border-line bg-void py-16 sm:py-20">
@@ -105,34 +103,16 @@ export default function TowardsPage() {
             lead="Start by finding yourself on the ladder below. Where you land decides which problem you have, and the two pages after this one answer the two questions that follow."
           />
 
-          <ul className="mt-10 grid gap-4 sm:grid-cols-2">
-            {onwards.map((stop, i) => (
-              <li key={stop.href}>
-                <Link
-                  href={stop.href}
-                  /* `route-box`, like the pagers and the layer doors: these two leave the
-                     page, and the author asked for the boxes that do to be told apart
-                     from the ones carrying a concept. They wore `panel` when the language
-                     was introduced, which made this header the one place on the route
-                     where an exit looked like content. */
-                  className="route-box group flex h-full flex-col gap-1.5 p-5"
-                >
-                  {/* The position, so a reader knows this card is a stop on a route and
-                      how far along. Derived from `CLIMB_ROUTE`, never typed: `onwards`
-                      drops the first stop, so index 0 here is stop 2. `SpecPager`'s own
-                      label was a hand-written "in four parts" against a five-item rail
-                      once, which is the failure this avoids by construction. */}
-                  <span className="route-label">
-                    Stop {i + 2} of {CLIMB_ROUTE.length} <span aria-hidden>→</span>
-                  </span>
-                  <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors group-hover:text-amber-bright">
-                    {stop.label}
-                  </span>
-                  <span className="text-sm leading-relaxed text-muted">{stop.blurb}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {/* The two onward cards that stood here are gone, on the author's
+              instruction. They were an index of the route printed before the route's own
+              content had begun: a reader met "Stop 3 of 3" between the lead and the
+              ladder, before being offered stop 2 and before seeing anything the stops are
+              about. The audit of this page counted that among its boundary defects, and
+              orange made the problem more visible rather than less, since the first block
+              on the page was then also the loudest.
+
+              Nothing is lost. `RoutePager` at the foot offers the next stop, in position,
+              at the point a reader has finished this one. */}
         </div>
       </header>
 
