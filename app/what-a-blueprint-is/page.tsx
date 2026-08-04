@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { allBlueprints, allNodeCards } from "@/lib/content";
+import { allBlueprints, allNodeCards, getNodeCard, getOntologyView } from "@/lib/content";
+import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
 import { ButtonLink } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
@@ -64,6 +65,9 @@ export const metadata: Metadata = {
     "A blueprint is a reusable pattern for getting work done by agents: a graph of automations, one versioned card per node, written against a shared vocabulary. Download one, hand it to Claude Code, publish what you build.",
 };
 
+/** The blueprint every worked example on this site opens with. */
+const STARTER_SLUG = "starter-software-factory";
+
 const LINK =
   "font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan";
 
@@ -72,12 +76,15 @@ function Part({
   title,
   href,
   hrefLabel,
+  figure,
   children,
 }: {
   index: string;
   title: string;
   href: string;
   hrefLabel: string;
+  /** What the part looks like. Every one is read off the archive, never drawn by hand. */
+  figure?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -86,6 +93,16 @@ function Part({
         <span className="font-mono text-[11px] tracking-[0.18em] text-dim">{index}</span>
         <h3 className="font-display text-lg font-semibold text-fg">{title}</h3>
       </div>
+      {figure !== undefined && (
+        /* Above the sentence, not below it. The three panels are a reader's first sight
+           of the objects they name, and a picture under a paragraph is something you
+           reach after deciding to read; the point here is that it is what makes you
+           decide. `h-28` on all three so the three panels stay the same height whatever
+           each figure's natural aspect is. */
+        <div className="flex h-28 items-center justify-center overflow-hidden rounded-lg border border-line bg-blueprint-deep/40 bp-grid px-3 py-2">
+          {figure}
+        </div>
+      )}
       <p className="text-sm leading-relaxed text-muted">{children}</p>
       <Link href={href} className={`${LINK} mt-auto`}>
         {hrefLabel}
@@ -94,9 +111,53 @@ function Part({
   );
 }
 
+/** One line of the card figure: a field name and what this card put in it. */
+function CardRow({ field, value }: { field: string; value: string }) {
+  return (
+    <div className="flex items-baseline gap-2 font-mono text-[10px] leading-[1.45]">
+      <span className="w-14 shrink-0 text-dim">{field}</span>
+      <span className="truncate text-fg">{value}</span>
+    </div>
+  );
+}
+
+/** One line of the vocabulary figure: a term and the kind it belongs to. */
+function TermRow({ kind, id }: { kind: string; id: string }) {
+  return (
+    <div className="flex items-baseline gap-2 font-mono text-[10px] leading-[1.45]">
+      <span className="w-[4.5rem] shrink-0 text-violet">{kind}</span>
+      <span className="truncate text-fg">{id}</span>
+    </div>
+  );
+}
+
 export default function WhatABlueprintIsPage() {
-  const blueprints = allBlueprints().length;
+  const all = allBlueprints();
+  const blueprints = all.length;
   const cards = allNodeCards().length;
+
+  /* The three figures, all read off the archive at build time.
+
+     None of them is drawn for the page. A picture of a graph that is not one of the
+     graphs, or a card with invented fields in it, would be the one thing this page
+     cannot afford: it exists to say what these objects are, and an illustration that
+     no file backs is a claim about a file that does not exist. `architecture/ontology.md`
+     records the same rule for counts, and it holds harder for pictures.
+
+     By slug, and checked. `seed` looked like the way to reach the starter and is not:
+     it flags the two blueprints the note highlights (`lib/data/community.ts`), and
+     `find((bp) => bp.seed)` drew Adversarial Consensus Line here. The starter is what
+     every other worked example on the site opens with, so a reader who met it on the
+     landing meets it again, and `SectionNodeCard` and `SectionRoles` name it the same
+     way. The fallback keeps the panel drawn rather than blank if it is ever renamed. */
+  const starter = all.find((bp) => bp.slug === STARTER_SLUG) ?? all[0];
+  const builder = getNodeCard("code-builder");
+  const view = getOntologyView();
+  /* Two of each kind, in the vocabulary's own order. A controlled list is what it looks
+     like: the kind on the left, the term on the right, and the same word spelled once. */
+  const terms = (["phase", "data-type", "risk-marker"] as const).flatMap((kind) =>
+    view.byKind(kind).slice(0, 2).map((term) => ({ kind, id: term.id })),
+  );
 
   return (
     <>
@@ -125,6 +186,15 @@ export default function WhatABlueprintIsPage() {
               title="The graph"
               href="/spec/topology"
               hrefLabel="The topology, in DOT"
+              figure={
+                starter === undefined ? undefined : (
+                  <GraphThumbnail
+                    graph={starter.graph}
+                    className="h-full w-full"
+                    ariaLabel={`${starter.title}, as a graph`}
+                  />
+                )
+              }
             >
               A directed graph in a subset of DOT, saying which node hands what to which.
               What it leaves out matters as much: an edge nobody drew is a connection
@@ -135,6 +205,26 @@ export default function WhatABlueprintIsPage() {
               title="The cards"
               href="/spec/card"
               hrefLabel="The node card, in YAML"
+              figure={
+                builder === undefined ? undefined : (
+                  /* Four fields off the real `code-builder` card, not four lines of its
+                     YAML: a text slice would be a listing, and `scripts/measure-prose.ts`
+                     records what listings do to a page that is meant to be read. `cannot`
+                     is one of the four because it is the half of the interface nothing
+                     else on this page shows. */
+                  <div className="w-full max-w-[15rem]">
+                    <CardRow field="id" value={builder.card.id} />
+                    <CardRow field="type" value={builder.card.type} />
+                    <CardRow field="model" value={builder.card.model ?? "inherits"} />
+                    <CardRow
+                      field="cannot"
+                      value={
+                        builder.card.cannot[0] ?? "nothing declared"
+                      }
+                    />
+                  </div>
+                )
+              }
             >
               One versioned card per node, saying what runs there, which model it uses,
               what it may reach, and what must never reach it. {cards} of them are
@@ -142,6 +232,13 @@ export default function WhatABlueprintIsPage() {
             </Part>
             <Part
               index="03"
+              figure={
+                <div className="w-full max-w-[15rem]">
+                  {terms.map((term) => (
+                    <TermRow key={term.id} kind={term.kind} id={term.id} />
+                  ))}
+                </div>
+              }
               title="The vocabulary"
               href="/spec/ontology"
               hrefLabel="The vocabulary"
