@@ -278,6 +278,59 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
             {card.name}
           </h1>
+
+          {/* Provenance and the two actions, directly under the title rather than below
+              the chips and the action sentence — the same move the blueprint page's
+              header makes, for the same reason: who wrote this card, which version it
+              is, and how to take it are what a reader wants before the vocabulary
+              chips. The row itself is unchanged; only where it sits. */}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+            {author !== undefined ? (
+              <AuthorChip author={author} />
+            ) : (
+              <span className="font-mono text-xs text-dim">
+                {card.author ?? "unattributed"}
+              </span>
+            )}
+            <span className="font-mono text-xs text-dim">{record.ref}</span>
+            <span className="font-mono text-xs text-dim">
+              used in {usedIn.length} blueprint{usedIn.length === 1 ? "" : "s"}
+            </span>
+            {/* Same emerald figure the blueprint page's header uses, but the "seeded"
+                marker stays here rather than following that page's redesign: the
+                blueprint page can drop it from its header line because the Score panel
+                below still says "seeded" in the same file (doc 2 §0.4's rule is per
+                file, not per line — `autonomy-surfaces.test.ts`). This page has no other
+                paragraph that names it, so the marker has to live beside the figure it
+                governs or the page prints a seeded number as a fact. Moving the row up
+                keeps them together, which is the whole of what that rule asks. */}
+            <span className="font-mono text-xs">
+              <span className="text-emerald">↓ {compact(downloads)} downloads</span>{" "}
+              <span className="text-amber" title="Seeded — no counter stands behind it">
+                <span aria-hidden>◐ </span>seeded
+              </span>
+            </span>
+            {/* Fork first, download second — the same grouping and the same reasoning
+                the blueprint page's header row uses: `ForkAction` is the disclosure, the
+                button beside it is the one real download this row promises. The group
+                carries `id="download"` (with `scroll-mt-24`, matching every other
+                in-page anchor target — `anchors.test.ts`) since this page has no
+                separate `DownloadPanel` for `ForkAction`'s `#download` link to
+                target. */}
+            <div id="download" className="ml-auto flex scroll-mt-24 items-center gap-2">
+              <ForkAction kind="node" />
+              {source !== undefined && (
+                <ButtonLink
+                  href={`data:text/yaml;charset=utf-8,${encodeURIComponent(source)}`}
+                  download={`${record.ref}.yaml`}
+                  prefetch={false}
+                >
+                  Download card
+                </ButtonLink>
+              )}
+            </div>
+          </div>
+
           <div className="flex flex-wrap items-center gap-3">
             <KindBadge kind="node" />
             {/* The two dimensions, side by side and each named. They are the same kind
@@ -336,50 +389,6 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-          {author !== undefined ? (
-            <AuthorChip author={author} />
-          ) : (
-            <span className="font-mono text-xs text-dim">
-              {card.author ?? "unattributed"}
-            </span>
-          )}
-          <span className="font-mono text-xs text-dim">{record.ref}</span>
-          <span className="font-mono text-xs text-dim">
-            used in {usedIn.length} blueprint{usedIn.length === 1 ? "" : "s"}
-          </span>
-          {/* Same emerald figure the blueprint page's header uses, but the "seeded"
-              marker stays here rather than following that page's redesign: the
-              blueprint page can drop it from its header line because the Score panel
-              below still says "seeded" in the same file (doc 2 §0.4's rule is per
-              file, not per line — `autonomy-surfaces.test.ts`). This page has no other
-              paragraph that names it, so the marker has to live beside the figure it
-              governs or the page prints a seeded number as a fact. */}
-          <span className="font-mono text-xs">
-            <span className="text-emerald">↓ {compact(downloads)} downloads</span>{" "}
-            <span className="text-amber" title="Seeded — no counter stands behind it">
-              <span aria-hidden>◐ </span>seeded
-            </span>
-          </span>
-          {/* Fork first, download second — the same grouping and the same reasoning
-              the blueprint page's header row uses: `ForkAction` is the disclosure, the
-              button beside it is the one real download this row promises. The group
-              carries `id="download"` (with `scroll-mt-24`, matching every other
-              in-page anchor target — `anchors.test.ts`) since this page has no
-              separate `DownloadPanel` for `ForkAction`'s `#download` link to target. */}
-          <div id="download" className="ml-auto flex scroll-mt-24 items-center gap-2">
-            <ForkAction kind="node" />
-            {source !== undefined && (
-              <ButtonLink
-                href={`data:text/yaml;charset=utf-8,${encodeURIComponent(source)}`}
-                download={`${record.ref}.yaml`}
-                prefetch={false}
-              >
-                Download card
-              </ButtonLink>
-            )}
-          </div>
-        </div>
       </header>
 
       {/* ---------- Body ---------- */}

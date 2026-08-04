@@ -172,6 +172,62 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
             {bp.title}
           </h1>
+
+          {/* Provenance and the two actions, directly under the title rather than below
+              the summary and the collapsed description. Who made this, when, and how to
+              take it are what a reader looks for first on a registry entry; leaving them
+              at the foot of the header put three paragraphs between the name and the
+              answer. The row itself is unchanged — only where it sits. */}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+            <AuthorChip author={bp.author} />
+            <span className="font-mono text-xs text-dim">
+              {prettyDate(bp.createdAt)}
+            </span>
+            {/* This line sits beside the author and the date and reads as a fact about
+                the artefact. Doc 2 §0.4: no counter produced any of these three. Votes
+                and Comments joined Downloads here once the "Registry stats" panel that
+                used to hold them was removed — same emerald accent across all three,
+                since they are the same kind of fact. The visible "◐ seeded" pill that
+                used to sit beside Downloads is gone (the author asked for it removed
+                from this row specifically), and the Score panel's own "seeded" paragraph
+                that used to carry the word elsewhere on this page is gone too (panel
+                reorg pass). A `title` on the two seeded figures keeps the word in the
+                rendered page honestly — `components/ui/autonomy-surfaces.test.ts` holds
+                every file that reads `.votes`/`.downloads` to saying so somewhere in it
+                — without reintroducing a visible marker nobody asked to see back. */}
+            <span
+              className="font-mono text-xs text-emerald"
+              title="Seeded — no counter stands behind it"
+            >
+              ↓ {compact(bp.downloads)} downloads
+            </span>
+            <span
+              className="font-mono text-xs text-emerald"
+              title="Seeded — no ballot stands behind it"
+            >
+              ▲ {compact(bp.votes)} votes
+            </span>
+            <span className="font-mono text-xs text-emerald">
+              {bp.comments.length} comments
+            </span>
+            {/* Fork first, download second — spec §3.2, both grouped at the row's right
+                end. `ForkAction` is the disclosure spec §1 locks in rather than a second
+                file download of its own; the button beside it is the one real download
+                this row promises. */}
+            <div className="ml-auto flex items-center gap-2">
+              <ForkAction />
+              {/* The topology, not the runnable pipeline: doc 2 §11 item 10's
+                  command-line artefact is `factory.dot`, which the sidebar
+                  `DownloadPanel` still leads with. This is a second, quicker entry point
+                  to `blueprint.dot` specifically, so the label and the file it saves have
+                  to name the same thing — `topologyHref`/`TOPOLOGY_DOT`, not
+                  `factoryHref`/`FACTORY_DOT`. */}
+              <ButtonLink href={topologyHref} download={TOPOLOGY_DOT} prefetch={false}>
+                Download blueprint.dot
+              </ButtonLink>
+            </div>
+          </div>
+
           <div className="flex flex-wrap items-center gap-3">
             <KindBadge kind={bp.kind} />
             {/* The per-node reading goes with the class, the way it does on the gallery
@@ -194,9 +250,11 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
         </div>
 
         {/* Long description, collapsed by default. PROJECT.md §3.1 first moved this
-            above the four panes; this pass moves it once more, into the header itself —
-            between the summary paragraph and the author/date row — so it reads as more
-            of the same claim rather than a separate body section below the schematic.
+            above the four panes; a later pass moved it into the header itself so it
+            reads as more of the same claim rather than a separate body section below the
+            schematic. It now closes the header — the author/date/actions row moved up
+            under the title — which suits it: it is the last thing a reader needs before
+            the schematic, and the only part of the header that is optional.
             `More` is a native `<details>` (already used by `DownloadPanel` and the
             disclosures further down), which keeps the prose in the prerendered HTML
             regardless of `open`. */}
@@ -212,55 +270,6 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             ))}
           </More>
         )}
-
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-          <AuthorChip author={bp.author} />
-          <span className="font-mono text-xs text-dim">
-            {prettyDate(bp.createdAt)}
-          </span>
-          {/* This line sits beside the author and the date and reads as a fact about
-              the artefact. Doc 2 §0.4: no counter produced any of these three. Votes and
-              Comments joined Downloads here once the "Registry stats" panel that used
-              to hold them was removed — same emerald accent across all three, since
-              they are the same kind of fact. The visible "◐ seeded" pill that used to
-              sit beside Downloads is gone (the author asked for it removed from this
-              row specifically), and the Score panel's own "seeded" paragraph that used
-              to carry the word elsewhere on this page is gone too (panel reorg pass).
-              A `title` on the two seeded figures keeps the word in the rendered page
-              honestly — `components/ui/autonomy-surfaces.test.ts` holds every file that
-              reads `.votes`/`.downloads` to saying so somewhere in it — without
-              reintroducing a visible marker nobody asked to see back. */}
-          <span
-            className="font-mono text-xs text-emerald"
-            title="Seeded — no counter stands behind it"
-          >
-            ↓ {compact(bp.downloads)} downloads
-          </span>
-          <span
-            className="font-mono text-xs text-emerald"
-            title="Seeded — no ballot stands behind it"
-          >
-            ▲ {compact(bp.votes)} votes
-          </span>
-          <span className="font-mono text-xs text-emerald">
-            {bp.comments.length} comments
-          </span>
-          {/* Fork first, download second — spec §3.2, both grouped at the row's right
-              end. `ForkAction` is the disclosure spec §1 locks in rather than a second
-              file download of its own; the button beside it is the one real download this
-              row promises. */}
-          <div className="ml-auto flex items-center gap-2">
-            <ForkAction />
-            {/* The topology, not the runnable pipeline: doc 2 §11 item 10's command-line
-                artefact is `factory.dot`, which the sidebar `DownloadPanel` still leads
-                with. This is a second, quicker entry point to `blueprint.dot`
-                specifically, so the label and the file it saves have to name the same
-                thing — `topologyHref`/`TOPOLOGY_DOT`, not `factoryHref`/`FACTORY_DOT`. */}
-            <ButtonLink href={topologyHref} download={TOPOLOGY_DOT} prefetch={false}>
-              Download blueprint.dot
-            </ButtonLink>
-          </div>
-        </div>
 
         {bp.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
