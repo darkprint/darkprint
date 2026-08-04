@@ -666,11 +666,13 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             meta={card.agent ?? "no named agent"}
           >
             <div className="flex flex-col gap-5">
-              <p className="text-[15px] leading-relaxed text-muted">
-                {card.action}
-              </p>
-
-              <div className="flex flex-col gap-4 border-t border-line pt-5">
+              {/* `card.action` stood here and is gone: the identical string is this page's
+                  header lead, 280 words above, and `metadata.description` is built from the
+                  same field, so it is also what a search result and a shared link show.
+                  Scanning the rendered page for repeated blocks of six words or more
+                  returned this and nothing else, on every one of the 53 instances.
+                  See docs/content-reorg/2026-08-04/nodes-id.md. */}
+              <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
                   <span className={LABEL}>
                     {phases.length === 1 ? "Phase" : "Phases"}
