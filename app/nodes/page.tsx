@@ -49,13 +49,29 @@ export default function NodesPage() {
 
   return (
     <div className="container-page py-12 sm:py-16">
+      {/* The lead was 45 words: three sentences defining the noun, then three
+          properties of the archive. A shelf's job is to say what is on it. */}
       <SectionHeading
         as="h1"
         eyebrow="Registry"
         title="Node cards"
-        lead={`One card says what a node does, what it takes in, what it hands on and what it puts at risk, and the ${blueprints} blueprints in the registry are assembled out of these ${nodes.length}. Every card is versioned, content-addressed, and pinned by exact reference.`}
+        lead={`The ${nodes.length} cards the registry's ${blueprints} blueprints are assembled from, grouped by what kind of step they are.`}
         className="mb-10"
       />
+      {/* No `Suspense`, and no `useSearchParams` behind it — see `NodeBrowser`.
+          ------------------------------------------------------------
+          The filters were briefly read with `useSearchParams`, which the Next docs say
+          must be wrapped in a `Suspense` boundary or the production build fails. Adding
+          the boundary made the build pass and quietly cost the page everything it is
+          for: measured against `next start`, `/nodes` came back **56KB containing zero
+          `<article>` elements**, because the same doc says calling that hook makes the
+          client tree up to the nearest boundary client-rendered. All 53 cards left the
+          prerendered HTML.
+
+          On an archive whose claim is that it can be read rather than trusted, a shelf
+          that ships no shelf is the worse bug. The browser keeps its URL state using
+          plain history APIs instead, and this page stays static with all 53 cards in
+          the markup. */}
       <NodeBrowser nodes={nodes} />
     </div>
   );

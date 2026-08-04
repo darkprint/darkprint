@@ -4,6 +4,21 @@ import { avatarGradient, cx } from "@/lib/format";
 
 const SIZES = { sm: 24, md: 32, lg: 44, xl: 64 } as const;
 
+/**
+ * The initials' share of the circle, per size rather than one ratio for all four.
+ *
+ * A flat `0.36` put the `sm` avatar's initials at **8.64px** — the smallest readable
+ * text anywhere on the site, and on `/nodes` it rendered 53 times, once per tile. The
+ * ratio that reads well at 64px does not survive being scaled to 24px, which is the
+ * ordinary reason a single ratio across a size scale is the wrong primitive.
+ *
+ * `sm` and `md` are raised to land on 11px, the floor the rest of the site holds to;
+ * `lg` and `xl` keep the proportion they had, because they were never the problem.
+ * Two characters of Geist SemiBold at 11px measure about 15px, so they still sit
+ * comfortably inside a 24px circle.
+ */
+const INITIAL_RATIO = { sm: 0.46, md: 0.35, lg: 0.36, xl: 0.36 } as const;
+
 function initials(name: string) {
   return name
     .split(" ")
@@ -41,7 +56,7 @@ export function Avatar({
         width: px,
         height: px,
         background: avatarGradient(author.avatarHue),
-        fontSize: px * 0.36,
+        fontSize: px * INITIAL_RATIO[size],
       }}
       title={author.displayName}
     >

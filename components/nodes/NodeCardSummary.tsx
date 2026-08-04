@@ -63,13 +63,23 @@ const TOOLS_SHOWN = 3;
  */
 export function NodeCardSummary({
   node,
+  showType = true,
   className,
 }: {
   node: NodeSummary;
+  /**
+   * Draw the node-type badge.
+   *
+   * Off inside a type group, where the sticky heading above the run already says it.
+   * With it on, all 24 tiles under `Tool` carried a chip reading "Tool" — the loudest
+   * object on the tile spending itself on the one fact the reader could not be missing.
+   */
+  showType?: boolean;
   className?: string;
 }) {
   const risk = node.riskMarkers.length;
   const overflow = node.tools.length - TOOLS_SHOWN;
+  const titleId = `node-${node.ref}-title`;
 
   return (
     <article
@@ -80,32 +90,43 @@ export function NodeCardSummary({
     >
       {/* The whole tile's click target, stretched under everything except the star.
           See `FavoriteStar`'s own comment for why this is a sibling rather than a
-          `<button>` nested inside the link. */}
-      <Link href={nodeHref(node.id)} className="absolute inset-0 z-10">
-        <span className="sr-only">{node.name}</span>
-      </Link>
+          `<button>` nested inside the link.
+
+          `aria-labelledby` pointing at the heading, rather than an `sr-only` copy of
+          the name inside the link. The copy meant every tile announced its own name
+          twice — "Assemble Stage … Assemble Stage, Assemble the transformed…" — 53
+          times down the page. Naming the link by the heading it opens says it once. */}
+      <Link
+        href={nodeHref(node.id)}
+        aria-labelledby={titleId}
+        className="absolute inset-0 z-10"
+      />
 
       <FavoriteStar id={`node:${node.ref}`} className="absolute right-2 top-2 z-20" />
 
       <div className="flex flex-wrap items-center justify-between gap-2 pr-8">
-        <span className="flex flex-wrap items-center gap-1.5">
-          <Badge color="var(--color-amber)">{node.typeLabel}</Badge>
+        <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          {showType && <Badge color="var(--color-amber)">{node.typeLabel}</Badge>}
           {/* Which stretch of the lifecycle this node works in. Named, not abbreviated
               — a tile has the room the gallery card's strip does not.
 
-              One chip per declared phase, and **nothing at all** when the card declares
+              Plain text, not a pill. As a pill it was pixel-identical to the type badge
+              beside it — same background, border, height, radius, colour and 11px size,
+              separated only by a 6px dot — so two different kinds of fact wore one
+              object. The badge is a term the card declares about what it *is*; a phase
+              is where it stands. Setting them apart costs nothing and stops the row
+              reading as a run of interchangeable chips.
+
+              One entry per declared phase, and **nothing at all** when the card declares
               none. A tile that printed "no phase" would draw an empty slot next to a
               filled one and turn a complete answer into a hole in the row; the tiles
-              that carry no phase chip are the answer to the browser's own "not in a
-              named phase" filter, and the card page says it in words. */}
-          {node.phases.map((phase) => (
-            <span
-              key={phase.id}
-              className="inline-flex items-center rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[11px] text-muted"
-            >
-              {phase.label.toLowerCase()}
+              that carry no phase are the answer to the browser's own "not in a named
+              phase" filter, and the card page says it in words. */}
+          {node.phases.length > 0 && (
+            <span className="font-mono text-[11px] text-muted">
+              {node.phases.map((phase) => phase.label.toLowerCase()).join(" · ")}
             </span>
-          ))}
+          )}
         </span>
         <span className="font-mono text-[11px] text-dim">{node.ref}</span>
       </div>
@@ -113,9 +134,17 @@ export function NodeCardSummary({
       <div className="flex-1">
         {/* `h2`: the grid sits directly under the `/nodes` page title, so a tile is a
             level down from it — the outline must not skip a level. */}
-        <h2 className="font-display text-base font-semibold leading-snug text-fg group-hover:text-cyan">
+        {/* `h3`, under the group heading `NodeBrowser` now prints per node type. It was
+            an `h2`, which put 53 siblings at one level with nothing above them; the
+            outline is the browser's structure and a card is a member of a group, not a
+            peer of one. `headingLevel` is not a prop because there is no caller that
+            wants a different answer: every mount of this component sits inside a group. */}
+        <h3
+          id={titleId}
+          className="font-display text-base font-semibold leading-snug text-fg group-hover:text-cyan"
+        >
           {node.name}
-        </h2>
+        </h3>
         <p className="mt-1 line-clamp-2 text-sm leading-snug text-muted">
           {node.action}
         </p>
