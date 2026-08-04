@@ -86,7 +86,7 @@ function Changelog({
     <div className="rounded-md border border-line bg-surface-2 p-3">
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
         <span
-          className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em]"
+          className="inline-flex items-center gap-1.5 rounded-full border px-2 py-1 font-mono text-[11px] uppercase tracking-[0.14em]"
           style={{
             color: meta.color,
             borderColor: `color-mix(in oklab, ${meta.color} 45%, var(--color-line))`,
@@ -149,7 +149,11 @@ export function VersionHistory({
       <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
         <h2
           id="version-history-heading"
-          className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim"
+          /* 13px `text-fg`, matching the panel headings on `/nodes/[...id]` — this is a
+             section of that page and used to be set like the sub-group labels *inside*
+             its neighbours, so the one line a reader scans for was the same size as the
+             seven lines they scan past. */
+          className="font-mono text-[13px] uppercase tracking-[0.18em] text-fg"
         >
           Version history
         </h2>
@@ -185,7 +189,7 @@ export function VersionHistory({
                 <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
                   <span className="font-mono text-sm text-fg">{entry.ref}</span>
                   {i === 0 && (
-                    <span className="rounded border border-cyan/50 bg-cyan/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan">
+                    <span className="rounded border border-cyan/50 bg-cyan/10 px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan">
                       current
                     </span>
                   )}

@@ -139,9 +139,27 @@ export const NODE_KIND_META: Record<
 };
 
 /** Deterministic gradient string for an avatar from a hue. */
+/**
+ * The identity gradient behind an author's initials.
+ *
+ * Light on purpose, because the initials are set in `void` rather than white. The
+ * previous pair — `55%` into `40%` — carried white text and failed WCAG AA on most of
+ * the wheel: 3.3:1 at hue 208, 2.5:1 at hue 32, and 1.46:1 at hue 60, where a yellow
+ * avatar put white initials on a near-white ground. Because the hue comes from the
+ * author record, the failure was per-author and invisible until the wrong person
+ * published.
+ *
+ * White cannot be rescued by darkening: swept across all 360 hues, no lightness down to
+ * 32% clears 4.5:1, since a saturated yellow stays lighter than white text can survive.
+ * Dark ink on a light ground inverts the problem and has a solution. These two stops
+ * were picked by sweeping every hue and taking the worst of *both* of them: the floor is
+ * 5.10:1 at hue 240, the darkest point on the wheel for this ink, and no hue drops below
+ * it. Keep the arithmetic if you retune the look — the ink is `--color-void`, and the
+ * binding constraint is the second stop at blue.
+ */
 export function avatarGradient(hue: number): string {
   const h2 = (hue + 40) % 360;
-  return `linear-gradient(135deg, hsl(${hue} 70% 55%), hsl(${h2} 65% 40%))`;
+  return `linear-gradient(135deg, hsl(${hue} 70% 72%), hsl(${h2} 60% 66%))`;
 }
 
 export function cx(...parts: Array<string | false | null | undefined>): string {

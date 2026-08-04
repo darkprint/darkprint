@@ -64,8 +64,12 @@ function RequiredCell({ required }: { required: boolean }) {
   );
 }
 
+/* 11px, not 10px. These are column headers, not decoration — a reader who cannot tell
+   `Data type` from `Required` cannot read the row under it — and 10px was the smallest
+   type on the page, below the floor the rest of the site holds to. Tracking matches
+   `LABEL` on the node page so the two label systems stop differing by 0.22px. */
 const TH =
-  "pb-2 pr-4 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-dim";
+  "pb-2 pr-4 font-mono text-[11px] font-normal uppercase tracking-[0.18em] text-dim";
 const TD = "py-2.5 pr-4 align-top";
 
 function PortTable({
@@ -85,9 +89,14 @@ function PortTable({
     <div className="flex flex-col gap-2.5">
       <div className="flex items-center gap-2">
         <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent }} aria-hidden />
-        <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
+        {/* `h3`, not a styled span. This sits under the `Interfaces` panel heading and
+            is a named sub-section of it, so a screen-reader user rotoring by heading
+            should be able to reach `Inputs` and `Outputs` directly. Tailwind's preflight
+            resets heading `font-size` and `font-weight` to `inherit`, so promoting the
+            element changes the outline and not one rendered pixel. */}
+        <h3 className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
           {label}
-        </span>
+        </h3>
         <span className="font-mono text-[11px] text-dim">{ports.length}</span>
       </div>
 
@@ -120,9 +129,14 @@ function PortTable({
             <tbody className="divide-y divide-line">
               {ports.map((port) => (
                 <tr key={port.name}>
-                  <td className={TD}>
+                  {/* `th scope="row"`, not `td`. The port name is what identifies the
+                      row, and without a row header a screen reader announces every
+                      cell against the column alone — three ports of the same type read
+                      as "Ontology data type: json" three identical times, with nothing
+                      saying which port each belongs to. */}
+                  <th scope="row" className={cx(TD, "font-normal")}>
                     <PortChip name={port.name} accent={accent} />
-                  </td>
+                  </th>
                   <td className={TD}>
                     <TypeCell type={port.type} known={port.known} />
                   </td>
@@ -185,9 +199,9 @@ export function NodeInterfaces({
             style={{ background: "var(--color-muted)" }}
             aria-hidden
           />
-          <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
+          <h3 className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
             Dependencies
-          </span>
+          </h3>
           <span className="font-mono text-[11px] text-dim">
             {dependencies.length}
           </span>

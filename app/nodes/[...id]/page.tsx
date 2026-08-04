@@ -21,7 +21,7 @@ import { KindBadge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { FavoriteStar } from "@/components/ui/FavoriteStar";
 import { SourcePanel } from "@/components/ui/SourcePanel";
-import { formatWeight } from "@/components/ontology/TermTable";
+import { formatWeight, markerWeight } from "@/components/ontology/TermTable";
 import {
   NodeInterfaces,
   type DependencyView,
@@ -64,28 +64,76 @@ export async function generateMetadata({ params }: PageProps<"/nodes/[...id]">) 
 
 /* --------------------- small local furniture --------------------- */
 
+/**
+ * The two label steps, which used to be one.
+ *
+ * `LABEL` was every section heading on this page *and* every sub-group label inside
+ * them: `Interfaces` and `Cannot receive` were set exactly like `Phases`, `Agent`,
+ * `Tools` and `Parameters`, at 11px `text-dim`. Eleven label strings across three
+ * structural levels in one style, on a page 4300–5500px long where the section heading
+ * is the only wayfinding there is. Below it the H1 is 36px, so the type scale stepped
+ * 36 → 11 with nothing in between and 65% of the page's characters at 12px or under.
+ *
+ * `SECTION` is the step that was missing: same mono and same tracking, so it still reads
+ * as the same family, but 13px and `text-fg` — brighter and larger than anything nested
+ * inside it. A reader scanning for a section now has one thing to look for.
+ */
+const SECTION = "font-mono text-[13px] uppercase tracking-[0.18em] text-fg";
 const LABEL = "font-mono text-[11px] uppercase tracking-[0.18em] text-dim";
 
-/** Main-column panel: a hairline header bar over its body, like the schematic's. */
+/**
+ * Main-column panel: a hairline header bar over its body, like the schematic's.
+ *
+ * `lead` marks the one panel that answers the question the page exists for. Every panel
+ * wore the identical `.panel` frame — one 1px `#222739` edge on `#0a0c16`, nine times —
+ * so `Specification`, which says what the node does, was indistinguishable from
+ * `Model, skill and servers`, which is a prerequisite checklist. With no weighting every
+ * scan costs the same, which is the same as saying nothing gets scanned.
+ *
+ * The lead is marked by its *edge and its ground*, not by a bigger heading: the heading
+ * scale is doing structural work already (36 → 20 → 13 → 11) and adding a fourth size
+ * for emphasis would break the thing it just fixed. A brighter border and a lifted
+ * surface say "start here" without claiming a different level.
+ *
+ * The treatment is `.panel-lead` in `globals.css` rather than utilities here, because
+ * `.panel` is unlayered and unlayered CSS outranks Tailwind's layers: the first attempt
+ * put `border-line-bright bg-surface-2/40` on this element and rendered identically to
+ * every other panel. Measured, not assumed — both borders came back `rgb(34,39,57)`.
+ */
 function Panel({
   id,
   label,
   meta,
+  lead = false,
   children,
 }: {
   id: string;
   label: string;
   meta?: string;
+  /** The panel a reader should land on first. At most one per page. */
+  lead?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <section className="panel overflow-hidden" aria-labelledby={`${id}-heading`}>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
-        <h2 id={`${id}-heading`} className={LABEL}>
+    <section
+      id={id}
+      className={cx("panel scroll-mt-24 overflow-hidden", lead && "panel-lead")}
+      aria-labelledby={`${id}-heading`}
+    >
+      {/* The meta sits beside its heading, not at the far edge.
+          `justify-between` held them apart across the full width of a 757px bar, so
+          `Interfaces` and its `1 in · 1 out` were 543px apart and `Behaviour` and its
+          agent name 540px — two things that answer each other, too far apart to be read
+          as a pair, and on a phone the meta was pushed off-screen entirely. Capping the
+          meta's width did nothing, because the gap was never about its width: with
+          `justify-between` the position is the whole problem. Left-aligned with a fixed
+          gap, the pair reads as one line and wraps together. */}
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line px-4 py-3">
+        <h2 id={`${id}-heading`} className={SECTION}>
           {label}
         </h2>
         {meta !== undefined && (
-          <span className="font-mono text-[11px] text-dim">{meta}</span>
+          <span className="min-w-0 font-mono text-[11px] text-dim">{meta}</span>
         )}
       </div>
       <div className="p-4 sm:p-5">{children}</div>
@@ -93,19 +141,37 @@ function Panel({
   );
 }
 
-/** Sidebar panel: the flat `panel p-5` shape the blueprint page's aside uses. */
+/**
+ * Sidebar panel: the flat `panel p-5` shape the blueprint page's aside uses.
+ *
+ * The `id` lands on the `<section>` as well as seeding the heading's. It used to seed
+ * only the heading, so `id="evaluation"` existed nowhere in the rendered document and a
+ * `href="#evaluation"` resolved to nothing — which `anchors.test.ts` cannot catch,
+ * because it reads the JSX tag that spells `id="evaluation"` and that tag is this
+ * component's *call site*, where the string is a prop rather than an attribute. The
+ * guard checks the offset, not the existence of the target. Caught in the DOM instead.
+ *
+ * `className` is here so the same call site can carry its own `scroll-mt-`, which the
+ * guard does read as source text and is right to insist on.
+ */
 function SidePanel({
   id,
   label,
+  className,
   children,
 }: {
   id: string;
   label: string;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="panel p-5" aria-labelledby={`${id}-heading`}>
-      <h2 id={`${id}-heading`} className={cx(LABEL, "mb-4 block")}>
+    <section
+      id={id}
+      className={cx("panel p-5", className)}
+      aria-labelledby={`${id}-heading`}
+    >
+      <h2 id={`${id}-heading`} className={cx(SECTION, "mb-4 block")}>
         {label}
       </h2>
       {children}
@@ -240,13 +306,26 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   });
   const enforcedCount = prohibitions.filter((p) => p.term !== undefined).length;
 
+  /* The weight comes from `markerWeight`, not from `term.defaultWeight`.
+     ------------------------------------------------------------
+     Reading `defaultWeight` off the term looked right and was dead code on every card in
+     the archive. `lib/core/ontology/core.ts:171` says so outright: "No term here carries
+     `defaultWeight`. Doc 3 §4 keeps the weights in the config file" — a number in two
+     places would make the ontology version meaningless. So the field is `undefined` for
+     all seven core markers, the weight was never rendered on any of the 53 pages, and the
+     footnote below promised a figure the branch could not produce.
+
+     `markerWeight` is the engine's own lookup order and was already exported from the
+     module this file takes `formatWeight` from: configured weight first, then the term's
+     own, which survives only for locally namespaced markers. `undefined` now means what
+     it says — nobody has priced this marker — rather than meaning "core marker". */
   const risks = card.riskMarkers.map((marker) => {
     const resolved = ontology.resolve(marker, "risk-marker");
     return {
       id: resolved?.term.id ?? marker,
       label: resolved?.term.label ?? marker,
       description: resolved?.term.description,
-      weight: resolved?.term.defaultWeight,
+      weight: resolved === undefined ? undefined : markerWeight(resolved.term),
     };
   });
 
@@ -263,6 +342,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   const source = cardSource(record.ref);
   const params_ = Object.entries(card.params);
   const downloads = downloadsFor(card.id);
+  const specWords = card.spec.trim().split(/\s+/).filter(Boolean).length;
 
   return (
     <div className="container-page py-10 lg:py-12">
@@ -347,7 +427,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             <Link
               href={typeHref}
               aria-label={`Ontology node type: ${typeLabel}`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-violet/10 px-2.5 py-0.5 font-mono text-[11px] text-violet transition-colors hover:border-violet"
+              className="inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-violet/10 px-2.5 py-1 font-mono text-[11px] text-violet transition-colors hover:border-violet"
             >
               <span className="text-muted">type ·</span>
               {typeLabel}
@@ -358,7 +438,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 key={phase.id}
                 href={phase.href}
                 aria-label={`Ontology phase: ${phase.label}`}
-                className="inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-violet/10 px-2.5 py-0.5 font-mono text-[11px] text-violet transition-colors hover:border-violet"
+                className="inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-violet/10 px-2.5 py-1 font-mono text-[11px] text-violet transition-colors hover:border-violet"
               >
                 <span className="text-muted">phase ·</span>
                 {phase.label}
@@ -370,7 +450,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 Doc 2 §1.1: this states where a person acts, which is a third fact read
                 off the card — not a warning about the card. */}
             {card.requiresHuman && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-violet/10 px-2.5 py-0.5 font-mono text-[11px] text-violet">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-violet/10 px-2.5 py-1 font-mono text-[11px] text-violet">
                 <span aria-hidden>⏸</span> human in the loop
               </span>
             )}
@@ -379,10 +459,34 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 dimensions beside it because it is the same kind of fact: something the
                 card states about itself. The panel below carries the entries. */}
             {prohibitions.length > 0 && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-violet/10 px-2.5 py-0.5 font-mono text-[11px] text-violet">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-violet/10 px-2.5 py-1 font-mono text-[11px] text-violet">
                 <span className="text-muted">cannot ·</span>
                 {prohibitions.length} declared
               </span>
+            )}
+            {/* Risk, in the header, which is the one fact a reader deciding whether to
+                wire this node most needs and the one the header did not carry.
+
+                `merge-executor` is the case that makes it plain: a node whose job is
+                merging pull requests, declaring `secret-access` and `unchecked-write`,
+                whose header said `cannot · 2 declared` and nothing else. The count of
+                prohibitions is a second-order fact; the markers are the decision. Worse,
+                the markers only appeared in the aside, which on a phone is DOM-ordered
+                after the whole main column — about 3000px down, below a raw YAML dump.
+
+                Amber, matching the marker cards in the aside it links to rather than the
+                violet the vocabulary chips beside it wear, because this is not another
+                dimension read off the card: it is the one chip here that should make a
+                reader stop. Rendered only when there are markers, so the quiet case
+                stays quiet — the same ruling the phase chips follow above. */}
+            {risks.length > 0 && (
+              <a
+                href="#evaluation"
+                className="inline-flex items-center gap-1.5 rounded-full border border-amber/40 bg-amber/10 px-2.5 py-1 font-mono text-[11px] text-amber transition-colors hover:border-amber"
+              >
+                <span aria-hidden>△</span>
+                {risks.length} risk marker{risks.length === 1 ? "" : "s"}
+              </a>
             )}
             <FavoriteStar id={`node:${card.id}@${card.version}`} className="ml-auto" />
           </div>
@@ -396,8 +500,60 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
 
       {/* ---------- Body ---------- */}
       <div className="mt-10 grid gap-8 lg:grid-cols-3">
-        {/* MAIN */}
-        <div className="flex flex-col gap-8 lg:col-span-2">
+        {/* MAIN
+
+            `min-w-0` is load-bearing and this is not a style choice. A grid item defaults
+            to `min-width: auto`, so it refuses to shrink below its own min-content, and
+            this column's min-content is 783px — set by the source panel's `<pre>` and the
+            port table's `min-w-[520px]`. Inside a 367px phone container the track stayed
+            at 783px, and `body { overflow-x: hidden }` in globals.css then *clipped* the
+            overflow instead of letting it scroll: `scrollTo(400, 0)` left `scrollX` at 0.
+
+            Measured before the fix, on a 378px viewport: 22 leaf elements fully
+            off-screen, including all four values in the Identity panel below — which
+            rendered its four labels with the numbers amputated — the whole Description
+            column of both port tables, every panel's `meta`, and the copy button. No
+            scrollbar, no error, nothing to tell a reader a third of the page was gone.
+
+            With `min-w-0` the track resolves to the container and the inner scroll
+            regions (the table's own `overflow-x-auto`, the source panel's) do the
+            scrolling they were always meant to do. Verified: `scrollWidth` 807 → 367. */}
+        <div className="flex min-w-0 flex-col gap-8 lg:col-span-2">
+          {/* What the node actually does, and the first thing on the page after the
+              header, because it is the only field that answers the question the page
+              exists for.
+
+              It was not rendered at all. `card.spec` is, in the schema's own words, "the
+              payload delivered to Claude Code, or an equivalent agent, when the graph is
+              instantiated" — and it appeared exactly once in the whole app, in
+              `components/panes/build.ts`, where a blueprint pane counts its *words*. The
+              page drew every wire around the work and never the work.
+
+              That absence made the page contradict its own source. `Cannot receive`
+              below glosses a free-text entry as "nothing checks it", while on
+              `maintainer-approval` the spec three panels down says "do not summarise the
+              change for them and do not recommend an outcome" — the prohibition is
+              carried, addressed to the agent, in the field that was not on the page.
+
+              Rendered whole rather than clamped: every spec in the archive is a single
+              paragraph of 71–169 words (median 117), so there is nothing here that a
+              "show more" would spare a reader, and clamping the field the page was just
+              reorganised to promote would be an odd thing to do. `Ticked` renders the
+              backtick spans the specs use, the same way the author's notes are drawn. */}
+          <Panel
+            id="specification"
+            label="Specification"
+            meta={`${specWords} words · handed to the agent`}
+            lead
+          >
+            {/* 16px against the 15px the other panels' prose uses. One step, not a
+                display size: this is the paragraph a reader came to read, and it should
+                feel like the body text of the page rather than like another field. */}
+            <p className="max-w-[68ch] text-base leading-relaxed text-fg">
+              <Ticked text={card.spec} />
+            </p>
+          </Panel>
+
           <Panel
             id="interfaces"
             label="Interfaces"
@@ -446,19 +602,31 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                          calls writing one legitimate, so it is a second kind of entry
                          and not a lesser one. What separates it is the promise, which
                          the badge states in words. */
+                      /* The gloss that stood here — "No data type by this name, so
+                         nothing checks it. It speaks to whoever reads the card." — was
+                         wrong twice over, so it is gone rather than reworded in place.
+
+                         Wrong once because it was printed verbatim on every free-text
+                         row, twice per page about 60px apart, saying one fact about the
+                         panel as if it were a fact about each entry. It belongs in the
+                         footnote below, which already existed to say exactly this kind
+                         of thing, and now does.
+
+                         Wrong twice because "nothing checks it" is false. On
+                         `maintainer-approval` the two free-text entries are restated
+                         almost word for word in the specification now rendered at the
+                         top of this page, where the agent reads them. The resolver does
+                         not enforce them; that is not the same as nothing acting on
+                         them, and the page was asserting the stronger claim while
+                         printing the evidence against it. The footnote states the
+                         mechanism instead. */
                       <li
                         key={p.entry}
-                        className="flex flex-col gap-1.5 rounded-md border border-line bg-surface-2 px-3 py-2.5"
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line bg-surface-2 px-3 py-2.5"
                       >
-                        <span className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="font-mono text-[12px] text-fg">{p.entry}</span>
-                          <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
-                            <span aria-hidden>◌</span> free text
-                          </span>
-                        </span>
-                        <span className="text-xs leading-relaxed text-dim">
-                          No data type by this name, so nothing checks it. It speaks to
-                          whoever reads the card.
+                        <span className="font-mono text-[12px] text-fg">{p.entry}</span>
+                        <span className="inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
+                          <span aria-hidden>◌</span> free text
                         </span>
                       </li>
                     ) : (
@@ -472,7 +640,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                             label={p.entry}
                             aria={`Ontology data type: ${p.term.label}`}
                           />
-                          <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-violet">
+                          <span className="inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-[0.14em] text-violet">
                             <span aria-hidden>⊘</span> enforced
                           </span>
                         </span>
@@ -504,9 +672,17 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   )}
                 </ul>
 
+                {/* No em dash in here, even though `app/nodes` is outside the trees
+                    `components/build/path.test.ts` guards. That exemption exists for copy
+                    that predates doc 2 §2.5, not as a licence for new copy, and the guard
+                    file says as much about `ForkAction.tsx`. This sentence was written in
+                    this pass, so it follows the rule the guard cannot see it break. */}
                 <p className="text-xs leading-relaxed text-dim">
                   Only a data type can be enforced, because only a data type travels on an
-                  edge. Anything else here is free text.
+                  edge. An entry naming anything else is free text: the resolver does not
+                  hold the graph to it, which is not the same as nothing acting on it. It
+                  is addressed to whoever runs the node, and the agent reads the
+                  specification at the top of this page.
                 </p>
               </div>
             )}
@@ -534,7 +710,12 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 the shape it was built for: named things that point outward. The limit
                 statements the paragraphs carried are all still here and still open, in
                 the glosses and the footnote. */}
+            {/* `frame={false}`: the figure is already inside a panel, and framed it drew
+                a bordered box inside a bordered box with each row's field cell bordered
+                again — three edges deep for one figure. The rows read as a figure on
+                their own; the panel is the box. */}
             <ReachList
+              frame={false}
               label="Before it can run"
               caption="What has to exist on the machine that runs this node."
             >
@@ -604,9 +785,13 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   See docs/content-reorg/2026-08-04/nodes-id.md. */}
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
-                  <span className={LABEL}>
+                  {/* `Phase` when there is one, `Phases` otherwise — and `Phases` when
+                      there are none, because "outside the five" is a statement about the
+                      set, not about a missing singular. A card declaring one phase used
+                      to read "Phases" above a single line. */}
+                  <h3 className={LABEL}>
                     {phases.length === 1 ? "Phase" : "Phases"}
-                  </span>
+                  </h3>
                   {/* Three renderings of one field, and the empty one is the one that
                       had to be designed: it is a sentence stating where the node
                       stands, not a dash, not a placeholder, and not styled to differ
@@ -644,7 +829,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                     `model` becomes `llm_model` in the exported factory, while this is a
                     label the author chose and nothing downstream reads. */}
                 <div className="flex flex-col gap-2">
-                  <span className={LABEL}>Agent</span>
+                  <h3 className={LABEL}>Agent</h3>
                   {card.agent === undefined ? (
                     <p className="text-xs leading-relaxed text-dim">
                       None named. The card&apos;s <code className="font-mono text-muted">type</code>{" "}
@@ -671,7 +856,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <span className={LABEL}>Tools</span>
+                  <h3 className={LABEL}>Tools</h3>
                   {tools.length > 0 ? (
                     <div className="flex flex-wrap gap-1.5">
                       {tools.map((tool) => (
@@ -691,7 +876,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <span className={LABEL}>Parameters</span>
+                  <h3 className={LABEL}>Parameters</h3>
                   {params_.length > 0 ? (
                     <dl className="divide-y divide-line rounded-md border border-line bg-void/40">
                       {params_.map(([key, value]) => (
@@ -717,7 +902,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
 
               {card.notes !== undefined && (
                 <div className="flex flex-col gap-2 border-t border-line pt-5">
-                  <span className={LABEL}>Notes from the author</span>
+                  <h3 className={LABEL}>Notes from the author</h3>
                   <p className="border-l-2 border-line-bright pl-4 text-[15px] leading-relaxed text-muted">
                     <Ticked text={card.notes} />
                   </p>
@@ -728,15 +913,34 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
 
           <VersionHistory versions={history} />
 
-          {/* Card source */}
+          {/* Card source, closed.
+              ------------------------------------------------------------
+              Open, this was 40% of the page's words. On `intent-router`: 1239 words
+              rendered, 496 of them inside this panel, re-printing `name`, `type`,
+              `phase`, `action` verbatim, `tools`, `params`, `inputs`, `outputs`,
+              `dependencies`, `cannot`, `notes`, `version` and `author` — every one of
+              which the panels above already draw — plus the digest for a third time.
+
+              It was also the direct cause of the mobile clipping fixed at the top of
+              this column: the `<pre>` sets this column's min-content at 783px, which is
+              what refused to shrink into a 367px phone.
+
+              Closed by default rather than deleted, because "the raw bytes are one click
+              away" is the registry's actual claim and this is where it is kept. The
+              download moves inside the panel header so a reader who wants the file does
+              not have to open a 1000-line window to reach it, and `headingId` makes the
+              panel's own visible label the section heading — it used to be an `sr-only`
+              `<h2>` stacked above a visible `<span>` title, so the words "Card source"
+              were announced twice in a row and drawn at a size no other heading used.
+
+              This is also the trade the Specification panel above pays for: the file
+              still has one home on the page, and the reader now meets the node's
+              instruction in prose 2000px before reaching it. */}
           <section
             id="card-source"
             className="flex scroll-mt-24 flex-col gap-2"
             aria-labelledby="card-source-heading"
           >
-            <h2 id="card-source-heading" className="sr-only">
-              Card source
-            </h2>
             {source !== undefined ? (
               <>
                 <SourcePanel
@@ -744,7 +948,14 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   language="YAML"
                   title="Card source"
                   meta={`${record.ref}.yaml`}
+                  downloadName={`${record.ref}.yaml`}
+                  headingId="card-source-heading"
+                  collapsible
+                  defaultOpen={false}
                 />
+                {/* Selectable, not a tooltip. The full digest was rendered only in the
+                    `title` of the Identity row, which a keyboard or touch reader cannot
+                    reach and nobody can copy; this is the one place it exists as text. */}
                 <p className="flex flex-wrap items-baseline gap-2 font-mono text-[11px]">
                   <span className="uppercase tracking-[0.14em] text-dim">
                     digest
@@ -758,116 +969,169 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 </p>
               </>
             ) : (
-              <p className="panel px-4 py-3 text-sm text-muted">
-                The archive does not carry the document behind{" "}
-                <code className="font-mono text-[12px] text-fg">{record.ref}</code>
-                , only the resolved card. Its digest is{" "}
-                <span className="break-all font-mono text-[12px] text-muted">
-                  {record.digest}
-                </span>
-                .
-              </p>
+              /* No document, so no `SourcePanel` and therefore no heading from it — the
+                 section still needs the one its `aria-labelledby` names. */
+              <>
+                <h2 id="card-source-heading" className={SECTION}>
+                  Card source
+                </h2>
+                <p className="panel px-4 py-3 text-sm text-muted">
+                  The archive does not carry the document behind{" "}
+                  <code className="font-mono text-[12px] text-fg">{record.ref}</code>
+                  , only the resolved card. Its digest is{" "}
+                  <span className="break-all font-mono text-[12px] text-muted">
+                    {record.digest}
+                  </span>
+                  .
+                </p>
+              </>
             )}
           </section>
         </div>
 
-        {/* SIDEBAR */}
-        <aside className="flex flex-col gap-6 lg:sticky lg:top-20 lg:self-start">
-          <SidePanel id="evaluation" label="Evaluation metadata">
-            <div className="flex flex-col gap-4">
-              {/* Doc 2 §1.1 — the two states are two designs, not a pass and a fail.
-                  The pair used to read as a checklist: an emerald ✓ on the node with
-                  nobody in it, the alarm pink ⏸ on the node with somebody in it, and
-                  the sentence "counts this node against the score" underneath. That is
-                  the budget grammar the principle rules out, and the explainability
-                  panel on the blueprint page already states the rule it broke ("no
-                  green tick rewarding a graph with nobody in it, and no red alarm on a
-                  node where somebody is").
+        {/* SIDEBAR
+            `min-w-0` for the same reason the main column carries it: this is the other
+            grid item, its risk cards hold long unbroken marker ids, and a column that
+            cannot shrink clips rather than wraps. `aria-label` because a `<complementary>`
+            with no accessible name is announced as an unlabelled landmark, which on a page
+            that also has an unlabelled site nav gives a screen-reader user two anonymous
+            regions to tell apart. */}
+        <aside
+          aria-label="Card metadata"
+          className="flex min-w-0 flex-col gap-6 lg:sticky lg:top-20 lg:self-start"
+        >
+          {/* "Risk and autonomy", not "Evaluation metadata". The panel answers two
+              questions a reader has — can this node do damage, and does anybody watch —
+              and the old label named the schema drawer they happen to be filed in. The
+              `id` is untouched, so `#evaluation` and the header chip still resolve. */}
+          <SidePanel id="evaluation" label="Risk and autonomy" className="scroll-mt-24">
+            {/* Risk first when there is any, autonomy first when there is none, and the
+                swap is made in the **DOM**, not with `flex-col-reverse` or `order-`.
+                ------------------------------------------------------------
+                The autonomy line led unconditionally, so on `merge-executor` — a node
+                that merges pull requests holding a repository write token, carrying
+                `secret-access` and `unchecked-write` — the panel opened with cyan
+                "Runs unattended. Nothing on this card asks for a person", directly above
+                two amber markers. On that card "nothing stops here" is the alarming
+                fact, and it was rendered in the colour this site keeps for good news.
 
-                  So both branches now use the neutral pair that panel uses: ▸ cyan for
-                  a node that runs on its own, ⏸ violet for a node where a person acts.
-                  Glyph and word carry the difference; colour never carries it alone. */}
-              <p className="flex items-start gap-2 text-sm leading-relaxed text-muted">
-                {card.requiresHuman ? (
-                  <>
-                    <span className="font-mono text-violet" aria-hidden>
-                      ⏸
-                    </span>
-                    <span>
-                      <span className="text-violet">A person acts here.</span> The run
-                      holds until somebody supplies or approves what this node asks for.
-                      The autonomy reading describes that; it does not charge for it.
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-mono text-cyan" aria-hidden>
-                      ▸
-                    </span>
-                    <span>
-                      <span className="text-cyan">Runs unattended.</span> Nothing on this
-                      card asks for a person, so a run does not stop here.
-                    </span>
-                  </>
-                )}
-              </p>
+                A CSS reorder would have fixed only what a sighted reader sees: `order`
+                and `flex-*-reverse` change the painted order and leave the DOM alone, so
+                a screen reader would still have been reassured before it was warned,
+                which is the half of the audience the warning matters most to. Emitting
+                the blocks in the right order costs one ternary and is true for everyone.
 
-              <div className="flex flex-col gap-2 border-t border-line pt-4">
-                <div className="flex items-center gap-2">
-                  <span className={LABEL}>Risk markers</span>
-                  <span className="font-mono text-[11px] text-dim">
-                    {risks.length}
-                  </span>
-                </div>
-                {risks.length > 0 ? (
-                  <>
-                    <ul className="flex flex-col gap-2">
-                      {risks.map((risk) => (
-                        <li key={risk.id}>
-                          <Link
-                            href={termHref(risk.id)}
-                            className="flex flex-col gap-1 rounded-md border border-amber/30 bg-amber/5 px-3 py-2 transition-colors hover:border-amber/60"
-                          >
-                            <span className="flex flex-wrap items-center justify-between gap-2">
-                              <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-amber">
-                                <span
-                                  className="h-1 w-1 rounded-full bg-current"
-                                  aria-hidden
-                                />
-                                {risk.label}
+                Doc 2 §1.1 still holds and nothing here grades autonomy: the pair is the
+                neutral one the blueprint page's explainability panel uses, ▸ cyan for a
+                node that runs alone and ⏸ violet for a node where a person acts, glyph
+                and word carrying the difference so colour never carries it alone.
+                Refusing to *score* autonomy is not a reason to let it answer first on a
+                card whose risk is the headline. */}
+            {(() => {
+              const autonomy = (
+                <p
+                  key="autonomy"
+                  className="flex items-start gap-2 text-sm leading-relaxed text-muted"
+                >
+                  {card.requiresHuman ? (
+                    <>
+                      <span className="font-mono text-violet" aria-hidden>
+                        ⏸
+                      </span>
+                      <span>
+                        <span className="text-violet">A person acts here.</span> The run
+                        holds until somebody supplies or approves what this node asks for.
+                        The autonomy reading describes that; it does not charge for it.
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-mono text-cyan" aria-hidden>
+                        ▸
+                      </span>
+                      <span>
+                        <span className="text-cyan">Runs unattended.</span> Nothing on
+                        this card asks for a person, so a run does not stop here.
+                      </span>
+                    </>
+                  )}
+                </p>
+              );
+
+              const risk = (
+                <div key="risk" className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className={LABEL}>Risk markers</h3>
+                    <span className="font-mono text-[11px] text-dim">{risks.length}</span>
+                  </div>
+                  {risks.length > 0 ? (
+                    <>
+                      <ul className="flex flex-col gap-2">
+                        {risks.map((risk) => (
+                          <li key={risk.id}>
+                            <Link
+                              href={termHref(risk.id)}
+                              /* The label alone is the accessible name. Without this the
+                                 name was the label plus the whole description, 58 and 90
+                                 characters, read out in full on every tab stop. */
+                              aria-label={risk.label}
+                              className="flex flex-col gap-1 rounded-md border border-amber/30 bg-amber/5 px-3 py-2 transition-colors hover:border-amber/60"
+                            >
+                              <span className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-amber">
+                                  <span
+                                    className="h-1 w-1 rounded-full bg-current"
+                                    aria-hidden
+                                  />
+                                  {risk.label}
+                                </span>
+                                {risk.weight !== undefined && (
+                                  <span className="font-mono text-[11px] tabular-nums text-amber">
+                                    {/* Two decimals, as everywhere else: weights are
+                                        quarter-points and 2 would read as an integer. */}
+                                    weight {formatWeight(risk.weight)}
+                                  </span>
+                                )}
                               </span>
-                              {risk.weight !== undefined && (
-                                <span className="font-mono text-[11px] tabular-nums text-amber">
-                                  {/* Two decimals, as everywhere else: weights are
-                                      quarter-points and 2 would read as an integer. */}
-                                  weight {formatWeight(risk.weight)}
+                              {risk.description !== undefined && (
+                                <span className="text-xs leading-relaxed text-muted">
+                                  {risk.description}
                                 </span>
                               )}
-                            </span>
-                            {risk.description !== undefined && (
-                              <span className="text-xs leading-relaxed text-muted">
-                                {risk.description}
-                              </span>
-                            )}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="text-xs leading-relaxed text-dim">
-                      The vocabulary&apos;s default, subtracted from a clean 4 when the
-                      marker appears in a graph. A deployment may recalibrate it.
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                      {/* "Configured", not "the vocabulary's default". Doc 3 §4 moved the
+                          core weights into `DARKPRINT_CONFIG.security.weights` precisely
+                          so the vocabulary would not carry them, and this line credited
+                          the wrong file while the figure beside it did not render at all. */}
+                      <p className="text-xs leading-relaxed text-dim">
+                        The configured cost, subtracted from a clean 4 when the marker
+                        appears in a graph. A deployment may recalibrate it, which is a
+                        patch of the ontology version because it re-scores every blueprint.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="flex items-start gap-2 text-xs leading-relaxed text-muted">
+                      <span className="font-mono text-emerald" aria-hidden>
+                        ✓
+                      </span>
+                      None declared. Nothing here costs a blueprint security points.
                     </p>
-                  </>
-                ) : (
-                  <p className="flex items-start gap-2 text-xs leading-relaxed text-muted">
-                    <span className="font-mono text-emerald" aria-hidden>
-                      ✓
-                    </span>
-                    None declared. Nothing here costs a blueprint security points.
-                  </p>
-                )}
-              </div>
-            </div>
+                  )}
+                </div>
+              );
+
+              const [lead, follow] =
+                risks.length > 0 ? [risk, autonomy] : [autonomy, risk];
+              return (
+                <div className="flex flex-col gap-4">
+                  {lead}
+                  <div className="border-t border-line pt-4">{follow}</div>
+                </div>
+              );
+            })()}
           </SidePanel>
 
           {/* "Used in" stood here, listing every blueprint pinning this card. The
@@ -891,13 +1155,20 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   {versions.length}
                 </dd>
               </div>
+              {/* The `title` carrying the full digest is gone: a tooltip is unreachable
+                  by keyboard and touch, and it was the only place the whole string
+                  existed as anything. The Card source section below now prints it as
+                  selectable text, so this row can be the short form it looks like and
+                  point at the long one. */}
               <div className="flex items-center justify-between gap-3 py-2.5">
                 <dt className="text-sm text-muted">Digest</dt>
-                <dd
-                  className="font-mono text-sm text-fg"
-                  title={record.digest}
-                >
-                  {shortDigest(record.digest)}
+                <dd className="font-mono text-sm text-fg">
+                  <a
+                    href="#card-source"
+                    className="underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan hover:decoration-cyan"
+                  >
+                    {shortDigest(record.digest)}
+                  </a>
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-3 py-2.5 last:pb-0">
@@ -920,8 +1191,11 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           `Comments` renders it as one: its empty state says notes are seeded rows, this
           card has none, and posting is not built. The section carries its own `◐ seeded`
           marker either way. */}
+      {/* `subject`, because the empty state's sentence was hard-coded to "blueprint" and
+          this is a node card — so all 53 of these pages closed on the wrong noun, in the
+          last sentence a reader meets. */}
       <div className="mt-10">
-        <Comments comments={commentsFor(card.id)} />
+        <Comments comments={commentsFor(card.id)} subject="node card" />
       </div>
     </div>
   );

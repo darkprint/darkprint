@@ -58,21 +58,41 @@ export function ReachRow({
   index = 0,
 }: ReachRowProps) {
   return (
+    /* Stacked below `sm`, three columns above it.
+       ------------------------------------------------------------
+       The row was three columns at every width, and the third one was
+       `minmax(0,1fr)` — whatever is left. Measured at 378px that left the gloss
+       **66px**: the `skill` row put 169 characters into it at roughly ten characters a
+       line, 340px tall, and the whole figure grew to 941px to carry about 300
+       characters. It never triggered an overflow warning because a grid squeezes rather
+       than spills, so nothing automated could see it.
+
+       Stacking is the honest fix rather than shrinking the name column, because the
+       three parts are a name, a pointing and a gloss: on one phone-width line the
+       pointing has nowhere to point, and the gloss is the part that has to stay
+       readable. */
     <li
-      className="anim-strip-in grid grid-cols-[minmax(0,10.5rem)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-3"
+      className="anim-strip-in grid grid-cols-1 items-start gap-1.5 sm:grid-cols-[minmax(0,10.5rem)_auto_minmax(0,1fr)] sm:items-center sm:gap-3"
       style={{ animationDelay: `${index * STEP}ms` }}
     >
-      <span className="flex min-w-0 flex-col rounded border border-line bg-surface-2 px-3 py-2">
+      <span className="flex min-w-0 flex-col rounded border border-line bg-surface-2 px-3 py-2 sm:w-auto">
         <code className={cx("font-mono text-[12px]", barred ? "text-amber" : "text-cyan")}>
           {field}
         </code>
+        {/* `truncate` only once there are columns to protect. Stacked, the row is as
+            wide as the figure and a clipped path helps nobody — `skills/merge-executor.md`
+            was cut with no title and no way to see the rest. */}
         {value !== undefined && (
-          <code className="min-w-0 truncate font-mono text-[11px] text-dim">{value}</code>
+          <code className="min-w-0 break-all font-mono text-[11px] text-dim sm:truncate sm:break-normal">
+            {value}
+          </code>
         )}
       </span>
 
-      {/* The pointing. A rule with an arrowhead, or a rule struck through. */}
-      <span aria-hidden className="flex items-center">
+      {/* The pointing. A rule with an arrowhead, or a rule struck through.
+          Hidden when stacked: an arrow pointing right at a block that now sits below it
+          is drawing a relation the layout no longer has. */}
+      <span aria-hidden className="hidden items-center sm:flex">
         <span className={cx("h-px w-5 sm:w-9", barred ? "bg-amber/50" : "bg-line-bright")} />
         <span
           className={cx(
@@ -84,7 +104,18 @@ export function ReachRow({
         </span>
       </span>
 
-      <span className="min-w-0 text-[13px] leading-snug text-muted">{children}</span>
+      {/* Indented a step when stacked, so a gloss still reads as belonging to the field
+          above it rather than as the next item in the list. `barred` keeps its amber
+          edge, which is the only thing carrying the refusal once the struck rule is
+          gone. */}
+      <span
+        className={cx(
+          "min-w-0 border-l pl-3 text-[13px] leading-snug text-muted sm:border-l-0 sm:pl-0",
+          barred ? "border-amber/50" : "border-line",
+        )}
+      >
+        {children}
+      </span>
     </li>
   );
 }
@@ -100,6 +131,7 @@ export function ReachList({
   label,
   caption,
   footnote,
+  frame = true,
   className,
   children,
 }: {
@@ -107,6 +139,16 @@ export function ReachList({
   caption?: React.ReactNode;
   /** One line under the rows, for the caveat a gloss cannot carry. */
   footnote?: React.ReactNode;
+  /**
+   * Draw the figure's own border and ground.
+   *
+   * Off when the figure is already inside a panel. Framed, it put a bordered box inside
+   * a bordered box, and each row's field cell has an edge of its own — three border
+   * levels for one figure, which is the nested-card shape a panel exists to avoid. The
+   * rows read as a figure on their own; the frame is only there for when nothing else
+   * is holding them.
+   */
+  frame?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
@@ -120,7 +162,8 @@ export function ReachList({
   return (
     <figure
       className={cx(
-        "flex flex-col gap-4 rounded-xl border border-line bg-surface/70 p-5 sm:p-6",
+        "flex flex-col gap-4",
+        frame && "rounded-xl border border-line bg-surface/70 p-5 sm:p-6",
         className,
       )}
     >

@@ -6,8 +6,14 @@ type Variant = "primary" | "outline" | "ghost";
 type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
+  /* The primary wore `shadow-[0_0_24px_-6px_var(--color-cyan)]` — a zero-offset coloured
+     halo, which is a glow rather than a shadow: it says "this element is emitting light",
+     which is decoration, and it reads as a focus or active state on a control that is
+     neither. A shadow carries an offset because a light source is somewhere. This one is
+     cast downward and tinted with the button's own hue instead of grey, which is what
+     keeps it from going muddy on the dark ground. */
   primary:
-    "bg-cyan text-void font-medium hover:bg-cyan-bright shadow-[0_0_24px_-6px_var(--color-cyan)]",
+    "bg-cyan text-void font-medium hover:bg-cyan-bright shadow-[0_6px_16px_-8px_var(--color-cyan)]",
   outline:
     "border border-line-bright text-fg hover:border-cyan hover:text-cyan bg-transparent",
   ghost: "text-muted hover:text-fg bg-transparent",

@@ -144,6 +144,28 @@ body {
   border-radius: var(--radius-lg);
 }
 
+/* The one panel on a page that answers the question the page exists for.
+   ------------------------------------------------------------
+   A stack of `.panel`s is a stack of equals, which is right until one of them is where a
+   reader should start. On `/nodes/[...id]` nine identical frames meant `Specification`,
+   which says what the node does, looked exactly like `Model, skill and servers`, which
+   is a prerequisite checklist.
+
+   A brighter edge and a lifted ground, and nothing else. Not a bigger heading: the
+   heading scale on that page is already doing structural work (36 → 20 → 13 → 11) and a
+   fourth size spent on emphasis would break the level it just made legible. At most one
+   per page — two leads is no lead.
+
+   This lives here rather than as Tailwind utilities at the call site because `.panel` is
+   an unlayered rule and unlayered CSS beats anything in a layer: `border-line-bright`
+   and `bg-surface-2/40` on the element resolved to the base `.panel` values and changed
+   nothing at all. A modifier next to what it modifies also keeps the two readable as one
+   decision. */
+.panel-lead {
+  background: color-mix(in oklab, var(--color-surface-2) 70%, transparent);
+  border-color: var(--color-line-bright);
+}
+
 /* A box that leaves the page.
    ------------------------------------------------------------
    The author, 2026-08-04: "the pages connects to other pages in a labrynth way. It is

@@ -32,7 +32,21 @@ import { Button } from "@/components/ui/Button";
 /** How many notes render immediately, before the rest sit behind "Load more". */
 const VISIBLE_NOTES = 10;
 
-export function Comments({ comments }: { comments: Comment[] }) {
+/**
+ * What the empty state calls the thing being discussed.
+ *
+ * The sentence was hard-coded to "blueprint" and this component is mounted on the node
+ * card pages too, so all 53 of them closed with "this blueprint has none" — the wrong
+ * noun, in the last sentence a reader meets. A default keeps every existing blueprint
+ * call site unchanged.
+ */
+export function Comments({
+  comments,
+  subject = "blueprint",
+}: {
+  comments: Comment[];
+  subject?: string;
+}) {
   const visible = comments.slice(0, VISIBLE_NOTES);
   const rest = comments.slice(VISIBLE_NOTES);
   return (
@@ -54,7 +68,7 @@ export function Comments({ comments }: { comments: Comment[] }) {
         <div className="panel px-5 py-8 text-center">
           <p className="text-sm text-muted">No notes yet.</p>
           <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-dim">
-            Notes are seeded rows in the index, and this blueprint has none. There is
+            Notes are seeded rows in the index, and this {subject} has none. There is
             no form on this page and no runner behind it, so posting is not built.
           </p>
         </div>
