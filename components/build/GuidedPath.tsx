@@ -471,6 +471,7 @@ export function GuidedPath() {
         {/* ---------- the panel that never leaves (§5.7) ---------- */}
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <ScorePanel
+            headingLevel="h3"
             {...(autonomy === undefined ? {} : { autonomy })}
             {...(security === undefined ? {} : { security })}
             {...(view.blueprint === undefined ? {} : { digest: view.blueprint.digest })}

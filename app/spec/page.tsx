@@ -186,31 +186,46 @@ export default function SpecPage() {
             above says three and `SPEC_LAYERS` is the length-three list it counts, so a
             fourth item in that `<ol>` would make the count a lie. This is a different
             question, over the same three layers, so it gets its own door. */}
-        <section
-          id="scoring"
-          className="panel scroll-mt-24 flex flex-col gap-3 p-6 sm:flex-row sm:items-center sm:justify-between"
-          aria-labelledby="scoring-door-heading"
-        >
-          <div className="flex flex-col gap-1.5">
-            <span className={LABEL}>How it&apos;s graded</span>
-            <h2
-              id="scoring-door-heading"
-              className="font-display text-lg font-semibold text-fg"
-            >
-              {SPEC_SCORING.title}
-            </h2>
-            <p className="max-w-2xl text-sm leading-relaxed text-muted">
-              {SPEC_SCORING.question}
-            </p>
-          </div>
-          <ButtonLink href={SPEC_SCORING.href} variant="outline" className="shrink-0">
-            Read it
-          </ButtonLink>
-        </section>
       </div>
 
       {/* ---------- what the engine checks, on a bundle in the archive ---------- */}
       <SectionExample />
+
+      {/* The scoring door, below the worked example rather than above it.
+
+          It used to close the three-layer block, which put the page's last exit before
+          the scorecard that argues for taking it: a reader was offered "how a blueprint
+          is graded" before they had been shown a blueprint being graded. The audit of
+          this route counted it among three boundary defects that this one move settles,
+          and it costs no words.
+
+          It carries its own `container-page` now. Inside the block above it inherited one
+          from the wrapper that closes further up, and moving it past `SectionExample`
+          without this renders it full-bleed. `id="scoring"` and `scroll-mt-24` travel with
+          it: `/spec#scoring` is a bookmark `anchors.test.ts` holds. */}
+      <div className="container-page pb-14">
+      <section
+        id="scoring"
+        className="panel scroll-mt-24 flex flex-col gap-3 p-6 sm:flex-row sm:items-center sm:justify-between"
+        aria-labelledby="scoring-door-heading"
+      >
+        <div className="flex flex-col gap-1.5">
+          <span className={LABEL}>How it&apos;s graded</span>
+          <h2
+            id="scoring-door-heading"
+            className="font-display text-lg font-semibold text-fg"
+          >
+            {SPEC_SCORING.title}
+          </h2>
+          <p className="max-w-2xl text-sm leading-relaxed text-muted">
+            {SPEC_SCORING.question}
+          </p>
+        </div>
+        <ButtonLink href={SPEC_SCORING.href} variant="outline" className="shrink-0">
+          Read it
+        </ButtonLink>
+      </section>
+      </div>
 
       <div className="container-page py-14">
         <SpecPager href={SPEC_OVERVIEW.href} />

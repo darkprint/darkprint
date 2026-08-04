@@ -107,6 +107,7 @@ export function DownloadStep({
       </p>
 
       <DownloadPanel
+        headingLevel="h3"
         factoryHref={hrefs.get(FACTORY_DOT) ?? ""}
         topologyHref={hrefs.get(TOPOLOGY_DOT) ?? ""}
         readmeHref={hrefs.get(BUNDLE_README) ?? ""}

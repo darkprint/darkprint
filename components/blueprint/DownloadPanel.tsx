@@ -23,6 +23,7 @@ export interface DownloadCard {
  * A client component only for the copy button. Everything it renders is plain data.
  */
 export function DownloadPanel({
+  headingLevel = "h2",
   factoryHref,
   topologyHref,
   readmeHref,
@@ -30,6 +31,14 @@ export function DownloadPanel({
   cards,
   className,
 }: {
+  /**
+   * `h3` where the panel sits under a section that already has an `h2`.
+   *
+   * Defaults to `h2`, so `/blueprints/[slug]` keeps the outline it was approved with
+   * (`references/reading.md` lists it as a benchmark). `/build`'s step 7 opts in: it had
+   * three sibling `h2`s, which said the page had three equal sections when it has one.
+   */
+  headingLevel?: "h2" | "h3";
   /** `/bundles/<slug>/factory.dot` — the Attractor-runnable pipeline. */
   factoryHref: string;
   /** `/bundles/<slug>/blueprint.dot` — the topology, card pins intact. */
@@ -57,6 +66,8 @@ export function DownloadPanel({
     }
   }
 
+  const Heading = headingLevel;
+
   return (
     <section
       id="download"
@@ -64,12 +75,15 @@ export function DownloadPanel({
       className={cx("panel scroll-mt-24 p-5", className)}
     >
       <div className="mb-3 flex items-center justify-between">
-        <h2
+        {/* See `headingLevel`. `id="download-heading"` and the `aria-labelledby` that
+            points at it are unchanged, and so is `id="download"` on the section, which is
+            the bookmark `ForkAction` targets. */}
+        <Heading
           id="download-heading"
           className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim"
         >
           Download
-        </h2>
+        </Heading>
         <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
           runs on your machine
         </span>

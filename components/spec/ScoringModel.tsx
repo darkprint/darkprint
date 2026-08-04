@@ -193,8 +193,12 @@ export function ScoringModel({
   const { minRuns, outlierZScore } = config.telemetry;
 
   return (
-    <section id="weights" className="scroll-mt-24 border-t border-line py-16 sm:py-20">
-      <div className="container-page flex flex-col gap-8">
+    /* No `container-page` and no outer padding: the route's own wrapper supplies both,
+       and carrying a second set here gave `/spec/scoring` two vertical rhythms. `id` and
+       `scroll-mt-24` stay on this element, which is all `anchors.test.ts` requires of the
+       `#weights` bookmark. The rule above stays, because it is what separates this half
+       of the page from the one before it. */
+    <section id="weights" className="scroll-mt-24 flex flex-col gap-8 border-t border-line pt-14">
         {/* No eyebrow. It carried "The arithmetic", and an eyebrow is how every page on
             this site opens: a mono kicker above a title, which is what `SectionHeading`
             draws at the top of `/spec/scoring` itself. Halfway down the route a second
@@ -447,7 +451,6 @@ export function ScoringModel({
             incomparable runs.
           </p>
         </More>
-      </div>
     </section>
   );
 }

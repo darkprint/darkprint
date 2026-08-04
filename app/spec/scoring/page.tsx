@@ -132,15 +132,21 @@ export default function SpecScoringPage() {
             </span>
           </p>
         </section>
-      </div>
 
-      {/* ---------- the quantitative detail: what each check is worth ----------
-          `ScoringModel` moved here unchanged from `app/spec/page.tsx`. Every number it
-          prints is read off `DARKPRINT_CONFIG` and `getOntologyView()` at render time, so
-          the route it mounts on changes nothing about what it says. It carries its own
-          `container-page`, which is why it sits outside the wrapper above rather than
-          inside it — nesting the two would double the horizontal padding. */}
-      <ScoringModel />
+        {/* ---------- the quantitative detail: what each check is worth ----------
+            `ScoringModel` moved here unchanged from `app/spec/page.tsx`. Every number it
+            prints is read off `DARKPRINT_CONFIG` and `getOntologyView()` at render time,
+            so the route it mounts on changes nothing about what it says.
+
+            It used to sit outside this wrapper because it carried its own
+            `container-page` and nesting the two would have doubled the horizontal
+            padding. That was true and it cost the route its rhythm: one half ran on the
+            wrapper's `gap-14 py-14` and the other on the component's own
+            `py-16 sm:py-20`, so a reader met two vertical systems on one page. The
+            component's container and its outer padding are gone instead, and the wrapper
+            now spaces both halves the same way. */}
+        <ScoringModel />
+      </div>
 
       <div className="container-page py-14">
         <SpecPager href={HERE} />

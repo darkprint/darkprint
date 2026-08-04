@@ -174,11 +174,19 @@ function GlanceScene() {
 
 export function WhichTasksGlance() {
   return (
-    <figure className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-8">
+    /* One column at every width. The drawing and its 117-word caption sat side by side
+       from `lg` up, which put the whole of the route's opening argument on one screen
+       beside the figure it explains and asked a reader to take both at once. The author:
+       "too information condensed in a 16:9 page. Think a user like it is a child where
+       you need to point the attention to a concept at time."
+
+       `lg:w-[30rem] lg:shrink-0` goes with the `lg:flex-row` it was sized for. Left
+       behind, the drawing keeps a desktop column width under a now full-width caption,
+       which is the same figure in a worse place. */
+    <figure className="flex flex-col gap-4">
       <Sheet
         label="Read this first"
         title="Four questions, asked in order"
-        className="lg:w-[30rem] lg:shrink-0"
         bodyClassName="p-3 sm:p-4"
       >
         <div className="overflow-x-auto">

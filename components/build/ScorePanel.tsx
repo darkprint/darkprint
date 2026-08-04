@@ -121,6 +121,14 @@ export function ScoreStrip({
 }
 
 export interface ScorePanelProps {
+  /**
+   * `h3` where the panel sits inside a section that already has an `h2`.
+   *
+   * Defaults to `h2` so `/blueprints/[slug]` is untouched: `references/reading.md` lists
+   * that route as an approved benchmark, and a heading level is part of what was
+   * approved. `/build` opts in, because there the step's own `h2` is the section.
+   */
+  headingLevel?: "h2" | "h3";
   autonomy?: AutonomyResult;
   security?: SecurityResult;
   /** `ResolvedBlueprint.digest` of the factory as the reader has chosen it. */
@@ -151,6 +159,7 @@ export interface ScorePanelProps {
 }
 
 export function ScorePanel({
+  headingLevel = "h2",
   autonomy,
   security,
   digest,
@@ -162,15 +171,23 @@ export function ScorePanel({
 }: ScorePanelProps) {
   const people = autonomy?.contributions.filter((c) => c.requiresHuman) ?? [];
 
+  const Heading = headingLevel;
+
   return (
     <section
       aria-labelledby="score-panel-heading"
       className={cx("panel flex flex-col gap-4 p-4", className)}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="score-panel-heading" className={LABEL}>
+        {/* `h3` on a page that already has an `h2` for the step. /build's step 7 had three
+            sibling `h2`s: the step's own, this one, and `DownloadPanel`'s, so the outline
+            said the page had three equal sections when it has one with two panels in it.
+            Opt-in rather than changed outright: this component and `DownloadPanel` also
+            render on `/blueprints/[slug]`, which `references/reading.md` lists as an
+            approved benchmark not to edit. */}
+        <Heading id="score-panel-heading" className={LABEL}>
           Your blueprint
-        </h2>
+        </Heading>
         {digest !== undefined && (
           <span className="font-mono text-[10px] text-dim" title={digest}>
             {shortDigest(digest)}
