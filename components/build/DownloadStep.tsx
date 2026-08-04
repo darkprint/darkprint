@@ -10,6 +10,8 @@ import {
 } from "@/lib/content/bundle-export";
 import { cx } from "@/lib/format";
 
+import { AgentHandoff } from "./AgentHandoff";
+
 /* ============================================================
    The end of the path: the factory, as files.
    ------------------------------------------------------------
@@ -173,6 +175,12 @@ export function DownloadStep({
           </p>
         </div>
       </div>
+
+      {/* The step used to end here, with one artefact: this blueprint, as files. Four
+          choices over one starter cannot reach a goal that is not "build software", and
+          most readers arrive with a different one. `AgentHandoff` is the generalisation,
+          and it is the mirror of the `AGENTS.md` sitting in the folder above. */}
+      <AgentHandoff className="mt-2 border-t border-line pt-6" />
     </div>
   );
 }

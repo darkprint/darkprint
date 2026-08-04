@@ -175,10 +175,17 @@ function Aside({
 export function WholeStep() {
   return (
     <>
+      {/* Opened on "a dark factory turns a written specification into working software"
+          until 2026-08-04. That is the older framing the author moved past: blueprints are
+          the object and a dark factory is one badge some of them earn. The first sentence a
+          reader meets on the authoring page is the wrong place to teach the exception, and
+          on this blueprint it is doubly wrong, because the five phases below are what makes
+          this particular one qualify. */}
       <p className={P}>
-        A dark factory turns a written specification into working software. This one does it
-        with five nodes, one for each phase of that work: planning, implementation, testing,
-        debugging, deployment.
+        A blueprint is a pattern for getting work done by agents, written down as a graph.
+        This one turns a written specification into working software, with five nodes, one
+        for each phase of that work: planning, implementation, testing, debugging,
+        deployment.
       </p>
       <p className={P}>Nothing on this page runs.</p>
       <More summary="How the panes below fit together">
