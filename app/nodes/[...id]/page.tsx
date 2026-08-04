@@ -9,10 +9,11 @@ import {
   getRegistry,
   nodeCardVersions,
 } from "@/lib/content";
-import { downloadsFor } from "@/lib/data/node-community";
+import { commentsFor, downloadsFor } from "@/lib/data/node-community";
 import { getAuthor } from "@/lib/data/users";
 import { compact, cx } from "@/lib/format";
 import { contentHref, termHref } from "@/lib/href";
+import { Comments } from "@/components/blueprint/Comments";
 import { ForkAction } from "@/components/blueprint/ForkAction";
 import { AuthorChip } from "@/components/ui/Avatar";
 import { KindBadge } from "@/components/ui/Badge";
@@ -1015,6 +1016,19 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             </dl>
           </SidePanel>
         </aside>
+      </div>
+
+      {/* Community notes, full width under both columns, the same component and the same
+          position the blueprint pages use. The author asked for it here too, and the
+          asymmetry was real: a blueprint could be discussed and a card could not, though
+          a card is the thing somebody lifts on its own.
+
+          `commentsFor` returns `[]` for every card today. That is the honest state and
+          `Comments` renders it as one: its empty state says notes are seeded rows, this
+          card has none, and posting is not built. The section carries its own `◐ seeded`
+          marker either way. */}
+      <div className="mt-10">
+        <Comments comments={commentsFor(card.id)} />
       </div>
     </div>
   );

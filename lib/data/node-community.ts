@@ -1,3 +1,5 @@
+import type { Comment } from "@/lib/types";
+
 /* ============================================================
    DarkPrint — per-card download counts, the node-card half of §5
    `lib/data/community.ts` is the blueprint half of the mutable index:
@@ -78,4 +80,24 @@ export const NODE_DOWNLOADS: Record<string, number> = {
 /** The download count for a card id, or `0` — a card nobody has a row for yet. */
 export function downloadsFor(id: string): number {
   return NODE_DOWNLOADS[id] ?? 0;
+}
+
+/**
+ * Notes per node card, keyed by card id. Seeded, exactly like `NODE_DOWNLOADS`.
+ *
+ * Empty today, and that is the honest state rather than a placeholder: nobody has written
+ * a note about a card through a form that exists, because there is no form and no runner
+ * behind one. `Comments` renders its own empty state and carries the `◐ seeded` marker
+ * either way, so a card page says what it has rather than hiding the section until
+ * somebody invents rows for it.
+ *
+ * The blueprint half (`lib/data/community.ts`) does ship seeded notes. Those were written
+ * with the archive; inventing a second set of voices to fill a new panel is a different
+ * thing, and it is the author's to write.
+ */
+export const NODE_COMMENTS: Record<string, Comment[]> = {};
+
+/** Notes for one card. `[]` for a card nobody has written about, which is all of them. */
+export function commentsFor(cardId: string): Comment[] {
+  return NODE_COMMENTS[cardId] ?? [];
 }

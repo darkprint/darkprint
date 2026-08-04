@@ -308,7 +308,26 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           under 300px to about 370px and the labels are clipped exactly as before, so they
           are being cut by the figure's own bounds and not by the column around it. See
           `components/viz/RadarChart.tsx`. */}
-      <div className="mt-10 flex flex-col gap-8">
+      {/* Two columns, the node page's shape.
+          ------------------------------------------------------------
+          The author: the panels "should be placed like the structure we have in the node
+          webapge where each box on the left occupised 2/3 of the column and the right
+          part is made by this attached ... I want the radard panel behaving like the one
+          attached for the node card; this up to the community notes which stay like now."
+
+          `SynchronisedPanes` used to own a 2:1 split of its own, for the graph row alone,
+          with the Score card in its `aside`. Everything under that row went full width,
+          so the page had one shape for its first screen and another for the rest, and the
+          Score card stopped being sticky the moment the graph ended.
+
+          The split is the page's now and runs the whole body: the left column carries the
+          graph, the panels and the engine's working, and the right one carries Score and
+          Bundle and stays put while the left scrolls. `lg:self-start` is what lets
+          `sticky` move at all — a column stretched to the row's height has nowhere to go.
+
+          Comments stay full width below, as asked. */}
+      <div className="mt-10 grid gap-8 lg:grid-cols-3">
+        <div className="flex min-w-0 flex-col gap-8 lg:col-span-2">
         {/* The graph and the card skeleton, consolidated: doc 2 §5.1's pane 1 and
             pane 2, the first thing in the body after the header. Clicking a
             node — or picking one from the dropdown beside the card skeleton — moves
@@ -321,55 +340,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             than under it — see the panel reorg spec §A2 for why: a reader gets the
             glance (the graph, what it draws) and the grade (Score) in one glance of
             the page, and Score stays in view while the graph is what scrolls. */}
-        <SynchronisedPanes
-          model={paneModel}
-          graph={bp.graph}
-          aside={
-            /* Score card. Doc 2 §1.1: autonomy is stated in `MetricBars`, never
-               scored, so the radar carries only the five metrics the engine reads
-               as a spoke. `bp.autonomy` is the same band the header meter prints.
-               `size` is smaller than `ScoreRadar`'s own 320 default because this
-               column is a third of the page width, not the full body width;
-               `ScoreRadar` is plain SVG on a `viewBox`, so it scales cleanly at a
-               narrower size without redrawing anything. 240 was chosen when the
-               body was `max-w-4xl` and this column was under 300px wide. The body
-               is the page's full column now and the aside is about 370, so the
-               radar had room it was not using. */
-            <section className="panel p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <PanelLabel>Score</PanelLabel>
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
-                  6-metric card
-                </span>
-              </div>
-              <div className="flex justify-center">
-                <ScoreRadar metrics={bp.metrics} size={280} />
-              </div>
-              {/* `audit` is what makes this card a glance rather than a second audit.
-                  The explainability panel below prints the engine's rationale for
-                  Autonomy and for Security verbatim, and this card was printing the
-                  same two strings under its two computed rows, word for word, one
-                  screen away. Handed the raw reading and the marker count, the
-                  Security row states where the blueprint sits on the engine's own
-                  0–4 scale instead of restating the subtraction that got it there.
-                  `raw` and not `level`: the bar beside it is a rescale of `raw`, and
-                  a rounded level printed next to it disagreed with the bar on four
-                  of these nine pages (see `ScoreAudit`). The four seeded rows are
-                  untouched: their detail carries the seeded marker and belongs
-                  beside the figure. */}
-              <MetricBars
-                metrics={bp.metrics}
-                autonomy={bp.autonomy}
-                compact
-                audit={{
-                  securityRaw: bp.analysis.security.raw,
-                  securityMarkers: bp.analysis.security.penalties.length,
-                }}
-                className="mt-4"
-              />
-            </section>
-          }
-        />
+        <SynchronisedPanes model={paneModel} graph={bp.graph} />
 
         {/* Requirements and Bundle, full width, right after the graph+Score row and
             the "Jump to a node" block `SynchronisedPanes` renders below it — moved
@@ -380,30 +351,20 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             suggestion the author ran on and a reader may override; what the graph is
             allowed to reach is a fact about its blast radius and the input to the
             security reading, so it stands on its own. */}
-        <More summary="Suggested models">
+        {/* Open, not folded. The author: "Make suggested model box and tool scope
+            always open and not collapsed." Both are short, both answer a question a
+            reader has while looking at the graph beside them, and a disclosure over four
+            lines costs a click to save nothing. */}
+        <section className="panel flex flex-col gap-3 p-5">
+          <PanelLabel>Suggested models</PanelLabel>
           <SuggestedModels agents={bp.requiredAgents} />
-        </More>
+        </section>
 
-        <More summary="Tool scopes">
+        <section className="panel flex flex-col gap-3 p-5">
+          <PanelLabel>Tool scopes</PanelLabel>
           <ToolScopes tools={bp.requiredTools} />
-        </More>
+        </section>
 
-        <More summary="Bundle">
-          <BundlePanel
-            digest={bp.digest}
-            ontologyVersion={record?.manifest.ontologyVersion ?? "unknown"}
-            // Doc 3 §8: the version a score was computed under, which the engine
-            // takes from the view the bundle was resolved against and not from
-            // the manifest. Both metrics carry the same value; a test in
-            // `lib/core` asserts they and `BlueprintAnalysis.ontologyVersion`
-            // can never disagree.
-            scoredOntologyVersion={bp.analysis.autonomy.ontologyVersion}
-            nodes={bundleNodes}
-            pinnedCards={record?.cardRefs.length ?? new Set(bp.cardRefs).size}
-            diagnostics={otherNotes}
-            explainedNotes={explainedNotes}
-          />
-        </More>
 
         {/* Explainability: the engine's own working for Autonomy and Security, in
             that order. `BlueprintCanvas` no longer draws its own schematic (the
@@ -415,15 +376,78 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             each other. */}
         <BlueprintCanvas graph={bp.graph} analysis={bp.analysis} />
 
-        {/* Comments */}
+        </div>
+
+        {/* The right column: the reading, then the folder it came from. Bundle moved
+            here from the full-width run below, on the author's instruction, so the two
+            things a reader checks against the graph travel with it. */}
+        <aside className="flex min-w-0 flex-col gap-8 lg:sticky lg:top-20 lg:col-span-1 lg:self-start">
+          <section className="panel p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <PanelLabel>Score</PanelLabel>
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
+                6-metric card
+              </span>
+            </div>
+            <div className="flex justify-center">
+              <ScoreRadar metrics={bp.metrics} size={280} />
+            </div>
+            {/* `audit` is what makes this card a glance rather than a second audit.
+                The explainability panel below prints the engine's rationale for
+                Autonomy and for Security verbatim, and this card was printing the
+                same two strings under its two computed rows, word for word, one
+                screen away. Handed the raw reading and the marker count, the
+                Security row states where the blueprint sits on the engine's own
+                0–4 scale instead of restating the subtraction that got it there.
+                `raw` and not `level`: the bar beside it is a rescale of `raw`, and
+                a rounded level printed next to it disagreed with the bar on four
+                of these nine pages (see `ScoreAudit`). The four seeded rows are
+                untouched: their detail carries the seeded marker and belongs
+                beside the figure. */}
+            <MetricBars
+              metrics={bp.metrics}
+              autonomy={bp.autonomy}
+              compact
+              audit={{
+                securityRaw: bp.analysis.security.raw,
+                securityMarkers: bp.analysis.security.penalties.length,
+              }}
+              className="mt-4"
+            />
+          </section>
+
+          <section className="panel p-5">
+            <PanelLabel>Bundle</PanelLabel>
+            <div className="mt-3">
+            <BundlePanel
+              digest={bp.digest}
+              ontologyVersion={record?.manifest.ontologyVersion ?? "unknown"}
+              // Doc 3 §8: the version a score was computed under, which the engine
+              // takes from the view the bundle was resolved against and not from
+              // the manifest. Both metrics carry the same value; a test in
+              // `lib/core` asserts they and `BlueprintAnalysis.ontologyVersion`
+              // can never disagree.
+              scoredOntologyVersion={bp.analysis.autonomy.ontologyVersion}
+              nodes={bundleNodes}
+              pinnedCards={record?.cardRefs.length ?? new Set(bp.cardRefs).size}
+              diagnostics={otherNotes}
+              explainedNotes={explainedNotes}
+            />
+            </div>
+          </section>
+        </aside>
+      </div>
+
+      {/* Comments and the download, full width under both columns. Community notes
+          "stay like now", per the author. */}
+      <div className="mt-8 flex flex-col gap-8">
         <Comments comments={bp.comments} />
 
-        {/* Doc 2 §11 item 10 — the bundle as files, generated at build time under
+        {/* Doc 2 §11 item 10: the bundle as files, generated at build time under
             `public/bundles/<slug>/` and linked here. Its own disclosure, collapsed by
-            default, after `Comments`, at the end of the page's content — Requirements
-            and Bundle used to share this same `<More>` with it; each of those two now
-            has its own disclosure instead, stacked under Score in the aside above, so
-            this one holds only the download. */}
+            default, at the end of the page's content. Bundle used to share this
+            `<More>` and now sits in the right column beside Score, so this one holds
+            only the download. */}
         <More summary="Download">
           <DownloadPanel
             factoryHref={factoryHref}
