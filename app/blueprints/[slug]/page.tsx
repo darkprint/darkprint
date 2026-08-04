@@ -294,12 +294,20 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           scrolls). Requirements and Bundle now sit full width, below the graph+aside
           row, next to "Jump to a node" — the graph keeps its natural size instead of
           being stretched or grown to manufacture room for something beside it.
-          `max-w-4xl` bounds the schematic, the graph-plus-aside row, and every panel
-          below it alike — the same width `SectionBlueprint`'s landing schematic and
-          `NodeCardStage`'s graph use for the same kind of content — so the 2:1
-          graph/aside split (`SynchronisedPanes`'s own `lg:grid-cols-3`) happens
-          inside this one column, not wider than it. */}
-      <div className="mx-auto mt-10 flex max-w-4xl flex-col gap-8">
+          The body used to be `mx-auto max-w-4xl`, which is 896px inside this page's
+          1152px `container-page`. The author read the result: the panels have to occupy
+          the same horizontal space as the title section above them, and a body inset by
+          128px a side under a full-width header reads as two pages stacked.
+
+          The 2:1 graph/aside split still happens inside this one column; the column is
+          now the page's.
+
+          It does **not** fix the radar's clipped axis labels, which render as "Reli" and
+          "rity" here. That was worth checking rather than assuming: the aside went from
+          under 300px to about 370px and the labels are clipped exactly as before, so they
+          are being cut by the figure's own bounds and not by the column around it. See
+          `components/viz/RadarChart.tsx`. */}
+      <div className="mt-10 flex flex-col gap-8">
         {/* The graph and the card skeleton, consolidated: doc 2 §5.1's pane 1 and
             pane 2, the first thing in the body after the header. Clicking a
             node — or picking one from the dropdown beside the card skeleton — moves

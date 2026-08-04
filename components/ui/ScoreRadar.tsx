@@ -1,6 +1,15 @@
 import type { Metric, MetricKey } from "@/lib/types";
 import { METRIC_SOURCE_META } from "@/lib/format";
 
+/**
+ * Room on each side of the square geometry for an axis label to run into.
+ *
+ * 12 characters ("Transparency") at `fontSize` 11 in the mono face is about 79 units,
+ * and the anchor sits inside the box, so ~56 clears it. 64 is that with a character of
+ * slack for a face whose advance is wider than assumed.
+ */
+const LABEL_PAD = 64;
+
 const SHORT: Record<MetricKey, string> = {
   autonomy: "Autonomy",
   efficacy: "Efficacy",
@@ -69,7 +78,26 @@ export function ScoreRadar({
   const chart =
     n === 0 ? null : (
       <svg
-        viewBox={`0 0 ${size} ${size}`}
+        /* Wider than it is tall, and only because of the labels.
+           ------------------------------------------------------------
+           The geometry is square and stays square: `cx`, `cy` and `R` are all off
+           `size`. What does not fit in a square is the text. Each axis label is anchored
+           at `R + 24` and then runs *outward* from there, so on the five-axis card the
+           right-hand anchor lands at `cx + (R + 24) * 0.951` and "Reliability" needs
+           roughly another 79 units of run beyond it. At the 240 this page asks for, that
+           is 213.6 + 79 against a 240-wide box, and the reader got "Reli". The mirrored
+           axis on the left lost the front of "Security" the same way and rendered as
+           "rity".
+
+           So the box gains `LABEL_PAD` on each side and the drawing keeps its origin.
+           The pad is a constant rather than a fraction of `size` because the thing it
+           has to clear is a fixed pixel length: the label is 11px mono whatever the
+           chart is scaled to, so the overflow is worst at the smallest size and a
+           proportional pad would under-provide exactly there.
+
+           Widening the column this card sits in does not help and was tried: the labels
+           are cut by the figure's own bounds, not by anything around it. */
+        viewBox={`${-LABEL_PAD} 0 ${size + LABEL_PAD * 2} ${size}`}
         className="w-full"
         role="img"
         aria-label={readout}
