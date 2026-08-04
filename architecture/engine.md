@@ -124,7 +124,7 @@ type raises **`bundle/prohibition-violated`**, an *error*, so the bundle does no
 | as shipped | closed-loop | yes | **4** | yes |
 | add `planner -> builder` | closed-loop | yes | **2** | **no — `bundle/prohibition-violated`** |
 
-Same conclusion from two directions. This is what `/what-it-isnt` and the `/build` switch
+Same conclusion from two directions. This is what the `/build` switch
 demonstrate live, and both surfaces must report the **refusal before the score** — a bundle
 that does not resolve is not a bundle with a low number.
 
@@ -191,7 +191,7 @@ do not let a surface imply otherwise.
 | **a weight or threshold** | every score on the site, all 9 READMEs, the "4 to 2" demonstration, and the ontology version (PATCH) |
 | **an autonomy band** | every class shown in the gallery and on every blueprint page |
 | **a diagnostic code** | the tables on `/spec`, any page quoting it, and the fixtures asserting it |
-| **the leak check** | `/what-it-isnt`, the `/build` switch, and the starter's claim to be the reference clean result |
+| **the leak check** | the `/build` switch, `/spec/card`'s quoted diagnostic, and the starter's claim to be the reference clean result. `/what-it-isnt` drew both graphs and was removed |
 | **anything in `lib/core`** | check the isomorphism constraint first — a `node:` import breaks `/upload` at runtime and not at build time |
 
 **When you change a check, attack it before trusting it.** Every bypass listed above was found

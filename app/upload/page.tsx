@@ -68,6 +68,26 @@ export default function UploadPage() {
           title="Share a blueprint"
           lead="Upload the DOT graph of your pipeline. DarkPrint parses the schematic in this tab and statically analyses it, naming the autonomy class and scoring the security with no forms to guess your way through. A graph with a person standing in it resolves like one without and names the node where they act. The other four axes stay empty: efficacy, reliability and transparency are meant to come from community votes and cost and time from a real run, and neither the ballot nor the runner is built. Nor is publishing — nothing here leaves your browser."
         />
+        {/* The vocabulary asymmetry, moved here from `/what-it-isnt` when that page was
+            removed. It is a statement about this page, and it was the only unconditional
+            statement of it on the site: `BundleDropzone` says the bundle is read against
+            the curated core alone, but only once a dropped bundle has already tripped a
+            vocabulary problem, so a reader comparing a page's score against the wizard's
+            never sees it first.
+
+            The claim is exact and worth keeping exact: the wizard builds its vocabulary
+            from `CORE_ONTOLOGY` alone (`components/upload/UploadFlow.tsx`) while the
+            archive resolves against the core plus `content/ontology/extensions.yaml`, so
+            this release's own `frontline-triage` bundle reports two unknown terms in the
+            wizard and scores 4 where its page shows 2. Not folded, and not shortened:
+            two HIGH findings in this project were disclaimers going missing while
+            somebody was cutting for pace. */}
+        <p className="mt-5 max-w-2xl text-sm leading-relaxed text-dim">
+          It resolves what you drop against the curated core vocabulary only. Bundles in
+          the archive are resolved against the core plus the terms this release adds in
+          its own namespace, so a graph using one of those comes back with the term
+          unknown and a security score computed without it.
+        </p>
       </header>
 
       <div className="mt-10">

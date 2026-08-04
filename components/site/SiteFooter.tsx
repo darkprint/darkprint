@@ -15,7 +15,7 @@ import Link from "next/link";
  * Each anchor was repointed at the id it moved with, and all five ids survive verbatim on
  * their new routes:
  *
- *     /#anchor      → /what-it-isnt#what-it-is   (SectionWhatItIs)
+ *     /#anchor      → gone with `/what-it-isnt` (SectionWhatItIs, deleted with the route)
  *     /#levels      → the route link below it, which lands on the ladder
  *     /#autonomy    → /towards-a-dark-factory#autonomy  (SectionLevels)
  *     /#node-card   → /spec/card                 (SectionNodeCard, the page's centrepiece)
@@ -72,10 +72,10 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
       { href: "/install", label: "Install" },
       { href: "/spec", label: "Spec" },
       { href: "/towards-a-dark-factory", label: "Towards a Dark Factory" },
-      { href: "/what-it-isnt", label: "What it isn't" },
-      // The rung the landing opened on, now the first section of the page that also
-      // says what one is not. Two links into one route, and they answer two questions.
-      { href: "/what-it-isnt#what-it-is", label: "What a dark factory is" },
+      // "What it isn't" and "What a dark factory is" both pointed at `/what-it-isnt`,
+      // which is gone. Neither is repointed: `SectionWhatItIs` held the definition and
+      // was deleted with the route, so there is no id left for the second link and no
+      // other page makes the comparison the first one promised.
     ],
   },
   {

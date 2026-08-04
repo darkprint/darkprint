@@ -66,7 +66,6 @@ export const NAV = [
   // character, which is what `nav.test.ts` holds it to. The label a reader clicks is the
   // heading they land on, so there is nothing to re-resolve on arrival.
   { href: "/towards-a-dark-factory", label: "Towards a Dark Factory", group: "learn" },
-  { href: "/what-it-isnt", label: "What it isn't", group: "learn" },
 ] as const;
 
 /** The first item of the second group, which is where the rule goes. */

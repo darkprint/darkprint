@@ -12,8 +12,8 @@
    2. The two-scales panel said the ladder is "the one thing on the
       site that is counted in rungs" three sections above a caption
       reading `security level 4`, which the same landing prints and
-      which recurs on all nine blueprint pages, `/build`,
-      `/what-it-isnt` and the gallery.
+      which recurs on all nine blueprint pages, `/build` and the
+      gallery.
 
    Both are copy, so both are checked as copy. The article cannot be
    fetched from a test (`hackernoon.com` answers 403), so what is

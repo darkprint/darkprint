@@ -35,8 +35,6 @@ import { createElement } from "react";
 import { describe, expect, it } from "vitest";
 
 import { getNodeCard, getOntologyView } from "@/lib/content";
-import { SectionAbsentEdge } from "@/components/explain/SectionAbsentEdge";
-import { isolationDemo } from "@/components/explain/starter-isolation";
 import { WhichTasksGlance } from "@/components/explain/WhichTasksGlance";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionLevels } from "@/components/home/SectionLevels";
@@ -93,8 +91,7 @@ function latticeProps(): { chain: string[]; kin: string[] } {
  * outright, on the author's verdict that the luminous-flow register itself reads as "a
  * blueprint" whatever is drawn inside it; the section now holds one static, aria-hidden
  * character per panel and nothing this file has anything to measure.
- * `SectionAbsentEdge` runs two bundles through the engine and draws both with
- * `AbsentEdgeGraph`; `LatticeFigure` is laid out from the vocabulary.
+ * `LatticeFigure` is laid out from the vocabulary.
  *
  * `DezoomGraph` and `ForkScene` are each rendered directly, and both are a judgement call
  * for the same reason. `DezoomGraph`'s two props are a link and a classification that no
@@ -151,15 +148,10 @@ const ROSTER: readonly SceneEntry[] = [
         createElement(DezoomGraph, { cardHref: "/nodes/code-builder", darkFactory: true }),
       ),
   },
-  {
-    files: ["components/explain/AbsentEdgeGraph.tsx"],
-    frames: 2,
-    render: () => {
-      const demo = isolationDemo();
-      if (demo === undefined) throw new Error("the starter blueprint is not in content/");
-      return framesOf(createElement(SectionAbsentEdge, { demo }));
-    },
-  },
+  // `components/explain/AbsentEdgeGraph.tsx` had an entry here. It drew the starter
+  // blueprint clean and leaked, two frames, rendered through `SectionAbsentEdge` so the
+  // numbers came from the engine rather than from this file. Both were deleted with
+  // `/what-it-isnt`, which was their only mount.
   {
     files: ["components/explain/WhichTasksGlance.tsx"],
     frames: 1,
@@ -220,7 +212,9 @@ const DRAWERS = [...sourcesUnder("components"), ...sourcesUnder("app")]
 describe("the guard covers every scene the site draws", () => {
   it("finds the drawings by walking the tree", () => {
     // A grep that matched nothing would leave every case below with nothing to check.
-    expect(DRAWERS.length).toBeGreaterThan(12);
+    // Was 12. `AbsentEdgeGraph.tsx` was deleted with `/what-it-isnt`, its only mount, so
+    // the tree really does draw one fewer scene. The floor guards the walk, not the count.
+    expect(DRAWERS.length).toBeGreaterThan(11);
     expect(DRAWERS).toContain("components/home/SectionRoles.tsx");
     expect(DRAWERS).toContain("components/spec/LatticeFigure.tsx");
   });

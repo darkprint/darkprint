@@ -11,11 +11,12 @@ import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { More } from "@/components/ui/More";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SEVERITY_META } from "@/components/ui/severity";
-// Read-only import of `/what-it-isnt`'s build-time derivation. That module runs the
-// analyzer over the starter bundle with one edge added and hands back what the engine
-// said; re-deriving it here would give the site two answers to one question, and the
-// answer this page needs is the exact `bundle/prohibition-violated` sentence. This page
-// quotes one diagnostic and links across for the full demonstration.
+// Read-only import of the build-time derivation in `components/explain/starter-isolation`.
+// That module runs the analyzer over the starter bundle with one edge added and hands back
+// what the engine said; re-deriving it here would give the site two answers to one
+// question, and the answer this page needs is the exact `bundle/prohibition-violated`
+// sentence. It was written for `/what-it-isnt`, which drew both graphs; that page is gone
+// and this page and `components/panes/absences.ts` are what keep the module alive.
 import {
   errorsOf,
   isolationDemo,
@@ -229,10 +230,15 @@ export default function SpecCardPage() {
                   </p>
                 )}
               </div>
+              {/* Pointed at the topology layer when `/what-it-isnt` was removed. The
+                  sentence had to change with the href, not just follow it: the old target
+                  drew the clean and leaked graphs side by side and quoted the analyzer on
+                  both, and nothing on the site does that now. What survives is the
+                  prohibition drawn as an edge the starter graph does not have. */}
               <p className="text-sm text-dim">
-                <SpecLink href="/what-it-isnt">The full demonstration</SpecLink>{" "}
-                puts the two graphs side by side and shows what the security
-                analyzer says about the same edge.
+                <SpecLink href="/spec/topology">The topology layer</SpecLink>{" "}
+                draws the same prohibition as an edge the starter graph does not
+                have, beside the card that declares it.
               </p>
             </div>
           )}

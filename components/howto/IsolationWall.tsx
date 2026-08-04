@@ -21,7 +21,7 @@ import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
    The account this page reads puts one sentence above every other:
    "the code generation layer and the validation layer must be
    completely isolated from each other. The agent can't see the
-   scenarios." That is the same claim `/what-it-isnt` makes about
+   scenarios." That is the same claim `/spec/topology` makes about
    the starter blueprint, arriving from a different direction, and
    drawing it with the same glyphs is the point: `FlowAbsence` is
    the mark this site has for a connection somebody chose not to

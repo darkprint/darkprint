@@ -394,7 +394,7 @@ export default function TheClimbPage() {
             Which nodes exist, what flows between them, what each node is forbidden to
             receive, and which model it runs. The wall above is a rule in that layer here,
             so{" "}
-            <Link href="/what-it-isnt" className={INLINE}>
+            <Link href="/spec/topology" className={INLINE}>
               the starter blueprint has an edge it does not have
             </Link>
             {" "}and adding it fails the bundle. None of the four formats reaches that layer; the{" "}
@@ -404,8 +404,9 @@ export default function TheClimbPage() {
             are a DOT topology, one versioned card per node, and a controlled vocabulary
             both are written against.
           </p>
-          {/* Constraint 0.4, and the one surviving copy of it on this route. The same
-              sentence /what-it-isnt carries, on the page most likely to read as a pitch. */}
+          {/* Constraint 0.4, on the page most likely to read as a pitch. It used to be
+              one of two copies; `/what-it-isnt` carried the other and that page is gone,
+              so this is now the only place the route states it. Do not fold it. */}
           <p className="max-w-3xl text-sm leading-relaxed text-dim">
             Nothing here runs a factory. Execution happens on your own machine, through
             Claude Code or an agent that reads the same cards. Publishing is not built,

@@ -32,8 +32,10 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    section in `WhichTasksExamples`, and the closing panel this file
    used to end on. That panel restated, word for word, the honesty
    note `/towards-a-dark-factory/the-climb` and `/what-it-isnt`
-   both carry; one copy survives, on the page most likely to read
-   as a pitch. The links it held are the line under the pager.
+   both carried; one copy survives, on the page most likely to read
+   as a pitch, and it is now the only one anywhere since
+   `/what-it-isnt` was removed. The links it held are the line under
+   the pager.
 
    ── The length pass (PROJECT.md §3.1): 1,763 prose words ──
    The author's reading was that the page is long enough to skip.
@@ -45,7 +47,8 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    now. The third gloss, "the isolation rules live in the topology
    where no single agent can talk itself out of them", is what
    `WhichTasksChecks`'s second card says at greater length, and its
-   link to `/what-it-isnt` is the same link.
+   link is the same link — repointed to `/spec/topology` when
+   `/what-it-isnt` was removed.
    ============================================================ */
 
 export const metadata: Metadata = {

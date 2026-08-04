@@ -1,10 +1,16 @@
 /* ============================================================
-   /what-it-isnt — the demonstration, as data
+   The criteria-leak demonstration, as data
+
+   Written for `/what-it-isnt`, which drew the clean and leaked
+   graphs side by side. That route is gone; `/spec/card` and
+   `components/panes/absences.ts` still read this module, so it
+   survives as the site's one derivation of the leak rather than as
+   one page's helper.
 
    Doc 2 §3's claim is that isolation is a property of the
    topology. A claim about topology can be checked on a topology,
-   so this page does not describe what the analyzer would say: it
-   runs the analyzer on two bundles and quotes it.
+   so nothing here describes what the analyzer would say: it runs
+   the analyzer on two bundles and quotes it.
 
    Bundle one is `starter-software-factory` exactly as the archive
    ships it. Bundle two is the same manifest and the same five

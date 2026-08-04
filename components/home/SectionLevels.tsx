@@ -648,8 +648,8 @@ export function SectionLevels() {
               </dt>
               {/* "The one thing on the site that is counted in rungs" was falsified three
                   sections down by this same page: `security level 4` is printed under the
-                  example's schematic, and again on all nine blueprint pages, `/build`,
-                  `/what-it-isnt` and the gallery. The binding constraint is the autonomy
+                  example's schematic, and again on all nine blueprint pages, `/build`
+                  and the gallery. The binding constraint is the autonomy
                   ordinal, which appears nowhere, and that is what the clause was reaching
                   for. Narrowed to the claim that is true and that the panel is about: an
                   organisation is counted in rungs here and nothing else is. */}

@@ -7,9 +7,9 @@ import { cx } from "@/lib/format";
    the supporting prose behind a disclosure", and the reviewers
    measured that it worked: the visible word count per step fell by
    between 37% and 66% and nothing on the page stopped being true.
-   §4.4 asks the same of `/what-it-isnt`, which is now the longest
-   page on the site, and the climb's four-phase account is in the
-   same position.
+   §4.4 asked the same of `/what-it-isnt`, which was then the
+   longest page on the site; that route has since been removed
+   outright. The climb's four-phase account is in the same position.
 
    So the device is one component rather than three copies. It was
    written inside `components/build/steps.tsx` and moved here the

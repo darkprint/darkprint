@@ -291,7 +291,10 @@ describe("the nav is a complete map of the routes", () => {
         .replace(/^\s*\/\/.*$/gm, "");
       for (const [, href] of source.matchAll(/"(\/[\w\-/[\]]*#[\w-]+)"/g)) hrefs.add(href);
     }
-    expect(hrefs.size).toBeGreaterThan(4);
+    // Was 4. Removing `/what-it-isnt` took the footer's `/what-it-isnt#what-it-is` with
+    // it, so the population is one smaller and the floor moves with it. The floor is here
+    // to catch a regex that stopped matching, not to pin a count.
+    expect(hrefs.size).toBeGreaterThan(3);
     expect(unrenderedFragments([...hrefs].sort())).toEqual([]);
   });
 

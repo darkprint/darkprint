@@ -36,7 +36,6 @@ TypeScript strict.
 | `/towards-a-dark-factory` | the 1–5 organisational ladder |
 | `/towards-a-dark-factory/which-tasks` | which tasks a dark factory can take |
 | `/towards-a-dark-factory/the-climb` | the four phases, holdouts, progressive disclosure |
-| `/what-it-isnt` | why a prompt library cannot hold this, with the prohibition demonstrated live |
 
 ### Do
 
@@ -100,7 +99,6 @@ The landing used to carry doc 2 §2.1's six rungs. They moved to the pages they 
 | the five roles + the absent edge | `/spec/topology` |
 | the 1–5 ladder | `/towards-a-dark-factory` |
 | the analyzer on a real bundle | `/spec` |
-| "what it is" / "not a skill library" | `/what-it-isnt` |
 
 `app/page.tsx`'s header comment records this, so nobody "restores" the spine.
 

@@ -40,7 +40,6 @@ import InstallPage, { metadata as installMetadata } from "@/app/install/page";
 import { allBlueprints } from "@/lib/content";
 import { CARD_ROWS } from "@/components/spec/rows";
 import { ScoringModel } from "@/components/spec/ScoringModel";
-import { SectionComponentRecap } from "@/components/explain/SectionComponentRecap";
 import { WhichTasksChecks } from "@/components/explain/WhichTasksChecks";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
 import { openText, plainText } from "@/components/ui/visible-text";
@@ -78,7 +77,6 @@ const INSTALL_PAGE = renderToStaticMarkup(createElement(InstallPage as never));
  */
 const INSTALL_METADATA_DESCRIPTION = installMetadata.description ?? "";
 const WHICH_TASKS = renderToStaticMarkup(createElement(WhichTasksChecks));
-const RECAP = renderToStaticMarkup(createElement(SectionComponentRecap));
 /**
  * The scoring panel `/spec/scoring` mounts (PROJECT.md §3.4; moved off `/spec` onto its
  * own route by the lifecycle-scoring pass, spec §4 — `ScoringModel` itself is unchanged
@@ -179,14 +177,17 @@ const CLAIMS: Claim[] = [
     html: WHICH_TASKS,
   },
 
-  /* ---- /what-it-isnt ---- */
-  {
-    surface: "/what-it-isnt · four words used precisely",
-    why: "a not-built statement. It stays inside the recap's disclosure on purpose, because the composite node it qualifies is only mentioned there: what this pins is that the two halves never separate, so the feature can never be described without the qualifier",
-    says: "reference another as a composite node, and nothing on the site does that today",
-    where: "present",
-    html: RECAP,
-  },
+  /* ---- /what-it-isnt — removed with the route ----
+     The entry held "reference another as a composite node, and nothing on the site does
+     that today" over `SectionComponentRecap`. It is out because the thing it qualified is
+     out: "composite node" was written in exactly one place on the site, that component,
+     and the component was deleted with `/what-it-isnt`. The site no longer describes the
+     feature, so it no longer needs the sentence saying the feature is not built.
+
+     This is the only reason an entry may leave. An entry does not come out because a
+     length pass wanted the words; it comes out when the claim it guards has nothing left
+     to guard. If the composite-node idea is ever described again anywhere, this entry
+     comes back with it. */
 
   /* ---- /install ---- */
   {
@@ -212,7 +213,6 @@ describe("the surfaces the ledger is read off", () => {
       ["/spec/card", SPEC_CARD],
       ["/spec scoring panel", SCORING],
       ["which-tasks checks", WHICH_TASKS],
-      ["the component recap", RECAP],
       ["the starter's canvas", STARTER],
     ] as const) {
       expect(html.length, name).toBeGreaterThan(2000);

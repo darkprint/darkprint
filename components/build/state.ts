@@ -233,8 +233,8 @@ function withoutCap(text: string): string | undefined {
  * turn up. Between 1 and 10 neither computed score moves, because a cap of 1 and a cap of
  * 10 are both a cap; the figure that does move is what happens when there is none, and doc
  * 3 §4.1 charges `unbounded-loop` for it. That figure is the engine's, taken here on a
- * bundle assembled for the purpose and thrown away, exactly as `/what-it-isnt` takes the
- * criteria-leak figure.
+ * bundle assembled for the purpose and thrown away, exactly as
+ * `components/explain/starter-isolation.ts` takes the criteria-leak figure.
  *
  * Total: a variant whose cards declare no cap, or one that fails to resolve once the cap
  * is gone, yields nothing and the sentence that would have quoted it is not written.

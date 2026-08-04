@@ -135,10 +135,10 @@ file rather than scattered through the analyzers.
 
 | change | what goes stale |
 |---|---|
-| **add a term** | `/ontology/<term>` page count, `partitionTerms` totals printed on `/spec` and `/what-it-isnt`, and the ontology version on every card |
+| **add a term** | `/ontology/<term>` page count, the `partitionTerms` totals printed on `/spec`, and the ontology version on every card |
 | **remove or rename a term** | every card using it (`card/unknown-term`), every port typed with it, every `cannot` naming it, and every bundle's scores |
 | **change the lattice** (`broader`) | port compatibility across all 9 bundles, and `cannot` enforcement — a widened parent can make a prohibition fire where it did not |
-| **change a weight in `config.ts`** | every security reading on the site, all 9 bundle READMEs, and the demonstration on `/what-it-isnt` that quotes "4 to 2" |
+| **change a weight in `config.ts`** | every security reading on the site and all 9 bundle READMEs. The `/what-it-isnt` demonstration that quoted "4 to 2" is gone with that route; `components/explain/starter-isolation.ts` still derives the figure for `/spec/card` |
 | **add a term to the closed `phase` list** | doc 3 calls this list closed; phase coverage, the phase chips, and `/spec/ontology` all assume five |
 
 **Before changing a weight, check the open calibration item** in `../PROJECT.md` §3.3: four of

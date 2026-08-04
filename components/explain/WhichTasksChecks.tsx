@@ -140,7 +140,7 @@ const CHECKS: Check[] = [
         criteria, so they have to live somewhere it cannot reach. With no harness there is
         nowhere to put them, and the model that wrote the change signs it off.{" "}
         <Link
-          href="/what-it-isnt"
+          href="/spec/topology"
           className="font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan"
         >
           Why that isolation is topology
