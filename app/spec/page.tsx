@@ -135,10 +135,14 @@ export default function SpecPage() {
               <li key={layer.href} id={layer.anchor} className="scroll-mt-24">
                 <Link
                   href={layer.href}
-                  className="panel tick-frame group flex h-full flex-col gap-3 p-5 transition-colors hover:border-cyan/50"
+                  /* `route-box`: each of these three is a door onto another page, and the
+                     author asked for the boxes that leave to be told apart from the ones
+                     that carry a concept. `app/globals.css` records why the distinction
+                     is shape as well as hue. */
+                  className="route-box tick-frame group flex h-full flex-col gap-3 p-5"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className={LABEL}>{layer.step}</span>
+                    <span className="route-label">{layer.step}</span>
                     <span
                       className="rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em]"
                       style={{ color: layer.color }}
@@ -146,7 +150,7 @@ export default function SpecPage() {
                       {layer.format}
                     </span>
                   </div>
-                  <h3 className="font-display text-lg font-semibold leading-snug text-fg transition-colors group-hover:text-cyan">
+                  <h3 className="font-display text-lg font-semibold leading-snug text-fg transition-colors group-hover:text-amber-bright">
                     {layer.title}
                   </h3>
                   <p className="text-sm leading-relaxed text-muted">

@@ -16,9 +16,12 @@ import { neighbours } from "./route";
    only it knows, which is where it is.
    ============================================================ */
 
-const CARD =
-  "panel group flex flex-1 flex-col gap-1.5 p-5 transition-colors hover:border-cyan/50";
+/* `route-box`, not `panel`: these two leave the page, and the author asked for the boxes
+   that do to be visually distinct from the ones carrying a concept. `app/globals.css`
+   records why the distinction is shape as well as hue. */
+const CARD = "route-box group flex flex-1 flex-col gap-1.5 p-5";
 
+/** The pager's own position line, which is not a link and stays quiet. */
 const EYEBROW = "font-mono text-[11px] uppercase tracking-[0.18em] text-dim";
 
 export function RoutePager({ href }: { href: string }) {
@@ -39,10 +42,10 @@ export function RoutePager({ href }: { href: string }) {
       <div className="flex flex-col gap-4 sm:flex-row">
         {previous !== undefined && (
           <Link href={previous.href} className={CARD}>
-            <span className={EYEBROW}>
+            <span className="route-label">
               <span aria-hidden>← </span>previous
             </span>
-            <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors group-hover:text-cyan">
+            <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors group-hover:text-amber-bright">
               {previous.label}
             </span>
             <span className="text-sm leading-relaxed text-muted">{previous.blurb}</span>
@@ -50,10 +53,10 @@ export function RoutePager({ href }: { href: string }) {
         )}
         {next !== undefined && (
           <Link href={next.href} className={`${CARD} sm:text-right`}>
-            <span className={EYEBROW}>
+            <span className="route-label">
               next<span aria-hidden> →</span>
             </span>
-            <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors group-hover:text-cyan">
+            <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors group-hover:text-amber-bright">
               {next.label}
             </span>
             <span className="text-sm leading-relaxed text-muted">{next.blurb}</span>

@@ -70,12 +70,15 @@ function PagerLink({ page, side }: { page: SpecPage; side: "previous" | "next" }
     <Link
       href={page.href}
       rel={isNext ? "next" : "prev"}
+      /* `route-box`, not `panel`: this leaves the page, and the author asked for the
+         boxes that do to be told apart from the ones that carry a concept. See
+         `app/globals.css`. */
       className={cx(
-        "panel group flex flex-col gap-1.5 p-5 transition-colors hover:border-line-bright",
+        "route-box group flex flex-col gap-1.5 p-5",
         isNext ? "sm:col-start-2 sm:text-right" : "sm:col-start-1",
       )}
     >
-      <span className={LABEL}>
+      <span className="route-label">
         {isNext ? (
           <>
             Next <span aria-hidden>→</span>
@@ -86,7 +89,7 @@ function PagerLink({ page, side }: { page: SpecPage; side: "previous" | "next" }
           </>
         )}
       </span>
-      <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors group-hover:text-cyan">
+      <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors group-hover:text-amber-bright">
         {page.title}
       </span>
       <span className="text-sm leading-relaxed text-muted">{page.question}</span>

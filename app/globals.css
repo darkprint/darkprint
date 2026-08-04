@@ -144,6 +144,50 @@ body {
   border-radius: var(--radius-lg);
 }
 
+/* A box that leaves the page.
+   ------------------------------------------------------------
+   The author, 2026-08-04: "the pages connects to other pages in a labrynth way. It is
+   not clear whther a section is ended or there is other to read. Make the box pointing
+   to other pages with a orange such to make a visual distinction with the rest
+   concepts."
+
+   So every box whose job is to send a reader somewhere else wears this, and nothing
+   else does. A reader scanning a page can then tell, without reading a word, which
+   blocks are the page and which are the exits.
+
+   ── Why shape and not only hue ──
+   This site's colours carry meaning: cyan is interactive, violet is where a person
+   acts, emerald is a figure read off the engine, signal is a defect, and amber is
+   "not built yet". Amber *is* the site's orange, so a wayfinding box and a
+   `ComingSoonBadge` cannot be told apart by hue alone, and on `/spec/scoring` they
+   appear on the same screen.
+
+   Shape carries the difference. `ComingSoonBadge` is a small uppercase pill with no
+   arrow; this is a full-width rectangle with a rule down its leading edge. A pill
+   states a status about the thing beside it. A bar with an arrow points away. Do not
+   round this to a pill, and do not put the badge in a rectangle. */
+.route-box {
+  background: color-mix(in oklab, var(--color-amber) 5%, transparent);
+  border: 1px solid color-mix(in oklab, var(--color-amber) 30%, transparent);
+  border-inline-start: 2px solid color-mix(in oklab, var(--color-amber) 70%, transparent);
+  border-radius: var(--radius-lg);
+  transition: border-color 150ms, background-color 150ms;
+}
+.route-box:hover {
+  background: color-mix(in oklab, var(--color-amber) 9%, transparent);
+  border-color: color-mix(in oklab, var(--color-amber) 55%, transparent);
+  border-inline-start-color: var(--color-amber);
+}
+/* The eyebrow inside one. Amber rather than the cyan `.eyebrow` spends, because inside
+   a route box the label is part of the signpost rather than a section heading. */
+.route-label {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-amber);
+}
+
 /* Mono label / eyebrow */
 .eyebrow {
   font-family: var(--font-mono), monospace;
