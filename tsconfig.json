@@ -6,6 +6,13 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    // `scripts/measure-prose.ts` runs under `node --experimental-strip-types`, which
+    // resolves relative imports by their real `.ts` extension. Letting it import
+    // `components/ui/visible-text.ts` directly keeps one definition of open-vs-total
+    // text shared with `components/site/honesty.test.ts`; a second copy in the script
+    // could drift from the guard it is supposed to agree with. Safe here because
+    // `noEmit` is already set and Next compiles through SWC rather than tsc.
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
