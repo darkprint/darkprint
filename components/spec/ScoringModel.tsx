@@ -394,10 +394,6 @@ export function ScoringModel({
             <h3 className="font-display text-lg font-semibold text-fg">
               Cost and time, if they are ever reported
             </h3>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-dim">
-              <span aria-hidden>○</span>
-              not built
-            </span>
           </div>
           <dl className="flex flex-col gap-2 font-mono text-[12px]">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -415,11 +411,28 @@ export function ScoringModel({
               </dd>
             </div>
           </dl>
-          <p className="text-sm leading-relaxed text-muted">
-            Nothing on this site measures a run, so these two filters describe a design
-            rather than a behaviour. There is no runner and no endpoint to report to, and
-            the cost and time figures in the registry are seeded rows that say so on every
-            card carrying one.
+          {/* The `○ not built` chip stood in the heading row, with `minRuns` and
+              `outlierZScore` between it and the sentence that explains what it means. It
+              introduces that sentence now, which is the shape this route already uses at
+              `app/spec/scoring/page.tsx:124-133`: badge, then the claim, in one line.
+
+              Guardrails §2 is the reason to move it toward the sentence rather than away.
+              The paragraph carries this route's one honesty-ledger entry, held `open`
+              over `ScoringModel` — "nothing on this site measures a run, so these two
+              filters describe a design rather than a behaviour" — and its wording is
+              untouched here. What changes is that the qualifier and the qualified thing
+              are now one block instead of two separated by a definition list. */}
+          <p className="flex flex-wrap items-center gap-2 text-sm leading-relaxed text-muted">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-dim">
+              <span aria-hidden>○</span>
+              not built
+            </span>
+            <span>
+              Nothing on this site measures a run, so these two filters describe a design
+              rather than a behaviour. There is no runner and no endpoint to report to, and
+              the cost and time figures in the registry are seeded rows that say so on every
+              card carrying one.
+            </span>
           </p>
         </div>
 

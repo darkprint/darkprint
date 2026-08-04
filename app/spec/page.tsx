@@ -126,6 +126,18 @@ export default function SpecPage() {
           >
             Three layers, three questions
           </h2>
+          {/* Above the doors, not below them. It used to close the section, which meant
+              the block did not end where it looked like it ended: three cards, then a
+              paragraph, then the section. The audit of this route counted that among its
+              boundary defects. Read first, the same 58 words set up what the three doors
+              are doors to, and the section now ends on the doors themselves. */}
+          <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
+            A bundle is a folder holding all three: the graph, the cards it
+            pins, and the local vocabulary when its cards reach for a term the
+            curated core does not have. Every example on these four pages is
+            read out of that folder during the build, so a reader copying from
+            here is copying a file that loads.
+          </p>
           <ol className="grid gap-5 md:grid-cols-3">
             {SPEC_LAYERS.map((layer) => (
               /* `layer.anchor` is the id this layer carried while `/spec` was one page.
@@ -156,6 +168,18 @@ export default function SpecPage() {
                   <p className="text-sm leading-relaxed text-muted">
                     {layer.question}
                   </p>
+                  {/* `layer.source` was cut here in a pacing pass and put back the same
+                      hour. The density argument is real: each door carries four mono
+                      lines under its question, and "where is this implemented" is not a
+                      question somebody reading the spec for the first time is asking.
+
+                      But `grep -rn "\.source" app/spec components/spec` returns this line
+                      and nothing else, and the three values render on no other page, so
+                      cutting them removes them from the site rather than from this block.
+                      The lever for that is relocate, not cut: each layer page owns its own
+                      layer and could print it. That is a change to three pages and a
+                      decision about what a layer page is for, which is not a thing to
+                      decide inside a pass about pacing. */}
                   <p className="mt-auto flex flex-col gap-1 pt-2 font-mono text-[11px] text-dim">
                     <span>{layer.file}</span>
                     <span>{layer.source}</span>
@@ -167,13 +191,6 @@ export default function SpecPage() {
               </li>
             ))}
           </ol>
-          <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
-            A bundle is a folder holding all three: the graph, the cards it
-            pins, and the local vocabulary when its cards reach for a term the
-            curated core does not have. Every example on these four pages is
-            read out of that folder during the build, so a reader copying from
-            here is copying a file that loads.
-          </p>
         </section>
 
         {/* ---------- the door to how it's graded: not a fourth layer ----------

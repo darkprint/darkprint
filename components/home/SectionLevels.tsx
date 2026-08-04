@@ -584,7 +584,6 @@ function LevelRow({ level, flip }: { level: Level; flip: boolean }) {
       <Sheet
         className={cx(flip ? "md:order-1" : "md:order-2")}
         bodyClassName="p-3 sm:p-4"
-        title={level.name}
         note={drawing.note}
       >
         {/* A `FlowScene` rather than a plain `Scene`, because `FLOW_CSS` is scoped to the

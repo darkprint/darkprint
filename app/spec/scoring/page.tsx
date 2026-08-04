@@ -96,7 +96,10 @@ export default function SpecScoringPage() {
             >
               Three ways of knowing
             </h2>
-            <span className="font-mono text-[11px] text-dim">six axes</span>
+            {/* A `six axes` chip stood here. The count is already on the page three
+                times over: the eyebrow above it (`sequence.ts`, "The six radar axes"),
+                the lead, and `metadata.description`. A fourth telling in the heading row
+                is a fact the reader has met and an object competing with the title. */}
           </div>
 
           <p className="text-[15px] leading-relaxed text-muted">
