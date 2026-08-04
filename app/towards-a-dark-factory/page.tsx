@@ -106,13 +106,26 @@ export default function TowardsPage() {
           />
 
           <ul className="mt-10 grid gap-4 sm:grid-cols-2">
-            {onwards.map((stop) => (
+            {onwards.map((stop, i) => (
               <li key={stop.href}>
                 <Link
                   href={stop.href}
-                  className="panel group flex h-full flex-col gap-1.5 p-5 transition-colors hover:border-cyan/50"
+                  /* `route-box`, like the pagers and the layer doors: these two leave the
+                     page, and the author asked for the boxes that do to be told apart
+                     from the ones carrying a concept. They wore `panel` when the language
+                     was introduced, which made this header the one place on the route
+                     where an exit looked like content. */
+                  className="route-box group flex h-full flex-col gap-1.5 p-5"
                 >
-                  <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors group-hover:text-cyan">
+                  {/* The position, so a reader knows this card is a stop on a route and
+                      how far along. Derived from `CLIMB_ROUTE`, never typed: `onwards`
+                      drops the first stop, so index 0 here is stop 2. `SpecPager`'s own
+                      label was a hand-written "in four parts" against a five-item rail
+                      once, which is the failure this avoids by construction. */}
+                  <span className="route-label">
+                    Stop {i + 2} of {CLIMB_ROUTE.length} <span aria-hidden>→</span>
+                  </span>
+                  <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors group-hover:text-amber-bright">
                     {stop.label}
                   </span>
                   <span className="text-sm leading-relaxed text-muted">{stop.blurb}</span>
