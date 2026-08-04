@@ -1,7 +1,7 @@
+import Link from "next/link";
 import type { AutonomyInfo, Metric } from "@/lib/types";
 import { METRIC_SOURCE_META } from "@/lib/format";
 import { SourceBadge } from "./Badge";
-import { More } from "./More";
 
 /**
  * What the two computed rows need in order to state where the blueprint sits without
@@ -185,19 +185,19 @@ export function MetricBars({
         })}
       </ul>
 
+      {/* "What each row means" was a `<More>` here, folded on every blueprint page: nine
+          copies of one lesson, none of them read, because a reader who has arrived at a
+          blueprint is there for the blueprint. It is `/reading-the-radar` now, once, with
+          the chart taken apart beside it. */}
       {compact && (
-        <More summary="What each row means" className="mt-3">
-          <dl className="flex flex-col gap-3">
-            {metrics.map((m) => (
-              <div key={m.key}>
-                <dt className="text-xs font-medium text-fg">{m.label}</dt>
-                <dd className="mt-0.5 text-xs leading-snug text-dim">
-                  {glance(m, autonomy, audit)}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </More>
+        <p className="mt-3 text-xs leading-relaxed text-dim">
+          <Link
+            href="/reading-the-radar"
+            className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"
+          >
+            How to read this chart <span aria-hidden>→</span>
+          </Link>
+        </p>
       )}
     </div>
   );

@@ -28,16 +28,34 @@ import { cx } from "@/lib/format";
 export function More({
   summary,
   children,
+  bare = false,
   className,
 }: {
   /** What is behind it, said plainly enough that a reader can decide not to open it. */
   summary: string;
   children: React.ReactNode;
+  /**
+   * Drop the box, and read as a line of text that opens.
+   *
+   * The bordered form is right where the disclosure is one of several panels on a page
+   * and its border is what separates them. It is wrong directly under a paragraph it
+   * continues: the author, on the blueprint page's "Read more", said they did not like
+   * "how to open the read more and the fact that is in a box". A box there announces a
+   * new region and what is behind it is the same paragraph at greater length.
+   *
+   * Everything else is unchanged. It is the same native `<details>`, so the content is
+   * still prerendered, still keyboard-reachable and still found by find-in-page.
+   */
+  bare?: boolean;
   className?: string;
 }) {
   return (
     <details
-      className={cx("group rounded-lg border border-line bg-surface-2/40 px-4 py-2.5", className)}
+      className={cx(
+        "group",
+        bare ? "" : "rounded-lg border border-line bg-surface-2/40 px-4 py-2.5",
+        className,
+      )}
     >
       <summary className="flex cursor-pointer list-none items-baseline gap-2 text-[13px] text-muted transition-colors hover:text-fg [&::-webkit-details-marker]:hidden">
         <span

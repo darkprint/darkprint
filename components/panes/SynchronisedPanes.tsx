@@ -222,9 +222,10 @@ export function SynchronisedPanes({
             `selectNode`/`selectAbsence` calls the drawing's own click uses, so there is
             one selection and not a second state machine beside it. */}
         <label className="flex flex-col gap-1">
-          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
-            Jump to a node
-          </span>
+          {/* Amber, on the author's instruction, and consistent with the pane it drives:
+              `SkeletonPane` is warm throughout because everything in it is about a node,
+              and this label names the same subject. */}
+          <span className="route-label">Jump to a node</span>
           <select
             value={focusedOptionValue(focus)}
             onChange={onIndexChange}

@@ -358,8 +358,26 @@ function AutonomyPanel({
   const unattended = autonomy.contributions.filter((c) => c.resolved && !c.requiresHuman);
   const undescribed = autonomy.contributions.filter((c) => !c.resolved && !c.requiresHuman);
 
+  /* `open`, not closed.
+     ------------------------------------------------------------
+     The author: "The autonomy and security boxed should be reorganized making more
+     appealing to read and easy. too many click to open. I want something coincise."
+
+     Two panels that both opened closed meant two clicks before a reader saw anything the
+     engine had computed, on a page whose whole claim is that the reading can be audited
+     rather than trusted. A disclosure is for content a minority wants; the working behind
+     the two numbers this page leads with is not that.
+
+     So the polarity flips: the reading is on screen when the page loads and the
+     `<details>` becomes a way to fold it away, which costs a click only to the reader who
+     has finished with it. The summary row is unchanged and is the concise version,
+     carrying the class and the score without opening anything.
+
+     This can only help the honesty ledger: `openText` drops the body of a *closed*
+     `<details>`, so every claim held over this component becomes more visible, never
+     less. */
   return (
-    <details className="group panel p-5" aria-labelledby="autonomy-explained">
+    <details open className="group panel p-5" aria-labelledby="autonomy-explained">
       <summary className="mb-4 flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
         <span className="flex items-center gap-2">
           <span
@@ -1128,8 +1146,9 @@ function SecurityPanel({
     (d) => d.code === CRITERIA_UNANCHORED_CODE,
   );
 
+  /* Open by default, for the reason recorded on the autonomy panel above. */
   return (
-    <details className="group panel p-5" aria-labelledby="security-explained">
+    <details open className="group panel p-5" aria-labelledby="security-explained">
       <summary className="mb-4 flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
         <span className="flex items-center gap-2">
           <span

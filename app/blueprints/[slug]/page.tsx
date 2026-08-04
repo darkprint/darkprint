@@ -260,7 +260,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             disclosures further down), which keeps the prose in the prerendered HTML
             regardless of `open`. */}
         {paragraphs.length > 0 && (
-          <More summary="Read more">
+          <More summary="Read more" bare>
             {paragraphs.map((p, i) => (
               <p
                 key={`${i}-${p.slice(0, 16)}`}

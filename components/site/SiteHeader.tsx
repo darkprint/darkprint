@@ -65,6 +65,10 @@ export const NAV = [
   // A child of `/spec`, not a fifth `learn` destination in its own right: it grades what
   // the three layers above it describe. Placed directly after `/spec` for that reason.
   { href: "/spec/scoring", label: "How a blueprint is graded", group: "learn" },
+  // The picture rather than the system: five spokes, why autonomy has none, and what a
+  // vertex's colour says. It sits after the grading page because it points there for the
+  // arithmetic and would be a strange first stop.
+  { href: "/reading-the-radar", label: "Reading the radar", group: "learn" },
   // The author named this label: "/which-tasks should be placed in The climb part which
   // I'd rename Towards a Dark Factory". It is also the page's own `h1`, character for
   // character, which is what `nav.test.ts` holds it to. The label a reader clicks is the
