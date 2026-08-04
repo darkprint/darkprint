@@ -5,6 +5,7 @@ import type {
   AutonomyResult,
   Diagnostic,
   MarkerProvenance,
+  PhaseCoverage,
   SecurityFinding,
   SecurityResult,
 } from "@/lib/core";
@@ -339,10 +340,12 @@ function ContributionRow({
 
 function AutonomyPanel({
   autonomy,
+  phaseCoverage,
   highlighted,
   onHighlight,
 }: {
   autonomy: AutonomyResult;
+  phaseCoverage: PhaseCoverage;
   highlighted?: string;
   onHighlight: (nodeId: string | undefined) => void;
 }) {
@@ -400,6 +403,27 @@ function AutonomyPanel({
               <span className="text-fg">A person stands in this graph.</span>{" "}
               &ldquo;Dark factory&rdquo; classifies a graph where nobody does. This one
               has {staffed.length === 1 ? "one" : staffed.length}, named below.
+            </span>
+          </>
+        ) : undescribed.length === 0 && autonomy.totalNodes > 0 ? (
+          /* Nobody waits, every node has a card, and it is still not a factory: the
+             classification asks for the whole lifecycle too. This case did not exist
+             before the phase half was added to `isDarkFactory` (2026-08-04), and without
+             a branch of its own it fell through to the row below, which told two real
+             blueprints that some of their nodes had no card. They all do.
+
+             Worded as scope, not as a gap. Doc 2 §1.1 governs this sentence exactly as it
+             governs the autonomy reading: a pattern that covers three phases is a pattern
+             about three phases, and the five are what a *factory* is expected to have. */
+          <>
+            <span className="mt-0.5 font-mono text-muted" aria-hidden>
+              ◻
+            </span>
+            <span>
+              <span className="text-fg">Nobody stands in this graph.</span> It is not
+              classed a dark factory because that also asks for the whole lifecycle, and
+              this one covers {phaseCoverage.covered.length} of the five. No node here
+              declares {phaseCoverage.missing.join(" or ")}.
             </span>
           </>
         ) : (
@@ -1248,6 +1272,7 @@ function SecurityPanel({
 export function Explainability({
   autonomy,
   security,
+  phaseCoverage,
   nodeNames,
   highlighted,
   onHighlight,
@@ -1255,6 +1280,8 @@ export function Explainability({
 }: {
   autonomy: AutonomyResult;
   security: SecurityResult;
+  /** Read only to say why an unattended graph is not classed a dark factory. */
+  phaseCoverage: PhaseCoverage;
   /** DOT node id → the name the schematic prints on it. */
   nodeNames: Readonly<Record<string, string>>;
   /** The node currently ringed in the schematic, if any. */
@@ -1281,6 +1308,7 @@ export function Explainability({
       <div className="mt-5 flex flex-col gap-4">
         <AutonomyPanel
           autonomy={autonomy}
+          phaseCoverage={phaseCoverage}
           highlighted={highlighted}
           onHighlight={onHighlight}
         />

@@ -99,7 +99,7 @@ export function AutonomyMeter({
   const full = [
     `Autonomy class ${autonomy.label}.`,
     autonomy.isDarkFactory && showDarkFactory
-      ? "Classed a dark factory: no node in this graph waits for a person."
+      ? "Classed a dark factory: it covers all five lifecycle phases and no node in it waits for a person."
       : undefined,
     contributions === undefined
       ? undefined
@@ -136,8 +136,12 @@ export function AutonomyMeter({
         <span className="inline-flex items-center gap-1 rounded border border-line bg-surface-2 px-2 py-0.5 text-fg">
           <span aria-hidden>◼</span>
           dark factory
+          {/* The whole rule, not half of it. `isDarkFactory` asked only about people
+              until 2026-08-04; it now also requires all five lifecycle phases, and a
+              caption naming one condition would send a reader looking for the wrong
+              reason when a graph nobody stands in carries no badge. */}
           <span className="sr-only">
-            : no node in this graph waits for a person
+            : covers all five lifecycle phases, and no node in it waits for a person
           </span>
         </span>
       )}

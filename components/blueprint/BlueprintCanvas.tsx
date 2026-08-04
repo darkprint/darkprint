@@ -55,6 +55,7 @@ export function BlueprintCanvas({
     <Explainability
       autonomy={analysis.autonomy}
       security={analysis.security}
+      phaseCoverage={analysis.phaseCoverage}
       nodeNames={nodeNames}
       highlighted={highlighted}
       onHighlight={setHighlighted}

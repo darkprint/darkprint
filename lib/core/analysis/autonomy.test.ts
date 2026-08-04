@@ -18,7 +18,7 @@ import type {
   ResolvedNode,
 } from "../bundle/types";
 import { buildGraph } from "../dot/graph";
-import { CORE_ONTOLOGY } from "../ontology/core";
+import { CORE_ONTOLOGY, CORE_PHASE_IDS } from "../ontology/core";
 import { ontologyView } from "../ontology/resolve";
 import type { OntologyView } from "../ontology/resolve";
 import type { Ontology, OntologyTerm } from "../ontology/types";
@@ -113,6 +113,22 @@ function withHumans(total: number, humans: number): NodeSpec[] {
   return Array.from({ length: total }, (_, i) => ({
     id: `n${i}`,
     card: i < humans ? { requiresHuman: true } : {},
+  }));
+}
+
+/**
+ * The same, with the five lifecycle phases covered.
+ *
+ * `makeCard` declares `phases: ["implementation"]`, which is the right default for the
+ * fraction tests — they are about who waits for a person and phases have nothing to say
+ * about that. `isDarkFactory` is the one reading that needs both halves, so its fixtures
+ * say both. Every node carries all five rather than one each, so a one-node graph can be
+ * fully covered and the size sweeps below still mean what they used to.
+ */
+function fullLifecycle(total: number, humans: number): NodeSpec[] {
+  return withHumans(total, humans).map((spec) => ({
+    ...spec,
+    card: { ...spec.card, phases: [...CORE_PHASE_IDS] },
   }));
 }
 
@@ -279,9 +295,31 @@ describe("computeAutonomy — the named class", () => {
 /* --------------------- the dark factory classification --------------------- */
 
 describe("computeAutonomy — isDarkFactory", () => {
-  it("is true for a graph with no human node at all", () => {
-    const result = computeAutonomy(makeBlueprint(withHumans(5, 0)));
+  it("is true for a fully covered graph with no human node at all", () => {
+    const result = computeAutonomy(makeBlueprint(fullLifecycle(5, 0)));
     expect(result.isDarkFactory).toBe(true);
+  });
+
+  /* The second half, added 2026-08-04. A dark factory is a blueprint whose five lifecycle
+     phases all run unattended, not merely a graph nobody stands in. Two blueprints in the
+     archive carried the badge on four phases before this. */
+  it("is false when a phase is missing, however unattended the graph is", () => {
+    const result = computeAutonomy(makeBlueprint(withHumans(5, 0)));
+    expect(result.autonomousNodes).toBe(result.totalNodes);
+    expect(result.level).toBe(4);
+    expect(result.autonomyClass).toBe("closed-loop");
+    // Unattended and top-band, and still not a factory: it does not do the whole job.
+    expect(result.isDarkFactory).toBe(false);
+  });
+
+  it("needs every one of the five, not most of them", () => {
+    for (const dropped of CORE_PHASE_IDS) {
+      const kept = CORE_PHASE_IDS.filter((p) => p !== dropped);
+      const result = computeAutonomy(
+        makeBlueprint([{ id: "a", card: { phases: [...kept] } }]),
+      );
+      expect(result.isDarkFactory, `missing ${dropped}`).toBe(false);
+    }
   });
 
   it("is false for a graph with exactly one human node", () => {
@@ -298,14 +336,14 @@ describe("computeAutonomy — isDarkFactory", () => {
 
   it("is zero human nodes rather than a threshold, at every size", () => {
     for (const total of [1, 2, 5, 11, 50]) {
-      expect(computeAutonomy(makeBlueprint(withHumans(total, 0))).isDarkFactory).toBe(true);
-      expect(computeAutonomy(makeBlueprint(withHumans(total, 1))).isDarkFactory).toBe(false);
+      expect(computeAutonomy(makeBlueprint(fullLifecycle(total, 0))).isDarkFactory).toBe(true);
+      expect(computeAutonomy(makeBlueprint(fullLifecycle(total, 1))).isDarkFactory).toBe(false);
     }
   });
 
-  it("is true for a single unattended node and false for a single human one", () => {
-    expect(computeAutonomy(makeBlueprint(withHumans(1, 0))).isDarkFactory).toBe(true);
-    expect(computeAutonomy(makeBlueprint(withHumans(1, 1))).isDarkFactory).toBe(false);
+  it("is true for a single covered unattended node and false for a single human one", () => {
+    expect(computeAutonomy(makeBlueprint(fullLifecycle(1, 0))).isDarkFactory).toBe(true);
+    expect(computeAutonomy(makeBlueprint(fullLifecycle(1, 1))).isDarkFactory).toBe(false);
   });
 
   it("counts a human type, not only the flag", () => {
@@ -338,7 +376,7 @@ describe("computeAutonomy — isDarkFactory", () => {
 
   it("agrees with the contributions, which are what a schematic draws", () => {
     for (const humans of [0, 1, 4]) {
-      const result = computeAutonomy(makeBlueprint(withHumans(4, humans)));
+      const result = computeAutonomy(makeBlueprint(fullLifecycle(4, humans)));
       const everyNodeUnattended = result.contributions.every((c) => c.resolved && !c.requiresHuman);
       expect(result.isDarkFactory).toBe(result.totalNodes > 0 && everyNodeUnattended);
     }

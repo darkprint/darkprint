@@ -65,6 +65,7 @@ function pageHtml(bp: (typeof BLUEPRINTS)[number]): string {
       createElement(Explainability, {
         autonomy: bp.analysis.autonomy,
         security: bp.analysis.security,
+        phaseCoverage: bp.analysis.phaseCoverage,
         nodeNames,
         onHighlight: () => {},
       }),

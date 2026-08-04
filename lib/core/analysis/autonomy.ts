@@ -39,13 +39,15 @@
    apart. `level` stays because the doc 3 §6 bands are arithmetic
    and an ordinal is what sorts; nothing user-facing prints it.
 
-   `isDarkFactory` is the other half. A graph with no human node at
-   all is *classed* a dark factory, the way a graph with no cycle
-   is classed acyclic. It is counted from the contributions and
-   never read off the band: zero nodes waiting for a person, not a
+   `isDarkFactory` is the other half. A blueprint whose five
+   lifecycle phases are all present and all unattended is *classed*
+   a dark factory, the way a graph with no cycle is classed
+   acyclic. Both halves are counted, never read off the band: zero
+   nodes waiting for a person, and zero phases missing — not a
    threshold, not "close". A graph one gate short of it is a
-   supervised graph, which is a legitimate thing to be and often a
-   deliberate one.
+   supervised graph, and a graph one phase short is a narrower
+   pattern; both are legitimate things to be and usually deliberate
+   ones. Most blueprints worth publishing are neither.
 
    Doc 3 §8: the result records the vocabulary version it was
    computed under. Two scores from different ontologies are not
@@ -122,7 +124,9 @@ export interface AutonomyResult {
    */
   autonomyClass: AutonomyClass;
   /**
-   * True when no node in this graph waits for a person.
+   * True when this graph covers all five lifecycle phases and no node in it waits for a
+   * person. Both halves are required: a graph nobody stands in that does only part of the
+   * lifecycle is a narrower pattern, not a factory.
    *
    * **A description of a shape, and not a grade.** It is the classification doc 2 §1.1
    * governs most tightly, so read the condition literally: `totalNodes > 0` and every
@@ -299,7 +303,18 @@ export function computeAutonomy(
   // dark factory would be the exact confusion doc 2 §1.1 warns about. `autonomousNodes`
   // counts only nodes whose card says how they run and says nobody is in them, so a node
   // with no card in the bundle also keeps this false.
-  const isDarkFactory = autonomousNodes === totalNodes;
+  //
+  // Phase coverage is the second half, added 2026-08-04 on the author's ruling: a dark
+  // factory is a blueprint whose *five lifecycle phases* all run unattended, not merely a
+  // graph nobody stands in. Without it a two-node graph qualified, and two blueprints in
+  // the archive carried the badge on four phases — `nightly-data-janitor` and
+  // `schema-forge-etl`, both missing `planning`. A janitor has no planning phase; it was
+  // never a factory, and the badge was a wrong label rather than a generous one.
+  //
+  // `bp.phaseCoverage` is computed by `computePhaseCoverage` before this runs, so this
+  // reads it rather than re-deriving it: two derivations of one fact are two answers to
+  // one question. `missing` is already the five minus the covered, in lifecycle order.
+  const isDarkFactory = autonomousNodes === totalNodes && bp.phaseCoverage.missing.length === 0;
 
   const comparison =
     level === 4

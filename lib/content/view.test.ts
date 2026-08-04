@@ -151,7 +151,13 @@ const YAML_SOURCE = `
 id: source
 name: Source
 type: tool
-phase: planning
+# Three of the five, with sink carrying the other two, so the probe is a dark factory
+# under both halves of the rule: nobody waits in it AND it covers the whole lifecycle.
+# Before 2026-08-04 the flag asked only the first question and this card declared planning
+# alone. The phases are a fixture detail, since nothing here asserts coverage, but a
+# two-phase probe would now class as "not a factory" and the assertion below would be
+# testing the wrong thing.
+phase: [planning, implementation, testing]
 action: Emit one payload so the probe bundle has something to carry.
 spec: >-
   Emit exactly one payload on \`payload\` so the bundle downstream of you has something to
@@ -173,7 +179,7 @@ const YAML_SINK = `
 id: sink
 name: Sink
 type: tool
-phase: deployment
+phase: [debugging, deployment]
 action: Swallow the payload, declaring no dependency on whoever sent it.
 spec: >-
   Take the payload you are handed on \`payload\`, write it to the fixture's destination
@@ -419,7 +425,7 @@ describe("toBlueprintView — autonomy as a class", () => {
     }
   });
 
-  it("classes a graph with no human node a dark factory", () => {
+  it("classes an unattended graph covering all five phases a dark factory", () => {
     const view = viewOf(dark);
     expect(view.autonomy.isDarkFactory).toBe(true);
     expect(view.autonomy.autonomyClass).toBe("closed-loop");
