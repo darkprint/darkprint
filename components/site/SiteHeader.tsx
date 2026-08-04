@@ -47,6 +47,10 @@ export const NAV = [
   // Nodes in the navbar. I prefer there." It is the vocabulary both of the others are
   // written against, so it belongs with the things you can browse rather than with the
   // pages explaining them.
+  // The wordmark already goes home, and a reader who has not learned that a logo is a
+  // link has no way in from a deep page. Its own group, so the wide row draws the same
+  // rule after it that it draws before `Learn`.
+  { href: "/", label: "Home", group: "home" },
   { href: "/blueprints", label: "Blueprints", group: "registry" },
   { href: "/nodes", label: "Nodes", group: "registry" },
   { href: "/ontology", label: "Ontology", group: "registry" },
@@ -86,6 +90,14 @@ export const NAV = [
   { href: "/install", label: "Install MCP", group: "learn", standalone: true },
 ] as const;
 
+/**
+ * The phone panel's sections. `home` is deliberately absent.
+ *
+ * A section headed "Home" holding one link called "Home" says the word twice and reads as
+ * a mistake, which is the same reason `/install` carries `standalone` rather than a group
+ * of its own. On the panel it is rendered above these, unheaded, where a first item does
+ * not need a category to be understood.
+ */
 const GROUPS = [
   { id: "registry", title: "Registry" },
   { id: "learn", title: "Learn" },
@@ -93,6 +105,8 @@ const GROUPS = [
 
 /** Inside the dropdown. */
 const LEARN = NAV.filter((item) => item.group === "learn" && !("standalone" in item));
+/** Flat, first, with a rule after it. */
+const HOME = NAV.filter((item) => item.group === "home");
 /** Flat, before the trigger. */
 const REGISTRY = NAV.filter((item) => item.group === "registry");
 /** Flat, after the trigger. */
@@ -178,6 +192,24 @@ export function SiteHeader() {
             because the page unmounts it", which is wrong: client-side routing does not
             unmount the header. Both are handled in the effects above. */}
         <nav className="hidden items-center gap-1 lg:flex">
+          {/* Home, then the same `border-l` rule that separates the registry from the
+              menu. One divider means one thing across the row: what is on either side of
+              it is a different kind of destination. */}
+          {HOME.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cx(
+                "rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm",
+                pathname === item.href ? "text-cyan" : "text-muted hover:text-fg",
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+
+          <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-line xl:mx-2" />
+
           {REGISTRY.map((item) => (
             <Link
               key={item.href}
@@ -280,6 +312,21 @@ export function SiteHeader() {
             {/* A `nav` per group, named by the same word the reader sees. The label is a
                 `p` and not a heading: the panel opens above the page's own `h1`, and a
                 heading here would put two levels of outline in front of it. */}
+            {/* Home first and unheaded: see `GROUPS`. */}
+            {HOME.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={cx(
+                  "block rounded-md px-3 py-2.5 text-sm",
+                  pathname === item.href ? "text-cyan" : "text-muted",
+                )}
+              >
+                {item.label}
+              </Link>
+            ))}
+
             {GROUPS.map((group) => (
               <nav key={group.id} aria-label={group.title} className="py-2">
                 <p className="px-3 pb-1 font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
