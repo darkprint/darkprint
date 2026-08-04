@@ -341,7 +341,20 @@ export function GuidedPath() {
             {step.title}
           </h2>
 
-          {step.id === "whole" && <WholeStep />}
+          {step.id === "whole" && (
+            <WholeStep
+              {...(base.analysis === undefined
+                ? {}
+                : { coverage: base.analysis.phaseCoverage })}
+              {...(base.blueprint === undefined
+                ? {}
+                : {
+                    nodeNames: Object.fromEntries(
+                      base.blueprint.nodes.map((node) => [node.nodeId, node.card.name]),
+                    ),
+                  })}
+            />
+          )}
           {step.id === "node" && <NodeStep />}
           {step.id === "output" && (
             <OutputStep

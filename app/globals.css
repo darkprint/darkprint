@@ -220,6 +220,25 @@ body {
   .anim-pulse-soft, .anim-float { animation: none; }
 }
 
+/* One cell of a staggered strip arriving.
+   ------------------------------------------------------------
+   Additive, in the strict sense spec §2a asks for: the resting style of the element is
+   the finished one, and this only plays on top of it. The rule lives inside
+   `no-preference` rather than being cancelled inside `reduce`, so a reader who asked for
+   less motion never has the `from` state applied at all.
+
+   That ordering is the whole point. An entrance written the other way round — hidden by
+   default, revealed by script — leaves the content invisible whenever the reveal does not
+   fire, which is exactly what happened to the first version of `LifecycleStrip`. Anything
+   that goes wrong here costs the animation and never the text. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes strip-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .anim-strip-in { animation: strip-in 480ms ease-out backwards; }
+}
+
 /* React Flow theming overrides (blueprint schematic look) */
 .react-flow__attribution { display: none; }
 .rf-blueprint .react-flow__edge-path {

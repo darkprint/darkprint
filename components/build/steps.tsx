@@ -4,6 +4,7 @@ import type {
   AutonomyResult,
   Diagnostic,
   JsonValue,
+  PhaseCoverage,
   ResolvedBlueprint,
   SecurityResult,
 } from "@/lib/core";
@@ -14,6 +15,7 @@ import { autonomyStatement, cx } from "@/lib/format";
    `components/ui/More.tsx` carries the reasoning. */
 import { More } from "@/components/ui/More";
 import { LEAK_EDGE, STARTER_NODES } from "./choices";
+import { LifecycleStrip } from "./LifecycleStrip";
 import type { UncappedReading } from "./state";
 
 /* ============================================================
@@ -172,7 +174,14 @@ function Aside({
 
 /* --------------------- 1. the whole factory --------------------- */
 
-export function WholeStep() {
+export function WholeStep({
+  coverage,
+  nodeNames,
+}: {
+  coverage?: PhaseCoverage;
+  /** Node id -> the name the schematic prints. Absent while the bundle does not resolve. */
+  nodeNames?: Readonly<Record<string, string>>;
+}) {
   return (
     <>
       {/* Opened on "a dark factory turns a written specification into working software"
@@ -187,6 +196,13 @@ export function WholeStep() {
         for each phase of that work: planning, implementation, testing, debugging,
         deployment.
       </p>
+      {/* The legend the sentence above promises. It names phases; the panes below draw
+          node names, and until now a reader had to hold one against the other themselves.
+          Read off the blueprint, so it follows a change of choice rather than describing
+          the variant that happened to be default. */}
+      {coverage !== undefined && nodeNames !== undefined && (
+        <LifecycleStrip coverage={coverage} nodeNames={nodeNames} className="my-1" />
+      )}
       <p className={P}>Nothing on this page runs.</p>
       <More summary="How the panes below fit together">
         <p className={SMALL}>
