@@ -1,20 +1,35 @@
 # DarkPrint
 
-**The blueprint registry for autonomous AI factories.** *Autonomy you can read as a graph.*
+**A registry of blueprints: reusable patterns for getting work done by agents.**
+*Autonomy you can read as a graph.*
 
 DarkPrint is a concept build for `darkprint.io` — a place where builders share the
-**blueprints** of their AI *dark factories*: autonomous agent pipelines that plan,
-execute, verify and ship without a human in the loop. This repository is a fully static
-front-end plus the engine behind it: a real archive of blueprint bundles under
-`content/`, parsed, resolved and scored at build time by `lib/core`. There is no backend
-— no auth, no uploads, no voting, no telemetry — and the site says so on every surface
-where it matters.
+**blueprints** they use to put agents to work. This repository is a fully static front-end
+plus the engine behind it: a real archive of blueprint bundles under `content/`, parsed,
+resolved and scored at build time by `lib/core`. There is no backend — no auth, no uploads,
+no voting, no telemetry — and the site says so on every surface where it matters.
+
+## What's a blueprint?
+
+A **pattern for achieving a goal**, written down as a directed graph of automations. Each
+node is a versioned card saying what runs there, which model it uses, what it may reach,
+and what must never reach it. The graph says how they connect — and, just as importantly,
+how they must not.
+
+The loop it is built for:
+
+1. **Download** a blueprint from the registry.
+2. **Compose** — hand it to Claude Code, Gemini or Codex, which adapts it into your codebase
+   and can combine it with other blueprints. *This happens on your machine. DarkPrint runs
+   nothing and holds none of your keys.*
+3. **Share** the result back as a new blueprint.
 
 ## What's a dark factory?
 
-A plant so automated it needs no lights — no operators, only machines running
-themselves. Applied to AI agents: a closed-loop pipeline where autonomous agents
-orchestrate the entire process. What sets it apart from ordinary automation:
+One badge a blueprint can earn, not the point of the site. A plant so automated it needs no
+lights — no operators, only machines running themselves. Applied here: a blueprint whose
+five lifecycle phases (planning, implementation, testing, debugging, deployment) are all
+present and all unattended. Most useful patterns are not dark factories.
 
 - **Decision autonomy** — no human-approval checkpoints; it makes judgement calls on its own.
 - **Closed loop** — agents plan → execute → verify → ship, instead of following a fixed script.

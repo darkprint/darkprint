@@ -10,16 +10,38 @@ what the project is for, where it stands, and what to do next.
 
 ## 1. The vision
 
-**A registry where people publish, read, fork and run the graphs that make agents build
-software.**
+**A registry where people publish, read and share blueprints: reusable patterns for getting
+work done by agents.**
 
 The claim the site is built on is that the useful artefact is not a prompt and not a model.
 It is the **shape of the work**: which agents exist, what each one is handed, what each one
 is kept away from, and where the run stops for a person. That shape is a directed graph.
-DarkPrint stores it as text, scores it, and hands it back as a folder you can run.
+DarkPrint stores it as text, scores it, and hands it back as a folder.
 
-A graph in which **no node waits for a person** is *classed* a **dark factory**. Everything
-on the site is arranged around that motif.
+A blueprint is a **pattern for achieving a goal**. You download one, hand it to Claude Code
+or an equivalent agent, and that agent adapts it into your codebase — or combines it with
+another. **The composing happens on your machine, never here.** DarkPrint hands out files
+and reads them back; it runs nothing. What you end up with, you can publish as a new
+blueprint, which is how the registry grows.
+
+**Nodes** are the parts a blueprint is built from, each a versioned card. The **ontology**
+is the controlled vocabulary both are written against. Those three — blueprint, node,
+vocabulary — are the whole model.
+
+> ### "Dark factory" is a property, not the point
+>
+> A blueprint whose five lifecycle phases (planning, implementation, testing, debugging,
+> deployment) are **all covered and all unattended** is *classed* a dark factory. It is one
+> computed badge on one kind of blueprint.
+>
+> **This document used to say "everything on the site is arranged around that motif", and
+> that is no longer true.** The idea evolved during development: blueprints and nodes are
+> the spine, and the site exists to get people downloading and sharing them. The older
+> framing survived in this file, in `README.md` and in much of the copy, and it was
+> actively misleading — an agent reading `AGENTS.md` → `PROJECT.md` → `architecture/` was
+> reconstructing the first concept and designing to it. Corrected 2026-08-04 on the
+> author's instruction. If you find prose anywhere in this repo that treats the dark
+> factory as the headline, it is a leftover; fix it rather than following it.
 
 ### The one rule that constrains everything
 
@@ -28,7 +50,7 @@ on the site is arranged around that motif.
 A dark factory is a *description of a shape*, the way *acyclic* describes a shape. It is not
 an award, not a score to maximise, not a rank. A blueprint that holds for a person before it
 releases is a first-class blueprint whose author decided where a person belongs, and it is
-shelved beside the rest.
+shelved beside the rest. Most useful patterns are not dark factories and never will be.
 
 Concretely, and enforced by tests that fail the build:
 
