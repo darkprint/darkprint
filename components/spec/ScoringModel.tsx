@@ -195,8 +195,14 @@ export function ScoringModel({
   return (
     <section id="weights" className="scroll-mt-24 border-t border-line py-16 sm:py-20">
       <div className="container-page flex flex-col gap-8">
+        {/* No eyebrow. It carried "The arithmetic", and an eyebrow is how every page on
+            this site opens: a mono kicker above a title, which is what `SectionHeading`
+            draws at the top of `/spec/scoring` itself. Halfway down the route a second
+            one made the page look like it started twice, which the audit of this route
+            called its worst boundary defect. The heading stays, because the section
+            genuinely is a new subject; the kicker goes, because the section is not a new
+            page. */}
         <SectionHeading
-          eyebrow="The arithmetic"
           title="What each check is worth"
           lead={`Security opens at ${CEILING} and subtracts. These are the amounts, read at build time out of the engine's configuration and the vocabulary this archive ships.`}
         />

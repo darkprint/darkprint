@@ -512,29 +512,17 @@ export function LoopDetail({
 
   return (
     <>
-      {/* Doc 1 §8's sentence about cost and runtime used to close this aside. It is the
-          score panel's now and only the score panel's: the panel never unmounts, so the
-          two were on screen together, which is the duplication §4.3's §5 licence names. */}
-      <Aside title="What the slider moves">
-        {budget !== undefined && (
-          <>
-            <p className="text-[13px] leading-relaxed text-muted">
-              At a cap of <span className="font-mono text-fg">{budget.maxIterations}</span>{" "}
-              the tester runs at most{" "}
-              <span className="font-mono text-fg">{budget.testerRunsAtMost}</span>{" "}times and
-              the debugger at most{" "}
-              <span className="font-mono text-fg">{budget.debuggerRunsAtMost}</span>, so a
-              run reaches a model at most{" "}
-              <span className="font-mono text-cyan">{budget.modelCallsAtMost}</span>{" "}times.
-            </p>
-            <Quote>
-              planner 1 + builder 1 + tester {budget.testerRunsAtMost} + debugger{" "}
-              {budget.debuggerRunsAtMost} = {budget.modelCallsAtMost}
-            </Quote>
-          </>
-        )}
-      </Aside>
+      {/* The `<Aside title="What the slider moves">` that stood here is gone. It printed
+          the cap arithmetic a third time on a screen that already carried it twice: the
+          `CapSlider`'s own three readings sit directly above it inside pane 1, and
+          `ScorePanel`'s "The run" prints the same sum and never unmounts. An earlier pass
+          had already moved doc 1 §8's cost sentence out of this aside for exactly that
+          reason and left the numbers behind.
 
+          Nothing is lost. Every figure it showed is read from `budget`, and both surviving
+          tellings read from the same object, so they move together when the slider does.
+          The audit of this route marked this block `ornament`, and the verifier confirmed
+          all three tellings on one screen at the default choices before it was cut. */}
       {/* Two disclosures where there were four paragraphs and two asides. The cap's effect
           on the two computed levels and its effect on the accumulated leak are one subject
           read twice, so they are folded behind one summary each rather than printed in

@@ -436,6 +436,16 @@ export function GuidedPath() {
           )}
 
           {/* ---------- moving on ---------- */}
+          {/* The counter used to exist only on the last step, where it told a reader who
+              had already arrived that they had arrived. Everywhere else the forward
+              button named the destination and hid the distance ("One node →"), so the
+              only way to learn you were on step 3 of 7 was to count the bar yourself.
+
+              The author's complaint is exactly this: "It is not clear whther a section is
+              ended or there is other to read." So the position is printed on every step,
+              between the two controls, and `STEPS.length` is read from the table in
+              `steps.tsx` rather than typed. The last step keeps its own wording, because
+              "step 7 of 7" and "the blueprint is yours" answer different questions. */}
           <div className="flex items-center justify-between gap-3 border-t border-line pt-5">
             <Button
               variant="ghost"
@@ -444,14 +454,16 @@ export function GuidedPath() {
             >
               ← Back
             </Button>
+            <span className="font-mono text-[11px] text-dim">
+              step {stepIndex + 1} of {STEPS.length}
+              {stepIndex === STEPS.length - 1 && " · the blueprint is yours"}
+            </span>
             {stepIndex < STEPS.length - 1 ? (
               <Button variant="outline" onClick={() => goTo(stepIndex + 1)}>
                 {STEPS[stepIndex + 1].nav} →
               </Button>
             ) : (
-              <span className="font-mono text-[11px] text-dim">
-                step {stepIndex + 1} of {STEPS.length} · the blueprint is yours
-              </span>
+              <span aria-hidden />
             )}
           </div>
         </div>
