@@ -504,13 +504,27 @@ function AutonomyPanel({
         </div>
 
         {staffed.length === 0 ? (
-          // Deliberately no tick and no green: doc 2 §1.1 rules out a surface that
-          // congratulates a graph for having nobody in it.
-          <p className="text-sm leading-relaxed text-muted">
-            {autonomy.totalNodes === 0
-              ? "This graph declares no nodes, so there is nothing here to run and nobody in it."
-              : "No node in this graph hands control to a person."}
-          </p>
+          /* Deliberately no tick and no green: doc 2 §1.1 rules out a surface that
+             congratulates a graph for having nobody in it.
+
+             And deliberately nothing at all in the ordinary case. "No node in this graph
+             hands control to a person" sat here, fifty words under a classification line
+             that had just said "No node in this graph waits for a person": one fact,
+             twice, in one panel. The heading and its `0` are the answer where the line
+             above has already given it, which is exactly when every node resolved and
+             none is staffed. The other two cases still need words: an empty graph, and a
+             graph the analyzer could not read, where the line above says something else
+             entirely. */
+          autonomy.totalNodes === 0 ? (
+            <p className="text-sm leading-relaxed text-muted">
+              This graph declares no nodes, so there is nothing here to run and nobody in
+              it.
+            </p>
+          ) : undescribed.length > 0 ? (
+            <p className="text-sm leading-relaxed text-muted">
+              No node in this graph hands control to a person.
+            </p>
+          ) : null
         ) : (
           <ul className="divide-y divide-line">
             {staffed.map((c) => (
@@ -828,9 +842,11 @@ function CriteriaIsolation({
           token beside it means. What the analyzer looks for is reference depth about the
           check rather than about this blueprint, so it sits behind a disclosure: still
           prerendered, still keyboard-reachable, still found by find-in-page. */}
+      {/* One sentence, not three. It used to add "Below is what the analyzer concluded,
+          including where it could not look", which the three rows underneath now say for
+          themselves, each with its own result. */}
       <p className="text-xs leading-relaxed text-dim">
-        The work must not see what will judge it. Below is what the analyzer concluded,
-        including where it could not look.
+        The work must not see what will judge it.
       </p>
 
       {/* The three checks with what each one found, in the open.
@@ -1197,8 +1213,7 @@ function SecurityPanel({
               paragraph directly above, which a screen reader reaches first; the nodes
               column carries the rest of what this used to spell out. */}
           <caption className="sr-only">
-            Security ledger: four points to start, minus one row for every risk marker
-            present in this blueprint.
+            Security ledger
           </caption>
           <thead>
             <tr className="border-b border-line text-left">
