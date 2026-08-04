@@ -72,7 +72,7 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
       // is for, which nothing else on the site did.
       { href: "/what-a-blueprint-is", label: "What a blueprint is" },
       { href: "/build", label: "Build one" },
-      { href: "/install", label: "Install" },
+      { href: "/install", label: "Install MCP" },
       { href: "/spec", label: "Spec" },
       { href: "/towards-a-dark-factory", label: "Towards a Dark Factory" },
       // "What it isn't" and "What a dark factory is" both pointed at `/what-it-isnt`,

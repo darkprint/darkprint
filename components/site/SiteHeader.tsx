@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AUTHORS } from "@/lib/data/users";
 import { Avatar } from "@/components/ui/Avatar";
 import { ButtonLink } from "@/components/ui/Button";
@@ -42,29 +42,26 @@ import { cx } from "@/lib/format";
  * those recognises it here too.
  */
 export const NAV = [
-  // Two nouns. The author, 2026-08-04: the site exists to get people downloading and
-  // sharing blueprints and nodes, and a header that gave five explanatory pages the same
-  // weight as the two things you can take said otherwise. `/ontology` moved into the menu
-  // with them: it is a reference index, not a destination anyone arrives wanting.
+  // The three registry surfaces, flat. `/ontology` sat in the menu for one pass and the
+  // author put it back beside `/nodes`: "the Ontology should be placed on the right of
+  // Nodes in the navbar. I prefer there." It is the vocabulary both of the others are
+  // written against, so it belongs with the things you can browse rather than with the
+  // pages explaining them.
   { href: "/blueprints", label: "Blueprints", group: "registry" },
   { href: "/nodes", label: "Nodes", group: "registry" },
+  { href: "/ontology", label: "Ontology", group: "registry" },
   // The first item of the menu, because it is the one a cold reader needs first and the
   // only page that says what a blueprint is *for*.
   { href: "/what-a-blueprint-is", label: "What a blueprint is", group: "learn" },
   // Doc 2 §0 splits the two onboardings. `/build` is the practical one: about an hour,
   // ending with a factory the reader has downloaded. It sits with the explanatory pages
-  // rather than with the two registry surfaces, because it is something to do rather
-  // than something to browse.
+  // rather than with the registry surfaces, because it is something to do rather than
+  // something to browse.
   { href: "/build", label: "Build one", group: "learn" },
-  // Right after `/build`: once the reader has something built, wiring it into a client
-  // is the next setup action, not a registry surface to browse — hence "learn" rather
-  // than beside the two registry routes above.
-  { href: "/install", label: "Install", group: "learn" },
   // `/spec` answers the question the guided path raises: the reader has just written a
   // graph and a card, and this is what the three layers they were writing in actually
   // are.
   { href: "/spec", label: "Spec", group: "learn" },
-  { href: "/ontology", label: "Ontology", group: "learn" },
   // A child of `/spec`, not a fifth `learn` destination in its own right: it grades what
   // the three layers above it describe. Placed directly after `/spec` for that reason.
   { href: "/spec/scoring", label: "How a blueprint is graded", group: "learn" },
@@ -73,6 +70,12 @@ export const NAV = [
   // character, which is what `nav.test.ts` holds it to. The label a reader clicks is the
   // heading they land on, so there is nothing to re-resolve on arrival.
   { href: "/towards-a-dark-factory", label: "Towards a Dark Factory", group: "learn" },
+  // Out of the menu and to the right of it, renamed, on the author's instruction. It is
+  // a setup action rather than something to read, and "Install" alone said nothing about
+  // what is being installed — the page is about pointing an MCP client at the registry.
+  // `standalone` keeps it in the `learn` group for the phone panel, where a section of
+  // one item would read as a mistake, while the wide row draws it beside the trigger.
+  { href: "/install", label: "Install MCP", group: "learn", standalone: true },
 ] as const;
 
 const GROUPS = [
@@ -80,14 +83,65 @@ const GROUPS = [
   { id: "learn", title: "Learn" },
 ] as const;
 
-const LEARN = NAV.filter((item) => item.group === "learn");
+/** Inside the dropdown. */
+const LEARN = NAV.filter((item) => item.group === "learn" && !("standalone" in item));
+/** Flat, before the trigger. */
 const REGISTRY = NAV.filter((item) => item.group === "registry");
+/** Flat, after the trigger. */
+const STANDALONE = NAV.filter((item) => "standalone" in item);
 
 const currentUser = AUTHORS.mara;
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+
+  /* The Learn menu, controlled rather than left to the element.
+     ------------------------------------------------------------
+     A bare `<details>` gives keyboard operation and a toggle for free, and it gives
+     nothing at all for the two things a reader expects of a menu: clicking away from it
+     closes it, and so does Escape. Left alone it stayed open behind whatever the reader
+     clicked next, including the page under it.
+
+     So `open` is React state and the element is told what it is. `onToggle` syncs the
+     other way, because the summary is still what the pointer and the keyboard operate;
+     without it the element and the state disagree the first time somebody clicks the
+     trigger. */
+  /* Both menus store *where* they were opened rather than whether they are open, so
+     "close on navigation" is derived instead of being an effect that writes state back
+     after the route has already changed. `react-hooks/set-state-in-effect` rejects the
+     effect version, and it is right to: the render after a route change would paint the
+     menu still open and then close it. This way the menu is shut in the same render the
+     path changes in, including on the browser's own back button. */
+  const [learnAt, setLearnAt] = useState<string | null>(null);
+  const [panelAt, setPanelAt] = useState<string | null>(null);
+  const learnOpen = learnAt === pathname;
+  const open = panelAt === pathname;
+  const setLearnOpen = (next: boolean) => setLearnAt(next ? pathname : null);
+  const setOpen = (next: boolean) => setPanelAt(next ? pathname : null);
+  const learnRef = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    if (!learnOpen) return;
+    /* `pointerdown`, not `click`: a reader who presses inside the page and releases over
+       the menu should not have the menu treated as the target, and pointerdown is also
+       what feels immediate. Capture phase so a handler that stops propagation somewhere
+       in the page cannot leave the menu stuck open. */
+    /* `setLearnAt` rather than the `setLearnOpen` helper: the helper closes over
+       `pathname` and is a new function every render, so depending on it would tear down
+       and rebuild both listeners on each one. The raw setter is stable. */
+    const onPointerDown = (event: PointerEvent) => {
+      if (!learnRef.current?.contains(event.target as Node)) setLearnAt(null);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLearnAt(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [learnOpen]);
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
@@ -100,18 +154,21 @@ export function SiteHeader() {
           <span className="text-cyan">Print</span>
         </Link>
 
-        {/* Two links and a menu, where there used to be nine links.
+        {/* Three registry links, a menu, and one standalone link after it.
 
             The width problem this solves was real: nine items in 976px at `lg` had the row
             tightening its own padding and type to fit, and the longest label in the set
-            ("How a blueprint is graded") was added without re-measuring. Seven of the nine
-            are now behind one 5-character trigger, so the row has slack at every breakpoint
-            instead of being tuned to one.
+            ("How a blueprint is graded") was added without re-measuring. Five of the nine
+            are behind one 5-character trigger now, so the row has slack at every
+            breakpoint instead of being tuned to one.
 
-            A native `<details>` rather than a button and a popover: keyboard operation,
-            Escape and focus order come from the element, and `More`, `DownloadPanel` and
-            `ForkAction` already use the same primitive elsewhere on the site. It closes on
-            navigation because the page unmounts it. */}
+            A `<details>` rather than a button and a popover, because keyboard operation,
+            the toggle and focus order come from the element, and `More`, `DownloadPanel`
+            and `ForkAction` already use the same primitive elsewhere. What it does *not*
+            give is a menu that closes when a reader clicks away from it or presses
+            Escape, and the first version of this row claimed it closed "on navigation
+            because the page unmounts it", which is wrong: client-side routing does not
+            unmount the header. Both are handled in the effects above. */}
         <nav className="hidden items-center gap-1 lg:flex">
           {REGISTRY.map((item) => (
             <Link
@@ -126,7 +183,12 @@ export function SiteHeader() {
             </Link>
           ))}
 
-          <details className="group relative ml-2 border-l border-line pl-3 xl:pl-4">
+          <details
+            ref={learnRef}
+            open={learnOpen}
+            onToggle={(e) => setLearnOpen(e.currentTarget.open)}
+            className="group relative ml-2 border-l border-line pl-3 xl:pl-4"
+          >
             <summary
               className={cx(
                 "flex cursor-pointer list-none items-center gap-1.5 rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm [&::-webkit-details-marker]:hidden",
@@ -158,6 +220,22 @@ export function SiteHeader() {
               ))}
             </div>
           </details>
+
+          {/* To the right of the trigger, on the author's instruction. A setup action is
+              not something to read, so it does not belong inside a menu called Learn, and
+              it is one item rather than the seven that made the row too wide. */}
+          {STANDALONE.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cx(
+                "rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm",
+                isActive(item.href) ? "text-cyan" : "text-muted hover:text-fg",
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
         </nav>
 
         {/* `/upload` validates and scores a bundle in the browser and stops there;
@@ -174,7 +252,7 @@ export function SiteHeader() {
 
         <button
           className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted lg:hidden"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setOpen(!open)}
           aria-label="Toggle menu"
           aria-expanded={open}
         >
