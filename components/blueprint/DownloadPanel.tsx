@@ -27,6 +27,7 @@ export function DownloadPanel({
   factoryHref,
   topologyHref,
   readmeHref,
+  agentsHref,
   vocabulary,
   cards,
   className,
@@ -44,6 +45,15 @@ export function DownloadPanel({
   /** `/bundles/<slug>/blueprint.dot` — the topology, card pins intact. */
   topologyHref: string;
   readmeHref: string;
+  /**
+   * `AGENTS.md`, the half of the folder addressed to whatever adapts the pattern.
+   *
+   * Optional only so a caller that has not been updated keeps compiling; every bundle
+   * carries the file (`lib/content/bundle-export.ts` writes it unconditionally), so a
+   * panel rendering without it is offering a reader eight of nine files and saying
+   * nothing about the ninth.
+   */
+  agentsHref?: string;
   /**
    * Doc 3 §7's local terms, when a card in this bundle declares one. Absent for a bundle
    * written entirely in the curated core, which is most of them.
@@ -179,6 +189,30 @@ export function DownloadPanel({
             What this bundle is, which digest it came from, and how to run it.
           </p>
         </li>
+        {/* The ninth file. It shipped in every bundle from the commit that generated it
+            and was linked from nowhere: this panel offered four kinds, the step-7
+            inventory list was the only place on the site a reader learned it existed, and
+            the comment beside that list claimed this panel already downloaded everything.
+            A folder with a file nobody is told about is the failure the README's own
+            "what is in the folder" table exists to prevent. */}
+        {agentsHref !== undefined && agentsHref !== "" && (
+          <li className="py-2.5">
+            <a
+              href={agentsHref}
+              download="AGENTS.md"
+              className="group flex items-baseline justify-between gap-2"
+            >
+              <span className="font-mono text-sm text-fg transition-colors group-hover:text-cyan">
+                AGENTS.md
+              </span>
+              <span className="shrink-0 font-mono text-[11px] text-dim">↓</span>
+            </a>
+            <p className="text-xs leading-snug text-dim">
+              The same folder addressed to an agent adapting it: what must never be
+              connected, what each node takes, and how the graph is wired.
+            </p>
+          </li>
+        )}
       </ul>
 
       {/* The cards, folded away: the panel above already lists the same names, and this

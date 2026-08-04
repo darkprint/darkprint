@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { DownloadPanel, type DownloadCard } from "@/components/blueprint/DownloadPanel";
 import {
+  BUNDLE_AGENTS,
   BUNDLE_README,
   FACTORY_DOT,
   TOPOLOGY_DOT,
@@ -111,6 +112,7 @@ export function DownloadStep({
         factoryHref={hrefs.get(FACTORY_DOT) ?? ""}
         topologyHref={hrefs.get(TOPOLOGY_DOT) ?? ""}
         readmeHref={hrefs.get(BUNDLE_README) ?? ""}
+        agentsHref={hrefs.get(BUNDLE_AGENTS) ?? ""}
         cards={cards}
         className="max-w-xl"
       />

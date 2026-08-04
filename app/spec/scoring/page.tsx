@@ -117,7 +117,31 @@ export default function SpecScoringPage() {
             cards are published as source on every blueprint page, so the
             arithmetic can be checked against them.
           </p>
-          <p className="border-t border-line pt-4 text-[15px] leading-relaxed text-muted">
+        </section>
+
+        {/* ---------- the other four ----------
+            Two panels where there was one. The section held four paragraphs and asked a
+            reader to hold the computed pair and the recorded four at once, separated only
+            by a hairline rule inside one box.
+
+            TWO, not the three the audit proposed. The verifier called the three-way split
+            a conditional breach of guardrails §2 and it was right: the badge and its
+            sentence would have been left as a loose closing line "in the same visual
+            group" as the four numbers, and after the split there is no such group. The
+            panel border WAS the group. So the split falls between the computed axes and
+            the recorded ones, and the `○ not built` badge stays inside the panel with
+            both of the sentences it qualifies. */}
+        <section
+          className="panel flex flex-col gap-4 p-6"
+          aria-labelledby="recorded-heading"
+        >
+          <h2
+            id="recorded-heading"
+            className="font-display text-2xl font-semibold tracking-tight text-fg"
+          >
+            The other four are recorded
+          </h2>
+          <p className="text-[15px] leading-relaxed text-muted">
             The other four cannot be read off a graph. Cost and time need
             somebody to run the blueprint, and that happens on their machine,
             so the platform can only ever be told the result. Efficacy,

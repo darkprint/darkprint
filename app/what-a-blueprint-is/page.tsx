@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { CORE_PHASE_IDS } from "@/lib/core";
 import { allBlueprints, allNodeCards, getNodeCard, getOntologyView } from "@/lib/content";
 import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
 import { ButtonLink } from "@/components/ui/Button";
@@ -153,11 +154,19 @@ export default function WhatABlueprintIsPage() {
   const starter = all.find((bp) => bp.slug === STARTER_SLUG) ?? all[0];
   const builder = getNodeCard("code-builder");
   const view = getOntologyView();
-  /* Two of each kind, in the vocabulary's own order. A controlled list is what it looks
-     like: the kind on the left, the term on the right, and the same word spelled once. */
-  const terms = (["phase", "data-type", "risk-marker"] as const).flatMap((kind) =>
-    view.byKind(kind).slice(0, 2).map((term) => ({ kind, id: term.id })),
-  );
+  /* Two of each kind. A controlled list is what it looks like: the kind on the left, the
+     term on the right, and the same word spelled once.
+
+     Phases come from `CORE_PHASE_IDS` rather than `byKind("phase")`, which sorts by id
+     and so opened the figure on "debugging, deployment". Accurate and wrong: the five are
+     a lifecycle and their order is part of what they are. The other two kinds have no
+     inherent order and keep the vocabulary's own. */
+  const terms = [
+    ...CORE_PHASE_IDS.slice(0, 2).map((id) => ({ kind: "phase" as const, id })),
+    ...(["data-type", "risk-marker"] as const).flatMap((kind) =>
+      view.byKind(kind).slice(0, 2).map((term) => ({ kind, id: term.id })),
+    ),
+  ];
 
   return (
     <>

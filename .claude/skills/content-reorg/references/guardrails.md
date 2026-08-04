@@ -68,6 +68,23 @@ if no test names it:
 These qualify something printed beside them. Moving the qualifier away from the qualified
 thing is the same defect as folding it, whatever the word count says.
 
+### The cross-page rescue does not work here either
+
+§1 says "the same idea appearing on another page" does not rescue a **ledger** claim.
+Agents read that as a rule about the ledger and helped themselves to it everywhere else:
+in the verification run, **every** proposal reached for "`/nodes/code-builder` owns it" or
+"`/spec` says it too" to justify cutting prose sitting *beside* a limit statement, and
+three of five converged on the same sentence that way.
+
+So the rule is wider than §1's wording. **"Another page says it" is not a reason to cut a
+sentence adjacent to a limit statement, whether or not the sentence is in the ledger.** A
+qualifier works by sitting next to the thing it qualifies; a reader on this page does not
+visit the other one, and the sentence beside the qualifier is often what makes the
+qualifier legible.
+
+That costs real cuts, and it is meant to. When the two are genuinely separable, say so in
+the spec and quote both, so the author can see what you saw.
+
 **When in doubt, leave it open and cut somewhere else.** The site has 84,000 words. There
 is always other text.
 

@@ -165,7 +165,19 @@ body {
    Shape carries the difference. `ComingSoonBadge` is a small uppercase pill with no
    arrow; this is a full-width rectangle with a rule down its leading edge. A pill
    states a status about the thing beside it. A bar with an arrow points away. Do not
-   round this to a pill, and do not put the badge in a rectangle. */
+   round this to a pill, and do not put the badge in a rectangle.
+
+   ── Where this is used, and one place it is deliberately not ──
+   Both pagers, the three layer doors on `/spec`, and the climb's onward cards. The rule
+   is: a box whose job is to send a reader elsewhere wears this, and nothing else does.
+
+   `components/home/SectionDoors.tsx` is the exception and stays as it is. It draws on
+   `bg-blueprint-deep` in `blueprint-ink`, a register the rest of the site does not use,
+   and amber on that ground fights the palette rather than reading as a signpost. It also
+   does not need the help: a full-bleed section in a register of its own already says "you
+   have left the page's argument", which is the whole job. Consistency is worth having
+   because it makes a language, and a language applied where it makes a block harder to
+   read is not one. */
 .route-box {
   background: color-mix(in oklab, var(--color-amber) 5%, transparent);
   border: 1px solid color-mix(in oklab, var(--color-amber) 30%, transparent);

@@ -8,6 +8,7 @@ import {
   getRegistry,
 } from "@/lib/content";
 import {
+  BUNDLE_AGENTS,
   BUNDLE_README,
   FACTORY_DOT,
   TOPOLOGY_DOT,
@@ -328,9 +329,12 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
                scored, so the radar carries only the five metrics the engine reads
                as a spoke. `bp.autonomy` is the same band the header meter prints.
                `size` is smaller than `ScoreRadar`'s own 320 default because this
-               column is roughly a third of the page width now, not the full body
-               width — `ScoreRadar` is plain SVG on a `viewBox`, so it scales
-               cleanly at a narrower size without redrawing anything. */
+               column is a third of the page width, not the full body width;
+               `ScoreRadar` is plain SVG on a `viewBox`, so it scales cleanly at a
+               narrower size without redrawing anything. 240 was chosen when the
+               body was `max-w-4xl` and this column was under 300px wide. The body
+               is the page's full column now and the aside is about 370, so the
+               radar had room it was not using. */
             <section className="panel p-5">
               <div className="mb-3 flex items-center justify-between">
                 <PanelLabel>Score</PanelLabel>
@@ -339,7 +343,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
                 </span>
               </div>
               <div className="flex justify-center">
-                <ScoreRadar metrics={bp.metrics} size={240} />
+                <ScoreRadar metrics={bp.metrics} size={280} />
               </div>
               {/* `audit` is what makes this card a glance rather than a second audit.
                   The explainability panel below prints the engine's rationale for
@@ -417,6 +421,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             factoryHref={factoryHref}
             topologyHref={topologyHref}
             readmeHref={bundleHref(bp.slug, BUNDLE_README)}
+            agentsHref={bundleHref(bp.slug, BUNDLE_AGENTS)}
             {...(vocabulary === undefined
               ? {}
               : {
