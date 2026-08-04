@@ -106,8 +106,12 @@ Notes on the choices inside that:
   user's machine (§6b), so a website step named for it contradicts the model on the one
   page a reader would test it against. `/build` is the **authoring** page: how to make a
   blueprint, and how to hand that to your agent. It is a rebuild, and it is critical — §6c.
-- **`[Share yours]`** replaces the current `[Validate]` button. Same route (`/upload`),
-  honest about the intent, and it is the supply side of a registry.
+- **`[Share yours]` was proposed and is NOT built.** `SiteHeader.tsx` already carries the
+  reason, written before this document existed: *"`/upload` validates and scores a bundle
+  in the browser and stops there; publishing has no backend. A '+ Share' label on every
+  page of the site would be the one promise the site cannot keep."* That is right and it
+  outranks §2. The button stays `[Validate]` until publishing exists, at which point the
+  rename is one line. Recorded here so the proposal does not read as unimplemented.
 - **"What a blueprint is" is a new page** and the only addition to the route list. See §4.
 - The header drops from 8 flat items to 3 + a menu.
 
@@ -185,8 +189,23 @@ One page, roughly 400 words, four figures, answering in order:
 4. **How you know it is any good.** Six axes, two computed. *(figure: the radar — reuse the
    Score card)*
 
-Every figure already exists. This page is **assembly, not new drawing** — which is why it
-is cheap and why it should be built before anything else in this proposal.
+**That plan was wrong, and the page shipped differently.** Reading the four components
+before assembling them showed the assembly would have built the labyrinth rather than
+cleared it:
+
+- `SectionNodeCard` is a `lg:h-[420vh]` scroll stage. It would make the page a cold reader
+  meets *first* four screen-heights long.
+- `SectionLifecycle` is the landing's fourth beat, tuned to the landing's length and pinned
+  by `beats.test.ts`. It already tells the loop, and its lead already carries the load-
+  bearing half: everything after the download runs on your machine.
+- `/spec` already draws the three layers, names three doors and works one example, in 736
+  words.
+
+So the site was not missing a figure. **It was missing one sentence: what a blueprint is
+*for*.** Nothing anywhere said "pattern". The page as built is 379 words: the definition,
+the three parts named in a line each with links to the pages that draw them properly, the
+download / adapt / share loop with composition explicitly off-site, and two doors. A fourth
+telling of the graph would have been the defect, not the fix.
 
 Then: landing beat 5 ("two doors") points here and at `/blueprints`. `/spec` becomes what
 this page hands *off* to, for people who want the formalism.

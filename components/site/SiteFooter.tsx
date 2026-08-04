@@ -68,6 +68,9 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
   {
     title: "Learn",
     links: [
+      // First here as it is first in the header menu: the page that says what a blueprint
+      // is for, which nothing else on the site did.
+      { href: "/what-a-blueprint-is", label: "What a blueprint is" },
       { href: "/build", label: "Build one" },
       { href: "/install", label: "Install" },
       { href: "/spec", label: "Spec" },

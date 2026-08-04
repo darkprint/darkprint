@@ -42,22 +42,29 @@ import { cx } from "@/lib/format";
  * those recognises it here too.
  */
 export const NAV = [
+  // Two nouns. The author, 2026-08-04: the site exists to get people downloading and
+  // sharing blueprints and nodes, and a header that gave five explanatory pages the same
+  // weight as the two things you can take said otherwise. `/ontology` moved into the menu
+  // with them: it is a reference index, not a destination anyone arrives wanting.
   { href: "/blueprints", label: "Blueprints", group: "registry" },
   { href: "/nodes", label: "Nodes", group: "registry" },
-  { href: "/ontology", label: "Ontology", group: "registry" },
+  // The first item of the menu, because it is the one a cold reader needs first and the
+  // only page that says what a blueprint is *for*.
+  { href: "/what-a-blueprint-is", label: "What a blueprint is", group: "learn" },
   // Doc 2 §0 splits the two onboardings. `/build` is the practical one: about an hour,
   // ending with a factory the reader has downloaded. It sits with the explanatory pages
-  // rather than with the three registry surfaces, because it is something to do rather
+  // rather than with the two registry surfaces, because it is something to do rather
   // than something to browse.
   { href: "/build", label: "Build one", group: "learn" },
   // Right after `/build`: once the reader has something built, wiring it into a client
   // is the next setup action, not a registry surface to browse — hence "learn" rather
-  // than beside the three registry routes above.
+  // than beside the two registry routes above.
   { href: "/install", label: "Install", group: "learn" },
   // `/spec` answers the question the guided path raises: the reader has just written a
   // graph and a card, and this is what the three layers they were writing in actually
   // are.
   { href: "/spec", label: "Spec", group: "learn" },
+  { href: "/ontology", label: "Ontology", group: "learn" },
   // A child of `/spec`, not a fifth `learn` destination in its own right: it grades what
   // the three layers above it describe. Placed directly after `/spec` for that reason.
   { href: "/spec/scoring", label: "How a blueprint is graded", group: "learn" },
@@ -68,13 +75,13 @@ export const NAV = [
   { href: "/towards-a-dark-factory", label: "Towards a Dark Factory", group: "learn" },
 ] as const;
 
-/** The first item of the second group, which is where the rule goes. */
-const FIRST_LEARN = NAV.find((item) => item.group === "learn")?.href;
-
 const GROUPS = [
   { id: "registry", title: "Registry" },
   { id: "learn", title: "Learn" },
 ] as const;
+
+const LEARN = NAV.filter((item) => item.group === "learn");
+const REGISTRY = NAV.filter((item) => item.group === "registry");
 
 const currentUser = AUTHORS.mara;
 
@@ -93,29 +100,64 @@ export function SiteHeader() {
           <span className="text-cyan">Print</span>
         </Link>
 
-        {/* Nine items now in 976px of container at `lg`, so the row tightens by two
-            pixels of padding and one of type there and relaxes at `xl`, where there is
-            1152px and no reason to crowd. The eight-item version of this row was measured
-            at 1024, 1280 and 1440; `/spec/scoring` adds "How a blueprint is graded", the
-            longest label in either group, so it costs the row more width than any item
-            already accounted for there — not independently re-measured in a live browser
-            since. */}
+        {/* Two links and a menu, where there used to be nine links.
+
+            The width problem this solves was real: nine items in 976px at `lg` had the row
+            tightening its own padding and type to fit, and the longest label in the set
+            ("How a blueprint is graded") was added without re-measuring. Seven of the nine
+            are now behind one 5-character trigger, so the row has slack at every breakpoint
+            instead of being tuned to one.
+
+            A native `<details>` rather than a button and a popover: keyboard operation,
+            Escape and focus order come from the element, and `More`, `DownloadPanel` and
+            `ForkAction` already use the same primitive elsewhere on the site. It closes on
+            navigation because the page unmounts it. */}
         <nav className="hidden items-center gap-1 lg:flex">
-          {NAV.map((item) => (
+          {REGISTRY.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={cx(
                 "rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm",
-                item.href === FIRST_LEARN && "ml-2 border-l border-line pl-3 xl:pl-4",
-                isActive(item.href)
-                  ? "text-cyan"
-                  : "text-muted hover:text-fg",
+                isActive(item.href) ? "text-cyan" : "text-muted hover:text-fg",
               )}
             >
               {item.label}
             </Link>
           ))}
+
+          <details className="group relative ml-2 border-l border-line pl-3 xl:pl-4">
+            <summary
+              className={cx(
+                "flex cursor-pointer list-none items-center gap-1.5 rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm [&::-webkit-details-marker]:hidden",
+                LEARN.some((item) => isActive(item.href))
+                  ? "text-cyan"
+                  : "text-muted hover:text-fg",
+              )}
+            >
+              Learn
+              <span
+                aria-hidden
+                className="text-[10px] transition-transform group-open:rotate-180"
+              >
+                ▾
+              </span>
+            </summary>
+            <div className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-lg border border-line bg-void py-1 shadow-lg">
+              {LEARN.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cx(
+                    "block px-4 py-2 text-sm transition-colors",
+                    isActive(item.href) ? "text-cyan" : "text-muted hover:text-fg",
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </details>
         </nav>
 
         {/* `/upload` validates and scores a bundle in the browser and stops there;
