@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { getNodeCard } from "@/lib/content";
+import { InsideACardFigure, TheHarnessFigure } from "@/components/explain/ConceptFigures";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
@@ -119,6 +120,8 @@ export default function ConceptsPage() {
             lead="A card is the whole of what a node is. Four of its lines decide what that node can do, and one decides what it must never do."
           />
 
+          <InsideACardFigure />
+
           {card !== undefined && (
             <ul className="grid gap-3 lg:grid-cols-2">
               <Part i={0} field="model" value={card.model ?? "inherits"}>
@@ -192,6 +195,8 @@ export default function ConceptsPage() {
             <code className="font-mono text-[12px] text-fg">factory.dot</code>, is the
             harness.
           </Correction>
+
+          <TheHarnessFigure />
 
           <div className="grid gap-3 lg:grid-cols-3">
             <div

@@ -36,6 +36,10 @@ import { describe, expect, it } from "vitest";
 
 import { getNodeCard, getOntologyView } from "@/lib/content";
 import { WhichTasksGlance } from "@/components/explain/WhichTasksGlance";
+import {
+  InsideACardFigure,
+  TheHarnessFigure,
+} from "@/components/explain/ConceptFigures";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionLevels } from "@/components/home/SectionLevels";
 import { ForkScene } from "@/components/home/lifecycle/ForkScene";
@@ -156,6 +160,16 @@ const ROSTER: readonly SceneEntry[] = [
     files: ["components/explain/WhichTasksGlance.tsx"],
     frames: 1,
     render: () => framesOf(createElement(WhichTasksGlance)),
+  },
+  {
+    // Two scenes in one file, so both are rendered and their frames counted together:
+    // one inside a node card, one zoomed out to the graph with the harness around it.
+    files: ["components/explain/ConceptFigures.tsx"],
+    frames: 2,
+    render: () => [
+      ...framesOf(createElement(InsideACardFigure)),
+      ...framesOf(createElement(TheHarnessFigure)),
+    ],
   },
   {
     files: ["components/howto/IsolationWall.tsx"],
