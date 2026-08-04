@@ -1,24 +1,45 @@
 /* ============================================================
-   DarkPrint — the ontology term card, and the flat grid of them
+   DarkPrint — the ontology term row, and the flat list of them
    One presentation for one vocabulary entry, shared by the flat
-   grid below and by the grouped forest in `TermTree.tsx`, so a
+   list below and by the grouped forest in `TermTree.tsx`, so a
    term looks the same wherever the page happens to arrange it.
    Doc 1 §6 (the vocabulary), doc 3 §1 (the three dimensions a node
    declares).
 
-   ── Why this is a card and not a row ──
-   It was a row: label, id, a usage count pushed to the right edge,
-   and a description under all three, stacked in a `divide-y` list.
-   The author, on the node-type section: the four roots, their
-   descriptions and their subtypes "are too mixed visually", and
-   the same on risk markers, data types and tool capabilities. A
-   flat stack of rows separated by hairlines gives a root and its
-   child identical weight, so the one relation the vocabulary
-   exists to carry was the one thing the layout hid.
+   ── Why this is a row on shared column tracks ──
+   Two presentations came before it and each failed the same fact
+   from a different side.
 
-   A card has an edge, so a group of terms is one object on the
-   page and a subterm drawn inside its parent's edge is visibly
-   inside it.
+   It was a flat `divide-y` stack of rows. The author, on the
+   node-type section: the four roots, their descriptions and their
+   subtypes "are too mixed visually". True — hairline rows gave a
+   root and its child identical weight, so the one relation the
+   vocabulary exists to carry was the one thing the layout hid.
+
+   So it became a card, and subterms were drawn inside the parent
+   card's border, two cards to a row. That fixed grouping and broke
+   everything else. The author: the elements "are not aligned and
+   not structurally separated". Also true, and measurably: a
+   two-column grid of cards shares no column track, so every
+   description began at a different x and every weight chip floated
+   to its own card's right edge; card heights differed, so nothing
+   lined up across a row; and a subsumption tree reads *down* while
+   a two-column grid reads left, right, left.
+
+   The row is the third answer and it keeps both facts. Every row
+   in a tree — root or leaf, depth 0 or depth 2 — lays out on the
+   same `grid-template-columns`, so descriptions share one left
+   edge and weights share one right edge and can be compared by
+   running the eye down a column. Depth is spent inside the first
+   cell as padding, never on the row, which is why a nested list
+   can indent without knocking the later columns out of true. That
+   constraint is load-bearing and `TermTree` depends on it: the
+   nested `<ul>`s it builds carry no horizontal padding of their
+   own.
+
+   Grouping, which the cards did carry, is now proximity and a
+   drawn spine rather than a border — see `TermTree`. Nothing here
+   nests a bordered box inside a bordered box.
 
    ── The usage counts are gone ──
    "if on the right of each field, the numbers refer to the number
@@ -210,16 +231,6 @@ export function markerWeight(term: OntologyTerm): number | undefined {
   return CONFIGURED_WEIGHTS[term.id] ?? term.defaultWeight;
 }
 
-/** The doc 3 §5 penalty a risk marker carries, in points off a starting score of 4. */
-export function WeightChip({ weight }: { weight: number }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-1.5 py-0.5 font-mono text-[11px]">
-      <span className="text-dim">weight</span>
-      <span className="tabular-nums text-fg">{formatWeight(weight)}</span>
-    </span>
-  );
-}
-
 /**
  * §6.2 made visible: a deprecated term is never removed, it is signposted. The arrow
  * is decorative, the successor is a real link with a real accessible name.
@@ -245,63 +256,152 @@ export function DeprecationMark({ term }: { term: OntologyTerm }) {
   );
 }
 
-/* --------------------- the card --------------------- */
+/* --------------------- the shared column tracks --------------------- */
+
+/**
+ * The one `grid-template-columns` every term row lays out on.
+ *
+ * Both strings are written out in full rather than composed, because Tailwind's scanner
+ * reads this file as text and a class assembled at runtime is a class it never emits.
+ *
+ * `md` and not `sm`: at 640px a 15rem name column leaves the description about 36
+ * characters, which is under the measure the type floor asks for. Below `md` the row
+ * stacks instead, and the indent moves from the first cell onto the row, so a subterm
+ * still reads as indented when there are no columns left to align.
+ */
+export const TERM_COLUMNS = "md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]";
+export const TERM_COLUMNS_WEIGHTED =
+  "md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_4.5rem]";
+
+export function termColumns(showWeight: boolean): string {
+  return showWeight ? TERM_COLUMNS_WEIGHTED : TERM_COLUMNS;
+}
+
+/**
+ * The width one level of subsumption is worth.
+ *
+ * Exported because `TermTree` positions its rails against the same number: the indent is
+ * padding inside the first cell, and the rail is drawn a fixed distance to the left of
+ * where that cell's text begins. Two files agreeing by arithmetic rather than by eye.
+ */
+export const TERM_INDENT_STEP_REM = 1.5;
+
+/** Depth as a CSS length, for the custom property both files read. */
+export function termIndent(depth: number): string {
+  return `${depth * TERM_INDENT_STEP_REM}rem`;
+}
+
+/**
+ * The strip naming the columns, drawn once above a list or a tree.
+ *
+ * It earns its line twice. It says what the bare number in the third column is, which the
+ * chip reading `weight 2.00` used to have to repeat on every single row; and it puts a
+ * real top edge on the grid, so the rows below read as one aligned object rather than as
+ * a stack that happens to line up. Hidden below `md`, where there are no columns to name.
+ */
+export function TermColumnHeader({ showWeight = false }: { showWeight?: boolean }) {
+  return (
+    <div
+      className={cx(
+        "hidden gap-x-6 border-b border-line pb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-dim md:grid",
+        termColumns(showWeight),
+      )}
+    >
+      <span>Term</span>
+      <span>What it means</span>
+      {showWeight && <span className="text-right">Weight</span>}
+    </div>
+  );
+}
+
+/* --------------------- the row --------------------- */
 
 /**
  * One vocabulary entry: what it is called, what it is spelled, whether it is still the
- * current spelling, what it costs if anything, and what it means.
+ * current spelling, what it means, and what it costs if anything.
  *
- * `subterms` is what the term subsumes, rendered inside this card's own border. Nesting
- * is the `broader` relation and nothing else carries it, so a card with children reads as
- * one group and a reader never has to work out whether two adjacent entries are siblings.
+ * The indent is read from `--term-indent`, which the caller sets on the element owning
+ * this row. Above `md` it is padding on the *first cell*, so the description and weight
+ * columns stay where they are however deep the term sits; below `md` it moves onto the
+ * row, because a stacked row has no later columns to knock out of true.
  */
-export function TermCard({
+export function TermRow({
   term,
   showWeight = false,
-  subterms,
+  root = false,
   className,
 }: {
   term: OntologyTerm;
-  /** Show the doc 3 §5 weight. Only risk markers carry one, and only a priced one shows. */
+  /** Show the doc 3 §5 weight. Only risk markers carry one. */
   showWeight?: boolean;
-  subterms?: React.ReactNode;
+  /** A term nothing in its kind subsumes. Set a step heavier than what hangs off it. */
+  root?: boolean;
   className?: string;
 }) {
   const weight = showWeight ? markerWeight(term) : undefined;
   return (
-    <li
+    <div
       className={cx(
-        "flex flex-col gap-1.5 rounded-lg border border-line bg-surface-2/50 p-4",
+        "grid gap-x-6 gap-y-1 py-2.5 pl-[var(--term-indent,0px)] md:pl-0",
+        termColumns(showWeight),
         className,
       )}
     >
-      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+      {/* `leading-[20px]` on the cell and not on the link, because a line box is at least
+          as tall as its parent's strut: setting it on an inline `<a>` alone leaves the
+          box at whatever the panel happens to inherit, which measured 25px and drifted
+          the label 3px below where `TermTree` draws the elbow that points at it. Fixed
+          here, the label's centre is `py` + 10px on every row, and the rail can be
+          positioned by arithmetic. */}
+      <div className="min-w-0 leading-[20px] md:pl-[var(--term-indent,0px)]">
         <Link
           href={termHref(term.id)}
-          className="font-display text-[15px] font-semibold leading-snug text-fg transition-colors hover:text-cyan"
+          className={cx(
+            "font-display text-fg transition-colors hover:text-cyan",
+            root ? "text-[15px] font-semibold" : "text-[14px] font-medium",
+          )}
         >
           {term.label}
         </Link>
-        <code className="font-mono text-[11px] text-dim">{term.id}</code>
-        {term.deprecated !== undefined && <DeprecationMark term={term} />}
-        {weight !== undefined && (
-          <span className="ml-auto">
-            <WeightChip weight={weight} />
-          </span>
-        )}
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <code className="font-mono text-[11px] text-dim">{term.id}</code>
+          {term.deprecated !== undefined && <DeprecationMark term={term} />}
+        </div>
       </div>
-      <p className="text-sm leading-relaxed text-muted">{term.description}</p>
-      {subterms}
-    </li>
+
+      <p className="min-w-0 text-[13px] leading-relaxed text-muted">{term.description}</p>
+
+      {showWeight && (
+        <div className="font-mono text-[12px] tabular-nums text-fg md:text-right">
+          <span className="text-dim md:hidden">weight </span>
+          {weight === undefined ? (
+            <>
+              <span aria-hidden className="text-dim">
+                —
+              </span>
+              <span className="sr-only">
+                No weight: a category a rule is written about, not a marker a card declares.
+              </span>
+            </>
+          ) : (
+            formatWeight(weight)
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
-/* --------------------- the flat grid --------------------- */
+/* --------------------- the flat list --------------------- */
 
 /**
  * A list of terms with no hierarchy worth drawing: the five phases, which doc 3 §2 keeps
  * flat and closed. The kinds that *are* deep (node types, risk markers, data types, tool
  * capabilities) get `TermTree`, which groups them by `broader`.
+ *
+ * A hairline between every entry and no extra space, which is the rhythm a flat kind
+ * wants. The generous gaps `TermTree` opens are there to separate *groups*, and a kind
+ * with no groups that borrowed them would be claiming a structure it does not have.
  *
  * `terms` is taken as given rather than re-sorted: the phases have to read in doc 3 §2's
  * lifecycle order, which is not the alphabetical order `byKind` returns.
@@ -319,10 +419,15 @@ export function TermTable({
     return <p className="text-sm text-dim">This vocabulary declares no terms of that kind.</p>;
   }
   return (
-    <ul className={cx("grid gap-3 sm:grid-cols-2", className)}>
-      {terms.map((term) => (
-        <TermCard key={term.id} term={term} showWeight={showWeight} />
-      ))}
-    </ul>
+    <div className={cx("max-w-4xl", className)}>
+      <TermColumnHeader showWeight={showWeight} />
+      <ul className="divide-y divide-line">
+        {terms.map((term) => (
+          <li key={term.id}>
+            <TermRow term={term} showWeight={showWeight} root />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

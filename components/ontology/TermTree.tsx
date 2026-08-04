@@ -6,19 +6,38 @@
    so the autonomy metric catches it without ever naming it (doc 3
    §3) — and a flat list is exactly the shape that hides that.
 
-   ── The grouping rule ──
-   The four kinds this draws have four different shapes, and one
-   rule covers all of them: **a lone root becomes the caption and
-   its children become the grid; several roots are the grid.**
+   ── One column, and why the nested lists carry no padding ──
+   This drew a two-column grid of cards, subterms nested inside
+   their parent card's border. The author: the elements "are not
+   aligned and not structurally separated."
 
-     node-type    4 roots, 2 with children  → 4 cards
-     risk-marker  6 roots, 2 with children  → 6 cards
-     data-type    1 root (`any`), 4 groups  → caption + 4 cards
-     tool         1 root, 11 flat children  → caption + 11 cards
+   Both halves are fixable at once, and the fix is a single
+   constraint. Every row in this tree — root or leaf, depth 0 or
+   depth 2 — lays out on `TermTable`'s shared column tracks, so
+   descriptions share one left edge and weights share one right
+   edge down the whole kind. That only survives nesting because the
+   `<ul>`s below carry **no horizontal padding of their own**:
+   depth is spent as padding *inside the first cell*, never on the
+   row, so indenting a subterm cannot drag the later columns with
+   it. Change that and the alignment goes, quietly.
 
-   Without it, `any` and `tool-capability` would each be a single
-   card holding the entire kind, which is the flat stack the author
-   asked off the page wearing a border.
+   Separation is then proximity and a drawn rail rather than a
+   border: root groups are parted by a hairline and a generous gap,
+   subterms hang off a spine with an elbow. No bordered box inside
+   a bordered box anywhere, which is what the cards had.
+
+   Reading order matters as much as alignment here. A subsumption
+   tree reads *down*; a two-column grid reads left, right, left,
+   which is orthogonal to the relation being drawn, and no amount
+   of styling inside a card repairs that.
+
+   ── The lone root is drawn, not captioned ──
+   The card version had a special case: a kind with a single root
+   (`any`, `tool-capability`) put that root in a caption above the
+   grid, because the alternative was one card holding an entire
+   kind. A tree has no such problem, so the special case is gone
+   and every kind is drawn as the forest it actually is. `any` is
+   the top of the data-type lattice and now looks like it.
 
    A **forest, not a tree**. Ontology v0.1 draws exactly the edges
    doc 3 §3 and §4 draw and no more, so inventing a common root
@@ -29,15 +48,18 @@
    `broader` graph, and it is cycle-safe by construction.
    ============================================================ */
 
-import Link from "next/link";
-
 import type { OntologyTerm, OntologyView, TermKind } from "@/lib/core";
 import { cx } from "@/lib/format";
-import { termHref } from "@/lib/href";
-import { TermCard, WeightChip, markerWeight } from "./TermTable";
+import {
+  TERM_INDENT_STEP_REM,
+  TermColumnHeader,
+  TermRow,
+  markerWeight,
+  termIndent,
+} from "./TermTable";
 
 /** One term plus everything narrower than it, already resolved. */
-interface Branch {
+export interface Branch {
   term: OntologyTerm;
   children: Branch[];
 }
@@ -53,7 +75,7 @@ interface Branch {
  * namespaced extension can introduce one and a page must not hang because of it.
  * Children are sorted by id, the same locale-independent order `byKind` uses.
  */
-function forest(ontology: OntologyView, kind: TermKind): Branch[] {
+export function termForest(ontology: OntologyView, kind: TermKind): Branch[] {
   const terms = ontology.byKind(kind);
   const seen = new Set<string>();
 
@@ -83,63 +105,7 @@ function forest(ontology: OntologyView, kind: TermKind): Branch[] {
  * re-deriving "what is a root" and getting a different answer from the picture.
  */
 export function termRootIds(ontology: OntologyView, kind: TermKind): string[] {
-  return forest(ontology, kind).map((branch) => branch.term.id);
-}
-
-/**
- * A subterm, drawn inside its parent's card.
- *
- * Deliberately quieter than the card's own heading and set behind a rule: the eye should
- * read the group first and the members second. Deeper levels recurse, so a three-level
- * kind indents twice rather than flattening.
- */
-function SubTerm({
-  branch,
-  showWeight,
-}: {
-  branch: Branch;
-  showWeight: boolean;
-}) {
-  const weight = showWeight ? markerWeight(branch.term) : undefined;
-  return (
-    <li className="flex flex-col gap-1 border-l border-line-bright pl-3">
-      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <Link
-          href={termHref(branch.term.id)}
-          className="font-display text-sm font-semibold leading-snug text-fg transition-colors hover:text-cyan"
-        >
-          {branch.term.label}
-        </Link>
-        <code className="font-mono text-[11px] text-dim">{branch.term.id}</code>
-        {weight !== undefined && (
-          <span className="ml-auto">
-            <WeightChip weight={weight} />
-          </span>
-        )}
-      </div>
-      <p className="text-[13px] leading-snug text-muted">{branch.term.description}</p>
-      {branch.children.length > 0 && (
-        <SubTermList branches={branch.children} showWeight={showWeight} />
-      )}
-    </li>
-  );
-}
-
-function SubTermList({
-  branches,
-  showWeight,
-}: {
-  branches: readonly Branch[];
-  showWeight: boolean;
-}) {
-  const ordered = showWeight ? [...branches].sort(byWeight) : branches;
-  return (
-    <ul className="mt-2 flex flex-col gap-2.5 border-t border-line pt-3 first:mt-0">
-      {ordered.map((child) => (
-        <SubTerm key={child.term.id} branch={child} showWeight={showWeight} />
-      ))}
-    </ul>
-  );
+  return termForest(ontology, kind).map((branch) => branch.term.id);
 }
 
 /**
@@ -170,27 +136,134 @@ function byWeight(a: Branch, b: Branch): number {
   return a.term.id < b.term.id ? -1 : a.term.id > b.term.id ? 1 : 0;
 }
 
-/** One card per branch, in a grid. */
-function Cards({
+/* --------------------- the rail --------------------- */
+
+/**
+ * Where a subterm's rail is drawn, relative to its own `<li>`.
+ *
+ * `--term-indent` is where the first cell's text begins, so the vertical sits one rem
+ * left of it and the elbow closes the gap but for a hair, which keeps the glyph off the
+ * text. Both are `calc` against the same custom property the row pads itself with, so a
+ * change to `TERM_INDENT_STEP_REM` moves the text and the rail together.
+ */
+const RAIL_X = `calc(var(--term-indent) - ${TERM_INDENT_STEP_REM - 0.5}rem)`;
+const RAIL_ELBOW_W = `${TERM_INDENT_STEP_REM - 0.75}rem`;
+
+/**
+ * The vertical centre of a subterm's label: `TermRow` pins the name cell to a 20px line
+ * box and pads the row by `py-2.5`, so the label's middle sits at 10 + 10 = 20px on every
+ * row of every kind. The elbow meets the name there rather than at the row's own middle,
+ * which drifts down as soon as a description wraps to a second line.
+ *
+ * This is arithmetic against two values in `TermTable`, not a number tuned by eye. If
+ * either moves, this moves with it.
+ */
+const RAIL_ELBOW_Y_REM = 1.25;
+
+/** The gap a separated subterm opens above itself, in the same rem the elbow counts in. */
+const RAIL_SEPARATION_REM = 0.75;
+
+/**
+ * One level of hierarchy, drawn.
+ *
+ * The vertical runs the full height of its `<li>` — which includes that item's own
+ * subtree, so the rail passes behind a nested group and reaches the next sibling — and
+ * stops at the elbow on the last child, which is what closes a group visually. Decoration
+ * for a relation the nesting already carries, so it is hidden from assistive technology.
+ *
+ * `offset` is the item's own top padding. Both marks are positioned from the top of the
+ * `<li>`, so an item that opens a gap above itself has to push the elbow down by exactly
+ * that gap or it lands above the label it is supposed to point at.
+ */
+function Rail({ last, offset }: { last: boolean; offset: number }) {
+  const elbowY = `${RAIL_ELBOW_Y_REM + offset}rem`;
+  return (
+    <span aria-hidden>
+      <span
+        className="absolute w-px bg-line-bright"
+        style={{ left: RAIL_X, top: 0, height: last ? elbowY : "100%" }}
+      />
+      <span
+        className="absolute h-px bg-line-bright"
+        style={{ left: RAIL_X, top: elbowY, width: RAIL_ELBOW_W }}
+      />
+    </span>
+  );
+}
+
+/* --------------------- the branches --------------------- */
+
+function BranchItem({
+  branch,
+  depth,
+  last,
+  separated,
+  showWeight,
+}: {
+  branch: Branch;
+  depth: number;
+  last: boolean;
+  /** Open a gap above this item: it starts a new group rather than continuing a run. */
+  separated: boolean;
+  showWeight: boolean;
+}) {
+  const root = depth === 0;
+  return (
+    <li
+      className={cx(
+        "relative",
+        // A rule between root groups, space alone between deeper ones. A hairline at
+        // depth would cut the rail it sits beside, and severing the line that says
+        // "these hang off the same parent" costs more than the separation buys.
+        separated && (root ? "mt-4 border-t border-line pt-4" : "pt-3"),
+      )}
+      style={{ "--term-indent": termIndent(depth) } as React.CSSProperties}
+    >
+      {depth > 0 && (
+        <Rail last={last} offset={separated ? RAIL_SEPARATION_REM : 0} />
+      )}
+      <TermRow term={branch.term} showWeight={showWeight} root={root} />
+      {branch.children.length > 0 && (
+        <BranchList branches={branch.children} depth={depth + 1} showWeight={showWeight} />
+      )}
+    </li>
+  );
+}
+
+/**
+ * One rank of siblings.
+ *
+ * No padding, margin or `gap` on the list itself: see this file's header. Every unit of
+ * horizontal space here would come off the description column of every row below it.
+ */
+function BranchList({
   branches,
+  depth,
   showWeight,
 }: {
   branches: readonly Branch[];
+  depth: number;
   showWeight: boolean;
 }) {
   const ordered = showWeight ? [...branches].sort(byWeight) : branches;
   return (
-    <ul className="grid items-start gap-3 sm:grid-cols-2">
-      {ordered.map((branch) => (
-        <TermCard
+    <ul>
+      {ordered.map((branch, i) => (
+        <BranchItem
           key={branch.term.id}
-          term={branch.term}
-          showWeight={showWeight}
-          subterms={
-            branch.children.length > 0 ? (
-              <SubTermList branches={branch.children} showWeight={showWeight} />
-            ) : undefined
+          branch={branch}
+          depth={depth}
+          last={i === ordered.length - 1}
+          // Roots are always their own group. Deeper down, a run of leaves is one list
+          // and wants no gaps inside it, but an item that carries a subtree — or follows
+          // one — is a group boundary and gets air.
+          separated={
+            i > 0 &&
+            (depth === 0 ||
+              branch.children.length > 0 ||
+              (ordered[i - 1]?.children.length ?? 0) > 0)
           }
+          showWeight={showWeight}
         />
       ))}
     </ul>
@@ -198,10 +271,11 @@ function Cards({
 }
 
 /**
- * Every term of one kind, grouped under the term it specialises.
+ * Every term of one kind, arranged under the term it specialises.
  *
- * See the grouping rule in this file's header: a kind with one root puts that root in a
- * caption above the grid instead of wrapping the whole vocabulary in a single card.
+ * `max-w-4xl` rather than the panel's full width: past that the description column runs
+ * beyond a comfortable measure, and a term list nobody can read a line of is not more
+ * useful for being wider.
  */
 export function TermTree({
   kind,
@@ -215,33 +289,15 @@ export function TermTree({
   showWeight?: boolean;
   className?: string;
 }) {
-  const branches = forest(ontology, kind);
+  const branches = termForest(ontology, kind);
   if (branches.length === 0) {
     return <p className="text-sm text-dim">This vocabulary declares no terms of that kind.</p>;
   }
 
-  const sole = branches.length === 1 ? branches[0] : undefined;
-  if (sole !== undefined && sole.children.length > 0) {
-    return (
-      <div className={cx("flex flex-col gap-3", className)}>
-        <p className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 text-sm leading-relaxed text-muted">
-          <Link
-            href={termHref(sole.term.id)}
-            className="font-display text-[15px] font-semibold text-fg transition-colors hover:text-cyan"
-          >
-            {sole.term.label}
-          </Link>
-          <code className="font-mono text-[11px] text-dim">{sole.term.id}</code>
-          <span className="w-full sm:w-auto">{sole.term.description}</span>
-        </p>
-        <Cards branches={sole.children} showWeight={showWeight} />
-      </div>
-    );
-  }
-
   return (
-    <div className={className}>
-      <Cards branches={branches} showWeight={showWeight} />
+    <div className={cx("max-w-4xl", className)}>
+      <TermColumnHeader showWeight={showWeight} />
+      <BranchList branches={branches} depth={0} showWeight={showWeight} />
     </div>
   );
 }
