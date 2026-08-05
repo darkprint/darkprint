@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { CORE_PHASE_IDS } from "@/lib/core";
 import { allBlueprints, allNodeCards, getNodeCard, getOntologyView } from "@/lib/content";
-import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
+import {
+  CardStackFigure,
+  FigureFrame,
+  GraphFigure,
+  GraphKey,
+  VocabularyFigure,
+} from "@/components/learn/PartFigures";
 import { ButtonLink } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
@@ -72,11 +77,40 @@ const STARTER_SLUG = "starter-software-factory";
 const LINK =
   "font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan";
 
+/**
+ * One of the three parts, as a band that occupies two thirds of the page and alternates
+ * which two thirds.
+ *
+ * The author's layout, in his words: the graphic on the left with the description and its
+ * link on the right, then the graphic on the right with the text on the left, then the
+ * graphic on the left again, "an 'S' structure where an entry occupy 2/3 of the space
+ * (left) and 2/3 the space when on the right".
+ *
+ * So the band is `col-span-8` of a twelve-column grid, starting at column 1, then column
+ * 5, then column 1. The third that is empty alternates sides, which is what draws the S,
+ * and the figure alternates within the band, which is what keeps a reader's eye crossing
+ * rather than running down a gutter.
+ *
+ * ── Why this replaced three cards in a row ──
+ * The three parts were `lg:grid-cols-3` panels, each with its figure crushed into a 112px
+ * box. Three equal columns say the three parts are alternatives to choose between; they
+ * are not, they are three files that reference each other, and a reader meets them in
+ * order. A band per part reads in order and gives each figure a real width, which is the
+ * only reason the drawings could be redrawn at all.
+ *
+ * ── DOM order, and why the figure is always first ──
+ * The figure precedes the prose in the markup on every band, and only the visual order
+ * flips, at `lg`. The old panel put the figure above the sentence for a stated reason,
+ * that "a picture under a paragraph is something you reach after deciding to read; the
+ * point here is that it is what makes you decide". That holds on a phone, where the band
+ * collapses to one column and reading order is DOM order.
+ */
 function Part({
   index,
   title,
   href,
   hrefLabel,
+  side,
   figure,
   children,
 }: {
@@ -84,51 +118,65 @@ function Part({
   title: string;
   href: string;
   hrefLabel: string;
+  /** Which two thirds this band occupies, and therefore which side its figure takes. */
+  side: "left" | "right";
   /** What the part looks like. Every one is read off the archive, never drawn by hand. */
-  figure?: React.ReactNode;
+  figure: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`grid items-center gap-6 lg:col-span-8 lg:grid-cols-[1.15fr_1fr] lg:gap-8 ${
+        side === "left" ? "lg:col-start-1" : "lg:col-start-5"
+      }`}
+    >
+      <div className={side === "right" ? "lg:order-2" : undefined}>{figure}</div>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-baseline gap-3">
+          <span className="font-mono text-[13px] tabular-nums text-dim">{index}</span>
+          <h3 className="font-display text-xl font-semibold leading-snug text-fg">{title}</h3>
+        </div>
+        <p className="text-[15px] leading-relaxed text-muted">{children}</p>
+        <Link href={href} className={`${LINK} mt-1 self-start`}>
+          {hrefLabel}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A step of "what you do with one": no figure, three across, as before.
+ *
+ * The three parts above became bands because each has a drawing that needed room. These
+ * three are a sequence of actions with nothing to draw, and three short panels in a row is
+ * the right shape for that. Same numeral and same heading size as a band, so the page
+ * reads as one page.
+ */
+function Step({
+  index,
+  title,
+  href,
+  hrefLabel,
+  children,
+}: {
+  index: string;
+  title: string;
+  href: string;
+  hrefLabel: string;
   children: React.ReactNode;
 }) {
   return (
     <article className="panel flex flex-col gap-3 p-6">
       <div className="flex items-baseline gap-3">
-        <span className="font-mono text-[11px] tracking-[0.18em] text-dim">{index}</span>
+        <span className="font-mono text-[13px] tabular-nums text-dim">{index}</span>
         <h3 className="font-display text-lg font-semibold text-fg">{title}</h3>
       </div>
-      {figure !== undefined && (
-        /* Above the sentence, not below it. The three panels are a reader's first sight
-           of the objects they name, and a picture under a paragraph is something you
-           reach after deciding to read; the point here is that it is what makes you
-           decide. `h-28` on all three so the three panels stay the same height whatever
-           each figure's natural aspect is. */
-        <div className="flex h-28 items-center justify-center overflow-hidden rounded-lg border border-line bg-blueprint-deep/40 bp-grid px-3 py-2">
-          {figure}
-        </div>
-      )}
       <p className="text-sm leading-relaxed text-muted">{children}</p>
       <Link href={href} className={`${LINK} mt-auto`}>
         {hrefLabel}
       </Link>
     </article>
-  );
-}
-
-/** One line of the card figure: a field name and what this card put in it. */
-function CardRow({ field, value }: { field: string; value: string }) {
-  return (
-    <div className="flex items-baseline gap-2 font-mono text-[11px] leading-[1.45]">
-      <span className="w-14 shrink-0 text-dim">{field}</span>
-      <span className="truncate text-fg">{value}</span>
-    </div>
-  );
-}
-
-/** One line of the vocabulary figure: a term and the kind it belongs to. */
-function TermRow({ kind, id }: { kind: string; id: string }) {
-  return (
-    <div className="flex items-baseline gap-2 font-mono text-[11px] leading-[1.45]">
-      <span className="w-[4.5rem] shrink-0 text-violet">{kind}</span>
-      <span className="truncate text-fg">{id}</span>
-    </div>
   );
 }
 
@@ -154,19 +202,25 @@ export default function WhatABlueprintIsPage() {
   const starter = all.find((bp) => bp.slug === STARTER_SLUG) ?? all[0];
   const builder = getNodeCard("code-builder");
   const view = getOntologyView();
-  /* Two of each kind. A controlled list is what it looks like: the kind on the left, the
-     term on the right, and the same word spelled once.
+  /* The vocabulary figure draws kinds and how many terms each holds, not a sample.
 
-     Phases come from `CORE_PHASE_IDS` rather than `byKind("phase")`, which sorts by id
-     and so opened the figure on "debugging, deployment". Accurate and wrong: the five are
-     a lifecycle and their order is part of what they are. The other two kinds have no
-     inherent order and keep the vocabulary's own. */
-  const terms = [
-    ...CORE_PHASE_IDS.slice(0, 2).map((id) => ({ kind: "phase" as const, id })),
-    ...(["data-type", "risk-marker"] as const).flatMap((kind) =>
-      view.byKind(kind).slice(0, 2).map((term) => ({ kind, id: term.id })),
-    ),
-  ];
+     Four sample terms was the wrong picture of this part. The sentence beside it says the
+     graph and the cards are "both written against" the list, and a sample of four says
+     nothing about that relation; it just shows four words. Kinds and counts say what the
+     list *is* — a closed set, of a known size, in named categories — which is the fact the
+     other two parts depend on.
+
+     Read off the ontology, never typed. `architecture/ontology.md` records that a written
+     count goes stale the moment content lands, and it holds harder for a drawing than for
+     a sentence: a figure showing 15 data types when there are 16 is a picture of a file
+     that does not exist.
+
+     `phase` is first because it is the one a reader already met, on the landing and in
+     the card above it. The rest run by size. */
+  const kinds = (["phase", "node-type", "data-type", "risk-marker"] as const).map(
+    (kind) => ({ kind, count: view.byKind(kind).length }),
+  );
+  const ontologyVersion = builder?.card.ontologyVersion ?? "";
 
   return (
     <>
@@ -189,49 +243,55 @@ export default function WhatABlueprintIsPage() {
             lead="Each part is a plain text file, and each is checked against the others."
           />
 
-          <div className="grid gap-5 lg:grid-cols-3">
+          {/* Twelve columns so a band can take eight of them and start at 1 or at 5.
+              `gap-y-14` rather than a rule between bands: the alternation already
+              separates them, and a full-width rule under a two-thirds band draws a line
+              across the third that band deliberately left empty. */}
+          <div className="grid gap-y-14 lg:grid-cols-12 lg:gap-y-20">
             <Part
               index="01"
+              side="left"
               title="The graph"
               href="/spec/topology"
               hrefLabel="The topology, in DOT"
               figure={
-                starter === undefined ? undefined : (
-                  <GraphThumbnail
-                    graph={starter.graph}
-                    className="h-full w-full"
-                    ariaLabel={`${starter.title}, as a graph`}
-                  />
+                starter === undefined ? null : (
+                  <FigureFrame caption={<GraphKey graph={starter.graph} />}>
+                    {/* Two placements, one per width. See `GraphFigure`: the wide boxes
+                        carry each node's display name and go under the legibility floor
+                        at phone width, so the narrow one carries the DOT id instead. */}
+                    <div className="sm:hidden">
+                      <GraphFigure graph={starter.graph} title={starter.title} compact />
+                    </div>
+                    <div className="hidden sm:block">
+                      <GraphFigure graph={starter.graph} title={starter.title} />
+                    </div>
+                  </FigureFrame>
                 )
               }
             >
               A directed graph in a subset of DOT, saying which node hands what to which.
               What it leaves out matters as much: an edge nobody drew is a connection
-              somebody decided against.
+              somebody decided against, and the crossed one above is a rule the resolver
+              enforces rather than a convention the author remembered.
             </Part>
+
             <Part
               index="02"
+              side="right"
               title="The cards"
               href="/spec/card"
               hrefLabel="The node card, in YAML"
               figure={
-                builder === undefined ? undefined : (
-                  /* Four fields off the real `code-builder` card, not four lines of its
-                     YAML: a text slice would be a listing, and `scripts/measure-prose.ts`
-                     records what listings do to a page that is meant to be read. `cannot`
-                     is one of the four because it is the half of the interface nothing
-                     else on this page shows. */
-                  <div className="w-full max-w-[15rem]">
-                    <CardRow field="id" value={builder.card.id} />
-                    <CardRow field="type" value={builder.card.type} />
-                    <CardRow field="model" value={builder.card.model ?? "inherits"} />
-                    <CardRow
-                      field="cannot"
-                      value={
-                        builder.card.cannot[0] ?? "nothing declared"
-                      }
+                builder === undefined || starter === undefined ? null : (
+                  <FigureFrame
+                    caption={`${starter.graph.nodes.length} nodes, ${starter.graph.nodes.length} cards. This is one of them.`}
+                  >
+                    <CardStackFigure
+                      card={builder.card}
+                      nodes={starter.graph.nodes.length}
                     />
-                  </div>
+                  </FigureFrame>
                 )
               }
             >
@@ -239,18 +299,18 @@ export default function WhatABlueprintIsPage() {
               what it may reach, and what must never reach it. {cards} of them are
               published here.
             </Part>
+
             <Part
               index="03"
-              figure={
-                <div className="w-full max-w-[15rem]">
-                  {terms.map((term) => (
-                    <TermRow key={term.id} kind={term.kind} id={term.id} />
-                  ))}
-                </div>
-              }
+              side="left"
               title="The vocabulary"
               href="/spec/ontology"
               hrefLabel="The vocabulary"
+              figure={
+                <FigureFrame caption="Both files spell a term the same way, or the checker says so.">
+                  <VocabularyFigure kinds={kinds} version={ontologyVersion} />
+                </FigureFrame>
+              }
             >
               A controlled list of terms the graph and the cards are both written against,
               so that two authors naming the same thing write the same word and a checker
@@ -269,16 +329,16 @@ export default function WhatABlueprintIsPage() {
           />
 
           <div className="grid gap-5 lg:grid-cols-3">
-            <Part index="01" title="Download" href="/blueprints" hrefLabel="Browse the shelf">
+            <Step index="01" title="Download" href="/blueprints" hrefLabel="Browse the shelf">
               A folder of text: the graph, the cards it pins, and a README carrying the
               digest so you can confirm the files are the ones the site read.
-            </Part>
-            <Part index="02" title="Adapt it" href="/install" hrefLabel="Point a client at it">
+            </Step>
+            <Step index="02" title="Adapt it" href="/install" hrefLabel="Point a client at it">
               Give it to Claude Code, Gemini, Codex or any agent that reads the same
               cards. It fits the pattern to the code you already have, and it can combine
               one blueprint with another. That happens on your machine, not here.
-            </Part>
-            <Part index="03" title="Share the result" href="/upload" hrefLabel="Validate a bundle">
+            </Step>
+            <Step index="03" title="Share the result" href="/upload" hrefLabel="Validate a bundle">
               What you end up with is a blueprint too. {/* Doc 2 §0.4: the qualifier sits
                   beside the claim it qualifies, in the open. `/upload` really does parse
                   and score in the tab; the publishing half really is absent. */}
@@ -287,7 +347,7 @@ export default function WhatABlueprintIsPage() {
                 Today the validator runs in your browser tab and stops there: publishing to
                 the registry is not built yet.
               </span>
-            </Part>
+            </Step>
           </div>
         </div>
       </section>

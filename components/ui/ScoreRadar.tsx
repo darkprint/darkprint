@@ -2,31 +2,39 @@ import type { Metric, MetricKey } from "@/lib/types";
 import { METRIC_SOURCE_META } from "@/lib/format";
 
 /**
- * Room on each side of the square geometry for an axis label to run into.
- *
- * 112, not 64, and the two numbers below solve together. The pad widens the viewBox, and
- * `LABEL_UNITS` sizes the label against that same widened box so it lands at 11 CSS px —
- * so a bigger pad needs a bigger label, which needs a bigger pad. Solving the pair for
- * `size = 300`: the label ends at 19.2 units, "Transparency" is about 138 units wide at
- * that size, and the anchor sits inside the box, so 112 clears it with a character of
- * slack, exactly as 64 did for the old 11-unit label.
- *
- * This trades chart area for legible names: the geometry now renders at about 173px
- * inside the 340px figure instead of 212px. On the one page whose whole subject is
- * reading this chart, five names nobody can read cost more than 39px of radius.
- */
-const LABEL_PAD = 112;
-
-/**
- * What an axis label should measure once it is on screen, and what that costs in units.
- *
- * The site's floor for live mono text is 11px, which is what `Sheet`'s own captions use;
- * a name inside a drawing has no business being smaller than the caption under it. The
- * viewBox is `size + 2 * LABEL_PAD` wide and renders into `size` worth of column, so a
- * label written at `n` units arrives at `n * size / (size + 2 * LABEL_PAD)`. Inverting
- * that is the whole fix.
+ * The floor for a live mono label. `Sheet`'s own captions use it, and a name inside a
+ * drawing has no business being smaller than the caption under it.
  */
 const LABEL_CSS_PX = 11;
+
+/**
+ * The pad and the label size, solved together against the width the chart will occupy.
+ *
+ * Both used to be constants: `LABEL_PAD = 112`, label `11 * (size + 224) / size`. They
+ * were solved once, for the ~302px column the chart sits in beside a blueprint's
+ * scorecard, and a constant only holds at the width it was solved at. Rendered as a
+ * full-width plate at 1102px the same pair gives **40px axis labels** and spends 43% of
+ * the viewBox on empty gutter, because the pad is a fixed number of units and the units
+ * got three and a half times bigger on screen.
+ *
+ * The relation is one equation. A label written at `u` units arrives at
+ * `u * render / viewBox`, the viewBox is `size + 2 * pad`, and the pad has to clear the
+ * longest name at whatever `u` turns out to be — measured on the shipped chart, about
+ * 5.83 units of pad per unit of label. Substituting and solving for the pad:
+ *
+ *     pad = (5.83 * LABEL_CSS_PX * size) / (render - 2 * 5.83 * LABEL_CSS_PX)
+ *
+ * At 302px that returns 111, which is the number the constant already held, so the
+ * scorecard column is unchanged to the pixel. At 1102px it returns 20, the label lands
+ * at 11px again, and the polygon takes **88% of the box instead of 58%**.
+ */
+const PAD_PER_LABEL_UNIT = 5.83;
+
+function geometry(size: number, render: number): { pad: number; labelUnits: number } {
+  const k = PAD_PER_LABEL_UNIT * LABEL_CSS_PX;
+  const pad = (k * size) / (render - 2 * k);
+  return { pad, labelUnits: (LABEL_CSS_PX * (size + pad * 2)) / render };
+}
 
 const SHORT: Record<MetricKey, string> = {
   autonomy: "Autonomy",
@@ -61,10 +69,21 @@ const SHORT: Record<MetricKey, string> = {
 export function ScoreRadar({
   metrics,
   size = 320,
+  render = 302,
+  plate = false,
 }: {
   metrics: Metric[];
   size?: number;
+  /**
+   * The CSS width this chart will actually occupy. The geometry is solved against it —
+   * see `geometry`. 302 is the scorecard column on a blueprint page, which is where this
+   * chart spends most of its life.
+   */
+  render?: number;
+  /** Drop the 340px cap, for a chart drawn as a full-width plate. */
+  plate?: boolean;
 }) {
+  const { pad: LABEL_PAD, labelUnits } = geometry(size, render);
   // Doc 2 §1.1: the band is not a length, so it is not a spoke.
   const axes = metrics.filter((m) => m.key !== "autonomy");
 
@@ -184,9 +203,16 @@ export function ScoreRadar({
                 y={lp.y}
                 textAnchor={anchor}
                 dominantBaseline="middle"
-                fontSize={(LABEL_CSS_PX * (size + LABEL_PAD * 2)) / size}
+                fontSize={labelUnits}
                 fontFamily="var(--font-mono), monospace"
-                fill="var(--color-muted)"
+                /* The axis name carries its own source colour, the same one its vertex
+                   is drawn in. The colour was on the vertex alone — a 4px dot — so the
+                   legend saying "cyan means static analysis" left a reader to match a
+                   hue against five small marks and work out which axis was which. Naming
+                   the axis in that colour closes the chain: label, vertex and legend
+                   entry are one object. All three sources clear 4.5:1 on this ground
+                   (cyan 9.44, amber 11.06, violet 7.46). */
+                fill={meta.color}
               >
                 {SHORT[m.key]}
               </text>
@@ -197,7 +223,7 @@ export function ScoreRadar({
     );
 
   return (
-    <figure className="flex w-full max-w-[340px] flex-col items-center gap-2">
+    <figure className={plate ? "flex w-full flex-col items-center gap-2" : "flex w-full max-w-[340px] flex-col items-center gap-2"}>
       {chart}
     </figure>
   );
