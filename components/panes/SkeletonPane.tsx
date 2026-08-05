@@ -286,7 +286,7 @@ export function SkeletonPane({
                       ref={list.setRef(index)}
                       onClick={() => list.onClickIndex(index)}
                       className={cx(
-                        "flex cursor-pointer items-baseline gap-2 border-l-2 px-3 py-1.5",
+                        "flex cursor-pointer flex-wrap items-baseline gap-2 border-l-2 px-3 py-1.5",
                         chosen
                           ? "border-amber bg-amber/10"
                           : "border-transparent hover:bg-surface-2/60",
@@ -322,6 +322,23 @@ export function SkeletonPane({
                       <span className="sr-only">
                         {field.filled ? "Filled." : "Left empty by this card."}
                       </span>
+
+                      {/* What the one line left out, on the row the reader chose.
+                          ------------------------------------------------------------
+                          The author: "on click of the field, it shows the details (this
+                          should be applied also in the card skeleton provided in the
+                          blueprint)". Only the summarising fields carry one, so clicking
+                          a row whose line is already the whole value changes nothing
+                          visible and nothing is promised that does not arrive.
+
+                          `basis-full` rather than a sibling block: the row is one
+                          `role="option"`, and a detail outside it would be a second stop
+                          in the listbox announcing half a field. */}
+                      {chosen && field.detail !== undefined && (
+                        <p className="basis-full whitespace-pre-wrap border-l-2 border-amber/40 pl-3 text-[12px] leading-relaxed text-muted">
+                          {field.detail}
+                        </p>
+                      )}
                     </div>
                   );
                 })}

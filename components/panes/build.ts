@@ -125,6 +125,24 @@ function oneLine(text: string, limit = 88): string {
   return `${(space > limit * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`;
 }
 
+/**
+ * The descriptions a port list cannot carry on one line.
+ *
+ * `name: type` is what the slot shows and it is the half a reader can check against the
+ * DOT; what each port is *for* is written on the card and had nowhere to go.
+ */
+function ports(
+  declared: readonly { name: string; type: string; description?: string }[],
+): { detail?: string } {
+  const written = declared.filter((port) => port.description !== undefined);
+  if (written.length === 0) return {};
+  return {
+    detail: written
+      .map((port) => `${port.name}: ${port.type} — ${port.description ?? ""}`)
+      .join("\n"),
+  };
+}
+
 function list(values: readonly string[], empty: string): { filled: boolean; value: string } {
   return values.length === 0
     ? { filled: false, value: empty }
@@ -149,7 +167,10 @@ function optional(value: string | undefined, empty: string): { filled: boolean; 
  * a gap to be filled turns a complete card into a checklist with items outstanding, and
  * a card that declares no tools and no risk markers has answered both questions.
  */
-function fieldValue(key: string, card: NodeCard): { filled: boolean; value: string } {
+function fieldValue(
+  key: string,
+  card: NodeCard,
+): { filled: boolean; value: string; detail?: string } {
   switch (key) {
     case "id":
       return { filled: true, value: card.id };
@@ -162,7 +183,13 @@ function fieldValue(key: string, card: NodeCard): { filled: boolean; value: stri
       // it. An intake or a retrieval step stands in none of them and says so.
       return list(card.phases, "outside the five");
     case "action":
-      return { filled: true, value: oneLine(card.action) };
+      return {
+        filled: true,
+        value: oneLine(card.action),
+        ...(oneLine(card.action) === card.action.replace(/\s+/g, " ").trim()
+          ? {}
+          : { detail: card.action }),
+      };
     case "spec":
       // The prose itself is in pane 4, on the lines this slot points at. What belongs in
       // a slot is its size and its purpose, which is what doc 1 §0.1.2 makes it: the
@@ -170,6 +197,7 @@ function fieldValue(key: string, card: NodeCard): { filled: boolean; value: stri
       return {
         filled: true,
         value: `${words(card.spec)} words, handed to the agent when the graph is instantiated`,
+        detail: card.spec,
       };
     case "model":
       return optional(card.model, "not named");
@@ -180,15 +208,21 @@ function fieldValue(key: string, card: NodeCard): { filled: boolean; value: stri
     case "params":
       return list(Object.keys(card.params), "none set");
     case "inputs":
-      return list(
-        card.inputs.map((port) => `${port.name}: ${port.type}`),
-        "nothing arrives on a declared port",
-      );
+      return {
+        ...list(
+          card.inputs.map((port) => `${port.name}: ${port.type}`),
+          "nothing arrives on a declared port",
+        ),
+        ...ports(card.inputs),
+      };
     case "outputs":
-      return list(
-        card.outputs.map((port) => `${port.name}: ${port.type}`),
-        "nothing leaves on a declared port",
-      );
+      return {
+        ...list(
+          card.outputs.map((port) => `${port.name}: ${port.type}`),
+          "nothing leaves on a declared port",
+        ),
+        ...ports(card.outputs),
+      };
     case "dependencies":
       return list(card.dependencies, "no upstream node is named");
     case "requires_human":
@@ -202,7 +236,11 @@ function fieldValue(key: string, card: NodeCard): { filled: boolean; value: stri
     case "notes":
       return card.notes === undefined || card.notes.trim() === ""
         ? { filled: false, value: "none" }
-        : { filled: true, value: `${words(card.notes)} words of author's notes` };
+        : {
+            filled: true,
+            value: `${words(card.notes)} words of author's notes`,
+            detail: card.notes,
+          };
     case "version":
       return { filled: true, value: card.version };
     case "author":
@@ -227,8 +265,9 @@ function buildCard(
   const fields: PaneField[] = [];
   for (const block of CARD_BLOCKS) {
     for (const key of block.keys) {
-      const { filled, value } = fieldValue(key, card);
+      const { filled, value, detail } = fieldValue(key, card);
       const field: PaneField = { key, group: block.id, filled, value };
+      if (detail !== undefined && detail.trim() !== "") field.detail = detail;
       const lines = blocks.get(key);
       if (lines !== undefined) field.lines = lines;
       if (key === "dependencies" && card.dependencies.length > 0) {

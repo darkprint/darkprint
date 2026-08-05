@@ -12,6 +12,7 @@ import {
 import { commentsFor, downloadsFor } from "@/lib/data/node-community";
 import { getAuthor } from "@/lib/data/users";
 import { compact, cx } from "@/lib/format";
+import { CARD_BLOCKS } from "@/components/panes/model";
 import { termHref } from "@/lib/href";
 import { Comments } from "@/components/blueprint/Comments";
 import { ForkAction } from "@/components/blueprint/ForkAction";
@@ -100,32 +101,62 @@ const LABEL = "font-mono text-[11px] uppercase tracking-[0.18em] text-dim";
  * every other panel. Measured, not assumed — both borders came back `rgb(34,39,57)`.
  */
 /* ============================================================
-   Every field a card can declare, in the schema's own order.
+   Every field a card can declare, grouped the way the skeleton
+   groups them, with its detail one click away.
 
-   The order is `lib/core/card/schema.ts`'s, not one chosen here:
-   a reader comparing the table against the YAML in `Card source`
-   further down should find the same fields in the same sequence,
-   and any other order makes them do the matching by eye.
+   ── The blocks ──
+   The author: partition the table "following the division
+   provided in a given blueprint related to a node", pointing at
+   `SkeletonPane`. So the groups, their order, their doc
+   references and their one-line purposes are `CARD_BLOCKS` from
+   `components/panes/model.ts`, imported rather than restated: the
+   skeleton and this table are two drawings of one document and a
+   second copy of the grouping would drift.
 
-   `read` returns the value and whether it is empty, because an
-   empty field is an answer on this site and is drawn as one:
-   `text-dim` and a word, never a dash and never a blank.
+   Three fields the card carries are not in doc 1 §3's blocks and
+   are placed here, once, with the reason:
+
+     skill   behaviour. It is literally the behaviour document.
+     mcp     behaviour. What it reaches in order to do the work.
+     cannot  interfaces. §3.3 is "what arrives, what leaves"; a
+             prohibition is the one thing that must not arrive.
+
+   ── Why the detail is a click and not prose ──
+   The author asked the explanations off the default view ("non
+   dobbiamo dire all'utente perché tanto deve essere
+   autoesplicativa") and then asked for them back on demand: "on
+   click of the field, it shows the details". So the resting state
+   is a field and a value, and everything that was prose is behind
+   a `<details>`. Native, so it needs no client component and it
+   opens for a reader without script.
+
+   A row with nothing more to say is a plain `div`. A summary that
+   opens onto nothing is worse than no affordance at all.
    ============================================================ */
 interface FieldValue {
   text: string;
   empty: boolean;
 }
 
+/** What the detail functions are allowed to read, resolved once by the page. */
+interface FieldView {
+  phases: { id: string; label: string; href: string; description?: string }[];
+  tools: { id: string; label: string }[];
+  params_: [string, JsonValue][];
+  risks: { id: string; label: string; description?: string; weight?: number }[];
+  prohibitions: ProhibitionView[];
+  dependencies: DependencyView[];
+  inputs: PortView[];
+  outputs: PortView[];
+}
+
 interface FieldRow {
+  /** A `CARD_BLOCKS` id. */
+  block: string;
   name: string;
-  read: (
-    card: NodeCard,
-    view: {
-      phases: { id: string; label: string }[];
-      tools: { id: string; label: string }[];
-      params_: [string, JsonValue][];
-    },
-  ) => FieldValue;
+  read: (card: NodeCard, view: FieldView) => FieldValue;
+  /** Everything this page used to say in prose, behind the disclosure. */
+  detail?: (card: NodeCard, view: FieldView) => React.ReactNode | undefined;
   /** Where the field is drawn in full, when a panel on this page already does it. */
   seeHref?: string;
   seeLabel?: string;
@@ -138,7 +169,7 @@ function list(values: readonly string[], empty = "none"): FieldValue {
     : { text: values.join(", "), empty: false };
 }
 
-/** A long prose field, measured rather than reprinted. */
+/** A long prose field, measured rather than reprinted in the resting row. */
 function words(value: string | undefined): FieldValue {
   const text = value?.trim() ?? "";
   return text === ""
@@ -152,68 +183,296 @@ function one(value: string | undefined, empty = "not named"): FieldValue {
     : { text: value, empty: false };
 }
 
+/** A paragraph inside a disclosure. One class, so every detail reads the same. */
+function Detail({ children }: { children: React.ReactNode }) {
+  return <p className="text-[13px] leading-relaxed text-muted">{children}</p>;
+}
+
+/** A `name : type` pair with its description, for the two port fields. */
+function Ports({ ports }: { ports: readonly PortView[] }) {
+  return (
+    <div className="flex flex-col gap-2">
+      {ports.map((p) => (
+        <div key={p.name} className="flex flex-col gap-0.5">
+          <span className="font-mono text-[12px] text-fg">
+            {p.name} : {p.type}
+            {!p.required && <span className="text-dim"> (optional)</span>}
+            {!p.known && <span className="text-dim"> (not a vocabulary term)</span>}
+          </span>
+          {p.description !== undefined && (
+            <span className="text-[13px] leading-relaxed text-muted">{p.description}</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const FIELD_ROWS: readonly FieldRow[] = [
-  { name: "id", read: (c) => one(c.id) },
-  { name: "name", read: (c) => one(c.name) },
-  { name: "type", read: (c) => one(c.type) },
+  { block: "identity", name: "id", read: (c) => one(c.id) },
+  { block: "identity", name: "name", read: (c) => one(c.name) },
   {
+    block: "identity",
+    name: "type",
+    read: (c) => one(c.type),
+  },
+  {
+    block: "identity",
     name: "phases",
     read: (_c, v) => list(v.phases.map((p) => p.label), "outside the five"),
+    detail: (_c, v) =>
+      v.phases.length === 0 ? (
+        /* The author's ruling, kept: the five phases describe a blueprint's shape and not
+           every node in one, so declaring none is an answer. It is the case a reader is
+           most likely to click on, which is why it earns a detail where a filled row of
+           labels does not. */
+        <Detail>
+          The phases describe a blueprint&apos;s shape, not every node in one: intake,
+          retrieval and routing are real work none of the five names. Declaring none is an
+          answer, not a blank.
+        </Detail>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {v.phases.map((phase) => (
+            <Detail key={phase.id}>
+              <span className="text-fg">{phase.label}.</span>{" "}
+              {phase.description ??
+                "Outside the five phases the vocabulary closes on, so the card names it and nothing here interprets it."}
+            </Detail>
+          ))}
+          <p className="text-xs leading-relaxed text-dim">
+            A blueprint covers the union of its nodes&apos; phases. That is scope, not
+            completeness.
+          </p>
+        </div>
+      ),
   },
+
   /* A word count, not the sentence. `action` is this page's opening lead verbatim, and
      printing it again 600px below is the duplication `docs/content-reorg` already caught
-     here once. No pointer either: the lead is the first paragraph on the page. */
+     here once. It is behind the click instead, where a reader has asked for it. */
   {
+    block: "behaviour",
     name: "action",
     read: (c) => words(c.action),
+    detail: (c) => (c.action === undefined ? undefined : <Detail>{c.action}</Detail>),
   },
   {
+    block: "behaviour",
     name: "spec",
     read: (c) => words(c.spec),
     seeHref: "#specification",
     seeLabel: "in full above",
   },
-  { name: "model", read: (c) => one(c.model, "whatever the graph supplies") },
-  { name: "agent", read: (c) => one(c.agent) },
-  { name: "skill", read: (c) => one(c.skill) },
-  { name: "tools", read: (_c, v) => list(v.tools.map((t) => t.label)) },
-  { name: "mcp", read: (c) => list(c.mcp) },
-  { name: "params", read: (_c, v) => list(v.params_.map(([k]) => k)) },
   {
+    block: "behaviour",
+    name: "model",
+    read: (c) => one(c.model, "whatever the graph supplies"),
+    detail: (c) =>
+      c.model === undefined ? (
+        <Detail>Whatever the graph or the runner supplies. The ordinary case.</Detail>
+      ) : (
+        <Detail>
+          What its agent runs on.{" "}
+          <span className="text-fg">A default, not a fixed fact:</span> a graph&apos;s{" "}
+          <code className="font-mono text-[12px] text-muted">model_stylesheet</code> can
+          override it.
+        </Detail>
+      ),
+  },
+  {
+    block: "behaviour",
+    name: "agent",
+    read: (c) => one(c.agent),
+    detail: (c) =>
+      c.agent === undefined ? undefined : (
+        <Detail>A label the author chose. Nothing in the engine reads it.</Detail>
+      ),
+  },
+  {
+    block: "behaviour",
+    name: "skill",
+    read: (c) => one(c.skill),
+    detail: (c) =>
+      c.skill === undefined ? (
+        <Detail>
+          None. The card&apos;s <code className="font-mono text-[12px] text-muted">spec</code>{" "}
+          is the whole instruction.
+        </Detail>
+      ) : (
+        <Detail>
+          Where its written procedure lives, relative to the repository you run from.{" "}
+          <span className="text-fg">
+            A pointer only: no skill document travels in a DarkPrint bundle.
+          </span>{" "}
+          You write the file it names.
+        </Detail>
+      ),
+  },
+  {
+    block: "behaviour",
+    name: "tools",
+    read: (_c, v) => list(v.tools.map((t) => t.label)),
+    detail: (_c, v) =>
+      v.tools.length === 0 ? undefined : (
+        <div className="flex flex-wrap gap-1.5">
+          {v.tools.map((tool) => (
+            <TermChip
+              key={tool.id}
+              href={termHref(tool.id)}
+              label={tool.label}
+              aria={`Ontology tool: ${tool.label}`}
+            />
+          ))}
+        </div>
+      ),
+  },
+  {
+    block: "behaviour",
+    name: "mcp",
+    read: (c) => list(c.mcp),
+    detail: (c) =>
+      c.mcp.length === 0 ? undefined : (
+        <Detail>
+          Servers it reaches, named as they are registered on your machine. Free text: the
+          vocabulary has no term for a process somebody installed.
+        </Detail>
+      ),
+  },
+  {
+    block: "behaviour",
+    name: "params",
+    read: (_c, v) => list(v.params_.map(([key]) => key)),
+    detail: (_c, v) =>
+      v.params_.length === 0 ? undefined : (
+        <dl className="divide-y divide-line rounded-md border border-line bg-void/40">
+          {v.params_.map(([key, value]) => (
+            <div
+              key={key}
+              className="grid grid-cols-1 gap-1 px-3 py-2.5 sm:grid-cols-[180px_1fr] sm:gap-4"
+            >
+              <dt className="font-mono text-[12px] text-dim">{key}</dt>
+              <dd className="min-w-0 whitespace-pre-wrap break-words font-mono text-[12px] text-fg">
+                {typeof value === "string" ? value : JSON.stringify(value, null, 2)}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      ),
+  },
+
+  {
+    block: "interfaces",
     name: "inputs",
     read: (c) => list(c.inputs.map((port) => `${port.name} : ${port.type}`)),
-    seeHref: "#interfaces",
-    seeLabel: "with their descriptions above",
+    detail: (_c, v) => (v.inputs.length === 0 ? undefined : <Ports ports={v.inputs} />),
   },
   {
+    block: "interfaces",
     name: "outputs",
     read: (c) => list(c.outputs.map((port) => `${port.name} : ${port.type}`)),
-    seeHref: "#interfaces",
-    seeLabel: "with their descriptions above",
+    detail: (_c, v) => (v.outputs.length === 0 ? undefined : <Ports ports={v.outputs} />),
   },
-  { name: "dependencies", read: (c) => list(c.dependencies) },
   {
+    block: "interfaces",
+    name: "dependencies",
+    read: (c) => list(c.dependencies),
+    detail: (_c, v) =>
+      v.dependencies.length === 0 ? undefined : (
+        <Detail>
+          Cards this one expects to hear from.{" "}
+          {v.dependencies.filter((d) => !d.known).length > 0
+            ? "An entry the registry does not publish names a DOT node rather than a card, so it has no page here."
+            : "Every one of them is published here."}
+        </Detail>
+      ),
+  },
+  {
+    block: "interfaces",
     name: "cannot",
     read: (c) => list(c.cannot),
     seeHref: "#prohibitions",
     seeLabel: "and what enforces it",
+    detail: (_c, v) =>
+      v.prohibitions.length === 0 ? undefined : (
+        <div className="flex flex-col gap-2">
+          {v.prohibitions.map((p) => (
+            <Detail key={p.entry}>
+              <code className="font-mono text-[12px] text-fg">{p.entry}</code>{" "}
+              {p.term === undefined ? (
+                <>
+                  names no data type, so it is a sentence addressed to a reader and{" "}
+                  <span className="text-fg">nothing enforces it</span>.
+                </>
+              ) : (
+                <>
+                  is a data type, so the resolver holds every incoming edge to it: a bundle
+                  carrying it fails with{" "}
+                  <code className="font-mono text-[12px] text-muted">
+                    bundle/prohibition-violated
+                  </code>
+                  .
+                </>
+              )}
+            </Detail>
+          ))}
+        </div>
+      ),
   },
+
   {
+    block: "evaluation",
     name: "requires_human",
     read: (c) => ({ text: String(c.requiresHuman), empty: !c.requiresHuman }),
+    detail: (c) => (
+      <Detail>
+        {c.requiresHuman
+          ? "A person acts here, so no graph containing this node is closed-loop."
+          : "Nobody stands here. The node runs unattended whenever the graph reaches it."}
+      </Detail>
+    ),
   },
   {
+    block: "evaluation",
     name: "risk_markers",
     read: (c) => list(c.riskMarkers),
     seeHref: "#evaluation",
     seeLabel: "priced, in the sidebar",
+    detail: (_c, v) =>
+      v.risks.length === 0 ? undefined : (
+        <div className="flex flex-col gap-2">
+          {v.risks.map((risk) => (
+            <Detail key={risk.id}>
+              <span className="text-fg">{risk.label}.</span>{" "}
+              {risk.description ?? "Not a term the vocabulary knows, so nothing prices it."}
+              {risk.weight !== undefined && (
+                <>
+                  {" "}
+                  Costs{" "}
+                  <span className="text-amber">{formatWeight(risk.weight)}</span> of the
+                  blueprint&apos;s security reading.
+                </>
+              )}
+            </Detail>
+          ))}
+        </div>
+      ),
   },
-  { name: "version", read: (c) => one(c.version) },
-  { name: "ontology_version", read: (c) => one(c.ontologyVersion) },
-  { name: "author", read: (c) => one(c.author, "unattributed") },
-  // No pointer: it is printed directly under this table, and a link to the panel the
-  // link is inside is a link to nowhere a reader wanted to go.
-  { name: "notes", read: (c) => words(c.notes) },
+  {
+    block: "evaluation",
+    name: "notes",
+    read: (c) => words(c.notes),
+    detail: (c) =>
+      c.notes === undefined ? undefined : (
+        <p className="border-l-2 border-line-bright pl-4 text-[13px] leading-relaxed text-muted">
+          <Ticked text={c.notes} />
+        </p>
+      ),
+  },
+
+  { block: "service", name: "version", read: (c) => one(c.version) },
+  { block: "service", name: "ontology_version", read: (c) => one(c.ontologyVersion) },
+  { block: "service", name: "author", read: (c) => one(c.author, "unattributed") },
 ];
 
 function Panel({
@@ -450,9 +709,17 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   /* How many of the card's fields carry something, counted rather than written. A card
      leaving nine fields empty has said nine things, and the count is the one number that
      tells a reader whether they are looking at a full card or a sparse one. */
-  const declared = FIELD_ROWS.filter(
-    (row) => !row.read(card, { phases, tools, params_ }).empty,
-  ).length;
+  const fieldView: FieldView = {
+    phases,
+    tools,
+    params_,
+    risks,
+    prohibitions,
+    dependencies,
+    inputs: card.inputs.map(port),
+    outputs: card.outputs.map(port),
+  };
+  const declared = FIELD_ROWS.filter((row) => !row.read(card, fieldView).empty).length;
   const downloads = downloadsFor(card.id);
   const specWords = card.spec.trim().split(/\s+/).filter(Boolean).length;
 
@@ -826,42 +1093,97 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
               `/concepts` in the `skill` and `model` rows of `WhatACardReaches`. The
               footnote under this table points there rather than restating them per card,
               53 times over. */}
-          <Panel id="fields" label="Every field on this card" meta={`${declared} declared`}>
-            <dl className="flex flex-col">
-              {FIELD_ROWS.map((row) => {
-                const value = row.read(card, { phases, tools, params_ });
+          <Panel id="fields" label="Every field on this card" meta={`${declared} declared, in five blocks`}>
+            <div className="flex flex-col gap-5">
+              {CARD_BLOCKS.map((block) => {
+                const rows = FIELD_ROWS.filter((row) => row.block === block.id);
+                if (rows.length === 0) return null;
                 return (
-                  <div
-                    key={row.name}
-                    className="grid gap-x-4 gap-y-1 border-t border-line/70 py-2 first:border-t-0 first:pt-0 sm:grid-cols-[10rem_minmax(0,1fr)]"
-                  >
-                    <dt className="font-mono text-[12px] text-cyan">{row.name}</dt>
-                    <dd
-                      className={cx(
-                        "min-w-0 font-mono text-[12px] leading-relaxed",
-                        value.empty ? "text-dim" : "text-fg",
-                      )}
-                    >
-                      {value.text}
-                      {/* Where a field has a panel of its own, the row points at it rather
-                          than reprinting it. The at-a-glance list stays one line per field
-                          and the page still says each thing once. */}
-                      {row.seeHref !== undefined && !value.empty && (
-                        <>
-                          {"  "}
-                          <a
-                            href={row.seeHref}
-                            className="text-[11px] text-dim underline decoration-line underline-offset-4 transition-colors hover:text-cyan"
+                  <section key={block.id} className="flex flex-col gap-2">
+                    {/* The block header, in the skeleton's own words. Amber, which the
+                        author asked to stay this page's prominent colour and which is
+                        already what `SkeletonPane` draws these five headings in. */}
+                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                      <h3 className="font-mono text-[12px] uppercase tracking-[0.18em] text-amber">
+                        {block.label}
+                      </h3>
+                      <span className="font-mono text-[11px] text-dim">{block.ref}</span>
+                    </div>
+                    <p className="text-[13px] leading-relaxed text-dim">{block.purpose}</p>
+
+                    <dl className="flex flex-col">
+                      {rows.map((row) => {
+                        const value = row.read(card, fieldView);
+                        const detail = row.detail?.(card, fieldView);
+                        const head = (
+                          <>
+                            <dt className="font-mono text-[12px] text-amber">{row.name}</dt>
+                            <dd
+                              className={cx(
+                                "min-w-0 font-mono text-[12px] leading-relaxed",
+                                value.empty ? "text-dim" : "text-fg",
+                              )}
+                            >
+                              {value.text}
+                              {/* Where a field has a panel of its own, the row points at
+                                  it rather than reprinting it. */}
+                              {row.seeHref !== undefined && !value.empty && (
+                                <>
+                                  {"  "}
+                                  <a
+                                    href={row.seeHref}
+                                    className="text-[11px] text-dim underline decoration-line underline-offset-4 transition-colors hover:text-amber"
+                                  >
+                                    {row.seeLabel}
+                                  </a>
+                                </>
+                              )}
+                            </dd>
+                          </>
+                        );
+
+                        /* A row with nothing more to say stays a plain row. A summary
+                           that opens onto nothing is a worse offer than no affordance,
+                           which is the same rule the vocabulary chips follow. */
+                        if (detail === undefined) {
+                          return (
+                            <div
+                              key={row.name}
+                              className="grid gap-x-4 gap-y-1 border-t border-line/70 py-2 pl-[1.15rem] first:border-t-0 first:pt-0 sm:grid-cols-[9rem_minmax(0,1fr)]"
+                            >
+                              {head}
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <details
+                            key={row.name}
+                            className="group border-t border-line/70 first:border-t-0"
                           >
-                            {row.seeLabel}
-                          </a>
-                        </>
-                      )}
-                    </dd>
-                  </div>
+                            <summary className="relative grid cursor-pointer list-none gap-x-4 gap-y-1 py-2 pl-[1.15rem] transition-colors hover:bg-surface-2/50 sm:grid-cols-[9rem_minmax(0,1fr)] [&::-webkit-details-marker]:hidden">
+                              {/* The marker is drawn rather than left to the browser: a
+                                  native triangle sits outside the grid and pushes the
+                                  first column out of alignment with the rows that have
+                                  no disclosure. `pl` on both branches keeps the two
+                                  kinds of row on one left edge. */}
+                              <span
+                                aria-hidden
+                                className="pointer-events-none absolute left-0 top-[0.6rem] font-mono text-[10px] text-dim transition-transform group-open:rotate-90"
+                              >
+                                &#9656;
+                              </span>
+                              {head}
+                            </summary>
+                            <div className="pb-3 pl-[1.15rem] sm:pl-[10.15rem]">{detail}</div>
+                          </details>
+                        );
+                      })}
+                    </dl>
+                  </section>
                 );
               })}
-            </dl>
+            </div>
 
             <p className="mt-4 border-t border-line pt-3 text-xs leading-relaxed text-dim">
               What each of these fields is for, once rather than on every card:{" "}

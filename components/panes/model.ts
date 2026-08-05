@@ -118,6 +118,17 @@ export interface PaneField {
   filled: boolean;
   /** The value in one line when filled; what the card says instead when it is not. */
   value: string;
+  /**
+   * What the one-line value left out, shown when the row is selected.
+   *
+   * Only the fields that summarise carry one: `action` is cut at 88 characters, `spec`
+   * and `notes` are reduced to a word count, and a port's description never fit on the
+   * line at all. The author asked for it: "on click of the field, it shows the details
+   * (this should be applied also in the card skeleton provided in the blueprint)". A
+   * field whose one line is already the whole value has none, because a row that opens
+   * onto a repeat of itself teaches a reader that clicking does nothing.
+   */
+  detail?: string;
   /** 1-based inclusive line range in the card document, when the document writes the key. */
   lines?: { start: number; end: number };
   /**
