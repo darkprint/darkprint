@@ -398,7 +398,7 @@ export function CardStackFigure({ card, nodes }: { card: NodeCard; nodes: number
       <div className="relative rounded-lg border border-line-bright bg-surface px-4 py-3">
         <div className="flex items-baseline justify-between gap-2 border-b border-line pb-2">
           <span className="truncate font-mono text-xs text-fg">{card.id}</span>
-          <span className="shrink-0 font-mono text-[10px] text-dim">v{card.version}</span>
+          <span className="shrink-0 font-mono text-[11px] text-dim">v{card.version}</span>
         </div>
         <div className="pt-2">
           <Field name="type" value={card.type} />
@@ -464,7 +464,7 @@ export function VocabularyFigure({
       </svg>
 
       <div className="min-w-0 flex-1 rounded-lg border border-line-bright bg-surface px-3 py-2.5">
-        <div className="border-b border-line pb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan">
+        <div className="border-b border-line pb-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan">
           ontology {version}
         </div>
         <dl className="pt-1.5">

@@ -145,7 +145,7 @@ export function CapSlider({
         >
           {readings.map((reading) => (
             <div key={reading.label} className="flex min-w-0 flex-col gap-0.5">
-              <dt className="font-mono text-[9px] uppercase tracking-[0.14em] text-dim">
+              <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
                 {reading.kind}
               </dt>
               <dd className="flex flex-col gap-0.5">

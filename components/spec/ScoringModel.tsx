@@ -63,7 +63,7 @@ import Link from "next/link";
 import { CORE_ONTOLOGY, DARKPRINT_CONFIG } from "@/lib/core";
 import type { DarkprintConfig, OntologyTerm } from "@/lib/core";
 import { getOntologyView } from "@/lib/content";
-import { AUTONOMY_LABELS } from "@/lib/format";
+import { AUTONOMY_LABELS, cx } from "@/lib/format";
 import { termHref } from "@/lib/href";
 import { More } from "@/components/ui/More";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -178,6 +178,43 @@ function bandRows(config: DarkprintConfig): { rule: string; label: string }[] {
 
 const TH = "pb-2 text-left font-normal uppercase tracking-[0.14em] text-[11px] text-dim";
 
+/**
+ * The subtracted amount, and a bar showing it against the whole security budget.
+ *
+ * The column carries this section's entire argument: security opens at the ceiling and
+ * these come off it. Set as bare numerals in a right-aligned column, that argument was
+ * legible only to a reader who read all eight and held them in their head. The costs run
+ * 2.0, 1.5, 1.0 and 0.5, so `arbitrary-code-execution` is half the budget and
+ * `secret-access` a quarter, and that is a shape rather than a list.
+ *
+ * The bar's full width is `CEILING`, which the column header states, so a reader can see
+ * what fraction of everything a marker is worth. `aria-hidden`, because the number beside
+ * it is the same fact and one reading is enough.
+ */
+function Subtracts({ value, dim = false }: { value: number; dim?: boolean }) {
+  return (
+    <div className="flex items-center justify-end gap-2.5">
+      <span
+        aria-hidden
+        className="hidden h-1.5 w-16 overflow-hidden rounded-full bg-line sm:block"
+      >
+        <span
+          className={cx("block h-full rounded-full", dim ? "bg-dim/50" : "bg-amber")}
+          style={{ width: `${Math.min(100, (value / CEILING) * 100)}%` }}
+        />
+      </span>
+      <span
+        className={cx(
+          "w-8 shrink-0 text-right font-mono text-[12px] tabular-nums",
+          dim ? "text-dim" : "text-fg",
+        )}
+      >
+        {weight(value)}
+      </span>
+    </div>
+  );
+}
+
 export function ScoringModel({
   /* Defaulted the way `computeSecurity` and `computeAutonomy` are defaulted, and passed by
      the test with numbers that are not the shipped ones. A panel of figures that cannot be
@@ -223,7 +260,7 @@ export function ScoringModel({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[34rem] border-collapse text-sm">
+            <table className="w-full min-w-[38rem] border-collapse text-sm">
               <caption className="sr-only">
                 Every risk marker the engine weighs, what it means, and how much it
                 subtracts from a security reading.
@@ -237,7 +274,7 @@ export function ScoringModel({
                     what it says about the node
                   </th>
                   <th scope="col" className={`${TH} text-right`}>
-                    subtracts
+                    subtracts <span className="ml-1 normal-case tracking-normal text-faint">of {CEILING}</span>
                   </th>
                 </tr>
               </thead>
@@ -259,8 +296,11 @@ export function ScoringModel({
                       >
                         {row.id}
                       </Link>
+                      {/* Its own line, not `ml-2` inline. In a 15rem column beside a
+                          28-character id the tag broke mid-phrase, "FROM THE" over
+                          "VOCABULARY", and the two halves read as two more markers. */}
                       {row.local && (
-                        <span className="ml-2 text-[11px] uppercase tracking-[0.12em] text-dim">
+                        <span className="mt-1 block text-[11px] uppercase tracking-[0.12em] text-dim">
                           from the vocabulary
                         </span>
                       )}
@@ -268,8 +308,8 @@ export function ScoringModel({
                     <td className="py-2.5 pr-4 leading-relaxed text-muted">
                       {row.what}
                     </td>
-                    <td className="w-[5rem] py-2.5 text-right font-mono text-[12px] text-fg">
-                      {weight(row.weight)}
+                    <td className="w-[8.5rem] py-2.5">
+                      <Subtracts value={row.weight} />
                     </td>
                   </tr>
                 ))}
@@ -290,8 +330,8 @@ export function ScoringModel({
                   <td className="py-2.5 pr-4 leading-relaxed text-dim">
                     A marker neither block above names.
                   </td>
-                  <td className="w-[5rem] py-2.5 text-right font-mono text-[12px] text-dim">
-                    {weight(unknown)}
+                  <td className="w-[8.5rem] py-2.5">
+                    <Subtracts value={unknown} dim />
                   </td>
                 </tr>
               </tbody>

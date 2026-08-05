@@ -155,7 +155,12 @@ export function YamlListing({
             <span
               aria-hidden
               className={cx(
-                "w-6 shrink-0 self-stretch select-none border-l-2 pl-1 text-[9px] leading-[18px] text-cyan/70",
+                /* 10px, not 9. `components/viz/flow.ts` puts the floor at 10 on the grounds
+                   that "the site's own smallest chrome is 11-pixel mono, and a label inside a
+                   drawing has no business being smaller than the caption under it"; a line
+                   number beside 13px code is the same argument. `w-6` still holds three
+                   digits, and this listing runs to two. */
+                "w-6 shrink-0 self-stretch select-none border-l-2 pl-1 text-[10px] leading-[18px] text-cyan/70",
                 marked ? RULE_MARKED : "border-transparent",
                 marked && live && RULE_LIVE[state],
                 marked && live && STEP_LIVE[state],
