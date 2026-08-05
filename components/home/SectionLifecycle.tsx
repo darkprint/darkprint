@@ -73,9 +73,18 @@ function Mono({ children }: { children: string }) {
   return <code className="font-mono text-[0.92em] text-fg">{children}</code>;
 }
 
-function PanelHeading({ index, title }: { index: string; title: string }) {
+function PanelHeading({
+  index,
+  title,
+  mark,
+}: {
+  index: string;
+  title: string;
+  mark: string;
+}) {
   return (
-    <div className="flex items-baseline gap-3">
+    <div className="flex items-center gap-3">
+      <Mark mark={mark} />
       <span className="font-mono text-[11px] tracking-[0.18em] text-dim">{index}</span>
       <h3 className="font-display text-xl font-semibold text-fg">{title}</h3>
     </div>
@@ -83,16 +92,46 @@ function PanelHeading({ index, title }: { index: string; title: string }) {
 }
 
 /**
- * One static character, in a plain box. No `Sheet`, no glow, no animation — see this
- * file's header for why the previous two rounds of illustration both came off.
+ * The mark, beside the heading rather than alone in a box.
+ *
+ * It was a 5xl character centred in a 144px-tall bordered box, which is a lot of panel
+ * spent on one glyph. The mark still earns its place, for the reason this file's header
+ * gives, and it is small now and sits on the heading's own line. `aria-hidden` for the
+ * same reason as before: `PanelHeading` names the step in real text beside it.
  */
-function Glyph({ mark }: { mark: string }) {
+function Mark({ mark }: { mark: string }) {
   return (
-    <div
+    <span
       aria-hidden="true"
-      className="flex h-32 items-center justify-center rounded-lg border border-line bg-surface-2 sm:h-36"
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-line bg-surface-2 font-mono text-base text-cyan"
     >
-      <span className="font-mono text-5xl text-cyan">{mark}</span>
+      {mark}
+    </span>
+  );
+}
+
+/**
+ * What the step actually hands you, in the space the glyph box used to take.
+ *
+ * The author on these three panels: they "si possono rendere più carini come passaggi che
+ * indicano che cosa si possa fare". The empty box was the weak part, and the fix is not a
+ * fourth attempt at an illustration — this file's header records two of those coming off,
+ * ending at "I'd lean toward a solution without the use of blueprint as images". So the
+ * space carries the artefact instead: the command you run, the files you get, the line you
+ * write, the reading you get back. Information rather than decoration, in the register the
+ * rest of the page already uses for a file listing.
+ */
+function Artefact({ lines }: { lines: readonly (readonly [string, string])[] }) {
+  return (
+    <div className="rounded-lg border border-line bg-surface-2/60 px-3 py-2.5">
+      {lines.map(([key, value]) => (
+        <div key={key + value} className="flex items-baseline gap-2 font-mono text-[11px] leading-[1.9]">
+          <span className="shrink-0 text-dim">{key}</span>
+          <span className="min-w-0 truncate text-fg" title={value}>
+            {value}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -113,16 +152,69 @@ export function SectionLifecycle() {
       <div className="container-page">
         <SectionHeading
           eyebrow="What you can do with one"
-          title="A blueprint is a folder you can take away"
-          lead="The registry publishes files. Everything after the download runs on your machine, with your own tools."
+          /* The author did not like the old line as a motto and named what the section has
+             to land instead: DarkPrint is a registry, it publishes files, and everything
+             after the download runs on your machine with your own tools. That was in the
+             lead and the title said "A blueprint is a folder you can take away", which is
+             a smaller claim about the same thing. The title carries it now, and the lead
+             says what the four panels are. */
+          title="The registry publishes files, your machine runs them"
+          lead="Point an agent at it over MCP, or take the folder yourself and wire it into what you already have. Nothing here executes a blueprint, and nothing you build has to come back."
         />
 
-        <div className="mt-10 grid gap-5 lg:grid-cols-3">
-          {/* ---------- 01 · download ---------- */}
-          <article className="panel flex flex-col gap-4 p-6">
-            <PanelHeading index="01" title="Download" />
+        {/* Four, not three, and two across rather than four.
+            ------------------------------------------------------------
+            The author: "qui puoi anche connetterti [con] MCP al registry in modo tale da
+            connetterlo con un tuo Claude Code, for example, e [via] MCP andare a pescare
+            all'interno dei blueprint o dei node quello che fa più al caso tuo rispetto a
+            quel tipo di workflow che stai facendo. Quindi questo è molto importante."
 
-            <Glyph mark="↓" />
+            It is the way in that needs no download at all, so it is first. Four narrow
+            columns would put each artefact box under 250px and the file names in them
+            would truncate; two across gives every panel the width its listing needs. */}
+        <div className="mt-10 grid gap-5 md:grid-cols-2">
+          {/* ---------- 01 · connect ---------- */}
+          <article className="panel flex flex-col gap-4 p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <PanelHeading index="01" title="Connect" mark="⇄" />
+              <ComingSoonBadge />
+            </div>
+
+            <Artefact
+              lines={[
+                ["$", "claude mcp add darkprint -- npx -y darkprint mcp"],
+                ["→", "every blueprint and node card, as resources"],
+              ]}
+            />
+
+            {/* Doc 2 §0.4: the panel that describes an unbuilt thing says so beside the
+                thing, not in a footnote. `/install` carries the same sentence and
+                `honesty.test.ts` holds it there. */}
+            <p className="text-sm leading-relaxed text-muted">
+              Point <Mono>Claude Code</Mono>, Gemini or any MCP client at the registry and
+              let it pull the blueprint or the card that fits the work in front of it. The
+              server is not built yet, so this is what the setup will look like.
+            </p>
+
+            <Link href="/install" className={linkCls}>
+              See the setup
+            </Link>
+          </article>
+
+          {/* ---------- 02 · download ---------- */}
+          <article className="panel flex flex-col gap-4 p-6">
+            <PanelHeading index="02" title="Download" mark="↓" />
+
+            {/* The bundle's own file names, from `lib/content/bundle-export.ts`, so a
+                reader who takes the folder finds what this box promised. */}
+            <Artefact
+              lines={[
+                ["", "blueprint.dot"],
+                ["", "factory.dot"],
+                ["", "cards/code-builder@1.0.0.yaml"],
+                ["", "README.md · AGENTS.md"],
+              ]}
+            />
 
             <p className="text-sm leading-relaxed text-muted">
               The folder is real, and <Mono>factory.dot</Mono> runs. Nothing here executes
@@ -134,11 +226,18 @@ export function SectionLifecycle() {
             </Link>
           </article>
 
-          {/* ---------- 02 · compose ---------- */}
+          {/* ---------- 03 · compose ---------- */}
           <article className="panel flex flex-col gap-4 p-6">
-            <PanelHeading index="02" title="Compose" />
+            <PanelHeading index="03" title="Compose" mark="⋈" />
 
-            <Glyph mark="⋈" />
+            <Artefact
+              lines={[
+                ["", "// yours.dot"],
+                ["", "build   -> qa_gate;"],
+                ["", "qa_gate -> release;"],
+                ["→", "one graph's exit, another's entry"],
+              ]}
+            />
 
             <p className="text-sm leading-relaxed text-muted">
               A DOT file is text. Wire one graph&rsquo;s exit into another&rsquo;s entry, or
@@ -150,14 +249,19 @@ export function SectionLifecycle() {
             </Link>
           </article>
 
-          {/* ---------- 03 · upload ---------- */}
+          {/* ---------- 04 · upload ---------- */}
           <article className="panel flex flex-col gap-4 p-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <PanelHeading index="03" title="Upload yours" />
+              <PanelHeading index="04" title="Upload yours" mark="↑" />
               <ComingSoonBadge />
             </div>
 
-            <Glyph mark="↑" />
+            <Artefact
+              lines={[
+                ["in", "your bundle, in the browser tab"],
+                ["out", "autonomy class · security reading"],
+              ]}
+            />
 
             {/* Doc 2 §0.4, and §1 of this pass's own spec: this is the landing's one
                 highest-honesty-risk sentence, so it says what `/upload` does and stops
@@ -167,9 +271,8 @@ export function SectionLifecycle() {
                 would be wrong about the one flow this panel links to. */}
             <p className="text-sm leading-relaxed text-muted">
               <Mono>/upload</Mono> reads a whole bundle, the topology and the cards it pins,
-              not a single card alone, inside your browser tab. It names the autonomy class
-              and scores the security. Nothing leaves the tab, and publishing so other
-              people can find it is not built yet.
+              not a single card alone, inside your browser tab. Nothing leaves the tab, and
+              publishing so other people can find it is not built yet.
             </p>
 
             <Link href="/upload" className={linkCls}>

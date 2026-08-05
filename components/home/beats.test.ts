@@ -277,9 +277,13 @@ describe("beat 4's three marks carry no information a screen reader needs", () =
    * has caught before ran in the direction of forgetting a name; a glyph that forgot to
    * hide itself would be the same bug from the other side.
    */
-  it("marks all three ↓ ⋈ ↑ as decorative", () => {
+  it("marks all four ⇄ ↓ ⋈ ↑ as decorative", () => {
+    /* Four now: `⇄` arrived with the MCP panel the author asked for. The marks also moved
+       out of a 144px box each and onto the heading's own line, so the wrapper this walks
+       back to is the heading row rather than the box, and the `aria-hidden` it finds is on
+       the mark's own span. Same property, one element in. */
     const html = beat("4 the lifecycle");
-    for (const mark of ["↓", "⋈", "↑"]) {
+    for (const mark of ["⇄", "↓", "⋈", "↑"]) {
       const at = html.indexOf(`>${mark}<`);
       expect(at, `${mark} is not in the markup`).toBeGreaterThan(0);
       const wrapper = html.lastIndexOf("<div", at);
@@ -292,7 +296,8 @@ describe("beat 4's three marks carry no information a screen reader needs", () =
 
   it("carries the panel titles as real, visible text instead", () => {
     const html = beat("4 the lifecycle");
-    for (const title of ["Download", "Compose", "Upload yours"]) expect(html).toContain(title);
+    for (const title of ["Connect", "Download", "Compose", "Upload yours"])
+      expect(html).toContain(title);
   });
 });
 
