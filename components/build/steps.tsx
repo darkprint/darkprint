@@ -77,6 +77,7 @@ import type { UncappedReading } from "./state";
 export type StepId =
   | "whole"
   | "node"
+  | "vocabulary"
   | "output"
   | "switch"
   | "approval"
@@ -84,7 +85,7 @@ export type StepId =
   | "download";
 
 /** Which of the three readings a step is talking about, so the pane opens on it. */
-export type StepReading = "skeleton" | "dot" | "card";
+export type StepReading = "skeleton" | "dot" | "card" | "vocabulary";
 
 export interface StepDef {
   id: StepId;
@@ -106,6 +107,20 @@ export interface StepDef {
 export const STEPS: readonly StepDef[] = [
   { id: "whole", nav: "The blueprint", title: "Five nodes, one blueprint", reading: "dot" },
   { id: "node", nav: "One node", title: "One node, four blocks", reading: "skeleton" },
+  /* The third component, which this path did not walk.
+     ------------------------------------------------------------
+     Steps 1 and 2 introduced the graph and the card and then went straight to the
+     choices, so the reader made four decisions about files written against a vocabulary
+     nobody had shown them. `/what-a-blueprint-is`, the item above this one in the Learn
+     menu, teaches three parts; this path taught two. It is third because it is the part
+     that only means anything once you have seen a word in the DOT and the same word in a
+     card, which is exactly what steps 1 and 2 just did. */
+  {
+    id: "vocabulary",
+    nav: "The vocabulary",
+    title: "The words both files use",
+    reading: "vocabulary",
+  },
   {
     id: "output",
     nav: "What it builds",
@@ -256,7 +271,37 @@ export function NodeStep() {
   );
 }
 
-/* --------------------- 3. choice 1 --------------------- */
+export function VocabularyStep() {
+  return (
+    <>
+      <p className={P}>
+        The graph and the card you have just read are written against the same closed list
+        of terms. When the DOT says a node covers{" "}
+        <code className="font-mono text-fg">implementation</code>{" "}and the card says the
+        same, that is one term in one vocabulary and not two files that happen to agree.
+      </p>
+      <More summary="Why a closed list, and what it buys">
+        <p className={SMALL}>
+          A checker can only catch a disagreement between two files if it knows what
+          agreement looks like. A free-text field lets two authors write{" "}
+          <code className="font-mono text-fg">implementation</code>{" "}and{" "}
+          <code className="font-mono text-fg">impl</code>{" "}and leaves nothing able to tell
+          that they meant one thing. Every term in the reading beside this one resolves, or
+          the bundle does not.
+        </p>
+        <p className={SMALL}>
+          It is also what makes a prohibition enforceable. An entry in{" "}
+          <code className="font-mono text-fg">cannot</code>{" "}that names a data type is a
+          rule the resolver holds every incoming edge to; an entry naming anything else is
+          a sentence addressed to a reader. That is the difference the next four steps turn
+          on, and it exists because the name is a term rather than a word.
+        </p>
+      </More>
+    </>
+  );
+}
+
+/* --------------------- 4. choice 1 --------------------- */
 
 export function OutputStep({ digest }: { digest?: string }) {
   return (

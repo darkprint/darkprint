@@ -55,6 +55,7 @@ import { CARD_BLOCKS, type PaneFocus, type PaneModel } from "./model";
    and never renders in these panes, and nothing in this component states a limit. */
 export function SkeletonPane({
   paneNumber,
+  showNumber = true,
   model,
   focus,
   onSelectField,
@@ -63,6 +64,17 @@ export function SkeletonPane({
   className,
 }: {
   paneNumber: number;
+  /**
+   * Draw the pane's ordinal beside its title.
+   *
+   * True for the archive's four-pane view, where the numbers are the view's own vocabulary
+   * and nothing competes with them. False on `/build`, which carries a seven-step bar in
+   * the same visual register a few pixels above: a reader met a chip reading **3** for
+   * "What it builds" and a chip reading **3** for "DOT" on one screen, and the two
+   * numberings are unrelated. The id stays either way, because `aria-labelledby` points at
+   * it.
+   */
+  showNumber?: boolean;
   model: PaneModel;
   focus: PaneFocus;
   onSelectField: (key: string) => void;
@@ -153,7 +165,7 @@ export function SkeletonPane({
           <span className="text-amber" aria-hidden>
             ▦
           </span>
-          <span className="text-dim">{paneNumber}</span> The card skeleton
+          {showNumber && <span className="text-dim">{paneNumber}</span>} The card skeleton
         </h3>
         <div className="flex items-center gap-3">
           <span className="font-mono text-[11px] text-dim">

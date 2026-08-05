@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { CORE_ONTOLOGY, ontologyView } from "@/lib/core";
 import { Button } from "@/components/ui/Button";
 import type { PaneModel, PaneSelection } from "@/components/panes/model";
 import { cx } from "@/lib/format";
@@ -30,12 +31,18 @@ import {
 } from "./path-state";
 import { ScorePanel, ScoreStrip } from "./ScorePanel";
 import { buildState, uncappedReading } from "./state";
+
+/* The same vocabulary `app/build/page.tsx` walks every combination against and the same
+   one `buildState` resolves each bundle with, so the pane cannot show a term the engine
+   did not use to resolve the thing beside it. */
+const ONTOLOGY = ontologyView(CORE_ONTOLOGY);
 import {
   ApprovalIntro,
   ApprovalReading,
   LoopDetail,
   LoopIntro,
   NodeStep,
+  VocabularyStep,
   OutputStep,
   STEPS,
   SwitchIntro,
@@ -356,6 +363,7 @@ export function GuidedPath() {
             />
           )}
           {step.id === "node" && <NodeStep />}
+          {step.id === "vocabulary" && <VocabularyStep />}
           {step.id === "output" && (
             <OutputStep
               {...(base.blueprint === undefined ? {} : { digest: base.blueprint.digest })}
@@ -396,6 +404,9 @@ export function GuidedPath() {
             <BuildPanes
               model={view.paneModel}
               graph={view.graph}
+              cards={view.blueprint?.nodes ?? []}
+              ontology={ONTOLOGY}
+              ontologyVersion={CORE_ONTOLOGY.version}
               selection={selection}
               onSelect={setSelection}
               {...(choice === undefined ? {} : { choice })}

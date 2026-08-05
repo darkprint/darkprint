@@ -51,6 +51,7 @@ export interface NodeChoice {
 
 export function ChoiceGraphPane({
   paneNumber,
+  showNumber = true,
   graph,
   model,
   focus,
@@ -61,6 +62,17 @@ export function ChoiceGraphPane({
   className,
 }: {
   paneNumber: number;
+  /**
+   * Draw the pane's ordinal beside its title.
+   *
+   * True for the archive's four-pane view, where the numbers are the view's own vocabulary
+   * and nothing competes with them. False on `/build`, which carries a seven-step bar in
+   * the same visual register a few pixels above: a reader met a chip reading **3** for
+   * "What it builds" and a chip reading **3** for "DOT" on one screen, and the two
+   * numberings are unrelated. The id stays either way, because `aria-labelledby` points at
+   * it.
+   */
+  showNumber?: boolean;
   graph: BlueprintGraphData;
   model: PaneModel;
   focus: PaneFocus;
@@ -161,7 +173,7 @@ export function ChoiceGraphPane({
           <span className="text-cyan" aria-hidden>
             ◈
           </span>
-          <span className="text-dim">{paneNumber}</span>{" "}The graph
+          {showNumber && <span className="text-dim">{paneNumber}</span>}{" "}The graph
         </h3>
         <span className="font-mono text-[11px] text-dim">
           {model.nodes.length} nodes · {graph.edges.length} edges

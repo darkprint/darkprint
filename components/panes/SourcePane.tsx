@@ -42,6 +42,7 @@ const MARKER: Record<Tone, string> = { primary: "▸", secondary: "·", plain: "
 
 export function SourcePane({
   paneNumber,
+  showNumber = true,
   title,
   language,
   meta,
@@ -61,6 +62,17 @@ export function SourcePane({
 }: {
   /** Which of the four this is, so the panes can be referred to by number. */
   paneNumber: number;
+  /**
+   * Draw the pane's ordinal beside its title.
+   *
+   * True for the archive's four-pane view, where the numbers are the view's own vocabulary
+   * and nothing competes with them. False on `/build`, which carries a seven-step bar in
+   * the same visual register a few pixels above: a reader met a chip reading **3** for
+   * "What it builds" and a chip reading **3** for "DOT" on one screen, and the two
+   * numberings are unrelated. The id stays either way, because `aria-labelledby` points at
+   * it.
+   */
+  showNumber?: boolean;
   title: string;
   /** "DOT" or "YAML" — used in the copy button's accessible name. */
   language: string;
@@ -183,7 +195,7 @@ export function SourcePane({
           <span className="text-cyan" aria-hidden>
             ▤
           </span>
-          <span className="text-dim">{paneNumber}</span> {title}
+          {showNumber && <span className="text-dim">{paneNumber}</span>} {title}
         </h3>
         <div className="flex items-center gap-2">
           {meta !== undefined && meta !== "" && (

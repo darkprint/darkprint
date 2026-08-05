@@ -9,7 +9,7 @@ import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
 export const metadata: Metadata = {
   title: "Build your own blueprint",
   description:
-    "The guided path. Start from the five-node starter, make three choices that stay in the artefact, and finish holding a blueprint that runs from your own command line. Every score on the page is computed by the same static analysis the registry uses. Nothing is uploaded and there is nowhere to save it yet.",
+    "The guided path through a blueprint's three parts: the graph, a card for every node, and the vocabulary both are written against. Start from the five-node starter, make three choices that stay in the artefact, and finish holding a blueprint that runs from your own command line. Every score is computed by the same static analysis the registry uses. Nothing is uploaded and there is nowhere to save it yet.",
 };
 
 /* ============================================================
@@ -114,11 +114,24 @@ export default function BuildPage() {
           className="mt-3"
           as="h1"
           title="Build your own blueprint"
-          lead="About an hour. Start from the five-node starter, make three choices, and leave with a blueprint that runs from your own command line."
+          /* Says what the reader is about to work on, not only how long it takes.
+             ------------------------------------------------------------
+             The author, on this page: "very confused. You should totally revisit under
+             the goal of providing support of what are the components of a blueprint."
+
+             The lead promised an hour, a starter and three choices, and named none of the
+             parts those choices are choices *about*. `/what-a-blueprint-is` is the item
+             above this one in the Learn menu and it teaches three components; a reader
+             arriving from it met four panes numbered 2, 3 and 4, named `Skeleton`, `DOT`
+             and `Card`, and no vocabulary anywhere. The three parts are named here, in
+             the same words and the same order that page uses, so the two pages are
+             teaching one thing. */
+          lead="About an hour. A blueprint is three files that check each other: a graph, a card for every node in it, and one vocabulary both are written against. You start from the five-node starter, make three choices, and every choice changes all three."
         />
         <p className="mt-4 text-[15px] leading-relaxed text-muted">
-          Every score is computed in this tab, by the analysis the gallery runs, on the
-          exact bytes you download. Nothing is uploaded.
+          Each of the three is beside the drawing below, and every score on the page is
+          computed in this tab, by the analysis the gallery runs, on the exact bytes you
+          download. Nothing is uploaded.
         </p>
         {/* Doc 2 §5.7's count, stated rather than claimed: the number is the length of the
             enumeration the build just walked through the engine. */}

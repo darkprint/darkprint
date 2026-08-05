@@ -13,8 +13,10 @@ import {
   type PaneSelection,
 } from "@/components/panes/model";
 import { cx } from "@/lib/format";
+import type { NodeCard, OntologyView } from "@/lib/core";
 import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
 import { ChoiceGraphPane, type NodeChoice } from "./ChoiceGraphPane";
+import { VocabularyPane } from "./VocabularyPane";
 import type { StepId, StepReading } from "./steps";
 
 /* ============================================================
@@ -58,27 +60,59 @@ import type { StepId, StepReading } from "./steps";
 const NO_LINES: readonly number[] = [];
 
 /**
- * The three documents, in doc 2 §5.1's order, numbered as the archive numbers them.
+ * The readings, named by which component of a blueprint each one is a view of.
  *
- * `label` is one word because the pane under the tablist opens with its own full heading
- * and its filename, and two tellings of "The card skeleton" a line apart is the duplication
- * the density pass exists to remove. `name` is what a screen reader hears, since a tab
- * called "Card" beside one called "Skeleton" is thin without the pane visible beside it.
+ * ── What they were called, and why that was wrong ──
+ * `Skeleton`, `DOT` and `Card`, chipped with the pane numbers 2, 3 and 4. Two problems,
+ * and the author named the page "very confused" over both.
+ *
+ * The numbers collided. `/build` draws a seven-step bar in the same visual register a few
+ * pixels above this row, so one screen carried a chip reading **3** for "What it builds"
+ * and a chip reading **3** for "DOT", from two unrelated numberings. They are off here
+ * (`showNumber`) and on everywhere the four-pane view has the screen to itself.
+ *
+ * And the names were formats, not parts. `/what-a-blueprint-is` is the item above this
+ * one in the Learn menu and it teaches three components: a graph, a card for every node,
+ * one vocabulary both are written against. A reader arriving from it found four numbered
+ * panes, none of them called any of the three, and the vocabulary absent from the page
+ * whose subject is assembling these files.
+ *
+ * So `group` is the component and `label` is which view of it. Two entries say `card`
+ * because a card genuinely has two readings here, its shape and its document, and saying
+ * so is the point rather than a collision.
  */
 const READINGS: readonly {
   id: StepReading;
   paneNumber: number;
+  /** Which of a blueprint's three parts this is a reading of. */
+  group: string;
   label: string;
   name: string;
 }[] = [
-  { id: "skeleton", paneNumber: 2, label: "Skeleton", name: "Pane 2, the card skeleton" },
-  { id: "dot", paneNumber: 3, label: "DOT", name: "Pane 3, the DOT" },
-  { id: "card", paneNumber: 4, label: "Card", name: "Pane 4, the card document" },
+  { id: "dot", paneNumber: 3, group: "graph", label: "", name: "The graph, as DOT" },
+  {
+    id: "skeleton",
+    paneNumber: 2,
+    group: "card",
+    label: "shape",
+    name: "The card, its shape",
+  },
+  { id: "card", paneNumber: 4, group: "card", label: "file", name: "The card, as YAML" },
+  {
+    id: "vocabulary",
+    paneNumber: 5,
+    group: "vocabulary",
+    label: "",
+    name: "The vocabulary this blueprint spends",
+  },
 ];
 
 export function BuildPanes({
   model,
   graph,
+  cards,
+  ontology,
+  ontologyVersion,
   selection,
   onSelect,
   choice,
@@ -89,6 +123,10 @@ export function BuildPanes({
 }: {
   model: PaneModel;
   graph: BlueprintGraphData;
+  /** The resolved nodes, for the vocabulary reading. See `VocabularyPane`. */
+  cards: readonly { nodeId: string; card: NodeCard }[];
+  ontology: OntologyView;
+  ontologyVersion: string;
   selection: PaneSelection;
   onSelect: (selection: PaneSelection) => void;
   choice?: NodeChoice;
@@ -248,6 +286,7 @@ export function BuildPanes({
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)] lg:items-start">
         <ChoiceGraphPane
           paneNumber={1}
+          showNumber={false}
           graph={graph}
           model={model}
           focus={focus}
@@ -262,7 +301,12 @@ export function BuildPanes({
             role="tablist"
             aria-label="Readings of the selected node"
             onKeyDown={onTabKeyDown}
-            className="flex min-w-0 gap-1 overflow-x-auto"
+            /* Wraps rather than scrolls. `overflow-x-auto` put the fourth tab past the
+               right edge of a 330px column, so the vocabulary, the component this page
+               was missing entirely, was reachable only by a reader who thought to drag a
+               tab row sideways. Two rows of two is worse than one row of four and far
+               better than a hidden quarter of the interface. */
+            className="flex min-w-0 flex-wrap gap-1"
           >
             {READINGS.map((entry, index) => {
               const active = entry.id === open;
@@ -287,10 +331,22 @@ export function BuildPanes({
                       : "border-transparent text-dim hover:text-muted",
                   )}
                 >
-                  <span className={active ? "text-cyan" : "text-faint"} aria-hidden>
-                    {entry.paneNumber}
+                  {/* The component, then which view of it. The component word is what
+                      replaced the colliding ordinal, so the chip that used to say "3"
+                      now says what a reader is about to look at. */}
+                  {/* `text-dim` when inactive, not `text-faint`: the token's own comment
+                      reserves faint for "decorative separators only", and these are the
+                      controls that reach three of a blueprint's four readings. */}
+                  <span className={cx("whitespace-nowrap", active ? "text-cyan" : "text-dim")}>
+                    {entry.group}
                   </span>
-                  <span className="whitespace-nowrap">{entry.label}</span>
+                  {entry.label !== "" && (
+                    <span
+                      className={cx("whitespace-nowrap", active ? "text-muted" : "text-dim")}
+                    >
+                      {entry.label}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -305,6 +361,7 @@ export function BuildPanes({
             {open === "skeleton" && (
               <SkeletonPane
                 paneNumber={2}
+                showNumber={false}
                 model={model}
                 focus={focus}
                 onSelectField={selectField}
@@ -315,6 +372,7 @@ export function BuildPanes({
             {open === "dot" && (
               <SourcePane
                 paneNumber={3}
+                showNumber={false}
                 title="The DOT"
                 language="DOT"
                 meta={model.dotFile}
@@ -335,9 +393,32 @@ export function BuildPanes({
               />
             )}
 
+            {open === "vocabulary" && (
+              /* Framed like the other readings rather than drawn bare, so the four sit in
+                 one box behind one tablist. */
+              <section
+                aria-labelledby="pane-5-heading"
+                className="panel flex min-w-0 flex-col gap-3 p-4"
+              >
+                <h3
+                  id="pane-5-heading"
+                  className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim"
+                >
+                  The vocabulary
+                </h3>
+                <VocabularyPane
+                  nodes={cards}
+                  view={ontology}
+                  version={ontologyVersion}
+                  selectedNodeId={focus.node.nodeId}
+                />
+              </section>
+            )}
+
             {open === "card" && (
               <SourcePane
                 paneNumber={4}
+                showNumber={false}
                 title="The card"
                 language="YAML"
                 meta={focus.card === undefined ? undefined : `${focus.card.ref}.yaml`}
