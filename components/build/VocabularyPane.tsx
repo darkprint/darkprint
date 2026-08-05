@@ -35,13 +35,16 @@ import { cx } from "@/lib/format";
    "how many" and the term page answers "what does it mean".
 
    ── Why counts and not a list of everything ──
-   The vocabulary holds 38 terms across four kinds. A pane
-   printing all of them would be a copy of `/ontology`, which is a
-   route away and better at it. What this pane knows and that page
-   cannot is which of those terms *this* blueprint spends, and
-   `n of m` is the fact a reader is actually after: five phases of
-   five is complete lifecycle coverage, one risk marker of ten is
-   a blast radius.
+   A pane printing every term the vocabulary holds would be a copy
+   of `/ontology`, which is a route away and better at it. What
+   this pane knows and that page cannot is which of those terms
+   *this* blueprint spends, and `n of m` is the fact a reader is
+   actually after: five phases of five is complete lifecycle
+   coverage, and a risk marker used is a blast radius priced.
+
+   No total is written down here. `architecture/ontology.md`
+   records that a written count goes stale the moment content
+   lands, so every one of them is `view.byKind(kind).length`.
    ============================================================ */
 
 /** The kinds a card can spend, in the order a reader meets them. */
@@ -93,6 +96,20 @@ function spendersByTerm(
     for (const m of card.riskMarkers) add(m, nodeId);
   }
   return out;
+}
+
+/** How many terms this bundle spends, against how many the vocabulary holds. */
+export function termTally(
+  nodes: readonly { nodeId: string; card: NodeCard }[],
+  view: OntologyView,
+): { spent: number; total: number } {
+  let spent = 0;
+  let total = 0;
+  for (const { kind } of KINDS) {
+    spent += spendersByTerm(nodes, kind, view).size;
+    total += view.byKind(kind).length;
+  }
+  return { spent, total };
 }
 
 export function VocabularyPane({

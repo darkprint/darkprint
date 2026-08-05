@@ -16,7 +16,7 @@ import { cx } from "@/lib/format";
 import type { NodeCard, OntologyView } from "@/lib/core";
 import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
 import { ChoiceGraphPane, type NodeChoice } from "./ChoiceGraphPane";
-import { VocabularyPane } from "./VocabularyPane";
+import { termTally, VocabularyPane } from "./VocabularyPane";
 import type { StepId, StepReading } from "./steps";
 
 /* ============================================================
@@ -60,52 +60,65 @@ import type { StepId, StepReading } from "./steps";
 const NO_LINES: readonly number[] = [];
 
 /**
- * The readings, named by which component of a blueprint each one is a view of.
+ * The three parts of a blueprint, and which readings each one has.
  *
- * ── What they were called, and why that was wrong ──
- * `Skeleton`, `DOT` and `Card`, chipped with the pane numbers 2, 3 and 4. Two problems,
- * and the author named the page "very confused" over both.
+ * ── Two passes, and why the first one did not land ──
+ * The row was `Skeleton`, `DOT` and `Card`, chipped with the pane numbers 2, 3 and 4.
+ * The first pass renamed them to component words and added the missing vocabulary, and
+ * the author's answer was "it seems to me the same as before". Fair: renaming four small
+ * tabs inside one of three columns leaves the page the same shape, and the components
+ * were still something a reader had to go looking for.
  *
- * The numbers collided. `/build` draws a seven-step bar in the same visual register a few
- * pixels above this row, so one screen carried a chip reading **3** for "What it builds"
- * and a chip reading **3** for "DOT", from two unrelated numberings. They are off here
- * (`showNumber`) and on everywhere the four-pane view has the screen to itself.
+ * So the readings are not a tab strip any more. They are three named rows, always on
+ * screen, each carrying a live fact about the reader's own bundle, and the one that is
+ * open shows its document underneath. Whatever step you are on, the page says a blueprint
+ * is three files and tells you what is currently in each.
  *
- * And the names were formats, not parts. `/what-a-blueprint-is` is the item above this
- * one in the Learn menu and it teaches three components: a graph, a card for every node,
- * one vocabulary both are written against. A reader arriving from it found four numbered
- * panes, none of them called any of the three, and the vocabulary absent from the page
- * whose subject is assembling these files.
+ * The card keeps two readings, its shape and its document, because it genuinely has two
+ * and the skeleton is what makes the YAML mean anything. They sit inside the card's own
+ * row rather than as peers of the three, which is the relation they actually have.
  *
- * So `group` is the component and `label` is which view of it. Two entries say `card`
- * because a card genuinely has two readings here, its shape and its document, and saying
- * so is the point rather than a collision.
+ * ── The ordinals ──
+ * 01, 02, 03 are the components, and they are the only numbers left in this region.
+ * `/build` draws a step bar in the same register above, so the pane ordinals 2, 3 and 4
+ * are off here (`showNumber`) and unchanged wherever the four-pane view has the screen to
+ * itself: one screen used to carry a chip reading 3 for "What it builds" and a chip
+ * reading 3 for "DOT", from two unrelated numberings.
  */
-const READINGS: readonly {
-  id: StepReading;
-  paneNumber: number;
-  /** Which of a blueprint's three parts this is a reading of. */
-  group: string;
-  label: string;
+const PARTS: readonly {
+  id: string;
+  ordinal: string;
   name: string;
+  /** The readings behind this part, in the order a reader meets them. */
+  views: readonly { id: StepReading; label: string; name: string }[];
 }[] = [
-  { id: "dot", paneNumber: 3, group: "graph", label: "", name: "The graph, as DOT" },
   {
-    id: "skeleton",
-    paneNumber: 2,
-    group: "card",
-    label: "shape",
-    name: "The card, its shape",
+    id: "graph",
+    ordinal: "01",
+    name: "the graph",
+    views: [{ id: "dot", label: "the file", name: "The graph, as DOT" }],
   },
-  { id: "card", paneNumber: 4, group: "card", label: "file", name: "The card, as YAML" },
+  {
+    id: "cards",
+    ordinal: "02",
+    name: "the cards",
+    views: [
+      { id: "skeleton", label: "its shape", name: "The card, its shape" },
+      { id: "card", label: "the file", name: "The card, as YAML" },
+    ],
+  },
   {
     id: "vocabulary",
-    paneNumber: 5,
-    group: "vocabulary",
-    label: "",
-    name: "The vocabulary this blueprint spends",
+    ordinal: "03",
+    name: "the vocabulary",
+    views: [
+      { id: "vocabulary", label: "the terms", name: "The vocabulary this blueprint spends" },
+    ],
   },
 ];
+
+/** Flat, for the arrow-key order and for finding which part owns the open reading. */
+const READINGS = PARTS.flatMap((part) => part.views.map((view) => ({ ...view, part: part.id })));
 
 export function BuildPanes({
   model,
@@ -170,8 +183,13 @@ export function BuildPanes({
   function onTabKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const at = READINGS.findIndex((entry) => entry.id === open);
     let next = -1;
-    if (event.key === "ArrowRight") next = (at + 1) % READINGS.length;
-    else if (event.key === "ArrowLeft") next = (at - 1 + READINGS.length) % READINGS.length;
+    /* Down and Up, because the list is vertical now and `aria-orientation` says so.
+       Right and Left stay bound as well: the card's two views sit side by side inside
+       their row, so both axes are real on screen. */
+    if (event.key === "ArrowDown" || event.key === "ArrowRight")
+      next = (at + 1) % READINGS.length;
+    else if (event.key === "ArrowUp" || event.key === "ArrowLeft")
+      next = (at - 1 + READINGS.length) % READINGS.length;
     else if (event.key === "Home") next = 0;
     else if (event.key === "End") next = READINGS.length - 1;
     else return;
@@ -179,6 +197,27 @@ export function BuildPanes({
     setOpen(READINGS[next].id);
     tabRefs.current[next]?.focus();
   }
+
+  /* One live fact per component, off the reader's own bundle.
+     ------------------------------------------------------------
+     A row that only said "the graph" would be a label, and the author's note on the first
+     pass was that renaming labels changed nothing. These are counts that move: an absent
+     edge appearing when the demonstration switch goes on, a card ref changing with the
+     selection, a term joining the vocabulary when a choice fires a risk marker. */
+  const facts: Record<string, string> = useMemo(() => {
+    const tally = termTally(cards, ontology);
+    return {
+      /* No filename. With `blueprint.dot` in front, the string is 43 characters and the
+         row truncates at "2 abse…" on a 342px column, which loses the count that is the
+         whole reason the absent edge is drawn. The pane below opens with the filename in
+         its own header, so it was said twice within 200px anyway. */
+      graph: `${model.nodes.length} nodes · ${graph.edges.length} edges${
+        model.absences.length === 0 ? "" : ` · ${model.absences.length} absent`
+      }`,
+      cards: `${cards.length} cards, one per node`,
+      vocabulary: `ontology ${ontologyVersion} · ${tally.spent} of ${tally.total} terms spent`,
+    };
+  }, [cards, ontology, ontologyVersion, model, graph.edges.length]);
 
   const dotMeanings = useMemo(
     () => model.dot.split("\n").map((_, i) => lineMeaning(model, i + 1)),
@@ -297,57 +336,110 @@ export function BuildPanes({
         />
 
         <div className="flex min-w-0 flex-col gap-2">
+          {/* The region says what it is, in the open.
+              ------------------------------------------------------------
+              Step 1 carried a `More` called "How the panes below fit together" holding
+              exactly this: that the drawing comes from the DOT, that the DOT pins a card
+              on every node, and that selecting anything moves the rest. Orientation about
+              the interface, folded behind a summary, on the one step where a reader has
+              not yet worked out there is anything to orient to. The three rows below now
+              say the first two parts of it by existing, so what is left is the sentence
+              they cannot draw, and it is not folded. */}
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
+              {/* Not "a blueprint is three files", which the page's lead already says
+                  four lines above this on step 1. That sentence is the general claim; this
+                  region is the reader's own bundle, and the facts on the rows are its
+                  counts, so the label says whose. */}
+              This blueprint, in three files
+            </h3>
+            <p className="font-mono text-[11px] text-dim">
+              select anything, the rest follow
+            </p>
+          </div>
+
           <div
             role="tablist"
-            aria-label="Readings of the selected node"
+            aria-orientation="vertical"
+            aria-label="The three parts of this blueprint"
             onKeyDown={onTabKeyDown}
-            /* Wraps rather than scrolls. `overflow-x-auto` put the fourth tab past the
-               right edge of a 330px column, so the vocabulary, the component this page
-               was missing entirely, was reachable only by a reader who thought to drag a
-               tab row sideways. Two rows of two is worse than one row of four and far
-               better than a hidden quarter of the interface. */
-            className="flex min-w-0 flex-wrap gap-1"
+            className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-line"
           >
-            {READINGS.map((entry, index) => {
-              const active = entry.id === open;
+            {PARTS.map((part) => {
+              const openHere = part.views.some((view) => view.id === open);
               return (
-                <button
-                  key={entry.id}
-                  type="button"
-                  role="tab"
-                  id={`${tabsId}-tab-${entry.id}`}
-                  aria-label={entry.name}
-                  aria-selected={active}
-                  aria-controls={`${tabsId}-panel-${entry.id}`}
-                  tabIndex={active ? 0 : -1}
-                  ref={(element) => {
-                    tabRefs.current[index] = element;
-                  }}
-                  onClick={() => setOpen(entry.id)}
+                <div
+                  key={part.id}
                   className={cx(
-                    "flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 font-mono text-[11px] transition-colors",
-                    active
-                      ? "border-line-bright bg-surface-2 text-fg"
-                      : "border-transparent text-dim hover:text-muted",
+                    "min-w-0 border-b border-line px-3 py-2.5 transition-colors last:border-b-0",
+                    openHere ? "bg-surface-2" : "bg-transparent",
                   )}
                 >
-                  {/* The component, then which view of it. The component word is what
-                      replaced the colliding ordinal, so the chip that used to say "3"
-                      now says what a reader is about to look at. */}
-                  {/* `text-dim` when inactive, not `text-faint`: the token's own comment
-                      reserves faint for "decorative separators only", and these are the
-                      controls that reach three of a blueprint's four readings. */}
-                  <span className={cx("whitespace-nowrap", active ? "text-cyan" : "text-dim")}>
-                    {entry.group}
-                  </span>
-                  {entry.label !== "" && (
+                  {/* Two lines, always, whichever part it is. Laid out as one wrapping
+                      row the three came out ragged: the fact sat inline beside "the
+                      cards" and wrapped under "the graph", so the buttons landed on a
+                      different line in each and the three rows were three heights. The
+                      name and its views share the first line, and the fact takes the
+                      second at full width, which is the only way it fits without
+                      truncating in a 388px column. */}
+                  <div className="flex min-w-0 items-baseline gap-3">
                     <span
-                      className={cx("whitespace-nowrap", active ? "text-muted" : "text-dim")}
+                      aria-hidden
+                      className={cx(
+                        "shrink-0 font-mono text-[11px] tabular-nums",
+                        openHere ? "text-cyan" : "text-faint",
+                      )}
                     >
-                      {entry.label}
+                      {part.ordinal}
                     </span>
-                  )}
-                </button>
+                    <span
+                      className={cx(
+                        "min-w-0 truncate font-mono text-[12px]",
+                        openHere ? "text-fg" : "text-dim",
+                      )}
+                    >
+                      {part.name}
+                    </span>
+                    <span className="ml-auto flex shrink-0 gap-1">
+                      {part.views.map((view) => {
+                        const active = view.id === open;
+                        const index = READINGS.findIndex((entry) => entry.id === view.id);
+                        return (
+                          <button
+                            key={view.id}
+                            type="button"
+                            role="tab"
+                            id={`${tabsId}-tab-${view.id}`}
+                            aria-label={view.name}
+                            aria-selected={active}
+                            aria-controls={`${tabsId}-panel-${view.id}`}
+                            tabIndex={active ? 0 : -1}
+                            ref={(element) => {
+                              tabRefs.current[index] = element;
+                            }}
+                            onClick={() => setOpen(view.id)}
+                            className={cx(
+                              "whitespace-nowrap rounded border px-2 py-0.5 font-mono text-[11px] transition-colors",
+                              active
+                                ? "border-cyan/50 bg-cyan/10 text-fg"
+                                : "border-line text-dim hover:border-line-bright hover:text-muted",
+                            )}
+                          >
+                            {view.label}
+                          </button>
+                        );
+                      })}
+                    </span>
+                  </div>
+
+                  {/* The live fact. This is what makes the row a reading of the reader's
+                      own bundle rather than a label: the counts move as choices are made,
+                      an absent edge appears when the demonstration switch goes on, and a
+                      term joins the vocabulary when a choice fires a risk marker. */}
+                  <p className="mt-1 min-w-0 truncate pl-[1.9rem] font-mono text-[11px] text-dim">
+                    {facts[part.id]}
+                  </p>
+                </div>
               );
             })}
           </div>

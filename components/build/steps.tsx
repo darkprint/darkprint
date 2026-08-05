@@ -230,13 +230,6 @@ export function WholeStep({
           Doc 2 §0.4 asks for the claim on the surface, not once per screenful. Cutting a
           telling that a reader can see at the same time as the one that survives is not
           the claim going quiet; deleting the last one on a surface would be. */}
-      <More summary="How the panes below fit together">
-        <p className={SMALL}>
-          The drawing comes from the DOT. The DOT pins a card on every node, and the card is
-          one of the files you download at the end. Select a node, a line of the DOT or a
-          field of the card, and the rest follow.
-        </p>
-      </More>
     </>
   );
 }
