@@ -61,6 +61,20 @@ function Drawing({ graph, className }: { graph: LandingGraph; className: string 
   return (
     <FlowScene
       {...flow.scene}
+      /* Names on, always.
+         ------------------------------------------------------------
+         `useLuminousFlow` returns `labels: "hover"` the moment a scene animates, and on
+         this one that left five identical glowing discs with nothing written on them. The
+         beat's caption says "five nodes, five edges" and the drawing showed five dots: a
+         reader could not tell a planner from a release gate, and a reader without a mouse
+         never could at all. `beats.test.ts` states the rule this broke, in the site's own
+         words: "a figure whose meaning is only available to a mouse user is a broken
+         figure."
+
+         Safe to turn on rather than a judgement call: `scene-labels.test.ts` measures
+         every label box in both of this section's frames, so a name that would collide or
+         leave the sheet fails the suite. After the spread, so it wins over the hook. */
+      labels="always"
       width={graph.width}
       height={graph.height}
       label={LANDING_GRAPH_LABEL}

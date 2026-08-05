@@ -126,8 +126,22 @@ function Part({
 }) {
   return (
     <div
-      className={`grid items-center gap-6 lg:col-span-8 lg:grid-cols-[1.15fr_1fr] lg:gap-8 ${
-        side === "left" ? "lg:col-start-1" : "lg:col-start-5"
+      /* Nine columns of twelve, and the figure capped rather than a fraction.
+         ------------------------------------------------------------
+         The author: "mantieni a S ma estendi la lunghezza orizzontale possibile per il
+         testo (questo ha come effetto di riempire di più e ridurre il numero di righe)".
+
+         The band was eight columns split `1.15fr 1fr`, which left the prose 342px, about
+         40 characters a line. Widening the band alone would have widened the figure with
+         it, so the figure takes a fixed 26rem, which is the width
+         `components/learn/figures.test.ts` measures its type against, and the prose takes
+         everything else: 416px, about 49 characters.
+
+         Nine rather than ten because the S has to survive. The empty quarter still
+         alternates sides and still reads as a step; at ten columns it is a sixth and the
+         alternation stops being visible. */
+      className={`grid items-center gap-6 lg:col-span-9 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:gap-8 ${
+        side === "left" ? "lg:col-start-1" : "lg:col-start-4"
       }`}
     >
       <div className={side === "right" ? "lg:order-2" : undefined}>{figure}</div>

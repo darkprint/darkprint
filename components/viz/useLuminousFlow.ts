@@ -174,15 +174,33 @@ export function useLuminousFlow<T extends SVGSVGElement = SVGSVGElement>(
         utils.set(sparks, { opacity: 0 });
         utils.set(absent, { opacity: 0 });
 
-        timeline
-          .add(nodes, { opacity: 1, duration: 420 }, stagger(90))
-          .add(blooms, { scale: 1, duration: 560, ease: "outCubic" }, stagger(90))
-          .add(lines, { draw: "0 1", duration: 560 }, stagger(80, { start: 340 }))
-          .add(pulses, { opacity: 1, duration: 420 }, stagger(80, { start: 720 }))
-          .add(sparks, { opacity: 1, duration: 420 }, stagger(80, { start: 720 }))
-          /* Last, and alone. A reader who has just watched five edges land is the reader
-             most likely to notice the sixth one that never connects. */
-          .add(absent, { opacity: 1, duration: 640 }, "+=180");
+        /* Every step guarded on having a target.
+           ------------------------------------------------------------
+           `spark` is an opt-in prop on `FlowEdge` and the landing's graph does not set
+           it, so `sparks` is an empty NodeList. Handing that to `timeline.add` makes
+           anime.js log "No target found" and breaks the chain, and because the six
+           `utils.set` calls above have already run, the whole scene stays at its hidden
+           state. The landing's centrepiece rendered as an empty graticule: 70 circles in
+           the DOM, every one of them at opacity 0, and nothing in the console but a
+           warning.
+
+           A scene omitting a glyph kind is ordinary, not an error. Five of the site's
+           scenes carry no spark at all. So each step is added only if it has something
+           to animate, and a scene that uses three of the six still plays the three. */
+        if (nodes.length > 0)
+          timeline.add(nodes, { opacity: 1, duration: 420 }, stagger(90));
+        if (blooms.length > 0)
+          timeline.add(blooms, { scale: 1, duration: 560, ease: "outCubic" }, stagger(90));
+        if (lines.length > 0)
+          timeline.add(lines, { draw: "0 1", duration: 560 }, stagger(80, { start: 340 }));
+        if (pulses.length > 0)
+          timeline.add(pulses, { opacity: 1, duration: 420 }, stagger(80, { start: 720 }));
+        if (sparks.length > 0)
+          timeline.add(sparks, { opacity: 1, duration: 420 }, stagger(80, { start: 720 }));
+        /* Last, and alone. A reader who has just watched five edges land is the reader
+           most likely to notice the sixth one that never connects. */
+        if (absent.length > 0)
+          timeline.add(absent, { opacity: 1, duration: 640 }, "+=180");
       }
 
       if (pulse && pulses.length > 0) {

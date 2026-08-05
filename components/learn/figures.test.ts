@@ -59,14 +59,17 @@ function typeSizes(markup: string): { viewBox: number; sizes: number[] }[] {
 /**
  * The placements, each with the CSS width it occupies.
  *
- * `/what-a-blueprint-is` draws its three parts as bands of `lg:col-span-8` on a
- * twelve-column grid inside `container-page`, split `1.15fr 1fr` with a `2rem` gap. That
- * is 1152 × 8/12 = 768 for the band, 394 for the figure column, less the frame's `p-5`
- * either side. Below `lg` the band is one column; below `sm` the compact placement takes
+ * `/what-a-blueprint-is` draws its three parts as bands of `lg:col-span-9` on a
+ * twelve-column grid inside `container-page`, split `minmax(0,26rem) minmax(0,1fr)` with
+ * a `2rem` gap. The band is 1152 × 9/12 = 864 and the figure column is capped at 26rem =
+ * 416, less the frame's `p-5` either side. The cap is why this number is stable: the band
+ * widened from eight columns to nine to give the prose a longer line, and a fractional
+ * split would have handed the figure the extra width and quietly changed what this file
+ * measures. Below `lg` the band is one column; below `sm` the compact placement takes
  * over at phone width.
  */
 const PLACEMENTS = [
-  { name: "graph figure, wide band on a 1440 page", compact: false, css: 394 - 40 },
+  { name: "graph figure, wide band on a 1440 page", compact: false, css: 416 - 40 },
   { name: "graph figure, one column at 768", compact: false, css: 720 - 40 },
   { name: "graph figure, compact on a 390 phone", compact: true, css: 342 - 40 },
 ];
