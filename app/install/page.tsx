@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { InstallTabs } from "@/components/install/InstallTabs";
+import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
 
 export const metadata: Metadata = {
   title: "Install",
@@ -34,8 +35,8 @@ export default function InstallPage() {
       </div>
 
       <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-relaxed text-muted">
-        Once live, an MCP server here will expose every published blueprint and node card
-        as a resource an agent can read directly, from the same registry{" "}
+        An MCP server here will expose every published blueprint and node card as a
+        resource an agent can read directly, from the same registry{" "}
         <Link
           href="/blueprints"
           className="underline decoration-line-bright underline-offset-4 hover:text-fg"
@@ -44,6 +45,22 @@ export default function InstallPage() {
         </Link>{" "}
         already browses by hand.
       </p>
+
+      <OnwardRoutes
+        className="mt-10"
+        routes={[
+          {
+            href: "/blueprints",
+            label: "Browse the blueprints",
+            blurb: "What an MCP client would be pointed at, readable today.",
+          },
+          {
+            href: "/build",
+            label: "Build one yourself",
+            blurb: "About an hour, ending in files on your machine.",
+          },
+        ]}
+      />
     </div>
   );
 }

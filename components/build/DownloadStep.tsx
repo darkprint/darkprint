@@ -173,10 +173,13 @@ export function DownloadStep({
             engine&rsquo;s own words, so you can confirm that what you have is what was
             scored on this page.
           </p>
-          <p className="text-[13px] leading-relaxed text-muted">
-            Keep the folder somewhere you will find it again. This page cannot hand it back
-            to you.
-          </p>
+          {/* "Keep the folder somewhere you will find it again. This page cannot hand
+              it back to you." stood here and is gone: it was the third statement of the
+              same fact inside 460px of step 7. `DownloadPanel` says "Execution happens on
+              your machine" at the top of the panel and "There is nowhere to save this yet"
+              290px below it, both of which say it better and neither of which repeats the
+              other. Repetition turns honesty into anxiety, which is the failure mode the
+              site-wide disclaimer rule was written for. */}
         </div>
       </div>
 

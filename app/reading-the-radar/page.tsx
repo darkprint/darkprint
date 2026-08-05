@@ -5,6 +5,7 @@ import { allBlueprints } from "@/lib/content";
 import { METRIC_SOURCE_META } from "@/lib/format";
 import { ScoreRadar } from "@/components/ui/ScoreRadar";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
 
 /* ============================================================
    /reading-the-radar — the scorecard, taken apart.
@@ -56,10 +57,19 @@ function Callout({
   n,
   title,
   children,
+  extra,
 }: {
   n: string;
   title: string;
   children: React.ReactNode;
+  /**
+   * A figure belonging to this callout: the source legend under 03, the axis list under
+   * 04. Both used to be bare `<li>`s of their own, so the `<ol>` held seven items while
+   * the page printed five numbers — a screen reader said "item 5 of 7" where the page
+   * said **04**, and every callout after 03 was announced at the wrong position. They
+   * belong to the callout above them, so they sit inside it.
+   */
+  extra?: React.ReactNode;
 }) {
   return (
     <li className="flex gap-4">
@@ -67,6 +77,7 @@ function Callout({
       <div className="flex flex-col gap-1">
         <h3 className="font-display text-base font-semibold text-fg">{title}</h3>
         <p className="text-sm leading-relaxed text-muted">{children}</p>
+        {extra !== undefined && <div className="mt-2">{extra}</div>}
       </div>
     </li>
   );
@@ -97,7 +108,13 @@ export default function ReadingTheRadarPage() {
         </div>
       </header>
 
-      <section className="border-t border-line bg-surface py-16">
+      {/* The page had no `h2` anywhere: one `h1` and then five sibling `h3`s, so a
+          heading-navigation pass jumped from the title into an unlabelled flat run and
+          the outline had a hole at level two. */}
+      <section aria-labelledby="how-to-read" className="border-t border-line bg-surface py-16">
+        <h2 id="how-to-read" className="sr-only">
+          How to read it
+        </h2>
         <div className="container-page grid gap-10 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:gap-14">
           <div className="flex flex-col gap-3">
             <div className="panel flex justify-center p-6">
@@ -128,13 +145,11 @@ export default function ReadingTheRadarPage() {
               </Callout>
             )}
 
-            <Callout n="03" title="The colour of a vertex says where its number came from">
-              Not all six are the same kind of fact, so the drawing does not pretend they
-              are.
-            </Callout>
-
-            <li className="flex flex-col gap-2 pl-8">
-              {sources.map((source) => {
+            <Callout
+              n="03" title="The colour of a vertex says where its number came from"
+              extra={
+                <div className="flex flex-col gap-2">
+                  {sources.map((source) => {
                 const meta = METRIC_SOURCE_META[source];
                 return (
                   <div key={source} className="flex items-baseline gap-3 text-sm">
@@ -150,25 +165,32 @@ export default function ReadingTheRadarPage() {
                   </div>
                 );
               })}
-            </li>
+                </div>
+              }
+            >
+              Not all six are the same kind of fact, so the drawing does not pretend they
+              are.
+            </Callout>
 
-            <Callout n="04" title="What each row means">
+            <Callout
+              n="04"
+              title="What each row means"
+              extra={
+                <dl className="flex flex-col gap-3">
+                  {sample.metrics.map((m) => (
+                    <div key={m.key}>
+                      <dt className="text-xs font-medium text-fg">{m.label}</dt>
+                      <dd className="mt-0.5 text-xs leading-snug text-dim">{m.detail}</dd>
+                    </div>
+                  ))}
+                </dl>
+              }
+            >
               {/* Moved here from a `<More>` inside `MetricBars`, which drew it folded on
                   every blueprint page. */}
               The list below says what each axis is measuring, in this blueprint&rsquo;s
               own terms.
             </Callout>
-
-            <li className="pl-8">
-              <dl className="flex flex-col gap-3">
-                {sample.metrics.map((m) => (
-                  <div key={m.key}>
-                    <dt className="text-xs font-medium text-fg">{m.label}</dt>
-                    <dd className="mt-0.5 text-xs leading-snug text-dim">{m.detail}</dd>
-                  </div>
-                ))}
-              </dl>
-            </li>
 
             <Callout n="05" title="Where the numbers come from">
               This page is about the picture. The scale behind it, every weight, and what
@@ -178,6 +200,26 @@ export default function ReadingTheRadarPage() {
               </Link>
             </Callout>
           </ol>
+
+          {/* The return trip. This page's own header comment says a reader wanting the
+              arithmetic "is sent across" to the grading page; that page is last in its
+              sequence, so its only tail box is `← Previous` and the link back here did
+              not exist. */}
+          <OnwardRoutes
+            className="mt-10"
+            routes={[
+              {
+                href: "/spec/scoring",
+                label: "How a blueprint is graded",
+                blurb: "The weights behind the picture, and what fires a risk marker.",
+              },
+              {
+                href: "/blueprints",
+                label: "The blueprint gallery",
+                blurb: "Nine scorecards to read the chart against.",
+              },
+            ]}
+          />
         </div>
       </section>
     </>

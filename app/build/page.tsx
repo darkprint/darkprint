@@ -4,6 +4,7 @@ import { buildStarterBundle, starterSlug } from "@/lib/starter/variants";
 import { Eyebrow, SectionHeading } from "@/components/ui/SectionHeading";
 import { ALL_COMBINATIONS } from "@/components/build/choices";
 import { GuidedPath } from "@/components/build/GuidedPath";
+import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
 
 export const metadata: Metadata = {
   title: "Build your own blueprint",
@@ -130,6 +131,26 @@ export default function BuildPage() {
       <div className="mt-10">
         <GuidedPath />
       </div>
+
+      {/* The one outbound link on this page was `/upload`, inside a 13px `text-dim`
+          paragraph two thirds of the way down, and the page ended on a download with
+          nowhere to go. A reader who has just built a blueprint has two obvious next
+          moves and neither was offered. */}
+      <OnwardRoutes
+        className="mt-12"
+        routes={[
+          {
+            href: "/upload",
+            label: "Validate a bundle",
+            blurb: "Run the same checks against a folder you already have.",
+          },
+          {
+            href: "/install",
+            label: "Point a client at it",
+            blurb: "What setup will look like once the registry serves MCP.",
+          },
+        ]}
+      />
     </div>
   );
 }

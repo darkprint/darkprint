@@ -7,6 +7,7 @@ import {
   WhatACardReaches,
 } from "@/components/explain/ConceptFigures";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
 
 /* ============================================================
    /concepts — eval, harness, rubric, tool, MCP, skill, and the
@@ -224,6 +225,24 @@ export default function ConceptsPage() {
             practice and this vocabulary has no opinion on it, which is worth saying rather
             than drawing a box for.
           </Correction>
+
+          {/* This page taught six words and then stopped. The two places those words are
+              load-bearing are the card that declares them and the library of cards. */}
+          <OnwardRoutes
+            className="mt-4"
+            routes={[
+              {
+                href: "/spec/card",
+                label: "The node card, in YAML",
+                blurb: "Where these words become fields the engine reads.",
+              },
+              {
+                href: "/nodes",
+                label: "The node library",
+                blurb: "Every card in the registry, and what each one declares.",
+              },
+            ]}
+          />
         </div>
       </section>
     </>
