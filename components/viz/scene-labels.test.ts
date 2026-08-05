@@ -38,7 +38,6 @@ import { getNodeCard, getOntologyView } from "@/lib/content";
 import { WhichTasksGlance } from "@/components/explain/WhichTasksGlance";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionLevels } from "@/components/home/SectionLevels";
-import { SectionNodeIsCard } from "@/components/home/SectionNodeIsCard";
 import { SectionRoles } from "@/components/home/SectionRoles";
 import { DezoomGraph } from "@/components/home/nodecard/DezoomGraph";
 import { IsolationWall } from "@/components/howto/IsolationWall";
@@ -117,11 +116,12 @@ const ROSTER: readonly SceneEntry[] = [
     frames: 2,
     render: () => framesOf(createElement(SectionBlueprint)),
   },
-  {
-    files: ["components/home/SectionNodeIsCard.tsx"],
-    frames: 1,
-    render: () => framesOf(createElement(SectionNodeIsCard)),
-  },
+  // `components/home/SectionNodeIsCard.tsx` had an entry here and the file draws no
+  // scene now. The beat carried a lit disc with a blank document hanging off it; the
+  // author asked for the annotated listing back in its place ("reprohose in the home ...
+  // the idea reported in spec/card"), so the figure is `CardWalk`, which is DOM text and
+  // not an `<svg>`. Its labels are HTML at 11px and up, which is a floor the browser
+  // enforces, and `beats.test.ts` still holds the beat's copy.
   {
     files: ["components/home/SectionLevels.tsx"],
     frames: 5,

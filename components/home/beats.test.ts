@@ -201,7 +201,11 @@ describe("every figure on the landing is reachable without a pointer", () => {
   // has none left (this file's own header, and `SectionLifecycle`'s in full): the author's
   // second verdict took the luminous-flow register itself off this beat, and what
   // replaced it is checked in its own describe block below rather than here.
-  it.each(["2 the blueprint", "3 the card"])(
+  /* Beat 3 was in this list and is not a luminous figure any more: it draws `CardWalk`,
+     a listing beside a list, both of them DOM text. The two cases below are about labels
+     inside an `<svg>`, which is where a label can be hidden behind a hover attribute or
+     be unreachable without a pointer. HTML text is neither. */
+  it.each(["2 the blueprint"])(
     "%s shows its labels when nothing has written the hover attribute",
     (name) => {
       const html = beat(name);
@@ -218,7 +222,11 @@ describe("every figure on the landing is reachable without a pointer", () => {
     },
   );
 
-  it.each(["2 the blueprint", "3 the card"])(
+  /* Beat 3 was in this list and is not a luminous figure any more: it draws `CardWalk`,
+     a listing beside a list, both of them DOM text. The two cases below are about labels
+     inside an `<svg>`, which is where a label can be hidden behind a hover attribute or
+     be unreachable without a pointer. HTML text is neither. */
+  it.each(["2 the blueprint"])(
     "%s gives every labelled glyph a focus stop and an accessible name",
     (name) => {
       const html = beat(name);
