@@ -69,7 +69,7 @@ export function ProfileHeader({ author }: { author: Author }) {
             label="Reputation"
             accent="var(--color-violet)"
           />
-          <span className="max-w-[14rem] font-mono text-[10px] leading-relaxed text-dim">
+          <span className="max-w-[14rem] font-mono text-[11px] leading-relaxed text-dim">
             <span className="text-amber" aria-hidden>
               ◐
             </span>{" "}

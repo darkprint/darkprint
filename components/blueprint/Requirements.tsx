@@ -60,7 +60,7 @@ function ChipList({
                 >
                   {item}
                   {contextWindow !== undefined && (
-                    <span className="text-[10px] text-dim">
+                    <span className="text-[11px] text-dim">
                       · {formatContextWindow(contextWindow)}
                     </span>
                   )}

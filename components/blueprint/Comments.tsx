@@ -116,7 +116,7 @@ function NoteList({ comments }: { comments: Comment[] }) {
                   {c.author.displayName}
                 </span>
                 {c.author.validator && (
-                  <span className="font-mono text-[10px] uppercase tracking-wide text-cyan">
+                  <span className="font-mono text-[11px] uppercase tracking-wide text-cyan">
                     ✦ validator
                   </span>
                 )}

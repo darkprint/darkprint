@@ -31,7 +31,7 @@ import { autonomyStatement, cx } from "@/lib/format";
    prints its own working.
    ============================================================ */
 
-const LABEL = "font-mono text-[10px] uppercase tracking-[0.18em] text-dim";
+const LABEL = "font-mono text-[11px] uppercase tracking-[0.18em] text-dim";
 
 /** The band, stated. No fill, no remainder, no ramp. */
 function Band({ children }: { children: React.ReactNode }) {
@@ -63,7 +63,7 @@ function Was({ value }: { value: string | number | undefined }) {
 
 function Rationale({ text }: { text: string }) {
   return (
-    <p className="rounded border border-line bg-surface-2 px-2.5 py-1.5 font-mono text-[10px] leading-relaxed text-dim">
+    <p className="rounded border border-line bg-surface-2 px-2.5 py-1.5 font-mono text-[11px] leading-relaxed text-dim">
       {text}
     </p>
   );
@@ -215,7 +215,7 @@ export function ScorePanel({
           Your blueprint
         </Heading>
         {digest !== undefined && (
-          <span className="font-mono text-[10px] text-dim" title={digest}>
+          <span className="font-mono text-[11px] text-dim" title={digest}>
             {shortDigest(digest)}
           </span>
         )}
@@ -237,7 +237,7 @@ export function ScorePanel({
           reading alone would be the one surface on the site scoring a rejected graph. */}
       {errors.length > 0 && (
         <div className="flex flex-col gap-2 rounded border border-signal/40 bg-signal/5 px-2.5 py-2">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-signal">
+          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-signal">
             <span aria-hidden>✕ </span>does not resolve
           </span>
           {errors.map((diagnostic) => (
@@ -322,7 +322,7 @@ export function ScorePanel({
                       <code className="font-mono text-[11px] text-signal">
                         {finding.marker}
                       </code>
-                      <code className="font-mono text-[10px] text-dim">
+                      <code className="font-mono text-[11px] text-dim">
                         {finding.nodeId}
                       </code>
                     </span>
@@ -343,7 +343,7 @@ export function ScorePanel({
         {budget !== undefined && (
           <>
             <Band>at most {budget.modelCallsAtMost} model calls</Band>
-            <p className="font-mono text-[10px] leading-relaxed text-dim">
+            <p className="font-mono text-[11px] leading-relaxed text-dim">
               planner 1 + builder 1 + tester {budget.testerRunsAtMost} + debugger{" "}
               {budget.debuggerRunsAtMost}, at a cap of {budget.maxIterations}
             </p>
@@ -351,7 +351,7 @@ export function ScorePanel({
         )}
         {/* Doc 1 §8: cost and runtime are reported by whoever runs the blueprint, never
             measured here. The ceiling above is the part that can be read off the graph. */}
-        <p className="text-[10px] leading-relaxed text-dim">
+        <p className="text-[11px] leading-relaxed text-dim">
           A worst case, read off the graph. What a run costs in money and time is reported
           by whoever runs it: execution happens on your machine, so DarkPrint has no way to
           measure either.

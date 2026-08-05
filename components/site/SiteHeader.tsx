@@ -240,7 +240,7 @@ export function SiteHeader() {
               Learn
               <span
                 aria-hidden
-                className="text-[10px] transition-transform group-open:rotate-180"
+                className="text-[11px] transition-transform group-open:rotate-180"
               >
                 ▾
               </span>

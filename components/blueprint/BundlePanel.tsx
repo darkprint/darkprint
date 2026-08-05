@@ -103,7 +103,7 @@ export function BundlePanel({
           <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
             Bundle
           </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
             content-addressed
           </span>
         </div>
@@ -199,7 +199,7 @@ export function BundlePanel({
             {SEVERITY_META.warning.glyph}{" "}
           </span>
           <span
-            className="font-mono text-[10px] uppercase tracking-[0.14em]"
+            className="font-mono text-[11px] uppercase tracking-[0.14em]"
             style={{ color: SEVERITY_META.warning.color }}
           >
             {severityCount(summarize(explainedNotes))}

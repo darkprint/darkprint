@@ -209,10 +209,10 @@ export function SkeletonPane({
                     blockIndex === 0 ? "border-b" : "border-y",
                   )}
                 >
-                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-amber">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-amber">
                     {block.label}
                   </span>
-                  <span className="font-mono text-[10px] text-dim">{block.ref}</span>
+                  <span className="font-mono text-[11px] text-dim">{block.ref}</span>
                   <span className="w-full text-[11px] leading-snug text-dim">
                     {block.purpose}
                   </span>
@@ -250,7 +250,7 @@ export function SkeletonPane({
                           >
                             {entry.label}
                           </span>
-                          <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
+                          <span className="ml-auto font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
                             not in this prose
                           </span>
                         </span>
@@ -300,7 +300,7 @@ export function SkeletonPane({
                       <span className="min-w-0 text-[12px] leading-snug text-muted">
                         {field.value}
                       </span>
-                      <span className="ml-auto shrink-0 font-mono text-[10px] text-dim">
+                      <span className="ml-auto shrink-0 font-mono text-[11px] text-dim">
                         {field.lines === undefined
                           ? "not written"
                           : field.lines.start === field.lines.end

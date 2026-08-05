@@ -154,7 +154,7 @@ export function SectionExample() {
                 document citation. Quoted rather than paraphrased: what the analyzer
                 says is checkable, and prose written to sound like it is not. */}
             <div className="rounded border border-line bg-surface-2 px-3 py-2">
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
+              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
                 what the analyzer says
               </span>
               <p className="mt-1 font-mono text-[11px] leading-relaxed text-muted">

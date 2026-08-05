@@ -155,7 +155,7 @@ function SeverityWord({ severity }: { severity: Diagnostic["severity"] }) {
   const meta = SEVERITY_META[severity];
   return (
     <span
-      className="font-mono text-[10px] uppercase tracking-[0.14em]"
+      className="font-mono text-[11px] uppercase tracking-[0.14em]"
       style={{ color: meta.color }}
     >
       {meta.word}
@@ -314,7 +314,7 @@ function ContributionRow({
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <span
-            className="font-mono text-[10px] uppercase tracking-[0.14em]"
+            className="font-mono text-[11px] uppercase tracking-[0.14em]"
             style={{ color }}
           >
             {word}
@@ -622,7 +622,7 @@ function FindingRow({
             {finding.marker}
           </code>
           <span
-            className="inline-flex items-baseline gap-1 font-mono text-[10px] uppercase tracking-[0.14em]"
+            className="inline-flex items-baseline gap-1 font-mono text-[11px] uppercase tracking-[0.14em]"
             style={{ color: provenance.color }}
           >
             <span aria-hidden>{provenance.glyph}</span>
@@ -747,7 +747,7 @@ function BlindChannelRow({
             engine graded it is something the length pass gets to drop. */}
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <SeverityWord severity={diagnostic.severity} />
-          <code className="font-mono text-[10px] break-all text-dim">
+          <code className="font-mono text-[11px] break-all text-dim">
             {diagnostic.code}
           </code>
         </div>
@@ -915,7 +915,7 @@ function CriteriaIsolation({
                 aria-hidden glyph and the code went behind the disclosure below. */}
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <SeverityWord severity={unanchored.severity} />
-              <code className="font-mono text-[10px] break-all text-dim">
+              <code className="font-mono text-[11px] break-all text-dim">
                 {unanchored.code}
               </code>
             </div>
@@ -1026,7 +1026,7 @@ function CriteriaIsolation({
       {suspected.length > 0 && (
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h5 className="font-mono text-[10px] uppercase tracking-[0.14em] text-amber">
+            <h5 className="font-mono text-[11px] uppercase tracking-[0.14em] text-amber">
               <span aria-hidden>▲</span> criteria showing up in the prose
             </h5>
             <span className="font-mono text-[11px] text-dim">{suspected.length}</span>
@@ -1060,7 +1060,7 @@ function CriteriaIsolation({
       {relayed.length > 0 && (
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h5 className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
+            <h5 className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
               <span aria-hidden>◌</span> where the trace stopped
             </h5>
             <span className="font-mono text-[11px] text-dim">{relayed.length}</span>
@@ -1114,7 +1114,7 @@ function CriteriaIsolation({
       {outOfBand.length > 0 && (
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h5 className="font-mono text-[10px] uppercase tracking-[0.14em] text-amber">
+            <h5 className="font-mono text-[11px] uppercase tracking-[0.14em] text-amber">
               <span aria-hidden>▲</span> criteria arriving off the graph
             </h5>
             <span className="font-mono text-[11px] text-dim">{outOfBand.length}</span>
@@ -1219,19 +1219,19 @@ function SecurityPanel({
             <tr className="border-b border-line text-left">
               <th
                 scope="col"
-                className="pb-2 font-normal uppercase tracking-[0.14em] text-[10px] text-dim"
+                className="pb-2 font-normal uppercase tracking-[0.14em] text-[11px] text-dim"
               >
                 Risk marker
               </th>
               <th
                 scope="col"
-                className="pb-2 pl-3 text-right font-normal uppercase tracking-[0.14em] text-[10px] text-dim"
+                className="pb-2 pl-3 text-right font-normal uppercase tracking-[0.14em] text-[11px] text-dim"
               >
                 Nodes
               </th>
               <th
                 scope="col"
-                className="pb-2 pl-3 text-right font-normal uppercase tracking-[0.14em] text-[10px] text-dim"
+                className="pb-2 pl-3 text-right font-normal uppercase tracking-[0.14em] text-[11px] text-dim"
               >
                 Points
               </th>
@@ -1254,7 +1254,7 @@ function SecurityPanel({
                       {glyph}
                     </span>
                     <span className="break-all">{p.marker}</span>
-                    <span className="mt-0.5 block text-[10px] leading-snug text-dim">
+                    <span className="mt-0.5 block text-[11px] leading-snug text-dim">
                       {p.nodeIds.join(", ")}
                     </span>
                   </th>

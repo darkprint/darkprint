@@ -94,7 +94,7 @@ export function DownloadPanel({
         >
           Download
         </Heading>
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
+        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
           runs on your machine
         </span>
       </div>

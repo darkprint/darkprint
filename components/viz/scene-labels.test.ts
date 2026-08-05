@@ -54,6 +54,7 @@ import {
   labelsOverBoxEdges,
   type LabelFrame,
 } from "./label-boxes";
+import { FLOW } from "./flow";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -286,6 +287,53 @@ describe.each(MEASURED)("$name", (entry) => {
       labelsOverBoxEdges(frame).map((message) => `frame ${index}: ${message}`),
     );
     expect(through).toEqual([]);
+  });
+
+  /**
+   * The one property none of the three above can see: whether a word is big enough to
+   * read once it is on a screen.
+   *
+   * A label inside an `<svg>` is written in viewBox units, so a reader gets
+   * `size × (rendered CSS width ÷ frame width)`. `components/home/graph.test.ts` has
+   * computed exactly that since the landing's labels were caught shipping at 8.1 CSS px,
+   * and it computes it for the two landing placements only — while this file walks a
+   * derived roster of every figure on the site and never asked. The two halves sat four
+   * files apart long enough for one sweep to find five figures under the floor at once:
+   * `EnforcementFigure` and `SpecLayers` at 6.76, `SectionLevels` at 6.98, `ScoreRadar`
+   * at 7.76, `GraphThumbnail` at 5.69. Every one was clipping-clean and collision-clean,
+   * so every one passed this file.
+   *
+   * ── What this case checks, and the half it cannot ──
+   * It asserts the units, not the rendered pixels: a label below `FLOW.frame.legible`
+   * units is under the floor at *any* scale at or under 1:1, so this is sound wherever
+   * the figure lands. It catches the shape the sweep actually found most of — a
+   * hard-coded `fontSize={8}` sitting under the token its neighbours use.
+   *
+   * The rendered-pixel half needs one fact this roster does not hold: the CSS width each
+   * figure's *narrowest* placement gets. It is not derivable here, and assuming it costs
+   * a guard its credibility — a first draft of this case used
+   * `FLOW.frame.phone - FLOW.frame.chrome` for every frame and reported ten figures at
+   * 4.02 CSS px, all false. Two reasons. Several figures ship two placements and let a
+   * media query pick, so the wide frame is never rendered at phone width (see
+   * `SectionRoles`, whose header explains why that pattern exists). Others do not squeeze
+   * at all; they keep their natural width and their container scrolls, so
+   * `EnforcementFigure` measures 0.844 on a 378px viewport rather than the 0.386 a
+   * squeeze would give.
+   *
+   * Closing that half means adding a required `renderedWidth` to `SceneEntry`, measured
+   * per figure off a running build, and asserting `size × renderedWidth ÷ frame.width`.
+   * That is worth doing and it is not a four-line port.
+   */
+  it("writes no word below the legibility floor in its own units", () => {
+    const tooSmall = entry.measured.flatMap((frame, index) =>
+      frame.labels
+        .filter((label) => label.size < FLOW.frame.legible)
+        .map(
+          (label) =>
+            `frame ${index}: "${label.text}" is ${label.size} units, under ${FLOW.frame.legible}`,
+        ),
+    );
+    expect(tooSmall).toEqual([]);
   });
 });
 

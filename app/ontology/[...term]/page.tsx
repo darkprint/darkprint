@@ -93,7 +93,7 @@ function TermChip({ term, accent }: { term: OntologyTerm; accent: string }) {
       />
       {term.id}
       {retired && (
-        <span className="text-[10px] uppercase tracking-[0.12em] text-amber">
+        <span className="text-[11px] uppercase tracking-[0.12em] text-amber">
           deprecated
         </span>
       )}
@@ -202,7 +202,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
           <div className="flex flex-wrap items-center gap-3">
             <TermKindBadge kind={term.kind} />
             {term.deprecated !== undefined && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber/40 bg-amber/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-amber">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber/40 bg-amber/10 px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em] text-amber">
                 <span aria-hidden>◑</span>
                 deprecated
               </span>

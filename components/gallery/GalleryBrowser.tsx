@@ -302,7 +302,7 @@ export function GalleryBrowser({
             </span>
             Narrow further
             {narrowCount > 0 && (
-              <span className="rounded-full border border-cyan/50 bg-cyan/10 px-2 py-0.5 text-[10px] text-cyan">
+              <span className="rounded-full border border-cyan/50 bg-cyan/10 px-2 py-0.5 text-[11px] text-cyan">
                 {narrowCount} active
               </span>
             )}

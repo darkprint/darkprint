@@ -457,7 +457,7 @@ export default function OntologyPage() {
                   {layer.step}
                 </span>
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em]"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em]"
                   style={{ color: layer.color }}
                 >
                   <span aria-hidden>{layer.glyph}</span>

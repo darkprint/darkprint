@@ -48,7 +48,7 @@ function DiagnosticRow({ diagnostic }: { diagnostic: Diagnostic }) {
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <span
-            className="font-mono text-[10px] uppercase tracking-[0.14em]"
+            className="font-mono text-[11px] uppercase tracking-[0.14em]"
             style={{ color: meta.color }}
           >
             {meta.word}

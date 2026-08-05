@@ -238,7 +238,7 @@ export function markerWeight(term: OntologyTerm): number | undefined {
 export function DeprecationMark({ term }: { term: OntologyTerm }) {
   const replacedBy = term.deprecated?.replacedBy;
   return (
-    <span className="inline-flex items-center gap-1.5 rounded border border-amber/40 bg-amber/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-amber">
+    <span className="inline-flex items-center gap-1.5 rounded border border-amber/40 bg-amber/10 px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em] text-amber">
       deprecated
       {replacedBy !== undefined && (
         <>
@@ -303,7 +303,7 @@ export function TermColumnHeader({ showWeight = false }: { showWeight?: boolean 
   return (
     <div
       className={cx(
-        "hidden gap-x-6 border-b border-line pb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-dim md:grid",
+        "hidden gap-x-6 border-b border-line pb-2 font-mono text-[11px] uppercase tracking-[0.16em] text-dim md:grid",
         termColumns(showWeight),
       )}
     >

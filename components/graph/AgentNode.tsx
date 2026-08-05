@@ -55,7 +55,7 @@ function NodeTitleLink({ cardId, label }: { cardId: string; label: string }) {
       className="nodrag nopan inline-flex items-baseline gap-1 rounded-sm text-sm font-medium text-fg underline decoration-line-bright decoration-dotted underline-offset-4 transition-colors hover:text-cyan hover:decoration-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
     >
       {label}
-      <span aria-hidden className="font-mono text-[10px] text-dim">
+      <span aria-hidden className="font-mono text-[11px] text-dim">
         ↗
       </span>
     </Link>
@@ -84,7 +84,7 @@ export function AgentNode({ data }: NodeProps<AgentFlowNode>) {
       />
       <div className="flex items-center gap-2">
         <span
-          className="font-mono text-[10px] uppercase tracking-[0.18em]"
+          className="font-mono text-[11px] uppercase tracking-[0.18em]"
           style={{ color: meta.color }}
         >
           {meta.glyph} {meta.label}
@@ -103,7 +103,7 @@ export function AgentNode({ data }: NodeProps<AgentFlowNode>) {
         )}
       </div>
       {data.sub && (
-        <div className="mt-0.5 font-mono text-[10px] text-dim">{data.sub}</div>
+        <div className="mt-0.5 font-mono text-[11px] text-dim">{data.sub}</div>
       )}
       <Handle
         type="target"

@@ -231,7 +231,13 @@ export default function TheClimbPage() {
             as="h1"
             eyebrow="The account"
             title="How one team crossed the gap"
-            lead="A quality architecture built from scratch rather than bolted onto the review process they already had."
+            /* The gap is named in the lead, because the title does not name it and the
+               URL promises a phrase the page's own prose never used: "dark factory"
+               appeared here only in a source title and the pager eyebrow. A reader
+               landing on `/towards-a-dark-factory/the-climb` from a link or a search
+               result met "the ladder" in the next paragraph as a second undefined term
+               and had nothing to attach either to. */
+            lead="The gap is the one between a pipeline a person shepherds and a dark factory, where planning, implementation, testing, debugging and deployment all run unattended. This is a quality architecture built from scratch rather than bolted onto the review process they already had."
           />
           {/* Doc 2 §1.1, said once, in one sentence, before anything else on the page. */}
           <p className="mt-6 max-w-3xl text-sm leading-relaxed text-dim">

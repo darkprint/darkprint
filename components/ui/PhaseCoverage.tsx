@@ -149,7 +149,7 @@ export function PhaseCoverageBadge({
     <div className={cx("flex items-center gap-2", className)} title={sentence}>
       <span
         aria-hidden
-        className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim"
+        className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim"
       >
         phases
       </span>

@@ -90,14 +90,28 @@ export function ReachRow({
       </span>
 
       {/* The pointing. A rule with an arrowhead, or a rule struck through.
+          ------------------------------------------------------------
+          This is the figure's central device and it was drawn at `--color-line-bright`,
+          which measures **1.74:1** on the panel ground, inside a wrapper marked
+          `aria-hidden`. So the relation the whole figure exists to draw was invisible to
+          a low-vision reader and absent from assistive technology at the same time, while
+          the `barred` variant beside it — the refusal — shouted at 10.66:1 in amber. The
+          refusal was the only thing anyone could see.
+
+          `--color-dim` is the site's own readable token (its comment: "≥4.5:1 on the dark
+          surfaces"), so the rule and the head now sit at roughly 6:1. The mark stays
+          decorative to AT, but the row no longer reads as two unrelated halves: an
+          `sr-only` word carries the relation instead, which is what the drawing means.
+
           Hidden when stacked: an arrow pointing right at a block that now sits below it
           is drawing a relation the layout no longer has. */}
+      <span className="sr-only">{barred ? " cannot be " : " reaches "}</span>
       <span aria-hidden className="hidden items-center sm:flex">
-        <span className={cx("h-px w-5 sm:w-9", barred ? "bg-amber/50" : "bg-line-bright")} />
+        <span className={cx("h-px w-5 sm:w-9", barred ? "bg-amber/60" : "bg-dim")} />
         <span
           className={cx(
             "-ml-px font-mono text-[12px]",
-            barred ? "text-amber" : "text-line-bright",
+            barred ? "text-amber" : "text-dim",
           )}
         >
           {barred ? "╱" : "→"}

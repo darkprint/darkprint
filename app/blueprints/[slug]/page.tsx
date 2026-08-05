@@ -391,7 +391,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           <section className="panel p-5">
             <div className="mb-3 flex items-center justify-between">
               <PanelLabel>Score</PanelLabel>
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
+              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
                 6-metric card
               </span>
             </div>

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { SectionLevels } from "@/components/home/SectionLevels";
 import { RoutePager } from "@/components/howto";
+import { CLIMB_ROUTE } from "@/components/howto/route";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
@@ -60,6 +61,8 @@ export const metadata: Metadata = {
 
 const HERE = "/towards-a-dark-factory";
 
+const LABEL = "font-mono text-[11px] uppercase tracking-[0.18em] text-dim";
+
 const INLINE =
   "font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan";
 
@@ -100,23 +103,73 @@ export default function TowardsPage() {
             as="h1"
             eyebrow="The route"
             title="Towards a Dark Factory"
-            lead="Start by finding yourself on the ladder below. Where you land decides which problem you have, and the two pages after this one answer the two questions that follow."
+            /* The phrase is defined before it is used again, which it was not.
+               ------------------------------------------------------------
+               The term appeared first in the `h1`, and the nearest thing to a definition
+               sat 1858px below it — 1.6 desktop viewports, 2.6 phone screens, and behind
+               four other level descriptions that arrive first. A reader coming in from
+               the nav, which is the only permanent entrance, read the whole ladder before
+               learning what the ladder climbs towards. The project's own memory records
+               that the phrase misleads everyone who meets it cold; this is that, on the
+               page named after it.
+
+               The definition is the five lifecycle phases the rest of the site is built
+               on, so it costs no new vocabulary: `planning`, `implementation`, `testing`,
+               `debugging` and `deployment` are the closed set doc 3 §2 draws, the same
+               five a node card declares a `phase` from and the same five the coverage
+               strip counts. A dark factory is the case where all five run unattended.
+               Level 5 keeps its own fuller account; this is the one-sentence version a
+               reader needs before the ladder means anything. */
+            lead="A dark factory is a pipeline where all five phases run unattended: planning, implementation, testing, debugging and deployment. Start by finding yourself on the ladder below. Where you land decides which problem you have, and the two pages after this one answer the two questions that follow."
           />
 
-          {/* The two onward cards that stood here are gone, on the author's
-              instruction. They were an index of the route printed before the route's own
-              content had begun: a reader met "Stop 3 of 3" between the lead and the
-              ladder, before being offered stop 2 and before seeing anything the stops are
-              about. The audit of this page counted that among its boundary defects, and
-              orange made the problem more visible rather than less, since the first block
-              on the page was then also the loudest.
-
-              Nothing is lost. `RoutePager` at the foot offers the next stop, in position,
-              at the point a reader has finished this one. */}
         </div>
       </header>
 
       <SectionLevels />
+
+      {/* The two doors, back — but after the ladder, not before it.
+          ------------------------------------------------------------
+          They were deleted because they sat between the lead and `SectionLevels`, so a
+          reader met "Stop 3 of 3" before being offered stop 2 and before seeing anything
+          the stops were about. That complaint was about *placement* and the deletion
+          answered it by removing the index instead of moving it.
+
+          Two things broke. `components/site/SiteHeader.tsx` justifies keeping these two
+          children out of the nav on the grounds that "each sequence carries its own
+          previous/next pager and its parent opens with a door per child" — true of
+          `/spec`, and false here from the moment the cards went. And the nav is the only
+          permanent entrance, so a reader arriving through it met the first link to either
+          child at 83% scroll depth, in a pager, one stop at a time.
+
+          Here they are an index of what is left rather than a menu shown before the
+          argument, and they run in route order, which the one prose link further down
+          did not: it offered stop 3 two hundred pixels above the pager offering stop 2. */}
+      <section
+        aria-labelledby="route-doors"
+        className="border-t border-line bg-void py-12"
+      >
+        <div className="container-page flex flex-col gap-5">
+          <h2 id="route-doors" className={LABEL}>
+            The two questions that follow
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {CLIMB_ROUTE.filter((stop) => stop.href !== HERE).map((stop, i) => (
+              <Link
+                key={stop.href}
+                href={stop.href}
+                className="route-box flex flex-col gap-2 p-5"
+              >
+                <span className="route-label">{`0${i + 2}`}</span>
+                <span className="font-display text-lg font-semibold text-fg">
+                  {stop.label}
+                </span>
+                <span className="text-sm leading-relaxed text-muted">{stop.blurb}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section id="around" className="scroll-mt-24 border-t border-line bg-void py-14 sm:py-20">
         <div className="container-page">
