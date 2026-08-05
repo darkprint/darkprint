@@ -34,9 +34,13 @@
                         starter graph at the end. That is the
                         payoff of a page about the card layer, and
                         on a landing beat it is a second subject.
-     the reserve        the track is 180vh against 420, because
+     the reserve        the track is 240vh against 420, because
                         there is no dezoom to reserve a quarter of
                         the scroll for.
+     the tail link      "read this card", taken out on the author's
+                        instruction along with beat 2's "Open this
+                        blueprint". `beats.test.ts` records what
+                        that costs and what still holds.
 
    What survives is the part the author asked for: seven parts of a
    real card, arriving one at a time, each marking its own lines.
@@ -52,7 +56,6 @@
    ============================================================ */
 
 import { useMemo } from "react";
-import Link from "next/link";
 
 import { stagesShown, useScrollProgress } from "@/components/viz/useScrollProgress";
 import { cx } from "@/lib/format";
@@ -119,12 +122,10 @@ function body(text: string): React.ReactNode[] {
 export function CardWalk({
   source,
   cardRef,
-  cardHref,
 }: {
   /** The card document, verbatim, read off the archive by the server half. */
   source: string;
   cardRef: string;
-  cardHref: string;
 }) {
   const lines = useMemo(() => tokenizeYaml(source), [source]);
   const notes = useMemo(() => resolveAnnotations(source), [source]);
@@ -150,7 +151,21 @@ export function CardWalk({
 
   return (
     <div ref={ref} className={cx(motion && "lg:h-[240vh]")}>
-      <div className={cx(motion && "lg:sticky lg:top-24")}>
+      {/* Centred while pinned, not tucked under the header.
+          ------------------------------------------------------------
+          The author: it "should start scrolling the list of fields when it is in the
+          middle of the page and not when it is high". `top-24` pinned the figure 96px
+          down, so the walk began with it against the top edge.
+
+          `calc(50vh - 16.5rem)` is half a viewport less half the figure, which centres it
+          at any height and degrades to a small positive offset on a short screen rather
+          than to a negative one. It also buys the settle the author is asking for for
+          free: the figure locks when the track's top reaches that offset, and
+          `scrollProgress` only starts counting once the top passes zero, so the figure
+          sits centred and still for those pixels before step 2 arrives. */}
+      <div
+        className={cx(motion && "lg:sticky lg:top-[calc(50vh-16.5rem)]")}
+      >
         {/* Plain ground, one hairline. The author named the graticule as the thing to
             drop, and it is the whole difference between a figure the landing carries and
             a plate that reads as its own page. */}
@@ -261,15 +276,6 @@ export function CardWalk({
               })}
             </ol>
           </div>
-
-          <p className="text-right font-mono text-[11px]">
-            <Link
-              href={cardHref}
-              className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
-            >
-              read this card
-            </Link>
-          </p>
         </figure>
       </div>
     </div>

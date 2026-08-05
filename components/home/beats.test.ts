@@ -185,14 +185,40 @@ describe("every link the landing draws goes somewhere", () => {
     expect(hrefs.filter((href) => !resolves(href))).toEqual([]);
   });
 
-  it("reaches the archive from the landing at all", () => {
-    // A regex that matched nothing would pass every case above. The landing is required
-    // to open at least one blueprint and one card, which is beats 2 and 3 by definition.
+  it("draws internal links at all, so the case above is not vacuous", () => {
+    /* This case used to require a `/blueprints/<slug>` and a `/nodes/<id>` among the
+       beats, on the grounds that "the landing is required to open at least one blueprint
+       and one card, which is beats 2 and 3 by definition". Both of those links are gone on
+       the author's instruction: beat 2's "Open this blueprint" and beat 3's "read this
+       card". The landing reaches the archive through beat 5's two doors now, at
+       `/blueprints` and `/nodes`, and not into a single one of either.
+
+       What the case was actually protecting survives and is what it checks now. The test
+       above resolves every href the beats emit, and a regex matching nothing would pass it
+       silently, so something has to assert the beats emit hrefs at all. */
     const all = BEATS.flatMap(([name]) =>
       [...beat(name).matchAll(/href="([^"]+)"/g)].map((m) => m[1]),
+    ).filter((href) => href.startsWith("/"));
+    expect(all.length).toBeGreaterThan(0);
+  });
+
+  it("still reaches the gallery from the doors", () => {
+    /* What is left of the landing's own route into the archive, stated so the next change
+       to `SectionDoors` cannot quietly close it.
+
+       Worth recording precisely, because removing beat 3's card link cost more than it
+       looks: the beats now emit no `/nodes` href at all, so the section arguing that every
+       node is a card offers no way to open one, and the node library is reachable from
+       this page only through the persistent header. That is a live consequence of the
+       author's instruction, not an oversight, and it is written here rather than in a
+       comment nobody greps. */
+    const hrefs = [...beat("5 the doors").matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+    expect(hrefs).toContain("/blueprints");
+
+    const fromBeats = BEATS.flatMap(([name]) =>
+      [...beat(name).matchAll(/href="([^"]+)"/g)].map((m) => m[1]),
     );
-    expect(all.some((href) => href.startsWith("/blueprints/"))).toBe(true);
-    expect(all.some((href) => href.startsWith("/nodes/"))).toBe(true);
+    expect(fromBeats.filter((href) => href.startsWith("/nodes"))).toEqual([]);
   });
 });
 

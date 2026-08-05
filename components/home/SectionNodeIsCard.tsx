@@ -36,13 +36,11 @@
    ============================================================ */
 
 import { cardSource } from "@/lib/content";
-import { nodeHref } from "@/lib/href";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 import { CardWalk } from "./nodecard/CardWalk";
 
 const CARD_REF = "code-builder@1.0.0";
-const CARD_ID = "code-builder";
 
 export function SectionNodeIsCard() {
   const source = cardSource(CARD_REF);
@@ -66,7 +64,6 @@ export function SectionNodeIsCard() {
                line 53 under a 52-line card, and would count in the walk's arithmetic. */
             source={source.trimEnd()}
             cardRef={CARD_REF}
-            cardHref={nodeHref(CARD_ID)}
           />
         </div>
       </div>

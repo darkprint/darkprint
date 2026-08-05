@@ -28,7 +28,6 @@
    under the sheet.
    ============================================================ */
 
-import Link from "next/link";
 
 import { FlowAbsence, FlowEdge, FlowNode, FlowScene, Sheet } from "@/components/viz";
 import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
@@ -42,7 +41,6 @@ import {
   type LandingGraph,
 } from "./graph";
 
-const BLUEPRINT_HREF = "/blueprints/starter-software-factory";
 
 /**
  * One tone across all five discs.
@@ -138,15 +136,6 @@ export function SectionBlueprint() {
           <Drawing graph={LANDING_NARROW} className="sm:hidden" />
           <Drawing graph={LANDING_WIDE} className="hidden sm:block" />
         </Sheet>
-
-        <p className="mt-5 text-center text-sm">
-          <Link
-            href={BLUEPRINT_HREF}
-            className="text-muted underline decoration-line-bright underline-offset-4 transition-colors hover:text-fg"
-          >
-            Open this blueprint
-          </Link>
-        </p>
       </div>
     </section>
   );
