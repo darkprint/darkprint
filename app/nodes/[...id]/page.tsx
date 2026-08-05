@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { JsonValue } from "@/lib/core";
+import type { JsonValue, NodeCard } from "@/lib/core";
 import { shortDigest } from "@/lib/core";
 import {
   allNodeCards,
@@ -16,7 +16,6 @@ import { termHref } from "@/lib/href";
 import { Comments } from "@/components/blueprint/Comments";
 import { ForkAction } from "@/components/blueprint/ForkAction";
 import { AuthorChip } from "@/components/ui/Avatar";
-import { ReachList, ReachRow } from "@/components/ui/ReachList";
 import { KindBadge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { FavoriteStar } from "@/components/ui/FavoriteStar";
@@ -100,6 +99,123 @@ const LABEL = "font-mono text-[11px] uppercase tracking-[0.18em] text-dim";
  * put `border-line-bright bg-surface-2/40` on this element and rendered identically to
  * every other panel. Measured, not assumed — both borders came back `rgb(34,39,57)`.
  */
+/* ============================================================
+   Every field a card can declare, in the schema's own order.
+
+   The order is `lib/core/card/schema.ts`'s, not one chosen here:
+   a reader comparing the table against the YAML in `Card source`
+   further down should find the same fields in the same sequence,
+   and any other order makes them do the matching by eye.
+
+   `read` returns the value and whether it is empty, because an
+   empty field is an answer on this site and is drawn as one:
+   `text-dim` and a word, never a dash and never a blank.
+   ============================================================ */
+interface FieldValue {
+  text: string;
+  empty: boolean;
+}
+
+interface FieldRow {
+  name: string;
+  read: (
+    card: NodeCard,
+    view: {
+      phases: { id: string; label: string }[];
+      tools: { id: string; label: string }[];
+      params_: [string, JsonValue][];
+    },
+  ) => FieldValue;
+  /** Where the field is drawn in full, when a panel on this page already does it. */
+  seeHref?: string;
+  seeLabel?: string;
+}
+
+/** `none`, or the joined list. One helper so every empty row reads the same way. */
+function list(values: readonly string[], empty = "none"): FieldValue {
+  return values.length === 0
+    ? { text: empty, empty: true }
+    : { text: values.join(", "), empty: false };
+}
+
+/** A long prose field, measured rather than reprinted. */
+function words(value: string | undefined): FieldValue {
+  const text = value?.trim() ?? "";
+  return text === ""
+    ? { text: "none", empty: true }
+    : { text: `${text.split(/\s+/).length} words`, empty: false };
+}
+
+function one(value: string | undefined, empty = "not named"): FieldValue {
+  return value === undefined || value === ""
+    ? { text: empty, empty: true }
+    : { text: value, empty: false };
+}
+
+const FIELD_ROWS: readonly FieldRow[] = [
+  { name: "id", read: (c) => one(c.id) },
+  { name: "name", read: (c) => one(c.name) },
+  { name: "type", read: (c) => one(c.type) },
+  {
+    name: "phases",
+    read: (_c, v) => list(v.phases.map((p) => p.label), "outside the five"),
+  },
+  /* A word count, not the sentence. `action` is this page's opening lead verbatim, and
+     printing it again 600px below is the duplication `docs/content-reorg` already caught
+     here once. No pointer either: the lead is the first paragraph on the page. */
+  {
+    name: "action",
+    read: (c) => words(c.action),
+  },
+  {
+    name: "spec",
+    read: (c) => words(c.spec),
+    seeHref: "#specification",
+    seeLabel: "in full above",
+  },
+  { name: "model", read: (c) => one(c.model, "whatever the graph supplies") },
+  { name: "agent", read: (c) => one(c.agent) },
+  { name: "skill", read: (c) => one(c.skill) },
+  { name: "tools", read: (_c, v) => list(v.tools.map((t) => t.label)) },
+  { name: "mcp", read: (c) => list(c.mcp) },
+  { name: "params", read: (_c, v) => list(v.params_.map(([k]) => k)) },
+  {
+    name: "inputs",
+    read: (c) => list(c.inputs.map((port) => `${port.name} : ${port.type}`)),
+    seeHref: "#interfaces",
+    seeLabel: "with their descriptions above",
+  },
+  {
+    name: "outputs",
+    read: (c) => list(c.outputs.map((port) => `${port.name} : ${port.type}`)),
+    seeHref: "#interfaces",
+    seeLabel: "with their descriptions above",
+  },
+  { name: "dependencies", read: (c) => list(c.dependencies) },
+  {
+    name: "cannot",
+    read: (c) => list(c.cannot),
+    seeHref: "#prohibitions",
+    seeLabel: "and what enforces it",
+  },
+  {
+    name: "requires_human",
+    read: (c) => ({ text: String(c.requiresHuman), empty: !c.requiresHuman }),
+  },
+  {
+    name: "risk_markers",
+    read: (c) => list(c.riskMarkers),
+    seeHref: "#evaluation",
+    seeLabel: "priced, in the sidebar",
+  },
+  { name: "version", read: (c) => one(c.version) },
+  { name: "ontology_version", read: (c) => one(c.ontologyVersion) },
+  { name: "author", read: (c) => one(c.author, "unattributed") },
+  // No pointer: it is printed directly under this table, and a link to the panel the
+  // link is inside is a link to nowhere a reader wanted to go.
+  { name: "notes", read: (c) => words(c.notes) },
+];
+
 function Panel({
   id,
   label,
@@ -211,17 +327,6 @@ interface ProhibitionView {
 }
 
 /** A `params` value as JSON: scalars inline, anything nested as an indented block. */
-function ParamValue({ value }: { value: JsonValue }) {
-  const nested = value !== null && typeof value === "object";
-  const text = JSON.stringify(value, null, nested ? 2 : 0) ?? "null";
-  return nested ? (
-    <pre className="overflow-x-auto font-mono text-[12px] leading-relaxed text-fg">
-      {text}
-    </pre>
-  ) : (
-    <code className="break-all font-mono text-[12px] text-fg">{text}</code>
-  );
-}
 
 /* --------------------- the page --------------------- */
 
@@ -341,6 +446,13 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   const author = card.author === undefined ? undefined : getAuthor(card.author);
   const source = cardSource(record.ref);
   const params_ = Object.entries(card.params);
+
+  /* How many of the card's fields carry something, counted rather than written. A card
+     leaving nine fields empty has said nine things, and the count is the one number that
+     tells a reader whether they are looking at a full card or a sparse one. */
+  const declared = FIELD_ROWS.filter(
+    (row) => !row.read(card, { phases, tools, params_ }).empty,
+  ).length;
   const downloads = downloadsFor(card.id);
   const specWords = card.spec.trim().split(/\s+/).filter(Boolean).length;
 
@@ -688,227 +800,90 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             )}
           </Panel>
 
-          {/* The three fields that say what has to exist before this node can run: the
-              model it is instantiated with, the document that defines its behaviour, and
-              the servers it reaches. They sit above Behaviour rather than inside it
-              because the card's `tools` are in there and the pair is easy to conflate:
-              `tools` is what the node is permitted to do, `mcp` is which server supplies
-              it, and merging them loses the question each one answers.
+          {/* One panel where two stood, and no prose in it.
+              ------------------------------------------------------------
+              The author, reviewing this page: "non mi è chiaro affatto che cosa significhi
+              la sezione model skill e servers", and on the explanations beside each field,
+              "questa roba qua non serve, non dobbiamo dire all'utente perché tanto deve
+              essere autoesplicativa". On the panel below it: "la parte dei behaviour box
+              non ho assolutamente capito di cosa serva". And what he wants instead: the
+              section should list "tutti i campi che sono presenti all'interno della
+              descrizione di una card, in modo tale che un utente le possa vedere al volo".
 
-              `model` used to sit inside Behaviour beside `agent`, which put the one field
-              the exported `factory.dot` carries as a reserved Attractor attribute next to
-              a free-text label the engine never reads. It leads here now, beside the other
-              two fields a reader has to satisfy before the node runs. */}
-          <Panel
-            id="runtime"
-            label="Model, skill and servers"
-            meta={card.model ?? "no model named"}
-          >
-            {/* Three stacked blocks of two and three paragraphs each stood here, every
-                one of them opening by naming its own field again. The author asked for
-                the `/concepts` figure wherever it helps reorganise a page, and this is
-                the shape it was built for: named things that point outward. The limit
-                statements the paragraphs carried are all still here and still open, in
-                the glosses and the footnote. */}
-            {/* `frame={false}`: the figure is already inside a panel, and framed it drew
-                a bordered box inside a bordered box with each row's field cell bordered
-                again — three edges deep for one figure. The rows read as a figure on
-                their own; the panel is the box. */}
-            <ReachList
-              frame={false}
-              label="Before it can run"
-              caption="What has to exist on the machine that runs this node."
-            >
-              <ReachRow field="model" value={card.model ?? "not named"}>
-                {card.model === undefined ? (
-                  <>Whatever the graph or the runner supplies. The ordinary case.</>
-                ) : (
-                  <>
-                    What its agent runs on.{" "}
-                    <span className="text-fg">A default, not a fixed fact:</span> a
-                    graph&apos;s{" "}
-                    <code className="font-mono text-[12px] text-muted">
-                      model_stylesheet
-                    </code>{" "}
-                    can override it.
-                  </>
-                )}
-              </ReachRow>
+              `Model, skill and servers` was three `ReachRow`s whose glosses explained what
+              `model`, `skill` and `mcp` mean. `Behaviour` was a grab bag: phases with a
+              paragraph each, the agent label, tools, params, and the author's notes, under
+              a heading that named none of them.
 
-              <ReachRow field="skill" value={card.skill ?? "not named"}>
-                {card.skill === undefined ? (
-                  <>
-                    None. The card&apos;s{" "}
-                    <code className="font-mono text-[12px] text-muted">spec</code> is the
-                    whole instruction.
-                  </>
-                ) : (
-                  <>
-                    Where its written procedure lives, relative to the repository you run
-                    from.{" "}
-                    <span className="text-fg">
-                      A pointer only: no skill document travels in a DarkPrint bundle.
-                    </span>{" "}
-                    You write the file it names.
-                  </>
-                )}
-              </ReachRow>
+              So: every field the card declares, in the schema's own order, name beside
+              value. A reader who wants to know what `mcp` is has the word and the value,
+              which is what "self-explanatory" means here; a reader who wants the argument
+              has `/concepts`, which is the page built for it and is linked below.
 
-              <ReachRow
-                field="mcp"
-                value={card.mcp.length === 0 ? "none" : card.mcp.join(", ")}
+              Two limit statements came off with the prose and are not lost. That a
+              `model` is a default a graph's `model_stylesheet` can override, and that a
+              `skill` is a pointer with no document in the bundle, are both said on
+              `/concepts` in the `skill` and `model` rows of `WhatACardReaches`. The
+              footnote under this table points there rather than restating them per card,
+              53 times over. */}
+          <Panel id="fields" label="Every field on this card" meta={`${declared} declared`}>
+            <dl className="flex flex-col">
+              {FIELD_ROWS.map((row) => {
+                const value = row.read(card, { phases, tools, params_ });
+                return (
+                  <div
+                    key={row.name}
+                    className="grid gap-x-4 gap-y-1 border-t border-line/70 py-2 first:border-t-0 first:pt-0 sm:grid-cols-[10rem_minmax(0,1fr)]"
+                  >
+                    <dt className="font-mono text-[12px] text-cyan">{row.name}</dt>
+                    <dd
+                      className={cx(
+                        "min-w-0 font-mono text-[12px] leading-relaxed",
+                        value.empty ? "text-dim" : "text-fg",
+                      )}
+                    >
+                      {value.text}
+                      {/* Where a field has a panel of its own, the row points at it rather
+                          than reprinting it. The at-a-glance list stays one line per field
+                          and the page still says each thing once. */}
+                      {row.seeHref !== undefined && !value.empty && (
+                        <>
+                          {"  "}
+                          <a
+                            href={row.seeHref}
+                            className="text-[11px] text-dim underline decoration-line underline-offset-4 transition-colors hover:text-cyan"
+                          >
+                            {row.seeLabel}
+                          </a>
+                        </>
+                      )}
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+
+            <p className="mt-4 border-t border-line pt-3 text-xs leading-relaxed text-dim">
+              What each of these fields is for, once rather than on every card:{" "}
+              <Link
+                href="/concepts"
+                className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"
               >
-                {card.mcp.length === 0 ? (
-                  <>None. It reaches no server.</>
-                ) : (
-                  <>
-                    Servers it reaches, named as they are registered on your machine. Free
-                    text: the vocabulary has no term for a process somebody installed.
-                  </>
-                )}
-              </ReachRow>
-            </ReachList>
+                eval, harness and the rest <span aria-hidden>&rarr;</span>
+              </Link>
+            </p>
 
-          </Panel>
-
-          <Panel
-            id="behaviour"
-            label="Behaviour"
-            meta={card.agent ?? "no named agent"}
-          >
-            <div className="flex flex-col gap-5">
-              {/* `card.action` stood here and is gone: the identical string is this page's
-                  header lead, 280 words above, and `metadata.description` is built from the
-                  same field, so it is also what a search result and a shared link show.
-                  Scanning the rendered page for repeated blocks of six words or more
-                  returned this and nothing else, on every one of the 53 instances.
-                  See docs/content-reorg/2026-08-04/nodes-id.md. */}
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-2">
-                  {/* `Phase` when there is one, `Phases` otherwise — and `Phases` when
-                      there are none, because "outside the five" is a statement about the
-                      set, not about a missing singular. A card declaring one phase used
-                      to read "Phases" above a single line. */}
-                  <h3 className={LABEL}>
-                    {phases.length === 1 ? "Phase" : "Phases"}
-                  </h3>
-                  {/* Three renderings of one field, and the empty one is the one that
-                      had to be designed: it is a sentence stating where the node
-                      stands, not a dash, not a placeholder, and not styled to differ
-                      from the other two. The author's ruling — the five phases
-                      describe the factory, not every node in it — is stated in full
-                      here because this is the page an author lands on when they are
-                      about to invent a phase for their intake node. */}
-                  {phases.length === 0 ? (
-                    <p className="text-[15px] leading-relaxed text-muted">
-                      <span className="text-fg">Outside the five.</span> The phases
-                      describe a blueprint&apos;s shape, not every node in one: intake,
-                      retrieval and routing are real work none of the five names.
-                      Declaring none is an answer, not a blank.
-                    </p>
-                  ) : (
-                    phases.map((phase) => (
-                      <p
-                        key={phase.id}
-                        className="text-[15px] leading-relaxed text-muted"
-                      >
-                        <span className="text-fg">{phase.label}.</span>{" "}
-                        {phase.description ??
-                          "Outside the five phases the vocabulary closes on, so the card names it and nothing here interprets it."}
-                      </p>
-                    ))
-                  )}
-                  <p className="text-xs leading-relaxed text-dim">
-                    A blueprint covers the union of its nodes&apos; phases. That is scope,
-                    not completeness.
-                  </p>
-                </div>
-
-                {/* `agent` on its own now that `model` leads the panel above. The two
-                    answer different questions and only one of them reaches the runner:
-                    `model` becomes `llm_model` in the exported factory, while this is a
-                    label the author chose and nothing downstream reads. */}
-                <div className="flex flex-col gap-2">
-                  <h3 className={LABEL}>Agent</h3>
-                  {card.agent === undefined ? (
-                    <p className="text-xs leading-relaxed text-dim">
-                      None named. The card&apos;s <code className="font-mono text-muted">type</code>{" "}
-                      and <code className="font-mono text-muted">spec</code> are the whole
-                      of what this node is.
-                    </p>
-                  ) : (
-                    <>
-                      <div className="flex flex-wrap gap-1.5">
-                        <span className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg">
-                          <span
-                            className="h-1 w-1 rounded-full"
-                            style={{ background: "var(--color-cyan)" }}
-                            aria-hidden
-                          />
-                          {card.agent}
-                        </span>
-                      </div>
-                      <p className="text-xs leading-relaxed text-dim">
-                        A label the author chose. Nothing in the engine reads it.
-                      </p>
-                    </>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <h3 className={LABEL}>Tools</h3>
-                  {tools.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {tools.map((tool) => (
-                        <TermChip
-                          key={tool.id}
-                          href={termHref(tool.id)}
-                          label={tool.label}
-                          aria={`Ontology tool: ${tool.label}`}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs leading-relaxed text-dim">
-                      None. The node asks for no external capability.
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <h3 className={LABEL}>Parameters</h3>
-                  {params_.length > 0 ? (
-                    <dl className="divide-y divide-line rounded-md border border-line bg-void/40">
-                      {params_.map(([key, value]) => (
-                        <div
-                          key={key}
-                          className="grid grid-cols-1 gap-1 px-3 py-2.5 sm:grid-cols-[180px_1fr] sm:gap-4"
-                        >
-                          <dt className="font-mono text-[12px] text-dim">{key}</dt>
-                          <dd className="min-w-0">
-                            <ParamValue value={value} />
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-                  ) : (
-                    <p className="text-xs leading-relaxed text-dim">
-                      None. The node is configured entirely by what arrives on its
-                      inputs.
-                    </p>
-                  )}
-                </div>
+            {card.notes !== undefined && (
+              /* Kept, and kept out of the table. Everything above is a field and a value;
+                 this is a paragraph the author wrote, and folding it into a `dd` would
+                 make one row twenty times the height of the others. */
+              <div className="mt-5 flex flex-col gap-2 border-t border-line pt-5">
+                <h3 className={LABEL}>Notes from the author</h3>
+                <p className="border-l-2 border-line-bright pl-4 text-[15px] leading-relaxed text-muted">
+                  <Ticked text={card.notes} />
+                </p>
               </div>
-
-              {card.notes !== undefined && (
-                <div className="flex flex-col gap-2 border-t border-line pt-5">
-                  <h3 className={LABEL}>Notes from the author</h3>
-                  <p className="border-l-2 border-line-bright pl-4 text-[15px] leading-relaxed text-muted">
-                    <Ticked text={card.notes} />
-                  </p>
-                </div>
-              )}
-            </div>
+            )}
           </Panel>
 
           <VersionHistory versions={history} />
