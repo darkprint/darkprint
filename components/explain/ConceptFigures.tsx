@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { ReachList, ReachRow } from "@/components/ui/ReachList";
 
 /* ============================================================
@@ -55,33 +57,94 @@ export function WhatACardReaches({
   mcp,
   skill,
   cannot,
+  riskMarkers,
 }: {
   model: string;
   tools: string;
   mcp: string;
   skill: string;
   cannot: string;
+  riskMarkers: string;
 }) {
-  // No caption. "The card is a document. None of these is a step in the run." stood in
-  // that slot and the author asked it off: the rows say it.
+  /* Six rows, and each carries its own fine print.
+     ------------------------------------------------------------
+     Both changes come from the same defect. `/concepts` drew this figure with five rows
+     and then set a six-box grid under it, one box per field, keyed by the same names. The
+     same list twice, and the two disagreed: the figure said five rows, the grid explained
+     six, and `risk_markers` appeared only in the grid. A reader counting fields on a page
+     whose subject is what the fields are got two answers.
+
+     So the sixth row is here, and the grid's sentences are the rows' `note`s. The gloss
+     says what the field reaches; the note says the thing about it a reader would otherwise
+     find out by trying it. Nothing was cut.
+
+     `code-builder` declares no risk markers, and the row says so. That is the honest
+     drawing: the field exists on every card and this card leaves it empty. */
   return (
-    <ReachList label="One card, five rows">
-      <ReachRow field="model" value={model}>
+    <ReachList label="One card, six rows">
+      <ReachRow
+        field="model"
+        value={model}
+        note="Written the way the provider writes it, and overridable. A reader can point the graph at something else."
+      >
         The model it thinks with. The ceiling on what this step can be trusted to attempt.
       </ReachRow>
-      <ReachRow field="tools" value={tools}>
+      <ReachRow
+        field="tools"
+        value={tools}
+        note="The card names the capability, not a vendor, so a graph says what it touches rather than what you bought."
+      >
         Capabilities it may reach for: a shell, a search index, a browser.
       </ReachRow>
-      <ReachRow field="mcp" value={mcp}>
+      <ReachRow
+        field="mcp"
+        value={mcp}
+        note="Two nodes naming the same server share the same door."
+      >
         A server exposing one. MCP is the wire, so this row is the reach a run has.
       </ReachRow>
-      <ReachRow field="skill" value={skill}>
+      <ReachRow
+        field="skill"
+        value={skill}
+        note={
+          <>
+            <span className="text-muted">
+              The engine reads nothing at the other end of this path, so no skill document
+              travels in the download.
+            </span>{" "}
+            Each bundle&rsquo;s README lists the ones you supply yourself.
+          </>
+        }
+      >
         A written procedure it follows. A pointer only: the document does not travel in
         the download.
       </ReachRow>
-      <ReachRow field="cannot" value={cannot} barred>
+      <ReachRow
+        field="cannot"
+        value={cannot}
+        barred
+        note="An entry naming a data type is enforced; an entry naming anything else is a sentence addressed to a reader and checked by nothing."
+      >
         What must never arrive. Naming a data type makes it a rule the resolver holds
         every incoming edge to, whichever node draws one.
+      </ReachRow>
+      <ReachRow
+        field="risk_markers"
+        value={riskMarkers}
+        note={
+          <>
+            Each marker costs the blueprint security points.{" "}
+            <Link
+              href="/spec/scoring"
+              className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"
+            >
+              How a blueprint is graded <span aria-hidden>&rarr;</span>
+            </Link>
+          </>
+        }
+      >
+        The blast radius, priced. What this step could break if it goes wrong, declared by
+        the card rather than guessed at by a reader.
       </ReachRow>
     </ReachList>
   );

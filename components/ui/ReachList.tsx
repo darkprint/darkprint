@@ -46,6 +46,16 @@ export interface ReachRowProps {
   barred?: boolean;
   /** What the field reaches, means, or draws from. */
   children: React.ReactNode;
+  /**
+   * A second line about this row, set smaller and dimmer under the gloss.
+   *
+   * Added for `/concepts`, where these lived in a separate six-box grid under the figure.
+   * A grid keyed by field name, sitting under a figure whose rows are keyed by field name,
+   * is the same list twice: a reader matched `mcp` in a box against `mcp` in the drawing by
+   * eye, and the two disagreed about how many fields there are. Optional, so the ontology
+   * and node placements are untouched.
+   */
+  note?: React.ReactNode;
   /** Set by `ReachList`; a caller passing it is overridden. */
   index?: number;
 }
@@ -55,6 +65,7 @@ export function ReachRow({
   value,
   barred = false,
   children,
+  note,
   index = 0,
 }: ReachRowProps) {
   return (
@@ -72,7 +83,7 @@ export function ReachRow({
        pointing has nowhere to point, and the gloss is the part that has to stay
        readable. */
     <li
-      className="anim-strip-in grid grid-cols-1 items-start gap-1.5 sm:grid-cols-[minmax(0,10.5rem)_auto_minmax(0,1fr)] sm:items-center sm:gap-3"
+      className="anim-strip-in grid grid-cols-1 items-start gap-1.5 sm:grid-cols-[minmax(0,10.5rem)_auto_minmax(0,1fr)] sm:gap-3"
       style={{ animationDelay: `${index * STEP}ms` }}
     >
       <span className="flex min-w-0 flex-col rounded border border-line bg-surface-2 px-3 py-2 sm:w-auto">
@@ -106,11 +117,15 @@ export function ReachRow({
           Hidden when stacked: an arrow pointing right at a block that now sits below it
           is drawing a relation the layout no longer has. */}
       <span className="sr-only">{barred ? " cannot be " : " reaches "}</span>
-      <span aria-hidden className="hidden items-center sm:flex">
+      <span aria-hidden className="hidden items-center sm:flex sm:pt-[7px]">
         <span className={cx("h-px w-5 sm:w-9", barred ? "bg-amber/60" : "bg-dim")} />
+        {/* Fixed width, because `╱` and `→` are not the same width even in a monospace
+            face and the connector sits in an `auto` grid column. The barred row's gloss
+            started eight pixels left of every other row's, which read as a stray indent on
+            the one row whose meaning is that it is different. */}
         <span
           className={cx(
-            "-ml-px font-mono text-[12px]",
+            "-ml-px inline-block w-3.5 text-center font-mono text-[12px]",
             barred ? "text-amber" : "text-dim",
           )}
         >
@@ -124,11 +139,16 @@ export function ReachRow({
           gone. */}
       <span
         className={cx(
-          "min-w-0 border-l pl-3 text-[13px] leading-snug text-muted sm:border-l-0 sm:pl-0",
+          /* Capped: the third column is `1fr`, and in a full-width placement that let a
+             gloss run to about 110 characters. */
+          "flex min-w-0 max-w-[74ch] flex-col gap-1 border-l pl-3 text-[13px] leading-snug text-muted sm:border-l-0 sm:pl-0",
           barred ? "border-amber/50" : "border-line",
         )}
       >
-        {children}
+        <span>{children}</span>
+        {note !== undefined && (
+          <span className="text-[12px] leading-relaxed text-dim">{note}</span>
+        )}
       </span>
     </li>
   );

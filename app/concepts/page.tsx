@@ -66,31 +66,6 @@ export const metadata: Metadata = {
 const LINK =
   "text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright";
 
-/**
- * One piece of fine print. Deliberately not a restatement of the figure: the figure says
- * what each row reaches, and these say the thing about that row a reader would otherwise
- * have to find out by trying it.
- */
-function Note({
-  i,
-  field,
-  children,
-}: {
-  i: number;
-  field: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <li
-      className="anim-strip-in flex flex-col gap-1 rounded-lg border border-line bg-surface-2/60 px-4 py-3"
-      style={{ animationDelay: `${i * 90}ms` }}
-    >
-      <code className="font-mono text-[12px] text-amber">{field}</code>
-      <p className="text-sm leading-relaxed text-muted">{children}</p>
-    </li>
-  );
-}
-
 function Correction({ children }: { children: React.ReactNode }) {
   return (
     <p className="flex gap-2 rounded-lg border border-amber/30 bg-amber/5 px-4 py-3 text-sm leading-relaxed text-muted">
@@ -125,7 +100,7 @@ export default function ConceptsPage() {
           <SectionHeading
             eyebrow="Zoom in"
             title="Inside one node"
-            lead="A card is the whole of what a node is. Four of its rows decide what that node can do, and one decides what it must never do. None of the five is a step in the run: the card describes the step, and points outward at things that live outside the graph."
+            lead="A card is the whole of what a node is. Four of its rows decide what that node can do, one decides what it must never do, and one prices what breaks if it goes wrong. None of the six is a step in the run: the card describes the step, and points outward at things that live outside the graph."
           />
 
           {card !== undefined && (
@@ -136,41 +111,11 @@ export default function ConceptsPage() {
                 mcp={card.mcp.length > 0 ? card.mcp.join(", ") : "none"}
                 skill={card.skill ?? "none"}
                 cannot={card.cannot.length > 0 ? (card.cannot[0] ?? "") : "nothing declared"}
+                riskMarkers={
+                  card.riskMarkers.length > 0 ? card.riskMarkers.join(", ") : "none declared"
+                }
               />
 
-              <ul className="grid gap-3 lg:grid-cols-3">
-                <Note i={0} field="model">
-                  Written the way the provider writes it, and overridable. A reader can
-                  point the graph at something else.
-                </Note>
-                <Note i={1} field="tools">
-                  The card names the capability, not a vendor, so a graph says what it
-                  touches rather than what you bought.
-                </Note>
-                <Note i={2} field="mcp">
-                  Two nodes naming the same server share the same door.
-                </Note>
-                <Note i={3} field="skill">
-                  <span className="text-fg">
-                    The engine reads nothing at the other end of this path, so no skill
-                    document travels in the download.
-                  </span>{" "}
-                  Each bundle&rsquo;s README lists the ones you supply yourself.
-                </Note>
-                <Note i={4} field="cannot">
-                  <span className="text-fg">
-                    An entry naming a data type is enforced; an entry naming anything else
-                    is a sentence addressed to a reader and checked by nothing.
-                  </span>
-                </Note>
-                <Note i={5} field="risk_markers">
-                  The blast radius, priced. Each marker costs the blueprint security
-                  points.{" "}
-                  <Link href="/spec/scoring" className={LINK}>
-                    How a blueprint is graded <span aria-hidden>&rarr;</span>
-                  </Link>
-                </Note>
-              </ul>
             </>
           )}
         </div>
@@ -211,7 +156,14 @@ export default function ConceptsPage() {
             lead="A verdict is worth something because the node doing the work never saw what it would be judged against. That is a property of the topology, so it is checkable."
           />
 
-          <p className="text-[15px] leading-relaxed text-muted">
+          {/* The link used to be a paragraph of nothing but the link, sitting alone
+              between a lead and a callout. It says what it is for now, which is the
+              question the lead above raises and does not answer: how a topology can be
+              checked for something nobody drew. */}
+          <p className="max-w-[62ch] text-[15px] leading-relaxed text-muted">
+            The check is topological, so it holds whoever wrote the graph: no path may
+            carry <code className="font-mono text-[13px] text-amber">acceptance-criteria</code>{" "}
+            into the node whose work that criteria will judge.{" "}
             <Link href="/spec/topology" className={LINK}>
               The edge that is not there <span aria-hidden>&rarr;</span>
             </Link>

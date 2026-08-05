@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored by `npx impeccable install`. It is a third-party skill's own source,
+    // not this project's, and it ships its own lint config; running ours over it
+    // reports warnings nobody here can act on.
+    ".claude/skills/**",
   ]),
 ]);
 
