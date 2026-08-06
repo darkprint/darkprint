@@ -1,8 +1,20 @@
 "use client";
 
 /* ============================================================
-   /spec/card — why one entry in `cannot` is a rule and the other
-   is a sentence.
+   Why one entry in `cannot` is a rule and the other is a sentence.
+
+   ── NO PAGE MOUNTS THIS, as of the IA pass of 2026-08-07 ──
+   It was the figure inside the "The split" band on `/spec/card`,
+   and the author asked for that band off the page. The band's two
+   pinned honesty sentences were rehomed into the open (see the
+   header of `app/spec/card/page.tsx`); this drawing was not, and
+   `/spec/card` was its only mount site-wide. It still renders and
+   is still measured — `components/viz/scene-labels.test.ts` builds
+   it directly and holds every label in it to the label-box rules —
+   so nothing fails, but this is a figure the suite protects and no
+   reader sees. Delete it with its roster entry, or remount it
+   deliberately; do not leave it as the third unmounted-but-guarded
+   figure alongside `LatticeFigure` and `SectionRoles`.
 
    `code-builder@1.0.0` declares two prohibitions. The engine holds
    the graph to the first and shows the second without checking it,
@@ -33,11 +45,13 @@
    away from where somebody acts).
 
    ── The two markers ──
-   `◆` and `◌` come from Fig. 1, imported rather than retyped. A
-   reader meets them on the overview and meets the same pair here,
-   and the panel below is the one place on the site where the two
-   kinds of entry sit four lines apart, so colour alone carrying the
-   difference would fail WCAG 1.4.1 in the same way Fig. 1 did.
+   `◆` and `◌` come from `./marks`, imported rather than retyped.
+   They were Fig. 1's (`SpecLayers`, DRW-101) until the IA pass took
+   that figure off the site with `/spec`; the constants outlived it
+   precisely so this pair could not drift. The panel below is the
+   one place on the site where the two kinds of entry sit four lines
+   apart, so colour alone carrying the difference would fail
+   WCAG 1.4.1 in the same way Fig. 1 did.
 
    ── Rendering (spec §1) ──
    Every string is an SVG `<text>` written at SSR time.
@@ -58,7 +72,7 @@ import {
 import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
 
 import { FigureFrame } from "./FigureFrame";
-import { FREE_TEXT_MARK, RESOLVED_MARK } from "./SpecLayers";
+import { FREE_TEXT_MARK, RESOLVED_MARK } from "./marks";
 import { Leader, fadeInFurniture, furniture } from "./furniture";
 
 const W = 720;
@@ -120,7 +134,7 @@ export function EnforcementFigure() {
           id="leak"
         />
         <FlowNode {...PLANNER} label="planner" id="planner" />
-        {/* Amber, which is the tone `/spec` gives the card layer, because the panel below
+        {/* Amber, the tone this figure has always given the card layer, because the panel below
             is this node's card and the two have to read as one object. */}
         <FlowNode
           {...BUILDER}

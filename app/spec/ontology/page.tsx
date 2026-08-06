@@ -4,12 +4,10 @@ import type { OntologyTerm } from "@/lib/core";
 import { CORE_PHASE_IDS, partitionTerms } from "@/lib/core";
 import { bundleVocabulary, getOntologyView } from "@/lib/content";
 import { CheckLegend, CheckTable } from "@/components/spec/CheckTable";
-import { LatticeFigure } from "@/components/spec/LatticeFigure";
 import { Id, SpecLink } from "@/components/spec/parts";
 import { ONTOLOGY_ROWS } from "@/components/spec/rows";
 import { specNeighbours } from "@/components/spec/sequence";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
-import { ButtonLink } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SourcePanel } from "@/components/ui/SourcePanel";
 
@@ -17,27 +15,39 @@ import { SourcePanel } from "@/components/ui/SourcePanel";
    /spec/ontology — layer 3, and the answer to the author's
    original question about which of the three the spec language is.
 
-   Redesign spec §4.1 split the single `/spec` page into four and
-   asks that each layer page open with its figure. This layer had
-   no figure at all: it had a paragraph describing a lattice, which
-   is the wrong medium for a shape. `LatticeFigure` draws it, in
-   the luminous register §1 asks for, from `view.ancestors` and
-   `view.children` rather than from a picture somebody kept in step
-   by hand.
+   The page is now three bands: what the vocabulary is and how big
+   it is, the one term this archive added on top of it, and what
+   the engine holds the vocabulary to. Every number in all three is
+   read off the engine at build time, which is what keeps this page
+   from being the site quoting itself.
 
-   ── What was cut (spec §5) ──
-   The paragraph that walked `acceptance-criteria ⊂ structured ⊂
-   any` in prose and then named the two checks the relation is
-   there for. The figure draws the chain and its caption carries
-   both sentences, which is one statement of it rather than two.
+   ── What was cut, and why (this pass) ──
+   **The lattice figure and its caption.** The drawing of
+   `acceptance-criteria ⊂ structured ⊂ any` with the fan of sibling
+   types, and the caption restating the two isolation checks, opened
+   the page. Both are gone on the author's word: the subsumption
+   argument belongs to the isolation story, not to the page whose
+   subject is the size and governance of the vocabulary, and reading
+   a lattice was the first thing this route asked of a stranger.
+   `components/spec/LatticeFigure.tsx` is deliberately KEPT: it is
+   still rendered and measured by `components/viz/scene-labels.test.
+   ts`, which walks the tree for scene drawers. It has no mount on
+   any route now — if a later pass wants it gone, that test's ROSTER
+   and its two `DRAWERS` assertions go in the same commit.
 
-   ── Everything else moved rather than changed ──
-   The counts, the phase list, the local vocabulary and its listing,
-   and the table of what the engine checks about the vocabulary
-   itself are the third layer of the old `/spec`, unedited except
-   for the cut above. Every number is read off the engine at build
-   time, which is what keeps this page from being the site quoting
-   itself.
+   **The exits band.** Four buttons to `/build`, `/ontology`,
+   `/nodes` and `/upload`, under a paragraph about the validator
+   running in the tab. `SpecPager` already closes the page with the
+   next stop in the sequence, and the same four routes are in the
+   header and footer nav; the band was a third copy of the site map
+   at the end of a spec page. Checked before cutting: the limit
+   statement it carried ("nothing is uploaded, there is no account
+   and no publishing step") is stated where a reader can actually
+   act on it — `UploadFlow.tsx` and `/build` both say it in the open
+   beside their own controls — and `components/site/honesty.test.ts`
+   holds no entry over this page, so no guarded sentence left the
+   site with the band. If the band ever comes back, it comes back
+   with that sentence.
 
    ── No route config ──
    A static segment, so there is no `generateStaticParams` and no
@@ -56,15 +66,6 @@ const HERE = "/spec/ontology";
 
 /** The bundle whose cards reach for a namespaced term, so the overlay travels with it. */
 const LOCAL_VOCAB_SLUG = "frontline-triage";
-
-/**
- * The data type the site's central argument is about.
- *
- * The figure is drawn from the chain above it and from the other kinds of the term one
- * step up, so this is the only id the page names; the rest of the drawing follows from
- * the vocabulary.
- */
-const ISOLATION_TYPE = "acceptance-criteria";
 
 /**
  * The canonical h2, spelled the way `components/ui/SectionHeading.tsx` spells it.
@@ -98,18 +99,19 @@ export default function SpecOntologyPage() {
     (term): term is OntologyTerm => term !== undefined,
   );
 
-  /* The chain the two isolation checks walk, nearest first and the term itself included,
-     and the other kinds of the term one step up it. Both are read off the vocabulary, so
-     a term renamed in `lib/core/ontology/core.ts` arrives in the drawing on the next
-     build and a new kind of `structured` appears in the fan without anybody drawing it. */
-  const chainTerms = view.ancestors(ISOLATION_TYPE);
-  const chain = chainTerms.map((term) => term.id);
-  const siblings = chainTerms.length < 2 ? [] : view.children(chainTerms[1].id);
-  const kin = siblings
-    .filter((term) => term.id !== ISOLATION_TYPE)
-    .map((term) => term.id);
-
   const vocabulary = bundleVocabulary(LOCAL_VOCAB_SLUG);
+
+  /* The overlay's single term, when it really is single.
+     ----------------------------------------------------
+     The overlay band names the term, quotes its own description, and prints its
+     `broader` and its weight — four facts read off the term rather than transcribed, so
+     a rename or a reweight in `content/ontology/extensions.yaml` arrives in the prose on
+     the next build. The old copy said "one term … priced at 0.5" in hand-typed words,
+     which is the shape of sentence that goes stale in silence.
+     `undefined` when the overlay grows past one term: a paragraph in the singular over a
+     set of three is worse than the generic sentence the band falls back to, and the
+     fallback is what tells the next author the copy needs writing. */
+  const overlayTerm = local.length === 1 ? local[0] : undefined;
 
   return (
     <>
@@ -124,30 +126,6 @@ export default function SpecOntologyPage() {
           />
         </div>
       </header>
-
-      {/* The figure this page opens with, on its own band. Guarded rather than assumed:
-          a vocabulary whose data types stopped forming a chain would be a different
-          drawing, and a page that printed an empty one would be asserting a shape it no
-          longer has. The guard wraps the band, so a page without the drawing does not
-          render 64px of empty ground where it was.
-
-          No `border-t`: the header above closes on its own `border-b`, and the ground
-          change is what marks the seam. */}
-      {chain.length >= 2 && kin.length > 0 && (
-        <section className="bg-surface/40 py-16 sm:py-20">
-          {/* The figcaption, held to the reading measure from the call site.
-              ------------------------------------------------------------
-              `components/spec/FigureFrame.tsx` draws its `<figcaption>` at the full
-              container, so "The chain the isolation argument walks…" ran at 186
-              characters a line. The class belongs on the figcaption; the figcaption
-              belongs to a shared component this page does not own, so the same rule is
-              applied through the wrapper instead. `var(--measure)` rather than a number:
-              it is the token `.prose-lane` reads, so the caption moves with the column. */}
-          <div className="container-page [&_figcaption]:max-w-[var(--measure)]">
-            <LatticeFigure chain={chain} kin={kin} />
-          </div>
-        </section>
-      )}
 
       {/* ---------- the size and shape of the curated set ----------
           A band, not a row in a flex stack. The five sections of this page used to sit
@@ -167,10 +145,24 @@ export default function SpecOntologyPage() {
               {core.length} curated terms, versioned as a whole
             </h2>
           </div>
-          {/* `.prose-lane` rather than the `max-w-3xl` this section carried on its own
-              wrapper: 768px ran these four paragraphs past 100 characters a line, and the
-              heading is now outside the lane where it belongs. */}
-          <div className="prose-lane flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
+          {/* NO `.prose-lane` HERE, ON PURPOSE — do not "fix" this back.
+              --------------------------------------------------------
+              Every other body column on this route is held to the 36rem measure, and
+              this one band is the exception the author asked for. The reason is what
+              these four paragraphs are: not running prose but the vocabulary's own
+              inventory, five counts and five phase ids read off the engine, half of it
+              set in `<Id>` chips. A chip is an atom the reader lands on and reads whole,
+              so the eye is not tracking a line to its end the way it does in argument
+              prose, and the measure that protects argument prose was instead breaking
+              the lists across three and four lines each — the phase enumeration, which
+              is the one thing here a reader scans rather than reads, wrapped mid-list at
+              36rem and reads as one row at container width.
+
+              The band therefore runs to `container-page` (1152px). It is the only text
+              column on the page that does. Its neighbours below keep the lane, so the
+              exception stays legible as an exception rather than becoming the new
+              default. */}
+          <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
             <p>
               Every structural field on the two layers above is a reference into
               one vocabulary of {core.length} curated terms, versioned at{" "}
@@ -214,7 +206,21 @@ export default function SpecOntologyPage() {
         </div>
       </section>
 
-      {/* ---------- the one term this archive coined for itself ---------- */}
+      {/* ---------- the one term this archive coined for itself ----------
+          Rewritten this pass, because the old copy could not be read in one go. It
+          opened "As the frontline-triage bundle carries it." — a fragment whose "it"
+          pointed at a heading ("The whole of this archive's own vocabulary") that never
+          said what the thing was — and then gave three facts in six words each ("one
+          term, rooted at a core category, priced at 0.5") without ever naming the term,
+          saying what it is a marker for, or saying what rooting and pricing buy. A
+          reader who did not already know doc 3 §7 got the shape of an argument and none
+          of its subject.
+
+          The rewrite answers, in order, the four questions the band actually exists to
+          answer: what the term is, why it is not in the core, what a namespaced term
+          still has to obey, and where the definition travels. Every claim is either read
+          off the overlay below (`overlayTerm`) or is doc 3 §7's rule stated as a rule;
+          nothing here describes behaviour the engine does not have. */}
       {vocabulary !== undefined && (
         <section
           className="border-t border-line bg-surface/40 py-16 sm:py-20"
@@ -224,7 +230,9 @@ export default function SpecOntologyPage() {
             <div className="flex flex-col gap-3">
               <span className="label-lead">The overlay</span>
               <h2 id="overlay-heading" className={BAND_H2}>
-                The whole of this archive&apos;s own vocabulary
+                {overlayTerm === undefined
+                  ? `The ${local.length} terms this archive added for itself`
+                  : "The one term this archive added for itself"}
               </h2>
             </div>
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
@@ -232,16 +240,56 @@ export default function SpecOntologyPage() {
                   564px, and the whole point between `sm` and `lg`, where this column is
                   the full 1152px container. */}
               <div className="prose-lane flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
-                <p>
-                  As the{" "}
-                  <SpecLink href={`/blueprints/${LOCAL_VOCAB_SLUG}`}>
-                    {LOCAL_VOCAB_SLUG}
-                  </SpecLink>{" "}
-                  bundle carries it. One term, rooted at a core category, priced
-                  at 0.5. The curated core has no marker for personal data, and
-                  coining one from the content side would extend a set the
-                  archive does not own, so it went into a namespace instead.
-                </p>
+                {overlayTerm === undefined ? (
+                  <p>
+                    Everything above describes the curated core. This archive
+                    also carries{" "}
+                    {local.length === 1
+                      ? "one term"
+                      : `${local.length} terms`}{" "}
+                    of its own, namespaced and outside that count. The file
+                    shown here is the whole of them.
+                  </p>
+                ) : (
+                  <>
+                    <p>
+                      Everything above describes the curated core. This archive
+                      needed one thing the core does not have: a way to mark a
+                      node that handles personal data. So it defined{" "}
+                      <Id>{overlayTerm.id}</Id>, whose own definition, quoted
+                      from the file shown here, is{" "}
+                      &ldquo;{overlayTerm.description}&rdquo;
+                    </p>
+                    <p>
+                      It sits in a namespace rather than in the core because
+                      adding a curated term from the content side would grow a
+                      set this archive does not own. That is the trade: the{" "}
+                      {core.length}{" "}
+                      above stay the number two authors can hold each other to,
+                      and this one is visibly somebody&apos;s local decision.
+                    </p>
+                    <p>
+                      A local term still has to earn its place. It declares{" "}
+                      <Id>{overlayTerm.broader ?? "a core term"}</Id> as its{" "}
+                      <Id>broader</Id>, so a reader or an analyzer that knows
+                      only the core can still tell what kind of thing it is
+                      {overlayTerm.defaultWeight === undefined
+                        ? ", and it declares no weight, so it counts zero and moves no score"
+                        : `, and it prices itself at ${overlayTerm.defaultWeight}. A local marker that named no weight would count zero and move no score`}
+                      .
+                    </p>
+                    <p>
+                      The definition travels with the work that uses it. Any
+                      bundle whose cards name the term ships this file in its
+                      own folder, as the{" "}
+                      <SpecLink href={`/blueprints/${LOCAL_VOCAB_SLUG}`}>
+                        {LOCAL_VOCAB_SLUG}
+                      </SpecLink>{" "}
+                      bundle does, so the card resolves wherever the folder is
+                      opened, with no registry to ask.
+                    </p>
+                  </>
+                )}
                 <p className="text-sm">
                   <SpecLink href="/ontology">Read the full vocabulary</SpecLink>
                   , with every term, its subsumption tree, and which cards use
@@ -285,51 +333,13 @@ export default function SpecOntologyPage() {
         </div>
       </section>
 
-      {/* ---------- the exits, at the end of the sequence ----------
-          The `border-t pt-8` this section used to draw inside the container is now the
-          band's own full-bleed edge, which is the same signal at the width the page is
-          actually divided at. */}
-      <section
-        className="border-t border-line bg-surface/40 py-16 sm:py-20"
-        aria-labelledby="exits-heading"
-      >
-        <div className="container-page flex flex-col gap-10">
-          <div className="flex flex-col gap-3">
-            <span className="label-lead">The exits</span>
-            <h2 id="exits-heading" className={BAND_H2}>
-              Write one, or read one
-            </h2>
-          </div>
-          <div className="flex flex-col gap-5">
-            <p className="prose-lane text-[15px] leading-relaxed text-muted">
-              The validator and the analyzers behind this sequence run in the
-              browser tab as well as at build time. Nothing is uploaded
-              anywhere, there is no account and no publishing step, and a bundle
-              dropped into the wizard is checked and scored in the tab and stops
-              there.
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <ButtonLink href="/build" variant="primary">
-                Build one step by step
-              </ButtonLink>
-              <ButtonLink href="/ontology" variant="outline">
-                The full vocabulary
-              </ButtonLink>
-              <ButtonLink href="/nodes" variant="outline">
-                The node card library
-              </ButtonLink>
-              <ButtonLink href="/upload" variant="outline">
-                Check a bundle in the tab
-              </ButtonLink>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* The rail closes the page on the opposite ground, and with no `border-t` of its
-          own: `SpecPager` draws one at container width, and a full-bleed rule 64px above
-          an inset rule is two lines saying one thing. The ground change is the seam. */}
-      <section className="bg-void py-16 sm:py-20">
+      {/* The rail closes the page. The exits band that used to stand between it and the
+          checks table is gone (header docblock), so the rail now follows a `bg-void`
+          section and takes the alternating ground itself — without the swap, the last
+          two bands would share a ground and the seam between them would disappear. Still
+          no `border-t` of its own: `SpecPager` draws one at container width, and a
+          full-bleed rule 64px above an inset rule is two lines saying one thing. */}
+      <section className="bg-surface/40 py-16 sm:py-20">
         <div className="container-page">
           <SpecPager href={HERE} />
         </div>

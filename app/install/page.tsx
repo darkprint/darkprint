@@ -56,7 +56,9 @@ export default function InstallPage() {
           },
           {
             href: "/build",
-            label: "Build one yourself",
+            // The nav's own label for this route since the author renamed it, and the
+            // page's `h1`. "Build one yourself" was a third name for one destination.
+            label: "Design a blueprint",
             blurb: "About an hour, ending in files on your machine.",
           },
         ]}

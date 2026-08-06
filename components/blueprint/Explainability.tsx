@@ -1186,14 +1186,14 @@ function SecurityPanel({
       </summary>
 
       {/* The arithmetic used to be restated here: "Four points to start, minus the
-          weight of every risk marker present". `/spec/scoring` describes the whole
+          weight of every risk marker present". `/reading-the-radar` describes the whole
           scale, every weight and both cuts, and the author's ruling is that it belongs
           there rather than on each of nine blueprint pages. What this panel is for is
           the ledger underneath, which says what *this* graph was charged. */}
       <p className="mb-3 text-sm leading-relaxed text-muted">
         What this graph was charged, and for what.{" "}
         <Link
-          href="/spec/scoring#weights"
+          href="/reading-the-radar#weights"
           className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"
         >
           How a blueprint is graded <span aria-hidden>→</span>

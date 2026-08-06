@@ -1,5 +1,5 @@
 /* ============================================================
-   /spec — the same three columns for all three layers.
+   The spec layer pages — the same three columns for all three.
 
    The page's claim is one claim repeated at three scales: some of
    what you write is resolved against something and the rest is

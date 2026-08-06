@@ -39,13 +39,11 @@ import { WhichTasksGlance } from "@/components/explain/WhichTasksGlance";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionLevels } from "@/components/home/SectionLevels";
 import { SectionRoles } from "@/components/home/SectionRoles";
-import { DezoomGraph } from "@/components/home/nodecard/DezoomGraph";
 import { GraphFigure } from "@/components/learn/PartFigures";
 import { IsolationWall } from "@/components/howto/IsolationWall";
 import { PhaseStrip } from "@/components/howto/PhaseStrip";
 import { EnforcementFigure } from "@/components/spec/EnforcementFigure";
 import { LatticeFigure } from "@/components/spec/LatticeFigure";
-import { SpecLayers } from "@/components/spec/SpecLayers";
 
 import {
   clippedLabels,
@@ -115,11 +113,6 @@ function graphFigures(): React.ReactElement {
  * blueprint" whatever is drawn inside it; the section now holds one static, aria-hidden
  * character per panel and nothing this file has anything to measure.
  * `LatticeFigure` is laid out from the vocabulary.
- *
- * `DezoomGraph` is rendered directly, which is a judgement call: its two props are a link
- * and a classification that no glyph is placed from, and its parent is a scroll stage
- * whose hooks do nothing on the server, so rendering the stage would buy the same two
- * frames through more machinery.
  */
 interface SceneEntry {
   /** Repo-relative paths of the files whose `<FlowScene` this entry measures. */
@@ -154,14 +147,17 @@ const ROSTER: readonly SceneEntry[] = [
   // `components/home/lifecycle/ForkScene.tsx` had an entry here and the file is gone.
   // `ForkAction` was its only caller and the author asked the drawing out of that panel,
   // which left the scene with nowhere to render.
-  {
-    files: ["components/home/nodecard/DezoomGraph.tsx"],
-    frames: 2,
-    render: () =>
-      framesOf(
-        createElement(DezoomGraph, { cardHref: "/nodes/code-builder", darkFactory: true }),
-      ),
-  },
+  // `components/home/nodecard/DezoomGraph.tsx` had an entry here and the file is gone.
+  // It drew the card shrinking into a node of the starter graph at the end of the walk,
+  // and `NodeCardStage` on `/spec/card` was its only mount. The author asked that page to
+  // draw "the same as the home's" node panel, which is `CardWalk` — a listing beside a
+  // list of notes, no `<svg>` anywhere in it — so the stage and the graph it ended on
+  // went with the mount. This is the second entry to leave for that reason and the
+  // deletion is deliberate: an earlier instruction asked for the dezoom in as many words
+  // ("when reached the end, there is a dezoom that place such node card within a node of
+  // a generic graph"), and the later one overrides it. Restoring the dezoom means
+  // restoring this entry with it, because a two-frame figure with no label floor is how
+  // 9px type reaches a page.
   // `components/explain/AbsentEdgeGraph.tsx` had an entry here. It drew the starter
   // blueprint clean and leaked, two frames, rendered through `SectionAbsentEdge` so the
   // numbers came from the engine rather than from this file. Both were deleted with
@@ -195,11 +191,12 @@ const ROSTER: readonly SceneEntry[] = [
     frames: 4,
     render: () => framesOf(createElement(PhaseStrip)),
   },
-  {
-    files: ["components/spec/SpecLayers.tsx"],
-    frames: 1,
-    render: () => framesOf(createElement(SpecLayers)),
-  },
+  /* `components/spec/SpecLayers.tsx` (DRW-101, the three stacked lanes) used to sit here.
+     It was mounted only on `/spec`, the IA pass deleted that route, and the author asked
+     for that figure and its caption off the site in the same instruction, so the entry
+     came out with the file rather than being left pointing at a module nothing renders.
+     Its two glyph constants moved to `components/spec/marks.ts`, which `EnforcementFigure`
+     below still spells its own distinction with. */
   {
     files: ["components/spec/EnforcementFigure.tsx"],
     frames: 1,
@@ -259,16 +256,19 @@ describe("the guard covers every scene the site draws", () => {
   });
 
   it("collects the furniture the box case compares against", () => {
-    // Three stroked rectangles are drawn across all 26 frames: level 4's harness, the
-    // card frame in `SpecLayers` and the prohibition block in `EnforcementFigure`. If the
-    // walker stopped recognising a `<rect>` — a change of attribute order, a stroke moved
-    // into a class — "draws no box edge through a word" would pass on every scene by
-    // having nothing to compare, which is the shape of guard this file exists to refuse.
+    // Two stroked rectangles are drawn across every frame the roster measures: level 4's
+    // harness, and the prohibition block in `EnforcementFigure`. Three until the IA pass,
+    // when `SpecLayers` went with the `/spec` route that was its only mount and took its
+    // card frame with it. If the walker stopped recognising a `<rect>` — a change of
+    // attribute order, a stroke moved into a class — "draws no box edge through a word"
+    // would pass on every scene by having nothing to compare, which is the shape of guard
+    // this file exists to refuse. A floor, not a count: it is here to fail when the walk
+    // stops matching, not to pin how many boxes the site draws.
     const boxes = MEASURED.reduce(
       (sum, entry) => sum + entry.measured.reduce((n, frame) => n + frame.boxes.length, 0),
       0,
     );
-    expect(boxes).toBeGreaterThanOrEqual(3);
+    expect(boxes).toBeGreaterThanOrEqual(2);
   });
 
   it("names no scene that has stopped existing", () => {

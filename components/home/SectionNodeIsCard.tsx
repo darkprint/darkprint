@@ -15,13 +15,20 @@
    component of a card. But in a lightweight version without using
    as background the blueprint."
 
-   So the listing is back, in `CardWalk`, which is `NodeCardStage`'s
-   choreography at a third of its weight and on a plain ground
-   rather than the graticule. **Do not move it off again** on the
-   strength of spec §2: that line is superseded, and the drawing it
-   protected said a node has a document behind it without ever
-   showing one, which is the weaker claim on the page that has to
-   make it.
+   So the listing is back, in `CardWalk`. **Do not move it off
+   again** on the strength of spec §2: that line is superseded, and
+   the drawing it protected said a node has a document behind it
+   without ever showing one, which is the weaker claim on the page
+   that has to make it.
+
+   `CardWalk` began as `NodeCardStage`'s choreography at a third of
+   its weight, on a plain ground rather than the graticule. It is no
+   longer a lighter copy of anything: the author asked `/spec/card`
+   for "the same as the home's" panel, the stage is deleted, and
+   this beat and that page are now two mounts of one component. The
+   only prop that differs is `bodies` — this one keeps the shorter
+   landing wording, which is what `beats.test.ts` measures the beat
+   against.
 
    ── Why the card is read and not typed ──
    `code-builder@1.0.0`, off the archive, because the seventh part

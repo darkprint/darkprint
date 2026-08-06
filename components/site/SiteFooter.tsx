@@ -19,11 +19,20 @@ import Link from "next/link";
  *     /#levels      → the route link below it, which lands on the ladder
  *     /#autonomy    → /towards-a-dark-factory#autonomy  (SectionLevels)
  *     /#node-card   → /spec/card                 (SectionNodeCard, the page's centrepiece)
- *     /#roles       → /spec/topology             (SectionRoles, the page's opening figure)
- *     /#examples    → /spec                      (SectionExample)
- *     /#scoring     → /spec/scoring              (moved off /spec onto its own route,
- *                                                  lifecycle-scoring spec §4; the fragment
- *                                                  it used to be is gone with it, so this
+ *     /#roles       → /spec/topology             (SectionRoles was that page's opening
+ *                                                  figure until the IA pass of 2026-08-07
+ *                                                  removed the band on the author's
+ *                                                  instruction; the route is still the
+ *                                                  right destination — it is where the
+ *                                                  topology is explained — but the figure
+ *                                                  that named this anchor is unmounted)
+ *     /#examples    → /what-a-blueprint-is       (SectionExample, which moved with the
+ *                                                  deletion of `/spec`; the door page is
+ *                                                  its only mount now)
+ *     /#scoring     → /reading-the-radar         (moved off /spec onto its own route,
+ *                                                  lifecycle-scoring spec §4, then merged
+ *                                                  into the radar page by the IA pass; the
+ *                                                  fragment it used to be is gone, so this
  *                                                  is a route link now rather than one)
  *     /#lifecycle   → /#lifecycle                (SectionLifecycle, moved again: redesign
  *                                                  spec §3 put it on `/blueprints`, the
@@ -32,16 +41,20 @@ import Link from "next/link";
  *                                                  fragment survived two moves and landed
  *                                                  back where its first link pointed)
  *
- * Four of them lost their fragment on the way. `#node-card`, `#roles` and `#examples`
- * are now the first figure on a page that exists for them, so linking the route says
- * more than linking the block does, and `nav.test.ts` checks the route rather than
- * guessing at an id somebody may rename.
+ * Four of them lost their fragment on the way. `#node-card` and `#examples` are now the
+ * first figure on a page that exists for them, and `#roles` is a page that exists for the
+ * subject even though the figure itself has since been removed — so in all three cases
+ * linking the route says more than linking the block does, and `nav.test.ts` checks the
+ * route rather than guessing at an id somebody may rename.
  *
  * ── Labels ──
  * Where the header names a route, the label here is the header's label, character for
  * character, and `nav.test.ts` holds them together. They drifted once: the header called
  * `/spec` "Spec" and this called it "The spec language", so one route had two names on
- * one page.
+ * one page. `/spec` is gone — the IA pass deleted it and `/what-a-blueprint-is` is the
+ * door onto the three layer pages now — but the column below is still headed with what it
+ * was called, because that is what the three files a bundle holds are collectively named
+ * and the column is a list of them rather than a list of children of a route.
  *
  * The three `/spec` children are not called what their pager calls them ("Topology",
  * "Node card", "Ontology" in `components/spec/sequence.ts`). Those labels are read inside
@@ -62,21 +75,21 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
       { href: "/#lifecycle", label: "What you can do with one" },
       // Not "Share a blueprint": publishing has no backend, and this link is rendered
       // on the landing too. The header and both doors use the same wording.
-      { href: "/upload", label: "Validate a bundle" },
+      { href: "/upload", label: "Upload blueprint" },
     ],
   },
   {
     title: "Learn",
     links: [
-      // First here as it is first in the header menu: the page that says what a blueprint
-      // is for, which nothing else on the site did.
+      // The header's order, and for the header's reasons. Three rows came out in the IA
+      // pass and none was replaced: `/spec` is deleted (the first row is its door now),
+      // `/spec/scoring` merged into `/reading-the-radar` and handed it its label, and
+      // `/concepts` is the `#the-words` section of the first row.
       { href: "/what-a-blueprint-is", label: "What a blueprint is" },
-      { href: "/build", label: "Build one" },
-      { href: "/install", label: "Install MCP" },
-      { href: "/spec", label: "Spec" },
-      { href: "/reading-the-radar", label: "Reading the radar" },
-      { href: "/concepts", label: "Eval, harness and the rest" },
+      { href: "/reading-the-radar", label: "How a blueprint is graded" },
+      { href: "/build", label: "Design a blueprint" },
       { href: "/towards-a-dark-factory", label: "Towards a Dark Factory" },
+      { href: "/install", label: "Install MCP" },
       // "What it isn't" and "What a dark factory is" both pointed at `/what-it-isnt`,
       // which is gone. Neither is repointed: `SectionWhatItIs` held the definition and
       // was deleted with the route, so there is no id left for the second link and no
@@ -84,12 +97,17 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
     ],
   },
   {
+    // The three files a bundle holds, and the only permanent entrance to the three pages
+    // that describe them: `nav.test.ts` requires every sub-route of the two sequences to
+    // be carried here, because a page reachable from one pager and nothing else
+    // disappears the moment somebody edits that pager. `/spec/scoring` was a fourth row
+    // and is not a bundle file — it merged into `/reading-the-radar`, which the Learn
+    // column above carries under the label that came with it.
     title: "The spec language",
     links: [
       { href: "/spec/topology", label: "The topology, in DOT" },
       { href: "/spec/card", label: "The node card, in YAML" },
       { href: "/spec/ontology", label: "The vocabulary" },
-      { href: "/spec/scoring", label: "How a blueprint is graded" },
     ],
   },
   {

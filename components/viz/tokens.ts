@@ -103,7 +103,8 @@ export const VIZ = {
    * reasoning was never applied to these tokens.
    *
    * Measured across the site before this change, all on a 378px viewport and none
-   * `aria-hidden`: `SpecLayers` put 44 text nodes at 8.44px and its term-kind row at
+   * `aria-hidden`: the since-deleted `SpecLayers` put 44 text nodes at 8.44px and its
+   * term-kind row at
    * 6.76px; `EnforcementFigure` put the two sentences carrying its entire argument at
    * 6.76px; `LatticeFigure`'s annotations landed at 8.44px; `SectionLevels` reached
    * 6.98px. Every one of those is `sub`, and every one is below the floor the same repo

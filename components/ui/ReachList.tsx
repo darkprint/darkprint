@@ -5,7 +5,8 @@ import { cx } from "@/lib/format";
 /* ============================================================
    The row → connector → gloss figure.
 
-   It was written for `/concepts` ("One card, five rows") and the
+   It was written for the "One card, five rows" figure that is now
+   `/what-a-blueprint-is#the-words`, and the
    author asked for it elsewhere: "I really liked the graphic u
    used here; this is what I intended when making more clear a
    concept. Apply this also in the ontology and node webpages
@@ -49,7 +50,8 @@ export interface ReachRowProps {
   /**
    * A second line about this row, set smaller and dimmer under the gloss.
    *
-   * Added for `/concepts`, where these lived in a separate six-box grid under the figure.
+   * Added for the words section (then `/concepts`, now `/what-a-blueprint-is#the-words`),
+   * where these lived in a separate six-box grid under the figure.
    * A grid keyed by field name, sitting under a figure whose rows are keyed by field name,
    * is the same list twice: a reader matched `mcp` in a box against `mcp` in the drawing by
    * eye, and the two disagreed about how many fields there are. Optional, so the ontology

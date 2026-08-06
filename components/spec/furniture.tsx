@@ -13,7 +13,7 @@
    graph blooms into existence beside it.
 
    Extracted because the same three lines were being written a
-   third time. `SpecLayers` had the marker and the fade, then
+   third time. The deleted `SpecLayers` had the marker and the fade, then
    `EnforcementFigure` needed both when it moved into the luminous
    register, and `LatticeFigure` needed them the day after. Three
    copies of a stagger drift into three figures that arrive at

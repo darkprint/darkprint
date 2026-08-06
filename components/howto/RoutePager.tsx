@@ -33,16 +33,29 @@ import { CLIMB_ROUTE, neighbours } from "./route";
    disagree about a route — which is the failure `route.ts` and
    `sequence.ts` both exist to make impossible.
 
-   Where they still differ, this one is right: a lone arrow card
-   fills the row here (`flex-1`), where `SpecPager` pins its
-   singleton to `sm:col-start-2` and leaves a 568×115px hole beside
-   it. `SpecPager` should adopt `flex-1` in a later pass.
+   Both pagers were full-width slabs until 2026-08-07, when the
+   author asked for the opposite: "I don't like the extension of
+   the orange box for moving through pages... Just keep the heading
+   title removing the subtitle and reduce the horizontal size." So
+   the `blurb` line is gone from both and the cards hug their
+   content. The stretch that used to differ between them —
+   `flex-1` here, `sm:col-start-2` there — is moot: neither fills a
+   row now, and both push a lone NEXT to the end of the row rather
+   than reserving space for an arrow that does not exist.
    ============================================================ */
 
 /* `route-box`, not `panel`: these two leave the page, and the author asked for the boxes
    that do to be visually distinct from the ones carrying a concept. `app/globals.css`
-   records why the distinction is shape as well as hue. */
-const CARD = "route-box group flex flex-1 flex-col gap-1.5 p-5";
+   records why the distinction is shape as well as hue — and the shrink keeps every part
+   of that shape: a 12px-radius rectangle, the 2px rule down the leading edge, and two
+   stacked lines. `ComingSoonBadge` is a full-round pill of one line with no rule, so the
+   two stay tellable apart by silhouette. A one-line version of this box would not be.
+
+   `max-w-[19rem]` is sized off the longest label in `CLIMB_ROUTE` ("Which tasks it can
+   take"), which fits on one line inside it; the cap is shared with `SpecPager`, whose
+   titles are longer and wrap to two. */
+const CARD =
+  "route-box group inline-flex max-w-full flex-col gap-1.5 px-4 py-3 sm:max-w-[19rem]";
 
 export function RoutePager({
   href,
@@ -114,7 +127,7 @@ export function RoutePager({
       </div>
 
       {arrows && (previous !== undefined || next !== undefined) && (
-        <div className="flex flex-col gap-5 sm:flex-row">
+        <div className="flex flex-col items-start gap-4 sm:flex-row">
           {previous !== undefined && (
             <Link href={previous.href} rel="prev" className={CARD}>
               <span className="route-label">
@@ -123,21 +136,19 @@ export function RoutePager({
               {/* `hoverable:` gates the hover on `(hover: hover) and (pointer: fine)`:
                   a tap on a phone has no "leave", so an ungated `group-hover` latches
                   the amber on whichever exit was last touched. */}
-              <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors hoverable:group-hover:text-amber-bright">
+              <span className="font-display text-base font-semibold leading-snug text-fg transition-colors hoverable:group-hover:text-amber-bright">
                 {previous.label}
               </span>
-              <span className="text-sm leading-relaxed text-muted">{previous.blurb}</span>
             </Link>
           )}
           {next !== undefined && (
-            <Link href={next.href} rel="next" className={`${CARD} sm:text-right`}>
+            <Link href={next.href} rel="next" className={`${CARD} sm:ms-auto sm:text-right`}>
               <span className="route-label">
                 next<span aria-hidden> →</span>
               </span>
-              <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors hoverable:group-hover:text-amber-bright">
+              <span className="font-display text-base font-semibold leading-snug text-fg transition-colors hoverable:group-hover:text-amber-bright">
                 {next.label}
               </span>
-              <span className="text-sm leading-relaxed text-muted">{next.blurb}</span>
             </Link>
           )}
         </div>

@@ -9,18 +9,20 @@
    links to that anchor by name, so a reader arrives at the
    sentence and leaves without the numbers in it: before this
    section, the string `arbitrary-code-execution` appeared on no
-   page under `/spec`.
+   page under the spec routes.
 
-   ── What it costs, measured ──
-   This section is 763 prose words, 579 of them open, and it takes
-   `/spec` from 883 to 1,638. That makes `/spec` the longest
-   open-prose page on the site, on a route the redesign split into
-   four because one long page made readers leave. PROJECT.md §3.4
-   carries the numbers and the open question, which is placement:
-   the content is what §3.4 asked for and a `/spec/scoring` route
-   would take the overview back to 883. Anything added here should
-   be weighed against that, and anything cut should come out of the
-   duplication rather than out of the honesty statement below.
+   ── What it costs, measured, and where it ended up ──
+   This section is 763 prose words, 579 of them open, and it took
+   the old `/spec` from 883 to 1,638 — the longest open-prose page
+   on the site, on a route the redesign had just split into four
+   because one long page made readers leave. PROJECT.md §3.4 carried
+   the numbers and the open question, which was placement. It was
+   answered twice: first by a `/spec/scoring` route of its own, then
+   by the IA pass merging that route into `/reading-the-radar`,
+   where the arithmetic sits under the picture it explains.
+   Anything added here should be weighed against that length, and
+   anything cut should come out of the duplication rather than out
+   of the honesty statement below.
 
    ── Every number here is read, none is typed ──
    `DARKPRINT_CONFIG` is exported and deep-frozen for exactly this
@@ -244,7 +246,7 @@ export function ScoringModel({
   return (
     /* No `container-page`, no outer padding and no rule of its own: the route wraps this
        in its own full-bleed band, and carrying a second set of any of them gave
-       `/spec/scoring` two vertical rhythms and two boundaries at one seam. `id` and
+       the page two vertical rhythms and two boundaries at one seam. `id` and
        `scroll-mt-24` stay on this element, which is all `anchors.test.ts` requires of the
        `#weights` bookmark. */
     <section id="weights" className="scroll-mt-24 flex flex-col gap-10">
@@ -476,8 +478,9 @@ export function ScoringModel({
           </dl>
           {/* The `○ not built` chip stood in the heading row, with `minRuns` and
               `outlierZScore` between it and the sentence that explains what it means. It
-              introduces that sentence now, which is the shape this route already uses in
-              `app/spec/scoring/page.tsx`'s `NotBuilt`: badge, then the claim, in one line.
+              introduces that sentence now, which is the shape the page around it already
+              uses in `app/reading-the-radar/page.tsx`'s `NotBuilt`: badge, then the claim,
+              in one line.
 
               Guardrails §2 is the reason to move it toward the sentence rather than away.
               The paragraph carries this route's one honesty-ledger entry, held `open`

@@ -5,10 +5,15 @@
    and `SectionExample` are the rungs redesign spec §3 relocated, and they are still here
    at their own paths because moving the files would have rewritten four components on the
    same day their register changed. Their new pages (`/towards-a-dark-factory`,
-   `/spec/card`, `/spec/topology`, `/spec`) import them by path rather than through this
+   `/spec/card`, `/what-a-blueprint-is`) import them by path rather than through this
    barrel, which is the reason this list is allowed to be the landing's list and nothing
    else: a page that reads its section out of the landing's index would make the index a
    shared surface, and then no one could tell from it what the landing renders.
+
+   `SectionRoles` is the one with no mount at all now. `/spec/topology` was its only one
+   and the trim pass cut that band; the file and its two guards stay, so the drawing can
+   be re-mounted without being re-derived. It is deliberately still absent from the
+   exports below — the landing does not render it, and this barrel says only that.
 
    `SectionLifecycle` used to be on that list too, relocated to `/blueprints` by redesign
    spec §3. The lifecycle-scoring pass's own §2 brought a rewritten version of it back to

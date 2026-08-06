@@ -833,7 +833,7 @@ describe("no scene draws a node as a rectangle", () => {
     // not a node: `SectionLevels` draws one around level 4's harness, which is a region.
     //
     // The `data-viz` net alone was not enough. `GraphThumbnail` — the drawing on all nine
-    // gallery tiles, on the profile grids and on `/spec`'s one worked example — drew
+    // gallery tiles, on the profile grids and on the site's one worked example — drew
     // every node as a rounded `<rect>` with a kind stripe and carried no viz attributes at
     // all, so it walked straight through this case while `/blueprints` showed the reader
     // the identical graph the landing draws as lit discs, in the register the author

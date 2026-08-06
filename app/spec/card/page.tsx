@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
 
-import { getRegistry } from "@/lib/content";
 import { SectionNodeCard } from "@/components/home/SectionNodeCard";
 import { CheckLegend, CheckTable } from "@/components/spec/CheckTable";
-import { EnforcementFigure } from "@/components/spec/EnforcementFigure";
 import { Id, SpecLink } from "@/components/spec/parts";
 import { CARD_ROWS } from "@/components/spec/rows";
 import { specNeighbours } from "@/components/spec/sequence";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
-import { More } from "@/components/ui/More";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SEVERITY_META } from "@/components/ui/severity";
 // Read-only import of the build-time derivation in `components/explain/starter-isolation`.
@@ -43,59 +40,87 @@ import {
    (`components/home/nodecard/annotations.ts`). Replacing it with a
    transcription would have cost the one property it was built for,
    and §3 says so directly: "it reads the real card through
-   `cardSource` and that must survive the move." It is owned by the
-   landing this pass, so it is imported by path and not edited.
+   `cardSource` and that must survive the move."
 
-   ── The length pass (PROJECT.md §3.1) ──
-   The page was the longest of the four at 2,054 prose words, and
-   the annotations turned out to be arguing with the prose
-   around them. What went, and where each claim it carried now
-   lives:
+   ── This pass: the figure is the landing's, and it is centred ──
+   The author, of this page: "make /spec/card's scrollable node
+   panel the same as the home's", and "it should scroll in the
+   middle of the screen". So `SectionNodeCard` mounts `CardWalk`,
+   the component the landing draws, rather than `NodeCardStage`,
+   which is deleted. That is a net deletion of three things —
+   the copper graticule plate, the drawn leader line and the dezoom
+   at the end — and `CardWalk`'s own header lists them so the price
+   is on the record rather than discovered later. The one thing
+   this page keeps of its own is the wording: it passes an empty
+   `bodies` override, so every note falls through to
+   `annotations.ts`'s 45-word reference bodies and the three
+   diagnostic codes in them stay on the page.
 
-     · the h1 lead's list of what a card says. `SectionNodeCard`'s
-       own lead, one screen below it, makes the same list from the
-       same card. Only the two claims that list did not carry are
-       left: the JSON spelling, and that a published version is
-       never edited in place.
+   The centring is `CardWalk`'s and needs nothing from here:
+   `lg:sticky lg:top-[max(4rem,calc(50vh_-_19.25rem))]` against a
+   612.5px figure. **On a 390px phone it costs nothing, because
+   there is nothing to pay**: every sticky, height and clip class in
+   that component carries `lg:`, so a phone gets the whole 52-line
+   listing at its natural height with all nine notes open under it
+   and scrolls the page past it. Nobody should try to satisfy
+   "middle of the screen" below `lg` — the two ways of doing it are
+   an inline height beside `overflow-x: auto`, which traps the file
+   in a nested scroller, and an inline transform, which slides half
+   of it out of a container that never clips. Both have shipped
+   here before and both are written up in `CardWalk`.
 
-     · the whole "Half of it resolves, half of it is for a reader"
-       section. Fig. 1 on `/spec` already draws that split and its
-       caption names both markers, and the table below carries it
-       per field in the third column. The field lists inside it
-       (`type`, `phase`, `tools`, `risk_markers`, port types on one
-       side; `model`, `mcp`, `skill`, `spec`, `notes` on the other)
-       are each a row of that table, so the enumeration was the
-       table read aloud. Its middle paragraph pointed forward at a
-       section two screens down and stated nothing.
+   ── What this page carried and no longer does ──
+   The band titled "The split" is gone on the author's instruction.
+   It held the enforcement argument: a lead, `EnforcementFigure`,
+   two panels, and the resolver's own refusal quoted off the build.
+   Two sentences in it are pinned by `components/site/honesty.test.
+   ts`, which is the repository's first non-negotiable, so they were
+   REHOMED rather than dropped and both are still in the open:
 
-     · the enforcement section's own lead, which said the same
-       thing a third time before the figure that draws it.
+     · "both are legitimate, and a reader has to be able to tell
+       which is which without running anything" is now the last
+       sentence of the `cannot` entry below, which is the field it
+       was always about. It is half of this page's thesis — panel B
+       asserted that the free-text entry is legitimate, and without
+       this the symmetry has one side and an entry nothing checks
+       reads as an entry that failed.
 
-     · the two panels' opening sentences, which restated annotation
-       07 and Fig. 2's caption. Both panels keep exactly what
-       neither of those says: that a *narrower* type violates the
-       prohibition too, and that the validator's silence on a
-       free-text entry is deliberate.
+     · "error bundle/prohibition-violated", the severity in word
+       form beside the code, is the quoted diagnostic under the
+       field list. It is read off the engine's own `Diagnostic`
+       rather than typed, exactly as before.
 
-   Nothing was moved off the page except into the annotations and
-   figures already making the point. The field table is reference
-   depth rather than repetition, so it went behind `More` instead:
-   still prerendered, still keyboard reachable, still found by
-   find-in-page (§4.3's device, and the reason it is allowed).
+   `EnforcementFigure` loses its only page mount in this change.
+   `components/viz/scene-labels.test.ts` renders it directly, so
+   nothing fails; that is a figure the suite protects and no page
+   shows, and it wants a deliberate decision from whoever owns
+   `components/spec/`.
 
-   ── Why the enforcement argument lives here ──
-   It is an argument about one field. `cannot` is a card field, the
-   two entries it carries are on the card above, and the table has
-   a row for it. On the old single page it sat four screens below
-   the card and read as a separate subject.
+   ── The reference is open, and it names the subfields ──
+   The field table used to sit behind `components/ui/More.tsx`. The
+   author: "It has to stay opened not collapsable. Here it is
+   important to describe the role of each subfield." So the
+   `<details>` is gone, and the list under the table is the part
+   §4.3's disclosure had been hiding the need for: `CARD_ROWS` is a
+   table of top-level wire keys, and several of those keys hold
+   structure the table has no column for — a port's four keys, the
+   two list fields that look alike and are not, the two kinds of
+   entry `cannot` accepts. No count is written into either the
+   docblock or the prose: the one that was there ("fifteen rows")
+   was already wrong about a table this page does not own. Every
+   claim in that list is
+   `lib/core/card/schema.ts` or `lib/core/card/validate.ts`, and
+   each one says what the subfield DOES rather than restating its
+   name.
 
-   ── What was cut earlier (spec §5) ──
-   The `SourcePanel` that used to sit beside this layer's prose
-   showed `cards/code-builder@1.0.0.yaml` in full, which is the
-   same document the section above now scrolls through line by line
-   from the same `cardSource` call. The download and the raw text
-   are one link away on `/nodes/code-builder`, which the prose
-   still points at, and that page reads the same bytes.
+   Also removed, on instruction: "Read this card on its own page
+   for the resolved version and the file as it is stored, or browse
+   the library of 53 cards written against this schema."
+   `honesty.test.ts` does not pin it (checked, both directions:
+   nothing in `CLAIMS` carries either clause), and `/nodes` is two
+   clicks away in the header. Nothing else on the page linked
+   `/nodes/code-builder`, so the archive is now reached from the nav
+   rather than from here.
 
    ── No route config ──
    A static segment, so there is no `generateStaticParams` and no
@@ -125,13 +150,140 @@ const HERE = "/spec/card";
 const BAND_H2 =
   "font-display text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] text-fg sm:text-[32px]";
 
+/**
+ * The nested keys, and the entries of the list fields, that `CARD_ROWS` has no column for.
+ *
+ * The table answers "what holds it" per top-level wire key, which is the right shape for
+ * a reference and the wrong shape for six of them: `inputs · outputs` is one
+ * row over a structure with four keys in it, `tools · risk_markers` is one row over two
+ * lists that answer different questions, and `cannot` is one row over a list whose entries
+ * are read two different ways depending on what they say.
+ *
+ * Every sentence here is `lib/core/card/schema.ts` or `lib/core/card/validate.ts` read
+ * back, and the point of each entry is the ROLE — what the subfield decides, and what
+ * goes wrong when it is absent or wrong. A list that said "`type`: the port's type" would
+ * be the table again at greater length.
+ *
+ * `cannot` is last on purpose: the quoted refusal under this list is the engine's answer
+ * to its first kind of entry, and the two read as one argument in that order.
+ */
+const SUBFIELDS: readonly { key: string; role: React.ReactNode }[] = [
+  {
+    key: "inputs[].name · outputs[].name",
+    role: (
+      <>
+        The end of an edge rather than a label. A DOT edge writes{" "}
+        <Id>{'[out="build", in="brief"]'}</Id> to say which pair of ports it joins, so a
+        port name is an address the topology layer spells out loud. Unique within a side:
+        two inputs both called <Id>brief</Id> leave the resolver no way to decide which one
+        an edge meant, and it raises <Id>card/duplicate-port</Id> rather than picking one.
+      </>
+    ),
+  },
+  {
+    key: "inputs[].type · outputs[].type",
+    role: (
+      <>
+        The only subfield the resolver pairs on. It names a <Id>data-type</Id>{" "}
+        term from the ontology, and an edge holds when the source&rsquo;s output type is
+        the target&rsquo;s input type or a narrower kind of it. Everything a card says about
+        what actually travels is carried by this one word; the rest of the port is written
+        for a person.
+      </>
+    ),
+  },
+  {
+    key: "inputs[].description · outputs[].description",
+    role: (
+      <>
+        Free text for whoever wires the graph, read by nothing. It is where a port says the
+        part its type cannot: that <Id>brief</Id> is the ordered build steps the run was
+        instantiated with, and the only thing this node ever sees.
+      </>
+    ),
+  },
+  {
+    key: "inputs[].required",
+    role: (
+      <>
+        Inputs only, and true unless the card says otherwise. On an output it describes
+        nothing, because an output is not something a node needs, and the validator reports{" "}
+        <Id>card/bad-type</Id> against the exact path rather than dropping the key in
+        silence. A flag that is quietly ignored reads as a flag that works.
+      </>
+    ),
+  },
+  {
+    key: "phase[]",
+    role: (
+      <>
+        Any number of the five lifecycle phases, and the wire key takes a single term or a
+        sequence because both spellings read naturally in YAML. An empty list is a complete
+        answer and never a hole: the five phases describe the factory, not every node in
+        it, and an intake, a retrieval step or a memory store stands in none of them.
+        Nothing that renders a card may draw the empty case as missing data.
+      </>
+    ),
+  },
+  {
+    key: "tools[] · mcp[]",
+    role: (
+      <>
+        Two lists that look alike and answer different questions. A <Id>tools</Id> entry is
+        a capability term from the vocabulary, so it either resolves or raises{" "}
+        <Id>card/unknown-term</Id>. An <Id>mcp</Id> entry is the name a concrete server is
+        registered under on the machine that runs the graph, which the vocabulary has no
+        term for and is not going to grow one. <Id>tools</Id> says what the node is
+        permitted to do and <Id>mcp</Id> says which process supplies it; a node can carry
+        either without the other, and merging them would lose the question each one
+        answers.
+      </>
+    ),
+  },
+  {
+    key: "risk_markers[]",
+    role: (
+      <>
+        Each entry names a <Id>risk-marker</Id> term, and what the marker costs is set by
+        the vocabulary rather than by the card. A locally coined marker with no{" "}
+        <Id>defaultWeight</Id> counts zero, so a card can declare a risk the scoring never
+        sees, which is the one outcome worth knowing about before you write one.
+      </>
+    ),
+  },
+  {
+    key: "params.*",
+    role: (
+      <>
+        Free in shape, and required to survive a JSON round-trip because the card is hashed
+        as JSON into its digest. A value that cannot be serialised cannot be hashed, and a
+        card that cannot be hashed cannot be pinned by a blueprint, so{" "}
+        <Id>card/bad-type</Id> is raised where the value is written rather than at the
+        point two digests disagree.
+      </>
+    ),
+  },
+  {
+    key: "cannot[]",
+    role: (
+      <>
+        Two kinds of entry in one list. An entry naming a <Id>data-type</Id> term is a
+        prohibition the resolver enforces: an incoming edge able to carry that type, or a
+        narrower kind of it, fails the bundle. An entry naming no term is read as free text
+        and checked by nothing, which is what the second line under <Id>cannot</Id> on the
+        card above is. Both are legitimate, and a reader has to be able to tell which is
+        which without running anything.
+      </>
+    ),
+  },
+];
+
 export default function SpecCardPage() {
   const { page } = specNeighbours(HERE);
-  const registry = getRegistry();
 
-  // The engine's own sentence about the edge Fig. 2 draws. Quoted rather than
-  // paraphrased, and guarded rather than indexed blindly: a page arguing that a
-  // declaration is enforced should drop the quotation rather than invent one if the
+  // The engine's own sentence about the prohibition the card above declares. Quoted
+  // rather than paraphrased, and guarded rather than indexed blindly: a page arguing that
+  // a declaration is enforced should drop the quotation rather than invent one if the
   // demonstration ever stops being derivable.
   const demo = isolationDemo();
   const refusal =
@@ -159,136 +311,13 @@ export default function SpecCardPage() {
           line by line and read straight out of `content/cards/`. */}
       <SectionNodeCard />
 
-      {/* ---------- the split one field carries ----------
-          A band, not a row in a flex stack. The two sections of this page used to sit
-          inside one `container-page flex flex-col gap-14 py-14`, so the enforcement
-          argument and the field table were separated by 56px of nothing — while
-          `/towards-a-dark-factory`, in the same nav group, marks every seam with a
-          full-bleed edge and a ground change. Same device here: `border-t` and an
-          alternating ground, no new token and no new colour. */}
-      <section
-        className="border-t border-line bg-surface/40 py-16 sm:py-20"
-        aria-labelledby="enforced-heading"
-      >
-        <div className="container-page flex flex-col gap-10">
-          <div className="flex flex-col gap-3">
-            <span className="label-lead">The split</span>
-            <h2 id="enforced-heading" className={BAND_H2}>
-              Checked against the graph, or shown to a reader
-            </h2>
-          </div>
-
-          {/* The figcaption, held to the reading measure from the call site.
-              ------------------------------------------------------------
-              `components/spec/FigureFrame.tsx` draws its `<figcaption>` at the full
-              container, so Fig. 2's caption ran past 180 characters a line. The class
-              belongs on the figcaption; the figcaption belongs to a shared component
-              this page does not own, so the same rule is applied through the wrapper
-              instead. `var(--measure)` rather than a number: it is the token
-              `.prose-lane` reads, so the caption moves with the column. */}
-          <div className="flex flex-col gap-5 [&_figcaption]:max-w-[var(--measure)]">
-            {/* PROJECT.md §3.1's length pass deleted the lead this section opened on, on
-                the grounds that the heading and Fig. 2's caption between them say it.
-                They say the split and they say how to tell the two apart by reading.
-                Neither says the other half, which is the page's thesis: an entry nothing
-                checks is not a defect. Panel B below asserts it of the free-text entry
-                alone, so the symmetry had one side. Seventeen words. */}
-            <p className="prose-lane text-[15px] leading-relaxed text-muted">
-              Both are legitimate, and a reader has to be able to tell which is
-              which without running anything.
-            </p>
-
-            <EnforcementFigure />
-
-            <div className="grid gap-5 md:grid-cols-2">
-              <div className="panel flex flex-col gap-3 p-5">
-                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-emerald">
-                  Held against the graph
-                </span>
-                {/* The severity and the code are on the plate above (`error · the bundle
-                  does not resolve`) and in the quoted diagnostic below, so this says the
-                  part neither of them does: what the resolver compares, and that a
-                  narrower type is caught as well. */}
-                <p className="text-sm leading-relaxed text-muted">
-                  Every edge into this node is held against it, and so is every
-                  output the source declares. A type narrower than the one named
-                  violates it just the same.
-                </p>
-              </div>
-              <div className="panel flex flex-col gap-3 p-5">
-                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
-                  <span aria-hidden>◌ </span>Shown, and checked by nothing
-                </span>
-                <p className="text-sm leading-relaxed text-muted">
-                  An entry naming no term is legitimate and it addresses a
-                  reader. The validator stays quiet on it by design, because
-                  reporting an unknown term here would fire on the entry the
-                  field was named for.
-                </p>
-              </div>
-            </div>
-
-            {refusal !== undefined && (
-              <div className="flex flex-col gap-3">
-                <p className="prose-lane text-[15px] leading-relaxed text-muted">
-                  The sentence below comes back from the resolver during the
-                  build rather than from this page, run over the starter bundle
-                  with <Id>{ADDED_DOT_LINE}</Id> inserted.
-                </p>
-                <div className="rounded-lg border border-line bg-surface-2 p-4">
-                  {/* The severity in word form, beside the code, from the same table the
-                    validator's own lists use. §3.1's pass deleted the sentence that
-                    carried "at error severity" and left the word only on Fig. 2's plate,
-                    which is inside an `<svg>`; "error" as a severity was then on no page
-                    of the site outside the field table below, which is itself folded.
-                    Read off the diagnostic rather than typed, so it cannot drift from
-                    what the engine actually returned. */}
-                  <p className="flex flex-wrap items-baseline gap-x-2 font-mono text-[11px] uppercase tracking-[0.14em]">
-                    <span
-                      style={{ color: SEVERITY_META[refusal.severity].color }}
-                    >
-                      {SEVERITY_META[refusal.severity].word}
-                    </span>
-                    <span className="text-signal">{refusal.code}</span>
-                  </p>
-                  <p className="mt-2 font-mono text-[12px] leading-relaxed text-fg">
-                    {refusal.message}
-                  </p>
-                  {refusal.hint !== undefined && (
-                    <p className="mt-2 font-mono text-[11px] leading-relaxed text-dim">
-                      {refusal.hint}
-                    </p>
-                  )}
-                </div>
-                {/* Pointed at the topology layer when `/what-it-isnt` was removed. The
-                  sentence had to change with the href, not just follow it: the old target
-                  drew the clean and leaked graphs side by side and quoted the analyzer on
-                  both, and nothing on the site does that now. What survives is the
-                  prohibition drawn as an edge the starter graph does not have. */}
-                {/* `.prose-lane`: uncapped, this sat at 182 characters a line — a sibling
-                  of the capped paragraph five lines above it, in the same block. */}
-                <p className="prose-lane text-sm text-dim">
-                  <SpecLink href="/spec/topology">The topology layer</SpecLink>{" "}
-                  draws the same prohibition as an edge the starter graph does
-                  not have, beside the card that declares it.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ---------- the reference, folded away ----------
-          §4.3's disclosure rather than a cut: fifteen rows naming the diagnostic
-          behind each field is the one place several of these codes appear on the
-          site, and a code is what makes the page's claims greppable. Behind a
-          `<details>` it stays in the prerendered HTML and stays searchable, so a
-          reader who wants the schema loses nothing and a reader who wanted the
-          argument is not reading a table to reach the pager.
-
-          The `border-t pt-8` this section used to draw inside the container is now the
-          band's own full-bleed edge, which is the same signal at the width the page is
-          actually divided at. */}
+      {/* ---------- the reference, in the open ----------
+          A band, not a row in a flex stack. The seam is a `border-t` and a ground
+          change, the same device `/towards-a-dark-factory` marks its bands with, and it
+          is now the only seam on the page: the band that used to sit between this and
+          the figure is gone, so the figure's `bg-void` runs straight into this one's and
+          the rule is what divides them. The pager below is `bg-surface/40`, which is the
+          ground change that closes the page. */}
       <section
         className="border-t border-line bg-void py-16 sm:py-20"
         aria-labelledby="fields-heading"
@@ -300,24 +329,96 @@ export default function SpecCardPage() {
               Every field, and what holds it
             </h2>
           </div>
-          <div className="flex flex-col gap-4">
+
+          <div className="flex flex-col gap-5">
             {/* Uncapped this ran 187 characters a line, the widest prose on the page. */}
+            {/* No count in the sentence. The docblock this page shipped with said
+                "fifteen rows" over a `CARD_ROWS` that has sixteen, because `provenance`
+                was added and the prose was not: a number typed beside a list somebody
+                else owns goes stale silently, and there is nothing here worth spending a
+                render on `CARD_ROWS.length` for. */}
             <p className="prose-lane text-sm text-muted">
-              <SpecLink href="/nodes/code-builder">
-                Read this card on its own page
-              </SpecLink>{" "}
-              for the resolved version and the file as it is stored, or{" "}
-              <SpecLink href="/nodes">browse the library</SpecLink> of{" "}
-              {registry.latestCards().length} cards written against this schema.
+              One row per wire key, and the third column is the point: a diagnostic code is
+              greppable, it is what the build and{" "}
+              <SpecLink href="/upload">the upload check</SpecLink> print, and it is the
+              difference between a promise and a rule you can go and trip on purpose.
             </p>
-            <More summary="Field by field, with the code behind each">
-              <CheckLegend />
-              <CheckTable
-                rows={CARD_ROWS}
-                caption="What the engine checks on a node card, and what it leaves to the author"
-              />
-            </More>
+            <CheckLegend />
+            <CheckTable
+              rows={CARD_ROWS}
+              caption="What the engine checks on a node card, and what it leaves to the author"
+            />
           </div>
+
+          <div className="flex flex-col gap-5">
+            <h3 className="label-lead">Inside the fields that hold structure</h3>
+            <p className="prose-lane text-sm text-muted">
+              Several rows above stand over more than one thing. What each nested key
+              decides, and what it costs to leave it out or to get it wrong.
+            </p>
+            {/* Two columns at `md`, because these are short definitions and one column of
+                nine at the reading measure is a screen of scrolling for a list a reader
+                scans rather than reads. 40px across and 20px down, both canonical tiers.
+
+                The term is spelled exactly as `CheckTable` spells its row heads —
+                `font-mono text-[12px] text-fg` — so the list reads as the table continued
+                rather than as a second, differently-typed reference. Deliberately NOT
+                copper: the register belongs to the figure above, where it marks the runs
+                of one real file, and spending it on a list of key names would say these
+                nine are lines of that card. */}
+            <dl className="grid gap-x-10 gap-y-5 md:grid-cols-2">
+              {SUBFIELDS.map((field) => (
+                <div key={field.key} className="flex flex-col gap-1.5">
+                  <dt className="font-mono text-[12px] text-fg">{field.key}</dt>
+                  <dd className="text-sm leading-relaxed text-muted">{field.role}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          {refusal !== undefined && (
+            <div className="flex flex-col gap-3">
+              <p className="prose-lane text-[15px] leading-relaxed text-muted">
+                The sentence below comes back from the resolver during the build rather
+                than from this page, run over the starter bundle with{" "}
+                <Id>{ADDED_DOT_LINE}</Id> inserted.
+              </p>
+              <div className="rounded-lg border border-line bg-surface-2 p-4">
+                {/* The severity in word form, beside the code, from the same table the
+                    validator's own lists use. An earlier length pass deleted the sentence
+                    that carried "at error severity" and left the word only on a figure's
+                    `<svg>` plate; that figure is now off the page too, so this is the one
+                    place on `/spec/card` where the severity is a word a reader can find.
+                    Read off the diagnostic rather than typed, so it cannot drift from what
+                    the engine actually returned. `honesty.test.ts` pins the pair. */}
+                <p className="flex flex-wrap items-baseline gap-x-2 font-mono text-[11px] uppercase tracking-[0.14em]">
+                  <span style={{ color: SEVERITY_META[refusal.severity].color }}>
+                    {SEVERITY_META[refusal.severity].word}
+                  </span>
+                  <span className="text-signal">{refusal.code}</span>
+                </p>
+                <p className="mt-2 font-mono text-[12px] leading-relaxed text-fg">
+                  {refusal.message}
+                </p>
+                {refusal.hint !== undefined && (
+                  <p className="mt-2 font-mono text-[11px] leading-relaxed text-dim">
+                    {refusal.hint}
+                  </p>
+                )}
+              </div>
+              {/* Pointed at the topology layer when `/what-it-isnt` was removed. The
+                  sentence had to change with the href, not just follow it: the old target
+                  drew the clean and leaked graphs side by side and quoted the analyzer on
+                  both, and nothing on the site does that now. What survives is the
+                  prohibition drawn as an edge the starter graph does not have. */}
+              {/* `.prose-lane`: uncapped, this sat at 182 characters a line. */}
+              <p className="prose-lane text-sm text-dim">
+                <SpecLink href="/spec/topology">The topology layer</SpecLink> draws the
+                same prohibition as an edge the starter graph does not have, beside the
+                card that declares it.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

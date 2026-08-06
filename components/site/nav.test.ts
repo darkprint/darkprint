@@ -6,7 +6,8 @@
 
    1. the header called `/spec` "Spec" and the footer called it
       "The spec language", so one route had two names on one
-      screen;
+      screen (that route is gone; the defect is not, and the
+      first block below is what stops it recurring);
    2. `/build` and `/how-to-build-a-dark-factory` were labelled
       "Build one" and "How to build one", two items apart in the
       same group. `/build` is a seven-step path ending in a
@@ -18,7 +19,11 @@
    The redesign added a third, and it is the one this file grew
    for. Spec §4 split `/spec` into four routes and `/how-to-build-
    a-dark-factory` into three under a new name, and it cut the
-   landing from eight sections to five beats. Every one of those
+   landing from eight sections to five beats. The IA pass then
+   deleted `/spec` again from the other end, merged `/spec/scoring`
+   into `/reading-the-radar` and folded `/concepts` into
+   `/what-a-blueprint-is`, which is three more of exactly the same
+   move. Every one of those
    moves can break the chrome in a way that typechecks and builds:
    a header item pointing at a deleted directory, a footer anchor
    naming a fragment no page renders any more, a sub-route nothing
@@ -333,7 +338,7 @@ describe("the nav is a complete map of the routes", () => {
    *
    * The footer is where most of them live and it is not where all of them live.
    * `/blueprints/[slug]` linked `/#scoring` for the panel that explains its two computed
-   * readings, spec §3 moved that panel to `/spec`, and the link survived the move
+   * readings, spec §3 moved that panel off the landing, and the link survived the move
    * pointing at a landing that renders no such id. It typechecks, it builds, it renders
    * as an underline, and it scrolls nowhere.
    */
@@ -358,11 +363,15 @@ describe("the nav is a complete map of the routes", () => {
   });
 
   /**
-   * Spec §4 gave `/spec` three children and `/towards-a-dark-factory` two, and put one
-   * item per sequence in the header. That is the right header and it leaves five routes
-   * whose only permanent entrance is the footer, so the footer has to carry them: a
-   * sub-route reachable from one pager and nothing else disappears the moment somebody
-   * edits that pager.
+   * Spec §4 gave the spec sequence three child routes and `/towards-a-dark-factory` two,
+   * and put one item per sequence in the header. That is the right header and it leaves
+   * five routes whose only permanent entrance is the footer, so the footer has to carry
+   * them: a sub-route reachable from one pager and nothing else disappears the moment
+   * somebody edits that pager.
+   *
+   * Two segments or fewer is not required here, which is why stop 00 of the spec
+   * sequence is not in this check after the IA pass moved it to `/what-a-blueprint-is`.
+   * It is in the Learn column regardless, as a top-level route in its own right.
    */
   it("carries every sub-route of the two sequences in the footer", () => {
     const linked = new Set(FOOTER.map((link) => split(link.href).path));
@@ -431,20 +440,38 @@ describe("the collapsed menu stays usable", () => {
 });
 
 /**
- * The §4.2 rename, held to the promise the spec made for it: "old URLs must not 404".
+ * Every route this site has retired, held to the promise §4.2 made for the first two:
+ * "old URLs must not 404".
  *
- * Both paths were in the header and the footer of every page this site has served, so a
- * build that drops either redirect breaks links that are already written down elsewhere.
- * The destinations are resolved against the filesystem for the same reason the header's
- * are: a redirect onto a route that no longer exists is a 404 with an extra hop.
+ * All five were in the header and the footer of every page this site served while they
+ * existed, so a build that drops one of these redirects breaks links that are already
+ * written down elsewhere. The destinations are resolved against the filesystem for the
+ * same reason the header's are: a redirect onto a route that no longer exists is a 404
+ * with an extra hop.
+ *
+ * The last three are the IA pass of 2026-08-07, and they are content moves rather than
+ * renames, so each lands on the page that now holds what the old one held rather than on
+ * a parent index:
+ *
+ *   - `/spec` was the overview above three layer pages. `/what-a-blueprint-is` is their
+ *     door now, and it carries the three old in-page ids so `/spec#card` still lands on
+ *     the band about the card after the hop.
+ *   - `/spec/scoring` merged into `/reading-the-radar`, which took its title with it.
+ *     `#weights` survives because `ScoringModel` owns that id and moved whole.
+ *   - `/concepts` is the `#the-words` section of `/what-a-blueprint-is`. The destination
+ *     is the bare route: a redirect that appends a fragment overrides the one a reader
+ *     arrived with.
  */
-describe("the routes that were renamed still answer", () => {
+describe("the routes that were retired still answer", () => {
   const RENAMED: [string, string][] = [
     ["/how-to-build-a-dark-factory", "/towards-a-dark-factory/the-climb"],
     ["/which-tasks", "/towards-a-dark-factory/which-tasks"],
+    ["/spec", "/what-a-blueprint-is"],
+    ["/spec/scoring", "/reading-the-radar"],
+    ["/concepts", "/what-a-blueprint-is"],
   ];
 
-  it("redirects both old paths, permanently, to a page that exists", async () => {
+  it("redirects every old path, permanently, to a page that exists", async () => {
     const redirects = (await nextConfig.redirects?.()) ?? [];
     for (const [source, destination] of RENAMED) {
       const rule = redirects.find((entry) => entry.source === source);
@@ -456,7 +483,7 @@ describe("the routes that were renamed still answer", () => {
     }
   });
 
-  it("has removed both old directories, so the redirect is the only answer", () => {
+  it("has removed every old page, so the redirect is the only answer", () => {
     // Redirects are checked before the filesystem, so a directory left behind at either
     // path would be shadowed and silently unreachable rather than loudly wrong.
     for (const [source] of RENAMED) {
@@ -464,7 +491,7 @@ describe("the routes that were renamed still answer", () => {
     }
   });
 
-  it("names neither old path anywhere in the chrome", () => {
+  it("names no old path anywhere in the chrome", () => {
     const stale = [...NAV.map((item) => item.href as string), ...FOOTER.map((link) => link.href)]
       .filter((href) => RENAMED.some(([source]) => split(href).path === source));
     expect(stale).toEqual([]);

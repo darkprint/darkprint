@@ -12,10 +12,9 @@
    `#explainability-heading` no longer has a link pointing at it —
    the panel reorg pass removed the Score panel's "See the working."
    paragraph, which was its only route in — but the id and its
-   `scroll-mt-24` stay on the heading regardless, the same way
-   `/spec#scoring` (below) keeps its compatibility door after nothing
-   on the site links it anymore. The rule below no longer names it as
-   one of its known-good examples for exactly that reason.
+   `scroll-mt-24` stay on the heading regardless. The rule below no
+   longer names it as one of its known-good examples for exactly
+   that reason.
 
    Nothing could see either one. A link and its target are in
    different files, often in different trees, and no render test
@@ -125,12 +124,17 @@ describe("the walk finds both halves", () => {
   it("finds the anchors this rule was written for", () => {
     const ids = new Set(LINKS.map((link) => link.id));
     /* Lifecycle-scoring spec §4.4: every internal `href="/spec#scoring"` was corrected to
-       `href="/spec/scoring"`, the real route, on purpose — `#scoring` is no longer a
-       fragment anything links to. The id still exists, on the compatibility door
-       `app/spec/page.tsx` carries at `id="scoring"` for an old bookmark or an external
-       link that still has the fragment (spec-routes.test.ts and honesty.test.ts hold that
-       door and the route it points at); this walk just has nothing left to find it by,
-       since a walk is built from `href`s and the door's own id is never one. */
+       the real route on purpose, and the IA pass then merged that route into
+       `/reading-the-radar`. `#scoring` is a fragment nothing links to and nothing renders
+       any more: the compatibility door lived on `app/spec/page.tsx`, and that page is
+       deleted. The three fragments that DID survive that deletion are `#topology`,
+       `#card` and `#ontology`, which moved onto the three bands of
+       `/what-a-blueprint-is` — nothing links those either, so this walk cannot see them,
+       and `components/spec/spec-routes.test.ts` is what holds them.
+
+       `#weights` is the one anchor in this pair that both survives and is linked. It
+       moved with `ScoringModel` through two routes and is reached from
+       `app/ontology/[...term]` and `components/blueprint/Explainability.tsx`. */
     for (const id of ["security-explained", "weights"]) {
       expect(ids, `nothing links #${id} any more`).toContain(id);
     }

@@ -24,18 +24,23 @@
    parts") as a literal string. The lifecycle-scoring pass appended a
    fifth page (`SPEC_SCORING`) to `SPEC_SEQUENCE` and the literal was
    never touched, so it kept announcing a four-stop rail to a screen
-   reader over a five-item `<ol>` — reproduced against the built
-   `/spec/scoring` HTML, which rendered five `<li>`s under the stale
-   label. Read off `SPEC_SEQUENCE.length` instead, so a sixth page
-   appended the same way updates the label by construction rather
-   than by whoever remembers to grep for "four" a second time.
+   reader over a five-item `<ol>` — reproduced against the built HTML
+   of the page that append added, which rendered five `<li>`s under
+   the stale label. Read off `SPEC_SEQUENCE.length` instead, so a
+   page appended the same way updates the label by construction
+   rather than by whoever remembers to grep for "four" a second time.
+
+   That is not a hypothetical any more in the other direction: the IA
+   pass took the sequence back DOWN to four, by deleting `/spec` and
+   merging `/spec/scoring` into `/reading-the-radar`, and the label
+   followed on its own.
    ============================================================ */
 
 import Link from "next/link";
 
 import { cx } from "@/lib/format";
 
-import { SPEC_SEQUENCE, specNeighbours, type SpecPage } from "./sequence";
+import { SPEC_OVERVIEW, SPEC_SEQUENCE, specNeighbours, type SpecPage } from "./sequence";
 
 /**
  * The crumb at the top of a child page.
@@ -43,6 +48,11 @@ import { SPEC_SEQUENCE, specNeighbours, type SpecPage } from "./sequence";
  * It carries the way back and the position, which are the two things a reader who arrived
  * from a search result has no other source for. Rendered on the three layer pages and not
  * on the overview, where both facts would be self-evident.
+ *
+ * Both halves come off `SPEC_OVERVIEW` rather than being typed. They were a hardcoded
+ * `href="/spec"` and a hardcoded "The spec language", and the IA pass deleted that route
+ * and moved stop 00 to `/what-a-blueprint-is` — three crumbs pointing at a 308 with the
+ * old page's name on them is exactly the drift `sequence.ts` exists to make impossible.
  */
 export function SpecCrumb({ href }: { href: string }) {
   const { position, total } = specNeighbours(href);
@@ -51,9 +61,9 @@ export function SpecCrumb({ href }: { href: string }) {
       {/* `.label` is the site's 11px/0.18em mono tier and it lives in
           `@layer components`, so the `hover:text-cyan` utility beside it wins the
           colour on hover rather than losing to the class's own `text-dim`. */}
-      <Link href="/spec" className="label transition-colors hover:text-cyan">
+      <Link href={SPEC_OVERVIEW.href} className="label transition-colors hover:text-cyan">
         <span aria-hidden>← </span>
-        The spec language
+        {SPEC_OVERVIEW.title}
       </Link>
       <span className="font-mono text-[11px] text-dim">
         {position} of {total}
@@ -62,7 +72,28 @@ export function SpecCrumb({ href }: { href: string }) {
   );
 }
 
-/** One arrow of the pager. `side` decides which way the chevron and the text run. */
+/**
+ * One arrow of the pager. `side` decides which way the chevron and the text run.
+ *
+ * ── Why this is a signpost and not a slab ──
+ * The author, 2026-08-07: "I don't like the extension of the orange box for moving
+ * through pages... Just keep the heading title removing the subtitle and reduce the
+ * horizontal size." So the `question` line is gone from here — it is still on the
+ * `/spec` doors, which is where a reader chooses between three pages they have not
+ * seen; at the foot of a page they have just read, the title alone names the next
+ * stop, and the extra line was buying a 700px amber rectangle for eight words.
+ *
+ * The box hugs its content now (`inline-flex`, no column stretch) and caps at 19rem,
+ * which is wide enough for the longest title in `SPEC_SEQUENCE` ("The ontology, the
+ * vocabulary both draw from") over two lines at the 16px display tier.
+ *
+ * ── It still cannot be read as a `ComingSoonBadge` ──
+ * `app/globals.css` says the two amber surfaces are told apart by shape, not hue, and
+ * the shrink deliberately keeps every part of that shape: a 12px-radius rectangle, the
+ * 2px rule down its leading edge, and two stacked lines (mono label over a display
+ * title). The badge is a fully-rounded pill of one uppercase line and no rule. Do not
+ * take this down to a single line — that is where the two would start to converge.
+ */
 function PagerLink({ page, side }: { page: SpecPage; side: "previous" | "next" }) {
   const isNext = side === "next";
   return (
@@ -73,8 +104,13 @@ function PagerLink({ page, side }: { page: SpecPage; side: "previous" | "next" }
          boxes that do to be told apart from the ones that carry a concept. See
          `app/globals.css`. */
       className={cx(
-        "route-box group flex flex-col gap-1.5 p-5",
-        isNext ? "sm:col-start-2 sm:text-right" : "sm:col-start-1",
+        "route-box group inline-flex max-w-full flex-col gap-1.5 px-4 py-3 sm:max-w-[19rem]",
+        /* `sm:ms-auto` rather than the old `sm:col-start-2`: on `/spec` and
+           `/spec/scoring` only one arrow exists, and the grid pinned that singleton to
+           the second column, leaving a hole beside it. Pushed to the end of a flex row
+           instead, a lone NEXT sits right and a lone PREVIOUS sits left with nothing
+           reserved for the arrow that is not there. */
+        isNext && "sm:ms-auto sm:text-right",
       )}
     >
       <span className="route-label">
@@ -88,10 +124,9 @@ function PagerLink({ page, side }: { page: SpecPage; side: "previous" | "next" }
           </>
         )}
       </span>
-      <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors group-hover:text-amber-bright">
+      <span className="font-display text-base font-semibold leading-snug text-fg transition-colors group-hover:text-amber-bright">
         {page.title}
       </span>
-      <span className="text-sm leading-relaxed text-muted">{page.question}</span>
     </Link>
   );
 }
@@ -136,7 +171,9 @@ export function SpecPager({ href }: { href: string }) {
       </ol>
 
       {(previous !== undefined || next !== undefined) && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        /* A row of two signposts, not a two-column grid: the boxes are content-sized
+           now, so a grid would stretch them straight back to half the measure each. */
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-start">
           {previous !== undefined && <PagerLink page={previous} side="previous" />}
           {next !== undefined && <PagerLink page={next} side="next" />}
         </div>

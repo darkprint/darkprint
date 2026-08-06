@@ -8,24 +8,24 @@ import { cx } from "@/lib/format";
    `app/globals.css` states the law in its own words: "every box
    whose job is to send a reader somewhere else wears this, and
    nothing else does." The two sequences honour it — `SpecPager`
-   across the five `/spec` stops, `RoutePager` across the three of
-   `/towards-a-dark-factory` — and both are pagers, so they only
-   exist for a page with a neighbour.
+   across the four stops of the spec sequence, `RoutePager` across
+   the three of `/towards-a-dark-factory` — and both are pagers, so
+   they only exist for a page with a neighbour.
 
    That left the standalone pages with nothing. Measured across the
-   Learn section: `/concepts`, `/reading-the-radar`,
-   `/what-a-blueprint-is`, `/build` and `/install` carried **zero**
-   `.route-box` between them, and three of those are the pages a
-   cold reader arrives on. `/what-a-blueprint-is` has six panels
-   whose entire job is to send the reader somewhere — `href` and
-   `hrefLabel` are required props on each — and not one was
-   signposted. The amber language existed and was unspent exactly
-   where it was needed most.
+   Learn section when this was written: `/concepts`,
+   `/reading-the-radar`, `/what-a-blueprint-is`, `/build` and
+   `/install` carried **zero** `.route-box` between them, and three
+   of those are the pages a cold reader arrives on. The amber
+   language existed and was unspent exactly where it was needed
+   most.
 
-   The pairing was one-way too. `/reading-the-radar` links across to
-   `/spec/scoring` for the arithmetic and says so in its own header
-   comment; `/spec/scoring` is last in its sequence, so its only
-   tail box is `← Previous` and the return trip did not exist.
+   The pairing was one-way too. `/reading-the-radar` linked across
+   to `/spec/scoring` for the arithmetic while that page's only tail
+   box was `← Previous`, so the return trip did not exist. The IA
+   pass settled that by merging the two: one page holds the picture
+   and the arithmetic, and its tail box points at the gallery and at
+   `/what-a-blueprint-is` instead of at its other half.
 
    Two destinations, not five: a page that ends by offering
    everything has not ended. Server component, no state, no props

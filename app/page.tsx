@@ -25,7 +25,9 @@
                                                   as components/explain/
                                                   SectionWhatItIs
      rung 3  self-localisation  SectionLevels     /towards-a-dark-factory
-     rung 4  one example        SectionExample    /spec
+     rung 4  one example        SectionExample    /spec, then
+                                                  /what-a-blueprint-is when
+                                                  the IA pass deleted /spec
      rung 5  what it isn't      SectionNotSkill   /what-it-isnt, folded into
                                                   SectionSkillVsFactory and
                                                   SectionIsolationRule

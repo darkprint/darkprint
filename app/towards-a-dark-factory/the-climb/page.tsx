@@ -447,7 +447,7 @@ export default function TheClimbPage() {
               the starter blueprint has an edge it does not have
             </Link>
             {" "}and adding it fails the bundle. None of the four formats reaches that layer; the{" "}
-            <Link href="/spec" className={INLINE}>
+            <Link href="/what-a-blueprint-is" className={INLINE}>
               three it is written in
             </Link>{" "}
             are a DOT topology, one versioned card per node, and a controlled vocabulary

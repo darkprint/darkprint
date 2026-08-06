@@ -19,7 +19,14 @@ export interface RouteStop {
   href: string;
   /** The nav label. Short, because it appears inside a pager button. */
   label: string;
-  /** What the page answers, for the pager's second line. */
+  /**
+   * What the page answers, in one line.
+   *
+   * Read by the two-door index at the foot of `/towards-a-dark-factory`, where a reader
+   * is choosing between pages they have not seen. NOT by `RoutePager` any more: on a
+   * page they have just read, the label alone names the next stop, and the second line
+   * was what made those boxes full-width slabs (author, 2026-08-07).
+   */
   blurb: string;
 }
 

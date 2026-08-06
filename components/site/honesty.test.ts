@@ -84,10 +84,12 @@ const INSTALL_PAGE = renderToStaticMarkup(createElement(InstallPage as never));
 const INSTALL_METADATA_DESCRIPTION = installMetadata.description ?? "";
 const WHICH_TASKS = renderToStaticMarkup(createElement(WhichTasksChecks));
 /**
- * The scoring panel `/spec/scoring` mounts (PROJECT.md §3.4; moved off `/spec` onto its
- * own route by the lifecycle-scoring pass, spec §4 — `ScoringModel` itself is unchanged
- * and this still renders it directly, so the assertions below hold regardless of which
- * route mounts it).
+ * The scoring panel `/reading-the-radar` mounts (PROJECT.md §3.4; moved off `/spec` onto
+ * `/spec/scoring` by the lifecycle-scoring pass, spec §4, and moved again when the IA
+ * pass merged that route into the radar page — `ScoringModel` itself is unchanged through
+ * both, and this still renders it directly, so the assertions below hold regardless of
+ * which route mounts it. Two route moves and not one edit here is the argument for
+ * rendering the component rather than reading a page).
  *
  * It is the first surface on the site to print `minRuns` and `outlierZScore`, and two
  * named filters on cost and time read as a description of something running unless the
@@ -209,23 +211,23 @@ const CLAIMS: Claim[] = [
 
   /* ---- /spec/card ---- */
   {
-    surface: "/spec/card · checked against the graph, or shown to a reader",
-    why: "half of the page's thesis. Panel B asserts the free-text entry is legitimate; without this the symmetry has one side, and an entry nothing checks reads as an entry that failed",
+    surface: "/spec/card · the `cannot[]` entry in the subfield list",
+    why: "half of the page's thesis. It used to close panel B of \"The split\", which asserted the free-text entry is legitimate; the IA pass of 2026-08-07 removed that band and rehomed this sentence onto the `cannot[]` entry, which is the field it was always about. Without it the symmetry has one side, and an entry nothing checks reads as an entry that failed",
     says: "both are legitimate, and a reader has to be able to tell which is which without running anything",
     where: "open",
     html: SPEC_CARD,
   },
   {
-    surface: "/spec/card · the resolver's own sentence",
-    why: 'the severity of the refusal in word form. It used to be in the prose ("at error severity"); after the length pass the only word form left was inside an `<svg>` plate and inside the folded field table',
+    surface: "/spec/card · the resolver's own sentence, quoted under the field list",
+    why: 'the severity of the refusal in word form. It used to be in the prose ("at error severity"); after the length pass the only word form left was inside an `<svg>` plate and inside the folded field table. The IA pass of 2026-08-07 removed both hiding places — "The split" and its `EnforcementFigure` went, and the field table is permanently open — so the quoted `Diagnostic`, still read off `isolationDemo()` at build time, now sits in the open under the field list',
     says: "error bundle/prohibition-violated",
     where: "open",
     html: SPEC_CARD,
   },
 
-  /* ---- /spec/scoring ---- */
+  /* ---- /reading-the-radar ---- */
   {
-    surface: "/spec · cost and time, if they are ever reported",
+    surface: "/reading-the-radar · cost and time, if they are ever reported",
     why: "the whole telemetry block is a design nothing implements. `minRuns 5` and `outlierZScore 3` are printed as engine configuration, which is what every other number in that section is, and those two are filters on a pipeline that has never had an input. PROJECT.md §3.5 is the point at which this stops being free, so the sentence has to be beside the numbers rather than behind a disclosure",
     says: "nothing on this site measures a run, so these two filters describe a design rather than a behaviour",
     where: "open",
@@ -343,7 +345,7 @@ describe("the surfaces the ledger is read off", () => {
     // A ledger held over an empty string passes every case in it.
     for (const [name, html] of [
       ["/spec/card", SPEC_CARD],
-      ["/spec scoring panel", SCORING],
+      ["the scoring panel", SCORING],
       ["which-tasks checks", WHICH_TASKS],
       ["the starter's canvas", STARTER],
       ["/build · download exit", DOWNLOAD_STEP],

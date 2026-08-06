@@ -2,33 +2,65 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { allBlueprints } from "@/lib/content";
-import { METRIC_SOURCE_META } from "@/lib/format";
+import type { MetricSource } from "@/lib/types";
+import { METRIC_SOURCE_META, cx } from "@/lib/format";
+import { ScoringModel } from "@/components/spec/ScoringModel";
+import { SourceBadge } from "@/components/ui/Badge";
+import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
 import { ScoreRadar } from "@/components/ui/ScoreRadar";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
+import { Sheet } from "@/components/viz";
 
 /* ============================================================
-   /reading-the-radar — the scorecard, taken apart.
+   /reading-the-radar — the scorecard, taken apart, and the
+   arithmetic behind it. One page.
 
-   The author, on the "What each row means" disclosure inside
-   `MetricBars`: it "should be placed in a new page where the is
-   the description how to read the radar chart. In such page I
-   expect a random radar chart that get described in its
-   components."
+   ── Two pages, and why they are one now ──
+   This route and `/spec/scoring` described the same six axes from
+   two sides: this one the *picture* (five spokes, why autonomy has
+   none, what a vertex's colour says), that one the *system* (three
+   badges, every weight, what fires a marker). Both opened with the
+   same `ScoreRadar`, at the same `starter-software-factory`, at
+   the same two width solves — two identical charts, one per route,
+   and each page's closing paragraph was a link to the other. The
+   author asked for the pair merged.
 
-   ── Why a page and not a longer disclosure ──
-   Every blueprint page draws this chart, and every one of them
-   folded the same explanation of it behind the same summary. Nine
-   copies of one lesson, none of them read, because a reader who
-   has arrived at a blueprint is there for the blueprint. The
-   lesson belongs once, where somebody who wants it can be sent.
+   The survivor is this route, on three grounds. The author asked
+   the grading door off the spec index in the same instruction, and
+   a page that stays a numbered spec stop while its parent index is
+   deleted refuses that twice. `components/spec/spec-routes.test.ts`
+   walks `app/spec` and fails on a child outside `SPEC_SEQUENCE`, so
+   keeping `/spec/scoring` would have forced it to stay in the
+   sequence. And this route is top-level and already carries the
+   highest-traffic inbound link of the pair, from `MetricBars` on
+   every blueprint scorecard.
 
-   ── What this page is not ──
-   It is not `/spec/scoring`. That page describes the *system*:
-   every weight, both cuts, what fires a marker. This one describes
-   the *picture*: five spokes, why autonomy is not one of them, and
-   what the colour of a vertex tells you about where its number came
-   from. A reader wanting the arithmetic is sent across.
+   The cost, stated: the URL says "reading the radar" and the title
+   says "How a blueprint is graded". The title wins because it is
+   the phrase every inline link on the site already uses for this
+   content — `Explainability`'s, `SectionExample`'s, the header's
+   and the footer's — and because it covers the merged page where
+   "Reading the radar" covers only the picture half. A URL is a
+   name somebody else wrote down; `next.config.ts` 308s
+   `/spec/scoring` here, and `#weights` still lands because
+   `ScoringModel` carries that id itself.
+
+   ── What came across from `/spec/scoring`, and what was dropped ──
+   Kept whole: DRW-104 with its `SourceBadge` legend and its
+   `○ not built` line naming the seeded axes; all three `SourceBand`
+   sections with both remaining `NotBuilt` paragraphs verbatim,
+   including the clause a reader has to be able to find again on a
+   card ("seeded rows, and every card that shows one says so"); and
+   `<ScoringModel />`, which reads every weight, cut and threshold
+   off `DARKPRINT_CONFIG` and the ontology at render time.
+
+   Dropped, on purpose: this page's own `<figure>` plate, which was
+   DRW-104 without the plate furniture; the source `<dl>` that used
+   to hang off callout 03, because DRW-104's legend and the three
+   band headers already say the same six metrics by source twice;
+   and callout 05, whose whole body was a link to the page this one
+   just absorbed. The spec crumb and pager went too: this is not a
+   stop in the spec sequence.
 
    ── The chart is a real one ──
    A blueprint out of the archive, drawn by the same `ScoreRadar`
@@ -36,22 +68,110 @@ import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
    would be a picture of a scorecard that no blueprint has, on the
    one page whose subject is how to read the real thing.
 
+   The figure's own honesty problem is that four of the six axes are
+   seeded, so a polygon drawn from them looks like a measurement of
+   something. The `○ not built` line in the figcaption is what stops
+   it claiming that, and it names the four rather than gesturing at
+   them.
+
+   ── Three sections, one per badge ──
+   The three badges a reader actually meets are AUTO, VOTED and
+   REPORTED: `SourceBadge` draws them from `METRIC_SOURCE_META` six
+   times on every blueprint scorecard. Each band is headed by the
+   live badge component rather than by a word for it, so the reader
+   matches a shape and a colour against the scorecard in front of
+   them, and the axis names under each badge are read off the
+   sample's own metrics.
+
    Static: no `generateStaticParams`, no `dynamicParams`, server
    component, no props (Next 16, `docs/01-app/03-api-reference/
    03-file-conventions/page.md`).
    ============================================================ */
 
 export const metadata: Metadata = {
-  title: "Reading the radar",
+  title: "How a blueprint is graded",
   description:
-    "A blueprint's scorecard, taken apart: five spokes, why autonomy is not one of them, and what the colour of each vertex says about where its number came from.",
+    "A blueprint's scorecard, taken apart: five spokes, why autonomy is not one of them, and what the colour of each vertex says about where its number came from. Then the three badges behind the six axes and every weight the engine charges. Nothing votes and nothing runs, so four of the six are seeded rows that say so.",
 };
 
 /** The blueprint whose card is drawn. Named, so the page says which one it is. */
 const SAMPLE_SLUG = "starter-software-factory";
 
+/** The badges, in the order the three bands below take them. */
+const SOURCE_ORDER: readonly MetricSource[] = ["auto", "community", "reported"];
+
 const LINK =
   "text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright";
+
+const BODY = "prose-lane text-[15px] leading-[1.7] text-muted";
+
+/**
+ * The `○ not built` line, beside the claim it qualifies.
+ *
+ * A pill and never `ComingSoonBadge`: amber is spent on two jobs on this site and one of
+ * them, `.route-box`, appears on this very page in the tail box. Shape carries the
+ * difference — globals.css writes that rule down — and this is the shape the deleted
+ * `/spec/scoring` used before the disclosure was split in two.
+ */
+function NotBuilt({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="flex flex-wrap items-start gap-2 text-[15px] leading-[1.7] text-dim">
+      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
+        <span aria-hidden>○</span>
+        not built
+      </span>
+      <span className="prose-lane">{children}</span>
+    </p>
+  );
+}
+
+/**
+ * One band, one badge.
+ *
+ * The heading row is the badge itself and the axes it carries, then the h2. That is
+ * deliberate: the reader is being taught to read a mark, so the mark is what titles the
+ * section rather than a transcription of it.
+ */
+function SourceBand({
+  source,
+  axes,
+  title,
+  id,
+  ground,
+  children,
+}: {
+  source: MetricSource;
+  /** The axis names this badge is on, read off the sample rather than typed. */
+  axes: string;
+  title: string;
+  id: string;
+  /** The band's ground, alternating down the page. */
+  ground: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      className={cx("border-t border-line py-16 sm:py-20", ground)}
+      aria-labelledby={id}
+    >
+      <div className="container-page flex flex-col gap-5">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+            <SourceBadge source={source} />
+            <span className="label">{axes}</span>
+          </div>
+          <h2
+            id={id}
+            className="font-display text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] text-fg sm:text-[32px]"
+          >
+            {title}
+          </h2>
+        </div>
+        {children}
+      </div>
+    </section>
+  );
+}
 
 function Callout({
   n,
@@ -63,11 +183,11 @@ function Callout({
   title: string;
   children: React.ReactNode;
   /**
-   * A figure belonging to this callout: the source legend under 03, the axis list under
-   * 04. Both used to be bare `<li>`s of their own, so the `<ol>` held seven items while
-   * the page printed five numbers — a screen reader said "item 5 of 7" where the page
-   * said **04**, and every callout after 03 was announced at the wrong position. They
-   * belong to the callout above them, so they sit inside it.
+   * A figure belonging to this callout: the axis list under 03. It used to be a bare
+   * `<li>` of its own, so the `<ol>` held more items than the page printed numbers — a
+   * screen reader said "item 5 of 7" where the page said **04**, and every callout after
+   * it was announced at the wrong position. It belongs to the callout above it, so it
+   * sits inside it.
    */
   extra?: React.ReactNode;
 }) {
@@ -98,7 +218,7 @@ function Callout({
   );
 }
 
-export default function ReadingTheRadarPage() {
+export default function HowABlueprintIsGradedPage() {
   const all = allBlueprints();
   const sample = all.find((bp) => bp.slug === SAMPLE_SLUG) ?? all[0];
   if (sample === undefined) return null;
@@ -108,7 +228,19 @@ export default function ReadingTheRadarPage() {
      blueprint page and missing from the page explaining the drawing. */
   const spokes = sample.metrics.filter((m) => m.key !== "autonomy");
   const autonomyRow = sample.metrics.find((m) => m.key === "autonomy");
-  const sources = [...new Set(spokes.map((m) => m.source))];
+
+  /* Every grouping on this page is read off the sample's own scorecard. The three bands,
+     the plate's legend and the sentence naming the seeded four all follow the data, so a
+     metric that changes source moves through the page rather than leaving one of its four
+     statements stale. */
+  const axesOf = (source: MetricSource): string =>
+    sample.metrics
+      .filter((metric) => metric.source === source)
+      .map((metric) => metric.label)
+      .join(" · ");
+  const seeded = sample.metrics
+    .filter((metric) => metric.source !== "auto")
+    .map((metric) => metric.label);
 
   return (
     <>
@@ -116,81 +248,84 @@ export default function ReadingTheRadarPage() {
         <div className="container-page">
           <SectionHeading
             as="h1"
-            eyebrow="Reading the radar"
-            title="What the scorecard is showing you"
-            lead="Every blueprint page draws one of these. It has five spokes, a sixth reading that deliberately has none, and a colour on each vertex saying where that number came from."
+            eyebrow="The six radar axes"
+            title="How a blueprint is graded"
+            lead="Every blueprint page draws one of these. It has five spokes, a sixth reading that deliberately has none, and a colour on each vertex saying where that number came from. This page reads the picture first and then the arithmetic behind it."
           />
         </div>
       </header>
 
-      {/* Plate first: the drawing IS the section, and the numbered notes below it are
-          its annotations.
-          ------------------------------------------------------------
-          The chart used to sit in a 22rem left column beside the five callouts, drawn at
-          302px — about 6% of the page — while the page's whole subject is reading it. The
-          author asked for it "central to the page and below the descriptions"; shown both
-          arrangements he chose this one, because a numbered annotation placed *above* the
-          figure whose numerals it references is unreadable: a reader meets "01" with
-          nothing on screen to look at, and callout 01's own text ("each vertex at that
-          axis's value") means nothing before the vertices exist.
+      {/* ---------- DRW-104: the drawing everything below annotates ----------
+          No `border-t` on this one band: the header above it already draws the seam with
+          its own `border-b`, and two hairlines meeting is a 2px rule at the one boundary
+          on the page that should be quietest. Every band below carries its own.
 
-          So the lead sets it up in one sentence, the plate is drawn as wide as the
-          container allows, and every note after it points at something already on screen.
-          `render` tells `ScoreRadar` the width it will occupy so its geometry solves
-          against that: labels stay at 11px and the polygon takes 88% of the box rather
-          than 58%. */}
-      <section aria-labelledby="the-plate" className="border-t border-line bg-surface py-16 sm:py-24">
-        <div className="container-page flex flex-col gap-6">
-          <div className="flex max-w-[62ch] flex-col gap-3">
-            {/* Display register, not the 13px mono panel-label one: the notes below are
-                `h3`s at 20px, and a 13px `h2` above them inverts the scale. Mono labels
-                name a panel; this names a section. */}
-            <h2
-              id="the-plate"
-              className="font-display text-2xl font-semibold leading-snug text-fg"
+          The plate is drawn once. Both routes that merged into this page opened with the
+          same chart at the same two solves, and the redundancy the author named was
+          exactly that. `render` tells `ScoreRadar` the width it will occupy so its
+          geometry solves against that: a single desktop solve puts the axis names at
+          three CSS pixels on a phone. Both placements below are the two
+          `components/learn/figures.test.ts` measures against the legibility floor. */}
+      <section className="bg-void py-16 sm:py-20" aria-label="The scorecard this page reads">
+        <div className="container-page">
+          <figure className="flex flex-col gap-5">
+            <Sheet
+              register="blueprint"
+              label="DRW-104 · six axes, three sources"
+              title={sample.title}
+              note={`${sample.metrics.length} axes · ${spokes.length} spokes`}
             >
-              One real scorecard
-            </h2>
-            <p className="text-[15px] leading-relaxed text-muted">
-              This is {sample.title}, drawn from its own card by the same component every
-              blueprint page uses. Everything below points at something on it.
-            </p>
-          </div>
+              <div className="flex justify-center">
+                <div className="w-full sm:hidden">
+                  <ScoreRadar metrics={sample.metrics} size={300} render={285} plate />
+                </div>
+                <div className="hidden w-full max-w-[480px] sm:block">
+                  <ScoreRadar metrics={sample.metrics} size={300} render={480} plate />
+                </div>
+              </div>
+            </Sheet>
 
-          {/* Two placements, because one solve cannot serve both widths.
-              `ScoreRadar`'s geometry is solved against the CSS width it will occupy: pad
-              and label size fall out of that one number together. Shipping a single
-              desktop solve put the labels at 3.13 CSS px on a 378px phone, which is the
-              same class of defect this component was just fixed for, arrived at from the
-              other side. `SectionRoles` already solves this by drawing a narrow frame and
-              a wide one and letting a media query choose; this is that. */}
-          <figure className="panel bp-grid flex flex-col items-center gap-4 px-4 py-10 sm:px-10 sm:py-14">
-            <div className="w-full sm:hidden">
-              <ScoreRadar metrics={sample.metrics} size={300} render={285} plate />
-            </div>
-            {/* 480px, not the full 1070 the container allows. Drawn edge to edge the
-                chart was simply too big — a five-spoke polygon does not gain anything
-                past a few hundred pixels, and at container width it stopped reading as a
-                figure on a page and started reading as the page. The plate stays full
-                width; the drawing sits centred inside it with air around it, which is
-                what makes it read as the subject rather than as wallpaper. */}
-            <div className="hidden w-full max-w-[480px] sm:block">
-              <ScoreRadar metrics={sample.metrics} size={300} render={480} plate />
-            </div>
-            <figcaption className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1 font-mono text-[11px] text-dim">
-              <span>{sample.title}</span>
-              <Link href={`/blueprints/${sample.slug}`} className={LINK}>
-                Open the blueprint <span aria-hidden>&rarr;</span>
-              </Link>
+            <figcaption className="flex flex-col gap-4">
+              <p className="prose-lane text-sm leading-relaxed text-muted">
+                {sample.title}, drawn by the same component every blueprint page
+                mounts. Each axis is named in the colour of the badge its row carries
+                on the scorecard, and the three sections below take those badges in
+                turn. Autonomy has no spoke: it is a class, not a length, so the chart
+                shows {spokes.length} of the {sample.metrics.length}.{" "}
+                {/* The one link the retired `/reading-the-radar` plate carried that
+                    DRW-104 did not: the way to the blueprint this chart belongs to. It is
+                    grafted onto this caption rather than lost with that figure. */}
+                <Link href={`/blueprints/${sample.slug}`} className={LINK}>
+                  Open the blueprint <span aria-hidden>&rarr;</span>
+                </Link>
+              </p>
+              <ul className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-x-8">
+                {SOURCE_ORDER.map((source) => (
+                  <li key={source} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <SourceBadge source={source} />
+                    <span className="label">{axesOf(source)}</span>
+                  </li>
+                ))}
+              </ul>
+              <NotBuilt>
+                {seeded.length} of the {sample.metrics.length} axes above are seeded
+                rows with no ballot and no runner behind them: {seeded.join(", ")}. The
+                polygon is the shape of the numbers on file, not a measurement of
+                anything.
+              </NotBuilt>
             </figcaption>
           </figure>
         </div>
       </section>
 
-      <section aria-labelledby="the-notes" className="bg-surface pb-20">
+      {/* ---------- the picture, annotated ---------- */}
+      <section
+        aria-labelledby="the-notes"
+        className="border-t border-line bg-surface py-16 sm:py-20"
+      >
         <div className="container-page flex flex-col gap-10">
           <h2 id="the-notes" className="sr-only">
-            What each part of it means
+            What each part of the drawing means
           </h2>
           <ol className="flex max-w-[52rem] flex-col gap-10">
             <Callout n="01" title={`${spokes.length} spokes, one per scored axis`}>
@@ -211,61 +346,6 @@ export default function ReadingTheRadarPage() {
 
             <Callout
               n="03"
-              title="The colour of a vertex says where its number came from"
-              extra={
-                /* Each source names the axes that carry it, in its own colour — the same
-                   colour those axis names are drawn in on the chart above. The legend
-                   used to say "cyan means static analysis" and stop, which left the
-                   reader to match a hue against five small vertices and work out for
-                   themselves which axis was which. Naming them here makes the legend
-                   readable without looking away, and looking up finds the same words in
-                   the same colour.
-
-                   It sits on the same two-column grid and the same 8px swatch as 04's list
-                   below, because the two are the same six metrics cut two ways — by source
-                   here, by name there. Set differently they read as two unrelated blocks
-                   and the reader has to work out that "Efficacy" in one is "Efficacy" in
-                   the other. Same track, same dot, same hairline: one system, two views. */
-                <dl className="flex flex-col">
-                  {sources.map((source) => {
-                    const meta = METRIC_SOURCE_META[source];
-                    const carried = spokes.filter((m) => m.source === source);
-                    return (
-                      <div
-                        key={source}
-                        className="grid gap-x-4 gap-y-1.5 border-t border-line/70 py-3 first:border-t-0 first:pt-0 sm:grid-cols-[11rem_minmax(0,1fr)]"
-                      >
-                        <dt
-                          className="flex items-baseline gap-2 font-mono text-[11px] uppercase tracking-[0.14em]"
-                          style={{ color: meta.color }}
-                        >
-                          <span
-                            aria-hidden
-                            className="inline-block h-2 w-2 shrink-0 translate-y-[-1px] rounded-full"
-                            style={{ background: meta.color }}
-                          />
-                          {meta.label}
-                        </dt>
-                        <dd className="flex flex-col gap-1.5">
-                          <span className="font-mono text-[11px]" style={{ color: meta.color }}>
-                            {carried.length === 0
-                              ? "no axis on this chart"
-                              : carried.map((m) => m.label).join("  ·  ")}
-                          </span>
-                          <span className="text-sm leading-relaxed text-muted">{meta.blurb}</span>
-                        </dd>
-                      </div>
-                    );
-                  })}
-                </dl>
-              }
-            >
-              Not all six are the same kind of fact, so the drawing does not pretend they
-              are.
-            </Callout>
-
-            <Callout
-              n="04"
               title="What each row means"
               extra={
                 /* Row-separated, and every row carries its source colour.
@@ -276,11 +356,9 @@ export default function ReadingTheRadarPage() {
                    weight to merge, and nothing separated one metric from the next, so six
                    definitions read as one grey paragraph.
 
-                   It is also the third list of the same six metrics on this page, after
-                   the chart's axis labels and 03's legend. The other two are colour-coded
-                   by source; this one was not, so a reader who had just learned that violet
-                   means a vote found the word "Efficacy" here in plain grey. The swatch is
-                   the same 8px dot 03 uses, so the three lists are one system. */
+                   The 8px dot is the same swatch DRW-104's legend uses above, so the chart,
+                   the legend and this list are one system rather than three ways of
+                   printing the same six names. */
                 <dl className="flex flex-col">
                   {sample.metrics.map((m) => (
                     <div
@@ -306,32 +384,119 @@ export default function ReadingTheRadarPage() {
               The list below says what each axis is measuring, in this blueprint&rsquo;s
               own terms.
             </Callout>
-
-            <Callout n="05" title="Where the numbers come from">
-              This page is about the picture. The scale behind it, every weight, and what
-              fires a risk marker are on{" "}
-              <Link href="/spec/scoring" className={LINK}>
-                How a blueprint is graded <span aria-hidden>→</span>
-              </Link>
-            </Callout>
           </ol>
 
-          {/* The return trip. This page's own header comment says a reader wanting the
-              arithmetic "is sent across" to the grading page; that page is last in its
-              sequence, so its only tail box is `← Previous` and the link back here did
-              not exist. */}
+          {/* Callout 03's own source `<dl>` stood here and is gone: DRW-104's legend above
+              and the three band headers below name the same six metrics by source twice
+              already. Its one sentence stays, as the lead into the bands, which is the
+              job it was doing. */}
+          <p className={BODY}>
+            Not all six are the same kind of fact, so the drawing does not pretend they
+            are. Two are the engine&rsquo;s own arithmetic. Three are waiting on a ballot
+            and one on a runner, and the three sections below take those badges in turn.
+          </p>
+        </div>
+      </section>
+
+      {/* ---------- AUTO ---------- */}
+      <SourceBand
+        source="auto"
+        axes={axesOf("auto")}
+        title="Read off the graph"
+        id="auto-heading"
+        ground="bg-surface/40"
+      >
+        <p className={BODY}>
+          These two are the engine&apos;s own arithmetic, run at build time. Autonomy
+          is the share of nodes that run unattended. Security opens at four and loses
+          the weight of every risk marker the graph carries. A blueprint&apos;s own
+          scorecard states the reading, and its detail page keeps the subtraction in
+          the panel that shows the working. Either way the result is rescaled onto the
+          0–100 axis the other rows share, so four of four reads there as 100.
+        </p>
+        <p className={BODY}>
+          Both are computed from the graph and the cards its blueprint pins, and both
+          name the nodes behind the number. The DOT and the cards are published as
+          source on every blueprint page, so the arithmetic can be checked against
+          them. What each check is worth is the rest of this page.
+        </p>
+      </SourceBand>
+
+      {/* ---------- VOTED ---------- */}
+      <SourceBand
+        source="community"
+        axes={axesOf("community")}
+        title="Waiting on a ballot"
+        id="voted-heading"
+        ground="bg-void"
+      >
+        <p className={BODY}>
+          These three are judgement calls, and no graph states them. Whether a
+          blueprint&apos;s output was any good, whether it holds up across repeated
+          runs, and whether its internal decisions are documented well enough to audit
+          are readings that a weighted vote of the people who ran it would produce.
+        </p>
+        <NotBuilt>
+          There is no ballot. Those three numbers are seeded rows, and every card that
+          shows one says so.
+        </NotBuilt>
+      </SourceBand>
+
+      {/* ---------- REPORTED ---------- */}
+      <SourceBand
+        source="reported"
+        axes={axesOf("reported")}
+        title="Waiting on a runner"
+        id="reported-heading"
+        ground="bg-surface/40"
+      >
+        <p className={BODY}>
+          Cost and time need somebody to run the blueprint, and that happens on their
+          machine. The platform never watches the run, so it can only ever be told the
+          result. That is why the badge reads <span className="text-fg">reported</span>{" "}
+          and never <span className="text-fg">measured</span>. Everything a reported
+          figure would have to travel with, how many runs it aggregates and how far
+          apart they were, is designed and none of it is wired.
+        </p>
+        <NotBuilt>
+          There is no runner and no endpoint. The cost and time figures are seeded rows,
+          and every card that shows one says so.
+        </NotBuilt>
+      </SourceBand>
+
+      {/* ---------- the quantitative detail: what each check is worth ----------
+          `ScoringModel` came here unchanged from the retired `/spec/scoring`. Every
+          number it prints is read off `DARKPRINT_CONFIG` and `getOntologyView()` at
+          render time, so the route it mounts on changes nothing about what it says — and
+          it carries `id="weights"` with its own `scroll-mt-24`, which is why
+          `/spec/scoring#weights` survives the merge as `/reading-the-radar#weights`.
+
+          It carries neither a container nor a band of its own: this page owns both, the
+          same way it owns the three above, so the arithmetic sits on the same rhythm as
+          the sections that introduce it. */}
+      <section className="border-t border-line bg-void py-16 sm:py-20">
+        <div className="container-page">
+          <ScoringModel />
+        </div>
+      </section>
+
+      {/* The way on. The pair this page used to make with `/spec/scoring` is gone — both
+          of its old tail boxes pointed at the other half of this page — so the two that
+          are left are the gallery to read the chart against, and the page that says what
+          the graph and the cards behind the two computed rows actually are. */}
+      <section className="border-t border-line bg-surface pb-20 pt-16">
+        <div className="container-page">
           <OnwardRoutes
-            className="mt-10"
             routes={[
-              {
-                href: "/spec/scoring",
-                label: "How a blueprint is graded",
-                blurb: "The weights behind the picture, and what fires a risk marker.",
-              },
               {
                 href: "/blueprints",
                 label: "The blueprint gallery",
                 blurb: "Nine scorecards to read the chart against.",
+              },
+              {
+                href: "/what-a-blueprint-is",
+                label: "What a blueprint is",
+                blurb: "The graph and the cards the two computed rows are read off.",
               },
             ]}
           />

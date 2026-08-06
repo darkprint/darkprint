@@ -1,5 +1,5 @@
 /* ============================================================
-   The five spec pages, held against the list they are a sequence
+   The four spec pages, held against the list they are a sequence
    in.
 
    Redesign spec §4.1 split one long page into four and asked that
@@ -12,19 +12,30 @@
    is visible in a build that passes.
 
    The lifecycle-scoring pass's own §4.2 appended a fifth,
-   `SPEC_SCORING`, after the three layers rather than among them —
-   `sequence.ts` has the reasoning for why it is a `SpecPage` and not
-   a fourth `SpecLayerPage`. Every check below still holds over
-   whatever `SPEC_SEQUENCE` contains, so the count grew without this
-   file's assertions needing to grow with it, except the one place
-   below that had frozen the old last page's `next` at `undefined`
-   by name rather than by position — the shape this file exists to
-   catch, this time in itself.
+   `SPEC_SCORING`, after the three layers rather than among them, and
+   the IA pass of 2026-08-07 took it back out along with the overview
+   itself. Every check below holds over whatever `SPEC_SEQUENCE`
+   contains, so the count grew and shrank without most of this file's
+   assertions moving — except the three places that had frozen a
+   route or a length by name rather than by position, which is the
+   shape this file exists to catch and which it kept committing in
+   itself. Those three are rewritten against the list, not against
+   the new numbers.
+
+   Two things changed under the assertions and neither weakens them.
+   Stop 00 is `/what-a-blueprint-is` now: `/spec` was deleted and its
+   three children had to keep a parent, a crumb and a rail, so the
+   page that already linked all three became the door. And the
+   sequence has no fifth stop, because grading merged into
+   `/reading-the-radar`, which is outside this sequence on purpose.
 
    So this file walks `app/spec` and holds the two directions
-   against each other. It also checks that each page renders the
-   pager at all, because a page that renders one and a page that
-   forgets it look identical from the route table.
+   against each other. The walk is what stops a child reappearing
+   under `app/spec` without an entry in the list — which is exactly
+   what `/spec/scoring` would have become if it had been kept. It
+   also checks that each page renders the pager at all, because a
+   page that renders one and a page that forgets it look identical
+   from the route table.
 
    A source scan, and deliberately not a render. The pages are
    server components that read the archive, and the fact worth
@@ -43,7 +54,6 @@ import { describe, expect, it } from "vitest";
 import {
   SPEC_LAYERS,
   SPEC_OVERVIEW,
-  SPEC_SCORING,
   SPEC_SEQUENCE,
   specNeighbours,
 } from "./sequence";
@@ -106,14 +116,21 @@ describe("the sequence and the filesystem agree", () => {
 });
 
 describe("next and previous", () => {
-  it("links the five into one chain, with no arrow off either end", () => {
-    expect(specNeighbours("/spec").previous).toBeUndefined();
-    // The end of the chain moved with the lifecycle-scoring pass's §4.2 append: `/spec/
-    // ontology` used to be the last stop and is now the third of five, with a `next` of
-    // its own. Asserting both — the old last page now has one, and the new last page
-    // does not — is what would have caught this the day the append landed.
-    expect(specNeighbours("/spec/ontology").next).toEqual(SPEC_SCORING);
-    expect(specNeighbours("/spec/scoring").next).toBeUndefined();
+  it("links them into one chain, with no arrow off either end", () => {
+    /* Both ends by position rather than by name. This block named `/spec` and
+       `/spec/scoring` as the two ends, and both routes are gone — the second time in two
+       passes that freezing a route here made the file need editing for a change it was
+       supposed to be indifferent to. `SPEC_SEQUENCE[0]` and `.at(-1)` are the two ends
+       whatever they are called, and the loop below still walks every neighbour pair. */
+    const first = SPEC_SEQUENCE[0];
+    const last = SPEC_SEQUENCE.at(-1);
+    expect(first).toBe(SPEC_OVERVIEW);
+    expect(last).toBeDefined();
+    expect(specNeighbours(first.href).previous).toBeUndefined();
+    expect(specNeighbours(last?.href ?? "").next).toBeUndefined();
+    // And the chain is a chain rather than two ends with a hole: every stop but the last
+    // hands on to the one after it.
+    expect(specNeighbours(SPEC_LAYERS[0].href).previous).toBe(SPEC_OVERVIEW);
 
     for (const [i, page] of SPEC_SEQUENCE.entries()) {
       const { position, total, previous, next } = specNeighbours(page.href);
@@ -168,18 +185,24 @@ describe("every page renders the sequence", () => {
 
 describe("the figures each layer page opens with", () => {
   /**
-   * Spec §3 moves two components off the landing and on to the pages whose subject they
-   * are, and names the property the move may not cost: the annotated card "reads the real
-   * card through `cardSource` and that must survive the move". Both are imported by path
+   * Spec §3 moved two components off the landing and on to the pages whose subject they
+   * are, and named the property the move may not cost: the annotated card "reads the real
+   * card through `cardSource` and that must survive the move". They are imported by path
    * rather than through the `components/home` barrel, so that taking them off the
    * landing's index cannot break a route here.
+   *
+   * Was two rows. `/spec/topology` no longer imports `SectionRoles`: the author asked the
+   * roles band ("The shape of the work", DRW-003) off that page in the trim pass, and the
+   * row came out with the mount in the same change rather than being loosened to keep
+   * passing. `SectionRoles.tsx` itself stays, with both of its guards —
+   * `components/home/roles-labels.test.ts` renders it directly and does not need a mount.
    */
-  it.each([
-    ["/spec/topology", "@/components/home/SectionRoles"],
-    ["/spec/card", "@/components/home/SectionNodeCard"],
-  ])("%s imports %s by path", (href, module) => {
-    expect(source(href)).toContain(`from "${module}"`);
-  });
+  it.each([["/spec/card", "@/components/home/SectionNodeCard"]])(
+    "%s imports %s by path",
+    (href, module) => {
+      expect(source(href)).toContain(`from "${module}"`);
+    },
+  );
 
   it("keeps the annotated card reading the archive rather than a transcription", () => {
     const section = readFileSync(
@@ -190,12 +213,21 @@ describe("the figures each layer page opens with", () => {
     expect(section).toContain("code-builder@1.0.0");
   });
 
-  it("draws the lattice from the vocabulary rather than from a list", () => {
-    const text = source("/spec/ontology");
-    expect(text).toContain("view.ancestors(");
-    expect(text).toContain("view.children(");
-    expect(text).toContain("<LatticeFigure");
-  });
+  /* The lattice case is gone with the drawing it guarded.
+     ------------------------------------------------------
+     It asserted that `/spec/ontology` mounted `<LatticeFigure` and laid it out from
+     `view.ancestors(` / `view.children(` rather than from a transcribed list. The band
+     was cut on the author's word (see that page's header docblock): the subsumption
+     argument belongs to the isolation story, and the vocabulary page's subject is the
+     size and governance of the set.
+
+     The property the case existed to protect — a drawing laid out from the vocabulary
+     rather than from a picture kept in step by hand — is not unguarded, because
+     `LatticeFigure` itself is unchanged and `components/viz/scene-labels.test.ts` still
+     renders it over `getOntologyView()` and measures every label in it. What has no
+     guard now is the mount, and that is correct: there is no mount. This comment stays
+     so the next reader finds the reason rather than an unexplained gap between the two
+     figure cases above. */
 });
 
 /**
@@ -204,13 +236,17 @@ describe("the figures each layer page opens with", () => {
  * `/spec#card`, `/spec#topology` and `/spec#ontology` were in-page anchors while `/spec`
  * was one page. A fragment never reaches the server, so no redirect in `next.config.ts`
  * can carry one onto the child route it became, and an external link or a bookmark landed
- * silently at the top of `/spec`. Each layer's door carries its old id.
+ * silently at the top of `/spec`. Each layer's band on the overview carries its old id.
+ *
+ * They survived `/spec` being deleted outright, for the same reason. The 308 lands on
+ * `/what-a-blueprint-is` with no fragment of its own, the browser re-applies the one it
+ * started with, and the band is there to receive it.
  */
 /**
  * The rail's `aria-label` used to spell the count out as a literal string ("in four
  * parts"), which this pass's own append of `SPEC_SCORING` left stale: reviewed and
- * reproduced against the built `/spec/scoring` HTML, whose `<nav>` announced a four-stop
- * rail over the five `<li>`s directly under it. `SpecPager.tsx` now reads the count off
+ * reproduced against the built HTML of the fifth page, whose `<nav>` announced a
+ * four-stop rail over the five `<li>`s directly under it. `SpecPager.tsx` now reads the count off
  * `SPEC_SEQUENCE.length`, so this renders the actual component rather than scanning its
  * source — a source scan for the digit would pass unchanged if the label were reverted to
  * a hardcoded string that happened to still be correct today.
@@ -224,15 +260,27 @@ describe("the pager's aria-label names the true count", () => {
       `aria-label="The spec language, in ${SPEC_SEQUENCE.length} parts"`,
     );
     // The failure mode this guards: a hardcoded count that was right when written and
-    // silently wrong after the next append. Asserting the wrong-today literal is absent
-    // is what a hardcoded string would fail on.
-    expect(SPEC_SEQUENCE.length).not.toBe(4);
-    expect(html).not.toContain("in four parts");
+    // silently wrong after the next append or removal. A spelled-out number is the only
+    // way that string can be a literal, so no spelling of any count may appear — the
+    // component writes a digit. This replaced `expect(SPEC_SEQUENCE.length).not.toBe(4)`,
+    // which pinned the wrong-today number and duly went stale when the IA pass took the
+    // sequence back down to four.
+    for (const word of ["two", "three", "four", "five", "six"]) {
+      expect(html, `the label spells a count out: "in ${word} parts"`).not.toContain(
+        `in ${word} parts`,
+      );
+    }
+    // And the rail draws one entry per stop, so the announced count is the count.
+    expect([...html.matchAll(/<li /g)]).toHaveLength(SPEC_SEQUENCE.length);
   });
 });
 
 describe("the anchors the split would otherwise have broken", () => {
-  const OVERVIEW = readFileSync(join(ROOT, "app/spec/page.tsx"), "utf8");
+  /* The overview's own file, by route rather than by path. It was `app/spec/page.tsx`
+     and it is `app/what-a-blueprint-is/page.tsx`, and the three ids had to travel with
+     the doors: a browser re-applies the fragment it started with to a `Location` that
+     carries none, so `/spec#card` follows the 308 and then looks for `#card` here. */
+  const OVERVIEW = readFileSync(pageFile(SPEC_OVERVIEW.href), "utf8");
 
   it("keeps the three old in-page ids on the sequence", () => {
     expect(SPEC_LAYERS.map((layer) => layer.anchor).sort()).toEqual([

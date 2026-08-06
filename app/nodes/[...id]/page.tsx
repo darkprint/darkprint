@@ -582,19 +582,26 @@ interface MapEntry {
 }
 
 /**
- * The rail's third panel, on space that was already paid for.
+ * The rail, and it leads the aside.
  *
- * The aside is `position: sticky` and 464px tall in a column 4073px long, so from
- * roughly y=863 down there were about 355px of visible empty rail on every screen for
- * the remaining three and a half viewports — three captures of this page in a row show
- * the same two panels frozen with nothing beneath them. Meanwhile the field table is
- * 1460px, 36% of the page, and was the block most in need of a way in.
+ * This page is nine panels and roughly 4,000px of card. The field table alone is 1460px
+ * of it, 36%, and there is no scroll spy and nothing to hydrate, so the only way a reader
+ * learns what is down there is a list that says so. That makes this the first thing in
+ * the sticky column rather than the last: the two panels beneath it — risk and identity —
+ * are answers you look up once you know the question, and this is where the questions
+ * are. It sat third for a while on the argument that the aside had empty space below the
+ * answers and this was a use for it; that reasoned from where there was ROOM, which is
+ * not the same as reasoning from what a reader needs first.
  *
  * Six rows, one per section, each with the one figure that says how much is behind it.
  * It is a `<nav>` rather than a `<section>` because that is what it is, and it is not
  * hidden below `lg`: on a phone the aside stacks under the main column, where the same
  * six links read as a way back up rather than a way in. A list of six anchors is worth
  * having in both places; hiding content by viewport is not.
+ *
+ * Measured at 1440x900 after the move: the three panels stack to 761px under a sticky
+ * `top-20`, so the aside is still shorter than one viewport and nothing it holds is
+ * pushed off-screen by going first.
  */
 function CardMap({ entries }: { entries: readonly MapEntry[] }) {
   return (
@@ -1301,12 +1308,14 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
               So: every field the card declares, in the schema's own order, name beside
               value. A reader who wants to know what `mcp` is has the word and the value,
               which is what "self-explanatory" means here; a reader who wants the argument
-              has `/concepts`, which is the page built for it and is linked below.
+              has `/what-a-blueprint-is#the-words`, which carries what `/concepts`
+              used to and is linked below.
 
               Two limit statements came off with the prose and are not lost. That a
               `model` is a default a graph's `model_stylesheet` can override, and that a
               `skill` is a pointer with no document in the bundle, are both said on
-              `/concepts` in the `skill` and `model` rows of `WhatACardReaches`. The
+              `/what-a-blueprint-is#the-words` in the `skill` and `model` rows of
+              `WhatACardReaches`. The
               footnote under this table points there rather than restating them per card,
               53 times over. */}
           <Panel
@@ -1323,13 +1332,39 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   <section key={block.id} className="flex flex-col gap-2">
                     {/* The block title, in the skeleton's own words.
                         ------------------------------------------------------------
-                        `--color-key`, not `--color-amber`. Amber carries two meanings
-                        on this site and neither is this one: "not built yet" and "this
-                        box leaves the page". Painted on five block titles and eighteen
-                        field names it made a single viewport of this page carry about
-                        twenty amber items, none of them coming soon and none of them an
-                        exit, which is the largest single dilution of a semantic colour
-                        the site had. A key is a name in a document, not a status.
+                        `--color-copper-line`, the token the landing's node figure paints
+                        its YAML keys in (`components/home/nodecard/YamlListing.tsx`,
+                        `key: "text-copper-line"`). The home page presents a node card in
+                        the copper register and this page IS a node card presented at
+                        full size, so the two surfaces now name the same object in the
+                        same colour. Before this they disagreed: the landing said copper,
+                        here the five block titles and eighteen field names said
+                        `--color-key` (= `--color-cyan-bright`).
+
+                        This is NOT `--color-amber`, and it must never become it. Amber
+                        carries two meanings sitewide and neither is this one: "not built
+                        yet" and "this box leaves the page". These field names were amber
+                        once — about twenty amber items in a single viewport, none of them
+                        coming soon and none of them an exit, the largest single dilution
+                        of a semantic colour the site had. Copper is the pole that exists
+                        precisely so a card can read orange without borrowing that lie:
+                        oklch hue 46 against amber's 75, see the token's docblock in
+                        `globals.css`.
+
+                        It is also not `text-cyan`: cyan says a thing can be clicked and a
+                        block title cannot. That argument, which the previous `--color-key`
+                        repoint was built on, is satisfied by copper too — copper is spent
+                        on exactly one claim, "this is a node card", and a name in a card
+                        is the most literal instance of it.
+
+                        Measured in the browser on this page, not assumed: the panel's
+                        `color-mix(oklab, --color-surface 92%, transparent)` composited
+                        over `--color-void` was sampled off a canvas at rgb(9, 11, 21),
+                        and `#ff8a4d` on it reads **8.40:1**. AAA at the 12px `<dt>` and
+                        at the 14px `.label-lead`, against a 4.5:1 requirement. Flat
+                        token only — the
+                        copper docblock's floor is explicit that `line/70` lands at 4.3:1,
+                        so no `/80` and no `/70` on these two call sites.
 
                         `.label-lead` rather than an `<h3>`, for the reason `globals.css`
                         writes down: a mono uppercase run is a label, and a label is not
@@ -1337,7 +1372,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                         this group sits under; five sibling `<h3>`s at 12px underneath a
                         13px `<h2>` were claiming a level the type never drew. */}
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                      <span className="label-lead text-key">{block.label}</span>
+                      <span className="label-lead text-copper-line">{block.label}</span>
                       <span className="label">{block.ref}</span>
                     </div>
                     <p className="text-[13px] leading-relaxed text-dim">{block.purpose}</p>
@@ -1349,12 +1384,17 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                         const detail = row.detail?.(card, fieldView);
                         const head = (
                           <>
-                            {/* `text-key`, the same repoint as the block title above and
-                                the eighteen rows this is one of. Not `text-cyan`: cyan
-                                says a thing can be clicked and a field name cannot, so
-                                the key tier is a step brighter and carries no underline
-                                and no hover. */}
-                            <dt className="font-mono text-[12px] text-key">{row.name}</dt>
+                            {/* `text-copper-line`, the same token as the block title
+                                above and for the same reason: this is a YAML key, and the
+                                landing figure paints a YAML key copper. Not `text-cyan`:
+                                cyan says a thing can be clicked and a field name cannot,
+                                so the key tier carries no underline and no hover. The
+                                value beside it stays `text-fg`/`text-dim`, which is also
+                                what `YamlListing` does with its scalars — the key is what
+                                the register marks, not the whole row. */}
+                            <dt className="font-mono text-[12px] text-copper-line">
+                              {row.name}
+                            </dt>
                             <dd
                               className={cx(
                                 "min-w-0 font-mono text-[12px] leading-relaxed",
@@ -1433,7 +1473,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   and an inline sentence link wearing the same hue was a third meaning
                   for the colour on a page that already had two too many. */}
               <Link
-                href="/concepts"
+                href="/what-a-blueprint-is#the-words"
                 className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:decoration-cyan"
               >
                 eval, harness and the rest <span aria-hidden>&rarr;</span>
@@ -1548,6 +1588,29 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           aria-label="Card metadata"
           className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-20 lg:self-start"
         >
+          {/* The rail leads, because the rail is the way in.
+              ------------------------------------------------------------
+              "On this card" used to sit third, under the two answer panels, on the
+              argument that the sticky aside had visible empty space beneath them and
+              this was a use for it. That argument was about where there was ROOM, not
+              about what a reader meets first, and it put the page's only table of
+              contents below the fold of the aside's own stack.
+
+              The two panels below are answers you look up — can this node do damage, and
+              which version am I reading. You go to them with a question already formed.
+              The rail is the opposite: it is how you find out what questions this page
+              can answer at all, on a document that runs past four thousand pixels and
+              nine panels. First position is the one thing a rail wants, so it takes it.
+
+              Nothing else moves. Both panels keep their `id` and their `scroll-mt-24` on
+              the same JSX tags, so `#evaluation` (the header's risk chip) and
+              `#identity` still resolve; the six rail rows are the same six anchors in
+              the same order, `cardMap` is not order-coupled to this stack, and no test
+              reads this file's source order. Measured at 1440x900: the aside's three
+              panels total 761px against a sticky `top-20`, so the whole stack still
+              fits one viewport and promoting the rail pushes nothing out of view. */}
+          <CardMap entries={cardMap} />
+
           {/* "Risk and autonomy", not "Evaluation metadata". The panel answers two
               questions a reader has — can this node do damage, and does anybody watch —
               and the old label named the schema drawer they happen to be filed in. The
@@ -1736,8 +1799,6 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
               </div>
             </dl>
           </SidePanel>
-
-          <CardMap entries={cardMap} />
         </aside>
       </div>
 

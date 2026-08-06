@@ -483,13 +483,14 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   {configured
                     ? "The number lives in the engine's configuration and not in this vocabulary, so a recalibration touches one file and every blueprint is re-scored consistently. That is also why a score records which vocabulary version produced it: move a weight and two evaluations stop being comparable."
                     : `The engine's configuration prices the curated markers and is silent about this one, so the number is the ${term.id.includes("/") ? "namespaced" : "local"} term's own declared weight, read from the vocabulary the bundle ships. That is why a score records which vocabulary version produced it: move a weight and two evaluations stop being comparable.`}{" "}
-                  {/* Lifecycle-scoring spec §4: the weight table moved with `ScoringModel`
-                      off `/spec` onto `/spec/scoring`, and `#weights` is the section's own
-                      id on both — a fragment never reaches the server, so the href has to
-                      name the route the id actually lives on now rather than the one it
-                      used to. */}
+                  {/* Lifecycle-scoring spec §4 moved the weight table with `ScoringModel`
+                      off `/spec` onto `/spec/scoring`; the IA pass merged that page into
+                      `/reading-the-radar`. `#weights` is `ScoringModel`'s own id and
+                      travelled with it both times — a fragment never reaches the server,
+                      so the href has to name the route the id actually lives on now
+                      rather than either of the two it used to. */}
                   <Link
-                    href="/spec/scoring#weights"
+                    href="/reading-the-radar#weights"
                     className="text-muted underline decoration-line underline-offset-4 hover:text-cyan"
                   >
                     Every weight the engine knows

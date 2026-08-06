@@ -1,26 +1,26 @@
 "use client";
 
 /* ============================================================
-   The landing's card, walked one part at a time.
+   The card, walked one part at a time. Both mounts of it.
 
-   ── What the author asked for ──
-   "I'd like you reprohose in the home in the current Every node is
-   a card the idea reported in spec/card, where you scroll down and
-   you can show all the component of a card. But in a lightweight
-   version without using as background the blueprint."
+   ── What the author asked for, twice ──
+   First for the landing: "I'd like you reprohose in the home in the
+   current Every node is a card the idea reported in spec/card,
+   where you scroll down and you can show all the component of a
+   card. But in a lightweight version without using as background
+   the blueprint."
 
-   So this is `NodeCardStage`'s idea at a third of its weight, and
-   the reversal of a decision this file's own predecessor recorded:
-   the beat carried an annotated listing, redesign spec §2 ruled a
-   YAML block off the landing, and the listing moved whole to
-   `/spec/card`. It is back, deliberately, in a form the landing can
-   carry. `SectionNodeIsCard` says so where the old note stood, so
-   the next author does not move it off again on the strength of a
-   spec line the author has since overruled.
+   Then, of the reference page the lightweight version was derived
+   from: "make /spec/card's scrollable node panel the same as the
+   home's", and "it should scroll in the middle of the screen". So
+   this file is now what BOTH `/` and `/spec/card` draw, and the
+   fork it was written as a copy of — `NodeCardStage`, 534 lines, a
+   `calc(100vh + 2500px)` track, a leader line and a dezoom — is
+   deleted rather than kept as a second answer to one question.
 
    ── What "lightweight" cost, item by item ──
-   `NodeCardStage` is 361 lines and a 420vh track. Four of its parts
-   are gone:
+   Recorded because these are deletions from the reference page as
+   well now, and none of them is free:
 
      the Sheet          the blue graticule ground, which is the one
                         thing the author named. This sits on plain
@@ -31,22 +31,32 @@
                         that costs. The listing's own highlight and
                         the open note say the same thing here.
      the dezoom         the card shrinking into a node of the
-                        starter graph at the end. That is the
-                        payoff of a page about the card layer, and
-                        on a landing beat it is a second subject.
-     the reserve        the track is a fraction of 420vh, because
+                        starter graph at the end. `/spec/card` was
+                        its only mount, so asking for the home's
+                        version of this figure took it off the site;
+                        `components/viz/scene-labels.test.ts` and
+                        `ssr.test.ts` record the same removal where
+                        they used to measure it.
+     the reserve        the track is 190vh rather than 420, because
                         there is no dezoom to reserve a quarter of
                         the scroll for.
-     the tail link      "read this card", taken out on the author's
-                        instruction along with beat 2's "Open this
-                        blueprint". `beats.test.ts` records what
-                        that costs and what still holds.
+     the per-head       every rail head was a `<button>` scrolling
+     buttons            the page to its own step. Nothing here is
+                        clickable: the reader's gesture is the only
+                        control, which is what makes the pin honest.
 
-   What survives is the part the author asked for: nine parts of a
-   real card, arriving one at a time, each marking its own lines.
+   What survives is the part the author asked for both times: nine
+   parts of a real card, arriving one at a time, each marking its
+   own lines.
+
+   ── The one thing that differs between the two mounts ──
+   `bodies`. The landing gets 25-word wording written for it; the
+   reference page gets `annotations.ts`'s 45-word bodies, which are
+   the ones `nodecard.test.ts` holds to the diagnostic codes the
+   site can be grepped for. Everything else — the window, the
+   pacing, the sticky offset, the ground — is the same figure.
 
    ── Why one DOM and not two ──
-   `NodeCardStage`'s reasoning, unchanged and load-bearing here too.
    The choreography classes all carry `lg:` and are emitted only
    when `motion` is true, and `motion` is false on the server and on
    the first client render. So the prerendered markup is the static
@@ -61,14 +71,14 @@ import { stagesShown, useScrollProgress } from "@/components/viz/useScrollProgre
 import { cx } from "@/lib/format";
 
 import { resolveAnnotations } from "./annotations";
-import { NC } from "./geometry";
+import { NC, reelShift } from "./geometry";
 import { YamlListing } from "./YamlListing";
 import { tokenizeYaml } from "./yaml";
 
 /**
- * The window the listing scrolls inside.
+ * The chrome around the window the listing scrolls inside.
  *
- * Twenty-four whole rows, and nothing else. The arithmetic, because it has gone wrong
+ * `NC.rows` whole rows, and nothing else. The arithmetic, because it has gone wrong
  * three times in the same place:
  *
  *   window   24 × NC.line = 528px of YAML, whole rows only
@@ -84,34 +94,24 @@ import { tokenizeYaml } from "./yaml";
  * after the last line of the file, 1160px down, and the space it appeared to reserve at
  * the visible edge is filled by the next row of content.
  *
- * The same argument runs at the top the moment the reel moves. Every shift `shiftFor`
+ * The same argument runs at the top the moment the reel moves. Every shift `reelShift`
  * returns is a whole multiple of `NC.line`, so with the padding gone the window shows 24
  * whole rows in every state it can be in, and with 8px of padding it shows the bottom
  * 8px of one row, 23 whole ones, and the top 14px of another — in every state except the
  * first. Hence `lg:py-0`: the padding is right on a phone, where the listing stands at
  * its own height and has no window to align to, and wrong the instant there is one.
- *
- * Twenty-four rows rather than eighteen because the figure is pinned and centred, and at
- * eighteen it stood 495px tall inside a 900px viewport with void above and below it. At
- * twenty-four the figure measures 612.5px, a little over two thirds of the screen it
- * holds. The sticky offset below is half that height and has to move with this number.
  */
-const ROWS = 24;
 const PAD_Y = 2;
-const WINDOW = ROWS * NC.line;
-
-/** Rows kept above the run being read, so a reader sees what comes before it. */
-const PARK = 3;
 
 /**
  * The landing's wording for the nine parts. Roughly 25 words each, against the 45 that
  * `annotations.ts` carries.
  *
- * The long bodies stay where they are and are not edited: they are `/spec/card`'s, they
- * are what `NodeCardStage` draws in a 22rem rail with a fixed `NC.body` box under it, and
+ * The long bodies stay where they are and are not edited: they are `/spec/card`'s, and
  * `nodecard.test.ts` holds three of them to the diagnostic codes the site can be checked
  * on (`bundle/prohibition-violated`, `bundle/port-mismatch`, `llm_model`). That is
- * reference material and it belongs on the reference page.
+ * reference material and it belongs on the reference page, which reaches it by passing
+ * `bodies={{}}` — an empty override, so every note falls through to `note.body`.
  *
  * What the landing needs from the same nine parts is smaller: which part of a card this
  * is, and why anyone would write it down. Beat 3 carried 670 of the landing's 1090 words
@@ -121,6 +121,12 @@ const PARK = 3;
  *
  * Keyed by `AnnotationSpec.id`, and anything unkeyed falls back to the long body, so a
  * new part appears here in full rather than not at all.
+ *
+ * Measured before the reference bodies were let into this layout: the notes column is
+ * 433px at `lg`, one body is open at a time, and the nine heads plus the longest of the
+ * long bodies come to 470px against the listing's 530px window beside them. So the
+ * figure's height — and therefore the sticky half-height below — is the listing's in
+ * both mounts, and the two wordings do not need two constants.
  */
 const WALK_BODY: Record<string, string> = {
   identity:
@@ -152,21 +158,6 @@ const WALK_BODY: Record<string, string> = {
     "`acceptance-criteria` into this node fails the bundle rather than warning about it.",
 };
 
-/**
- * How far to slide the listing so the run starting at `from` sits under the head-room.
- *
- * `geometry.ts` has `reelShift` and it is not reused: it clamps against `NC.window`, the
- * full stage's 420px, and this window is 264. Sharing it would let the listing slide past
- * its own last line by exactly the difference.
- */
-function shiftFor(from: number, totalLines: number): number {
-  const wanted = (from - 1 - PARK) * NC.line;
-  const furthest = Math.max(0, totalLines * NC.line - WINDOW);
-  const y = Math.min(Math.max(wanted, 0), furthest);
-  // Negating zero gives -0, which stringifies into `translateY(-0px)`.
-  return y === 0 ? 0 : -y;
-}
-
 /** Two digits, so the numbers form a column rather than a ragged edge. */
 function ordinal(step: number): string {
   return String(step).padStart(2, "0");
@@ -193,10 +184,19 @@ function body(text: string): React.ReactNode[] {
 export function CardWalk({
   source,
   cardRef,
+  bodies = WALK_BODY,
 }: {
   /** The card document, verbatim, read off the archive by the server half. */
   source: string;
   cardRef: string;
+  /**
+   * Per-step wording, keyed by `AnnotationSpec.id`, overriding `annotations.ts`.
+   *
+   * Defaults to the landing's short set. `/spec/card` passes `{}`, which is not the same
+   * as passing nothing: an empty record overrides no step, so every note falls through to
+   * its long reference body. The two mounts differ here and nowhere else.
+   */
+  bodies?: Record<string, string>;
 }) {
   const lines = useMemo(() => tokenizeYaml(source), [source]);
   const notes = useMemo(() => resolveAnnotations(source), [source]);
@@ -253,7 +253,7 @@ export function CardWalk({
           starts counting once the top passes zero, so the figure sits centred and still
           for those pixels before step 2 arrives.
 
-          19.25rem, not 16.5: the figure grew with `ROWS` and half of it grew with it. The
+          19.25rem, not 16.5: the figure grew with `NC.rows` and half of it grew with it. The
           two numbers have to move together or the walk pins off-centre, high by the
           difference. 308px is half of the 612.5px the figure measures at `lg` — 530 of
           window, 24 of `sm:p-6` at each end, 16 of `gap-4` and 18.5 of figcaption.
@@ -331,7 +331,7 @@ export function CardWalk({
                  states the rule this broke: "the sticky-scroll choreography must not trap
                  a phone reader". Below `lg` the listing now stands at its full height and
                  the page scrolls past it. */
-              style={{ "--walk-window": `${WINDOW + PAD_Y}px` } as React.CSSProperties}
+              style={{ "--walk-window": `${NC.window + PAD_Y}px` } as React.CSSProperties}
             >
               <div
                 /* The reel's shift goes through a custom property for exactly the reason
@@ -352,7 +352,7 @@ export function CardWalk({
                   {
                     "--walk-reel":
                       motion && open !== undefined
-                        ? `${shiftFor(open.from, lines.length)}px`
+                        ? `${reelShift(open.from, lines.length)}px`
                         : "0px",
                   } as React.CSSProperties
                 }
@@ -417,14 +417,25 @@ export function CardWalk({
 
                     {/* Open under its own head while the walk is running; all nine open
                         in the static layout, which is what makes the prerendered markup
-                        readable without script. */}
+                        readable without script.
+
+                        `lg:sr-only`, and not `lg:hidden`. This carried `lg:hidden` —
+                        `display: none`, which takes an element out of the accessibility
+                        tree as well as out of the layout — so eight of the nine bodies
+                        were unreachable to a screen reader, to find-in-page and to a text
+                        extractor at `lg`, and the only route to them was scrolling a
+                        190vh section one step at a time. `NodeCardStage` had the same bug
+                        once and fixed it this way; that component is deleted and this is
+                        the fix carried across rather than lost with it. `sr-only` is
+                        `position: absolute` with a 1px clip, so the reel steps exactly as
+                        it did and the column measures the same. */}
                     <p
                       className={cx(
                         "mt-1.5 pl-[1.9rem] text-[13px] leading-relaxed text-muted",
-                        motion && !isOpen && "lg:hidden",
+                        motion && !isOpen && "lg:sr-only",
                       )}
                     >
-                      {body(WALK_BODY[note.id] ?? note.body)}
+                      {body(bodies[note.id] ?? note.body)}
                     </p>
                   </li>
                 );

@@ -1,7 +1,7 @@
 # The website
 
 Next.js 16 App Router, **SSG only** — `generateStaticParams` + `dynamicParams = false`, typed
-`PageProps<"/route/[param]">`. 20 route files prerender to **137 pages**. React 19, Tailwind v4,
+`PageProps<"/route/[param]">`. 19 route files prerender to **136 pages**. React 19, Tailwind v4,
 TypeScript strict.
 
 > `AGENTS.md` is not boilerplate: this is Next.js 16 with real breaking changes. Read
@@ -16,7 +16,7 @@ TypeScript strict.
 | route | pages | what it is |
 |---|---|---|
 | `/blueprints` | 1 | the shelf. Download / compose / upload moved to the landing (lifecycle-scoring pass); this index is the grid and nothing under it |
-| `/blueprints/[slug]` | 9 | one blueprint: schematic, Score card (radar, right column on wide, right under the schematic on narrow — CSS grid `order`/`row-start`, not duplicated markup), explainability, `ForkAction` + download buttons, download panel |
+| `/blueprints/[slug]` | 9 | one blueprint: schematic, Score card (radar, right column on wide, right under the schematic on narrow — the aside is `display: contents` below `lg` so Score and Bundle become items of the body grid, `lg:row-span-2` + `order-1` do the placing, no duplicated markup), explainability, the `blueprint.dot` scroll walk at full width, `ForkAction` + download buttons, download panel |
 | `/nodes` | 1 | the card library |
 | `/nodes/[...id]` | 53 | one card in full: interfaces, params, `mcp`, `skill`, `cannot`, risk markers, version history, raw YAML |
 | `/ontology` | 1 | the vocabulary |
@@ -28,11 +28,11 @@ TypeScript strict.
 | route | what it is |
 |---|---|
 | `/` | the landing: five beats, ~370 visible words |
-| `/spec` | the spec language: three layers, and what the engine checks |
-| `/spec/topology` | layer 1, the DOT graph + the five-roles figure |
+| `/what-a-blueprint-is` | what a blueprint is for, the three parts, one worked bundle, and the words that travel with the subject. Stop 00 of the spec sequence and the door onto its three children; `/spec` and `/concepts` 308 here |
+| `/spec/topology` | layer 1, the DOT graph |
 | `/spec/card` | layer 2, the node card + the scroll-annotated card |
 | `/spec/ontology` | layer 3, the vocabulary |
-| `/spec/scoring` | not a fourth layer — how all six radar axes are read, weights included, `id="scoring"` kept on `/spec` as the old anchor's landing spot |
+| `/reading-the-radar` | how a blueprint is graded: the picture (five spokes, why autonomy has none) and the arithmetic (three badges, every weight). `/spec/scoring` merged in and 308s here; `#weights` survives with `ScoringModel` |
 | `/towards-a-dark-factory` | the 1–5 organisational ladder |
 | `/towards-a-dark-factory/which-tasks` | which tasks a dark factory can take |
 | `/towards-a-dark-factory/the-climb` | the four phases, holdouts, progressive disclosure |
@@ -41,15 +41,23 @@ TypeScript strict.
 
 | route | what it is |
 |---|---|
-| `/build` | a workspace: one graph as the stage, three simultaneous choices, five tabs, two co-equal exits over 80 pre-resolved combinations |
-| `/upload` | validates and scores a bundle **in the tab**, and stops there |
+| `/build` | "Design a blueprint": a workspace with one graph as the stage, three simultaneous choices, five tabs, two co-equal exits over 80 pre-resolved combinations |
+| `/upload` | "Upload blueprint": validates and scores a bundle **in the tab**, and stops there |
 | `/install` | previews per-client MCP setup behind tabs (`InstallTabs`); coming soon, no server exists yet |
 
 ### Redirects — `next.config.ts`
 
 All permanent (308): `/gallery → /blueprints`, `/parts → /nodes`, `/ontologies → /ontology`,
 `/which-tasks → /towards-a-dark-factory/which-tasks`,
-`/how-to-build-a-dark-factory → /towards-a-dark-factory/the-climb`.
+`/how-to-build-a-dark-factory → /towards-a-dark-factory/the-climb`,
+`/spec → /what-a-blueprint-is`, `/spec/scoring → /reading-the-radar`,
+`/concepts → /what-a-blueprint-is`.
+
+A redirect cannot carry a fragment, but a browser re-applies the one it started with to a
+`Location` that has none. So `/spec#topology|#card|#ontology` still land: the three bands
+on `/what-a-blueprint-is` carry those ids with `scroll-mt-24`. `/spec/scoring#weights`
+lands because `ScoringModel` owns `id="weights"` and moved whole. `/spec#scoring` does
+not: its compatibility door was on the deleted page.
 
 ---
 
@@ -98,7 +106,7 @@ The landing used to carry doc 2 §2.1's six rungs. They moved to the pages they 
 | the annotated node card | `/spec/card` |
 | the five roles + the absent edge | `/spec/topology` |
 | the 1–5 ladder | `/towards-a-dark-factory` |
-| the analyzer on a real bundle | `/spec` |
+| the analyzer on a real bundle | `/what-a-blueprint-is` (was `/spec`, deleted) |
 
 `app/page.tsx`'s header comment records this, so nobody "restores" the spine.
 

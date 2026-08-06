@@ -7,7 +7,13 @@ import { ALL_COMBINATIONS } from "@/components/build/choices";
 import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
 
 export const metadata: Metadata = {
-  title: "Build your own blueprint",
+  /* "Design a blueprint", not "Build your own blueprint". The author renamed the nav
+     label on 2026-08-07 and this site's own doctrine — `components/site/nav.test.ts`'s
+     header, "one route, one name" — makes the page's `h1` and its `<title>` follow: the
+     label a reader clicks should be the heading they land on, with nothing to re-resolve
+     on arrival. "Design" is also the truer verb for what this workspace is. Nothing is
+     built here; three choices are made over a graph and a folder comes out. */
+  title: "Design a blueprint",
   description:
     "One workspace over a blueprint's three parts: the graph, a card for every node, and the vocabulary both are written against. Start from the five-node starter, make three choices that stay in the artefact, and leave holding a blueprint that runs from your own command line. Every score is computed by the same static analysis the registry uses. Nothing is uploaded and there is nowhere to save it yet.",
 };
@@ -117,7 +123,7 @@ export default function BuildPage() {
         <SectionHeading
           className="mt-3"
           as="h1"
-          title="Build your own blueprint"
+          title="Design a blueprint"
           /* Doc 2 §5.3/§5.7 named the choices; the build-restructure spec's §2.4 fixed
              where the hour goes.
              ------------------------------------------------------------
@@ -163,7 +169,9 @@ export default function BuildPage() {
         routes={[
           {
             href: "/upload",
-            label: "Validate a bundle",
+            // The label the header, the footer and the phone panel all use for this
+            // destination, and the `h1` it lands on. One route, one name.
+            label: "Upload blueprint",
             blurb: "Run the same checks against a folder you already have.",
           },
           {

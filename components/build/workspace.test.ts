@@ -424,7 +424,8 @@ function sourcesUnder(dir: string): string[] {
  *
  * `lib/core/analysis/autonomy.ts` composes the autonomy rationale and the per-node
  * explanation, and `lib/format.ts` is the presentation transform every surface puts them
- * through. Both print onto `/blueprints`, `/build`, `/spec`, every blueprint detail page
+ * through. Both print onto `/blueprints`, `/build`, `/what-a-blueprint-is`, every
+ * blueprint detail page
  * and every generated `README.md`, and neither was covered: the guard walked
  * `components/` trees and `app/**` pages and stopped there, so
  * "… (type: human-gate) — a person acts here." shipped on three blueprint pages against
@@ -470,12 +471,13 @@ const EM_DASH_FILES = [
  * a colon or a quote, which is what a URL inside a string looks like.
  *
  * The block rule wants a whitespace or bracket boundary in front of the comment opener for
- * the same class of reason. `SpecLayers` names its figure with a glob over the card
- * directory, and that glob puts a slash-star inside a string literal: an opener with no
+ * the same class of reason. `SpecLayers` named its figure with a glob over the card
+ * directory, and that glob put a slash-star inside a string literal: an opener with no
  * boundary in front of it matches there and swallows everything up to the next real
- * closer, which on that file is the caption and the whole of lane 1. A guard that is
- * silently blind over the span it ate is the worst way for a check to fail, and this rule
- * was just extended to cover exactly that file.
+ * closer, which on that file was the caption and the whole of lane 1. A guard that is
+ * silently blind over the span it ate is the worst way for a check to fail. That file
+ * went with `/spec` in the IA pass; the rule stays, because the shape it catches is a
+ * path inside a string and this repo writes those everywhere.
  */
 function visibleCopy(source: string): string {
   return source

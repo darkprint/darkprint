@@ -1,5 +1,5 @@
 /* ============================================================
-   The scoring panel on `/spec`, held against `lib/core/config.ts`.
+   The scoring panel, held against `lib/core/config.ts`.
 
    PROJECT.md §3.4 asked for the weights to be published, and the
    one way that request can be answered badly is by typing them
@@ -107,7 +107,7 @@ describe("the weights table", () => {
 
   it("publishes the one this site was missing", () => {
     // The finding that opened PROJECT.md §3.4: the heaviest weight in the engine, and
-    // the string appeared on no page under `/spec`.
+    // the string appeared on no page describing the spec.
     expect(OPEN).toContain("arbitrary-code-execution");
     expect(OPEN).toMatch(/arbitrary-code-execution[^0-9]*2\.0/);
   });

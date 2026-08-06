@@ -109,7 +109,7 @@ Rules:
 - It must declare `broader`, pointing at a curated term, so it inherits a place in the lattice.
 - `partitionTerms()` in `resolve.ts` is the one place that splits curated from local. Use it
   rather than counting terms yourself — a page that counted the overlay into the core is
-  exactly how `/spec` came to print "50 terms" when the core has 49.
+  exactly how the old `/spec` came to print "50 terms" when the core has 49.
 - **Extensions travel with the bundle.** `ontology/extensions.yaml` is exported into any
   bundle that uses local terms, or the download cannot reproduce its own scores.
 
@@ -135,7 +135,7 @@ file rather than scattered through the analyzers.
 
 | change | what goes stale |
 |---|---|
-| **add a term** | `/ontology/<term>` page count, the `partitionTerms` totals printed on `/spec`, and the ontology version on every card |
+| **add a term** | `/ontology/<term>` page count, the `partitionTerms` total printed on `/what-a-blueprint-is`'s vocabulary band, and the ontology version on every card |
 | **remove or rename a term** | every card using it (`card/unknown-term`), every port typed with it, every `cannot` naming it, and every bundle's scores |
 | **change the lattice** (`broader`) | port compatibility across all 9 bundles, and `cannot` enforcement — a widened parent can make a prohibition fire where it did not |
 | **change a weight in `config.ts`** | every security reading on the site and all 9 bundle READMEs. The `/what-it-isnt` demonstration that quoted "4 to 2" is gone with that route; `components/explain/starter-isolation.ts` still derives the figure for `/spec/card` |

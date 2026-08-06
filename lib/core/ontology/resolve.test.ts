@@ -326,7 +326,7 @@ describe("byKind", () => {
 
 /* ============================================================
    partitionTerms
-   The count `/spec` and `/ontology` print. Both used to reach for
+   The count `/what-a-blueprint-is` and `/ontology` print. Both used to reach for
    `view.ontology.terms.length`, which is the merged view, under
    copy naming the curated core — so the pages announced 50 terms
    and 10 risk markers against a core of 49 and 9, the extra being

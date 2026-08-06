@@ -3,7 +3,9 @@ import Link from "next/link";
 import { ReachList, ReachRow } from "@/components/ui/ReachList";
 
 /* ============================================================
-   The two drawings on /concepts, second attempt.
+   The two drawings of the words section, second attempt. They
+   were written for `/concepts`; that route folded into
+   `/what-a-blueprint-is#the-words` and the figures moved with it.
 
    ── What was wrong with the first ──
    The author called them "very wrong", and they were. Both were
@@ -68,7 +70,7 @@ export function WhatACardReaches({
 }) {
   /* Six rows, and each carries its own fine print.
      ------------------------------------------------------------
-     Both changes come from the same defect. `/concepts` drew this figure with five rows
+     Both changes come from the same defect. The page drew this figure with five rows
      and then set a six-box grid under it, one box per field, keyed by the same names. The
      same list twice, and the two disagreed: the figure said five rows, the grid explained
      six, and `risk_markers` appeared only in the grid. A reader counting fields on a page
@@ -135,7 +137,7 @@ export function WhatACardReaches({
           <>
             Each marker costs the blueprint security points.{" "}
             <Link
-              href="/spec/scoring"
+              href="/reading-the-radar"
               className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"
             >
               How a blueprint is graded <span aria-hidden>&rarr;</span>

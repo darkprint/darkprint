@@ -4,9 +4,16 @@
    How far a reader has travelled through a tall section, 0..1.
 
    Spec §3.2 is the customer: a sticky viewport holding one node
-   card, a row of annotations that attach one at a time as the
-   reader descends, and a dezoom at the end. All three read the same
-   number.
+   card and a row of annotations that attach one at a time as the
+   reader descends. Both read the same number.
+
+   There was a third reader, a dezoom at the end of the same walk,
+   and it is gone with `NodeCardStage` — the author asked
+   `/spec/card` to draw the landing's figure, which has no ending
+   of its own. The `tail` reserve below exists for exactly that
+   shape and currently has no caller passing one; it is kept
+   because a walk that ends on something is the case the parameter
+   was derived for, not a speculative one.
 
    Two decisions worth stating, because both are load-bearing:
 
@@ -127,8 +134,8 @@ export interface ScrollProgress<T extends Element> {
 
 /*
  * `pinned` used to be a third field: `rect.height > viewport`, set from inside `measure`
- * on every animation frame of every scroll. No consumer ever read it. `NodeCardStage` is
- * the only caller and destructures `{ ref, progress, motion }`, and the layout question it
+ * on every animation frame of every scroll. No consumer ever read it. `CardWalk` is the
+ * only caller and destructures `{ ref, progress, motion }`, and the layout question it
  * would have answered is answered by a media query instead, so the state existed only to
  * be written. Spec §2a makes this module part of the vocabulary eight components share,
  * and a shared vocabulary carrying a field nobody can use teaches the next author to pass

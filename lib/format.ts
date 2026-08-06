@@ -33,7 +33,8 @@ export function prettyDate(iso: string): string {
  * `app/globals.css`: `ComingSoonBadge` ("not built yet") and `.route-box` / `.route-label`
  * ("this box leaves the page"). A metric whose value *is* reported is neither, and this
  * entry was spending amber six times on every blueprint scorecard, on the Cost vertex and
- * axis name of every radar, and across three sections of `/spec/scoring` — far more amber
+ * axis name of every radar, and across three sections of `/reading-the-radar` — far more
+ * amber
  * than the two jobs it is reserved for, so the reserved meaning was the one that got lost.
  *
  * Emerald, because emerald already means "a figure read off the engine" and a reported
@@ -48,7 +49,8 @@ export function prettyDate(iso: string): string {
  *
  * It does not say "verified". Emerald is a *provenance* here, and the honesty is carried
  * where it always was: the badge prints the word `reported`, its `title` says the figure
- * is seeded because nothing has run, and the `○ not built` lines on `/spec/scoring` name
+ * is seeded because nothing has run, and the `○ not built` lines on `/reading-the-radar`
+ * name
  * the axes. Colour never carries a claim alone on this site — that rule is what makes it
  * safe to reuse a hue for a second, adjacent meaning.
  */

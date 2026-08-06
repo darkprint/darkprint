@@ -179,6 +179,19 @@ Prose only, at `340931e`:
 
 `/nodes` (2,396) and `/ontology` (2,060) were left alone on purpose. They are lists.
 
+**Re-measured after the IA pass of 2026-08-07** (`npm run measure:prose` on the production
+build). Three of these rows have moved, and two of them moved *up*, deliberately:
+
+| page | at `2d70354` | now | |
+|---|---|---|---|
+| `/spec/card` | 1,717 (−38% open) | **1,802, all of it open** | the author asked "Field by field" permanently open and asked for each subfield's role described. Nine subfield entries were added and `components/ui/More.tsx` came off the page, so the *open* reading went from roughly 1,064 to 1,802 — +69%. "The split" band leaving paid some of it back. This is now the site's longest single-instance page that is not a list. |
+| `/what-a-blueprint-is` | 472 | **1,457** | it absorbed the deleted `/spec`'s door furniture, `SectionExample` (386 words, and `/spec` was its only mount) and the `/concepts` content as `#the-words`. |
+| `/reading-the-radar` | 1,373 | **1,557** | the `/spec/scoring` merge, minus the duplicate plate and both self-linking tail boxes. |
+
+None of the three is behind a disclosure, so the honesty ledger's *open* tags are all still
+honoured — the growth is readable text, which is the direction this project treats as safe.
+The lever, if any of them needs cutting later, is named in each page's own header docblock.
+
 ### What this pass taught, worth keeping
 
 Cutting for pace is how honesty statements disappear, and the danger is not deletion. It is
@@ -237,29 +250,37 @@ mis-set against real content:
 
 Changing any of these is a PATCH of the ontology version, because it re-scores every blueprint.
 
-### 3.4 Give the scoring model a home — **done: it is now `/spec/scoring`, its own route**
+### 3.4 Give the scoring model a home — **done: it is `/reading-the-radar`, after two moves**
 
-The previous entry here shipped the content as a section on `/spec` and left the
-placement as an open question: that page had become the longest open-prose page on the
-site, +86% over its own post-length-pass figure, on a route the redesign split into four
+The first entry here shipped the content as a section on `/spec` and left the placement
+as an open question: that page had become the longest open-prose page on the site, +86%
+over its own post-length-pass figure, on a route the redesign split into four
 specifically because one long page made readers leave.
 
-That question is resolved. `SectionExample`'s `#scoring` panel ("How a factory is
-graded", the qualitative walk through all six radar axes) and `ScoringModel` (the
-quantitative weights, bands and thresholds, still read live from `DARKPRINT_CONFIG` and
-`getOntologyView()`, never transcribed) both moved onto a new `app/spec/scoring/page.tsx`.
-`/spec` itself is back near its original length; the new page carries the weight instead,
-on a route whose whole subject is exactly this.
+The second answer was a route of its own. `SectionExample`'s `#scoring` panel ("How a
+factory is graded", the qualitative walk through all six radar axes) and `ScoringModel`
+(the quantitative weights, bands and thresholds, still read live from `DARKPRINT_CONFIG`
+and `getOntologyView()`, never transcribed) both moved onto `app/spec/scoring/page.tsx`,
+appended to `SPEC_SEQUENCE` as a fifth stop and a plain `SpecPage` — never a fourth
+*layer*, because `SPEC_LAYERS` stays three items and the site says "three layers" in
+enough places that a fourth would contradict itself.
 
-**It is a fifth entry in the spec *sequence*, not a fourth *layer*.**
-`components/spec/sequence.ts`'s `SPEC_LAYERS` stays three items (topology, card,
-ontology — the site says "three layers" in enough places that a fourth would contradict
-itself), and `SPEC_SCORING` is appended to `SPEC_SEQUENCE` as a plain `SpecPage` instead.
-`/spec` itself keeps a small, separately-framed "How it's graded" callout — not a fourth
-door in the three-layer grid — carrying `id="scoring"` so the anchor every blueprint page
-already links (`/spec/scoring` directly now; the id itself is preserved as the bookmark
-target for anyone still holding the old `/spec#scoring` fragment) lands one click from the
-real content, same precedent as the topology/card/ontology anchors.
+**The IA pass of 2026-08-07 is the third and last answer.** The author asked the grading
+door off the spec index and asked `/spec` itself deleted, which left a numbered spec stop
+under an index that no longer existed. `/spec/scoring` merged into `/reading-the-radar`
+instead: one page carrying the picture (five spokes, why autonomy has none, what a
+vertex's colour says) and the arithmetic (the three badges, `ScoringModel` entire), under
+the title every inline link on the site already used for it, "How a blueprint is graded".
+The two routes had drawn the same `ScoreRadar` at the same blueprint at the same two width
+solves, and each ended by linking the other; that duplication is what the merge removed.
+
+`SPEC_SEQUENCE` is four again — stop 00 is `/what-a-blueprint-is`, which is the door onto
+the three layer pages now. `next.config.ts` 308s `/spec`, `/spec/scoring` and `/concepts`.
+The fragments survive the moves that could carry them: `#weights` because `ScoringModel`
+owns that id and travelled whole, and `/spec#topology|#card|#ontology` because the three
+bands on `/what-a-blueprint-is` took those ids, which is what a browser re-applying a
+fragment to a fragment-less `Location` needs to find. `/spec#scoring` does not survive:
+its compatibility door was on the page that was deleted.
 
 The pager's own aria-label was found reading "in four parts" against a five-item rail
 after the split — a reviewer caught it, and it's fixed by deriving the count

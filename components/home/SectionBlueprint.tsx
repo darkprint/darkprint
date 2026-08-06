@@ -6,8 +6,13 @@
    The line is "this is a blueprint", and the drawing is the whole
    of the argument, so the copy is one sentence and stops. Every
    paragraph the landing used to spend explaining the five roles,
-   the loop and the prohibition has moved to `/spec/topology`, where
-   `SectionRoles` says all of it to a reader who came for it.
+   the loop and the prohibition went to `/spec/topology` with
+   `SectionRoles`, and came off that page again when the trim pass
+   cut the roles band. The argument now lives where it is checkable
+   rather than where it was retold: `TOPOLOGY_ROWS` on
+   `/spec/topology` and the `cannot` line on `/spec/card`. This beat
+   never carried it and still does not — one sentence, then the
+   drawing.
 
    ── What is drawn ──
    The starter software factory the site ships, node for node and

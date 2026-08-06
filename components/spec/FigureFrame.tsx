@@ -1,5 +1,5 @@
 /* ============================================================
-   /spec — the paper both figures are drawn on.
+   The spec set — the paper every figure in it is drawn on.
 
    Two things are shared and neither is decoration.
 

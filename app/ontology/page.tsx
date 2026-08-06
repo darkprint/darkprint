@@ -125,7 +125,7 @@ export default function OntologyPage() {
   // asserted: this archive ships an overlay, and a page claiming it does not would be
   // wrong the moment somebody reads the risk-marker list below.
   //
-  // Through `partitionTerms` rather than by hand, because `/spec` printed the merged
+  // Through `partitionTerms` rather than by hand, because the old `/spec` printed the merged
   // count where it meant the curated one and the two pages disagreed by a term. One
   // derivation, so they cannot.
   const { core: coreTermList, local: localTerms } = partitionTerms(terms);

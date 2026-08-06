@@ -170,8 +170,9 @@ export function SectionExample() {
         </div>
 
         {/* ---------- the scorecard, and where the rest of it lives ----------
-            Lifecycle-scoring spec §4.1 moves the qualitative "How a factory is graded"
-            panel that used to sit beside this one to `/spec/scoring`, along with
+            Lifecycle-scoring spec §4.1 moved the qualitative "How a factory is graded"
+            panel that used to sit beside this one to `/spec/scoring`, and the IA pass
+            merged that route into `/reading-the-radar`, along with
             `ScoringModel`'s quantitative detail: it walked all six axes without naming
             this bundle, so it detached cleanly. Losing that second column leaves one
             panel in what was a two-up grid, so this is full-width now rather than a lone
@@ -191,7 +192,7 @@ export function SectionExample() {
             The scorecard prints the subtraction under the Security row and the fraction
             under Autonomy.{" "}
             <Link
-              href="/spec/scoring"
+              href="/reading-the-radar"
               className="text-cyan underline decoration-cyan/40 underline-offset-4 hover:decoration-cyan"
             >
               How a blueprint is graded →

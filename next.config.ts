@@ -30,9 +30,27 @@ const nextConfig: NextConfig = {
    * the-climb`; the parent is the 1-5 ladder, which that page never carried. A redirect
    * to a parent index is how a bookmark quietly becomes a shrug.
    *
+   * The last three are the IA pass of 2026-08-07, and all three are content moves rather
+   * than renames, so each lands on the page that now holds what the old one held.
+   *
+   * `/spec` was the overview above three layer pages. It is deleted and the layer pages
+   * are not: `/what-a-blueprint-is` is their door now, carrying the three doors' chips,
+   * their file and engine-source lines, and — the part a redirect cannot do on its own —
+   * the three old in-page ids. A fragment never reaches the server, but a browser
+   * re-applies the fragment it started with to a `Location` that carries none, so
+   * `/spec#card` follows this 308 and still finds `#card` at the other end.
+   *
+   * `/spec/scoring` merged into `/reading-the-radar`, which now holds the picture and the
+   * arithmetic in one page under the title every inline link already used for it.
+   * `#weights` survives with it, because `ScoringModel` owns that id and moved whole.
+   *
+   * `/concepts` folded into `/what-a-blueprint-is#the-words`. The destination here is the
+   * bare route rather than the fragment: a redirect that appends a fragment overrides the
+   * one a reader arrived with, and `/concepts` had none of its own worth preserving.
+   *
    * `permanent: true`, so 308 rather than 307. The rename is a decision and not an
    * experiment, and 308 is the code that tells a client to stop asking. Redirects are
-   * checked before the filesystem, so a directory reappearing at either old path would
+   * checked before the filesystem, so a directory reappearing at any old path would
    * be shadowed by its entry here; `components/site/nav.test.ts` fails if one does.
    */
   async redirects() {
@@ -52,6 +70,13 @@ const nextConfig: NextConfig = {
         destination: "/towards-a-dark-factory/which-tasks",
         permanent: true,
       },
+      { source: "/spec", destination: "/what-a-blueprint-is", permanent: true },
+      {
+        source: "/spec/scoring",
+        destination: "/reading-the-radar",
+        permanent: true,
+      },
+      { source: "/concepts", destination: "/what-a-blueprint-is", permanent: true },
     ];
   },
 };

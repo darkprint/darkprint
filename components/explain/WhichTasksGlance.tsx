@@ -206,7 +206,7 @@ export function WhichTasksGlance() {
           characters a line at 14px, the widest paragraph on the route, sitting directly
           under a figure whose whole job is to be taken in at a glance. The drawing keeps
           the container; the reading of it does not, which is the rule `FigureFrame`
-          already carries on `/spec`.
+          already carries wherever a spec figure is drawn.
 
           The two callouts are `.label` now. They were `tracking-[0.14em]` at 11px, which
           is the 14px tier's tracking on the 11px tier's size — the exact collision the

@@ -30,7 +30,7 @@ export interface ScoreAudit {
  * Doc 3 §5's ceiling. The floor is deliberately not printed here: `raw` is stated before
  * the clamp, and a row reading "0.00 of 4" beside a page that says the published reading
  * is held at 1 is the honest pair — the arithmetic ran past the floor and the number
- * stopped, which is what `/spec/scoring#weights` says in as many words.
+ * stopped, which is what `/reading-the-radar#weights` says in as many words.
  */
 const SECURITY_CEILING = 4;
 
@@ -109,9 +109,10 @@ export function MetricBars({
    * surface for the two computed rows. Its presence is the whole switch; see `glance`
    * for what changes and for the duplication that made it necessary.
    *
-   * Left off by `components/home/SectionExample.tsx`, deliberately: `/spec` shows this
-   * card with no panel beside it, and the paragraph next to it there tells the reader
-   * that "the scorecard prints that subtraction under the Security row".
+   * Left off by `components/home/SectionExample.tsx`, deliberately: that section shows
+   * this card with no panel beside it, and the paragraph next to it tells the reader that
+   * "the scorecard prints that subtraction under the Security row". It is mounted on
+   * `/what-a-blueprint-is` since the IA pass deleted `/spec`, which was its only mount.
    */
   audit?: ScoreAudit;
   /**
@@ -122,8 +123,8 @@ export function MetricBars({
    * `position: sticky` nothing to do (a box already as tall as the row it shares has no
    * slack to move within). Nothing is cut: every sentence is still in the prerendered
    * HTML, findable and readable, just gathered under one summary instead of six.
-   * `SectionExample` leaves this off on purpose — `/spec` has nothing beside this card
-   * competing for scroll room, so there is no reason to fold anything there.
+   * `SectionExample` leaves this off on purpose — nothing sits beside this card there
+   * competing for scroll room, so there is no reason to fold anything.
    */
   compact?: boolean;
   className?: string;

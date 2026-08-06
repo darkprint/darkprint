@@ -18,11 +18,10 @@ import { cx } from "@/lib/format";
  * The pass that added `/spec` and the climb took the header from six items to eight, and
  * eight is where the arrangement stops being decoration: the group headings in the
  * collapsed panel below are the only thing that keeps a phone reader from scrolling a
- * flat list of eight, and the rule in the wide row is the same statement made with one
- * border.
+ * flat list, and the rule in the wide row is the same statement made with one border.
  *
- * Seven for a while. Redesign spec §4.2 renamed `/how-to-build-a-dark-factory` to
- * `/towards-a-dark-factory` and folded `/which-tasks` into it as a child, so the two
+ * Seven for a while, then nine. Redesign spec §4.2 renamed `/how-to-build-a-dark-factory`
+ * to `/towards-a-dark-factory` and folded `/which-tasks` into it as a child, so the two
  * items that used to sit side by side in `learn` are one item leading to a three-page
  * sequence. Both old paths redirect from `next.config.ts` and neither is listed here: a
  * nav is a map of where the site is, and a redirect is for a link somebody else already
@@ -33,11 +32,27 @@ import { cx } from "@/lib/format";
  * child, so putting five more items in this row would make the header a table of contents
  * for two pages that already have one.
  *
- * Nine now: the lifecycle-scoring pass gave `/spec/scoring` its own route right after
- * `/spec`, since it grades what the three layers describe rather than adding a fourth one
- * of its own. Its label is the same phrase the page's own `h1` and every inline link to it
- * already use, "How a blueprint is graded", so a reader who has met the phrase on any of
- * those recognises it here too.
+ * ── Nine back to nine, with three of them different (2026-08-07) ──
+ * The IA pass removed three `learn` rows and added none:
+ *
+ *   - `/spec` is deleted. `/what-a-blueprint-is` is the door onto the three layer pages
+ *     now, and it was already the item above `/spec` in this list, so the row came out
+ *     rather than being repointed.
+ *   - `/spec/scoring` is deleted. Its content merged into `/reading-the-radar`, which
+ *     takes over its label: "How a blueprint is graded" is the phrase that page's own
+ *     `h1` and every inline link on the site already use, and it covers the merged page
+ *     where "Reading the radar" covered only the picture half.
+ *   - `/concepts` is deleted. Its content is the `#the-words` section of
+ *     `/what-a-blueprint-is`, so a row here would have been a second name for a page
+ *     already in this list.
+ *
+ * Two rows were renamed rather than moved. `/build` is "Design a blueprint" on the
+ * author's instruction, and sits directly before `/towards-a-dark-factory`; the page's
+ * own `h1` says the same words, which is what `nav.test.ts` holds every label to. And the
+ * `/upload` control is "Upload blueprint", the label the footer and the phone panel use
+ * as well — one destination, one name, and that test reads all three out of this source.
+ *
+ * Nine, then: home, three registry surfaces, four in the menu, and `/install` beside it.
  */
 export const NAV = [
   // The three registry surfaces, flat. `/ontology` sat in the menu for one pass and the
@@ -53,27 +68,22 @@ export const NAV = [
   { href: "/nodes", label: "Nodes", group: "registry" },
   { href: "/ontology", label: "Ontology", group: "registry" },
   // The first item of the menu, because it is the one a cold reader needs first and the
-  // only page that says what a blueprint is *for*.
+  // only page that says what a blueprint is *for*. It is also the door onto the three
+  // layer pages, and stop 00 of `SPEC_SEQUENCE`, since `/spec` was deleted — which is why
+  // the row that used to sit two below this one is gone rather than repointed.
   { href: "/what-a-blueprint-is", label: "What a blueprint is", group: "learn" },
+  // The scorecard, whole: the picture (five spokes, why autonomy has none, what a
+  // vertex's colour says) and the arithmetic (three badges, every weight) on one route
+  // after `/spec/scoring` merged into it. The label is the phrase the page's own `h1` and
+  // every inline link on the site already use. It follows "What a blueprint is" because a
+  // reader has to know what a blueprint is made of before a grade of one means anything.
+  { href: "/reading-the-radar", label: "How a blueprint is graded", group: "learn" },
   // Doc 2 §0 splits the two onboardings. `/build` is the practical one: about an hour,
-  // ending with a factory the reader has downloaded. It sits with the explanatory pages
+  // ending with a blueprint the reader has downloaded. It sits with the explanatory pages
   // rather than with the registry surfaces, because it is something to do rather than
-  // something to browse.
-  { href: "/build", label: "Build one", group: "learn" },
-  // `/spec` answers the question `/build` raises: the reader has just written a graph
-  // and a card, and this is what the three layers they were writing in actually are.
-  { href: "/spec", label: "Spec", group: "learn" },
-  // A child of `/spec`, not a fifth `learn` destination in its own right: it grades what
-  // the three layers above it describe. Placed directly after `/spec` for that reason.
-  { href: "/spec/scoring", label: "How a blueprint is graded", group: "learn" },
-  // The picture rather than the system: five spokes, why autonomy has none, and what a
-  // vertex's colour says. It sits after the grading page because it points there for the
-  // arithmetic and would be a strange first stop.
-  { href: "/reading-the-radar", label: "Reading the radar", group: "learn" },
-  // The words that travel with this subject and are not the site's own vocabulary: eval,
-  // harness, rubric, tool, MCP, skill. It sits after the spec pages because it explains
-  // what the card's fields *are*, which only lands once a reader knows a card has fields.
-  { href: "/concepts", label: "Eval, harness and the rest", group: "learn" },
+  // something to browse — and directly before the route sequence, on the author's
+  // instruction. Renamed from "Build one": the page's `h1` says the same words.
+  { href: "/build", label: "Design a blueprint", group: "learn" },
   // The author named this label: "/which-tasks should be placed in The climb part which
   // I'd rename Towards a Dark Factory". It is also the page's own `h1`, character for
   // character, which is what `nav.test.ts` holds it to. The label a reader clicks is the
@@ -339,9 +349,13 @@ export function SiteHeader() {
 
             `/upload` validates and scores a bundle in the browser and stops there;
             publishing has no backend. A "+ Share" label on every page would be the one
-            promise the site cannot keep — and the label is "Validate a bundle", the
+            promise the site cannot keep — and the label is "Upload blueprint", the
             same words the phone panel, the footer and both landing doors use, so one
-            destination has one name everywhere. `nav.test.ts` holds them together. */}
+            destination has one name everywhere. `nav.test.ts` holds them together, and
+            it holds the page's own `h1` and `<title>` to the same words. Renamed from
+            "Upload blueprint" on the author's instruction: the noun a reader is
+            carrying is a blueprint, and "bundle" is the word for the folder it arrives
+            in rather than for the thing they made. */}
         <div className="flex items-center gap-2">
           <ButtonLink
             href="/upload"
@@ -349,7 +363,7 @@ export function SiteHeader() {
             size="sm"
             className="lg:h-10 lg:gap-2 lg:px-4"
           >
-            Validate a bundle
+            Upload blueprint
           </ButtonLink>
 
           <button
@@ -415,7 +429,7 @@ export function SiteHeader() {
               onClick={() => setOpen(false)}
               className="mt-2 border-t border-line px-3 pb-1 pt-4 text-sm text-cyan"
             >
-              Validate a bundle
+              Upload blueprint
             </Link>
           </div>
         </div>

@@ -37,6 +37,7 @@ import { More } from "@/components/ui/More";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
 import { absencesFor } from "@/components/panes/absences";
 import { buildPaneModel, type PaneNodeInput } from "@/components/panes/build";
+import { DotWalk } from "@/components/panes/DotWalk";
 import { SynchronisedPanes } from "@/components/panes/SynchronisedPanes";
 import { BundlePanel, type BundleNode } from "@/components/blueprint/BundlePanel";
 import { DownloadPanel, type DownloadCard } from "@/components/blueprint/DownloadPanel";
@@ -371,6 +372,50 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
 
           Comments stay full width below, as asked. */}
 
+      {/* ---------- the body grid, and why it has four children rather than two ----------
+          The author: on narrow screens the Score panel goes DIRECTLY BELOW the block the
+          "Jump to a node" label opens, using CSS grid `order`/`row-start` and not a second
+          copy of the markup. `architecture/website.md` has recorded that behaviour since
+          the two-column pass; the page never had it. Score was the first child of a
+          sticky aside that sat after the whole left column, so below `lg` — where the
+          grid collapses to one column and DOM order IS reading order — it landed 2,619px
+          down the page, behind Tool scopes and an ~1,800px explainability block. Measured
+          on `starter-software-factory` at 390: the "Jump to a node" label at y=1245, Score
+          at y=3864.
+
+          `order` alone cannot fix that, and this is the trap worth writing down: `order`
+          reorders SIBLINGS inside one container. Score is a child of the aside and the
+          skeleton pane is a grandchild of the left column, so no value of `order` on the
+          two grid children can interleave one into the other. Something has to become a
+          grid item, which is what `display: contents` does — below `lg` the aside has no
+          box of its own and Score and Bundle are direct children of this grid.
+
+          So the grid has four children, in DOM order: the graph panel, Score, Bundle, and
+          then everything that used to follow the graph in the same column.
+
+            below lg   one column, DOM order, with `order-1` holding Bundle last:
+                       graph + skeleton → SCORE → tool scopes + explainability → bundle
+            at lg      `lg:flex` gives the aside its box back and `lg:row-span-2` gives it
+                       both rows, so the three grid areas are exactly what they were:
+                       graph (row 1, cols 1-2), aside (col 3, rows 1-2, sticky), the rest
+                       (row 2, cols 1-2). Nothing about the wide layout moves.
+
+          `lg:row-span-2` is not decoration. Without it the aside is trapped in row 1 and
+          `position: sticky` stops moving once row 1 ends — a regression invisible in a
+          screenshot of the top of the page.
+
+          `min-w-0` moves onto Score and onto Bundle's wrapper for the same reason: below
+          `lg` the aside is not a box any more, so the overflow guard cannot live on it.
+
+          `components/panes/archive-labels.test.ts` reads this file's SOURCE TEXT and pins
+          four things in order — the grid literal, then the two-thirds column class, then
+          the panes mount, then the aside — because every canvas measurement in that file
+          is computed from them. It matches on the column class WITH ITS CLOSING QUOTE, so
+          prose above the grid may not spell that class out; this sentence used to and
+          moved the first match 328 characters before the grid literal, which fails with a
+          message about a column that had not moved. All four still hold: the wrapper is
+          still the first `lg:col-span-2` and still precedes the mount, and the aside still
+          follows it. */}
       <div className="mt-10 grid gap-8 lg:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-8 lg:col-span-2">
         {/* The graph and the card skeleton, consolidated: doc 2 §5.1's pane 1 and pane 2, the
@@ -403,7 +448,79 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             asserts both halves — whole everywhere, and the 6.6 CSS px floor this column
             actually achieves rather than the one the site would prefer. */}
         <SynchronisedPanes model={paneModel} graph={bp.graph} />
+        </div>
 
+        {/* The right column: the reading, then the folder it came from. Bundle moved
+            here from the full-width run below, on the author's instruction, so the two
+            things a reader checks against the graph travel with it.
+
+            `contents` below `lg`, a flex column at `lg` — see the note on the grid above
+            for what that buys and what `lg:row-span-2` is holding up. */}
+        <aside
+          aria-label="The reading, and the folder it came from"
+          className="contents lg:sticky lg:top-20 lg:col-span-1 lg:row-span-2 lg:flex lg:min-w-0 lg:flex-col lg:gap-8 lg:self-start"
+        >
+          <section className="panel min-w-0 p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <PanelLabel>Score</PanelLabel>
+              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
+                6-metric card
+              </span>
+            </div>
+            <div className="flex justify-center">
+              <ScoreRadar metrics={bp.metrics} size={280} />
+            </div>
+            {/* `audit` is what makes this card a glance rather than a second audit.
+                The explainability panel below prints the engine's rationale for
+                Autonomy and for Security verbatim, and this card was printing the
+                same two strings under its two computed rows, word for word, one
+                screen away. Handed the raw reading and the marker count, the
+                Security row states where the blueprint sits on the engine's own
+                0–4 scale instead of restating the subtraction that got it there.
+                `raw` and not `level`: the bar beside it is a rescale of `raw`, and
+                a rounded level printed next to it disagreed with the bar on four
+                of these nine pages (see `ScoreAudit`). The four seeded rows are
+                untouched: their detail carries the seeded marker and belongs
+                beside the figure. */}
+            <MetricBars
+              metrics={bp.metrics}
+              autonomy={bp.autonomy}
+              compact
+              audit={{
+                securityRaw: bp.analysis.security.raw,
+                securityMarkers: bp.analysis.security.penalties.length,
+              }}
+              className="mt-4"
+            />
+          </section>
+
+          {/* No wrapper of its own, once: `BundlePanel` draws its own bordered panel with
+              its own "Bundle" header, so putting it inside a `panel` titled "Bundle"
+              printed the word twice. It has a bare `<div>` now for two jobs the dissolved
+              aside can no longer do — `order-1` keeps it LAST below `lg`, where it is a
+              sibling of Score and of both left-column blocks rather than a child of a box
+              that already ordered it, and `min-w-0` is the overflow guard that used to sit
+              on the aside. `lg:order-none` is defensive rather than needed: inside the
+              flex column at `lg` it is already the last child. */}
+          <div className="order-1 min-w-0 lg:order-none">
+            <BundlePanel
+              digest={bp.digest}
+              ontologyVersion={record?.manifest.ontologyVersion ?? "unknown"}
+              // Doc 3 §8: the version a score was computed under, which the engine
+              // takes from the view the bundle was resolved against and not from
+              // the manifest. Both metrics carry the same value; a test in
+              // `lib/core` asserts they and `BlueprintAnalysis.ontologyVersion`
+              // can never disagree.
+              scoredOntologyVersion={bp.analysis.autonomy.ontologyVersion}
+              nodes={bundleNodes}
+              pinnedCards={record?.cardRefs.length ?? new Set(bp.cardRefs).size}
+              diagnostics={otherNotes}
+              explainedNotes={explainedNotes}
+            />
+          </div>
+        </aside>
+
+        <div className="flex min-w-0 flex-col gap-8 lg:col-span-2">
         {/* Tool scopes and the engine's working, in the same column as the graph and
             under the "Jump to a node" block `SynchronisedPanes` renders below it — moved
             out of the sticky aside column (see the comment above) so the graph and
@@ -445,67 +562,40 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
 
         </div>
 
-        {/* The right column: the reading, then the folder it came from. Bundle moved
-            here from the full-width run below, on the author's instruction, so the two
-            things a reader checks against the graph travel with it. */}
-        <aside className="flex min-w-0 flex-col gap-8 lg:sticky lg:top-20 lg:col-span-1 lg:self-start">
-          <section className="panel p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <PanelLabel>Score</PanelLabel>
-              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
-                6-metric card
-              </span>
-            </div>
-            <div className="flex justify-center">
-              <ScoreRadar metrics={bp.metrics} size={280} />
-            </div>
-            {/* `audit` is what makes this card a glance rather than a second audit.
-                The explainability panel below prints the engine's rationale for
-                Autonomy and for Security verbatim, and this card was printing the
-                same two strings under its two computed rows, word for word, one
-                screen away. Handed the raw reading and the marker count, the
-                Security row states where the blueprint sits on the engine's own
-                0–4 scale instead of restating the subtraction that got it there.
-                `raw` and not `level`: the bar beside it is a rescale of `raw`, and
-                a rounded level printed next to it disagreed with the bar on four
-                of these nine pages (see `ScoreAudit`). The four seeded rows are
-                untouched: their detail carries the seeded marker and belongs
-                beside the figure. */}
-            <MetricBars
-              metrics={bp.metrics}
-              autonomy={bp.autonomy}
-              compact
-              audit={{
-                securityRaw: bp.analysis.security.raw,
-                securityMarkers: bp.analysis.security.penalties.length,
-              }}
-              className="mt-4"
-            />
-          </section>
-
-          {/* No wrapper. `BundlePanel` draws its own bordered panel with its own
-              "Bundle" header, so putting it inside a `panel` titled "Bundle" printed the
-              word twice, one box inside another. Mine, from the two-column pass. */}
-          <BundlePanel
-            digest={bp.digest}
-            ontologyVersion={record?.manifest.ontologyVersion ?? "unknown"}
-            // Doc 3 §8: the version a score was computed under, which the engine
-            // takes from the view the bundle was resolved against and not from
-            // the manifest. Both metrics carry the same value; a test in
-            // `lib/core` asserts they and `BlueprintAnalysis.ontologyVersion`
-            // can never disagree.
-            scoredOntologyVersion={bp.analysis.autonomy.ontologyVersion}
-            nodes={bundleNodes}
-            pinnedCards={record?.cardRefs.length ?? new Set(bp.cardRefs).size}
-            diagnostics={otherNotes}
-            explainedNotes={explainedNotes}
-          />
-        </aside>
       </div>
 
       {/* Comments and the download, full width under both columns. Community notes
           "stay like now", per the author. */}
       <div className="mt-8 flex flex-col gap-8">
+        {/* ---------- the file itself, at the width the file needs ----------
+            The author asked for the `<slug>/blueprint.dot` panel to be BIGGER, and for the
+            important tag to light up in blue as the page scrolls.
+
+            Both asks are answered by taking the listing out of a column. The page carried
+            `blueprint.dot` only as a download button, and the panel the ask describes —
+            `components/ui/SourcePanel.tsx` — is a half-grid box that measures 564x320
+            against 713x578 of content wherever it is mounted: 45% of the file hidden
+            downward, 21% of it hidden sideways, in a box a reader has to scroll inside a
+            page they are already scrolling. Full width is 1152px here, the listing takes
+            two thirds of that, and every line of every blueprint in the archive is on
+            screen at once with no nested scrolling of any kind.
+
+            WHY IT IS HERE AND NOT IN THE LEFT COLUMN. Two thirds of the body is 757px, and
+            the same 2:1 figure inside it would give the listing 463px against a longest
+            line of about 690px — which is smaller than the panel this replaces, not
+            bigger. A figure whose whole argument is "you can read the file" cannot be
+            width-starved to sit beside something.
+
+            It follows the two columns and precedes the community notes, which keeps the
+            drawing, the reading and the folder together above it and leaves this as the
+            last thing the page says in its own voice: here is the source, and here is what
+            each part of it is.
+
+            `components/panes/DotWalk.tsx` carries the register, the contrast numbers and
+            the pacing; `components/panes/dot-walk.ts` derives every step from the file so
+            that nine different DOTs cannot drift out of a hand-typed table. */}
+        <DotWalk source={bp.graph.dot} title={`${bp.slug}/${paneModel.dotFile}`} />
+
         <Comments comments={bp.comments} />
 
         {/* Doc 2 §11 item 10: the bundle as files, generated at build time under

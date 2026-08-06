@@ -181,7 +181,7 @@ function numberAttr(attrs: string, name: string): number | undefined {
  * Extra width `letter-spacing` adds per character.
  *
  * Two scenes spend it and they spell it two ways: `IsolationWall` writes user units on its
- * lane names and `furniture.tsx` writes `em` on every caption in the `/spec` set. A guard
+ * lane names and `furniture.tsx` writes `em` on every caption in the spec set. A guard
  * that ignored it would under-measure `GENERATION` by 16 units, which is the direction
  * that lets a collision through. Anything in a unit this cannot convert throws, for the
  * reason `translationOf` throws.
@@ -231,8 +231,10 @@ function hasTransform(attrs: string): boolean {
  *
  * A hand-rolled walk rather than a DOM: `vitest.config.ts` runs the suite under
  * `environment: "node"`, and what a scene emits is a stack of translations with words at
- * the leaves. `<tspan>` is walked through rather than around, because `SpecLayers` writes
- * a card line as two of them inside one `<text>` and the pair is one word to a reader.
+ * the leaves. `<tspan>` is walked through rather than around, because a spec figure
+ * writes a card line as two of them inside one `<text>` and the pair is one word to a
+ * reader. (`SpecLayers` was the figure that did it; it went with `/spec`, and
+ * `EnforcementFigure` draws its `cannot:` panel the same way.)
  *
  * `<rect>` is collected because a box drawn around a group is furniture a word can end up
  * underneath, and nothing here compared the two: `SectionLevels`'s harness rectangle
@@ -418,7 +420,7 @@ export function clippedLabels(frame: LabelFrame): string[] {
  * ranges meet. The ranges come from the anchor rather than from the anchor point, which is
  * what the first version of this comparison got wrong: it measured every box as `x ± half`
  * and would have read `SectionLevels`'s right-anchored harness caption and every
- * `/spec` lane label as sitting half a width to the right of where they are drawn.
+ * spec lane label as sitting half a width to the right of where they are drawn.
  */
 export function collidingLabels(frame: LabelFrame): string[] {
   const out: string[] = [];
@@ -444,7 +446,7 @@ export function collidingLabels(frame: LabelFrame): string[] {
  * furniture around it.
  *
  * A word wholly inside a box is not a collision — that is a caption in a panel, which is
- * how `IsolationWall` and the `/spec` figures are drawn. A word wholly outside is not one
+ * how `IsolationWall` and the spec figures are drawn. A word wholly outside is not one
  * either. What is reported is a word the outline passes through: its ink overlaps the
  * rectangle and is not contained by it. Rounded corners are ignored, which reports a word
  * tucked into a corner arc that the arc misses; that is the direction to be wrong in.

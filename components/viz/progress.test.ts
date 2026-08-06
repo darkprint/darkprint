@@ -102,8 +102,11 @@ describe("staging annotations off the progress value", () => {
     expect(stagesShown(1 / COUNT + 0.001, COUNT)).toBe(2);
   });
 
-  /** The head lets the card settle before the first leader line is drawn; the tail leaves
-      the dezoom somewhere to happen after the last one. */
+  /** The head lets the card settle before the first run is marked; the tail leaves an
+      ending somewhere to happen after the last one. The walk on `/` and `/spec/card`
+      passes `tail: 0` and argues for it in `CardWalk`, so the tail is exercised here
+      rather than by a caller — the reserve is the general shape and the walk is one
+      case of it. */
   it("honours the reserves at each end", () => {
     const reserve = { head: 0.1, tail: 0.2 };
     expect(stagesShown(0.1, COUNT, reserve)).toBe(0);

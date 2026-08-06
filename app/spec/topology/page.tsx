@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import { bundleSource } from "@/lib/content";
-import { SectionRoles } from "@/components/home/SectionRoles";
 import { CheckLegend, CheckTable } from "@/components/spec/CheckTable";
 import { Id, SpecLink } from "@/components/spec/parts";
 import { TOPOLOGY_ROWS } from "@/components/spec/rows";
@@ -20,27 +19,39 @@ import { SourcePanel } from "@/components/ui/SourcePanel";
    leave." This is the first of the three, and §4.1 asks that each
    one open with its figure.
 
-   ── The figure is imported, and it is held to the file ──
-   §3 moves the five roles here from the landing, where they were
-   one of eight sections nobody reached the bottom of. It is the
-   right page for them: the roles drawing *is* the topology layer,
-   and `components/home/roles.test.ts` reparses
-   `content/blueprints/starter-software-factory/blueprint.dot` and
-   the five cards it names, so the wires, the labels and the
-   iteration cap in that drawing cannot drift away from the bundle
-   this page then prints in full underneath.
+   ── The figure this page opened with, and why it is gone ──
+   §3 had moved the five roles here from the landing — the
+   `SectionRoles` band, eyebrow "The shape of the work", DRW-003 and
+   three paragraphs — and this page opened with it for a release.
+   The author asked for that subsection off the page in this pass.
+   The reasoning it carried is not lost: the loop and the absent
+   edge are the whole subject of `TOPOLOGY_ROWS` below, and the DOT
+   listing on the right prints the five nodes and five edges the
+   drawing traced. What the page loses is a picture; what it gains
+   is a route that starts at its own subject, the file, rather than
+   at a second telling of the landing's argument.
 
-   `components/home/SectionRoles.tsx` is owned elsewhere this pass,
-   so it is imported by path rather than through the
-   `components/home` barrel: moving it off the landing's index must
-   not be able to break this route.
+   `components/home/SectionRoles.tsx` was mounted here and nowhere
+   else, so it is now mounted nowhere. The component and its guards
+   stay: `components/home/roles-labels.test.ts` and
+   `components/home/roles.test.ts` both render it directly and
+   reparse `content/blueprints/starter-software-factory/blueprint.dot`,
+   and `architecture/website.md` names the first of those the
+   highest-value guard on the site. A guard is not deleted because a
+   mount moved; deleting it is how the drawing would come back
+   wrong.
 
    ── What was cut (spec §5) ──
    The paragraph that used to introduce the DOT listing ended on
    "its lesson is an edge that is not written: nothing runs from
-   planner to builder". The section above now makes that argument
-   with a drawing, two panels and the card that declares the
-   prohibition. One copy survives, and it is the longer one.
+   planner to builder". It was cut when the roles band arrived
+   saying the same thing at length, and it is not re-added now the
+   band has gone. The prohibition is not a topology check and no row
+   in `TOPOLOGY_ROWS` could carry it: a missing edge is not a
+   diagnostic, it is a card's `cannot` line, and `/spec/card` is
+   where that line is printed and argued. Restating it here would
+   put the claim back in the layer that cannot express it, which is
+   the one thing this page's three paragraphs exist to explain.
 
    ── No route config ──
    A static segment, so there is no `generateStaticParams` and no
@@ -66,9 +77,12 @@ const STARTER = "starter-software-factory";
  * Every band below opens with a `.label-lead` and one of these. Two things were wrong
  * with the sub-sections before: they drew at `text-2xl` (24px), which is neither of the
  * two display steps the site has, and they carried no mono cue at all, so a page whose
- * `h1` and whose figure each spend a cyan `.eyebrow` had three more sections a reader
- * could not tell apart by scanning. `.label-lead` is the answer rather than a third
- * eyebrow: the eyebrow names a page or a full-bleed band, and this page has spent both.
+ * `h1` and whose opening figure each spent a cyan `.eyebrow` had three more sections a
+ * reader could not tell apart by scanning. `.label-lead` is the answer rather than a
+ * third eyebrow: the eyebrow names a page or a full-bleed band, and the `h1` has spent
+ * it. (The figure has since been cut, so one eyebrow is now drawn on the route rather
+ * than two. That is a reason to leave this alone, not to promote a band: the two bands
+ * below are peers of each other, and an eyebrow on one would rank it over the other.)
  */
 const BAND_H2 =
   "font-display text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] text-fg sm:text-[32px]";
@@ -91,18 +105,21 @@ export default function SpecTopologyPage() {
         </div>
       </header>
 
-      {/* The figure this page opens with. Five roles, five edges, one absence. */}
-      <SectionRoles />
-
       {/* ---------- the file, and what one attribute joins ----------
           A band, not a row in a flex stack. The three sections of this page used to sit
           inside one `container-page flex flex-col gap-14 py-14`, so the only thing
           separating the prose above from the check table below was 56px of nothing —
           while the two pages in the same nav group next door mark every seam with a
           full-bleed edge and a ground change. Same device here: `border-t` and an
-          alternating ground, no new token and no new colour. */}
+          alternating ground, no new token and no new colour.
+
+          No `border-t` on this one. It used to sit under the roles band, which was
+          `bg-surface`, so the rule was the seam between two grounds. It now sits directly
+          under the header, which already draws a `border-b` at full bleed: a `border-t`
+          here would stack a second hairline on the first and print a 2px rule nothing
+          asked for. The header's rule is the seam. */}
       <section
-        className="border-t border-line bg-void py-16 sm:py-20"
+        className="bg-void py-16 sm:py-20"
         aria-labelledby="dot-file-heading"
       >
         <div className="container-page flex flex-col gap-10">

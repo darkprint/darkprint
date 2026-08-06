@@ -55,8 +55,8 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    py-12` — 56px between sections and 48px of page padding, two
    values that are not on the eight-point scale the rest of the
    site now keeps, on the one page sitting between two that do.
-   `/spec` recorded the same conversion and the same reason: the
-   other two stops in this sequence, `/towards-a-dark-factory` and
+   The deleted `/spec` recorded the same conversion and the same
+   reason: the other two stops in this sequence, `/towards-a-dark-factory` and
    `/towards-a-dark-factory/the-climb`, mark every seam with a
    full-bleed edge and a ground change, so a reader crossing from
    one to the next met a third rhythm in the middle of a

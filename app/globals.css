@@ -184,7 +184,16 @@
 
   /* A key is a name in a document, not a status. YAML keys and node-card field
      names were borrowing cyan, the interactive colour, which said "click me"
-     about a word that cannot be clicked. */
+     about a word that cannot be clicked.
+
+     NO CONSUMERS TODAY, and that is a decision rather than an oversight. Its two
+     call sites — the five block titles and eighteen field names in "Every field
+     on this card" on `/nodes/[...id]` — moved to `--color-copper-line`, so that
+     page and the landing's node figure name a card's keys in the same register.
+     The token stays declared because this `@theme static` block's own rule is
+     that a declared-but-unconsumed accent is cheap and a `var()` that silently
+     paints nothing is not; the next surface that needs a non-interactive key
+     colour outside the copper register has it waiting, spelled the same way. */
   --color-key: var(--color-cyan-bright);
   /* Warning severity. Darker and less saturated than `--color-amber`, so a
      warning and a "not built yet" badge can never read as the same signal. */

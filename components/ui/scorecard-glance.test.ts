@@ -34,9 +34,9 @@
         rows change. The other four say the figure is seeded, which
         doc 2 §0.4 makes a product rule and which has to stay
         wherever the number is legible;
-     3. the prop stops being passed, or gets passed on `/spec`,
-        where `SectionExample` shows this card with no panel beside
-        it and the paragraph next to it says in as many words that
+     3. the prop stops being passed, or gets passed inside
+        `SectionExample`, which shows this card with no panel beside
+        it and whose next paragraph says in as many words that
         "the scorecard prints that subtraction under the Security
         row".
 
@@ -73,7 +73,7 @@ function card(bp: (typeof BLUEPRINTS)[number]): string {
   );
 }
 
-/** The same card as `/spec` renders it, with no panel beside it. */
+/** The same card as `SectionExample` renders it, with no panel beside it. */
 function unaudited(bp: (typeof BLUEPRINTS)[number]): string {
   return renderToStaticMarkup(
     createElement(MetricBars, { metrics: bp.metrics, autonomy: bp.autonomy }),
@@ -200,8 +200,8 @@ describe("the switch is thrown by the page that owns the panel", () => {
     };
 
     expect(tag(read("app/blueprints/[slug]/page.tsx"))).toContain("audit=");
-    // `/spec` explains the subtraction in the paragraph beside this card, so the card
-    // has to still be printing one.
+    // `SectionExample` explains the subtraction in the paragraph beside this card, so
+    // the card has to still be printing one.
     expect(tag(read("components/home/SectionExample.tsx"))).not.toContain("audit=");
   });
 });
