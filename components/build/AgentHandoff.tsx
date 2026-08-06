@@ -27,6 +27,16 @@ import { SourcePanel } from "@/components/ui/SourcePanel";
    `DownloadStep`. `agentBrief()` did not change; what changed is what this file says about
    its own place on the page.
 
+   ── Fix round 1: the title dropped its leading "Or" ──
+   The heading below used to open "Or have your agent write one for your own goal" — task 6's
+   review caught what that word does read next to a `DownloadStep` that, at the time, had no
+   title of its own: "Or" reads as the second half of a pair, and a reader meets the word
+   before they have met anything for it to be paired against. `DownloadStep` now carries its
+   own peer title ("This starter, as files"), so the two headings are siblings read left to
+   right rather than a stated option followed by an alternative — which is what "co-equal"
+   in the design spec's own words actually requires. `agentBrief()` and everything below the
+   heading are unchanged; only the four characters "Or " came out.
+
    ── The mirror of a bundle's `AGENTS.md` ──
    `lib/content/bundle-export.ts` writes one of those into every
    download: *here is a pattern, adapt it into your code*. This is
@@ -100,7 +110,7 @@ export function AgentHandoff({ className }: { className?: string }) {
   return (
     <div className={className}>
       <h3 className="font-display text-lg font-semibold text-fg">
-        Or have your agent write one for your own goal
+        Have your agent write one for your own goal
       </h3>
       <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
         The worked example only ever builds software — that is the one starter it

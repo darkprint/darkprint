@@ -43,6 +43,13 @@ import { cx } from "@/lib/format";
    `lib/content/bundle-export.ts` already writes an `AGENTS.md` into this exact folder, and
    that the hour a reader is about to spend belongs to wiring the folder into their own
    agent runner, not to reading this page.
+
+   ── Fix round 1: co-equal in fact, not just in the docblock's own claim ──
+   Task 6's review measured the gap this paragraph asserted away: only `AgentHandoff` carried
+   a heading, so a reader scanning the two exits met a title on one side and a wall of prose
+   on the other — which is not what "co-equal" reads as, whatever this comment said about it.
+   This component's own `h3`, added directly above the paragraph below, is the fix; nothing
+   else in this component changed.
    ============================================================ */
 
 const CARD_PREFIX = "cards/";
@@ -105,6 +112,14 @@ export function DownloadStep({
 
   return (
     <div className={cx("flex flex-col gap-5", className)}>
+      {/* Fix round 1: a peer title, in the same register as `AgentHandoff`'s own `h3`
+          ("Have your agent write one for your own goal"). Before this, only the other exit
+          carried a title — its own opened on "Or", which reads as the second of a pair when
+          the first has nothing to be paired against. The words are the spec's own sketch
+          (§2.1: "This starter, as files"), not a fresh rewrite; the fix is giving them a
+          heading at all, not choosing new words for them. */}
+      <h3 className="font-display text-lg font-semibold text-fg">This starter, as files</h3>
+
       {/* The walk through the folder that used to stand here is gone (redesign spec §5).
           `DownloadPanel` sits directly under this line and describes every file as it
           lists it: what Attractor runs, what the topology carries, what the README is for.

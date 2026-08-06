@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { CORE_ONTOLOGY, ontologyView } from "@/lib/core";
 import { cx } from "@/lib/format";
 import {
@@ -212,6 +212,46 @@ export function WorkspaceStage({
     if (surface !== undefined) onTabOpen(surface);
   }
 
+  /**
+   * Fix round 1, FIX 3 — a choice that moves the surface the reader is ALREADY looking at
+   * must not leave a `•` behind for it.
+   * ------------------------------------------------------------
+   * Before this fix, a reader with the DOT tab open who then changed the output choice
+   * watched the DOT redraw in front of them AND saw a `•` land on the very tab they were
+   * staring at — a marker pointing at a change they had just watched happen, which is not
+   * what the marker is for. Spec §2.2's own rationale is that the `•` makes the page's claim
+   * "every choice changes all three" checkable BY LOOKING AT THE TABS THE READER DID NOT
+   * JUST OPEN; a badge on the open tab checks nothing, because there is nothing left to
+   * discover there. It only ever cleared once the reader left and came back, which is
+   * backwards: they had already seen it.
+   *
+   * Two changes do this together, deliberately, not one:
+   *   1. The render below withholds the `•` on the tab that is currently `active`
+   *      (`marks.includes(surface) && !active`) — the immediate, visible fix.
+   *   2. This effect fires `onTabOpen` for the active tab's surface the moment it appears
+   *      in `marks`, so the mark actually LEAVES `BuildWorkspace`'s state rather than only
+   *      being hidden by (1). Hidden-but-still-present would reappear the instant the
+   *      reader opened a DIFFERENT tab and glanced back at this one, because `active` would
+   *      then be false for it and (1) alone would stop suppressing it — the exact "only
+   *      clears if they leave and come back" bug this fix exists to remove, just moved one
+   *      tab-switch later instead of fixed.
+   *
+   * RULING, recorded here so a future reader does not restore the old behaviour by quoting
+   * spec §2.2's literal sentence at it: "a marker appears on every tab whose content differs
+   * from what it was immediately before the reader's last choice, and clears when that tab
+   * is opened" is true and unchanged by this fix — it describes a tab the reader is NOT
+   * looking at when the change lands, and says nothing about a tab that is already open
+   * when it happens. Read together with the rationale one line above it in the same spec
+   * section (the marker exists so the page's claim is checkable), a marker on the tab
+   * already on screen contradicts the rationale even while satisfying the literal wording,
+   * and the coordinator's ruling is that the rationale wins. Suppress the marker on the
+   * active tab; do not bring this back by re-reading the sentence more literally.
+   */
+  useEffect(() => {
+    const surface = SURFACE_OF[open];
+    if (surface !== undefined && marks.includes(surface)) onTabOpen(surface);
+  }, [marks, open, onTabOpen]);
+
   /** The house tablist pattern (`./tablist.ts`, factored out of `BuildPanes.tsx`), bound
       horizontal: this row reads left to right and carries no `aria-orientation`. */
   function onTabKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -326,7 +366,10 @@ export function WorkspaceStage({
           {TABS.map((tab, index) => {
             const active = tab.id === open;
             const surface = SURFACE_OF[tab.id];
-            const changed = surface !== undefined && marks.includes(surface);
+            // `&& !active`: see this file's own "Fix round 1, FIX 3" docblock, above the
+            // `openTab` function — the active tab never carries the change marker, because
+            // the reader is already looking at whatever it would be pointing at.
+            const changed = surface !== undefined && marks.includes(surface) && !active;
             return (
               <button
                 key={tab.id}
