@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import {
   ReactFlow,
   Background,
   BackgroundVariant,
   BaseEdge,
+  ControlButton,
   Controls,
   EdgeLabelRenderer,
   MarkerType,
   Panel,
   getBezierPath,
+  getViewportForBounds,
   useReactFlow,
   useStore,
+  useStoreApi,
   type Edge,
   type EdgeProps,
   type EdgeTypes,
@@ -20,7 +23,16 @@ import {
 } from "@xyflow/react";
 import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
 import { AgentNode, type AgentFlowNode } from "./AgentNode";
-import { FIT_PADDING, LEGIBLE_ZOOM, MAX_ZOOM, PAN_MIN_ZOOM } from "./framing";
+import { BLOCK_WIDTH } from "./block";
+import {
+  FIT_PADDING,
+  LEGIBLE_ZOOM,
+  MAX_ZOOM,
+  PAN_MIN_ZOOM,
+  curveSpanAcross,
+  returnCurvature,
+  type FlowSpan,
+} from "./framing";
 
 const nodeTypes: NodeTypes = { agent: AgentNode };
 
@@ -332,28 +344,64 @@ function PanHint() {
 }
 
 /**
- * Refits the whole drawing whenever the box it is drawn in changes size.
+ * Frames the whole drawing — wires included — and refits it whenever the box changes size.
  *
- * The `fitView` prop below fits once, against whatever React Flow measured on mount. That
- * was enough while the fit was floored and most drawings were cropped anyway; it is not
- * enough now that "the whole graph is on screen" is the contract. A reader who rotates a
- * phone, or drags a window from 1440 to 800, gets a canvas several hundred pixels narrower
- * than the one the zoom was computed for, and the drawing that fitted runs off both edges.
- * `graphPaneHeight` makes the same point vertically: the pane's height is derived from the
- * viewport, so a resize moves both axes at once.
+ * It owns the zoom controls too, and that is not a convenience: React Flow's own fit-view
+ * button runs React Flow's own `fitView`, and that fit measures the NODES. Left alone, the
+ * one button on the pane whose job is to restore the arrival framing restores a DIFFERENT
+ * one — measured on `/blueprints/adversarial-consensus-line` at 1440, a click took the zoom
+ * from 0.541 to 0.577 and put the `reopen -> vote` bow 39px past the canvas's right edge,
+ * which is the exact defect this component exists to have fixed, one click in.
+ *
+ * ── Why the button is replaced rather than redirected ──
+ * `Controls` takes an `onFitView`, and its type says it is "called when the fit view button
+ * is clicked. When this is not provided, the viewport will be adjusted so that all nodes are
+ * visible" — which reads as a replacement and is not one. The handler is
+ * `fitView(fitViewOptions); onFitView?.();`, so both run; and `fitView` is QUEUED rather than
+ * applied (it sets `fitViewQueued` and waits for the render it triggers), so it lands after
+ * the synchronous `setViewport` beside it and wins. Measured with `onFitView={frame}` in
+ * place: 0.577 and 39px outside, exactly as without it.
+ *
+ * So the built-in button is switched off and this one takes its place, as a `ControlButton`
+ * child in the same strip, with React Flow's own label. The icon is drawn here because
+ * `FitViewIcon` is internal to the library; it is the same four-corner frame at the same
+ * 32x30 viewBox, so the strip reads as one set of three.
+ *
+ * ── Why the fit is computed rather than delegated ──
+ * `fitView` has no way to be told about a bezier. The bounds below are the node boxes React
+ * Flow measured, widened across to `across` — `curveSpanAcross`, in `framing.ts`, which has
+ * the argument and the measured cost — and handed to React Flow's OWN `getViewportForBounds`
+ * with the padding, floor and ceiling the instance is configured with. So the arithmetic is
+ * still the library's; only the box handed to it is this component's.
+ *
+ * The `fitView` prop below still runs first, and is kept. It fires inside React Flow's own
+ * initialisation, the frame the nodes are measured in, which is earlier than any effect can
+ * be; dropping it would paint one frame of a drawing at zoom 1 with its top-left corner in
+ * the corner of the pane. What it lands on is this framing plus at most the bow — 8% on
+ * `adversarial-consensus-line`, nothing at all on seven of the nine — and then this corrects
+ * it in the same commit.
+ *
+ * ── Why the refit exists at all ──
+ * A reader who rotates a phone, or drags a window from 1440 to 800, gets a canvas several
+ * hundred pixels narrower than the one the zoom was computed for, and the drawing that
+ * fitted runs off both edges. `graphPaneHeightCss` makes the same point vertically: the
+ * pane's height follows its own width, so a resize moves both axes at once.
  *
  * ── Why this does not fight the reader ──
  * It watches the CANVAS, not the viewport transform. `s.width`/`s.height` are the measured
- * box; panning and zooming do not touch them, so dragging the drawing, both zoom buttons
- * and fit-view all behave exactly as they did — this fires on a resize and on nothing else.
- * The distinction matters: an earlier pass that re-framed on every viewport change undid
- * `Controls`' own buttons the moment they were pressed.
+ * box; panning and zooming do not touch them, so dragging the drawing and both zoom buttons
+ * behave exactly as they did — this fires on a resize and on nothing else. The distinction
+ * matters: an earlier pass that re-framed on every viewport change undid `Controls`' own
+ * buttons the moment they were pressed. The store is read through `useStoreApi` inside the
+ * callback rather than through a selector, so the node boxes it reads cost no subscription
+ * and no re-render.
  *
  * The first run is the arrival framing, which is why there is no latch. `measured` holds it
  * back until React Flow has a width for every node, because a fit computed from unmeasured
  * boxes lands somewhere the drawing is not.
  */
-function FitWhole() {
+function WholeFrame({ across, className }: { across: FlowSpan; className: string }) {
+  const store = useStoreApi();
   const width = useStore((s) => s.width);
   const height = useStore((s) => s.height);
   const measured = useStore((s) => {
@@ -364,25 +412,68 @@ function FitWhole() {
   });
   const flow = useReactFlow();
 
+  const frame = useCallback(() => {
+    const state = store.getState();
+    if (state.width === 0 || state.height === 0) return;
+    let top = Infinity;
+    let bottom = -Infinity;
+    for (const node of state.nodeLookup.values()) {
+      const nodeHeight = node.measured.height ?? 0;
+      if (nodeHeight === 0) return;
+      const { y } = node.internals.positionAbsolute;
+      top = Math.min(top, y);
+      bottom = Math.max(bottom, y + nodeHeight);
+    }
+    if (top === Infinity) return;
+    void flow.setViewport(
+      getViewportForBounds(
+        { x: across.left, y: top, width: across.right - across.left, height: bottom - top },
+        state.width,
+        state.height,
+        PAN_MIN_ZOOM,
+        MAX_ZOOM,
+        FIT_PADDING,
+      ),
+    );
+  }, [across, flow, store]);
+
   useEffect(() => {
     if (!measured || width === 0 || height === 0) return;
-    void flow.fitView({ padding: FIT_PADDING, maxZoom: MAX_ZOOM });
-  }, [flow, height, measured, width]);
+    frame();
+  }, [frame, height, measured, width]);
 
-  return null;
+  return (
+    <Controls
+      showInteractive={false}
+      showFitView={false}
+      orientation="horizontal"
+      className={className}
+    >
+      <ControlButton onClick={frame} className="react-flow__controls-fitview" title="Fit View" aria-label="Fit View">
+        {/* React Flow's own four-corner frame, redrawn: the library does not export it. */}
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 30" aria-hidden>
+          <path d="M3.692 4.63c0-.53.4-.938.939-.938h5.215V0H4.708C2.13 0 0 2.054 0 4.63v5.216h3.692V4.631zM27.354 0h-5.2v3.692h5.17c.53 0 .984.4.984.939v5.215H32V4.631A4.624 4.624 0 0027.354 0zm.954 24.83c0 .532-.4.94-.939.94h-5.215v3.768h5.215c2.577 0 4.631-2.13 4.631-4.707v-5.139h-3.692v5.139zm-23.677.94c-.531 0-.939-.4-.939-.94v-5.138H0v5.139c0 2.577 2.13 4.707 4.708 4.707h5.138V25.77H4.631z" />
+        </svg>
+      </ControlButton>
+    </Controls>
+  );
 }
 
 /**
  * Interactive schematic for detail pages and the upload preview.
  *
- * The whole drawing, every time. Nothing floors the fit: `fitViewOptions` carries the
- * padding and no `minZoom`, so React Flow falls back to the instance's `PAN_MIN_ZOOM`,
- * which is set well under any fit this site produces. The zoom that follows is the
- * blueprint's own — `framing.ts` has the table of what each one lands on and what its type
- * measures there — which is the author's instruction: "you cannot adopt the same zoom for
- * each blueprint as different blueprints have different graph's complexity". The pane's
- * height comes from the same arithmetic, per blueprint, so the drawing is not stranded in a
- * field of graticule at the blueprints that need less of it.
+ * The whole drawing, every time — every block, every name, and every wire between them.
+ * Nothing floors the fit: `fitViewOptions` carries the padding and no `minZoom`, so React
+ * Flow falls back to the instance's `PAN_MIN_ZOOM`, which is set well under any fit this
+ * site produces. The zoom that follows is the blueprint's own — `framing.ts` has the table
+ * of what each one lands on and what its type measures there — which is the author's
+ * instruction: "you cannot adopt the same zoom for each blueprint as different blueprints
+ * have different graph's complexity". The pane's height comes from the same arithmetic, per
+ * blueprint, so the drawing is not stranded in a field of graticule at the blueprints that
+ * need less of it.
+ *
+ * `WholeFrame` below is the half of that React Flow's own fit cannot do: a bezier is drawn
+ * from control points that owe nothing to the boxes it joins, and `fitView` measures boxes.
  *
  * Pan/drag stays enabled and scroll-zoom stays off so the page still scrolls. Dragging is
  * no longer how a reader reaches the rest of a cropped drawing — there is no crop — but it
@@ -460,6 +551,10 @@ export function BlueprintGraph({
     [graph, highlighted],
   );
 
+  /* How wide the drawing really is, wires and all, for the framing below. Memoised on the
+     graph because `WholeFrame`'s callback holds it in a dependency list. */
+  const across = useMemo(() => curveSpanAcross(graph, BLOCK_WIDTH), [graph]);
+
   /* Where each node sits and what it is called, so an edge can tell whether it runs
      forward or back and can name its own ends out loud. */
   const nodeIndex = useMemo(() => {
@@ -497,8 +592,12 @@ export function BlueprintGraph({
 
          Curvature scales with how far back the edge reaches, so a short return arcs
          just enough to clear the gap and a long one lifts clear of everything under it.
-         Capped, because past about 1.2 the curve overshoots the frame the panel
-         reserves. Every blueprint gets this: it keys on the geometry, not on a slug. */
+         Capped, because past about 1.2 the curve is a semicircle rather than a wire.
+         Every blueprint gets this: it keys on the geometry, not on a slug.
+
+         `returnCurvature` lives in `framing.ts` because the FIT has to reach the same
+         number — a curvature the drawing used and the framing did not know about is how
+         `adversarial-consensus-line` shipped with a bow drawn through its own frame. */
       const from = nodeIndex.at.get(e.source);
       const to = nodeIndex.at.get(e.target);
       const backwards = from !== undefined && to !== undefined && to.x <= from.x;
@@ -531,7 +630,7 @@ export function BlueprintGraph({
             ? `Edge from ${nodeIndex.named.get(e.source) ?? e.source} to ${nodeIndex.named.get(e.target) ?? e.target}`
             : `Edge from ${nodeIndex.named.get(e.source) ?? e.source} to ${nodeIndex.named.get(e.target) ?? e.target}, carrying ${e.label}`,
         data: {
-          curvature: backwards ? Math.min(1.2, 0.55 + reach / 900) : undefined,
+          curvature: backwards ? returnCurvature(reach) : undefined,
           labelDrop: paired && moves ? LABEL_STEP : 0,
           labelWidth:
             e.label === undefined ? 0 : e.label.length * LABEL_CHAR + LABEL_PAD,
@@ -586,18 +685,19 @@ export function BlueprintGraph({
         />
         {/* Horizontal, and that follows from the pane's height rather than from taste.
             Stacked, the three buttons stand about 80px, and the pane is the drawing's own
-            size now: on `guarded-merge-bot` — six blocks in one row, a 256px pane — the
+            size now: on `guarded-merge-bot` — six blocks in one row, a 240px pane — the
             column was drawn straight across the first block's lower half. Laid out along
             the bottom the strip is 26px tall, which sits inside the 52px `FIT_BAND` the fit
             already keeps clear below the drawing for a stepped-off edge label, with 18px
-            still between the two. It used to have 300px of empty graticule to stand in. */}
-        <Controls
-          showInteractive={false}
-          orientation="horizontal"
+            still between the two. It used to have 300px of empty graticule to stand in.
+
+            It is rendered by `WholeFrame` rather than here because its fit-view button has
+            to run that component's framing and not React Flow's — see its docblock. */}
+        <PanHint />
+        <WholeFrame
+          across={across}
           className="!border !border-line !bg-surface-2 !shadow-none [&_button]:!border-line [&_button]:!bg-surface-2 [&_button]:!fill-muted hover:[&_button]:!bg-surface-3"
         />
-        <PanHint />
-        <FitWhole />
       </ReactFlow>
     </div>
   );

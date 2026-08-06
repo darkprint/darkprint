@@ -120,8 +120,13 @@ export function GraphPane({
       {/* Pointer path. The schematic's own nodes are focusable, so a keyboard reader who
           lands on one can choose it with Enter; the dropdown beside the card skeleton
           (this pane's caller renders it) is the path that does not depend on that, and
-          the one a screen reader can use to reach a node the drawing has no room for. */}
-      <div onClick={onGraphClick} onKeyDown={onGraphKeyDown} className="p-3">
+          the one a screen reader can use to reach a node the drawing has no room for.
+
+          `@container` is `container-type: inline-size`, and the height the caller passes is
+          a `cqw` expression measured against it — see `graphPaneHeightCss`. It is what lets
+          one expression size this pane in the blueprint page's two-thirds column and in
+          `/upload`'s full-width preview without either caller knowing which it is in. */}
+      <div onClick={onGraphClick} onKeyDown={onGraphKeyDown} className="@container p-3">
         <BlueprintGraph
           graph={drawn}
           id={graphId}

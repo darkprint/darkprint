@@ -208,7 +208,7 @@ export function ValidationReport({
                scales the drawing down rather than clipping it, per
                `components/graph/framing.ts`. */
             height={graphPaneHeightCss(
-              drawnExtent(graph.nodes, BLOCK_WIDTH, BLOCK_MAX_HEIGHT),
+              drawnExtent(graph, BLOCK_WIDTH, BLOCK_MAX_HEIGHT),
             )}
             onSelectNode={setSelectedNode}
           />

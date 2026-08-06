@@ -60,6 +60,8 @@
 
 import { describe, expect, it } from "vitest";
 
+import { getBezierPath, Position } from "@xyflow/react";
+
 import { BLOCK_MAX_HEIGHT, BLOCK_WIDTH } from "@/components/graph/block";
 import {
   FIT_BAND,
@@ -68,8 +70,10 @@ import {
   PANE_BORDER,
   PANE_MIN_HEIGHT,
   canvasWidthAt,
+  curveSpanAcross,
   drawnExtent,
   graphPaneHeight,
+  returnCurvature,
 } from "@/components/graph/framing";
 import {
   FRAME,
@@ -162,16 +166,28 @@ function canvasWidth(viewport: number): number {
 
 /* --------------------- the drawing, at one viewport width --------------------- */
 
-/** The nodes of one combination. A combination that does not resolve is not measurable. */
-function nodesOf(state: BuildState) {
+/** The graph of one combination. A combination that does not resolve is not measurable. */
+function graphOf(state: BuildState) {
   const graph = state.graph;
   if (graph === undefined) throw new Error("the combination under measurement must resolve");
-  return graph.nodes;
+  return graph;
 }
 
-/** What one combination's drawing occupies in flow units, worst-case block height and all. */
+/** Its nodes, for the assertions that count them. */
+function nodesOf(state: BuildState) {
+  return graphOf(state).nodes;
+}
+
+/**
+ * What one combination's drawing occupies in flow units, worst-case block height and all.
+ *
+ * The whole graph and not just its nodes: the width the pane has to hold is the WIRES' as
+ * much as the blocks', and on this stage that is not a rounding — the debugger's return edge
+ * to the tester bows 75 flow units past the last column, taking the drawing from 550 across
+ * to 625. See `curveSpanAcross` in `components/graph/framing.ts`.
+ */
 function extentOf(state: BuildState) {
-  return drawnExtent(nodesOf(state), BLOCK_WIDTH, BLOCK_MAX_HEIGHT);
+  return drawnExtent(graphOf(state), BLOCK_WIDTH, BLOCK_MAX_HEIGHT);
 }
 
 /**
@@ -189,7 +205,7 @@ function canvasHeight(state: BuildState, viewport: number): number {
 
 /** The framing one combination arrives at, in the box the stage gives it. */
 function framingOf(state: BuildState, viewport: number): Framing {
-  return frameSchematic(nodesOf(state), canvasWidth(viewport), canvasHeight(state, viewport));
+  return frameSchematic(graphOf(state), canvasWidth(viewport), canvasHeight(state, viewport));
 }
 
 /**
@@ -206,7 +222,7 @@ function measureStageLabels(state: BuildState, viewport: number): NameBox[] {
 
 /** And down: the air the fit leaves for a stepped-off edge label. See `schematicAir`. */
 function measureStageAir(state: BuildState, viewport: number): Air {
-  return schematicAir(nodesOf(state), canvasWidth(viewport), canvasHeight(state, viewport));
+  return schematicAir(graphOf(state), canvasWidth(viewport), canvasHeight(state, viewport));
 }
 
 /* --------------------- the assertions --------------------- */
@@ -278,16 +294,21 @@ describe("the build stage draws the whole graph", () => {
    *
    * The old pair of assertions was "the whole drawing at 640, part of it at 500", and the
    * 500 half was a pin on where the crop began. Nothing crops now, so the quantity worth
-   * pinning is the one the reader actually meets: the five-node combinations clear 10 CSS px
-   * down to 640 (10.5 there, 7.7 at 500) and the six-node ones need 900 (11.5 there, 9.6 at
-   * 768). Both sides of both thresholds are asserted, so a change in either direction fails
-   * rather than sliding.
+   * pinning is the one the reader actually meets. Both sides of both thresholds are
+   * asserted, so a change in either direction fails rather than sliding.
+   *
+   * The tester threshold has MOVED, and by exactly what the wires cost: the fit reserves
+   * room for the debugger's return bow now, so the five-node drawing is 625 flow units
+   * across instead of 550, and the canvas it needs to clear 10 CSS px goes from 540 to 609.
+   * It used to be legible down to 640 (10.5 CSS px there) and is now legible down to 768
+   * (11.5) and under the floor at 640 (9.2). The six-node threshold is unmoved at 900,
+   * because its own extra layer already put it there.
    */
-  it("stops being legible below 640 with a tester, and below 900 with a human", () => {
+  it("stops being legible below 768 with a tester, and below 900 with a human", () => {
     const tester = buildState(base);
     const human = buildState({ ...base, approval: "human" });
-    expect(isLegible(framingOf(tester, 640)), "tester at 640").toBe(true);
-    expect(isLegible(framingOf(tester, 500)), "tester at 500").toBe(false);
+    expect(isLegible(framingOf(tester, 768)), "tester at 768").toBe(true);
+    expect(isLegible(framingOf(tester, 640)), "tester at 640").toBe(false);
     expect(isLegible(framingOf(human, 900)), "human at 900").toBe(true);
     expect(isLegible(framingOf(human, 768)), "human at 768").toBe(false);
   });
@@ -296,9 +317,10 @@ describe("the build stage draws the whole graph", () => {
    * And the phone, pinned so nobody reads more into the suite than is in it.
    *
    * A 390px viewport draws the whole graph — that is new, and it is the author's
-   * instruction — at 0.498, which puts `AgentNode`'s 11px kind row at 5.5 CSS px. Whole and
-   * not readable is the trade, and it is asserted as both halves so that a green run cannot
-   * be mistaken for a promise the page does not keep.
+   * instruction — at 0.438, which puts `AgentNode`'s 11px kind row at 4.8 CSS px. It was
+   * 0.498 and 5.5 before the fit started reserving room for the wires. Whole and not
+   * readable is the trade, and it is asserted as both halves so that a green run cannot be
+   * mistaken for a promise the page does not keep.
    *
    * If this ever starts failing because a phone fits legibly, that is good news and the
    * assertion should be tightened, not deleted.
@@ -307,7 +329,7 @@ describe("the build stage draws the whole graph", () => {
     const framing = framingOf(buildState(base), 390);
     expect(framing.whole).toBe(true);
     expect(isLegible(framing)).toBe(false);
-    expect(framing.legiblePx).toBeCloseTo(5.5, 1);
+    expect(framing.legiblePx).toBeCloseTo(4.8, 1);
   });
 });
 
@@ -418,7 +440,63 @@ describe("the stage frames with the numbers this guard reads", () => {
     expect(GRAPH_SOURCE).toContain("fitViewOptions={{ padding: FIT_PADDING }}");
     expect(GRAPH_SOURCE).toContain("minZoom={PAN_MIN_ZOOM}");
     expect(GRAPH_SOURCE).not.toMatch(/fitViewOptions=\{\{[^}]*minZoom/);
-    expect(GRAPH_SOURCE).toContain("void flow.fitView({ padding: FIT_PADDING, maxZoom: MAX_ZOOM });");
+  });
+
+  /**
+   * And that the framing the page ARRIVES at is the one this file measures: the drawing's
+   * span with the wires in it, through React Flow's own `getViewportForBounds`.
+   *
+   * Three separate things are read, because dropping any one of them puts the bow back
+   * outside the frame while the other two still look right:
+   *
+   * - the component computes `curveSpanAcross`, which is where the wires are accounted for.
+   *   Without it the bounds are the node boxes and `adversarial-consensus-line` is cut again
+   * - it hands that span to `getViewportForBounds` and applies the result. `fitView` cannot
+   *   be told about a bezier, so a call to it here would be the defect restored
+   * - React Flow's own fit-view button is OFF and this component's is in its place. The
+   *   library's button runs the library's nodes-only fit, and its `onFitView` hook does not
+   *   replace that — it runs alongside, and loses, because `fitView` is queued for the next
+   *   render while a `setViewport` beside it is immediate. Measured on
+   *   `adversarial-consensus-line` at 1440, with `onFitView={frame}` in place: a click took
+   *   the zoom from 0.541 to 0.577 and put the `reopen -> vote` bow 39px outside the canvas.
+   *   `showFitView={false}` is therefore load-bearing, not tidiness
+   *
+   * The zoom bounds it passes are read too, and that is the fourth way in: `fitViewOptions`
+   * is not the only place a floor can be smuggled back. `getViewportForBounds` takes one as
+   * its fourth argument, and a `LEGIBLE_ZOOM` there would re-crop every wide drawing on the
+   * site with the pane's own props still reading `minZoom={PAN_MIN_ZOOM}` — measured, it
+   * left both this file and `archive-labels.test.ts` green.
+   *
+   * `components/panes/archive-labels.test.ts` measures the CONSEQUENCE on all nine
+   * blueprints. This is the half that says the page is running the code that produces it.
+   */
+  it("frames from the span the wires reach, through React Flow's own arithmetic", () => {
+    expect(GRAPH_SOURCE).toContain("curveSpanAcross(graph, BLOCK_WIDTH)");
+    expect(GRAPH_SOURCE).toContain("void flow.setViewport(");
+    /* And that the curvature the component DRAWS with is the one `curveSpanAcross` reserved
+       for, which is the fifth way in and the only one every other assertion here is blind
+       to. Both sides read `returnCurvature`, so nothing above notices if the drawing scales
+       what it gets back: with `returnCurvature(reach) * 1.35` in the line below, the whole
+       suite stays at 3496 passing and the live page puts the `reopen -> vote` bow 12px past
+       the right edge of `adversarial-consensus-line`'s canvas and the debugger's `patch`
+       bow 20px past the starter's — measured at 1440, both of them the exact cut this
+       component's docblock names as the reason the constant lives in `framing.ts` at all.
+       The walk against `getBezierPath` below cannot see it either: it asks
+       `returnCurvature` for the curvature rather than reading the one the component uses. */
+    expect(
+      GRAPH_SOURCE,
+      "BlueprintGraph.tsx draws with a curvature `curveSpanAcross` did not reserve for",
+    ).toContain("curvature: backwards ? returnCurvature(reach) : undefined,");
+    expect(GRAPH_SOURCE).toContain("showFitView={false}");
+    expect(GRAPH_SOURCE).toContain("<ControlButton onClick={frame}");
+    // A JSX attribute, not the word: this file's own docblock names the hook.
+    expect(GRAPH_SOURCE).not.toMatch(/^\s*onFitView=/m);
+    expect(GRAPH_SOURCE).not.toMatch(/flow\.fitView\(/);
+    const call = /getViewportForBounds\(([\s\S]*?)\),\n/.exec(GRAPH_SOURCE);
+    expect(call, "BlueprintGraph.tsx no longer calls getViewportForBounds").not.toBeNull();
+    expect(call?.[1]).toContain("PAN_MIN_ZOOM,");
+    expect(call?.[1]).toContain("MAX_ZOOM,");
+    expect(call?.[1]).toContain("FIT_PADDING,");
   });
 
   /** And that both halves of the padding are absolute, since both axes assume it. */
@@ -428,10 +506,97 @@ describe("the stage frames with the numbers this guard reads", () => {
     expect(FIT_PAD_X).toBeGreaterThanOrEqual(MIN_CLEARANCE * 2);
   });
 
-  /** And that the pane asks for the height this file computes, rather than a number. */
+  /**
+   * And that the pane asks for the height this file computes, rather than a number — and
+   * that the box that height is measured against is the pane's own.
+   *
+   * `graphPaneHeightCss` emits `100cqw`, which resolves against the nearest ancestor with
+   * `container-type: inline-size`. Tailwind's `@container` is that declaration. Without it
+   * the expression silently falls back to the small viewport, which is not a broken layout
+   * but a pane of the wrong height at every width — the kind of failure a screenshot passes.
+   */
   it("sizes the pane from the drawing it holds", () => {
     expect(PANE_SOURCE).toContain(
-      "height={graphPaneHeightCss(drawnExtent(graph.nodes, BLOCK_WIDTH, BLOCK_MAX_HEIGHT))}",
+      "height={graphPaneHeightCss(drawnExtent(graph, BLOCK_WIDTH, BLOCK_MAX_HEIGHT))}",
     );
+    const wrapper = /onClick=\{onGraphClick\}[^>]*className="([^"]*)"/.exec(PANE_SOURCE);
+    expect(
+      wrapper?.[1],
+      `${PANE_FILE}: the graph wrapper is no longer a container, so the pane's \`100cqw\` ` +
+        `height resolves against the viewport instead of the box it is in`,
+    ).toMatch(/(?:^| )@container(?: |$)/);
+  });
+});
+
+describe("the framing knows the curve React Flow will actually draw", () => {
+  /**
+   * `curveSpanAcross` against `getBezierPath`, on the real edge that made this necessary.
+   *
+   * `framing.ts` has to answer "how far does this wire reach" without a browser, and it does
+   * it by restating React Flow's `calculateControlOffset` — which is not exported from
+   * anywhere this repo installs — and then solving the cubic's own extremes. Two copies of
+   * an arithmetic is exactly the pattern `schematic-boxes.ts`'s header warns about, and the
+   * warning is earned: an earlier guard restated three constants, called the copy proof
+   * against drift, and stayed green through three mutations of the real source.
+   *
+   * So the copy is checked against the library rather than trusted. `getBezierPath` is asked
+   * for the SAME edge — the debugger's return to the tester on `/build`'s stage, handles
+   * where `AgentNode` puts them, curvature from `returnCurvature` — its path is walked at a
+   * thousand points, and the extremes of the walk are compared with what `curveSpanAcross`
+   * reserved for it. A wrong control offset, a wrong curvature, or a wrong root of `x'(t)`
+   * all fail here. So does gutting `curveSpanAcross` to the node bounds, which is the
+   * mutation `archive-labels.test.ts`'s wire assertions cannot see.
+   *
+   * A tolerance of 0.5 flow units, which is the sampling error of a thousand-point walk over
+   * a curve this size and nothing else — the two arithmetics are exact.
+   */
+  it("reserves what a walk over React Flow's own path measures", () => {
+    const graph = graphOf(buildState(base));
+    const at = new Map(graph.nodes.map((node) => [node.id, node.position]));
+    const span = curveSpanAcross(graph, BLOCK_WIDTH);
+
+    let left = Infinity;
+    let right = -Infinity;
+    let backwards = 0;
+    for (const edge of graph.edges) {
+      const from = at.get(edge.source);
+      const to = at.get(edge.target);
+      if (from === undefined || to === undefined) continue;
+      const returns = to.x <= from.x;
+      if (returns) backwards += 1;
+      const [path] = getBezierPath({
+        sourceX: from.x + BLOCK_WIDTH,
+        sourceY: from.y,
+        sourcePosition: Position.Right,
+        targetX: to.x,
+        targetY: to.y,
+        targetPosition: Position.Left,
+        ...(returns ? { curvature: returnCurvature(Math.abs(from.x - to.x)) } : {}),
+      });
+      /* `M sx,sy C c1x,c1y c2x,c2y tx,ty` — the four x values, in order. */
+      const numbers = path.match(/-?\d+(?:\.\d+)?/g)?.map(Number) ?? [];
+      expect(numbers.length, `unexpected path shape: ${path}`).toBe(8);
+      const [p0, , p1, , p2, , p3] = numbers;
+      for (let step = 0; step <= 1000; step += 1) {
+        const t = step / 1000;
+        const u = 1 - t;
+        const x = u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+      }
+    }
+
+    /* The stage really does have a return edge, and its bow really does leave the blocks —
+       without both, the three comparisons below would hold of a span that ignored the wires
+       entirely and this test would be measuring nothing. */
+    const blocksRight = Math.max(...graph.nodes.map((node) => node.position.x)) + BLOCK_WIDTH;
+    expect(backwards).toBeGreaterThan(0);
+    expect(right).toBeGreaterThan(blocksRight);
+
+    expect(span.left).toBeLessThanOrEqual(left + 0.5);
+    expect(span.right).toBeGreaterThanOrEqual(right - 0.5);
+    // And no more than it has to be: framing to the control points would pass the line
+    // above and cost the drawing a third of its size. See `framing.ts`.
+    expect(span.right).toBeLessThanOrEqual(right + 0.5);
   });
 });

@@ -329,15 +329,16 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
       </header>
 
       {/* ---------- Body ---------- */}
-      {/* Panel reorg spec §A2, revised twice: the Score card rode in
+      {/* Panel reorg spec §A2, revised three times: the Score card rode in
           `SynchronisedPanes`'s own `aside` slot, sticky beside the graph — Requirements
           and Bundle moved out of that column entirely, because stacking all three
           there made the column taller than the graph's own natural height, which
           left `position: sticky` with no slack to move Score within (a box already
           exactly as tall as the row it sits in has nowhere to go as the page
-          scrolls). Score then moved into the page's own right column, and the graph
-          has now left the grid altogether so that it can be as wide as the body —
-          see its mount below for why, and for what that costs.
+          scrolls). Score then moved into the page's own right column, the graph left
+          the grid altogether to be as wide as the body, and the graph is now back in
+          the grid's two-thirds column with Score beside it — see its mount below for
+          what that is worth and what it costs.
           The body used to be `mx-auto max-w-4xl`, which is 896px inside this page's
           1152px `container-page`. The author read the result: the panels have to occupy
           the same horizontal space as the title section above them, and a body inset by
@@ -363,49 +364,48 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           so the page had one shape for its first screen and another for the rest, and the
           Score card stopped being sticky the moment the graph ended.
 
-          The split is the page's now and runs the body under the graph: the left column
-          carries the panels and the engine's working, and the right one carries Score and
-          Bundle and stays put while the left scrolls. `lg:self-start` is what lets
+          The split is the page's and runs the whole body, graph included: the left column
+          carries the graph, the panels and the engine's working, and the right one carries
+          Score and Bundle and stays put while the left scrolls. `lg:self-start` is what lets
           `sticky` move at all — a column stretched to the row's height has nowhere to go.
-
-          The graph panel is the one exception and it sits above this grid, full width. The
-          comment on its own mount has the measurement and the trade.
 
           Comments stay full width below, as asked. */}
 
-      {/* The graph and the card skeleton, consolidated: doc 2 §5.1's pane 1 and pane 2, the
-          first thing in the body after the header. Clicking a node — or picking one from the
-          dropdown beside the card skeleton — moves the same `selection` both panes share,
-          and the card it resolves opens its own page through the skeleton's "Open card"
-          link. The raw DOT and the raw card YAML (the four-pane view's panes 3 and 4) are
-          not redrawn here; `DownloadPanel` below already links to those exact bytes.
-
-          ── Why this one panel is outside the 2:1 body ──
-          The author: "in the graph panel of each blueprint, you should make the whole
-          blueprint visible". Seven of the nine archive graphs are six columns and 1150 flow
-          units across, and the width of the box is the only thing that decides what that
-          costs in type size — the drawings are width-bound at every viewport, so a taller
-          pane buys literally nothing. In the two-thirds column this panel used to share with
-          Score, the whole-graph fit is 0.61 and `AgentNode`'s 11px kind row renders at
-          6.7 CSS px. With the whole body it is 0.94 and 10.4, which is over the 10 CSS px
-          floor the site holds its figures to. That one difference is whether eight of the
-          nine blueprints are whole AND readable or only whole.
-
-          It is a real cost and it is the author's own earlier instruction that pays it: the
-          panels "should be placed like the structure we have in the node webpage where each
-          box on the left occupies 2/3 of the column", and the reorg spec §A2's reason for
-          Score being sticky beside the graph was that a reader gets "the glance and the
-          grade in one glance of the page". Score is still sticky and still travels with the
-          body — it is beside Tool scopes and the engine's working now instead of beside the
-          drawing. Every other panel keeps the 2:1 shape. If the trade is the wrong way
-          round, the fix is to put this panel back inside the left column and accept 6.7 CSS
-          px on seven of the nine, not to re-floor the fit. */}
-      <SynchronisedPanes model={paneModel} graph={bp.graph} className="mt-10" />
-
       <div className="mt-10 grid gap-8 lg:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-8 lg:col-span-2">
-        {/* Requirements and Bundle, full width, right after the graph+Score row and
-            the "Jump to a node" block `SynchronisedPanes` renders below it — moved
+        {/* The graph and the card skeleton, consolidated: doc 2 §5.1's pane 1 and pane 2, the
+            first thing in the body after the header. Clicking a node — or picking one from
+            the dropdown beside the card skeleton — moves the same `selection` both panes
+            share, and the card it resolves opens its own page through the skeleton's "Open
+            card" link. The raw DOT and the raw card YAML (the four-pane view's panes 3 and
+            4) are not redrawn here; `DownloadPanel` below already links to those exact bytes.
+
+            ── This panel is in the column, and what that costs, measured ──
+            It spent one commit outside the grid at the full width of the body, because the
+            width of the box is the only lever on how large a schematic is drawn: every
+            archive drawing is width-bound at every viewport, so a taller pane buys literally
+            nothing and a wider one buys everything. The author has ruled for the LAYOUT.
+            Two thirds of the body is a 729px canvas at 1440 against the body's 1124, and on
+            a six-column drawing that is a whole-graph fit of 0.599 against 0.943 — so
+            `AgentNode`'s 11px kind row renders at 6.6 CSS px here and its 14px name at 8.4,
+            where the full body gave 10.4 and 13.2. The site holds its figures to 10 CSS px,
+            and `starter-software-factory` at 12.1 is the only blueprint that clears it in
+            this column. The trade is the author's, made with the numbers in front of them:
+            the panels "should be placed like the structure we have in the node webpage where
+            each box on the left occupies 2/3 of the column", and reorg spec §A2 wants a
+            reader to get "the glance and the grade in one glance of the page" — which is
+            Score, sticky, beside the drawing.
+
+            What did NOT come back with the layout is the crop. The fit still draws every
+            blueprint whole at every width, with no floor under it; the drawing is smaller in
+            this column, not cut off. `components/graph/framing.ts` carries the table of what
+            each blueprint measures where, and `components/panes/archive-labels.test.ts`
+            asserts both halves — whole everywhere, and the 6.6 CSS px floor this column
+            actually achieves rather than the one the site would prefer. */}
+        <SynchronisedPanes model={paneModel} graph={bp.graph} />
+
+        {/* Tool scopes and the engine's working, in the same column as the graph and
+            under the "Jump to a node" block `SynchronisedPanes` renders below it — moved
             out of the sticky aside column (see the comment above) so the graph and
             Score keep their own natural sizes instead of the column being stretched
             to hold three panels' worth of content. */}

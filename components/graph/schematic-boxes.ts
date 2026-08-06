@@ -68,6 +68,17 @@
 
    `schematicAir` is generous in the same direction and says how.
 
+   ── The wires, which this module used to say nothing about ──
+   It measured blocks and names, and stated so: "an edge's bezier is drawn from control points
+   that reach outside the block bounds the fit was computed from, and this file measures
+   blocks and names only". That gap was a real defect on a real page —
+   `/blueprints/adversarial-consensus-line`'s `reopen -> vote` bow was drawn through the
+   frame — so the span every framing here is computed from is `curveSpanAcross`
+   (`framing.ts`), the same one `BlueprintGraph` frames with, and `Framing.curve` reports
+   where the outermost point of a wire lands. This is NOT generous: the bow is the curve's own
+   extreme, solved for, not the hull of its control points. `framing.ts` has the measurement
+   that decided which.
+
    ── What "clipped" means, and what it does not ──
    A name is clipped when the frame's edge is drawn THROUGH it; a name wholly outside the
    frame is off-frame instead. Under the old cropping policy that distinction carried the
@@ -101,6 +112,7 @@ import {
   LEGIBLE_ZOOM,
   MAX_ZOOM,
   PAN_MIN_ZOOM,
+  curveSpanAcross,
   type FramePadding,
 } from "./framing";
 
@@ -176,6 +188,12 @@ export interface DrawnNode {
   position: { x: number; y: number };
 }
 
+/** A resolved graph, in the two parts a framing is computed from. */
+export interface DrawnGraph {
+  nodes: readonly DrawnNode[];
+  edges: readonly { source: string; target: string }[];
+}
+
 /** One node name, in canvas coordinates: 0 is the frame's left edge. */
 export interface NameBox {
   /** `label (id)`, so a failure names the node a reader would recognise on the page. */
@@ -212,6 +230,25 @@ export interface Framing {
    */
   legiblePx: number;
   /**
+   * Where the leftmost and rightmost point of the drawing lands, WIRES included, in canvas
+   * px.
+   *
+   * The residual this file's own header used to disclaim: "an edge's bezier is drawn from
+   * control points that reach outside the block bounds the fit was computed from, and this
+   * file measures blocks and names only". It measures the curves now, and the fit is
+   * computed from them — `curveSpanAcross` in `framing.ts`.
+   *
+   * It is the same span the fit above was computed from, and that is worth saying out loud
+   * rather than leaving a caller to think `curvesInside` is an independent check: what it
+   * catches is a FIT that stops accounting for the wires, which is exactly how the defect on
+   * `/blueprints/adversarial-consensus-line` arrived and the mutation that reintroduces it.
+   * What it cannot catch is `curveSpanAcross` itself being gutted, since both sides would
+   * move together — `the wires reach past the blocks by` in
+   * `components/panes/archive-labels.test.ts` pins that from the other end, in flow units,
+   * per blueprint.
+   */
+  curve: { left: number; right: number };
+  /**
    * Which axis the fit is bound by.
    *
    * `"width"` on every archive drawing at every width, by construction: the pane's height is
@@ -241,20 +278,20 @@ export interface Air {
  */
 const MONO_FLOOR = 11;
 
-/** The blocks of one graph, across the flow axis only — where each one starts and ends. */
-function blocksOf(nodes: readonly DrawnNode[]) {
-  return nodes.map((node) => ({ x: node.position.x, width: BLOCK_WIDTH }));
+/** The flow-unit span the drawing occupies across, wires and all. */
+function spanOf(graph: DrawnGraph) {
+  return curveSpanAcross(graph, BLOCK_WIDTH);
 }
 
-/** The flow-unit span the blocks occupy, across. */
-function spanOf(blocks: readonly { x: number; width: number }[]) {
-  let left = Infinity;
-  let right = -Infinity;
-  for (const block of blocks) {
-    left = Math.min(left, block.x);
-    right = Math.max(right, block.x + block.width);
+/** And the same in the vertical, from the placed nodes alone. See `frameSchematic`. */
+function rowsOf(nodes: readonly DrawnNode[]) {
+  let top = Infinity;
+  let bottom = -Infinity;
+  for (const node of nodes) {
+    top = Math.min(top, node.position.y);
+    bottom = Math.max(bottom, node.position.y);
   }
-  return { left, right };
+  return { top, bottom };
 }
 
 /**
@@ -279,20 +316,22 @@ function spanOf(blocks: readonly { x: number; width: number }[]) {
  * the archive's tallest block is 120px against that ceiling of 160, so the modelled drawing
  * is taller than the real one and this errs towards reporting a height-bound fit that the
  * page survived — never the other way round.
+ *
+ * ── Why it takes the graph and not the nodes ──
+ * Because the fit does. `BlueprintGraph`'s `WholeFrame` frames from `curveSpanAcross`, which
+ * is the span the WIRES reach and not the one the blocks occupy, so a framing computed here
+ * from nodes alone would be a framing no page draws — larger than the real one on any
+ * blueprint with a return edge, and therefore green about a drawing that is bigger than
+ * the one the reader gets.
  */
 export function frameSchematic(
-  nodes: readonly DrawnNode[],
+  graph: DrawnGraph,
   canvasWidth: number,
   canvasHeight: number,
 ): Framing {
-  const blocks = blocksOf(nodes);
-  const { left, right } = spanOf(blocks);
-  let top = Infinity;
-  let bottom = -Infinity;
-  for (const node of nodes) {
-    top = Math.min(top, node.position.y);
-    bottom = Math.max(bottom, node.position.y);
-  }
+  const nodes = graph.nodes;
+  const { left, right } = spanOf(graph);
+  const { top, bottom } = rowsOf(nodes);
 
   /* React Flow's own fit, both axes, with the numbers the component hands it. Called rather
      than reimplemented, so this file cannot disagree with the library about its own
@@ -339,6 +378,10 @@ export function frameSchematic(
     zoom: fitted.zoom,
     whole: boxes.every((box) => box.blockLeft >= -0.5 && box.blockRight <= canvasWidth + 0.5),
     legiblePx: fitted.zoom * MONO_FLOOR,
+    curve: {
+      left: fitted.x + left * fitted.zoom,
+      right: fitted.x + right * fitted.zoom,
+    },
     /* `MAX_ZOOM` is not the height binding, and reading it as one was the first version of
        this line: `starter-software-factory` fits a 1124px canvas at 1.97 and is drawn at
        the ceiling, so a comparison against the across-only zoom alone called every wide
@@ -355,6 +398,21 @@ export function frameSchematic(
 /** Whether a framing draws its own type at or above the 10 CSS px the site holds figures to. */
 export function isLegible(framing: Framing): boolean {
   return framing.legiblePx >= MONO_FLOOR * LEGIBLE_ZOOM;
+}
+
+/**
+ * Whether every wire is inside the canvas, to the same tier of clearance as a name.
+ *
+ * A bezier is a 1.6px stroke and a name is a box of type, so `MIN_CLEARANCE` is generous for
+ * a curve — deliberately, and in the direction that fails loudly: a wire drawn 4px from the
+ * border has not been cut, but a fit that leaves it there has stopped reserving anything and
+ * the next blueprint with a longer return edge is the one that gets cut.
+ */
+export function curvesInside(framing: Framing, canvasWidth: number): boolean {
+  return (
+    framing.curve.left >= MIN_CLEARANCE &&
+    framing.curve.right <= canvasWidth - MIN_CLEARANCE
+  );
 }
 
 /** The names the frame draws: every one whose box meets the canvas. See the header. */
@@ -439,17 +497,12 @@ export function columnPitch(nodes: readonly DrawnNode[]): number | undefined {
  * 20 CSS px there and grows with the drawing above it.
  */
 export function schematicAir(
-  nodes: readonly DrawnNode[],
+  graph: DrawnGraph,
   canvasWidth: number,
   canvasHeight: number,
 ): Air {
-  const { left, right } = spanOf(blocksOf(nodes));
-  let top = Infinity;
-  let bottom = -Infinity;
-  for (const node of nodes) {
-    top = Math.min(top, node.position.y);
-    bottom = Math.max(bottom, node.position.y);
-  }
+  const { left, right } = spanOf(graph);
+  const { top, bottom } = rowsOf(graph.nodes);
 
   const fit = (blockHeight: number) =>
     getViewportForBounds(

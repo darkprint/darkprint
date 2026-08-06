@@ -208,28 +208,32 @@ export function SynchronisedPanes({
       {/* The pane is the drawing's own size, per blueprint.
           ------------------------------------------------------------
           It used to be 780 at every blueprint, chosen against the Score card's fixed ~746px
-          so that `position: sticky` on the aside beside it had room to move. Two things
-          retired that argument. The aside is the page's now and not this component's — the
-          `aside` prop below has had no caller since the blueprint page took the split over,
-          so there is nothing beside the graph for a height to be chosen against. And the
-          author has ruled that every blueprint shows its whole graph, which makes the
-          height a consequence rather than a choice: `graphPaneHeightCss` is the fitted
-          drawing plus the band `FIT_BAND` reserves for edge labels, and nothing else.
+          so that `position: sticky` on the aside beside it had room to move. The author has
+          ruled that every blueprint shows its whole graph, which makes the height a
+          consequence rather than a choice: `graphPaneHeightCss` is the fitted drawing plus
+          the band `FIT_BAND` reserves for edge labels, and nothing else. Score is sticky
+          beside this panel again — in the blueprint page's own right column, not in the
+          `aside` slot below, which still has no caller — and the reason it can be is that a
+          pane sized to its drawing is SHORTER than the Score card at every blueprint, so
+          `position: sticky` has slack to move within where a 780px pane gave it none.
 
           What 780 cost is visible on a screenshot. `guarded-merge-bot` is six blocks in one
           row: at 1440 its drawing is 152px tall and it was drawn in a 778px canvas, five
           times its own height in empty graticule. The heights the arithmetic gives instead,
-          at the 1124px canvas this panel now has: 257 for that one, 427 for the six two-row
-          drawings, 380 for `checkpoint-resume-runner`, 597 for the three-row
-          `grounded-research-desk`, and 650 for the starter, whose zoom meets `MAX_ZOOM`
-          rather than the canvas. `components/panes/archive-labels.test.ts` pins all nine.
+          at the 729px canvas the two-thirds column has at 1440, read off the rendered box:
+          240 for that one (the floor), 311 for five of the two-row drawings, 291 for
+          `adversarial-consensus-line` (whose fit reserves room for the bow on
+          `reopen -> vote`), 281 for `checkpoint-resume-runner`, 419 for the three-row
+          `grounded-research-desk`, and 482 for the starter.
+          `components/panes/archive-labels.test.ts` pins all nine.
 
           A CSS length rather than a measured number, because this page is statically
           generated and the site's rule is that content never needs JS to become visible: a
           pane that measured its own canvas and then set its height in an effect would ship
-          a layout shift on every load. The height is linear in the canvas width and the
-          canvas width is linear in the viewport, so the browser can do the whole thing at
-          layout time. */}
+          a layout shift on every load. The height is linear in the canvas width, and the
+          canvas width is the box's own — `100cqw` against the `@container` on `GraphPane`'s
+          wrapper — so the browser does the whole thing at layout time, in the column or out
+          of it, with nothing here knowing which. */}
       <div className={cx("grid gap-4", aside !== undefined && "lg:grid-cols-3")}>
         <div className={cx("min-w-0", aside !== undefined && "lg:col-span-2")}>
           <GraphPane
@@ -239,7 +243,7 @@ export function SynchronisedPanes({
             focus={focus}
             graphId={`panes-${model.slug}`}
             height={graphPaneHeightCss(
-              drawnExtent(graph.nodes, BLOCK_WIDTH, BLOCK_MAX_HEIGHT),
+              drawnExtent(graph, BLOCK_WIDTH, BLOCK_MAX_HEIGHT),
             )}
             onSelectNode={selectNode}
           />

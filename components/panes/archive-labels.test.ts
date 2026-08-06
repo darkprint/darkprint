@@ -19,8 +19,11 @@
    ── What is asserted now ──
      whole              every block of every blueprint inside the canvas, at every width.
                         Not "the part on screen is whole" — the whole drawing is on screen.
-     legible            `AgentNode`'s 11px kind row at or over 10 CSS px, at the widths
-                        where that is arithmetically reachable, named individually
+     wires inside       every edge's bezier inside it too, which is the half that was
+                        missing: React Flow's fit measures the NODES, and one bow on
+                        `adversarial-consensus-line` was drawn through the frame
+     the floor achieved the type size the two-thirds column actually yields, per blueprint,
+                        pinned as numbers — not a floor the layout cannot reach
      bound by width     the pane's height never shrinks the drawing. `graphPaneHeight`
                         derives the height FROM the width-bound zoom, so a height-bound
                         fit means that derivation is wrong and the whole drawing is
@@ -28,18 +31,23 @@
      no empty field     neither a blank band down one side nor a pane taller than the
                         drawing it holds
      nothing overlaps   two blocks clear of each other, in the drawing's own units and in
-                        CSS px wherever the drawing is legible
+                        CSS px at the widths where the drawing is largest
 
    ── The honest half, so nobody reads more into a green run than is in it ──
-   Legible is NOT achievable everywhere and this file says where, per width, rather than
-   leaving a green suite to imply otherwise. At a 314px phone canvas a six-column drawing
-   fits whole at zoom 0.238, which renders that 11px row at 2.6 CSS px, and no tuning
-   changes it: the drawing is 1150 flow units across and the zoom an 11px glyph needs to
-   clear 10 CSS px would want 1086px of canvas. `checkpoint-resume-runner`, the only
-   seven-column drawing, is the one blueprint that misses the floor even at 1440 — 8.8 CSS
-   px. `is whole but not legible on a phone` below pins that outcome deliberately, so a
-   change that quietly made phones legible fails and gets celebrated rather than passing
-   unnoticed. `components/graph/framing.ts` carries the full table.
+   Nothing in the archive except `starter-software-factory` is LEGIBLE, at any width, and
+   this file pins that rather than leaving a green suite to imply otherwise. In the
+   two-thirds column the canvas tops out at 729px, a six-column drawing is 1150 flow units
+   across, and the whole-graph fit is 0.599 — which renders an 11px kind row at 6.6 CSS px
+   and a 14px name at 8.4, against a site floor of 10. It is not tuning: the same drawing
+   needs 1086px of canvas to clear the floor, and the column never has it.
+
+   That is the author's own trade, made with the number in front of them. The panel spent
+   one commit outside the body grid at the full width of the body, where six-column drawings
+   measured 10.4 CSS px and were both whole and readable; the layout won, and
+   `app/blueprints/[slug]/page.tsx` carries the argument. What this file will not do is
+   quietly restate the trade as a success — `draws its type at the size this column allows`
+   asserts the achieved numbers, one per blueprint, so any further shrinkage fails and any
+   improvement fails too and gets celebrated.
 
    ── The technique, and where it lives ──
    `components/graph/schematic-boxes.ts`, the same module `components/build/stage-labels.test.ts`
@@ -53,35 +61,34 @@
    The chain, outermost first, all of it from real classes on real elements:
 
      `.container-page`            `min(width, 1200)` less `padding-inline: 1.5rem` a side
-     the graph panel              the WHOLE body. It used to be the body grid's
-                                  `lg:col-span-2` third, beside the sticky Score column;
-                                  it is hoisted above that grid now, because the width of
-                                  the box is the only lever on the zoom and two thirds of
-                                  the body was 6.7 CSS px against the full body's 10.4.
-                                  `the graph panel is the width of the body` below pins it
+     the body grid                `grid gap-8 lg:grid-cols-3`, of which the graph panel has
+                                  `lg:col-span-2` — two thirds and the gap between them,
+                                  `(2B - 32) / 3`. Below `lg` the grid is one column and
+                                  the panel has the body. `the graph panel sits in the body
+                                  grid's two-thirds column` reads all four numbers off the
+                                  page and fails if any of them moves
      `GraphPane`                  the section's own 1px border, both sides
      its graph wrapper            `p-3`, read off `GraphPane.tsx`
      `BlueprintGraph`             the `.rf-blueprint` box's own 1px border, both sides
 
-   That chain is monotonic again. It was not, while the graph shared the grid: a 900px
-   viewport gave the graph the whole body and an 824px canvas, and crossing into `lg` at
-   1024 handed a third of it to the Score column and dropped the canvas to 612, so the
-   drawing got SMALLER as the window got bigger. Both sides of that hinge are still measured
-   below, because the widths are worth keeping even though the cliff between them is gone.
+   That chain is not monotonic, and the discontinuity is real rather than a modelling error:
+   a 900px viewport gives the graph the whole body and an 824px canvas, and crossing into
+   `lg` at 1024 hands a third of it to the Score column and drops the canvas to 612, so the
+   drawing gets SMALLER as the window gets bigger. Both sides of that hinge are measured
+   below. It is the price of Score being sticky beside the graph, and it is the same
+   breakpoint the rest of the body splits on.
 
-   The arithmetic itself is `canvasWidthAt` in `components/graph/framing.ts` — the same
-   function the pane's own `clamp()` height is built from, so the guard and the page cannot
-   disagree about how wide the box is. What is local here is the pane chrome, parsed off
-   `GraphPane.tsx`'s classes, and the whole chain is checked against the browser rather than
-   trusted: `the canvas this guard reads is the canvas the page draws in` pins all seven
-   widths against `.react-flow`'s own `offsetWidth`, read off the running page.
+   The arithmetic itself is `columnCanvasWidthAt` in `components/graph/framing.ts`. What is
+   local here is the pane chrome, parsed off `GraphPane.tsx`'s classes, and the whole chain
+   is checked against the browser rather than trusted: `measures the canvas the page actually
+   draws in` pins all seven widths against `.react-flow`'s own `offsetWidth`, read off the
+   running page.
 
    ── What this guard does NOT cover, said out loud ──
-   The wires. An edge's bezier is drawn from control points that reach outside the block
-   bounds the fit was computed from, and this file measures blocks and names only — the same
-   limit `components/viz/label-boxes.ts` states about curves in its own header. A guard for
-   it would need the bezier extremum, which is a second measurement and a separate piece of
-   work.
+   The label chips. A stepped-off edge label is measured for its clearance from the canvas
+   border (`schematicAir`) but not for overlap with another chip; that would need the
+   rendered text metrics, which is the limit `components/viz/label-boxes.ts` states about
+   curves in its own header. The wires themselves are covered now.
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
@@ -89,22 +96,28 @@ import { describe, expect, it } from "vitest";
 import { allBlueprints } from "@/lib/content";
 import { BLOCK_MAX_HEIGHT, BLOCK_WIDTH } from "@/components/graph/block";
 import {
+  BODY_GRID_COLUMNS,
+  BODY_GRID_GAP,
   FIT_BAND,
+  GRAPH_COLUMN_SPAN,
   PANE_BORDER,
   PANE_MIN_HEIGHT,
-  canvasWidthAt,
+  columnCanvasWidthAt,
+  curveSpanAcross,
   drawnExtent,
   graphPaneHeight,
 } from "@/components/graph/framing";
 import {
   MIN_CLEARANCE,
   columnPitch,
+  curvesInside,
   drawnNames,
   frameSchematic,
   isLegible,
   rowPitch,
   schematicAir,
   sourceFile,
+  type DrawnGraph,
   type DrawnNode,
   type Framing,
 } from "@/components/graph/schematic-boxes";
@@ -117,31 +130,37 @@ const BLUEPRINTS = allBlueprints();
  *
  * 1440 is the design width. 1200 is where `.container-page` stops growing, so its canvas is
  * 1440's and pinning both is what says so. 1024 and 900 are the two sides of the `lg` hinge
- * described in the header, which the graph panel no longer falls off. 768 is the tablet
- * band. 500 and 390 are the two widths at which no archive drawing can be both whole and
- * legible, which is exactly why they are measured: whole is still asserted there.
+ * described in the header — the graph panel falls off it again, in the direction that makes
+ * the drawing smaller, so both sides are measured deliberately. 768 is the tablet band. 500
+ * and 390 are two phone widths. No archive drawing but the starter is legible at any of the
+ * seven; whole is asserted at all of them.
  */
 const WIDTHS = [1440, 1200, 1024, 900, 768, 500, 390] as const;
 
 /**
- * The widths at which a six-column archive drawing can be whole AND legible.
+ * The widths at which the drawing is largest, and the only ones where a CSS-px reading of
+ * anything says something about what a reader can see.
  *
- * Not a taste call — `minCanvasFor` a 1150-unit drawing is 1086px of canvas, and only 1440
- * and 1200 reach it (both give 1124). 1024 gives 948, which is 8.7 CSS px.
+ * They used to be called `LEGIBLE_WIDTHS`, on the argument that a six-column drawing cleared
+ * 10 CSS px at 1440 and 1200 in the full-width pane. In the two-thirds column it does not,
+ * at any width, so the name would be a claim this file exists to keep honest. What is still
+ * true is that these two are the widest canvas the column ever has — 729px — which makes
+ * them the right place to read a clearance in the reader's own units.
  */
-const LEGIBLE_WIDTHS = [1440, 1200] as const;
+const WIDEST = [1440, 1200] as const;
 
 /**
  * The canvas each of those widths resolves to, read off `.react-flow`'s own `offsetWidth`
  * on the running page.
  *
  * Not a restatement of the arithmetic — a check on it, and the only thing standing between
- * this file and a canvas that exists nowhere but in it.
+ * this file and a canvas that exists nowhere but in it. 1024 being narrower than 900 is the
+ * `lg` hinge, and it is measured rather than reasoned for exactly that reason.
  */
 const MEASURED_CANVAS: Record<number, number> = {
-  1440: 1124,
-  1200: 1124,
-  1024: 948,
+  1440: 729,
+  1200: 729,
+  1024: 612,
   900: 824,
   768: 692,
   500: 424,
@@ -190,9 +209,16 @@ function wrapperPadding(): number {
 /** The pane section's border, its wrapper's padding, and React Flow's own box border. */
 const PANE_CHROME = 2 + wrapperPadding() * 2 + 2;
 
-/** Viewport width -> the canvas React Flow measures, in CSS px. See the header's chain. */
+/**
+ * Viewport width -> the canvas React Flow measures, in CSS px. See the header's chain.
+ *
+ * `columnCanvasWidthAt` and not `canvasWidthAt`: this pane has two thirds of the body grid
+ * from `lg` up, and the body below it. A guard that kept measuring the full-body chain would
+ * report a drawing a third larger than the one the page draws, and every legibility number
+ * in this file would be about a page nobody visits.
+ */
 function canvasWidth(viewport: number): number {
-  return canvasWidthAt(viewport, PANE_CHROME);
+  return columnCanvasWidthAt(viewport, PANE_CHROME);
 }
 
 /* --------------------- what the frame puts in front of the reader --------------------- */
@@ -202,9 +228,14 @@ function nodesOf(blueprint: (typeof BLUEPRINTS)[number]): readonly DrawnNode[] {
   return blueprint.graph.nodes;
 }
 
+/** The drawing itself: the nodes and the wires the fit has to reserve room for. */
+function graphOf(blueprint: (typeof BLUEPRINTS)[number]): DrawnGraph {
+  return blueprint.graph;
+}
+
 /** What a blueprint's drawing occupies in flow units, worst-case block height and all. */
 function extentOf(blueprint: (typeof BLUEPRINTS)[number]) {
-  return drawnExtent(nodesOf(blueprint), BLOCK_WIDTH, BLOCK_MAX_HEIGHT);
+  return drawnExtent(graphOf(blueprint), BLOCK_WIDTH, BLOCK_MAX_HEIGHT);
 }
 
 /**
@@ -223,7 +254,7 @@ function canvasHeight(blueprint: (typeof BLUEPRINTS)[number], width: number): nu
 /** The framing one blueprint arrives at, in the box the page gives it at one viewport. */
 function framingOf(blueprint: (typeof BLUEPRINTS)[number], viewport: number): Framing {
   const width = canvasWidth(viewport);
-  return frameSchematic(nodesOf(blueprint), width, canvasHeight(blueprint, width));
+  return frameSchematic(graphOf(blueprint), width, canvasHeight(blueprint, width));
 }
 
 /** How many distinct columns have their whole name box inside the canvas. */
@@ -264,7 +295,9 @@ describe("the archive schematics draw every blueprint whole", () => {
    * the leading block counts as a failure. This is the assertion the whole change exists to
    * satisfy and the one that fails outright against the framing that shipped before it:
    * seven of the nine drawings are 1150 flow units across, the floor held the fit at 0.9,
-   * and 1035px of drawing does not go into a 729px canvas.
+   * and 1035px of drawing does not go into the 729px canvas this column gives them. Any
+   * floor put back under the fit — in `fitViewOptions`, in `FRAME`, or as a `Math.max` in
+   * `WholeFrame` — fails here first and at every width.
    */
   it.each(WIDTHS)("puts every block inside the canvas at %ipx", (viewport) => {
     const cropped: string[] = [];
@@ -333,24 +366,68 @@ describe("the archive schematics draw every blueprint whole", () => {
 
 describe("the archive schematics keep their type as large as the box allows", () => {
   /**
-   * Whole AND readable, where the arithmetic allows both.
+   * The floor this column ACTUALLY achieves, per blueprint, as numbers.
    *
-   * This is the assertion the panel's move out of the body grid was made for, and the one
-   * that fails if it is moved back: in a two-thirds column the six-column drawings fit whole
-   * at 0.61 and their 11px kind row renders at 6.7 CSS px. With the whole body it is 0.94
-   * and 10.4. `checkpoint-resume-runner` is 1350 flow units and reaches 8.8, so it is named
-   * as the exception rather than papered over — a floor written to include it would be a
-   * floor of 8.8, which is not a legibility floor, it is today's output.
+   * This assertion used to say "eight of the nine are legible at 1440 and 1200", which was
+   * true of a graph panel that had the whole body: six-column drawings fitted at 0.94 and
+   * their 11px kind row rendered at 10.4 CSS px, over the site's 10px floor. The panel is
+   * back in the body grid's two-thirds column on the author's instruction, the canvas is
+   * 729px instead of 1124, and the same drawings fit at 0.599 and render that row at 6.6.
+   *
+   * Rewriting the assertion to `>= 6.6` would be tuning a floor to today's output, and
+   * deleting it would leave the trade unmeasured. So what is pinned is the OUTPUT itself,
+   * one number per blueprint, at the width where the drawing is largest. It fails if
+   * anything shrinks the type further — a wider Score column, a bigger `FIT_PAD_X`, a
+   * heavier bow — and it fails if anything improves it, which is the direction where the
+   * right response is to celebrate and re-pin.
+   *
+   * `starter-software-factory` at 12.1 is the one blueprint in the archive a reader can
+   * actually read at the design width, and `isLegible` is asserted directly on it so that
+   * the site's own definition of the floor stays load-bearing rather than decorative.
    */
-  it.each(LEGIBLE_WIDTHS)("draws eight of the nine legibly at %ipx", (viewport) => {
-    const small: string[] = [];
-    for (const blueprint of BLUEPRINTS) {
+  it("draws its type at the size this column allows, at 1440", () => {
+    const measured = Object.fromEntries(
+      BLUEPRINTS.map((blueprint) => [
+        blueprint.slug,
+        Number(framingOf(blueprint, 1440).legiblePx.toFixed(1)),
+      ]),
+    );
+    expect(measured).toEqual({
+      "adversarial-consensus-line": 6.0,
+      "checkpoint-resume-runner": 5.6,
+      "frontline-triage": 6.6,
+      "grounded-research-desk": 6.6,
+      "guarded-merge-bot": 6.6,
+      "incident-commander": 6.6,
+      "nightly-data-janitor": 6.6,
+      "schema-forge-etl": 6.6,
+      "starter-software-factory": 12.1,
+    });
+    const legible = BLUEPRINTS.filter((blueprint) => isLegible(framingOf(blueprint, 1440)));
+    expect(legible.map((blueprint) => blueprint.slug)).toEqual(["starter-software-factory"]);
+  });
+
+  /**
+   * And said as a sentence, so the trade cannot be read off a table of numbers as a success.
+   *
+   * The site holds its figures to 10 CSS px. Eight of the nine archive schematics are under
+   * it at every width the column ever has, and that is the author's accepted price for the
+   * layout — Score sticky beside the drawing — not a defect and not a rounding error. The
+   * assertion is written the way the old phone one was, so it fails in both directions: if a
+   * future change makes a second blueprint legible in this column, this fails and the change
+   * should be celebrated and the assertion tightened, not deleted.
+   */
+  it.each(WIDTHS)("cannot make a six-column drawing legible in this column, at %ipx", (viewport) => {
+    const wide = BLUEPRINTS.filter((blueprint) => extentOf(blueprint).width >= 1150);
+    expect(wide.length).toBeGreaterThanOrEqual(8);
+    for (const blueprint of wide) {
       const framing = framingOf(blueprint, viewport);
-      if (!isLegible(framing)) {
-        small.push(`${blueprint.slug}: ${framing.legiblePx.toFixed(1)} CSS px`);
-      }
+      expect(framing.whole, `${blueprint.slug} at ${viewport}`).toBe(true);
+      expect(
+        isLegible(framing),
+        `${blueprint.slug} at ${viewport} is legible now — good news, re-pin the floor`,
+      ).toBe(false);
     }
-    expect(small).toEqual(["checkpoint-resume-runner: 8.8 CSS px"]);
   });
 
   /**
@@ -360,7 +437,12 @@ describe("the archive schematics keep their type as large as the box allows", ()
    * are asserted together on purpose: the first is the author's instruction carried out, the
    * second is what it cost, and a version of this file that only asserted the first would
    * read as a promise the site does not keep. The numbers are 2.6 CSS px on the six-column
-   * drawings and 2.2 on `checkpoint-resume-runner`, against an 11px design size.
+   * drawings, 2.4 on `adversarial-consensus-line` and 2.2 on `checkpoint-resume-runner`,
+   * against an 11px design size.
+   *
+   * It overlaps the per-width assertion above and is kept anyway: that one is about the
+   * column, this one is about the phone, where the column does not even exist — below `lg`
+   * the graph has the whole body and 314px of it, and the answer is still no.
    *
    * If this ever starts failing because a phone fits, that is good news and the assertion
    * should be tightened, not deleted.
@@ -508,7 +590,7 @@ describe("the archive schematics keep their own parts clear of each other", () =
     const width = canvasWidth(viewport);
     const tight: string[] = [];
     for (const blueprint of BLUEPRINTS) {
-      const air = schematicAir(nodesOf(blueprint), width, canvasHeight(blueprint, width));
+      const air = schematicAir(graphOf(blueprint), width, canvasHeight(blueprint, width));
       if (air.top < MIN_CLEARANCE || air.bottom < MIN_CLEARANCE) {
         tight.push(`${blueprint.slug}: ${air.top.toFixed(1)} / ${air.bottom.toFixed(1)}`);
       }
@@ -537,10 +619,12 @@ describe("the archive schematics keep their own parts clear of each other", () =
    *
    * The overlap question is scale-free and so is the assertion now: both recorded defects
    * were negative clearance in flow units, and both fail this at any width. The px reading
-   * is kept as a second assertion, over the widths where the site still claims the drawing
-   * is legible — where a reader is being told they can read it, the parts have to be
-   * visibly apart. Measured today: 50 flow units across and 20 down, which is 47px and 19px
-   * at 1440.
+   * is kept as a second assertion, over the two widths where the drawing is largest — it
+   * used to be over "the widths where the site still claims the drawing is legible", and
+   * there are none of those left in this column, so the honest framing is the widest canvas
+   * rather than a claim about reading. Measured today: 50 flow units across and 20 down,
+   * which is 30px and 12px at 1440 against 47 and 19 in the full-width pane. Both still
+   * clear `MIN_CLEARANCE`, and the second is now the tightest number in this file.
    *
    * No width parameter, and that is the change rather than an omission: the quantity is the
    * same at all seven, so parameterising it would be seven runs of one assertion pretending
@@ -563,7 +647,7 @@ describe("the archive schematics keep their own parts clear of each other", () =
   });
 
   /** And in the reader's own units, wherever the drawing is drawn large enough to read. */
-  it.each(LEGIBLE_WIDTHS)("keeps them clear on screen too, at %ipx", (viewport) => {
+  it.each(WIDEST)("keeps them clear on screen too, at %ipx", (viewport) => {
     const overlapping: string[] = [];
     for (const blueprint of BLUEPRINTS) {
       const nodes = nodesOf(blueprint);
@@ -602,33 +686,58 @@ describe("the archive frames with the canvas this guard reads", () => {
   });
 
   /**
-   * And that the graph panel really has the body, which is what the canvas above assumes.
+   * And that the graph panel really is in the two-thirds column, which is what the canvas
+   * above assumes — with all four numbers the arithmetic is built from read off the page.
    *
-   * The whole chain is a third wider than it was because this one panel is outside the 2:1
-   * grid the rest of the body keeps. It is a layout decision that can be undone by moving
-   * one JSX line, and undoing it silently would leave every canvas above wrong by a third
-   * and every legibility assertion measuring a drawing the page does not draw. Cheaper to
-   * fail here, where the message says which line moved.
+   * The chain is a third narrower than it was for one commit, because this panel is back
+   * inside the body grid rather than hoisted above it. It is a layout decision that can be
+   * undone by moving one JSX line, and undoing it silently would leave every canvas above
+   * wrong by a third and every legibility number in this file measuring a drawing the page
+   * does not draw. Cheaper to fail here, where the message says which line moved.
+   *
+   * `gap-8` -> `BODY_GRID_GAP`, `lg:grid-cols-3` -> `BODY_GRID_COLUMNS`, `lg:col-span-2` ->
+   * `GRAPH_COLUMN_SPAN`: `framing.ts` states those three as numbers and this is what holds
+   * them to the classes the page actually carries. A `gap-6` on that grid moves the canvas
+   * by 5px and nothing else on the site would notice.
    */
-  it("gives the graph panel the width of the body", () => {
+  it("gives the graph panel the body grid's two-thirds column", () => {
+    const grid = PAGE_SOURCE.indexOf(
+      `className="mt-10 grid gap-${BODY_GRID_GAP / 4} lg:grid-cols-${BODY_GRID_COLUMNS}"`,
+    );
+    const column = PAGE_SOURCE.indexOf(`lg:col-span-${GRAPH_COLUMN_SPAN}"`);
     const mount = PAGE_SOURCE.indexOf("<SynchronisedPanes");
-    const grid = PAGE_SOURCE.indexOf('className="mt-10 grid gap-8 lg:grid-cols-3"');
+    const aside = PAGE_SOURCE.indexOf("<aside");
+    expect(
+      grid,
+      `${PAGE_FILE} no longer opens its body with ` +
+        `\`grid gap-${BODY_GRID_GAP / 4} lg:grid-cols-${BODY_GRID_COLUMNS}\`, which is what ` +
+        `\`columnCanvasWidthAt\` divides the body by`,
+    ).toBeGreaterThan(0);
+    expect(
+      column,
+      `${PAGE_FILE} no longer gives its left column \`lg:col-span-${GRAPH_COLUMN_SPAN}\``,
+    ).toBeGreaterThan(grid);
     expect(mount, `${PAGE_FILE} no longer mounts <SynchronisedPanes ...>`).toBeGreaterThan(0);
-    expect(grid, `${PAGE_FILE} no longer opens its body with the 2:1 grid`).toBeGreaterThan(0);
     expect(
       mount,
-      `${PAGE_FILE}: the graph panel is inside the 2:1 body grid again, which costs it a ` +
-        `third of its width and takes seven of the nine drawings under 10 CSS px`,
-    ).toBeLessThan(grid);
+      `${PAGE_FILE}: the graph panel is outside the body grid again, which gives it a third ` +
+        `more width than every canvas in this file is computed from`,
+    ).toBeGreaterThan(column);
+    expect(
+      mount,
+      `${PAGE_FILE}: the graph panel is no longer above the sticky Score column, so the two ` +
+        `are not side by side and the reader does not get the glance and the grade at once`,
+    ).toBeLessThan(aside);
   });
 
   /**
    * The one assumption in the pane that is a prop and not a class.
    *
-   * `SynchronisedPanes` renders a 2:1 split of its own when it is given an `aside`, and the
+   * `SynchronisedPanes` renders a 2:1 split of its OWN when it is given an `aside`, and the
    * blueprint page does not give it one — Score and Bundle live in the page's own right
-   * column instead. If that ever changes, the graph's canvas drops by a third at every width
-   * above `lg` and every number above becomes wrong.
+   * column instead, beside the whole left column rather than beside the graph alone. If that
+   * ever changes, the graph's canvas drops by another third at every width above `lg` and
+   * every number above becomes wrong.
    */
   it("gives the graph the whole of the panel it sits in", () => {
     const mount = /<SynchronisedPanes\b([^>]*)\/>/.exec(PAGE_SOURCE);
@@ -638,12 +747,38 @@ describe("the archive frames with the canvas this guard reads", () => {
   });
 
   /**
+   * And that the pane's height is measured against its own box rather than the viewport.
+   *
+   * `graphPaneHeightCss` emits `100cqw`, which resolves against the nearest ancestor with
+   * `container-type: inline-size` — `@container`, on the wrapper below. Without that class
+   * the expression falls back to the SMALL VIEWPORT, which is not a broken layout but a
+   * quietly wrong pane height at every width, on every route that mounts this pane. Exactly
+   * the kind of failure that survives a screenshot, so it is read off the class list.
+   */
+  it("measures the pane against its own box", () => {
+    const wrapper = /onClick=\{onGraphClick\}[^>]*className="([^"]*)"/.exec(GRAPH_PANE_SOURCE);
+    expect(wrapper?.[1], `${GRAPH_PANE_FILE}: the graph wrapper lost its literal className`)
+      .toBeDefined();
+    expect(
+      wrapper?.[1],
+      `${GRAPH_PANE_FILE}: the graph wrapper is no longer a container, so the pane's ` +
+        `\`100cqw\` height resolves against the viewport instead of the column`,
+    ).toMatch(/(?:^| )@container(?: |$)/);
+    expect(PANES_SOURCE).toContain("graphPaneHeightCss(");
+  });
+
+  /**
    * And down: the pane asks for the drawing's own height, per blueprint.
    *
-   * The numbers are what `graphPaneHeight` returns at the 1124px canvas, and they are worth
-   * pinning as numbers rather than only as a property: they are the visible half of "you
-   * cannot adopt the same zoom for each blueprint", and a change that quietly made them all
-   * equal again would still pass every proportional assertion above.
+   * The numbers are what `graphPaneHeight` returns at the 729px canvas of the two-thirds
+   * column, and they are worth pinning as numbers rather than only as a property: they are
+   * the visible half of "you cannot adopt the same zoom for each blueprint", and a change
+   * that quietly made them all equal again would still pass every proportional assertion
+   * above. Read off the rendered `.rf-blueprint` box the browser measures one more on the
+   * five that land on a fraction — see the deliberate `+ 1` in `graphPaneHeightCss`.
+   *
+   * `guarded-merge-bot` sits on `PANE_MIN_HEIGHT`: six blocks in one row want 203px in this
+   * column, and a pane that short would put the control strip and the drawing in one band.
    */
   it("asks for a different pane height per blueprint", () => {
     const width = canvasWidth(1440);
@@ -654,15 +789,90 @@ describe("the archive frames with the canvas this guard reads", () => {
       ]),
     );
     expect(heights).toEqual({
-      "adversarial-consensus-line": 427,
-      "checkpoint-resume-runner": 380,
-      "frontline-triage": 427,
-      "grounded-research-desk": 597,
-      "guarded-merge-bot": 257,
-      "incident-commander": 427,
-      "nightly-data-janitor": 427,
-      "schema-forge-etl": 427,
-      "starter-software-factory": 650,
+      "adversarial-consensus-line": 291,
+      "checkpoint-resume-runner": 280,
+      "frontline-triage": 310,
+      "grounded-research-desk": 418,
+      "guarded-merge-bot": PANE_MIN_HEIGHT,
+      "incident-commander": 310,
+      "nightly-data-janitor": 310,
+      "schema-forge-etl": 310,
+      "starter-software-factory": 481,
+    });
+  });
+});
+
+describe("the archive schematics draw their wires inside the frame", () => {
+  /**
+   * The residual this file's own header used to disclaim, now an assertion.
+   *
+   * React Flow's `fitView` measures the NODES. A bezier is drawn from control points that owe
+   * nothing to the boxes it joins, and on `/blueprints/adversarial-consensus-line` the
+   * `reopen -> vote` return edge bowed out past the last column and was drawn THROUGH the
+   * frame's own right edge — every node whole, every label whole, one wire cut. The fit is
+   * computed from `curveSpanAcross` now, which is the span the wires reach.
+   *
+   * What this catches is a FIT that stops accounting for them: drop the curve span out of
+   * `frameSchematic` or out of `BlueprintGraph`'s `WholeFrame` and the drawing grows back to
+   * the node bounds while the wires stay where they are, and this fails at every width on
+   * `adversarial-consensus-line` and `starter-software-factory`. What it cannot catch is
+   * `curveSpanAcross` itself being gutted, because both sides of the comparison would move
+   * together — `the wires reach past the blocks by` below pins that from the other end.
+   */
+  it.each(WIDTHS)("keeps every edge curve inside the canvas at %ipx", (viewport) => {
+    const width = canvasWidth(viewport);
+    const outside: string[] = [];
+    for (const blueprint of BLUEPRINTS) {
+      const framing = framingOf(blueprint, viewport);
+      if (!curvesInside(framing, width)) {
+        outside.push(
+          `${blueprint.slug}: wires span ${framing.curve.left.toFixed(1)}..` +
+            `${framing.curve.right.toFixed(1)} in a ${width}px canvas`,
+        );
+      }
+    }
+    expect(outside).toEqual([]);
+  });
+
+  /**
+   * How far past its own blocks each blueprint's widest bow actually reaches, in flow units.
+   *
+   * The other end of the assertion above, and the one that fails if the bezier arithmetic is
+   * gutted rather than ignored: these are facts about the drawings, not about the fit. Seven
+   * of the nine are zero — their return edges run between columns, where the bow has
+   * somewhere to go — and the two that are not are the two whose return edge leaves the LAST
+   * column and has to bow into the margin.
+   *
+   * The cost of reserving them, measured at the 729px canvas: `adversarial-consensus-line`
+   * goes from 0.599 of zoom to 0.541 and `starter-software-factory` from 1.253 to 1.102. The
+   * other seven are unchanged, which is the whole argument for solving the curve's extreme
+   * rather than framing to the convex hull of its control points — the hull would have cost
+   * `nightly-data-janitor` a third of its size to reserve room for a point nothing is drawn
+   * at. `components/graph/framing.ts` carries that measurement in full.
+   */
+  it("reserves the room the wires reach past the blocks", () => {
+    const bow = Object.fromEntries(
+      BLUEPRINTS.map((blueprint) => {
+        const nodes = nodesOf(blueprint);
+        const span = curveSpanAcross(graphOf(blueprint), BLOCK_WIDTH);
+        const left = Math.min(...nodes.map((node) => node.position.x));
+        const right = Math.max(...nodes.map((node) => node.position.x + BLOCK_WIDTH));
+        return [
+          blueprint.slug,
+          [Number((left - span.left).toFixed(1)), Number((span.right - right).toFixed(1))],
+        ];
+      }),
+    );
+    expect(bow).toEqual({
+      "adversarial-consensus-line": [0, 122.7],
+      "checkpoint-resume-runner": [0, 0],
+      "frontline-triage": [0, 0],
+      "grounded-research-desk": [0, 0],
+      "guarded-merge-bot": [0, 0],
+      "incident-commander": [0, 0],
+      "nightly-data-janitor": [0, 0],
+      "schema-forge-etl": [0, 0],
+      "starter-software-factory": [0, 75.5],
     });
   });
 });

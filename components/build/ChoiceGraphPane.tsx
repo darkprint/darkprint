@@ -225,16 +225,20 @@ export function ChoiceGraphPane({
           350, and the floored zoom turned `p-3`'s 314 CSS px into 348.9 of them, which
           missed by 1.1 and cost the reader a whole column. Nothing is floored and nothing is
           cropped, so the eight pixels buy 0.013 of zoom; what they cost is a canvas whose
-          width is not one expression, and this height has to be ONE CSS length. A pane
-          computed for a narrower canvas than the real one is height-bound by the difference,
-          which quietly shrinks the drawing — the exact defect the paragraph above is about,
-          two per cent of it. One padding, one expression, no bind. */}
-      <div onClick={onGraphClick} onKeyDown={onGraphKeyDown} className="p-3">
+          width is not one expression. A `cqw` height measures the box rather than modelling
+          it, so a second padding would no longer make the fit height-bound — but two
+          paddings would still be two answers to "how wide is the canvas" for the guard that
+          has no browser, so the single `p-3` stays and `stage-labels.test.ts` still holds it.
+
+          `@container` is `container-type: inline-size`: it is what `100cqw` inside that
+          height resolves against. Without it the expression falls back to the small
+          viewport and every pane on the route is the wrong height. */}
+      <div onClick={onGraphClick} onKeyDown={onGraphKeyDown} className="@container p-3">
         <BlueprintGraph
           graph={drawn}
           id={graphId}
           highlighted={focus.graphNodeId}
-          height={graphPaneHeightCss(drawnExtent(graph.nodes, BLOCK_WIDTH, BLOCK_MAX_HEIGHT))}
+          height={graphPaneHeightCss(drawnExtent(graph, BLOCK_WIDTH, BLOCK_MAX_HEIGHT))}
           className="rounded-md"
         />
       </div>
