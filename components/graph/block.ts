@@ -51,3 +51,32 @@ export const BLOCK_WIDTH = 150;
  * browser has already wrapped the name inside a box this file states outright.
  */
 export const BLOCK_TEXT_INSET = 13;
+
+/* ── The one thing about a block that is a range and not a number ──
+   ------------------------------------------------------------
+   A block's WIDTH is stated above and enforced against `AgentNode.tsx`'s own class list by
+   `block.test.ts`. Its HEIGHT cannot be: it is whatever the name wraps to, plus a kind row,
+   plus the `◎ highlighted` badge when the explainability panel is pointing at it. Nothing
+   in the source says what that comes to, and no test without a browser can find out.
+
+   So it is stated as an interval, measured rather than reasoned, and every consumer is
+   written to take the WORST end of it. `components/build/stage-labels.test.ts` is the only
+   one today: it works out how much air the fit leaves above and below the drawing for an
+   edge label that has stepped outside it, and that answer needs the drawing's height. Using
+   the tall end where a taller drawing is worse and the short end where a shorter one is
+   (a short drawing fits at a larger zoom, and a larger zoom draws a longer step-off) keeps
+   the guard on the safe side of a number it cannot know.
+
+   Both ends measured in the browser, at 1440 on the stage and across the archive:
+
+   - 61px  `ship` on `/blueprints/checkpoint-resume-runner` — a one-line name and its kind
+           row, which is the least an `AgentNode` can be.
+   - 157px `/build`'s `Python Script Factory Release Gate` — three wrapped lines, lit, with
+           the badge row under the title. `lib/content/layout.ts`'s `rowGap` of 180 exists
+           to clear exactly this one.
+
+   Rounded outward, never inward: 60 and 160. Raise the ceiling, never lower it, if a node
+   ever grows another row — the same sentence `layout.ts` writes about the gap this sits in,
+   for the same reason. */
+export const BLOCK_MIN_HEIGHT = 60;
+export const BLOCK_MAX_HEIGHT = 160;

@@ -88,6 +88,43 @@ const MAX_ZOOM = 1.6;
 const FIT_PADDING = 0.18;
 
 /**
+ * The band the fit keeps clear above and below the drawing, in CSS px.
+ *
+ * React Flow's fit measures the NODES. An edge label is not a node: `SchematicEdge` below
+ * steps a chip off any block it would be written across, so a label about the top row is
+ * drawn *outside* the box the fit was computed from, and the same for the bottom. Nothing
+ * told the fit that, and the fraction it was given happened to cover it by a hair.
+ * Measured on the stage before this constant existed: 2.2px of clearance at 1440, 1.7px at
+ * 1200, and **0.3px at 768, 900 and 1024** between `acceptance criteria` and the canvas's
+ * own top border. That is not a margin, it is a coincidence — the horizontal defect this
+ * whole pass is about, rotated ninety degrees.
+ *
+ * So the vertical half of the padding stops being a fraction of the box and becomes the
+ * band the label is actually drawn in. The arithmetic it answers to: a stepped-off chip's
+ * centre sits `LABEL_HEIGHT / 2 + LABEL_CLEAR` = 16 flow units past the block it left, and
+ * draws its own 20px box around that centre — magnified with the drawing above zoom 1,
+ * counter-scaled to a constant 20 CSS px below it. At the zooms these panes reach that is
+ * 24px of reach at the floor and about 38 at the widest the stage fits to, so 52 leaves
+ * better than 10px between the chip and the border at every width the guard measures
+ * (`components/build/stage-labels.test.ts`, which computes it rather than trusting this
+ * paragraph — 22px measured at 1440, 26px at 768).
+ *
+ * Absolute and not a fraction because the thing being reserved is a fixed-size chip: a
+ * fraction shrinks exactly where the canvas is shortest, which is where the clearance was
+ * already gone.
+ */
+const FIT_BAND = 52;
+
+/**
+ * The padding handed to React Flow's fit, and to `frameAcross` so the two agree.
+ *
+ * `x` is read as a fraction of the canvas width and `y` as an absolute band — see the two
+ * constants above. Stated once here because a fit computed from one padding and a frame
+ * computed from another would be a guard measuring a drawing the page never draws.
+ */
+const FIT_PADDINGS = { x: FIT_PADDING, y: `${FIT_BAND}px` } as const;
+
+/**
  * Where an edge label sits in the pane's own stacking context.
  *
  * React Flow paints edges under nodes by design, and its edge labels ride inside the edge's
@@ -367,8 +404,8 @@ function PanHint() {
  * shrunk past legibility. It does not decide WHERE the crop falls, and React Flow's fit
  * centres the drawing, so the two frame edges landed mid-word: measured on `/build` at a
  * 390px viewport, four of five node names were cut and the reader was shown `ory`,
- * `Python Scr` and `Release Ga`. `./frame.ts` holds the rule that replaces that — start at
- * the drawing's leading edge, reach as far in as the last whole block — and this is the
+ * `Python Scr` and `Release Ga`. `./frame.ts` holds the rule that replaces that — of every
+ * frame position that cuts no word, the one showing the most drawing — and this is the
  * three lines that apply it.
  *
  * ── Why once, and why not on every viewport change ──
@@ -405,7 +442,7 @@ function FrameAcross({ blocks }: { blocks: readonly { x: number; width: number }
     const frame = frameAcross(blocks, width, {
       minZoom: FRAME_MIN_ZOOM,
       maxZoom: MAX_ZOOM,
-      padding: FIT_PADDING,
+      padding: FIT_PADDINGS,
     });
     if (frame === undefined) return;
     const current = flow.getViewport();
@@ -622,7 +659,7 @@ export function BlueprintGraph({
           instance.current = flow;
         }}
         fitView
-        fitViewOptions={{ padding: FIT_PADDING, minZoom: FRAME_MIN_ZOOM }}
+        fitViewOptions={{ padding: FIT_PADDINGS, minZoom: FRAME_MIN_ZOOM }}
         minZoom={PAN_MIN_ZOOM}
         maxZoom={MAX_ZOOM}
         zoomOnScroll={false}

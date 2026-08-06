@@ -192,24 +192,33 @@ export function ChoiceGraphPane({
 
           `clamp()` rather than a second number, because this pane now has two containers
           worth caring about — the stage at 1440 and a phone at 390 — and picking one to
-          hardcode is what produced the defect above. 22rem is a phone's share of a screen
-          it also has to scroll a node list on; 30rem is where the stage's drawing stops
-          growing, since past that a schematic reads as zoomed rather than large. React
-          Flow re-fits from the measured box either way, so the two ends are framings and
-          not breakpoints. */}
-      {/* `p-2` on a phone and `p-3` from `sm` up, and the eight pixels are load-bearing.
-          `components/graph/frame.ts` will not let a frame edge fall through a block, so a
-          canvas one flow unit too narrow for the second column does not cut it — it drops
-          the column and leaves the surplus blank. At 390 the starter's first two columns
-          span 350 flow units and the floor zoom turns 314 CSS px into 348.9 of them, which
-          misses by 1.1 and costs the reader a whole column of the drawing. `p-2` gives the
-          canvas 322 px, or 357.8 flow units, and both columns are drawn. */}
+          hardcode is what produced the defect above. 25rem is the floor of that range and
+          30rem is where the stage's drawing stops growing, since past that a schematic
+          reads as zoomed rather than large. React Flow re-fits from the measured box either
+          way, so the two ends are framings and not breakpoints.
+
+          The floor was 22rem and is 25rem because `BlueprintGraph`'s `FIT_BAND` reserves
+          52px above and below the drawing for the edge labels that step outside it, and the
+          shorter the canvas the less of that band the fit can actually give: a two-row
+          schematic at the legibility floor is 306px tall in the worst case the guard models
+          (180 units of row gap and a block up to 160 tall, at zoom 0.9), so a 350px canvas
+          has 22px left for a chip that reaches 24, and a 398px one has 46. 25rem is where
+          the clearance stops being arithmetic luck — `components/build/stage-labels.test.ts`
+          computes it at six widths rather than trusting this paragraph. The 48px is paid on
+          phones and small laptops, where the graph is the largest thing on the page anyway. */}
+      {/* `p-2` on a phone and `p-3` from `sm` up: eight more pixels of canvas where canvas
+          is scarcest. It used to be load-bearing to the flow unit — the starter's first two
+          columns span 350, and the floor zoom turned `p-3`'s 314 CSS px into 348.9 of them,
+          which missed by 1.1 and cost the reader a whole column. `components/graph/frame.ts`
+          measures a block's WORDS now rather than its box, so that 1.1 comes out of a
+          border and a strip of padding instead of a column, and these eight pixels are back
+          to being what they look like. */}
       <div onClick={onGraphClick} onKeyDown={onGraphKeyDown} className="p-2 sm:p-3">
         <BlueprintGraph
           graph={drawn}
           id={graphId}
           highlighted={focus.graphNodeId}
-          height="clamp(22rem, 32vw, 30rem)"
+          height="clamp(25rem, 32vw, 30rem)"
           className="rounded-md"
         />
       </div>

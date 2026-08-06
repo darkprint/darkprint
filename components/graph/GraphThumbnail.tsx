@@ -4,10 +4,16 @@ import { VIZ } from "@/components/viz/tokens";
 import { FLOW } from "@/components/viz/flow";
 
 /* The cell the layered layout reserves for one node. `lib/content/layout.ts` places
-   layers 200 apart across and rows 100 apart down, and these two numbers are the box
+   layers 200 apart across and rows 180 apart down, and these two numbers are the box
    that used to be drawn inside that cell. The box is gone (see the header) and the disc
    is centred in the cell instead, so every coordinate the archive already carries still
-   puts the same node in the same place and no edge had to move in graph space. */
+   puts the same node in the same place and no edge had to move in graph space.
+
+   The row pitch was 100 when this cell was written and is 180 since
+   `components/graph/block.ts` fixed the block's width and long names started wrapping.
+   Nothing here reads it — the cell is a constant and the disc is centred in it — but the
+   drawing is 80 units taller per row than it was, which is where the gallery tile's
+   scale went. `components/ui/ContentCard.tsx` has that measurement. */
 const NW = 118;
 const NH = 42;
 const PAD = 26;

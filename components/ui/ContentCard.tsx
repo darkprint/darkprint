@@ -116,13 +116,21 @@ export function ContentCard({
           enough to read a constellation of lit discs as a shape, and the 48px it gives
           back buys the summary its third line above. */}
       <div className="relative h-28 overflow-hidden border-y border-line bg-blueprint-deep/40 bp-grid">
-        {/* `nodeLabels={false}`: this frame is 369 wide and 94 high inside its padding,
-            the drawing's viewBox is 570×220, and `preserveAspectRatio="xMidYMid meet"`
-            takes the smaller of the two ratios — so the uniform scale was 0.647 at
-            `h-40` and is 0.427 now. Node names rendered at 7.1 effective pixels then and
-            would render at 4.7 now, against a 10 CSS px floor. The glyph, the kind
-            colour and the topology all survive that scale; the words never did. See the
-            prop's own comment. */}
+        {/* `nodeLabels={false}`: this frame is 353 wide and 94 high inside its padding on
+            the grid (743 wide on the shelf's featured tile), the archive's viewBoxes run
+            from 498×304 to 1298×304 — 1098×484 for the widest fan-out — and
+            `preserveAspectRatio="xMidYMid meet"` takes the smaller of the two ratios. So
+            the uniform scale is 0.194 to 0.321 across the nine, and an 11-unit node name
+            would land between **2.1 and 3.5 CSS pixels** against a 10 CSS px floor.
+
+            Measured after `lib/content/layout.ts` took the row gap from 140 to 180, which
+            is what moved these numbers: every viewBox grew down, and the ones that were
+            already the widest on the shelf did not grow across. Note what that does to the
+            `h-40` → `h-28` story above — on a grid tile the fit is bound by the WIDTH, so
+            the 48px this gave back cost the drawing no scale at all; only the featured
+            tile, which has width to spare, is height-bound. The glyph, the kind colour and
+            the topology all survive that scale; the words never did. See the prop's own
+            comment. */}
         <GraphThumbnail
           graph={item.graph}
           nodeLabels={false}
