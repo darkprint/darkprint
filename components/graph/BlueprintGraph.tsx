@@ -384,8 +384,12 @@ export function BlueprintGraph({
 
   const edges: SchematicEdge[] = useMemo(() => {
     /* Both directions between the same two nodes: the pair whose labels would otherwise
-       be drawn on top of each other. */
-    const runs = new Set(graph.edges.map((e) => `${e.source} ${e.target}`));
+       be drawn on top of each other. A NUL cannot appear in a node id, so it is a
+       collision-proof separator between the two halves of the key — written as the escape
+       sequence rather than a raw byte, since a raw NUL in a source file is invisible in every
+       editor and makes git treat the whole file as binary (`components/build/source-hygiene.test.ts`
+       guards against this coming back). */
+    const runs = new Set(graph.edges.map((e) => `${e.source}\u0000${e.target}`));
 
     return graph.edges.map((e) => {
       const variant = e.variant ?? "flow";
@@ -415,7 +419,7 @@ export function BlueprintGraph({
       /* Which half of a reciprocal pair moves its label: the one running back along x,
          and on an exact tie — a pair stacked vertically — the one whose ends sort later,
          so the choice is the same on every render and on the server. */
-      const paired = runs.has(`${e.target} ${e.source}`);
+      const paired = runs.has(`${e.target}\u0000${e.source}`);
       const moves =
         from === undefined || to === undefined
           ? false
