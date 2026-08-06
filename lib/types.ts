@@ -136,7 +136,7 @@ export interface FlowNodeSeed {
    * The ref is in the resolved model either way (`ResolvedNode.ref`), so the presence of
    * this field is a second fact: whether `/nodes/<id>` exists. `graphForBlueprint` fills
    * it under `cardsInRegistry`, which only the archive path passes. A graph drawn from a
-   * bundle dropped into the upload wizard, or from the variant cards the guided path
+   * bundle dropped into the upload wizard, or from the variant cards the workspace
    * generates, carries ids no page was built for, and a link into a 404 is worse than no
    * link. `BlueprintGraph` links the node name when it is here and draws plain text when
    * it is not.

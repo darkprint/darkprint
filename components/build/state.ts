@@ -229,15 +229,24 @@ function withoutCap(text: string): string | undefined {
 /**
  * The security reading of the same factory with the cap removed, or `undefined`.
  *
- * Doc 2 §5.6 wants the last step to show that the cap is a trade rather than a dial to
- * turn up. Between 1 and 10 neither computed score moves, because a cap of 1 and a cap of
- * 10 are both a cap; the figure that does move is what happens when there is none, and doc
- * 3 §4.1 charges `unbounded-loop` for it. That figure is the engine's, taken here on a
- * bundle assembled for the purpose and thrown away, exactly as
+ * Doc 2 §5.6 wanted the cap's own step to show that the cap is a trade rather than a dial
+ * to turn up. That step is gone (restructure spec §2.1), and nothing on `/build` today
+ * quotes this figure. Between 1 and 10 neither computed score moves, because a cap of 1
+ * and a cap of 10 are both a cap; the figure that does move is what happens when there is
+ * none, and doc 3 §4.1 charges `unbounded-loop` for it. That figure is the engine's, taken
+ * here on a bundle assembled for the purpose and thrown away, exactly as
  * `components/explain/starter-isolation.ts` takes the criteria-leak figure.
  *
  * Total: a variant whose cards declare no cap, or one that fails to resolve once the cap
  * is gone, yields nothing and the sentence that would have quoted it is not written.
+ *
+ * No UI caller today. `GuidedPath.tsx` and `steps.tsx` were the only two, and both went
+ * with the path; `workspace.test.ts` is the sole caller left, proving the cap-versus-
+ * `unbounded-loop` claim stays true across all eight variants. Same standing as
+ * `ChoiceGraphPane.tsx`'s `choice` slot (see its own doc comment): kept because the claim
+ * is worth keeping proven and nothing currently pays for the alternative, not because
+ * something on screen reads it — either the workspace should say this figure beside the
+ * cap slider, or this function should go.
  */
 export function uncappedReading(choices: StarterChoices): UncappedReading | undefined {
   const bundle = buildStarterBundle(choices);

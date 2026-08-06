@@ -175,7 +175,7 @@ export interface GraphSeedOptions {
    * them has a page at `/nodes/<id>` and the schematic can link a node to its card.
    *
    * Off by default, and the default is the safe one. Three callers reach this function
-   * and only one of them is looking at the archive: the guided path resolves cards it
+   * and only one of them is looking at the archive: the workspace resolves cards it
    * generated a moment ago (`<variant>-planner` and friends, ids no page was built
    * for), and the upload wizard resolves a bundle the reader dropped into the tab. The
    * node page is statically generated with `dynamicParams = false`, so a link built for

@@ -614,11 +614,11 @@ function approver(p: StarterProfile): StarterCardSpec {
     requiresHuman: true,
     riskMarkers: [],
     // The class, never the band behind it. This string is written into the card YAML the
-    // reader downloads and reads in pane 4, so spec part 2 binds it exactly as it binds a
-    // page: a number here would be the 1-to-5 organisational ladder's number appearing on
-    // a single graph, which is the collision the class exists to end. The class name is
-    // the same fact, and `variants.test.ts` holds the sentence to the class the engine
-    // actually computes for the bundle this card ships in.
+    // reader downloads and reads in the Cards tab, so spec part 2 binds it exactly as it
+    // binds a page: a number here would be the 1-to-5 organisational ladder's number
+    // appearing on a single graph, which is the collision the class exists to end. The
+    // class name is the same fact, and `variants.test.ts` holds the sentence to the class
+    // the engine actually computes for the bundle this card ships in.
     notes: `With this node the blueprint is classed conditional. Without it, closed-loop. The class records where a person acts in the run, and this is where. A blueprint that touches something you cannot roll back is a blueprint you want this node in, and the class names which of the two designs you are holding. \`requires_human\` is redundant with the node type and set anyway, so the gate is legible without an ontology lookup.`,
     version: BASE_VERSION,
     provenance: PROVENANCE,

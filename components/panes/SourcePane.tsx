@@ -66,11 +66,14 @@ export function SourcePane({
    * Draw the pane's ordinal beside its title.
    *
    * True for the archive's four-pane view, where the numbers are the view's own vocabulary
-   * and nothing competes with them. False on `/build`, which carries a seven-step bar in
-   * the same visual register a few pixels above: a reader met a chip reading **3** for
-   * "What it builds" and a chip reading **3** for "DOT" on one screen, and the two
-   * numberings are unrelated. The id stays either way, because `aria-labelledby` points at
-   * it.
+   * and nothing competes with them. False on `/build`'s workspace stage
+   * (`WorkspaceStage.tsx`): its outer tablist already names this pane in the open tab's own
+   * label — "DOT" or "Cards" — the same word this pane's own `title` prop repeats a line
+   * down, and only three of the stage's five tab bodies carry a `paneNumber` at all
+   * (`VocabularyPane` and `ScorePanel`, the other two, have no such prop). A number beside a
+   * title the open tab already named would repeat what is already on screen and imply a
+   * numbering two of the five tabs do not share. The id stays either way, because
+   * `aria-labelledby` points at it.
    */
   showNumber?: boolean;
   title: string;

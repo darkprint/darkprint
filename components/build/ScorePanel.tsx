@@ -72,7 +72,7 @@ function Rationale({ text }: { text: string }) {
 }
 
 /**
- * The same figures in one line, for the width where the panel cannot sit beside the step.
+ * The same figures in one line, for the four tabs whose bodies are not the score panel's own.
  *
  * Doc 2 §5.7 asks for the score panel to stay visible *while the choices are made*, and the
  * panel itself cannot do that on its own here: it is the body of one of the stage's five

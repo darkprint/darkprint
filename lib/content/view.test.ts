@@ -267,7 +267,7 @@ describe("toBlueprintView — the diagnostics passthrough", () => {
    otherwise. That is the whole guard: `/nodes/[...id]` is
    statically generated with `dynamicParams = false`, so a link
    built for a bundle the reader dropped into the upload wizard,
-   or for the variant cards the guided path generates a moment
+   or for the variant cards the workspace generates a moment
    before drawing them, lands on a 404. Only the archive path can
    promise the page exists, and only the archive path passes the
    flag.

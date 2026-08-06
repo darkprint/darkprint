@@ -68,11 +68,14 @@ export function SkeletonPane({
    * Draw the pane's ordinal beside its title.
    *
    * True for the archive's four-pane view, where the numbers are the view's own vocabulary
-   * and nothing competes with them. False on `/build`, which carries a seven-step bar in
-   * the same visual register a few pixels above: a reader met a chip reading **3** for
-   * "What it builds" and a chip reading **3** for "DOT" on one screen, and the two
-   * numberings are unrelated. The id stays either way, because `aria-labelledby` points at
-   * it.
+   * and nothing competes with them. No caller sets this to `false` today: `/build`'s stage
+   * stopped mounting this pane once it collapsed to a tablist (see `linkToCard`'s own doc
+   * comment below, on the prop that recorded the same departure), so the archive is the
+   * only place this renders now and the number is always on. Same standing as
+   * `ChoiceGraphPane.tsx`'s `choice` slot (see its own doc comment): kept rather than
+   * dropped, because a caller that needs the ordinal off — one drawing this pane behind a
+   * tablist that already names it, the way `/build`'s did — has nowhere else to say so. The
+   * id stays either way, because `aria-labelledby` points at it.
    */
   showNumber?: boolean;
   model: PaneModel;

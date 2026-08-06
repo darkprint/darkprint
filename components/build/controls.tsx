@@ -96,9 +96,10 @@ export interface CapReading {
  * Doc 2 §5.3's third choice, and §5.6's teaching instrument.
  *
  * A range input, so the keyboard gets arrow keys, Home and End for free and the reader
- * can hear the value change. The figures under it are the point of the step: §5.6 wants
- * the trade-off delivered by the control rather than argued underneath it, so three
- * consequences of the cap sit against the slider and move together while it is dragged.
+ * can hear the value change. The figures under it are the point of this control — one of
+ * the three the panel below the stage renders (spec §2.2) — where §5.6 wants the trade-off
+ * delivered by the control itself rather than argued underneath it, so three consequences
+ * of the cap sit against the slider and move together while it is dragged.
  *
  * They are handed in rather than derived here, because each is arithmetic over the
  * topology and the declared cap (`starterRunBudget`) and this component knows about

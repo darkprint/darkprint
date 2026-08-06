@@ -119,8 +119,8 @@ export function toBlueprintView(input: BlueprintViewInput): Blueprint {
          `GalleryBrowser` orders its filter list by, and no surface renders it.
 
          `autonomyStatement` is idempotent, so the components that also serve the upload
-         and guided-path routes — which hold a raw `BlueprintAnalysis` and must do their
-         own stripping — stay correct when handed one of these instead. */
+         and build-workspace routes — which hold a raw `BlueprintAnalysis` and must do
+         their own stripping — stay correct when handed one of these instead. */
       autonomy: {
         ...analysis.autonomy,
         rationale: autonomyStatement(analysis.autonomy.rationale),
