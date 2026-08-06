@@ -59,10 +59,10 @@ export function SectionNodeCard() {
               <code className="rounded bg-surface-3 px-1 py-0.5 font-mono text-[13px] text-fg">
                 {CARD_REF}
               </code>{" "}
-              as the archive stores it. Seven places on the card decide what the node is,
-              which model it runs, what it may reach, what arrives and what must never
-              arrive. The last of those is why whoever writes the code never reads the
-              tests the work is judged against.
+              as the archive stores it. Nine places on the card decide what the node is,
+              what it does, the brief it is handed, which model it runs, what it may
+              reach, what arrives and what must never arrive. The last of those is why
+              whoever writes the code never reads the tests the work is judged against.
             </>
           }
         />

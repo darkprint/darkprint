@@ -1,0 +1,56 @@
+id: reply-qa-check
+name: Reply QA Check
+type: validation
+phase: testing
+
+action: >-
+  Grade the drafted reply against the tone, accuracy and completeness rubric, release it only above
+  the confidence threshold, and emit the score the escalation path branches on.
+spec: >-
+  Read the drafted reply and the citations attached to it on `draft`, and grade it against the
+  `support-reply-rubric@2` rubric on three axes: tone, factual accuracy and completeness. Check
+  every factual claim in the reply against the citation the draft says supports it, and score an
+  uncited or mis-cited claim as an accuracy failure rather than as a style note. Emit the graded
+  score on `confidence` as a single number between 0 and 1, and put the reply on `approved`,
+  unchanged apart from your QA stamp, only when that score is 0.72 or above. The customer's
+  personal details ride inside the draft: leave them there, and do not copy names, addresses,
+  order numbers or account identifiers into the score or into any comment you attach to it. You
+  are done when a score is on `confidence` and `approved` carries either the stamped reply or
+  nothing at all.
+model: claude-sonnet-5
+agent: QA checker
+tools: []
+mcp: []
+skill: skills/reply-qa-check.md
+params:
+  confidence_threshold: 0.72
+  rubric_ref: "support-reply-rubric@2"
+
+inputs:
+  - name: draft
+    type: json
+    description: The composed reply and the citations it claims to rest on.
+outputs:
+  - name: approved
+    type: json
+    description: The reply cleared for sending, unchanged apart from the QA stamp.
+  - name: confidence
+    type: status
+    description: The graded score, what the escalation branch reads.
+dependencies:
+  - resolution-composer
+cannot:
+  - copy a customer identifier into the score it emits
+
+requires_human: false
+risk_markers:
+  - lupo/pii-handling
+notes: >-
+  The customer's details ride through this node inside the draft, which is what the
+  `lupo/pii-handling` marker records, a local term, because doc 3 §4 has no marker for personal
+  data. The threshold is the one dial that trades escalation volume against send quality; raising
+  it moves work to people rather than improving the replies.
+
+version: 1.0.0
+author: hachi
+ontology_version: 0.1.0

@@ -1,0 +1,54 @@
+id: confidence-escalation
+name: Confidence Escalation
+type: human-gate
+
+action: >-
+  Let anything at or above the confidence threshold through untouched and park the rest for a
+  person, with the full context pack attached and an SLA on the clock.
+spec: >-
+  Read the confidence figure on the verdict you are handed. At 0.7 or above, pass the work
+  through on `accepted` exactly as it reached you and take no other action. Below 0.7, decide
+  nothing yourself: assemble the parked case on `escalated` with the work that was graded
+  attached, taken from the context you were given, or pulled from the run record when none
+  was wired, put a fifteen-minute deadline on it, notify the reviewer on call, and wait.
+  Nothing reaches `accepted` that has not either cleared 0.7 or been approved by that person.
+tools:
+  - human-review
+  - messaging
+mcp:
+  - slack
+params:
+  confidence_threshold: 0.7
+  sla_minutes: 15
+
+inputs:
+  - name: verdict
+    type: status
+    description: The upstream check's confidence signal, the number this node reads.
+  - name: context
+    type: json
+    required: false
+    description: The work that was graded, attached to the escalation so nobody has to go digging.
+outputs:
+  - name: escalated
+    type: json
+    description: The parked case as handed to a human, with its context pack and deadline.
+  - name: accepted
+    type: json
+    description: The work passed straight through, untouched, because confidence cleared the bar.
+dependencies:
+  - qa
+cannot:
+  - decide a parked case itself
+
+requires_human: true
+risk_markers: []
+notes: >-
+  `context` is optional because an edge carries a single value: the QA step wires its verdict,
+  and the escalation pulls the draft it graded from the run record. The `requires_human` flag is
+  redundant with the node type and set anyway, the human gate should be legible without an
+  ontology lookup.
+
+version: 1.0.0
+author: sol-antczak
+ontology_version: 0.1.0

@@ -1,0 +1,53 @@
+id: record-repairer
+name: Record Repairer
+type: agent
+phase: debugging
+
+action: >-
+  Work the violation list field by field, mend only what the gate objected to, and send the
+  record back for re-normalization instead of dropping it or writing it half-formed.
+spec: >-
+  Work through the entries on `violations` one at a time. Each entry names one field and the
+  specific constraint that field broke, and that constraint is your whole brief for what the
+  value has to become, rewrite that field and leave every other field of the record exactly as
+  you received it. Emit the mended record on `repaired`, whole: never emit a partial record, and
+  never delete a field or blank it out to make a violation go away, because a silently dropped
+  field is worse than a rejected one. When a violation cannot be mended from what the record
+  itself contains, the value is missing rather than malformed, leave the field alone and note
+  the reason on the record, so the next pass fails on something true instead of on your guess.
+model: claude-sonnet-5
+agent: Repair worker
+tools: []
+mcp: []
+skill: skills/record-repairer.md
+params:
+  max_iterations: 3
+  temperature: 0.1
+
+inputs:
+  - name: violations
+    type: json
+    description: The gate's field-level failures, one entry per breach, with the rule each broke.
+  - name: record
+    type: json
+    required: false
+    description: The rejected record itself, when the caller wires it alongside the violations.
+outputs:
+  - name: repaired
+    type: json
+    description: The record with the objected-to fields rewritten and everything else untouched.
+dependencies:
+  - validate
+cannot:
+  - emit a partial record
+  - blank a field out to clear a violation
+
+requires_human: false
+risk_markers: []
+notes: >-
+  `max_iterations` is the brake on the repair loop: past that count a record is genuinely broken
+  rather than dirty, and grinding on it only burns tokens.
+
+version: 1.0.0
+author: lupo
+ontology_version: 0.1.0

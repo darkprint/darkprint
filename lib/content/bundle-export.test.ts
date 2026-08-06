@@ -16,11 +16,16 @@ import {
   BUNDLE_VOCABULARY,
   FACTORY_DOT,
   TOPOLOGY_DOT,
+  SITE_ORIGIN,
   bundleDir,
+  bundleDownloadCommand,
+  bundleFilePaths,
   bundleHref,
   bundleAgents,
   bundleReadme,
+  cardDownloadCommand,
   cardFilePath,
+  cardHref,
   exportBundle,
   localTermsUsed,
   skillPointers,
@@ -370,6 +375,86 @@ describe("paths", () => {
     expect(bundleHref("starter-software-factory", cardFilePath("spec-planner@1.0.0"))).toBe(
       "/bundles/starter-software-factory/cards/spec-planner%401.0.0.yaml",
     );
+  });
+
+  it("gives a card version an address of its own, outside any bundle", () => {
+    expect(cardHref("spec-planner@1.0.0")).toBe("/cards/spec-planner@1.0.0.yaml");
+  });
+});
+
+/* --------------------- the download command --------------------- */
+
+/**
+ * The command `components/blueprint/CloneMenu.tsx` hands a reader to paste into a
+ * terminal. It is the one string on the site that a reader runs against a live host, so
+ * the properties that make it work are asserted rather than assumed.
+ */
+describe("the command that takes the whole folder", () => {
+  it("lists exactly the files exportBundle writes, in the same order", () => {
+    for (const { slug, input, files } of EXPORTS) {
+      const vocabulary = localTermsUsed(input).length > 0 && input.vocabulary !== undefined;
+      expect([
+        slug,
+        bundleFilePaths({ cardRefs: input.blueprint.nodes.map((n) => n.ref), vocabulary }),
+      ]).toEqual([slug, files.map((f) => f.path)]);
+    }
+  });
+
+  /**
+   * curl expands `{}` and `[]` in a URL itself, and `,` separates the alternatives inside
+   * a brace list. A filename carrying any of them would silently make the command fetch
+   * something other than that file — semver permits `+` too, which is a space once a URL
+   * is decoded. No ref in the archive contains one today; this fails on the day one does,
+   * which is the day the command has to be built differently.
+   */
+  it("never emits a path holding a character curl's globber would eat", () => {
+    for (const { slug, files } of EXPORTS) {
+      for (const file of files) {
+        expect([slug, file.path, /[{}[\],+]/.test(file.path)]).toEqual([slug, file.path, false]);
+      }
+    }
+  });
+
+  it("quotes the URL list and writes each file under a folder named for the blueprint", () => {
+    const { slug, input } = EXPORTS[0];
+    const vocabulary = localTermsUsed(input).length > 0 && input.vocabulary !== undefined;
+    const command = bundleDownloadCommand(
+      slug,
+      bundleFilePaths({ cardRefs: input.blueprint.nodes.map((n) => n.ref), vocabulary }),
+    );
+    // The quotes are load-bearing: unquoted, the shell brace-expands `{…}` before curl
+    // sees it and every file is written over one literal file called `#1`.
+    expect(command).toContain(`-o "${slug}/#1"`);
+    expect(command).toContain(`"${SITE_ORIGIN}/${bundleDir(slug)}/{`);
+    expect(command.endsWith('}"')).toBe(true);
+    // `--fail-early` is what turns a mid-list 404 into exit 22 instead of a silent,
+    // incomplete folder; `--create-dirs` is what lets `cards/…` land at all.
+    expect(command).toContain("--fail-early");
+    expect(command).toContain("--create-dirs");
+    // Raw `@`, not `bundleHref`'s `%40`: this string is read by a person deciding whether
+    // it fetches the cards they were just looking at, and `%401.0.0` is not that.
+    expect(command).toContain(`cards/${input.blueprint.nodes[0].ref}.yaml`);
+    expect(command).not.toContain("%40");
+  });
+
+  it("fetches one card by name, with no braces to expand", () => {
+    const command = cardDownloadCommand("spec-planner@1.0.0");
+    expect(command).toBe(
+      `curl -fsSL -O "${SITE_ORIGIN}/cards/spec-planner@1.0.0.yaml"`,
+    );
+    expect(command).not.toContain("{");
+  });
+
+  /** There is no repository. The word may not appear in a command a reader runs. */
+  it("never says git", () => {
+    for (const { slug, input } of EXPORTS) {
+      const vocabulary = localTermsUsed(input).length > 0 && input.vocabulary !== undefined;
+      const command = bundleDownloadCommand(
+        slug,
+        bundleFilePaths({ cardRefs: input.blueprint.nodes.map((n) => n.ref), vocabulary }),
+      );
+      expect([slug, command.includes("git")]).toEqual([slug, false]);
+    }
   });
 });
 

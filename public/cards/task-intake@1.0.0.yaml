@@ -1,0 +1,40 @@
+id: task-intake
+name: Task Intake
+type: tool
+
+action: >-
+  Accept an inbound task request, stamp it with a run id and the acceptance criteria it will be
+  judged against, and hand it to the line as a single self-contained brief.
+spec: >-
+  Take the next request off the `task-queue` source and check it against the `task-request@1`
+  schema before anything else; reject a request that does not match and stop, rather than
+  forwarding a half-filled brief the rest of the line has to guess at. Stamp the accepted
+  request with a fresh run id and attach to it the reference to the acceptance-criteria set this
+  run will be judged against. Emit the result on `request` as one self-contained brief carrying
+  the goal, the constraints and that criteria reference. You are the only step that reads the
+  queue, so anything you drop or fail to copy across is gone for the remainder of the run.
+tools: []
+mcp: []
+skill: skills/task-intake.md
+params:
+  source: task-queue
+  request_schema: task-request@1
+
+inputs: []
+outputs:
+  - name: request
+    type: json
+    description: The task as the line will see it, goal, constraints, and the criteria set it must clear.
+dependencies: []
+cannot:
+  - forward a request that failed the schema check
+
+requires_human: false
+risk_markers: []
+notes: >-
+  The criteria reference is attached here rather than at the verifier, so both solvers write
+  against the same bar the verifier will later hold them to.
+
+version: 1.0.0
+author: mara-veil
+ontology_version: 0.1.0

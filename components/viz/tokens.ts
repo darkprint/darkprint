@@ -123,11 +123,18 @@ export const VIZ = {
 } as const;
 
 /**
- * The two registers a sheet can be drawn on.
+ * The three registers a sheet can be drawn on.
  *
  * `grid` names a class that already exists in `app/globals.css`. `.bp-grid` is the
- * cyanotype graticule and wants a blue ground under it; `.tech-grid` is the dark pole's
- * coarser rule. Nothing new is added to the stylesheet for this.
+ * cyanotype graticule and wants a blue ground under it; `.copper-grid` is the same
+ * graticule in warm ink; `.tech-grid` is the dark pole's coarser rule.
+ *
+ * `copper` exists for one figure and states its own subject: the annotated node card,
+ * where what is on the paper is a document rather than a drawing. It is a register and
+ * not a colour a caller picks, so the choice is made once per sheet and every glyph
+ * inside it follows through `--viz-line` / `--viz-ink` without being told. Its four
+ * variables are declared in `app/globals.css` beside the blueprint pole's, with the
+ * measured contrast and the reason it is not amber.
  */
 export const SHEET_REGISTER = {
   blueprint: {
@@ -136,6 +143,13 @@ export const SHEET_REGISTER = {
     surface: "color-mix(in oklab, var(--color-blueprint-deep) 62%, var(--color-void))",
     border: "var(--color-blueprint)",
     grid: "bp-grid",
+  },
+  copper: {
+    ink: "var(--color-copper-ink)",
+    line: "var(--color-copper-line)",
+    surface: "color-mix(in oklab, var(--color-copper-deep) 62%, var(--color-void))",
+    border: "var(--color-copper)",
+    grid: "copper-grid",
   },
   dark: {
     ink: "var(--color-fg)",

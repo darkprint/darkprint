@@ -445,6 +445,11 @@ const EM_DASH_FILES = [
     ...LIB_COPY_FILES,
     "components/build/state.ts",
     "components/panes/GraphPane.tsx",
+    // Product copy that is not a component: one paragraph per card field, rendered on
+    // `/nodes/<id>` and inside the blueprint page's card skeleton. Named here for the
+    // same reason `ForkAction.tsx` is, and because a `.ts` file of prose is exactly the
+    // shape a tree-based walk misses.
+    "components/panes/field-notes.ts",
     "components/panes/SkeletonPane.tsx",
     "components/panes/SourcePane.tsx",
     "components/panes/SynchronisedPanes.tsx",

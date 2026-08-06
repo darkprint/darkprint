@@ -1,24 +1,47 @@
 /* ============================================================
-   The seven things spec §3.2 asks this card to be read for, in
-   the order it asks for them.
+   The nine things spec §3.2 asks this card to be read for, in the
+   order they are written down.
 
-   The table in the spec is the contract, including its ordering,
-   which is why step 3 (`skill`) points further down the file than
-   step 4 (`tools` / `mcp`) does. The order is the order a reader
-   needs the facts in rather than the order the author happened to
-   write the keys in.
+   ── The order is document order, and that is now a rule ──
+   It used to be reading order: the table in the spec puts `skill`
+   before `tools`/`mcp`, and this file followed it, so step 3 pointed
+   at line 22 and step 4 pointed back up at line 19. Every quantity
+   in `geometry.ts` follows the run being read, so scrolling DOWN
+   through that pair slid the listing DOWN too and the highlight
+   climbed the card. The author, watching it: "when scrolling down,
+   the highlighted elements should be ordered from top to bottom.
+   Right now, sometimes scrolling down, highlight something above."
 
-   Every claim below is one the site can be held to:
+   A scroll-driven figure makes exactly one promise, which is that
+   the reader's gesture and the drawing move the same way, and no
+   argument about the ideal order of two facts is worth breaking it.
+   So the sequence is the file's own: identity, what it does, the
+   brief it is handed, what runs it, what it reaches, where its
+   behaviour is written, what arrives, what it hands on, and what
+   must never arrive. `nodecard.test.ts` asserts the resolved line
+   ranges are strictly increasing, so the next person to add a step
+   cannot reintroduce this by putting it in the wrong place.
 
-   - step 2's `llm_model` is what `lib/core/attractor/emit.ts`
+   Steps annotate a KEY GROUP rather than a line: `identity` covers
+   the four lines that name the node, `reach` covers `tools` and
+   `mcp` together because neither answers "what can it touch" alone.
+   The group is the unit a reader thinks in and the unit the leader
+   line points at.
+
+   ── Every claim below is one the site can be held to ──
+   - step 2's "checked by nothing" is `lib/core/card/validate.ts`,
+     which reads `action` for presence and never for content;
+   - step 3's forty characters is `card/spec-too-thin`, raised at
+     warning severity;
+   - step 4's `llm_model` is what `lib/core/attractor/emit.ts`
      writes, and Attractor spec §8's model stylesheet is what can
      override it;
-   - step 3's "the engine reads nothing at the other end" is
+   - step 6's "the engine reads nothing at the other end" is
      `lib/core/card/schema.ts` on `skill`, and the missing folder is
      the paragraph `lib/content/bundle-export.ts` puts in every
      bundle README;
-   - step 6's mismatch is `bundle/port-mismatch`;
-   - step 7 is `lib/core/bundle/resolve.ts`'s `checkProhibitions`,
+   - step 8's mismatch is `bundle/port-mismatch`;
+   - step 9 is `lib/core/bundle/resolve.ts`'s `checkProhibitions`,
      which raises `bundle/prohibition-violated` at error severity
      when an incoming edge's source declares an output of the
      prohibited type or of a narrower one.
@@ -54,6 +77,24 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
       "`implementation` places it in the lifecycle the ontology defines.",
   },
   {
+    id: "action",
+    keys: ["action"],
+    title: "What it does, in a line",
+    body:
+      "The operation, in one sentence a person can read at a glance. Nothing in the engine " +
+      "checks it: `action` is prose for whoever opens the card, and it travels into the " +
+      "download unchanged. The instruction the agent is actually handed is the block under it.",
+  },
+  {
+    id: "spec",
+    keys: ["spec"],
+    title: "The brief it is handed",
+    body:
+      "The prose an agent is given when somebody instantiates this graph on their own machine. " +
+      "It has to stand alone, because whatever reads it never sees the rest of the graph. Only " +
+      "its length is checked here: under forty characters raises `card/spec-too-thin`.",
+  },
+  {
     id: "model",
     keys: ["model"],
     title: "The model it runs on",
@@ -63,15 +104,6 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
       "A card with no such line inherits whatever the run supplies.",
   },
   {
-    id: "skill",
-    keys: ["skill"],
-    title: "The behaviour document",
-    body:
-      "`skills/code-builder.md` is where this agent's behaviour is written. The field is a " +
-      "pointer and the engine reads nothing at the other end, so no skill document travels in " +
-      "the download. Each bundle's README lists the paths you supply yourself.",
-  },
-  {
     id: "reach",
     keys: ["tools", "mcp"],
     title: "What it can reach",
@@ -79,6 +111,15 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
       "`tools` is empty and `mcp` names one server, so this node touches the filesystem and " +
       "nothing else. The reach of a whole factory can be read off its cards before anything is " +
       "run, which is why it is written down here at all.",
+  },
+  {
+    id: "skill",
+    keys: ["skill"],
+    title: "The behaviour document",
+    body:
+      "`skills/code-builder.md` is where this agent's behaviour is written. The field is a " +
+      "pointer and the engine reads nothing at the other end, so no skill document travels in " +
+      "the download. Each bundle's README lists the paths you supply yourself.",
   },
   {
     id: "inputs",
@@ -124,6 +165,11 @@ export interface ResolvedAnnotation extends AnnotationSpec {
  * are correct by design (spec §2b: "a card with no `model` inherits"), so the section has
  * to survive being pointed at one, and a leader line drawn to a line the reader is not
  * looking at is worse than an annotation that is not there.
+ *
+ * Dropping a step cannot disturb the order: the specs are already in document order, so
+ * any subsequence of them is too. What it does disturb is the rail's arithmetic, which is
+ * sized for a fixed count (`geometry.ts`), and that is why the two live next to each
+ * other rather than one being derived from the archive.
  */
 export function resolveAnnotations(
   source: string,

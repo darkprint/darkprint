@@ -18,17 +18,14 @@
    Not a client component. The section is markup; only the wordmark
    needs a timeline, and it is the only thing that ships as one.
 
-   That split is also why the three counts under the hero's buttons
-   are read here and handed down. `PLATFORM_STATS` reaches
-   `lib/content/read.ts`, which reads the archive off disk and throws
-   by hand if it ever finds a `window`; `Wordmark` is `"use client"`,
-   so importing it there would put `node:fs` in the browser bundle.
-   Counted on the server, passed across the boundary as three plain
-   numbers, they stay countable off `content/` at build time instead
-   of being written down in the hero where they would go stale.
+   This file used to read `PLATFORM_STATS` and hand the three counts
+   down to `Wordmark` as props, because that component is `"use
+   client"` and the constant reaches `node:fs`. The author removed the
+   counts line from the first viewport, so the section takes no data
+   at all now — the same three figures still appear on beat 5, in
+   `components/home/SectionDoors.tsx`, beside the sentence that
+   vouches for them.
    ============================================================ */
-
-import { PLATFORM_STATS } from "@/lib/data";
 
 import { Wordmark } from "./Wordmark";
 
@@ -45,7 +42,7 @@ export function Hero() {
       />
 
       <div className="container-page relative">
-        <Wordmark stats={PLATFORM_STATS} />
+        <Wordmark />
       </div>
     </section>
   );

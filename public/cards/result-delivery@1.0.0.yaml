@@ -1,0 +1,38 @@
+id: result-delivery
+name: Result Delivery
+type: tool
+phase: deployment
+
+action: >-
+  Hand the accepted result to its destination and close the run, carrying the decision trace
+  with it so the delivery can be reconstructed later.
+spec: >-
+  Take the signed-off result you are handed, write it to `run-artifacts` exactly as the
+  verifier released it, and close the run. Write the decision trace alongside it, which node
+  produced what, and what each one decided, so the delivery can be reconstructed later
+  without re-running the line. Emit nothing onward: this is the last step of the run, so
+  deliver only what you were actually handed and alter none of it.
+tools: []
+mcp:
+  - filesystem
+skill: skills/result-delivery.md
+params:
+  destination: run-artifacts
+  include_trace: true
+
+inputs:
+  - name: result
+    type: json
+    description: The signed-off result, as the verifier released it.
+outputs: []
+dependencies:
+  - acceptance-verifier
+cannot:
+  - alter the result it was handed
+
+requires_human: false
+risk_markers: []
+
+version: 1.0.0
+author: k0bra
+ontology_version: 0.1.0

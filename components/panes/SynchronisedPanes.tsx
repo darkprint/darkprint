@@ -2,6 +2,8 @@
 
 import { useState, type ChangeEvent, type ReactNode } from "react";
 import { cx } from "@/lib/format";
+import { BLOCK_MAX_HEIGHT, BLOCK_WIDTH } from "@/components/graph/block";
+import { drawnExtent, graphPaneHeightCss } from "@/components/graph/framing";
 import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
 import { GraphPane } from "./GraphPane";
 import { SkeletonPane } from "./SkeletonPane";
@@ -100,8 +102,23 @@ export function SynchronisedPanes({
   const selectNode = (nodeId: string) => {
     setSelection({ nodeId });
   };
-  const selectField = (field: string) => {
-    setSelection((held) => ({ nodeId: held.nodeId, field }));
+  /**
+   * A field row opened, or the open one closed. **The node never moves.**
+   *
+   * Both branches rebuild the selection from `held.nodeId` rather than from anything the
+   * skeleton pane knows, which is what makes the guarantee structural: a field is a
+   * narrowing *inside* the selected node, so there is no path through this function that
+   * can change or clear which node the drawing rings. Closing widens back to the whole
+   * node, the same state the "back to the whole node" button below produces — that
+   * button stays, because it is also the escape from an absence, which no `<details>`
+   * closes.
+   *
+   * An absence in hand is dropped either way: at most one narrowing applies at a time.
+   */
+  const selectField = (field: string | undefined) => {
+    setSelection((held) =>
+      field === undefined ? { nodeId: held.nodeId } : { nodeId: held.nodeId, field },
+    );
   };
   const selectAbsence = (id: string) => {
     const absence = model.absences.find((entry) => entry.id === id);
@@ -188,14 +205,31 @@ export function SynchronisedPanes({
         </p>
       )}
 
-      {/* 780, not the historical 460: with the aside now holding only the compact
-          Score card (`MetricBars`' `compact` prop folds its six sentences behind
-          one disclosure — see that file), Score's own height is fixed at ~746px
-          regardless of which blueprint this is, measured live and identical across
-          every one checked. 780 is the smallest round number whose total section
-          height (780 plus this pane's own ~114px of header/footer chrome) clears
-          746 with real margin, so `position: sticky` on the aside (below) has
-          genuine room to move rather than nothing to do. */}
+      {/* The pane is the drawing's own size, per blueprint.
+          ------------------------------------------------------------
+          It used to be 780 at every blueprint, chosen against the Score card's fixed ~746px
+          so that `position: sticky` on the aside beside it had room to move. Two things
+          retired that argument. The aside is the page's now and not this component's — the
+          `aside` prop below has had no caller since the blueprint page took the split over,
+          so there is nothing beside the graph for a height to be chosen against. And the
+          author has ruled that every blueprint shows its whole graph, which makes the
+          height a consequence rather than a choice: `graphPaneHeightCss` is the fitted
+          drawing plus the band `FIT_BAND` reserves for edge labels, and nothing else.
+
+          What 780 cost is visible on a screenshot. `guarded-merge-bot` is six blocks in one
+          row: at 1440 its drawing is 152px tall and it was drawn in a 778px canvas, five
+          times its own height in empty graticule. The heights the arithmetic gives instead,
+          at the 1124px canvas this panel now has: 257 for that one, 427 for the six two-row
+          drawings, 380 for `checkpoint-resume-runner`, 597 for the three-row
+          `grounded-research-desk`, and 650 for the starter, whose zoom meets `MAX_ZOOM`
+          rather than the canvas. `components/panes/archive-labels.test.ts` pins all nine.
+
+          A CSS length rather than a measured number, because this page is statically
+          generated and the site's rule is that content never needs JS to become visible: a
+          pane that measured its own canvas and then set its height in an effect would ship
+          a layout shift on every load. The height is linear in the canvas width and the
+          canvas width is linear in the viewport, so the browser can do the whole thing at
+          layout time. */}
       <div className={cx("grid gap-4", aside !== undefined && "lg:grid-cols-3")}>
         <div className={cx("min-w-0", aside !== undefined && "lg:col-span-2")}>
           <GraphPane
@@ -204,7 +238,9 @@ export function SynchronisedPanes({
             model={model}
             focus={focus}
             graphId={`panes-${model.slug}`}
-            height={780}
+            height={graphPaneHeightCss(
+              drawnExtent(graph.nodes, BLOCK_WIDTH, BLOCK_MAX_HEIGHT),
+            )}
             onSelectNode={selectNode}
           />
         </div>

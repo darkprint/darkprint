@@ -147,17 +147,36 @@ registerHooks({
 
 const { hasErrors, lintAttractor, parseDot } = await import("@/lib/core");
 const { contentVocabulary, readContent } = await import("@/lib/content/read");
-const { FACTORY_DOT, bundleDir, exportBundle } = await import("@/lib/content/bundle-export");
+const { CARD_LIBRARY_DIR, FACTORY_DOT, bundleDir, exportBundle } = await import(
+  "@/lib/content/bundle-export"
+);
 
 /* --------------------- generation --------------------- */
 
 const OUTPUT_ROOT = join(ROOT, "public", "bundles");
+
+/**
+ * The card library, written a second time at the site root.
+ *
+ * A bundle's copy of a card is addressable only through the blueprint that pins it, and
+ * `/nodes/[...id]` is a page about the card rather than about any blueprint: naming one
+ * there would print a slug the reader did not ask about, and would 404 the day that
+ * blueprint left the archive. The bytes are identical — the same `card.text` the export
+ * puts in the folder — so this is a second address for one document, not a second
+ * document, which is why it is written from the same loop.
+ *
+ * Outside `OUTPUT_ROOT` on purpose: `lib/content/bundle-export.test.ts` asserts the exact
+ * file set `exportBundle` returns, and a tenth file inside a bundle would break it. This
+ * adds no file to any bundle.
+ */
+const CARD_LIBRARY_ROOT = join(ROOT, "public", CARD_LIBRARY_DIR);
 
 function main(): void {
   // Cleared rather than merged into: a blueprint removed from the archive, or a card
   // whose pin moved to a new version, would otherwise leave a stale file behind that
   // nothing links to and every later build would keep.
   rmSync(OUTPUT_ROOT, { recursive: true, force: true });
+  rmSync(CARD_LIBRARY_ROOT, { recursive: true, force: true });
 
   // Throws, loudly and with every diagnostic, if any bundle under `content/` carries an
   // error. That is the "fail the build if a bundle does not resolve" half of the contract.
@@ -173,6 +192,8 @@ function main(): void {
 
   const problems: string[] = [];
   const summary: string[] = [];
+  /** Every distinct card version any bundle pins, keyed by ref. See `CARD_LIBRARY_ROOT`. */
+  const library = new Map<string, string>();
 
   for (const entry of loaded) {
     const files = exportBundle({
@@ -186,6 +207,21 @@ function main(): void {
         ? {}
         : { vocabulary: { text: vocabulary.text, terms: vocabulary.terms } }),
     });
+
+    // Collected from the exported files rather than from `entry.cardFiles`, so the library
+    // copy and the bundle copy are the same string by construction. A ref pinned by two
+    // blueprints is one published version and therefore one document (§4: a published
+    // version is immutable); if two bundles ever disagreed about its bytes, that is a
+    // corrupt archive and the build says so rather than letting the last write win.
+    for (const file of files) {
+      if (!file.path.startsWith(`${CARD_LIBRARY_DIR}/`)) continue;
+      const ref = file.path.slice(CARD_LIBRARY_DIR.length + 1).replace(/\.yaml$/, "");
+      const seen = library.get(ref);
+      if (seen !== undefined && seen !== file.text) {
+        problems.push(`${ref}: two bundles carry different bytes for one published version.`);
+      }
+      library.set(ref, file.text);
+    }
 
     const dir = join(OUTPUT_ROOT, entry.slug);
     let bytes = 0;
@@ -227,6 +263,15 @@ function main(): void {
     );
   }
 
+  // Written after the loop rather than inside it, so a build that is about to fail on a
+  // bundle does not leave a card library behind that no bundle backs.
+  if (problems.length === 0) {
+    mkdirSync(CARD_LIBRARY_ROOT, { recursive: true });
+    for (const [ref, text] of [...library].sort(([a], [b]) => (a < b ? -1 : 1))) {
+      writeFileSync(join(CARD_LIBRARY_ROOT, `${ref}.yaml`), text, "utf8");
+    }
+  }
+
   if (problems.length > 0) {
     throw new Error(
       [
@@ -241,6 +286,7 @@ function main(): void {
 
   console.log(`public/${bundleDir("<slug>")} — ${loaded.length} bundles`);
   for (const line of summary) console.log(line);
+  console.log(`public/${CARD_LIBRARY_DIR} — ${library.size} card versions`);
 }
 
 main();

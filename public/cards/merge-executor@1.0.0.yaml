@@ -1,0 +1,52 @@
+id: merge-executor
+name: Merge Executor
+type: tool
+phase: deployment
+
+action: >-
+  Merge the approved head into the base under the configured strategy and emit the resulting
+  commit, refusing to act on anything but a maintainer approval.
+spec: >-
+  You act on one thing only: the approval signal you are handed. If it is anything other than an
+  approval, stop and emit nothing. On an approval, merge the pull request's head into its base as
+  a single squashed commit whose message is the pull-request title and body, then delete the
+  source branch. If the base has moved and the squash does not apply cleanly, abort, leave the
+  base untouched, leave the source branch in place, and report the conflict instead of resolving
+  it yourself. Emit the resulting commit on `merge_commit` with its SHA, its parents and the
+  branch it landed on. Use the repository write token scoped to this repository alone, and never
+  push to any ref other than the base branch the approval names.
+tools:
+  - git
+mcp:
+  - github
+skill: skills/merge-executor.md
+params:
+  strategy: squash
+  delete_source_branch: true
+
+inputs:
+  - name: approval
+    type: status
+    description: The maintainer's verdict. No approval, no merge, this is the only trigger.
+outputs:
+  - name: merge_commit
+    type: json
+    description: The commit the merge produced, with its parents and the branch it landed on.
+dependencies:
+  - maintainer-approval
+cannot:
+  - resolve a merge conflict itself
+  - push to any ref other than the base branch the approval names
+
+requires_human: false
+risk_markers:
+  - secret-access
+  - unchecked-write
+notes: >-
+  This is the node that holds the repo write token, and a token is not something an upstream
+  control node can take away, the human gate in front of it bounds when it fires, not what it
+  could reach. Scope the token to the one repository and the branches you actually merge into.
+
+version: 1.0.0
+author: sol-antczak
+ontology_version: 0.1.0

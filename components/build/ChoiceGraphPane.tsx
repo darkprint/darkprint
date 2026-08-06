@@ -2,6 +2,8 @@
 
 import { useMemo, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { BlueprintGraph } from "@/components/graph/BlueprintGraph";
+import { BLOCK_MAX_HEIGHT, BLOCK_WIDTH } from "@/components/graph/block";
+import { drawnExtent, graphPaneHeightCss } from "@/components/graph/framing";
 import { useRovingListbox } from "@/components/panes/listbox";
 import type { PaneFocus, PaneModel } from "@/components/panes/model";
 import { NODE_KIND_META, cx } from "@/lib/format";
@@ -196,44 +198,43 @@ export function ChoiceGraphPane({
         </span>
       </div>
 
-      {/* The canvas answers to its container, in both directions.
+      {/* The canvas answers to its container across, and to the drawing down.
           ------------------------------------------------------------
           Across, it always did: the box is `width: 100%` and React Flow fits to what it
           measures, so moving this pane out of the old three-column grid and onto the stage
           took the canvas from 393px to 1126px at 1440 without a number changing here. What
-          did NOT follow was the height. `height={340}` was tuned for the cramped column,
-          and in a 1126px-wide box it made the fit height-bound: the drawing settled at the
-          zoom a 340px box allowed and left a third of the new width empty.
+          did NOT follow was the height. `height={340}` was tuned for the cramped column, and
+          in a 1126px-wide box it made the fit height-bound: the drawing settled at the zoom
+          a 340px box allowed and left a third of the new width empty.
 
-          `clamp()` rather than a second number, because this pane now has two containers
-          worth caring about — the stage at 1440 and a phone at 390 — and picking one to
-          hardcode is what produced the defect above. 25rem is the floor of that range and
-          30rem is where the stage's drawing stops growing, since past that a schematic
-          reads as zoomed rather than large. React Flow re-fits from the measured box either
-          way, so the two ends are framings and not breakpoints.
+          A `clamp(25rem, 32vw, 30rem)` stood here next, and it had the same defect in a
+          smaller size — 32vw is a guess about the drawing, and at 1440 it resolved to 460px
+          for a drawing that wanted 601, so the stage was STILL height-bound and still
+          drawing a schematic smaller than its own box allowed. `graphPaneHeightCss` is the
+          arithmetic instead of a guess at it: the fitted drawing, plus the band `FIT_BAND`
+          reserves for the edge labels that step outside it, plus the box's own border. It
+          is still a `clamp()` and still needs no JS — the height is linear in the canvas
+          width and the canvas width is linear in the viewport — but the slope is this
+          graph's, and this graph changes with the reader's own choices: the approval choice
+          adds a node and with it a layer, so the drawing that has to fit is not a constant.
 
-          The floor was 22rem and is 25rem because `BlueprintGraph`'s `FIT_BAND` reserves
-          52px above and below the drawing for the edge labels that step outside it, and the
-          shorter the canvas the less of that band the fit can actually give: a two-row
-          schematic at the legibility floor is 306px tall in the worst case the guard models
-          (180 units of row gap and a block up to 160 tall, at zoom 0.9), so a 350px canvas
-          has 22px left for a chip that reaches 24, and a 398px one has 46. 25rem is where
-          the clearance stops being arithmetic luck — `components/build/stage-labels.test.ts`
-          computes it at six widths rather than trusting this paragraph. The 48px is paid on
-          phones and small laptops, where the graph is the largest thing on the page anyway. */}
-      {/* `p-2` on a phone and `p-3` from `sm` up: eight more pixels of canvas where canvas
-          is scarcest. It used to be load-bearing to the flow unit — the starter's first two
-          columns span 350, and the floor zoom turned `p-3`'s 314 CSS px into 348.9 of them,
-          which missed by 1.1 and cost the reader a whole column. `components/graph/frame.ts`
-          measures a block's WORDS now rather than its box, so that 1.1 comes out of a
-          border and a strip of padding instead of a column, and these eight pixels are back
-          to being what they look like. */}
-      <div onClick={onGraphClick} onKeyDown={onGraphKeyDown} className="p-2 sm:p-3">
+          The wrapper pads the same at every width now, and that is a consequence of the
+          height rather than a taste change. It was `p-2` on a phone and `p-3` from `sm` up,
+          for eight more pixels of canvas where canvas is scarcest, and those eight pixels
+          used to be load-bearing to the flow unit — the starter's first two columns span
+          350, and the floored zoom turned `p-3`'s 314 CSS px into 348.9 of them, which
+          missed by 1.1 and cost the reader a whole column. Nothing is floored and nothing is
+          cropped, so the eight pixels buy 0.013 of zoom; what they cost is a canvas whose
+          width is not one expression, and this height has to be ONE CSS length. A pane
+          computed for a narrower canvas than the real one is height-bound by the difference,
+          which quietly shrinks the drawing — the exact defect the paragraph above is about,
+          two per cent of it. One padding, one expression, no bind. */}
+      <div onClick={onGraphClick} onKeyDown={onGraphKeyDown} className="p-3">
         <BlueprintGraph
           graph={drawn}
           id={graphId}
           highlighted={focus.graphNodeId}
-          height="clamp(25rem, 32vw, 30rem)"
+          height={graphPaneHeightCss(drawnExtent(graph.nodes, BLOCK_WIDTH, BLOCK_MAX_HEIGHT))}
           className="rounded-md"
         />
       </div>

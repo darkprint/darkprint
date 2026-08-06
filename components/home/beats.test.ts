@@ -265,44 +265,45 @@ describe("every figure on the landing is reachable without a pointer", () => {
   );
 });
 
-describe("beat 4's three marks carry no information a screen reader needs", () => {
+describe("beat 4's marks carry no information a screen reader needs", () => {
   /**
    * The opposite property from the describe block above, and just as load-bearing. A
    * `FlowNode` earns a focus stop because it is the only place its meaning lives; these
-   * three characters are not — `PanelHeading` already names "Download", "Compose" and
-   * "Upload yours" in real text next to each one, so a glyph that also grabbed a tab stop
-   * would announce nothing a screen reader has not already been told, once per panel, for
-   * no reason. `aria-hidden="true"` is what keeps it out of that tree, and this is the
+   * characters are not — `PanelHeading` already names "Download", "Connect" and "Upload
+   * yours" in real text next to each one, so a glyph that also grabbed a tab stop would
+   * announce nothing a screen reader has not already been told, once per panel, for no
+   * reason. `aria-hidden="true"` is what keeps it out of that tree, and this is the
    * test that would fail if a future edit dropped it — the accessibility bug this file
    * has caught before ran in the direction of forgetting a name; a glyph that forgot to
    * hide itself would be the same bug from the other side.
    */
-  it("marks all four ⇄ ↓ ⋈ ↑ as decorative", () => {
-    /* Four now: `⇄` arrived with the MCP panel the author asked for. The marks also moved
-       out of a 144px box each and onto the heading's own line, so the wrapper this walks
-       back to is the heading row rather than the box, and the `aria-hidden` it finds is on
-       the mark's own span. Same property, one element in. */
+  it("marks all three ⇄ ↓ ↑ as decorative", () => {
+    /* Three: `⋈` left with the Compose panel, which is a hint under Download now rather
+       than a numbered step of its own (`SectionLifecycle`'s header). The marks also moved
+       out of a 144px box each and onto the heading's own line, so what this reads is the
+       mark's own opening tag rather than a wrapper — `lastIndexOf("<", at)` lands on the
+       `<span>` the character sits directly inside, which is where `Mark` puts the
+       attribute, and it keeps passing regardless of what element ends up around it. */
     const html = beat("4 the lifecycle");
-    for (const mark of ["⇄", "↓", "⋈", "↑"]) {
+    for (const mark of ["⇄", "↓", "↑"]) {
       const at = html.indexOf(`>${mark}<`);
       expect(at, `${mark} is not in the markup`).toBeGreaterThan(0);
-      const wrapper = html.lastIndexOf("<div", at);
-      expect(
-        html.slice(wrapper, at),
-        `${mark}'s wrapper does not carry aria-hidden`,
-      ).toContain('aria-hidden="true"');
+      const tag = html.slice(html.lastIndexOf("<", at), at);
+      expect(tag, `${mark}'s own element does not carry aria-hidden`).toContain(
+        'aria-hidden="true"',
+      );
     }
   });
 
   it("carries the panel titles as real, visible text instead", () => {
     const html = beat("4 the lifecycle");
-    for (const title of ["Connect", "Download", "Compose", "Upload yours"])
+    for (const title of ["Connect", "Download", "Upload yours"])
       expect(html).toContain(title);
   });
 });
 
 /**
- * Beat 4's four panels, and the 342px column they have to survive.
+ * Beat 4's panels, and the 342px column they have to survive.
  *
  * The bug this guards shipped, and it destroyed text rather than merely moving it. An
  * `<article>` is a grid item; a grid item's default `min-width: auto` resolves to its
@@ -332,8 +333,12 @@ describe("beat 4's panels can be narrower than the strings inside them", () => {
   const html = beat("4 the lifecycle");
   const ARTICLES = [...html.matchAll(/<article[^>]*>/g)].map((m) => m[0]);
 
-  it("renders the four panels this checks", () => {
-    expect(ARTICLES).toHaveLength(4);
+  it("renders the three panels this checks", () => {
+    /* Three since Compose became a hint inside Download rather than a peer beside it. The
+       count is asserted at all so the two cases under it cannot pass by walking an empty
+       list, and it is asserted exactly so a panel quietly reappearing — the shape this
+       section has changed twice now — has to come past this file. */
+    expect(ARTICLES).toHaveLength(3);
   });
 
   it("clears the automatic grid-item min-width on every one of them", () => {
@@ -376,7 +381,10 @@ describe("beat 4 leads with what ships and states what does not", () => {
     return i;
   };
 
-  it("prints both working capabilities before either unbuilt one", () => {
+  it("prints what ships before either unbuilt one", () => {
+    // Compose is a hint inside the Download panel now rather than a peer beside it, so it
+    // is still one of the two things a reader can do today and still ahead of both — the
+    // demotion changed its rank, not its side of the rule.
     expect(at("Download")).toBeLessThan(at("Connect"));
     expect(at("Compose")).toBeLessThan(at("Connect"));
     expect(at("Connect")).toBeLessThan(at("Upload yours"));
@@ -396,6 +404,123 @@ describe("beat 4 leads with what ships and states what does not", () => {
     expect(words).toContain(
       "Nothing leaves the tab, and publishing so other people can find it is not built yet.",
     );
+  });
+});
+
+/**
+ * The Download panel lists the folder that actually downloads.
+ *
+ * The panel opened on `factory.dot`, and the author's verdict was that the name is
+ * meaningless to a reader who has not already met Attractor: "a generic folder should be
+ * composed by a blueprint.dot and a list of yaml node cards and the README.md and
+ * AGENTS.md". What makes this worth a test rather than a careful edit is that the listing
+ * is a claim about bytes on disk — a folder drawn on the landing that does not match the
+ * folder `public/bundles/<slug>/` hands over is the same class of error as a missing
+ * disclaimer, and it fails silently in both directions: a file could leave the bundle
+ * generator, or a name could be retyped here.
+ *
+ * So the four names the author asked for are read out of the rendered panel. Whether those
+ * names are the real ones was checked against `public/bundles/` when the listing was
+ * written — all nine bundles hold `blueprint.dot`, `factory.dot`, `cards/`, `README.md` and
+ * `AGENTS.md`, and in all nine the card count equals the number of nodes carrying a `card=`
+ * pin — and `SectionLifecycle`'s header records that check. What this file adds is the part
+ * that keeps running: the names stay, and the panel does not drift back to leading with the
+ * compiled artefact.
+ */
+describe("beat 4 lists the folder a reader actually downloads", () => {
+  const words = readable(beat("4 the lifecycle"));
+
+  it("names the graph, the cards, and the two documents", () => {
+    for (const file of ["blueprint.dot", "cards/", "README.md", "AGENTS.md"])
+      expect(words, `${file} is not in the download panel`).toContain(file);
+  });
+
+  it("does not open the listing on the compiled file", () => {
+    // `factory.dot` is still in the bundle and still named in the prose — it is the file
+    // that runs, and dropping it would trade one inaccuracy for another. It may not be the
+    // first thing the panel shows: `blueprint.dot` is what the registry stores, what the
+    // cards are pinned in and what the digest is taken over.
+    expect(words).toContain("factory.dot");
+    expect(words.indexOf("blueprint.dot")).toBeLessThan(words.indexOf("factory.dot"));
+  });
+});
+
+/**
+ * Compose survived being demoted from a panel to a hint.
+ *
+ * The author asked for it as "a hint not a per se box", and a demotion is exactly the edit
+ * during which a claim turns into a mood: the sentence gets shortened to fit a smaller
+ * slot, or slides down the page and ends up under the "not built yet" rule, where a reader
+ * files it with the two capabilities that do not exist. It is neither. Composing is a
+ * property of the DOT format and it is true today with a text editor and nothing else.
+ *
+ * Both halves are asserted — the words, and the position — because either one alone passes
+ * on the failure the other describes.
+ */
+describe("beat 4 keeps the compose claim, as a hint inside Download", () => {
+  const words = readable(beat("4 the lifecycle"));
+
+  it("still says what composing is and that it is a property of the format", () => {
+    // Read around the two typographic apostrophes rather than through them: the source
+    // writes `&rsquo;`, React emits the character itself, and `readable()` only undoes the
+    // five entities React escapes. A test that spelled them ASCII would fail on correct
+    // markup, which is the worst kind of guard to leave behind.
+    expect(words).toContain("A DOT file is text.");
+    expect(words).toContain("Wire one graph");
+    expect(words).toContain("exit into another");
+    expect(words).toContain("drop a card into a pipeline");
+  });
+
+  it("keeps it above the unbuilt rule, where what ships is", () => {
+    const compose = words.indexOf("A DOT file is text.");
+    const rule = words.indexOf("Next, and not built yet");
+    expect(compose, "the compose hint is not in beat 4").toBeGreaterThan(0);
+    expect(rule, "the unbuilt rule is not in beat 4").toBeGreaterThan(0);
+    expect(compose).toBeLessThan(rule);
+  });
+
+  it("is no longer a panel of its own", () => {
+    // The whole point of the demotion, and it cannot be checked by searching for the word:
+    // the hint is tagged `Compose`, so the string is still in the markup and should be.
+    // What a panel has and a hint does not is a `PanelHeading` — an `<h3>` in the document
+    // outline — and the `⋈` mark that ranked it as a step.
+    const html = beat("4 the lifecycle");
+    expect(html).not.toMatch(/<h3[^>]*>Compose</);
+    expect(html).not.toContain("⋈");
+  });
+});
+
+/**
+ * What uploading is FOR, and the fact that none of it works yet.
+ *
+ * The author: "the Upload box should stress that if uploaded, you can get feedback for the
+ * blueprint you proposed by other users." That is the motive the panel was missing, and it
+ * is also the single largest honesty risk this section has ever carried — it describes a
+ * readership, on a site with no backend, no publishing and no users to review anything. It
+ * ships wearing `ComingSoonBadge`, which is what `components/site/honesty.test.ts` holds
+ * the sentence of; this checks the marker is on the surface beside it, because the ledger
+ * reads text and a sentence can lose its badge without losing a word.
+ */
+describe("beat 4 frames the feedback as what upload is for, not as a feature", () => {
+  const html = beat("4 the lifecycle");
+  const words = readable(html);
+
+  it("says the feedback is what publishing would be for", () => {
+    expect(words).toContain("other people can open the blueprint you proposed");
+    expect(words).toContain("tell you where it does not hold");
+  });
+
+  it("opens that sentence on the limit rather than closing on it", () => {
+    // A reader who stops after the first three words has still been told. "Not built yet:"
+    // plus a noun phrase is the form `AgentHandoff` and `DownloadStep` use for the same
+    // job, and the clause after it stays conditional — "Once a bundle can be published" —
+    // so no part of the sentence can be read in the present tense.
+    expect(words).toContain("Not built yet: the second reader.");
+    expect(words).toContain("Once a bundle can be published");
+  });
+
+  it("wears the badge, on the one claim in this section that needs it", () => {
+    expect(words).toContain("Coming soon");
   });
 });
 

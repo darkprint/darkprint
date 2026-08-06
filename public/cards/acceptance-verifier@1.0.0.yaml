@@ -1,0 +1,52 @@
+id: acceptance-verifier
+name: Acceptance Verifier
+type: validation
+phase: testing
+
+action: >-
+  Check the candidate against every acceptance criterion and pass it on only once all of them
+  clear, so nothing ships on a partial result.
+spec: >-
+  Check the finished artefact you are handed against every criterion in the set registered as
+  `acceptance-criteria@1`, one at a time, using the supporting material supplied alongside it
+  wherever a criterion calls for evidence. Emit the artefact unchanged on `accepted` only once
+  every criterion has cleared, nothing ships on a partial result, and a criterion you cannot
+  evaluate has not cleared. There is no failure exit from this node: when a criterion is
+  missed, record which one and stop the run there rather than passing the work anywhere.
+model: claude-sonnet-5
+agent: Verifier
+tools: []
+mcp: []
+skill: skills/acceptance-verifier.md
+params:
+  criteria_ref: acceptance-criteria@1
+  strict: true
+
+inputs:
+  - name: candidate
+    type: json
+    description: The finished artefact the line wants to ship.
+  - name: evidence
+    type: json
+    required: false
+    description: Supporting material a criterion may need to be judged against.
+outputs:
+  - name: accepted
+    type: json
+    description: The candidate unchanged, now signed off against the named criteria set.
+dependencies:
+  - assemble-stage
+cannot:
+  - pass a candidate that missed a criterion
+
+requires_human: false
+risk_markers: []
+notes: >-
+  One exit only: a candidate that misses a criterion stops the run rather than being routed
+  anywhere, which is all a linear pipeline can act on. Version 2.0.0 adds the second exit for
+  lines that can reopen the decision instead of failing it, which is a major bump because a
+  declared prohibition came with it.
+
+version: 1.0.0
+author: sol-antczak
+ontology_version: 0.1.0

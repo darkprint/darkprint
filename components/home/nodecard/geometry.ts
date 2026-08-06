@@ -3,7 +3,7 @@
 
    The choreography spec §3.2 asks for has three moving parts that
    have to agree with each other to the pixel: a listing that scrolls
-   inside a window, a rail of seven annotation heads beside it, and a
+   inside a window, a rail of nine annotation heads beside it, and a
    leader line drawn between the two. The obvious way to connect them
    is to read `getBoundingClientRect()` off the live DOM, and the
    obvious way is wrong here for three reasons: the measurement has to
@@ -32,8 +32,17 @@ export const NC = {
   /** Row height of one line of the listing. Set on the row, so it holds whatever the
       mono face's own metrics are. */
   line: 22,
-  /** Height of the window the listing scrolls inside while the reel is running. */
-  window: 420,
+  /**
+   * Height of the window the listing scrolls inside while the reel is running.
+   *
+   * 504, and it is not a free number: it is exactly what `head`, `gap` and `body` come to
+   * for the count of steps in `annotations.ts` (9 × 36 + 8 × 6 + 132), which is what keeps
+   * the listing and the notes column level at every step. It was 420 when there were seven
+   * steps. `NodeCardStage` carries the same figure twice as a Tailwind arbitrary value,
+   * because v4 scans source text and cannot read a constant; those two literals and this
+   * one move together or the leader is drawn into a box it is taller than.
+   */
+  window: 504,
   /** Lines of head-room kept above the run being annotated, so the reader sees what
       comes before it rather than the run arriving at the top edge. */
   park: 6,
@@ -42,7 +51,7 @@ export const NC = {
   /** Gap between heads. `head + gap` is the rail's pitch. */
   gap: 6,
   /** Height of the one expanded body. Fixed for two reasons: the rail below it does not
-      shift as the copy changes length, and seven heads plus one body then come to exactly
+      shift as the copy changes length, and nine heads plus one body then come to exactly
       `window`, so the notes and the listing are the same height at every step. */
   body: 132,
   /**
@@ -121,7 +130,7 @@ export function leaderPath(fromY: number, toY: number, width: number): string {
  * How far the section stays pinned, in px.
  *
  * The stage used to be `420vh`, which makes the pin travel a multiple of the viewport:
- * `height - viewport` is `3.2 x viewport`, so the same seven steps cost 221px each on a
+ * `height - viewport` is `3.2 x viewport`, so the same steps cost 221px each on a
  * 768-tall laptop and 341px each on a 1080-tall monitor. That is backwards. A scroll notch
  * is the same number of pixels on both screens, so the bigger the screen the slower the
  * argument arrives. Sizing the stage as `calc(100vh + PIN_TRAVEL)` makes
@@ -129,11 +138,16 @@ export function leaderPath(fromY: number, toY: number, width: number): string {
  * `scrollProgress` divides by, so every reader gets the same distance per step.
  *
  * 2500 spends itself as 125px of lead-in before the first note attaches
- * (`STEP_RESERVE.head`), seven steps of 296px, and 300px for the dezoom
- * (`STEP_RESERVE.tail`). Measured before: 2880px of travel on a 900-tall screen, of which
- * the dezoom alone took 749px — five sixths of a viewport of scrolling for one shrink —
- * while each of the seven steps got 284px. So the section is 380px shorter and every step
- * is slightly *slower* than it was.
+ * (`STEP_RESERVE.head`), the steps, and 300px for the dezoom (`STEP_RESERVE.tail`).
+ * Measured before it was a fixed number: 2880px of travel on a 900-tall screen, of which
+ * the dezoom alone took 749px — five sixths of a viewport of scrolling for one shrink.
+ *
+ * IT DID NOT MOVE WHEN THE FIGURE GREW FROM SEVEN STEPS TO NINE, and that is a decision
+ * rather than an oversight. Each step's share fell from 296px to 231px; holding 296 would
+ * have cost 2900px of stage, and the page this figure opens is one the author has twice
+ * asked to be shorter. 231px is still two thirds of a laptop screen per note, and the two
+ * notes that were added are read from the listing as much as from the rail. If the pace
+ * ever needs buying back, buy it here, in one number, and say what it cost.
  */
 export const PIN_TRAVEL = 2500;
 
@@ -155,7 +169,7 @@ export const STAGE_HEIGHT = `calc(100vh + ${PIN_TRAVEL}px)`;
  * `progress -> how many steps` arithmetic lives.
  *
  * The tail was 0.26. Whatever the pin is worth, a quarter of it bought one shrink, and the
- * shrink is the least of what this section has to say: the seven notes are the argument.
+ * shrink is the least of what this section has to say: the nine notes are the argument.
  * At 0.12 the dezoom still gets 300px, which is a third of a screen for a move that is
  * over in one gesture.
  */
@@ -206,7 +220,7 @@ export function stepScrollTop(
  * begins before the last note has attached shrinks the card out from under a note the
  * reader has not read yet. The old pair, `tail: 0.26` and a hand-written `0.76`, agreed by
  * hand; when the tail came down to 0.12 the same 0.76 would have run steps 6 and 7 inside
- * the shrink. `settle` is the beat of stillness between the seventh note landing and the
+ * the shrink. `settle` is the beat of stillness between the last note landing and the
  * card starting to move, and the 0.01 left at the end is the beat the finished graph is
  * held for before the section lets go.
  */

@@ -1,0 +1,48 @@
+id: kb-resolver
+name: KB Resolver
+type: tool
+
+action: >-
+  Retrieve the k nearest knowledge-base articles for the routed request and return the best match
+  as Markdown, with its article id and last-reviewed date in the front matter.
+spec: >-
+  Build a retrieval query out of the routed request on `query`, its label plus the body of the
+  message it carries, and pull the four nearest knowledge-base articles for it. Throw away every
+  hit that scores below 0.35, then emit the single best of what survives on `article`, verbatim,
+  with its article id and its last-reviewed date in the front matter. Do not paraphrase, merge,
+  translate or summarise the article: the node that reads it quotes it, so any edit you make is an
+  edit to a quotation. If nothing clears 0.35, emit nothing at all rather than the least-bad
+  article in the index, an empty result is the correct answer here and the run is built to
+  survive it.
+tools:
+  - vector-store
+mcp:
+  - qdrant
+skill: skills/kb-resolver.md
+params:
+  k: 4
+  min_score: 0.35
+
+inputs:
+  - name: query
+    type: json
+    description: The routed request, whose label and body become the retrieval query.
+outputs:
+  - name: article
+    type: markdown
+    description: The winning article verbatim, so the composer quotes it rather than paraphrasing.
+dependencies:
+  - intent-router
+cannot:
+  - edit the article it returns
+
+requires_human: false
+risk_markers: []
+notes: >-
+  Read-only against the knowledge base, and it returns nothing at all below `min_score` rather than
+  handing the composer the least-bad article in the index. `vector-store` retrieves what the
+  factory itself embedded, which is why no external-access marker is inferred here.
+
+version: 1.0.0
+author: hachi
+ontology_version: 0.1.0

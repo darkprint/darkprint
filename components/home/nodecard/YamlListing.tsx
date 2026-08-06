@@ -26,8 +26,23 @@
    annotation to its lines, so the step's number is printed in the
    left margin against the run it annotates, and the same run
    carries a rule down its edge. A reader who never sees the
-   animation still sees which seven places on this card the seven
+   animation still sees which nine places on this card the nine
    notes are about.
+
+   ── Why every colour in here is copper ──
+   The author asked for the node card to read orange rather than
+   blue. The listing is where that is decided: fifty-two rows of
+   keys and values are most of the figure's ink, so the register has
+   to reach the tokens and not only the paper under them. Keys take
+   the register's line colour, values its ink, and the marking of a
+   run takes the same pair at two weights.
+
+   `number` and `bool` used to be `text-amber`, which was a third
+   spelling of a colour the site reserves for "not built yet" and
+   "this box leaves the page", sitting on a card the engine really
+   enforces. They are `text-fg` now: a scalar constant is a value
+   rather than a status, and a neutral is the one thing in a warm
+   register that cannot be mistaken for a signal.
    ============================================================ */
 
 import { cx } from "@/lib/format";
@@ -41,16 +56,16 @@ export type BandState = "pending" | "attached" | "active";
 
 const TOKEN_CLASS: Record<YamlTokenKind, string> = {
   plain: "",
-  key: "text-cyan",
+  key: "text-copper-line",
   sep: "text-dim",
   block: "text-dim",
   /* Folded prose inside `spec` and `notes`. Quieter than a scalar, because it is the
-     longest thing on the card and the seven runs the annotations point at are all
-     short. */
+     longest thing on the card, and now that `spec` is a step of its own the eight lines
+     of it a reader lands on have to sit under the run's marking rather than fight it. */
   text: "text-muted",
-  string: "text-blueprint-ink",
-  number: "text-amber",
-  bool: "text-amber",
+  string: "text-copper-ink",
+  number: "text-fg",
+  bool: "text-fg",
   comment: "text-dim",
 };
 
@@ -58,30 +73,35 @@ const TOKEN_CLASS: Record<YamlTokenKind, string> = {
  * A run's marking, in two halves.
  *
  * The base classes are the *finished* marking, which is what the stacked layout and the
- * reduced-motion layout want: all seven runs marked at once, because all seven notes are
+ * reduced-motion layout want: every run marked at once, because every note is
  * open at once beside them. The `lg:` half is the live state, and it is only emitted while
  * the choreography is running. Without the split, a phone reader would watch runs light up
  * one at a time under notes that were all already readable, which says the wrong thing
  * about which note is being read: none of them, all of them.
  */
-const ROW_MARKED = "bg-blueprint/25";
+const ROW_MARKED = "bg-copper/25";
 const ROW_LIVE: Record<BandState, string> = {
   pending: "lg:bg-transparent",
-  attached: "lg:bg-blueprint/25",
-  active: "lg:bg-cyan/10",
+  attached: "lg:bg-copper/25",
+  active: "lg:bg-copper-line/10",
 };
 
-const RULE_MARKED = "border-blueprint-line/60";
+/* The rule is a boundary rather than a word, so it is held to 3:1 and not to 4.5:1. The
+   register's line at 60% measures 3.6:1 on the listing's ground; the active state is the
+   same colour at full, which is 8.4:1 and reads as the brighter of the two at a glance. */
+const RULE_MARKED = "border-copper-line/60";
 const RULE_LIVE: Record<BandState, string> = {
   pending: "lg:border-transparent",
-  attached: "lg:border-blueprint-line/60",
-  active: "lg:border-cyan",
+  attached: "lg:border-copper-line/60",
+  active: "lg:border-copper-line",
 };
 
+/* A step number IS a word, so the attached weight is 80% (5.4:1) rather than the rule's
+   60%. Below 80 the register stops clearing AA at 11px. */
 const STEP_LIVE: Record<BandState, string> = {
   pending: "lg:text-dim/60",
-  attached: "lg:text-cyan/60",
-  active: "lg:text-cyan",
+  attached: "lg:text-copper-line/80",
+  active: "lg:text-copper-line",
 };
 
 interface LineMark {
@@ -164,7 +184,7 @@ export function YamlListing({
                    `w-6` less the rule and `pl-1` leaves 18px, and a step number is one
                    digit. `leading-[18px]` is left alone so the marker keeps sitting on the
                    same optical line as the code beside it. */
-                "w-6 shrink-0 self-stretch select-none border-l-2 pl-1 text-[11px] leading-[18px] text-cyan/70",
+                "w-6 shrink-0 self-stretch select-none border-l-2 pl-1 text-[11px] leading-[18px] text-copper-line/80",
                 marked ? RULE_MARKED : "border-transparent",
                 marked && live && RULE_LIVE[state],
                 marked && live && STEP_LIVE[state],

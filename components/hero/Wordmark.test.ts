@@ -3,24 +3,18 @@
    server render — which is what a no-JS reader and a
    `prefers-reduced-motion` reader both get, per `useReveal`'s
    `static` phase — still shows "DarkPrint" as plain, findable text,
-   the two buttons and the three counts are already there at full
-   strength, and the letter-trace overlay (Task 6) is never visible in
-   that state.
+   the two buttons are already there at full strength, and the
+   letter-trace overlay (Task 6) is never visible in that state.
    ============================================================ */
 
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { Wordmark, type WordmarkCounts } from "@/components/hero/Wordmark";
+import { Wordmark } from "@/components/hero/Wordmark";
 import { plainText } from "@/components/ui/visible-text";
 
-/* Fixed rather than `PLATFORM_STATS`: this file renders the component in isolation, and the
-   point of the case below is that whatever the server counted reaches the markup. The wiring
-   to the real archive is `Hero`'s, and `components/home/beats.test.ts` renders that. */
-const STATS: WordmarkCounts = { blueprints: 9, nodes: 53, terms: 27 };
-
-const render = () => renderToStaticMarkup(createElement(Wordmark, { stats: STATS }));
+const render = () => renderToStaticMarkup(createElement(Wordmark));
 
 describe("Wordmark", () => {
   it("renders the finished name and claim as real text with no client JS", () => {
@@ -59,11 +53,18 @@ describe("Wordmark", () => {
     expect(text).toContain("Build your own");
   });
 
-  it("prints the counts it was handed, so the first screen carries proof", () => {
+  /**
+   * The first viewport used to print "N blueprints · N node cards · N ontology terms"
+   * under the two buttons. The author removed it. The counts are not gone from the site —
+   * `components/home/SectionDoors.tsx` prints the same three on beat 5, next to the
+   * sentence that says they are exact, and `beats.test.ts` holds that. This case exists so
+   * the line does not drift back into the hero unnoticed, which is how it got here.
+   */
+  it("does not print the archive counts in the first viewport", () => {
     const text = plainText(render());
-    expect(text).toContain("9 blueprints");
-    expect(text).toContain("53 node cards");
-    expect(text).toContain("27 ontology terms");
+    expect(text).not.toMatch(/\d+\s+blueprints/);
+    expect(text).not.toMatch(/\d+\s+node cards/);
+    expect(text).not.toMatch(/\d+\s+ontology terms/);
   });
 
   it("still says the CLI setup is not live yet", () => {

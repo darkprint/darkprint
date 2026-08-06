@@ -56,6 +56,19 @@ export interface CardBlockSpec {
  * evaluation metadata serves DarkPrint's **static analysis**, and the service fields
  * serve neither. One file feeds both worlds and the two worlds do not read the same
  * keys, which is the single most useful thing pane 2 can say about a card.
+ *
+ * ── Three keys doc 1 §3 does not file under a block, placed here once ──
+ * `skill`, `mcp` and `cannot` are in the schema and were in neither table: the skeleton
+ * omitted them outright, and `/nodes/<id>` hard-coded its own placement for them. So the
+ * blueprint page's skeleton never showed the behaviour document, the servers, or the
+ * prohibition — the one field the whole enforcement argument rests on. The placement,
+ * with the reason, now that it decides two surfaces rather than one:
+ *
+ *   skill   behaviour. It is literally the behaviour document.
+ *   mcp     behaviour. What it reaches in order to do the work.
+ *   cannot  interfaces. §3.3 is "what arrives, what leaves"; a prohibition is the one
+ *           thing that must not arrive, and `bundle/prohibition-violated` is raised
+ *           against an edge, which is the same currency as `inputs`.
  */
 export const CARD_BLOCKS: readonly CardBlockSpec[] = [
   {
@@ -70,14 +83,14 @@ export const CARD_BLOCKS: readonly CardBlockSpec[] = [
     label: "Behaviour",
     ref: "doc 1 §3.2",
     purpose: "What it does, and the prose the agent is handed when the graph runs.",
-    keys: ["action", "spec", "model", "agent", "tools", "params"],
+    keys: ["action", "spec", "model", "agent", "skill", "tools", "mcp", "params"],
   },
   {
     id: "interfaces",
     label: "Interfaces",
     ref: "doc 1 §3.3",
-    purpose: "What arrives, what leaves, which nodes it expects to hear from.",
-    keys: ["inputs", "outputs", "dependencies"],
+    purpose: "What arrives, what leaves, which nodes it expects to hear from, and what may not.",
+    keys: ["inputs", "outputs", "dependencies", "cannot"],
   },
   {
     id: "evaluation",
@@ -119,14 +132,17 @@ export interface PaneField {
   /** The value in one line when filled; what the card says instead when it is not. */
   value: string;
   /**
-   * What the one-line value left out, shown when the row is selected.
+   * What the one-line value left out, shown when the row is open.
    *
-   * Only the fields that summarise carry one: `action` is cut at 88 characters, `spec`
-   * and `notes` are reduced to a word count, and a port's description never fit on the
-   * line at all. The author asked for it: "on click of the field, it shows the details
-   * (this should be applied also in the card skeleton provided in the blueprint)". A
-   * field whose one line is already the whole value has none, because a row that opens
-   * onto a repeat of itself teaches a reader that clicking does nothing.
+   * **This card's value, not the field's meaning.** Only the fields that summarise carry
+   * one: `action` is cut at 88 characters, `spec` and `notes` are reduced to a word
+   * count, and a port's description never fit on the line at all. A field whose one line
+   * is already the whole value has none, because a row that opened onto a repeat of
+   * itself would teach a reader that clicking does nothing.
+   *
+   * What the field is *for* is not here and is not per card: it is one paragraph in
+   * `./field-notes.ts`, which the renderer looks up by `key`. Carrying it through this
+   * model would put the same 23 paragraphs in the page payload once per node.
    */
   detail?: string;
   /** 1-based inclusive line range in the card document, when the document writes the key. */

@@ -1,0 +1,55 @@
+id: reply-dispatch
+name: Reply Dispatch
+type: tool
+phase: deployment
+
+action: >-
+  Post the approved reply to the channel the ticket arrived on and return the provider's receipt,
+  leaving the thread in whatever state that channel reports.
+spec: >-
+  Post the reply you are handed on `approved` to the ticket thread named inside it, over the
+  channel that thread arrived on and over no other. Send it exactly as it reached you: you are not
+  authorised to edit, shorten, re-tone or append to a reply that has already been cleared. Send it
+  exactly once, a sent message cannot be recalled, so if the provider has not answered within
+  fifteen seconds, report the timeout and stop rather than sending again. Emit the provider's
+  acknowledgement on `receipt` in the provider's own terms, delivered, deferred or rejected, and
+  never upgrade a deferral or a rejection into a success. You are done when a receipt is on
+  `receipt`, whatever that receipt says.
+tools:
+  - messaging
+  - http-fetch
+mcp:
+  - zendesk
+skill: skills/reply-dispatch.md
+params:
+  channel: ticket-thread
+  timeout_s: 15
+
+inputs:
+  - name: approved
+    type: json
+    description: The QA-cleared reply, together with the thread it belongs to.
+outputs:
+  - name: receipt
+    type: status
+    description: The provider's acknowledgement, delivered, deferred or rejected.
+dependencies:
+  - reply-qa-check
+cannot:
+  - edit a reply that has already been cleared
+  - report a deferral as a success
+
+requires_human: false
+risk_markers:
+  - lupo/pii-handling
+  - irreversible-action
+notes: >-
+  This is where the customer's data leaves the process, so `lupo/pii-handling` stays on the card
+  even though the QA gate upstream is what stops an unapproved draft ever reaching it. It is also
+  where the run stops being reversible: a reply posted to a customer thread cannot be unsent, which
+  is `irreversible-action` in doc 3 §4's own words. The core vocabulary has no email or ticketing
+  capability, so `messaging` plus `http-fetch` is the closest honest pair.
+
+version: 1.0.0
+author: hachi
+ontology_version: 0.1.0

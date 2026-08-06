@@ -38,7 +38,7 @@ import {
    `SectionNodeCard` calls `cardSource("code-builder@1.0.0")` and
    hands the bytes to the scene, which tokenises them in the
    browser. So the listing a reader scrolls through is the file in
-   `content/cards/`, byte for byte, and the seven annotations are
+   `content/cards/`, byte for byte, and the nine annotations are
    resolved against that text rather than typed beside it
    (`components/home/nodecard/annotations.ts`). Replacing it with a
    transcription would have cost the one property it was built for,
@@ -48,7 +48,7 @@ import {
 
    ── The length pass (PROJECT.md §3.1) ──
    The page was the longest of the four at 2,054 prose words, and
-   the seven annotations turned out to be arguing with the prose
+   the annotations turned out to be arguing with the prose
    around them. What went, and where each claim it carried now
    lives:
 

@@ -1,11 +1,11 @@
 /* ============================================================
    Scroll arithmetic, at both ends and past them.
 
-   The centrepiece (spec §3.2) stages seven annotations off one
+   The centrepiece (spec §3.2) stages its annotations off one
    number, so the two values that matter most are the ones a reader
    sits at longest: 0 above the section and 1 below it. A formula
-   that overshoots at either end attaches an eighth annotation or
-   drops the seventh, and neither shows up in a screenshot taken
+   that overshoots at either end attaches one annotation too many or
+   drops the last, and neither shows up in a screenshot taken
    halfway down.
    ============================================================ */
 
@@ -78,7 +78,9 @@ describe("progress across a pinned section", () => {
 });
 
 describe("staging annotations off the progress value", () => {
-  /** Spec §3.2's table: seven annotations attach to the node card, one at a time. */
+  /** Spec §3.2's table: the node card's annotations attach one at a time. Seven here
+      rather than the nine the card now carries, because this is arithmetic about a count
+      and not about that figure: the property has to hold for any of them. */
   const COUNT = 7;
 
   it("attaches none at the top and all at the bottom", () => {

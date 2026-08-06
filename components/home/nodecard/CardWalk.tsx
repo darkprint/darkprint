@@ -34,7 +34,7 @@
                         starter graph at the end. That is the
                         payoff of a page about the card layer, and
                         on a landing beat it is a second subject.
-     the reserve        the track is 240vh against 420, because
+     the reserve        the track is a fraction of 420vh, because
                         there is no dezoom to reserve a quarter of
                         the scroll for.
      the tail link      "read this card", taken out on the author's
@@ -42,7 +42,7 @@
                         blueprint". `beats.test.ts` records what
                         that costs and what still holds.
 
-   What survives is the part the author asked for: seven parts of a
+   What survives is the part the author asked for: nine parts of a
    real card, arriving one at a time, each marking its own lines.
 
    ── Why one DOM and not two ──
@@ -50,7 +50,7 @@
    The choreography classes all carry `lg:` and are emitted only
    when `motion` is true, and `motion` is false on the server and on
    the first client render. So the prerendered markup is the static
-   layout: the whole listing, all seven notes, no clipping. A phone
+   layout: the whole listing, all nine notes, no clipping. A phone
    reader and a reader who asked for stillness get that, and so does
    a crawler.
    ============================================================ */
@@ -104,7 +104,7 @@ const WINDOW = ROWS * NC.line;
 const PARK = 3;
 
 /**
- * The landing's wording for the seven parts. Roughly 25 words each, against the 45 that
+ * The landing's wording for the nine parts. Roughly 25 words each, against the 45 that
  * `annotations.ts` carries.
  *
  * The long bodies stay where they are and are not edited: they are `/spec/card`'s, they
@@ -113,7 +113,7 @@ const PARK = 3;
  * on (`bundle/prohibition-violated`, `bundle/port-mismatch`, `llm_model`). That is
  * reference material and it belongs on the reference page.
  *
- * What the landing needs from the same seven parts is smaller: which part of a card this
+ * What the landing needs from the same nine parts is smaller: which part of a card this
  * is, and why anyone would write it down. Beat 3 carried 670 of the landing's 1090 words
  * with the reference sentences in it, on the page whose job is to get a reader as far as
  * the archive. The `L1–4` marks in the listing do the pointing that a sentence naming
@@ -126,6 +126,12 @@ const WALK_BODY: Record<string, string> = {
   identity:
     "The first four lines fix identity. `code-builder` is the id a graph pins by version, " +
     "`agent` means a model runs this box, and `implementation` places it in the lifecycle.",
+  action:
+    "One line for what the node does. Nothing in the engine reads it, and it travels into " +
+    "the download unchanged, for whoever opens the card next.",
+  spec:
+    "The brief an agent is handed when the graph is instantiated on your own machine. It has " +
+    "to stand alone: whatever reads it never sees the rest of the graph.",
   model:
     "Which model the agent is instantiated with. The export writes it into `factory.dot`, and " +
     "a card that names none inherits whatever the run supplies.",
@@ -203,9 +209,8 @@ export function CardWalk({
      sticky child is a full screen tall, and this one measures 612.5px pinned at
      `50vh - 19.25rem` = 142px, so the two clocks disagree by a fixed amount:
 
-       reported span   R = 1530 - 900               = 630px  (progress 0 → 1)
-       real pin        P = 1530 - 612.5 - 142       = 776px  (lock → release; the page
-                                                              gives up the pin at 760)
+       reported span   R = 1710 - 900               = 810px  (progress 0 → 1)
+       real pin        P = 1710 - 612.5 - 142       = 955px  (lock → release)
 
      P - R = 146px in which the figure is still pinned and `progress` is already 1. That
      gap is structural: it is `viewport - figureHeight - stickyTop`, which for a centred
@@ -213,29 +218,29 @@ export function CardWalk({
      is one more thing C bought.
 
      Everything after the last step is dead scroll, so the last step is pushed as late as
-     the arithmetic allows. Step 7 attaches at `head + (6/7)(1 - head - tail)`:
+     the arithmetic allows. The last of nine attaches at `head + (8/9)(1 - head - tail)`:
 
-       tail 0.04 (before)  → 0.829 → 522px  → 238px frozen
-       tail 0     (now)    → 0.863 → 544px  → 216px frozen, measured by stepping the
-                                              live page 20px at a time
+       tail 0.04  → 0.867 → 702px → 253px frozen
+       tail 0     → 0.893 → 723px → 232px frozen
 
-     which is one step's worth of dwell on note 7 plus the structural 146px, and is the
-     floor. THE PLAN SAID `tail: 0.20`; that is the wrong direction and it is recorded
-     here rather than silently followed. A tail reserve moves the last step EARLIER, so
-     0.20 lands step 7 at 0.692 = 436px and leaves 324px frozen — it lengthens the gap
-     the change was written to close. There is still no dezoom here to spend a reserve on.
+     which is one step's worth of dwell on the last note plus the structural 146px, and is
+     the floor. THE PLAN SAID `tail: 0.20`; that is the wrong direction and it is recorded
+     here rather than silently followed. A tail reserve moves the last step EARLIER, and
+     lengthens the gap the change was written to close. There is still no dezoom here to
+     spend a reserve on.
 
-     The track came down from 240vh to 170vh, which is where the 436px of frozen scroll
-     measured on the old build actually went: at 240vh the figure held for 1479px and the
-     walk finished at 1043. The cost is pace — seven steps now spread over 6/7 × 0.96 ×
-     630 = 518px, about 86px each rather than 165 — and it is the trade the section wants:
-     beat 3 was 39.8% of the landing's height, and a landing is not the reference page. */
+     The track was 240vh, came down to 170vh when that was where 436px of frozen scroll
+     was going, and is 190vh now that the walk carries nine parts rather than seven. The
+     20vh buys the pace back exactly: a step is `(1/9) × 0.96 × 810 = 86px`, which is the
+     number seven steps had at 170vh. Two more notes at the same pace, for a fifth of a
+     screen of landing. Leave the pace alone and each step would have fallen to 67px,
+     which is under a single trackpad flick and would have made the walk skip. */
   const shown = motion ? stagesShown(progress, notes.length, { head: 0.04, tail: 0 }) : notes.length;
   const active = motion ? Math.min(notes.length, Math.max(1, shown)) - 1 : -1;
   const open = active >= 0 ? notes[active] : undefined;
 
   return (
-    <div ref={ref} className={cx(motion && "lg:h-[170vh]")}>
+    <div ref={ref} className={cx(motion && "lg:h-[190vh]")}>
       {/* Centred while pinned, not tucked under the header.
           ------------------------------------------------------------
           The author: it "should start scrolling the list of fields when it is in the
@@ -362,7 +367,7 @@ export function CardWalk({
               </div>
             </div>
 
-            {/* The seven parts. Every title is on screen from the start, so the figure
+            {/* The nine parts. Every title is on screen from the start, so the figure
                 says how many parts a card has before it has walked any of them, and the
                 one being read opens under its own head. */}
             <ol className="flex min-w-0 flex-col">
@@ -379,7 +384,10 @@ export function CardWalk({
                         aria-hidden
                         className={cx(
                           "shrink-0 font-mono text-[11px] tabular-nums transition-colors",
-                          isOpen ? "text-cyan" : reached ? "text-dim" : "text-faint",
+                          /* Copper, because the listing beside it is: the card's register
+                             is one colour and the number telling a reader which note is
+                             open belongs to it. 8.7:1 on `bg-void`. */
+                          isOpen ? "text-copper-line" : reached ? "text-dim" : "text-faint",
                         )}
                       >
                         {ordinal(note.step)}
@@ -395,19 +403,19 @@ export function CardWalk({
                       {/* `text-dim` and not `text-faint`. `--color-faint` is #3b4058 at
                           1.83:1 and `app/globals.css` reserves it for decorative
                           separators; this is the only thing telling a reader which lines
-                          each part is about, and six of the seven wear it at any moment,
+                          each part is about, and eight of the nine wear it at any moment,
                           so the whole column was below the contrast floor. */}
                       <span
                         className={cx(
                           "shrink-0 font-mono text-[11px] tabular-nums transition-colors",
-                          isOpen ? "text-cyan" : "text-dim",
+                          isOpen ? "text-copper-line" : "text-dim",
                         )}
                       >
                         {span(note.from, note.to)}
                       </span>
                     </div>
 
-                    {/* Open under its own head while the walk is running; all seven open
+                    {/* Open under its own head while the walk is running; all nine open
                         in the static layout, which is what makes the prerendered markup
                         readable without script. */}
                     <p

@@ -7,7 +7,7 @@
    once, and the shape of this file is what that costs:
 
      lg and up, motion allowed  the sticky reel. The listing scrolls
-                                inside a window, seven annotations
+                                inside a window, nine annotations
                                 attach one at a time, a leader line
                                 is drawn from the run being read to
                                 the note about it, and at the end the
@@ -16,12 +16,15 @@
      below lg                   the stacked list. No sticky scaffold,
                                 no clipped window, no leader. The
                                 whole card at its natural height with
-                                the seven notes under it. "The
+                                the nine notes under it. "The
                                 sticky-scroll choreography must not
                                 trap a phone reader."
      reduced motion, or no JS   the same stacked list, at any width.
                                 "All seven annotations visible at
                                 once in a readable static layout."
+                                The spec counted seven, the figure
+                                now carries nine, and that sentence
+                                was always about *all* of them.
 
    One DOM serves all three, which is the only way the second half of
    §1 can hold: the YAML has to be in `.next/server/app/index.html`,
@@ -38,16 +41,29 @@
        agrees with it before anything moves.
 
    One thing is added on top of all three rather than taken from any
-   of them: at `lg` each of the seven heads is a button that puts the
+   of them: at `lg` each of the nine heads is a button that puts the
    page where its own step is the one being read. The rail collapses
-   six heads out of seven, so the argument's later notes depend on
+   eight heads out of nine, so the argument's later notes depend on
    earlier ones the reader can no longer see, and scrolling back up by
    feel through a pinned section is not a way to re-read a sentence.
    The button is additive in the strict sense — it exists only where
    `motion` is true, so the static list is the list it always was.
 
+   ── The register, and the one accent that survives it ──
+   The sheet is drawn on `copper` rather than on `blueprint`, on the
+   author's instruction, and inside a figure whose whole ground is
+   one accent a second accent reads as a mistake. So the marks that
+   used to be cyan — the leader, the run being read, the step
+   numbers, the head's hover — are the register's own line colour,
+   and cyan is left with exactly one job in here: the focus ring,
+   which `app/globals.css` sets unlayered on every focusable element
+   on the site. A keyboard reader's "you are here" is a sitewide
+   guarantee and does not get a per-figure spelling. Everything else
+   is copper, and `YamlListing` says the same thing about the
+   listing's own tokens.
+
    The dezoom is written straight to the DOM from `onProgress` rather
-   than through React state. The reel and the seven steps are
+   than through React state. The reel and the nine steps are
    discrete and re-render happily a hundred times across the scroll;
    a scale factor is continuous, and quantising it to whole percent
    would step visibly. `useScrollProgress` exists partly for this:
@@ -60,10 +76,10 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { animate } from "animejs";
 
-import { MOTION, Sheet, VIZ, toneColor } from "@/components/viz";
+import { MOTION, Sheet, VIZ, VIZ_LINE } from "@/components/viz";
 import { EASE_OUT } from "@/components/viz/easing";
 import { stagesShown, useScrollProgress } from "@/components/viz/useScrollProgress";
-import { Ticked } from "@/components/nodes/VersionHistory";
+import { Ticked } from "@/components/ui/Ticked";
 import { cx } from "@/lib/format";
 
 import { resolveAnnotations } from "./annotations";
@@ -143,7 +159,7 @@ export function NodeCardStage({
 
   /*
    * How far the reader has got. With motion gated off `progress` is 1, so `shown` is
-   * every step and `active` is none of them: that is the static layout, where all seven
+   * every step and `active` is none of them: that is the static layout, where all nine
    * notes are open at once and no single one is being read.
    */
   const count = annotations.length;
@@ -211,11 +227,11 @@ export function NodeCardStage({
   }, [motion, active]);
 
   /*
-   * Any of the seven notes, on demand.
+   * Any of the nine notes, on demand.
    *
-   * The rail collapses six of the seven heads at `lg`, so a reader who has reached note 07
-   * ("What must never arrive") cannot re-read note 04 ("What it can reach") that the
-   * seventh depends on without scrolling back up by feel. `stepScrollTop` inverts the
+   * The rail collapses eight of the nine heads at `lg`, so a reader who has reached note 09
+   * ("What must never arrive") cannot re-read note 05 ("What it can reach") that the
+   * ninth depends on without scrolling back up by feel. `stepScrollTop` inverts the
    * `progress -> step` map the whole section is driven by, so a head can put the page
    * exactly where that step is the one being read.
    *
@@ -257,6 +273,17 @@ export function NodeCardStage({
           )}
         >
           <Sheet
+            /* The copper register, not the blueprint one, and it is the whole of the
+               author's fourth request: "I'd like that the dominating colour is orange
+               instead of blue in the node card." The sheet decides the ground, the
+               graticule, the frame and the ink in one place, so the listing inside it and
+               the leader drawn beside it follow without being handed a colour.
+
+               It is NOT amber. Amber is spent sitewide on "not built yet" and "this box
+               leaves the page", and this figure is the most built thing on the site.
+               `app/globals.css` declares the four copper variables with the measured
+               contrast and that reason. */
+            register="copper"
             /* The label is set in uppercase by the sheet, so the card's ref goes in the
                title block instead: `code-builder@1.0.0` is an identifier and an
                identifier a reader might type is wrong in capitals. */
@@ -294,11 +321,11 @@ export function NodeCardStage({
                 role="region"
                 aria-label={`${cardRef}, ${lines.length} lines`}
                 className={cx(
-                  "overflow-x-auto rounded border border-blueprint/70 bg-void/70",
+                  "overflow-x-auto rounded border border-copper/70 bg-void/70",
                   /* The right edge, faded, so what is left over reads as an edge rather
                      than as a cut. Widening the column takes the overflow from sixteen
                      rows to two, and no column this figure can be given holds a 102
-                     character line beside seven notes. It has to be on THIS element and
+                     character line beside nine notes. It has to be on THIS element and
                      not on the reel inside it: the mask is painted over the scroll
                      container's own box, which is the part that stays still while the
                      content moves under it.
@@ -310,7 +337,10 @@ export function NodeCardStage({
                      enough to dim the last three characters of every 95-character line
                      that *does* fit, which states a truncation that is not there. */
                   "[mask-image:linear-gradient(to_right,black_calc(100%_-_1.5rem),transparent)]",
-                  motion && "lg:h-[420px] lg:overflow-y-hidden",
+                  /* `NC.window`, retyped. Tailwind v4 scans source text for arbitrary
+                     values, so this cannot read the constant; `geometry.ts` says so beside
+                     the number and `nodecard.test.ts` holds the pair together. */
+                  motion && "lg:h-[504px] lg:overflow-y-hidden",
                 )}
               >
                 <div
@@ -350,18 +380,21 @@ export function NodeCardStage({
                     pathLength={1}
                     strokeDasharray={1}
                     strokeDashoffset={0}
-                    stroke={toneColor("cyan")}
+                    /* The sheet's own line colour, read through the variable the sheet
+                       sets on itself, so the leader is copper here and would follow any
+                       register this figure is ever drawn on without a second decision. */
+                    stroke={VIZ_LINE}
                     strokeWidth={VIZ.stroke.thin}
                   />
                 </svg>
               </div>
 
-              {/* ---------- the seven notes ---------- */}
+              {/* ---------- the nine notes ---------- */}
               <ol
                 ref={listRef}
                 className={cx(
                   "flex list-none flex-col gap-5",
-                  motion && "lg:h-[420px] lg:gap-1.5 lg:overflow-hidden",
+                  motion && "lg:h-[504px] lg:gap-1.5 lg:overflow-hidden",
                 )}
               >
                 {annotations.map((annotation, index) => {
@@ -382,14 +415,19 @@ export function NodeCardStage({
                             finished state, and only the `lg:` half tracks the step. A
                             note whose body is open beside it must not have a heading
                             greyed out as unreached, which is what a phone would show. */}
+                        {/* Copper, at the two weights the register can afford to spend
+                            on 11px text: full is 7.6:1 on the sheet's ground and 80% is
+                            5.3:1, both past AA, while 70% lands at 4.3 and 60% at 3.6.
+                            The unreached state stays `text-dim`, which is a neutral and
+                            says "not yet" without claiming the register. */}
                         <span
                           className={cx(
-                            "shrink-0 font-mono text-[11px] text-cyan/70",
+                            "shrink-0 font-mono text-[11px] text-copper-line/80",
                             motion &&
                               (isActive
-                                ? "lg:text-cyan"
+                                ? "lg:text-copper-line"
                                 : attached
-                                  ? "lg:text-cyan/60"
+                                  ? "lg:text-copper-line/80"
                                   : "lg:text-dim/60"),
                           )}
                         >
@@ -425,7 +463,7 @@ export function NodeCardStage({
                               type="button"
                               onClick={() => goToStep(index)}
                               aria-current={isActive ? "step" : undefined}
-                              className="cursor-pointer text-left transition-[transform,scale,color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:text-cyan hoverable:active:scale-[0.97] lg:flex lg:h-9 lg:items-center"
+                              className="cursor-pointer text-left transition-[transform,scale,color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:text-copper-line hoverable:active:scale-[0.97] lg:flex lg:h-9 lg:items-center"
                             >
                               {annotation.title}
                             </button>
@@ -444,7 +482,7 @@ export function NodeCardStage({
                           Only one body is on screen at a time under the choreography, and
                           `display: none` took the other six out of the accessibility tree
                           as well as out of the layout: at lg with motion allowed, six of
-                          the seven annotations were unreachable by a screen reader and by
+                          the nine annotations were unreachable by a screen reader and by
                           find-in-page, and the only way to them was to scroll a 420vh
                           section. `sr-only` is `position: absolute` with a 1px clip, so it
                           contributes exactly the same nothing to the layout and the reel

@@ -7,7 +7,7 @@
    constant. A comment asking the next author to keep the pair in step is not a mechanism.
 
    This is, because everything downstream of that number assumes the drawn block is exactly
-   `BLOCK_WIDTH` wide: `lib/content/layout.ts`'s `layerGap` clears it, `frame.ts` places a
+   `BLOCK_WIDTH` wide: `lib/content/layout.ts`'s `layerGap` clears it, `framing.ts` sizes a
    frame edge beside it, and `components/build/stage-labels.test.ts` measures a node's name
    inside it with no browser to check against. A block that quietly drew at 220 again would
    leave all three arguing about a drawing none of them was looking at.

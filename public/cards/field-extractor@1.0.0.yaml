@@ -1,0 +1,49 @@
+id: field-extractor
+name: Field Extractor
+type: agent
+phase: implementation
+
+action: >-
+  Read each source document and pull the target fields out of it verbatim, quoting the span each
+  value came from so a downstream reviewer can check the extraction rather than trust it.
+spec: >-
+  For every entry on `documents`, read the document's content and pull out the target fields
+  named in the extraction schema you are configured with. Copy each value verbatim from the
+  source text, do not paraphrase it, do not tidy it, do not convert a unit or a date format,
+  and record next to it the span of the document the value was taken from, so a reviewer can
+  check the extraction instead of trusting it. Emit one object per document on `fields`, keyed
+  by field name and carrying that document's hash, so a later step can key back to the source.
+  Where the document simply does not state a field, leave it absent: an absent field is a fact
+  the next step can act on, and an invented one is a plausible record rather than a true one.
+model: claude-haiku-4-5
+agent: Extractor
+tools: []
+mcp: []
+skill: skills/field-extractor.md
+params:
+  temperature: 0
+  max_tokens: 2048
+
+inputs:
+  - name: documents
+    type: json
+    description: The intake batch, one entry per source document, with its content and hash.
+outputs:
+  - name: fields
+    type: json
+    description: One object per document, field name to extracted value, with the source span.
+dependencies:
+  - document-intake
+cannot:
+  - paraphrase a value it copies
+  - invent a field the document does not state
+
+requires_human: false
+risk_markers: []
+notes: >-
+  `temperature: 0` is not a style preference here. Extraction is a transcription task, and a
+  model that paraphrases a value is producing a plausible record rather than a true one.
+
+version: 1.0.0
+author: lupo
+ontology_version: 0.1.0

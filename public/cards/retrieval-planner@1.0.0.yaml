@@ -1,0 +1,49 @@
+id: retrieval-planner
+name: Retrieval Planner
+type: agent
+phase: planning
+
+action: >-
+  Split the question into at most `max_strands` retrieval strands, one per corpus, and emit each
+  as a query plan the strand can run on its own without asking the planner anything further.
+spec: >-
+  You are handed one research question on `question`, with the asker's scope appended to it. Split
+  it into at most three retrieval strands, one for each corpus that could hold an answer: the
+  public web, the internal vector store, and the indexed code repositories. Write every strand as
+  a standalone query plan, the search terms, the filters that follow from the stated scope, and
+  how many results that strand should return, worded so whoever runs it needs nothing but that
+  plan. Do not chain the strands: none of them may be phrased in terms of what another is expected
+  to find, because they run at the same time and any of them may come back empty. Emit all the
+  plans together on `strands`; you are done when every corpus that could hold an answer has
+  exactly one plan and none has two.
+model: claude-opus-5
+agent: Search planner
+tools: []
+mcp: []
+skill: skills/retrieval-planner.md
+params:
+  max_strands: 3
+  temperature: 0.2
+
+inputs:
+  - name: question
+    type: text
+    description: The stated question, as intake released it.
+outputs:
+  - name: strands
+    type: plan
+    description: One query plan per corpus, each with its terms, filters and result budget.
+dependencies:
+  - question-intake
+cannot:
+  - phrase a strand in terms of what another is expected to find
+
+requires_human: false
+risk_markers: []
+notes: >-
+  The strands are written to be independent on purpose, they fan out in parallel and nothing
+  downstream assumes a particular one came back, so a dead corpus costs coverage, not the run.
+
+version: 1.0.0
+author: orin
+ontology_version: 0.1.0

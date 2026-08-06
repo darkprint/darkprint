@@ -42,7 +42,9 @@ import { CARD_ROWS } from "@/components/spec/rows";
 import { ScoringModel } from "@/components/spec/ScoringModel";
 import { WhichTasksChecks } from "@/components/explain/WhichTasksChecks";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
+import { CloneMenu } from "@/components/blueprint/CloneMenu";
 import { AgentHandoff } from "@/components/build/AgentHandoff";
+import { SectionLifecycle } from "@/components/home/SectionLifecycle";
 import { DownloadStep } from "@/components/build/DownloadStep";
 import { DEFAULT_CHOICES } from "@/components/build/choices";
 import { buildState } from "@/components/build/state";
@@ -112,11 +114,65 @@ const DOWNLOAD_STEP = renderToStaticMarkup(
 const AGENT_HANDOFF = renderToStaticMarkup(createElement(AgentHandoff));
 
 /**
+ * The landing's fourth beat, where the site first tells a stranger what it is for.
+ *
+ * Its Upload panel now says why anybody would upload at all — the author asked for it, in
+ * as many words: "the Upload box should stress that if uploaded, you can get feedback for
+ * the blueprint you proposed by other users." Every clause of that is unbuilt. There is no
+ * backend, nothing publishes, and there is no readership to send anything back, so the
+ * motive and the limit are the same sentence and it has to stay that way.
+ *
+ * This is the highest-traffic surface in the ledger and the one whose copy is rewritten
+ * most often — the beat has lost two illustration registers, a panel, and a whole ordering
+ * since it was written — which is exactly the churn the file header describes a disclaimer
+ * disappearing into. `components/home/beats.test.ts` holds the panel's other limit and the
+ * `ComingSoonBadge` beside this one; the sentence itself is held here, with the rest of
+ * the site's.
+ */
+const LIFECYCLE = renderToStaticMarkup(createElement(SectionLifecycle));
+
+/**
  * The starter is the one bundle whose criteria walk stops at a judge
  * (`analysis/criteria-relayed-through-judge`), so it is the only page carrying the
  * feedback-against-gaming statement. Asserted rather than assumed, below.
  */
 const STARTER = canvas("starter-software-factory");
+
+/**
+ * The download menus, both kinds, exactly as the two header rows mount them.
+ *
+ * They are the first surface on the site to print a `darkprint …` command, and the block
+ * beside it is a `curl` line that genuinely runs. A reader who has just been handed a
+ * working command reads the next code block as another working command unless the panel
+ * says otherwise, which is what the claims below hold in place.
+ *
+ * ── Why these render at all ──
+ * `CloneMenu` is a native `<details>`, so its panel is in the markup whether it is open or
+ * shut. That is the whole reason it is a `<details>` rather than `ForkAction`'s
+ * `open && (…)` toggle: under that gate the badge and the sentence are simply not in the
+ * string `renderToStaticMarkup` produces, and no assertion over them could be written.
+ *
+ * ── Why `present` and not `open` ──
+ * The header rule: a sentence qualifying something printed *in the open* has to be in the
+ * open with it. Nothing this qualifies is in the open — the `darkprint clone` preview sits
+ * inside the same closed disclosure as its disclaimer, one line above it, and a reader
+ * cannot reach one without the other.
+ */
+const CLONE_BLUEPRINT = renderToStaticMarkup(
+  createElement(CloneMenu, {
+    kind: "blueprint",
+    command:
+      'curl --fail-early -fsSL --create-dirs -o "starter-software-factory/#1" "https://darkprint.io/bundles/starter-software-factory/{README.md}"',
+    cliCommand: "darkprint clone starter-software-factory",
+  }),
+);
+const CLONE_NODE = renderToStaticMarkup(
+  createElement(CloneMenu, {
+    kind: "node",
+    command: 'curl -fsSL -O "https://darkprint.io/cards/spec-planner@1.0.0.yaml"',
+    cliCommand: "darkprint clone card spec-planner@1.0.0",
+  }),
+);
 
 /* --------------------- the ledger --------------------- */
 
@@ -227,6 +283,29 @@ const CLAIMS: Claim[] = [
     html: INSTALL_METADATA_DESCRIPTION,
   },
 
+  /* ---- the download menus ---- */
+  {
+    surface: "/blueprints/<slug> · take the whole folder",
+    why: "the menu's second half previews a `darkprint clone` line one paragraph under a curl command that really works. Doc 2 §0.4: a code block beside a working code block reads as runnable, and this is the sentence saying the CLI is not",
+    says: "not built yet: a darkprint cli that clones a blueprint by name",
+    where: "present",
+    html: CLONE_BLUEPRINT,
+  },
+  {
+    surface: "/blueprints/<slug> · take the whole folder",
+    why: "the honest difference between what this command does and the word the author asked for. Copying a folder over HTTP is a snapshot: no repository, no history, nothing to pull, and a reader who reads \"clone\" and expects an update path finds out only when it fails",
+    says: "a snapshot, not a clone",
+    where: "present",
+    html: CLONE_BLUEPRINT,
+  },
+  {
+    surface: "/nodes/<id> · take the file",
+    why: "the same limit on the card page's own menu, so a reader who only ever opens a node card still meets it. The noun differs because the CLI would clone a card there, and a paraphrase of the blueprint sentence would leave this surface unguarded",
+    says: "not built yet: a darkprint cli that clones a card by name",
+    where: "present",
+    html: CLONE_NODE,
+  },
+
   /* ---- /build · the two exits (task 5) ---- */
   {
     surface: "/build · download exit (`DownloadStep`)",
@@ -242,7 +321,22 @@ const CLAIMS: Claim[] = [
     where: "open",
     html: AGENT_HANDOFF,
   },
+
+  /* ---- / · the lifecycle beat's upload panel ---- */
+  {
+    surface: "/ · beat 4, the Upload panel's reason for existing",
+    why: "the panel states a motive — other people reading the blueprint you proposed and answering it — and there is no backend, no publishing and no readership behind any part of it. The motive and the limit are one sentence on purpose: a reader who meets \"get feedback from other users\" as a separate, positive line will take it as live, and this is the landing, where most readers meet the idea first",
+    says: "not built yet: the second reader. once a bundle can be published, other people can open the blueprint you proposed and tell you where it does not hold.",
+    where: "open",
+    html: LIFECYCLE,
+  },
 ];
+
+/** The two dropdown panels, asserted together wherever the assertion is the same. */
+const MENUS = [
+  ["the blueprint clone menu", CLONE_BLUEPRINT],
+  ["the node clone menu", CLONE_NODE],
+] as const;
 
 describe("the surfaces the ledger is read off", () => {
   it("rendered something on each of them", () => {
@@ -254,10 +348,30 @@ describe("the surfaces the ledger is read off", () => {
       ["the starter's canvas", STARTER],
       ["/build · download exit", DOWNLOAD_STEP],
       ["/build · agent-brief exit", AGENT_HANDOFF],
+      ["/ · the lifecycle beat", LIFECYCLE],
     ] as const) {
       expect(html.length, name).toBeGreaterThan(2000);
     }
+    // The two menus are dropdown panels rather than pages, so they get their own floor.
+    // 2000 is a threshold neither could ever meet, and a floor nothing can fail is the
+    // same as no floor at all.
+    for (const [name, html] of MENUS) {
+      expect(html.length, name).toBeGreaterThan(900);
+    }
     expect(BLUEPRINTS.length).toBe(9);
+  });
+
+  /**
+   * There is no repository per blueprint, no remote and no history. The author asked for
+   * "a sort of `git clone blueprint_name`", and this is the half of that ask the site
+   * refuses: the command that works is a snapshot fetch, and the only thing here that
+   * would genuinely be a clone is the CLI that does not exist. The word may not reappear
+   * on either menu under any later wording pass.
+   */
+  it("never says git on either download menu", () => {
+    for (const [name, html] of MENUS) {
+      expect(plainText(html).toLowerCase(), name).not.toContain("git");
+    }
   });
 
   it("still has a bundle whose criteria walk stops at a judge", () => {

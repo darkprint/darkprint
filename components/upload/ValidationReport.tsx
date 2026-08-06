@@ -9,6 +9,8 @@ import { AutonomyMeter } from "@/components/ui/AutonomyMeter";
 import { DiagnosticList } from "@/components/ui/DiagnosticList";
 import { SourcePanel } from "@/components/ui/SourcePanel";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
+import { BLOCK_MAX_HEIGHT, BLOCK_WIDTH } from "@/components/graph/block";
+import { drawnExtent, graphPaneHeightCss } from "@/components/graph/framing";
 import { GraphPane } from "@/components/panes/GraphPane";
 import { buildPaneModel, type PaneNodeInput } from "@/components/panes/build";
 import { announce, resolveFocus } from "@/components/panes/model";
@@ -196,13 +198,18 @@ export function ValidationReport({
             model={paneModel}
             focus={focus}
             graphId={`upload-${paneModel.slug}`}
-            /* 380, not the merged panel's 780 and not `BlueprintGraph`'s own 460. This
-               pane has the full 1152px container to itself with nothing sticky beside
-               it, so `fitView` is width-constrained on every archive-shaped graph and
-               anything taller than this is empty graticule above and below the drawing.
-               A deep graph still fits: the fit scales it down rather than clipping it,
-               and the pane's zoom controls are there. */
-            height={380}
+            /* The drawing's own height, the same arithmetic every other schematic on the
+               site now uses. This pane took 380 as a fixed number for the reason the
+               general rule states — it has the full container to itself, `fitView` is
+               width-bound on every archive-shaped graph, and anything taller is empty
+               graticule — but the graph here is the READER's, uploaded a moment ago, and
+               its depth is not something this file can pick a number for. A one-row DOT
+               and a five-row one get different panes now, and neither is cropped: the fit
+               scales the drawing down rather than clipping it, per
+               `components/graph/framing.ts`. */
+            height={graphPaneHeightCss(
+              drawnExtent(graph.nodes, BLOCK_WIDTH, BLOCK_MAX_HEIGHT),
+            )}
             onSelectNode={setSelectedNode}
           />
         </>

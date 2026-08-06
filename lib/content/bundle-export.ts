@@ -105,6 +105,41 @@ export function bundleHref(slug: string, file: string): string {
   return `/${segments.join("/")}`;
 }
 
+/**
+ * Where this site is served from, with no trailing slash.
+ *
+ * It was a bare literal inside `bundleReadme`'s "Exported from" line, which was the only
+ * place a bundle named its own origin. It is now also the origin printed in the download
+ * command `components/blueprint/CloneMenu.tsx` hands a reader to paste into a terminal,
+ * and those two must be the same host or the folder a reader fetches is not the folder
+ * the README inside it claims to have come from.
+ */
+export const SITE_ORIGIN = "https://darkprint.io";
+
+/**
+ * Where the card library's copies live under `public/`, relative to it.
+ *
+ * The same word as `BUNDLE_CARDS_DIR` and deliberately a second constant: that one names
+ * a directory *inside* a bundle, this one names a directory at the site root, and the day
+ * either moves it must be able to move without dragging the other with it.
+ */
+export const CARD_LIBRARY_DIR = "cards";
+
+/**
+ * The library address of one card version, independent of any bundle.
+ *
+ * `bundleHref` can only name a card *inside* a blueprint's folder, which is the wrong
+ * address for `/nodes/[...id]`: that page is about the card, and printing some blueprint
+ * that happens to pin it would name a thing the reader did not ask about and 404 the day
+ * that blueprint leaves the archive. `scripts/generate-bundles.ts` writes the same bytes
+ * a second time under `public/cards/`, and this is the URL they land at.
+ *
+ * Raw, not percent-encoded, for the same reason `bundleFilePaths` is raw — see there.
+ */
+export function cardHref(ref: CardRef): string {
+  return `/${CARD_LIBRARY_DIR}/${ref}.yaml`;
+}
+
 /* --------------------- what goes in and what comes out --------------------- */
 
 /** One pinned card document, verbatim. */
@@ -187,6 +222,99 @@ export function exportBundle(input: BundleExportInput): readonly ExportedFile[] 
 
   files.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
   return files;
+}
+
+/**
+ * The names `exportBundle` writes, without generating a byte of their contents.
+ *
+ * A page rendering the download command has to list every file in the folder, and the one
+ * thing that must never be true of that list is that it disagrees with what is on disk: a
+ * command missing a file writes a folder that does not resolve, and a command naming a
+ * file that is not there aborts partway through on `--fail-early` and leaves a half-written
+ * folder behind. So the list is derived here, beside the writer, from the same four
+ * constants and the same `cardFilePath` — and `bundle-export.test.ts` holds it to
+ * `exportBundle(input).map((f) => f.path)` over every bundle in the archive, which is the
+ * assertion that makes "derived from the same values" a fact rather than an intention.
+ *
+ * It takes what it needs rather than a whole `BundleExportInput`, because the caller is a
+ * page that holds pinned refs and a vocabulary flag, not card documents. Sorted the same
+ * way `exportBundle` sorts, for the same reason: the order is a property of the bundle.
+ *
+ * Raw names, not `bundleHref`'s percent-encoded ones. A card's `@` is legal unencoded in a
+ * path segment and both spellings were measured to return 200, and this list is read by a
+ * person deciding whether the command in front of them fetches the files they were just
+ * looking at. `%401.0.0` in a terminal is not that.
+ */
+export function bundleFilePaths(input: {
+  /** Every card the graph pins. Deduplicated and sorted here, like `pinnedCards`. */
+  cardRefs: readonly CardRef[];
+  /**
+   * Whether this bundle carries `ontology/extensions.yaml` — the same condition
+   * `exportBundle` writes it under, which the caller reads off `bundleVocabulary(slug)`.
+   */
+  vocabulary: boolean;
+}): readonly string[] {
+  const paths = [
+    BUNDLE_README,
+    BUNDLE_AGENTS,
+    TOPOLOGY_DOT,
+    FACTORY_DOT,
+    ...[...new Set(input.cardRefs)].map(cardFilePath),
+  ];
+  if (input.vocabulary) paths.push(BUNDLE_VOCABULARY);
+  paths.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  return paths;
+}
+
+/* --------------------- taking the folder from a terminal --------------------- */
+
+/**
+ * The one command that fetches a whole bundle folder onto a reader's disk today.
+ *
+ * ── Why a curl glob and not `wget -r` ──
+ * There is nothing to crawl. The site is static and has no directory index:
+ * `GET /bundles/<slug>/` answers 308 and `GET /bundles/<slug>` answers 404, so a recursive
+ * fetcher discovers zero files. What does work is curl's own URL globbing — the brace list
+ * below is expanded *by curl*, and `-o "#1"` writes each result to the path that matched,
+ * which is what recreates `cards/` under a folder named after the blueprint. Every file
+ * name in the list comes from `bundleFilePaths`, so the command and the folder cannot
+ * disagree.
+ *
+ * ── Every flag, against the alternative that was measured ──
+ * `--fail-early` because plain `-f` alone returns EXIT=0 when a middle URL 404s: it skips
+ * the bad file, keeps going, and reports the last success — a reader would get a silent,
+ * incomplete folder. With `--fail-early` the same run returns 22 and stops.
+ * `-f` on its own is still needed so a 404 body is never written to disk under a `.dot`
+ * name. `-s -S` is quiet-but-loud-on-error; without `-s`, curl prints one progress table
+ * per file. `-L` follows a CDN redirect in production. `--create-dirs` is what makes the
+ * `cards/…` and `ontology/…` paths land at all. `-o "#1"` rather than `-O`, because `-O`
+ * flattens `cards/x.yaml` into the working directory.
+ *
+ * ── The quotes are part of the command ──
+ * Unquoted, both zsh and bash brace-expand `{…}` before curl ever sees it, which produces
+ * nine separate URL arguments all written over one literal file called `#1`. Anything that
+ * renders this string has to keep it copyable verbatim, quotes included.
+ *
+ * This is a snapshot fetch and not a clone: it copies the files as they are at the moment
+ * it runs. There is no repository behind it, so whatever renders it must say so.
+ */
+export function bundleDownloadCommand(slug: string, files: readonly string[]): string {
+  return (
+    `curl --fail-early -fsSL --create-dirs -o "${slug}/#1" ` +
+    `"${SITE_ORIGIN}/${bundleDir(slug)}/{${files.join(",")}}"`
+  );
+}
+
+/**
+ * The same, for one card version at its library address.
+ *
+ * No braces, no `#1` and no `--create-dirs`: one URL, one file, landing in the working
+ * directory under its own name, which is what `-O` means and the one case where `-O` is
+ * the right flag. `--fail-early` has nothing to be early about with a single URL and is
+ * left off rather than carried as decoration.
+ */
+export function cardDownloadCommand(ref: CardRef): string {
+  return `curl -fsSL -O "${SITE_ORIGIN}${cardHref(ref)}"`;
 }
 
 /**
@@ -737,7 +865,7 @@ export function bundleReadme(input: BundleExportInput): string {
   );
 
   push("---", "");
-  push(`Exported from https://darkprint.io/blueprints/${manifest.slug}`);
+  push(`Exported from ${SITE_ORIGIN}/blueprints/${manifest.slug}`);
 
   return `${out.join("\n")}\n`;
 }

@@ -36,6 +36,76 @@
    held to: no YAML, no table, no code block, full opacity with no script, and every link
    resolving.
 
+   ── Compose is a hint, not a panel (2026-08-06) ──
+   The author: compose "should be a hint not a per se box". It was a numbered peer of
+   Download, Connect and Upload, which claimed for it a rank it does not have: the other
+   three are things you go and do — a file to fetch, a client to point, a tab to drop a
+   bundle into — and composing is a *property of the bytes you were just handed*. A DOT
+   file is text; that is a fact about the download, not a fourth destination, and it is the
+   only one of the four with no interaction of its own to describe.
+
+   So it lives inside the Download panel now, under the prose, as a dim `.label`-tagged
+   line rather than a bordered box of its own. Under and not beside, because it reads in
+   the order it is true in: here is the folder, here is what is in it, and here is what you
+   can do with the file you now have. The claim itself is unchanged and still stated in the
+   open — a DOT file is text, wire one graph's exit into another's entry, drop a card into
+   a pipeline already being written, all true today with a text editor and nothing else.
+   `beats.test.ts` holds that sentence, and holds it *inside* the Download panel and ahead
+   of the "not built yet" rule, so a demotion cannot quietly turn a working capability into
+   one a reader files under the unbuilt pair. The `/build` link compose used to carry is
+   inline in the hint; the section would otherwise stop reaching the workspace at all.
+
+   Losing a panel makes the count odd against a two-column grid, and the empty half-track
+   that leaves is not a cost — it is what pays for the composition. Download spans both
+   columns: the one thing on this section that ships in full today is the widest object in
+   it, its file listing gets a column of its own instead of a 342px track, and the two
+   unbuilt panels sit narrow underneath the rule. Rank by width, which the reader reads
+   before any word of it.
+
+   ── What the Download panel lists, and why `factory.dot` stopped leading it ──
+   The author: "`factory.dot` is meaningless. A generic folder should be composed by a
+   blueprint.dot and a list of yaml node cards and the README.md and AGENTS.md". The panel
+   opened on `factory.dot` — the Attractor-runnable emission, which is a name only somebody
+   who already runs Attractor can read, and the *derived* file at that. What DarkPrint
+   publishes is the graph and the cards it pins; `factory.dot` is what that gets compiled
+   to on the way out (`lib/content/bundle-export.ts`).
+
+   The listing is the generic shape, checked against `public/bundles/` rather than written
+   from memory, because a folder drawn here that does not match the folder that downloads
+   is the same class of error as a missing disclaimer. All nine bundles on disk today hold
+   `blueprint.dot`, `factory.dot`, `cards/`, `README.md` and `AGENTS.md`, and in all nine
+   the card count equals the number of nodes carrying a `card=` pin — 5/5 on the starter,
+   9/9 on `checkpoint-resume-runner` — which is what licences "one YAML per node the graph
+   pins" as a general statement rather than a description of one bundle. One bundle
+   (`frontline-triage`) also carries `ontology/extensions.yaml`; it is not in the listing
+   because it is not in the generic folder, and the prose does not imply an exhaustive
+   listing. `factory.dot` stays named in the prose — it is genuinely in the folder and it
+   is the file that runs, so dropping it entirely would trade one inaccuracy for another.
+
+   ── Upload says what uploading is for (2026-08-06) ──
+   The author: "the Upload box should stress that if uploaded, you can get feedback for the
+   blueprint you proposed by other users." That is the motive, and the panel had only the
+   mechanism: what `/upload` reads, where it reads it, and what it stops at. But there is
+   no backend and no publishing, so *no part of the feedback claim is true today* — it is
+   strictly the reason the unbuilt half is worth building.
+
+   It therefore wears `ComingSoonBadge`, in the `<badge> + "Not built yet: …"` form
+   `AgentHandoff` and `DownloadStep` already use, and it is the one place in this section
+   where the amber pill comes back. That is not a reversal of the decision recorded below.
+   That decision was about the two *panel-level* markers, in the scan path of the headings,
+   restating a fact the rule above them had just stated; this badge is attached to a
+   sentence lower in one panel's body making a claim the rule does not cover at all. The
+   rule says the panel is not built. It says nothing about other people existing, which is
+   the larger promise and the one a reader could most easily take as live. A second,
+   different claim gets a marker; the same claim twice does not.
+
+   The pinned sentence beside it is untouched, to the character — `beats.test.ts` holds
+   "Nothing leaves the tab, and publishing so other people can find it is not built yet."
+   and this pass added words around it without editing a word of it. The new claim is in
+   `components/site/honesty.test.ts`'s ledger, `open`, which is the file that exists
+   because a limit statement has twice left this site during a pass that was adding or
+   cutting copy around one.
+
    ── What each panel shows, and why it stopped being a drawing ──
    Two rounds of illustration came off this section, both by the author's own verdict.
    First: three `FlowScene` drawings — files wired to a runner, a small graph wired into a
@@ -52,15 +122,18 @@
    monospace character and nothing else — no glow, no motion, no client component. `↓` and
    `↑` are not invented for this panel: `ContentCard`'s download count and every "seeded"
    row already use them, so the panel borrows a mark the reader has seen mean the same
-   thing rather than teaching a new one. `⋈`, the relational-algebra join, is the one
-   glyph chosen for what it names rather than reused from elsewhere on the site, because
-   nothing else here already means "two things becoming one".
+   thing rather than teaching a new one. Compose used to hold a fourth, `⋈`, the
+   relational-algebra join — the one glyph chosen for what it names rather than reused from
+   elsewhere on the site, because nothing else here already meant "two things becoming
+   one". It went out with the panel: a mark is how this section ranks a step, and the whole
+   point of the demotion is that composing is not one. The hint carries a `.label` instead,
+   which is what the site uses to tag a claim rather than to number a destination.
 
    `aria-hidden`, all three: the glyph adds no information a screen reader needs beyond
    what `PanelHeading` already gives it, and a lone Unicode character with no context is a
    worse announcement than the heading beside it.
 
-   ── The order of the four panels, and why it is not the order they were written in ──
+   ── The order of the panels, and why it is not the order they were written in ──
    Connect used to be 01, on the grounds that MCP "is the way in that needs no download at
    all, so it is first". That reasoning was about the capability. What it ignored is what
    the reader's eye does with the resulting composition: the sequence opened on COMING SOON
@@ -69,8 +142,10 @@
    pills were the highest-chroma objects in the viewport. The eye landed on "not built yet"
    before it landed on "Download".
 
-   **What ships leads; what does not is grouped once and labelled once.** Download and
-   Compose are first because a reader can do both today. Connect and Upload follow, under a
+   **What ships leads; what does not is grouped once and labelled once.** Download is
+   first, carrying compose with it, because a reader can do both today — that is one panel
+   rather than two since the demotion above, and the rule it is separated from has not
+   moved. Connect and Upload follow, under a
    single rule reading "Next, and not built yet", and inside that pair the per-panel marker
    drops from an amber `ComingSoonBadge` to a dim inline note — the rule above them is now
    carrying the fact, so the pill would be saying it twice in the loudest colour on the
@@ -84,6 +159,7 @@
 
 import Link from "next/link";
 
+import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 const STARTER = "/blueprints/starter-software-factory";
@@ -177,6 +253,40 @@ function NotBuiltYet() {
   return <span className="shrink-0 font-mono text-[11px] text-dim">not built yet</span>;
 }
 
+/**
+ * Compose, demoted from a panel to a line under the folder it is a property of.
+ *
+ * The header argues the placement; this is what makes it read as a hint rather than as a
+ * fourth thing to go and do. No border and no ground — a box is exactly what the author
+ * said it should stop being — so the only structure is a `.label` tag at the 11px mono
+ * floor and a 13px line beside it, one tier under the panel's own `text-sm` prose. The tag
+ * is `.label` and not a heading for the reason `app/globals.css` records: a mono uppercase
+ * run names a thing, it does not open a level of the document outline, and this claim is
+ * part of Download's argument rather than a section of its own.
+ *
+ * The claim is the one that survived the demotion intact, and it is true today with a text
+ * editor and nothing else — which is why it sits above the "not built yet" rule and inside
+ * the panel a reader has already been told works. `beats.test.ts` holds both facts.
+ */
+function ComposeHint() {
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px] leading-relaxed text-dim">
+      <span className="label shrink-0">Compose</span>
+      <span className="min-w-0">
+        A DOT file is text. Wire one graph&rsquo;s exit into another&rsquo;s entry, or drop
+        a card into a pipeline you&rsquo;re already writing.{" "}
+        <Link
+          href="/build"
+          className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
+        >
+          Start one in the workspace
+        </Link>
+        .
+      </span>
+    </p>
+  );
+}
+
 export function SectionLifecycle() {
   // `scroll-mt-24` because `SiteFooter` links `/#lifecycle` from every page and the
   // header is `sticky top-0` over a 4rem row. It was missing: the anchor guard walks the
@@ -195,18 +305,22 @@ export function SectionLifecycle() {
              after the download runs on your machine with your own tools. That was in the
              lead and the title said "A blueprint is a folder you can take away", which is
              a smaller claim about the same thing. The title carries it now, and the lead
-             says what the four panels are. */
+             says what the panels are. */
           title="The registry publishes files, your machine runs them"
           lead="Point an agent at it over MCP, or take the folder yourself and wire it into what you already have. Nothing here executes a blueprint, and nothing you build has to come back."
         />
 
-        {/* Four, not three, and two across rather than four.
+        {/* Three panels in a two-column grid, the first spanning both.
             ------------------------------------------------------------
             Four narrow columns would put each artefact box under 250px and the file names
             in them would truncate; two across gives every panel the width its listing
-            needs. The order — what ships, then what does not, under one rule — is argued
-            in this file's header; the short version is that two amber pills were reading
-            before the two capabilities that work.
+            needs. Compose stopped being a panel (this file's header), which leaves three,
+            and rather than parking an empty half-track beside Download the panel takes the
+            full row: the one capability that ships in full is the widest object here, its
+            file listing gets a column to itself instead of a 342px track, and the pair
+            that does not ship sits narrow under the rule. The order — what ships, then
+            what does not, under one rule — is argued in this file's header; the short
+            version is that two amber pills were reading before the capabilities that work.
 
             `min-w-0` on every article is load-bearing and not cosmetic. An `<article>` is
             a grid item, a grid item's default `min-width: auto` is its min-content width,
@@ -226,54 +340,46 @@ export function SectionLifecycle() {
             holds the floor now. */}
         <div className="mt-10 grid gap-5 md:grid-cols-2">
           {/* ---------- 01 · download ---------- */}
-          <article className="panel flex min-w-0 flex-col gap-4 p-5">
+          <article className="panel flex min-w-0 flex-col gap-4 p-5 md:col-span-2">
             <PanelHeading index="01" title="Download" mark="↓" />
 
-            {/* The bundle's own file names, from `lib/content/bundle-export.ts`, so a
-                reader who takes the folder finds what this box promised. */}
-            <Artefact
-              lines={[
-                ["", "blueprint.dot"],
-                ["", "factory.dot"],
-                ["", "cards/code-builder@1.0.0.yaml"],
-                ["", "README.md · AGENTS.md"],
-              ]}
-            />
+            {/* Listing left, argument right, because the folder is the evidence for every
+                sentence beside it and a reader should be able to check one against the
+                other without scrolling between them. One column on a phone, where the
+                stack puts the listing first for the same reason. */}
+            <div className="grid gap-5 md:grid-cols-2">
+              {/* The generic folder, in the author's own order and verified against
+                  `public/bundles/` — see this file's header for the check. `blueprint.dot`
+                  is what the registry stores and what the digest is taken over; the cards
+                  are one YAML per node the graph pins, true of all nine bundles on disk;
+                  the two docs address a person and an agent. */}
+              <Artefact
+                lines={[
+                  ["", "blueprint.dot"],
+                  ["", "cards/spec-planner@1.0.0.yaml"],
+                  ["", "cards/code-builder@1.0.0.yaml"],
+                  ["", "cards/ … one YAML per node the graph pins"],
+                  ["", "README.md · AGENTS.md"],
+                ]}
+              />
 
-            <p className="text-sm leading-relaxed text-muted">
-              The folder is real, and <Mono>factory.dot</Mono> runs. Nothing here executes
-              it for you.
-            </p>
+              <div className="flex min-w-0 flex-col gap-3">
+                <p className="text-sm leading-relaxed text-muted">
+                  The folder is real, and every bundle has that shape. A{" "}
+                  <Mono>factory.dot</Mono> compiled from the same graph ships beside it and
+                  is the file that runs. Nothing here executes it for you.
+                </p>
 
-            <Link href={`${STARTER}#download`} className={linkCls}>
-              Take the starter folder
-            </Link>
+                <ComposeHint />
+
+                <Link href={`${STARTER}#download`} className={linkCls}>
+                  Take the starter folder
+                </Link>
+              </div>
+            </div>
           </article>
 
-          {/* ---------- 02 · compose ---------- */}
-          <article className="panel flex min-w-0 flex-col gap-4 p-5">
-            <PanelHeading index="02" title="Compose" mark="⋈" />
-
-            <Artefact
-              lines={[
-                ["", "// yours.dot"],
-                ["", "build   -> qa_gate;"],
-                ["", "qa_gate -> release;"],
-                ["→", "one graph's exit, another's entry"],
-              ]}
-            />
-
-            <p className="text-sm leading-relaxed text-muted">
-              A DOT file is text. Wire one graph&rsquo;s exit into another&rsquo;s entry, or
-              drop a card into a pipeline you&rsquo;re already writing.
-            </p>
-
-            <Link href="/build" className={linkCls}>
-              Start building one
-            </Link>
-          </article>
-
-          {/* ---------- the line the two working capabilities end at ----------
+          {/* ---------- the line the working capability ends at ----------
               One rule, one label, spanning both columns, so the pair below it is read as a
               group with a shared state rather than as two panels each carrying a warning.
               It is a `.label` and not a heading: `app/globals.css` records that a mono
@@ -286,10 +392,10 @@ export function SectionLifecycle() {
             <span className="label">Next, and not built yet</span>
           </div>
 
-          {/* ---------- 03 · connect ---------- */}
+          {/* ---------- 02 · connect ---------- */}
           <article className="panel flex min-w-0 flex-col gap-4 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <PanelHeading index="03" title="Connect" mark="⇄" />
+              <PanelHeading index="02" title="Connect" mark="⇄" />
               <NotBuiltYet />
             </div>
 
@@ -315,10 +421,10 @@ export function SectionLifecycle() {
             </Link>
           </article>
 
-          {/* ---------- 04 · upload ---------- */}
+          {/* ---------- 03 · upload ---------- */}
           <article className="panel flex min-w-0 flex-col gap-4 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <PanelHeading index="04" title="Upload yours" mark="↑" />
+              <PanelHeading index="03" title="Upload yours" mark="↑" />
               <NotBuiltYet />
             </div>
 
@@ -339,6 +445,32 @@ export function SectionLifecycle() {
               <Mono>/upload</Mono> reads a whole bundle, the topology and the cards it pins,
               not a single card alone, inside your browser tab. Nothing leaves the tab, and
               publishing so other people can find it is not built yet.
+            </p>
+
+            {/* Why anyone would upload at all, which the panel above states the mechanism
+                of and never the motive (this file's header, and the author's own words).
+                Every clause of it is unbuilt — there is no backend, no publishing and no
+                readership — so it wears the badge and opens on "Not built yet:", the form
+                `AgentHandoff` and `DownloadStep` already use for a claim about a capability
+                that does not exist. `items-start` rather than `items-center`: this wraps to
+                three lines on a phone and a pill vertically centred against a paragraph
+                floats away from the word it qualifies. Held in
+                `components/site/honesty.test.ts`'s ledger, `open`.
+
+                It names the reader rather than repeating the verb. Measured on a phone, the
+                first draft made this panel say "not built yet" three times in nine lines —
+                the heading's dim note, the end of the paragraph above ("publishing so other
+                people can find it is not built yet"), and then a third sentence opening on
+                "publishing … so other people …" again. The limit is stated as many times as
+                it needs to be; what was wasted was the words. "The second reader" is what
+                the author asked to be stressed, it is a thing this site does not have, and
+                the conditional that follows ("Once a bundle can be published") says the
+                same limit a fourth way without spending the phrase a fourth time. */}
+            <p className="flex flex-wrap items-start gap-2 text-[13px] leading-relaxed text-dim">
+              <ComingSoonBadge />
+              Not built yet: the second reader. Once a bundle can be published, other
+              people can open the blueprint you proposed and tell you where it does not
+              hold.
             </p>
 
             <Link href="/upload" className={linkCls}>

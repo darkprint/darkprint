@@ -2,6 +2,7 @@ import Link from "next/link";
 import { inferBump, shortDigest, type BumpLevel, type NodeCard } from "@/lib/core";
 import { cx } from "@/lib/format";
 import { contentHref } from "@/lib/href";
+import { Ticked } from "@/components/ui/Ticked";
 
 /** One published version of a card, plus the blueprints pinning that exact ref. */
 export interface NodeVersion {
@@ -45,32 +46,6 @@ const BUMP_META: Record<BumpLevel, { word: string; glyph: string; color: string;
       gloss: "no change to the card's content",
     },
   };
-
-/**
- * Prose with `backticked` identifiers in it, rendered as inline code. Both the
- * engine's bump reasons and a card author's `notes` are written that way, and the
- * port and parameter names inside the ticks are the substance of the sentence.
- * It lives here because the changelog is its first and busiest caller.
- */
-export function Ticked({ text }: { text: string }) {
-  const parts = text.split("`");
-  return (
-    <>
-      {parts.map((part, i) =>
-        i % 2 === 1 ? (
-          <code
-            key={i}
-            className="rounded bg-surface-3 px-1 py-0.5 font-mono text-[12px] text-fg"
-          >
-            {part}
-          </code>
-        ) : (
-          <span key={i}>{part}</span>
-        ),
-      )}
-    </>
-  );
-}
 
 function Changelog({
   previous,

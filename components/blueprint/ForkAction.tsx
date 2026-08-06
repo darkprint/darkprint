@@ -1,10 +1,11 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import Link from "next/link";
 import { cx } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
+import { announceMenuOpened, useCloseWhenAnotherMenuOpens } from "@/components/ui/menu-group";
 
 /** Which page this action renders on, so its copy names the right thing. */
 type ForkKind = "blueprint" | "node";
@@ -53,6 +54,13 @@ export function ForkAction({
   // not a guess a second instance of this component on the same page could collide with.
   const panelId = useId();
 
+  // This panel and `CloneMenu`'s sit in the same header row, both centred under their own
+  // trigger and both wider than the gap between the two triggers: open together, the second
+  // covers the first. `components/ui/menu-group.ts` is the one-event coordination that
+  // keeps one open at a time, and it is why `panelId` doubles as this menu's identity.
+  const close = useCallback(() => setOpen(false), []);
+  useCloseWhenAnotherMenuOpens(panelId, close);
+
   return (
     <div className={cx("relative", className)}>
       <Button
@@ -60,7 +68,12 @@ export function ForkAction({
         variant="outline"
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          setOpen((o) => {
+            if (!o) announceMenuOpened(panelId);
+            return !o;
+          });
+        }}
       >
         {kind === "node" ? "Fork card" : "Fork blueprint"}
         <span

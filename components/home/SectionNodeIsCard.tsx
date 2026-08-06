@@ -58,7 +58,7 @@ export function SectionNodeIsCard() {
             in the listing below it for the same reader's attention. */}
         <SectionHeading
           title="Every node is a card"
-          lead="Open one and it says which model runs it, what arrives, what it hands on, and what must never reach it. Seven parts, on a card the archive really stores."
+          lead="Open one and it says what it does, the brief it is handed, which model runs it, what arrives, and what must never reach it. Nine parts, on a card the archive really stores."
         />
 
         <div className="mt-10">

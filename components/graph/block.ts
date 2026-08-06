@@ -18,8 +18,8 @@
      together rather than trusting a comment to keep them in step.
    - `lib/content/layout.ts`, whose `layerGap` has to clear it. 200 - 150 leaves 50 flow
      units between columns, which is the clearance an edge can be seen in.
-   - `components/graph/frame.ts` and the guard over it, which need to know where a name is
-     drawn WITHOUT a browser to measure it. That is the property a `max-w` could never
+   - `components/graph/framing.ts` and the guards over it, which need to know where a name
+     is drawn WITHOUT a browser to measure it. That is the property a `max-w` could never
      give them: a range is not a position.
 
    ── Why 150 and not 220 with a wider gap ──

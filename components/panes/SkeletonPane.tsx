@@ -4,8 +4,10 @@ import { Fragment, useMemo } from "react";
 import Link from "next/link";
 import { nodeHref } from "@/lib/href";
 import { cx } from "@/lib/format";
-import { useRovingListbox } from "./listbox";
-import { CARD_BLOCKS, type PaneFocus, type PaneModel } from "./model";
+import { FieldDisclosure } from "@/components/ui/FieldDisclosure";
+import { Ticked } from "@/components/ui/Ticked";
+import { FIELD_NOTE } from "./field-notes";
+import { CARD_BLOCKS, type PaneAbsence, type PaneFocus, type PaneModel } from "./model";
 
 /* ============================================================
    Pane 2: the skeleton of the selected node's card.
@@ -34,6 +36,33 @@ import { CARD_BLOCKS, type PaneFocus, type PaneModel } from "./model";
    `linkToCard` turns the header's ref into a real link out to that
    card's own page, for the blueprint detail page's merged panel —
    see the prop's own doc comment for who leaves it off and why.
+
+   ── Every row opens, and why it is a `<details>` ──
+   The author, of this pane: "when clicking on the fields listed
+   for a node, it opens the field providing more information (like
+   in the node webpage card)". `/nodes/<id>` had it already, and
+   the two now share both halves: the disclosure chrome is
+   `components/ui/FieldDisclosure.tsx`, and the paragraph behind
+   each key is `./field-notes.ts` — so the sentence about what
+   `cannot` enforces is written once for the whole site instead of
+   drifting between two pages that both claim to list every field.
+
+   These rows were a roving-tabindex listbox until then: one tab
+   stop, arrow keys inside it, selection following focus, the
+   pattern `./listbox.ts` still runs pane 3 on. It could not carry
+   a disclosure. A `role="option"` may not hold an interactive
+   descendant, the listbox's own Enter and Space handler claims
+   the two keys a `<summary>` needs, and the detail was rendered
+   only for the row the client had selected — so it was in no
+   prerendered document, and reachable by neither find-in-page nor
+   a reader without script. A native `<details>` is all of that
+   for free, and announces its own open state.
+
+   What it costs is the single tab stop: the list is one stop per
+   field now. That is the trade `/nodes/<id>`'s field table
+   already made, and it buys the property the author asked for.
+   Absences keep a control of their own, because an absence is not
+   a field of the card and opens onto nothing.
    ============================================================ */
 
 /* ── Why this pane is amber and not cyan ──
@@ -80,7 +109,15 @@ export function SkeletonPane({
   showNumber?: boolean;
   model: PaneModel;
   focus: PaneFocus;
-  onSelectField: (key: string) => void;
+  /**
+   * A field row was opened, or the open one was closed — `undefined` for the close.
+   *
+   * This pane never says which **node** is selected, and that is the contract the
+   * signature carries: opening a field narrows the shared selection inside the node the
+   * reader is already on, and closing it widens back to that same node.
+   * `SynchronisedPanes` holds both branches to it by rebuilding from `held.nodeId`.
+   */
+  onSelectField: (key: string | undefined) => void;
   onSelectAbsence: (absenceId: string) => void;
   /**
    * Blueprint detail page's merged panel: the focused card's ref becomes a real
@@ -99,61 +136,37 @@ export function SkeletonPane({
 }) {
   const card = focus.card;
 
-  /** Field rows and the absences that hang off them, flattened for one roving tabindex. */
-  const entries = useMemo(() => {
-    if (card === undefined) return [];
-    const out: (
-      | { kind: "field"; id: string; blockId: string }
-      | { kind: "absence"; id: string; blockId: string; label: string; detail: string }
-    )[] = [];
-    for (const block of CARD_BLOCKS) {
-      for (const key of block.keys) {
-        out.push({ kind: "field", id: key, blockId: block.id });
-        for (const absence of model.absences) {
-          if (absence.field?.nodeId !== focus.node.nodeId) continue;
-          if (absence.field.key !== key) continue;
-          out.push({
-            kind: "absence",
-            id: absence.id,
-            blockId: block.id,
-            label: absence.label,
-            detail: absence.detail,
-          });
-        }
-      }
+  /** The gaps this node declares against a card field, by the wire key each hangs under. */
+  const absencesByKey = useMemo(() => {
+    const out = new Map<string, PaneAbsence[]>();
+    for (const absence of model.absences) {
+      if (absence.field?.nodeId !== focus.node.nodeId) continue;
+      const held = out.get(absence.field.key);
+      if (held === undefined) out.set(absence.field.key, [absence]);
+      else held.push(absence);
     }
     return out;
-  }, [card, model.absences, focus.node.nodeId]);
-
-  const selectable = useMemo(() => entries.map(() => true), [entries]);
-
-  const activeIndex = useMemo(() => {
-    if (focus.absence !== undefined) {
-      return entries.findIndex(
-        (entry) => entry.kind === "absence" && entry.id === focus.absence?.id,
-      );
-    }
-    if (focus.field === undefined) return -1;
-    return entries.findIndex(
-      (entry) => entry.kind === "field" && entry.id === focus.field?.key,
-    );
-  }, [entries, focus]);
-
-  const list = useRovingListbox({
-    selectable,
-    activeIndex,
-    onActivate: (index) => {
-      const entry = entries[index];
-      if (entry === undefined) return;
-      if (entry.kind === "absence") onSelectAbsence(entry.id);
-      else onSelectField(entry.id);
-    },
-  });
+  }, [model.absences, focus.node.nodeId]);
 
   const fieldsByKey = useMemo(() => {
     const out = new Map(card?.fields.map((field) => [field.key, field]) ?? []);
     return out;
   }, [card]);
+
+  const openKey = focus.absence === undefined ? focus.field?.key : undefined;
+
+  /**
+   * The browser toggled a row. Selection follows it, and the node never moves.
+   *
+   * Both directions arrive here, including the ones nobody clicked: opening row B makes
+   * React close row A, and the browser fires `toggle` on A for that too. The guard is the
+   * key — by the time A's event lands the selection already says B, so the close is read
+   * as the consequence it is rather than as a reader asking to see the whole node again.
+   */
+  const onToggleRow = (key: string, open: boolean) => {
+    if (open) onSelectField(key);
+    else if (openKey === key) onSelectField(undefined);
+  };
 
   return (
     <section
@@ -208,12 +221,10 @@ export function SkeletonPane({
         </p>
       ) : (
         <>
-          <div
-            role="listbox"
-            aria-label={`Fields of card ${card.ref}`}
-            onKeyDown={list.onKeyDown}
-            className="max-h-[26rem] flex-1 overflow-auto"
-          >
+          {/* No `role="listbox"` any more, and the header of this file says what that
+              cost and bought. What is left is a scroll box with the blocks inside it;
+              each block names itself, and every row is its own disclosure. */}
+          <div className="max-h-[26rem] flex-1 overflow-auto">
             {CARD_BLOCKS.map((block, blockIndex) => (
               // The group is named in two words rather than by its header element: the
               // header carries the doc reference and the block's purpose, and a screen
@@ -236,116 +247,132 @@ export function SkeletonPane({
                   </span>
                 </div>
 
-                {entries.map((entry, index) => {
-                  if (entry.blockId !== block.id) return null;
-
-                  if (entry.kind === "absence") {
-                    const chosen = focus.absence?.id === entry.id;
-                    return (
-                      <div
-                        key={entry.id}
-                        role="option"
-                        aria-selected={chosen}
-                        tabIndex={list.tabIndexFor(index)}
-                        ref={list.setRef(index)}
-                        onClick={() => list.onClickIndex(index)}
-                        className={cx(
-                          "ml-6 flex cursor-pointer flex-col gap-0.5 border-l-2 border-dashed px-3 py-1.5",
-                          chosen
-                            ? "border-signal bg-signal/10"
-                            : "border-line-bright hover:bg-surface-2/60",
-                        )}
-                      >
-                        <span className="flex items-baseline gap-2">
-                          <span className="font-mono text-[11px] text-signal" aria-hidden>
-                            ◌
-                          </span>
-                          <span
-                            className={cx(
-                              "font-mono text-[11px]",
-                              chosen ? "text-signal" : "text-muted",
-                            )}
-                          >
-                            {entry.label}
-                          </span>
-                          <span className="ml-auto font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
-                            not in this prose
-                          </span>
-                        </span>
-                        <span className="text-[11px] leading-snug text-dim">
-                          {entry.detail}
-                        </span>
-                      </div>
-                    );
-                  }
-
-                  const field = fieldsByKey.get(entry.id);
+                {block.keys.map((key) => {
+                  const field = fieldsByKey.get(key);
                   if (field === undefined) return null;
-                  const chosen =
-                    focus.absence === undefined && focus.field?.key === entry.id;
+                  const chosen = openKey === key;
+                  const note = FIELD_NOTE[key];
                   return (
-                    <div
-                      key={entry.id}
-                      role="option"
-                      aria-selected={chosen}
-                      tabIndex={list.tabIndexFor(index)}
-                      ref={list.setRef(index)}
-                      onClick={() => list.onClickIndex(index)}
-                      className={cx(
-                        "flex cursor-pointer flex-wrap items-baseline gap-2 border-l-2 px-3 py-1.5",
-                        chosen
-                          ? "border-amber bg-amber/10"
-                          : "border-transparent hover:bg-surface-2/60",
-                      )}
-                    >
-                      <span
+                    <Fragment key={key}>
+                      <FieldDisclosure
+                        open={chosen}
+                        onToggle={(event) => onToggleRow(key, event.currentTarget.open)}
                         className={cx(
-                          "font-mono text-[11px]",
-                          field.filled ? "text-amber" : "text-dim",
+                          "border-l-2",
+                          chosen ? "border-amber bg-amber/10" : "border-transparent",
                         )}
-                        aria-hidden
-                      >
-                        {field.filled ? "▪" : "◌"}
-                      </span>
-                      <code
-                        className={cx(
-                          "shrink-0 font-mono text-[12px]",
-                          chosen ? "text-amber" : "text-fg",
+                        summaryClassName={cx(
+                          "flex flex-wrap items-baseline gap-2 py-1.5 pl-[1.35rem] pr-3 transition-colors",
+                          !chosen && "hoverable:hover:bg-surface-2/60",
                         )}
+                        // Amber when open, to stay inside this pane's one documented
+                        // amber exception rather than opening a second colour in a
+                        // block the author asked to be warm throughout.
+                        markerClassName={cx(
+                          "left-2 top-[0.45rem]",
+                          chosen ? "text-amber" : "text-dim",
+                        )}
+                        bodyClassName="flex flex-col gap-2 pb-2.5 pl-[1.35rem] pr-3"
+                        summary={
+                          <>
+                            <span
+                              className={cx(
+                                "font-mono text-[11px]",
+                                field.filled ? "text-amber" : "text-dim",
+                              )}
+                              aria-hidden
+                            >
+                              {field.filled ? "▪" : "◌"}
+                            </span>
+                            <code
+                              className={cx(
+                                "shrink-0 font-mono text-[12px]",
+                                chosen ? "text-amber" : "text-fg",
+                              )}
+                            >
+                              {field.key}
+                            </code>
+                            <span className="min-w-0 text-[12px] leading-snug text-muted">
+                              {field.value}
+                            </span>
+                            <span className="ml-auto shrink-0 font-mono text-[11px] text-dim">
+                              {field.lines === undefined
+                                ? "not written"
+                                : field.lines.start === field.lines.end
+                                  ? `line ${field.lines.start}`
+                                  : `lines ${field.lines.start}–${field.lines.end}`}
+                            </span>
+                            <span className="sr-only">
+                              {field.filled ? "Filled." : "Left empty by this card."}
+                            </span>
+                          </>
+                        }
                       >
-                        {field.key}
-                      </code>
-                      <span className="min-w-0 text-[12px] leading-snug text-muted">
-                        {field.value}
-                      </span>
-                      <span className="ml-auto shrink-0 font-mono text-[11px] text-dim">
-                        {field.lines === undefined
-                          ? "not written"
-                          : field.lines.start === field.lines.end
-                            ? `line ${field.lines.start}`
-                            : `lines ${field.lines.start}–${field.lines.end}`}
-                      </span>
-                      <span className="sr-only">
-                        {field.filled ? "Filled." : "Left empty by this card."}
-                      </span>
+                        {/* What the field is FOR, the same paragraph `/nodes/<id>`
+                            opens onto. In the markup whether or not the row is open,
+                            which is the whole reason this is a `<details>`: a reader
+                            without script, a printer and find-in-page all reach it. */}
+                        {note !== undefined && (
+                          <p className="border-l-2 border-amber/40 pl-3 text-[12px] leading-relaxed text-muted">
+                            <Ticked text={note} />
+                          </p>
+                        )}
+                        {/* And what this card in particular wrote, where the one line
+                            above had to summarise it. Second, because the reader has
+                            just been told what they are looking at. */}
+                        {field.detail !== undefined && (
+                          <p className="whitespace-pre-wrap border-l-2 border-line-bright pl-3 text-[12px] leading-relaxed text-muted">
+                            {field.detail}
+                          </p>
+                        )}
+                      </FieldDisclosure>
 
-                      {/* What the one line left out, on the row the reader chose.
-                          ------------------------------------------------------------
-                          The author: "on click of the field, it shows the details (this
-                          should be applied also in the card skeleton provided in the
-                          blueprint)". Only the summarising fields carry one, so clicking
-                          a row whose line is already the whole value changes nothing
-                          visible and nothing is promised that does not arrive.
-
-                          `basis-full` rather than a sibling block: the row is one
-                          `role="option"`, and a detail outside it would be a second stop
-                          in the listbox announcing half a field. */}
-                      {chosen && field.detail !== undefined && (
-                        <p className="basis-full whitespace-pre-wrap border-l-2 border-amber/40 pl-3 text-[12px] leading-relaxed text-muted">
-                          {field.detail}
-                        </p>
-                      )}
-                    </div>
+                      {(absencesByKey.get(key) ?? []).map((absence) => {
+                        const picked = focus.absence?.id === absence.id;
+                        return (
+                          // A button, not a disclosure: an absence is not a field of
+                          // the card and has nothing folded behind it. Its whole text
+                          // is on the row, and pressing it moves the shared selection
+                          // so the drawing rings the node the gap concerns.
+                          <div key={absence.id} className="pl-6">
+                            <button
+                              type="button"
+                              aria-pressed={picked}
+                              onClick={() => onSelectAbsence(absence.id)}
+                              className={cx(
+                                "flex w-full flex-col gap-0.5 border-l-2 border-dashed px-3 py-1.5 text-left",
+                                picked
+                                  ? "border-signal bg-signal/10"
+                                  : "border-line-bright hoverable:hover:bg-surface-2/60",
+                              )}
+                            >
+                              <span className="flex w-full items-baseline gap-2">
+                                <span
+                                  className="font-mono text-[11px] text-signal"
+                                  aria-hidden
+                                >
+                                  ◌
+                                </span>
+                                <span
+                                  className={cx(
+                                    "font-mono text-[11px]",
+                                    picked ? "text-signal" : "text-muted",
+                                  )}
+                                >
+                                  {absence.label}
+                                </span>
+                                <span className="ml-auto font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
+                                  not in this prose
+                                </span>
+                              </span>
+                              <span className="text-[11px] leading-snug text-dim">
+                                {absence.detail}
+                              </span>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </Fragment>
                   );
                 })}
               </div>
@@ -360,8 +387,8 @@ export function SkeletonPane({
             <span className="font-mono" aria-hidden>
               ◌
             </span>{" "}
-            it does not, which is an answer as much as the other. Pinned by{" "}
-            <Pins model={model} ref_={card.ref} />.
+            it does not, which is an answer as much as the other. Every row opens onto
+            what its field is for. Pinned by <Pins model={model} ref_={card.ref} />.
           </p>
         </>
       )}

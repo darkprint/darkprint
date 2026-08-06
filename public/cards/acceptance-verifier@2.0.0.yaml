@@ -1,0 +1,64 @@
+id: acceptance-verifier
+name: Acceptance Verifier
+type: validation
+phase: testing
+
+action: >-
+  Check the candidate against every acceptance criterion and pass it on only once all of them
+  clear, raising a conflict signal instead when the failure is a genuine disagreement rather
+  than a defect.
+spec: >-
+  Check the finished artefact you are handed against every criterion in the set registered as
+  `acceptance-criteria@1`, one at a time, using the supporting material supplied alongside it
+  wherever a criterion calls for evidence. Emit the artefact unchanged on `accepted` only once
+  every criterion has cleared. When one is missed, judge which kind of miss it is: if the work
+  is simply wrong, record the criterion and stop the run; if the candidates it was chosen from
+  answered the brief in genuinely different ways, emit that on `conflict` so the choice can be
+  reopened. `conflict` is for real disagreement only, never use it as a second failure exit.
+model: claude-opus-5
+agent: Verifier
+tools: []
+mcp: []
+skill: skills/acceptance-verifier.md
+params:
+  criteria_ref: acceptance-criteria@1
+  strict: true
+
+inputs:
+  - name: candidate
+    type: json
+    description: The finished artefact the line wants to ship.
+  - name: evidence
+    type: json
+    required: false
+    description: Supporting material a criterion may need to be judged against.
+outputs:
+  - name: accepted
+    type: json
+    description: The candidate unchanged, now signed off against the named criteria set.
+  - name: conflict
+    type: status
+    description: The second exit, the criteria held but the proposals genuinely disagreed.
+dependencies:
+  - weighted-vote
+cannot:
+  - pass a candidate that missed a criterion
+  - use `conflict` as a second failure exit
+
+requires_human: false
+risk_markers: []
+notes: >-
+  `conflict` is not a second failure exit. A candidate can miss a criterion because the work is
+  wrong, or because the proposals it was chosen from read the brief differently, only the
+  second is worth reopening, and separating the two is the whole reason this version exists.
+  The model moved with the job: 1.0.0 decides pass or fail and names `claude-sonnet-5`, this
+  one has to tell a defect from a disagreement and names `claude-opus-5`. On its own that is a
+  minor change by `inferBump`, since `model` is the default the card was written against and
+  the graph settles it at run time, so what the node runs on moves while no port, type or
+  prohibition a blueprint declared against does. The version is 2.0.0 for the other edit:
+  `use \`conflict\` as a second failure exit` is a new entry under `cannot`, and a prohibition
+  added after publication narrows what the node accepts, so §4 calls it major.
+
+version: 2.0.0
+author: sol-antczak
+ontology_version: 0.1.0

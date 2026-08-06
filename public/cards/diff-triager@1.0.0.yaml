@@ -1,0 +1,51 @@
+id: diff-triager
+name: Diff Triager
+type: agent
+phase: planning
+
+action: >-
+  Read the diff hunk by hunk and emit a triage record: which files carry risk, which are
+  mechanical, and which tests the change is expected to move.
+spec: >-
+  You are handed a pull-request payload with the base and head refs, the changed-file list and
+  the unified diff. Read the diff hunk by hunk and put every changed file in exactly one band:
+  `high` for public interfaces, authentication, data migrations and concurrency, `mechanical`
+  for renames, formatting and generated output, `normal` for everything else, with one line of
+  reasoning per file naming the hunk that decided it. Then work out the blast radius: which
+  modules import what the diff touched, and which test suites cover them. Emit a single JSON
+  record on `triage` holding the per-file bands with their reasons, the blast radius, and the
+  list of suites to run. Triage at most sixty files; if the diff is larger, take the sixty that
+  touch the most call sites and state in the record how many you left out.
+model: claude-sonnet-5
+agent: Triager
+tools:
+  - git
+mcp:
+  - git
+skill: skills/diff-triager.md
+params:
+  max_files: 60
+  temperature: 0.2
+
+inputs:
+  - name: pull_request
+    type: json
+    description: The PR payload from intake, diff included.
+outputs:
+  - name: triage
+    type: json
+    description: Per-file risk bands, the blast radius the diff implies, and the suites to run.
+dependencies:
+  - pr-intake
+cannot:
+  - push to the repository it reads
+
+requires_human: false
+risk_markers: []
+notes: >-
+  Read scope on the repository only, the triager clones and diffs, it never pushes. The write
+  scope this line needs lives on `merge-executor`, at the far end of the human gate.
+
+version: 1.0.0
+author: sol-antczak
+ontology_version: 0.1.0

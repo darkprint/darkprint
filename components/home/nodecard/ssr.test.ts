@@ -73,7 +73,9 @@ describe("the card is in the markup before any script runs", () => {
   });
 
   it("colours it with spans rather than painting it", () => {
-    expect(HTML).toContain('<span class="text-cyan">model</span>');
+    // The key colour is the copper register's line, not cyan: the figure's whole ground
+    // is one accent now, and a second one inside it would read as a mistake.
+    expect(HTML).toContain('<span class="text-copper-line">model</span>');
     expect(HTML).not.toContain("<img");
     expect(HTML).not.toContain("<canvas");
   });
@@ -83,7 +85,7 @@ describe("the card is in the markup before any script runs", () => {
    * finished state, so a reader with no JS and a reader who asked for no motion get
    * every annotation open at once, which is what spec §3.2 requires in as many words.
    */
-  it("opens all seven annotations", () => {
+  it("opens every annotation at once", () => {
     for (const annotation of NODE_CARD_ANNOTATIONS) {
       expect(TEXT).toContain(annotation.title);
       // The longest stretch of plain prose in the body. `Ticked` splits on backticks and
@@ -103,21 +105,26 @@ describe("the card is in the markup before any script runs", () => {
     // `motion` is false until the client has looked, so the prerendered markup is the
     // stacked layout. A `lg:` class in here means the gate has been bypassed and the
     // no-JS reader is looking at a clipped window that will never scroll.
-    for (const gated of ["lg:sticky", "lg:h-[420px]", "lg:h-[420vh]", "lg:hidden", "lg:bg-"]) {
+    for (const gated of ["lg:sticky", "lg:h-[504px]", "lg:h-[420vh]", "lg:hidden", "lg:bg-"]) {
       expect(HTML, `choreography class leaked: ${gated}`).not.toContain(gated);
     }
   });
 
   /**
    * The static answer to the leader line. There is no drawn connection without the
-   * choreography, so all seven runs are marked in the listing's margin and each carries
-   * its step number, which is how a reader with no JS still knows which seven places on
-   * the card the seven notes below are about.
+   * choreography, so every run is marked in the listing's margin and each carries its step
+   * number, which is how a reader with no JS still knows which places on the card the
+   * notes below are about.
+   *
+   * The two classes are the copper register's, not the blueprint one's. They are asserted
+   * by name because the marking is the whole of the static layout's pointing: a rename
+   * that dropped one of them would leave a listing that still renders and no longer says
+   * which lines each note is about.
    */
-  it("marks all seven runs in the listing itself", () => {
-    expect(HTML).toContain("bg-blueprint/25");
-    expect(HTML).toContain("border-blueprint-line/60");
-    for (const step of [1, 2, 3, 4, 5, 6, 7]) {
+  it("marks every annotated run in the listing itself", () => {
+    expect(HTML).toContain("bg-copper/25");
+    expect(HTML).toContain("border-copper-line/60");
+    for (const step of NODE_CARD_ANNOTATIONS.map((_, i) => i + 1)) {
       expect(HTML).toContain(`>${step}</span>`);
     }
   });
@@ -186,7 +193,7 @@ describe("the landing's walk lays out for a phone before it lays out for a scree
   });
 
   it("emits none of the choreography's classes on the server", () => {
-    for (const gated of ["lg:sticky", "lg:h-[170vh]", "lg:overflow-y-hidden", "lg:hidden"]) {
+    for (const gated of ["lg:sticky", "lg:h-[190vh]", "lg:overflow-y-hidden", "lg:hidden"]) {
       expect(WALK, `choreography class leaked: ${gated}`).not.toContain(gated);
     }
   });

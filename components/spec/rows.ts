@@ -87,9 +87,9 @@ export const TOPOLOGY_ROWS: readonly CheckRow[] = [
  * Layer 02. One node, fully described.
  *
  * ── The length pass, PROJECT.md §3.1 ──
- * `/spec/card` opens with the scroll-annotated card, whose seven annotations already
- * teach `id`/`type`/`phase`, `model`, `skill`, `tools`/`mcp`, `inputs`, `outputs` and
- * `cannot` at length, from the same file. Every `what` below that restated one of them
+ * `/spec/card` opens with the scroll-annotated card, whose nine annotations already
+ * teach `id`/`type`/`phase`, `action`, `spec`, `model`, `tools`/`mcp`, `skill`, `inputs`,
+ * `outputs` and `cannot` at length, from the same file. Every `what` below that restated one of them
  * was cut back to the part the annotation does not carry, and no row lost a claim: the
  * table's job here is the third column, which is the only place several of these
  * diagnostic codes are named anywhere on the site.
@@ -189,8 +189,15 @@ export const CARD_ROWS: readonly CheckRow[] = [
     what: "A path inside the bundle. Nothing in the engine reads what it points at.",
   },
   {
-    name: "name · action · notes · author",
+    name: "name · action · agent · notes · author",
     what: "Prose for whoever reads the card. Carried into the download and checked by nothing.",
+  },
+  {
+    /* `provenance` was the one wire key this table did not list, which made "every field"
+       a claim it did not quite meet. It is optional, most cards leave it out, and leaving
+       it out is not a defect: the row says so rather than implying an absence. */
+    name: "provenance",
+    what: "Where the card came from, when its author says so. Optional, free text, and read by no analysis.",
   },
 ];
 

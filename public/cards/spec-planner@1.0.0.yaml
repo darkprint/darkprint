@@ -1,0 +1,55 @@
+id: spec-planner
+name: Spec Planner
+type: agent
+phase: planning
+
+action: >-
+  Turn the incoming request into two separate artefacts, an ordered build brief, and the
+  acceptance criteria the finished work will be judged against.
+spec: >-
+  Read the feature request you are handed and turn it into two separate artefacts, written
+  independently of one another. On `plan`, set out the ordered steps someone would follow to
+  build the thing, naming for each step the file or module it touches and what exists once it
+  is done. On `criteria`, set out the conditions the finished work must satisfy, one per line,
+  each phrased so a machine can decide it: an observable behaviour, an input paired with the
+  output it must produce, or a measurable limit. Keep the two apart, a step is not a
+  criterion, and a criterion that merely restates a step tests nothing. Write no code yourself,
+  and never weaken a criterion to make it easier to meet.
+model: claude-opus-5
+agent: Planner
+tools: []
+mcp: []
+skill: skills/spec-planner.md
+
+inputs:
+  - name: request
+    type: text
+    description: The feature request the run was started with, in the requester's own words.
+outputs:
+  - name: plan
+    type: plan
+    description: The ordered build steps, each naming what it touches and what exists when it is done.
+  - name: criteria
+    type: acceptance-criteria
+    description: The conditions the finished work must satisfy, one per line, each machine-decidable.
+dependencies: []
+cannot:
+  - write any of the code it plans
+  - weaken a criterion to make it easier to meet
+
+requires_human: false
+risk_markers: []
+notes: >-
+  The `plan` port is deliberately not wired to `builder` in this blueprint, and the gap is the
+  lesson rather than an oversight. Doc 3 §4.1 defines `criteria-leak` over a *path* from the
+  criteria producer to the node whose artefact they judge, and the analyzer reads that path at
+  node level, so any edge at all from this node into an `implementation` node establishes the
+  marker, whichever port it carries. The builder is therefore handed its brief when the graph is
+  instantiated, and nothing leaves this node except the criteria, which go to the tester. The
+  other end of that gap is written down too: `code-builder@1.0.0` lists `acceptance-criteria`
+  under `cannot`, so an edge from here into the builder is refused by the resolver as well as
+  charged by the analyzer.
+
+version: 1.0.0
+author: orin
+ontology_version: 0.1.0

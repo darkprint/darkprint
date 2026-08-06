@@ -63,6 +63,34 @@
   --color-blueprint-line: #74b4ff;
   --color-blueprint-ink: #cfe2ff;
 
+  /* --- Copper pole: the node card, and nothing else yet ---
+     The same four jobs the blueprint pole has (ground, frame, line, ink), on
+     the other side of the wheel. The author asked for the node card figure to
+     read orange rather than blue, and a figure whose subject is one card
+     rather than one graph is worth a register of its own: a card is a
+     document, a blueprint is a drawing, and the two now say so before a word
+     is read.
+
+     WHY THIS IS NOT `--color-amber`, and why it must never become it. Amber
+     is spent sitewide on exactly two claims — `ComingSoonBadge` ("not built
+     yet") and `.route-box` ("this box leaves the page"). The node card is the
+     most literally-built thing on the site: it is read off `content/cards/`
+     at build time and the engine enforces what it declares. Painting it in
+     the "not built yet" colour would be the one lie this figure cannot
+     afford. `--color-copper-line` sits at oklch hue 46 against amber's 75, so
+     it is orange where amber is gold, and it is 0.06 darker besides.
+
+     Contrast, measured against the ground this register mixes for itself
+     (`SHEET_REGISTER.copper`, #24140c, and the listing's own #0e0a0d over it):
+     `line` reads 7.6:1 and 8.4:1, `ink` 13.3:1 and 14.7:1, both past AA for
+     body text and AAA at these sizes. `line` at 80% opacity is the floor for
+     text (5.3:1); at 60% it is 3.6:1, which is a non-text boundary and not a
+     word. Do not write `line/70` on a label: it lands at 4.3:1. */
+  --color-copper: #5e2b07;
+  --color-copper-deep: #3a1c06;
+  --color-copper-line: #ff8a4d;
+  --color-copper-ink: #f8d9c4;
+
   /* --- Accents ---
      Each accent carries one meaning and the site does not spend it elsewhere:
      cyan is interactive, violet is where a person acts, emerald is a figure
@@ -280,6 +308,21 @@ body {
       linear-gradient(90deg, color-mix(in oklab, var(--color-blueprint-line) 12%, transparent) 1px, transparent 1px),
       linear-gradient(color-mix(in oklab, var(--color-blueprint-line) 5%, transparent) 1px, transparent 1px),
       linear-gradient(90deg, color-mix(in oklab, var(--color-blueprint-line) 5%, transparent) 1px, transparent 1px);
+    background-size: 96px 96px, 96px 96px, 16px 16px, 16px 16px;
+    background-position: -1px -1px;
+  }
+
+  /* The same graticule, warm. `.bp-grid`'s geometry to the pixel — 96px major,
+     16px minor, the same 12%/5% stops — because the node card is drawn on the
+     same drafting paper as everything else and only the ink changed. Anything
+     that moves in `.bp-grid` moves here too, or the two sheets stop being one
+     family. */
+  .copper-grid {
+    background-image:
+      linear-gradient(color-mix(in oklab, var(--color-copper-line) 12%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--color-copper-line) 12%, transparent) 1px, transparent 1px),
+      linear-gradient(color-mix(in oklab, var(--color-copper-line) 5%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--color-copper-line) 5%, transparent) 1px, transparent 1px);
     background-size: 96px 96px, 96px 96px, 16px 16px, 16px 16px;
     background-position: -1px -1px;
   }

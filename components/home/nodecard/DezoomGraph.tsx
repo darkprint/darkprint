@@ -14,7 +14,7 @@
    card for the disc the card flies into.
 
    The absent edge is the reason this is the right graph to end on.
-   Annotation 7 has just told the reader that `cannot:
+   The last annotation has just told the reader that `cannot:
    [acceptance-criteria]` is enforced, and here is the run it
    forbids, drawn as the dashed non-edge `FlowAbsence` exists for.
 
@@ -179,8 +179,8 @@ export function DezoomGraph({
         </div>
         <p className="max-w-2xl text-sm leading-relaxed text-muted">
           Five discs, and behind each one a card like the one above. Nobody stands in this
-          graph, which is what the classification records. The dashed run is the edge
-          annotation 7 described: draw it and the bundle stops resolving.{" "}
+          graph, which is what the classification records. The dashed run is the edge the
+          last annotation described: draw it and the bundle stops resolving.{" "}
           <Link
             href={cardHref}
             className="text-cyan underline decoration-line-bright underline-offset-4"

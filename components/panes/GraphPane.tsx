@@ -55,10 +55,16 @@ export function GraphPane({
   focus: PaneFocus;
   /** Distinct React Flow instance name; a page may mount more than one schematic. */
   graphId: string;
-  /** `BlueprintGraph`'s own default is 460 — the merged panel's caller asks for that
-      explicitly, since this pane's own historical default (280) was sized for a
-      four-up grid this pane no longer shares the row with. */
-  height?: number;
+  /**
+   * The canvas box's height: a pixel count, or any CSS length.
+   *
+   * A string is what lets a caller size the pane from the drawing it holds without
+   * measuring a canvas first — `SynchronisedPanes` passes `graphPaneHeightCss`, which is a
+   * `clamp()` over the viewport, for exactly that reason. The 280 default is this pane's
+   * own history, from a four-up grid it no longer shares a row with, and is left as the
+   * answer for a caller that has no graph geometry to hand.
+   */
+  height?: number | string;
   onSelectNode: (nodeId: string) => void;
   className?: string;
 }) {

@@ -1,7 +1,6 @@
-"use client";
-
-import { useState } from "react";
 import { cx } from "@/lib/format";
+import { CopyButton } from "@/components/ui/CopyButton";
+import { CloneMenu } from "@/components/blueprint/CloneMenu";
 
 /** One downloadable card document. */
 export interface DownloadCard {
@@ -20,7 +19,10 @@ export interface DownloadCard {
  * request — and the hrefs are handed in already computed, which keeps the engine out of
  * the browser bundle.
  *
- * A client component only for the copy button. Everything it renders is plain data.
+ * No longer a client component. It was one only for its inline copy button; that block is
+ * now `components/ui/CopyButton.tsx`, which carries the `"use client"` itself, so every
+ * filename, href and sentence in this panel is rendered on the server and none of it waits
+ * on script.
  */
 export function DownloadPanel({
   headingLevel = "h2",
@@ -30,6 +32,7 @@ export function DownloadPanel({
   agentsHref,
   vocabulary,
   cards,
+  clone,
   className,
 }: {
   /**
@@ -61,20 +64,21 @@ export function DownloadPanel({
   vocabulary?: { href: string; termIds: readonly string[] };
   /** Every card the graph pins, deduplicated and sorted. */
   cards: readonly DownloadCard[];
+  /**
+   * The one command that fetches this whole folder in one go, and the `darkprint clone`
+   * line that would replace it if that CLI existed. Both are built by
+   * `lib/content/bundle-export.ts` from the same file list the generator wrote, so the
+   * command and the folder on disk cannot disagree.
+   *
+   * Optional, because one caller correctly has nothing to pass: `/build`'s step 7 renders
+   * a bundle assembled in the browser from the reader's own choices, which was never
+   * written under `public/bundles/` and therefore has no URL to fetch it from. A command
+   * there would 404 on every line.
+   */
+  clone?: { command: string; cliCommand: string };
   className?: string;
 }) {
   const command = "attractor run factory.dot";
-  const [copied, setCopied] = useState(false);
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(command);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1400);
-    } catch {
-      /* clipboard unavailable — no-op */
-    }
-  }
 
   const Heading = headingLevel;
 
@@ -119,22 +123,35 @@ export function DownloadPanel({
         <code className="min-w-0 flex-1 truncate rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg">
           {command}
         </code>
-        <button
-          type="button"
-          onClick={copy}
-          aria-label={
-            copied ? "Run command copied to the clipboard" : "Copy the run command"
-          }
-          className="shrink-0 rounded border border-line px-2 py-1 font-mono text-[11px] text-muted transition-colors hover:border-cyan hover:text-cyan"
-        >
-          {copied ? "copied ✓" : "copy"}
-        </button>
+        <CopyButton text={command} ariaLabel="Copy the run command" />
       </div>
       {/* Doc 1 §0.1.3, stated where the download happens rather than only in the README. */}
       <p className="mt-2 text-xs leading-snug text-dim">
         Execution happens on your machine. DarkPrint distributes these files and analyses
         them. It runs nothing and holds none of your provider keys.
       </p>
+
+      {/* Taking the folder rather than the files one at a time.
+          It sits here, after the runnable artefact and its command, and not above them:
+          `factory.dot` is first and largest because it is the thing that runs, and a
+          462-character curl line above it would demote the one file a reader needs. The
+          reading order is now what the panel always meant — here is the file that runs,
+          here is how to run it, here is how to take the whole folder in one go, and here
+          is each remaining file on its own.
+
+          `variant="plain"`, because this panel already lives behind a
+          `<More summary="Download">` on the blueprint page and a floating dropdown inside
+          a disclosure is two clicks and a panel inside a panel. The header row carries the
+          `menu` variant for the reader who never opens this. */}
+      {clone !== undefined && (
+        <CloneMenu
+          kind="blueprint"
+          variant="plain"
+          command={clone.command}
+          cliCommand={clone.cliCommand}
+          className="mt-4"
+        />
+      )}
 
       {/* The other two files. */}
       <ul className="mt-4 flex flex-col divide-y divide-line border-t border-line">

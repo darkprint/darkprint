@@ -11,11 +11,14 @@
       about the YAML being real. So the tokens are reassembled and
       compared to the bytes on disk.
 
-   2. The seven annotations still point at the seven things. They
-      resolve by key name against a file that another agent was
-      editing during this same pass, and a run that silently moved
-      to the wrong lines draws a leader to the wrong place rather
-      than failing.
+   2. The annotations still point at the things they name, and they
+      still do it in document order. They resolve by key name
+      against a file that another agent was editing during this same
+      pass, and a run that silently moved to the wrong lines draws a
+      leader to the wrong place rather than failing. The ordering
+      case below is the author's bug report, kept: with the steps in
+      the spec's reading order rather than the file's, scrolling
+      down moved the highlight up.
 
    3. The arithmetic in `geometry.ts` holds. It is arithmetic
       precisely so that it can be checked without a DOM, which is
@@ -141,19 +144,49 @@ describe("a key's block is the key plus what is indented under it", () => {
   });
 });
 
-describe("the seven annotations point at the seven places", () => {
+describe("the annotations point at the places they name", () => {
   const resolved = resolveAnnotations(CARD);
 
-  it("resolves all seven against the archive's own copy of the card", () => {
+  it("resolves every one against the archive's own copy of the card", () => {
     expect(resolved).toHaveLength(NODE_CARD_ANNOTATIONS.length);
-    expect(resolved.map((a) => a.step)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(resolved.map((a) => a.step)).toEqual(
+      NODE_CARD_ANNOTATIONS.map((_, i) => i + 1),
+    );
+  });
+
+  /**
+   * THE ONE THE AUTHOR REPORTED. "When scrolling down, the highlighted elements should be
+   * ordered from top to bottom. Right now, sometimes scrolling down, highlight something
+   * above."
+   *
+   * The whole section is driven by `reelShift(current.from)`, so the walk's direction is
+   * decided here, in the order of a plain array, and nowhere else. The old order followed
+   * the spec's table, which puts `skill` (line 22) before `tools`/`mcp` (lines 19-21), so
+   * step 4 scrolled the listing 66px back down while the reader was scrolling on. Strictly
+   * increasing, not merely non-decreasing: two steps starting on the same line would leave
+   * the leader pointing at one run twice with nothing moving between them, which reads as
+   * a figure that has got stuck.
+   */
+  it("walks the card downwards, one run strictly after the last", () => {
+    const starts = resolved.map((a) => a.from);
+    expect(starts).toEqual([...starts].sort((a, b) => a - b));
+    for (let i = 1; i < resolved.length; i += 1) {
+      const before = resolved[i - 1];
+      const here = resolved[i];
+      expect(
+        here?.from,
+        `step ${here?.step} (${here?.id}) starts at L${here?.from}, above step ${before?.step} (${before?.id}) at L${before?.from}-${before?.to}`,
+      ).toBeGreaterThan(before?.to ?? 0);
+    }
   });
 
   it.each([
     ["identity", "id: code-builder"],
+    ["action", "action: >-"],
+    ["spec", "spec: >-"],
     ["model", "model: claude-sonnet-5"],
-    ["skill", "skill: skills/code-builder.md"],
     ["reach", "tools: []"],
+    ["skill", "skill: skills/code-builder.md"],
     ["inputs", "inputs:"],
     ["outputs", "outputs:"],
     ["cannot", "cannot:"],
@@ -164,9 +197,9 @@ describe("the seven annotations point at the seven places", () => {
   });
 
   /**
-   * Spec §3.2 makes step 7 the critical one and says what it has to claim. The wording
-   * may be edited; the diagnostic code and the type it fires on may not quietly drop out
-   * of it, because that sentence is the site's strongest checkable statement.
+   * Spec §3.2 makes the prohibition the critical step and says what it has to claim. The
+   * wording may be edited; the diagnostic code and the type it fires on may not quietly
+   * drop out of it, because that sentence is the site's strongest checkable statement.
    */
   it("says what the engine does about the prohibition", () => {
     const cannot = resolved.find((a) => a.id === "cannot");
@@ -176,6 +209,23 @@ describe("the seven annotations point at the seven places", () => {
 
   it("names the reserved Attractor attribute the model becomes", () => {
     expect(resolved.find((a) => a.id === "model")?.body).toContain("llm_model");
+  });
+
+  /**
+   * The two steps the author asked for, and the one honesty hazard they carry. `spec` is
+   * the payload an agent is handed, and there is no backend here and nothing that runs a
+   * graph, so the body has to put the running somewhere other than this site. It also has
+   * to carry the one check the field does have, which is a length floor.
+   */
+  it("says what instructs the node, without claiming to run it", () => {
+    const action = resolved.find((a) => a.id === "action");
+    const spec = resolved.find((a) => a.id === "spec");
+    expect(action?.body).toContain("`action`");
+    expect(spec?.body).toContain("card/spec-too-thin");
+    expect(spec?.body).toContain("own machine");
+    for (const claim of ["we run", "runs it for you", "darkprint runs"]) {
+      expect(spec?.body.toLowerCase()).not.toContain(claim);
+    }
   });
 
   /**
@@ -232,19 +282,23 @@ describe("the reel's arithmetic", () => {
   });
 
   /**
-   * Seven collapsed heads plus one open body come to exactly the height of the listing
-   * window, which is what keeps the two columns level at every step. Changing one of the
-   * four numbers without the others is the way this section goes crooked.
+   * Every collapsed head but one, plus the open body, come to exactly the height of the
+   * listing window, which is what keeps the two columns level at every step. Written
+   * against the count rather than against a literal 7, because the count changed once and
+   * the four numbers did not follow it on their own: the next person to add a step gets
+   * this failure instead of a rail that overflows its window by 42px in silence.
    */
   it("makes the notes column the same height as the listing", () => {
-    expect(7 * NC.head + 6 * NC.gap + NC.body).toBe(NC.window);
+    const count = NODE_CARD_ANNOTATIONS.length;
+    expect(count * NC.head + (count - 1) * NC.gap + NC.body).toBe(NC.window);
     expect(RAIL_PITCH).toBe(NC.head + NC.gap);
   });
 
   it("centres a rail head on its own row", () => {
+    const last = NODE_CARD_ANNOTATIONS.length - 1;
     expect(railCentre(0)).toBe(NC.head / 2);
-    expect(railCentre(6)).toBe(6 * RAIL_PITCH + NC.head / 2);
-    expect(railCentre(6)).toBeLessThan(NC.window);
+    expect(railCentre(last)).toBe(last * RAIL_PITCH + NC.head / 2);
+    expect(railCentre(last)).toBeLessThan(NC.window);
   });
 });
 
@@ -253,9 +307,9 @@ describe("both ends of the leader land inside the drawing, on the real card", ()
 
   /**
    * The one check that would have caught a wrong constant. Every quantity in
-   * `geometry.ts` is chosen so that seven particular runs of one particular file line up
-   * with seven rail heads, and the way that goes wrong is quietly: a leader drawn to
-   * y = 470 in a 420-high box simply is not there, and nothing throws.
+   * `geometry.ts` is chosen so that particular runs of one particular file line up with
+   * the rail heads beside them, and the way that goes wrong is quietly: a leader drawn to
+   * y = 560 in a 504-high box simply is not there, and nothing throws.
    */
   it.each(resolved.map((a) => [a.id, a] as const))(
     "%s connects a visible run to a visible head",
@@ -328,8 +382,9 @@ describe("the dezoom", () => {
    * under a note nobody has read yet. The two numbers used to agree by hand.
    */
   it("has not started until the last note has attached", () => {
+    const count = NODE_CARD_ANNOTATIONS.length;
     const lastAttached = 1 - STEP_RESERVE.tail;
-    expect(stagesShown(lastAttached, 7, STEP_RESERVE)).toBe(7);
+    expect(stagesShown(lastAttached, count, STEP_RESERVE)).toBe(count);
     expect(dezoomProgress(lastAttached)).toBe(0);
   });
 
@@ -344,16 +399,19 @@ describe("the dezoom", () => {
 /* --------------------- any note, on demand --------------------- */
 
 describe("a note's own head knows where its step is", () => {
-  const count = 7;
+  const count = NODE_CARD_ANNOTATIONS.length;
 
   /**
    * The inversion has to round-trip through the map it inverts. A head that lands a pixel
    * outside its own band opens the neighbouring note, and the reader has no way to know
    * why the thing they clicked is not the thing that opened.
    */
-  it.each([0, 1, 2, 3, 4, 5, 6])("puts step %i in the middle of its own band", (index) => {
-    expect(stagesShown(stepProgress(index, count), count, STEP_RESERVE)).toBe(index + 1);
-  });
+  it.each(NODE_CARD_ANNOTATIONS.map((_, i) => i))(
+    "puts step %i in the middle of its own band",
+    (index) => {
+      expect(stagesShown(stepProgress(index, count), count, STEP_RESERVE)).toBe(index + 1);
+    },
+  );
 
   it("clamps an index past either end onto a real step", () => {
     expect(stepProgress(-3, count)).toBe(stepProgress(0, count));
@@ -366,7 +424,7 @@ describe("a note's own head knows where its step is", () => {
    */
   it("stays inside the pin at both ends", () => {
     const top = 1200;
-    for (const index of [-1, 0, 3, 6, 40]) {
+    for (const index of [-1, 0, 3, count - 1, 40]) {
       const y = stepScrollTop(index, count, top, 900 + PIN_TRAVEL, 900);
       expect(y).toBeGreaterThanOrEqual(top);
       expect(y).toBeLessThanOrEqual(top + PIN_TRAVEL);
@@ -376,11 +434,16 @@ describe("a note's own head knows where its step is", () => {
   /**
    * What the stage is sized for. `PIN_TRAVEL` is stated in pixels rather than in `vh`
    * precisely so this number is the same on every screen.
+   *
+   * 231px, where seven steps got 296. `PIN_TRAVEL` deliberately did not grow with the two
+   * steps the author asked for, and `geometry.ts` argues that trade beside the number; the
+   * assertion is here so that raising the count again is a decision somebody makes on
+   * purpose rather than a figure that quietly gets faster.
    */
   it("spends the pin evenly, at the distance the stage is sized for", () => {
     const at = (index: number) => stepScrollTop(index, count, 0, 900 + PIN_TRAVEL, 900);
     const travel = at(1) - at(0);
-    expect(Math.round(travel)).toBe(296);
+    expect(Math.round(travel)).toBe(231);
     for (let i = 1; i < count; i += 1) {
       expect(at(i) - at(i - 1)).toBeCloseTo(travel, 6);
     }
@@ -392,15 +455,15 @@ describe("a note's own head knows where its step is", () => {
 describe("the choreography hides the six inactive notes without deleting them", () => {
   /**
    * `lg:hidden` is `display: none`, which removes an element from the accessibility tree
-   * as well as from the layout. Six of the seven annotation bodies carried it at `lg` with
+   * as well as from the layout. Every annotation body but one carried it at `lg` with
    * motion allowed, so a screen reader, find-in-page and a text extractor all saw one note
    * out of seven, and the only route to the rest was scrolling a 420vh section. Spec §3.2
    * asks for the choreography and asks for nothing to be unreachable; `sr-only` is
    * `position: absolute` with a 1px clip, so the reel steps exactly as it did.
    *
    * A source scan because the state under test is a client one: `renderToStaticMarkup`
-   * runs with `motion === false` (see `ssr.test.ts`), which is the branch where all seven
-   * bodies are open, so no server render can reach the class this is about.
+   * runs with `motion === false` (see `ssr.test.ts`), which is the branch where every
+   * body is open, so no server render can reach the class this is about.
    */
   const SOURCE = readFileSync(
     join(process.cwd(), "components/home/nodecard/NodeCardStage.tsx"),
@@ -412,11 +475,11 @@ describe("the choreography hides the six inactive notes without deleting them", 
   });
 
   /**
-   * The rail collapses six of the seven heads at `lg`, so each head is a button that puts
-   * the page back where its own step is the one being read. That button exists only where
+   * The rail collapses every head but one at `lg`, so each head is a button that puts the
+   * page back where its own step is the one being read. That button exists only where
    * there is a pin to scroll: `motion === false` is the server, the reader with no JS and
    * the reader who asked for stillness, and all three still get the list exactly as it was,
-   * seven notes open and nothing to operate. The way that goes wrong is somebody hoisting
+   * every note open and nothing to operate. The way that goes wrong is somebody hoisting
    * the button out of the ternary to tidy the JSX, which is what this pins.
    */
   it("puts the head's button behind the motion gate", () => {

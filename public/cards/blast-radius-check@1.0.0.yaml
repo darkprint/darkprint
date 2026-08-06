@@ -1,0 +1,60 @@
+id: blast-radius-check
+name: Blast Radius Check
+type: validation
+phase: testing
+
+action: >-
+  Expand the drafted mitigation into the concrete set of hosts and services it would touch, hold
+  back anything wider than the declared limit, and emit the risk verdict the escalation path reads.
+spec: >-
+  Read the proposed mitigation on `draft` and expand every target expression in it, globs, tags,
+  service names, into the concrete list of hosts and services it would touch, resolving them
+  against live inventory rather than trusting the count the draft claims for itself. Measure that
+  resolved list against two limits: at most twelve affected hosts, and nothing that belongs to
+  `tier-0` or to `payments`. Emit your verdict on `risk`, and put the mitigation on `mitigation`
+  with the resolved target list attached only when it sits inside both limits. Treat a target you
+  cannot resolve as over the limit, not as safe, and never widen or narrow the mitigation to make
+  it fit, you judge it, you do not edit it. You are done when a verdict is on `risk`, whichever
+  way it went.
+model: claude-opus-5
+agent: Blast-radius QA
+tools:
+  - http-fetch
+mcp:
+  - fetch
+skill: skills/blast-radius-check.md
+params:
+  max_affected_hosts: 12
+  protected_tiers:
+    - tier-0
+    - payments
+
+inputs:
+  - name: draft
+    type: json
+    description: The proposed mitigation as the composer wrote it, before anything has run.
+outputs:
+  - name: mitigation
+    type: json
+    description: The mitigation cleared to run, with its resolved target list attached.
+  - name: risk
+    type: status
+    description: The risk verdict, what routes a mitigation to on-call instead of to the host.
+dependencies:
+  - resolution-composer
+cannot:
+  - edit the mitigation it judges
+  - clear a target it could not resolve
+
+requires_human: false
+risk_markers: []
+notes: >-
+  It reads live inventory over HTTP to expand the target set, which is the only reason this node
+  reaches the network at all. The core vocabulary has no metrics or observability capability, so
+  `http-fetch` stands in for the metrics API. That tool is what makes the analyzer infer
+  `unvalidated-external-access` here: this node is itself the validation step, and doc 3 §4.1 will
+  not let a node vouch for its own fetch, so the inference is correct and is left standing.
+
+version: 1.0.0
+author: mara-veil
+ontology_version: 0.1.0

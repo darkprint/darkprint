@@ -12,6 +12,8 @@ import {
   BUNDLE_README,
   FACTORY_DOT,
   TOPOLOGY_DOT,
+  bundleDownloadCommand,
+  bundleFilePaths,
   bundleHref,
   cardFilePath,
 } from "@/lib/content/bundle-export";
@@ -40,6 +42,7 @@ import { BundlePanel, type BundleNode } from "@/components/blueprint/BundlePanel
 import { DownloadPanel, type DownloadCard } from "@/components/blueprint/DownloadPanel";
 import { Comments } from "@/components/blueprint/Comments";
 import { ForkAction } from "@/components/blueprint/ForkAction";
+import { CloneMenu } from "@/components/blueprint/CloneMenu";
 import { ToolScopes } from "@/components/blueprint/Requirements";
 
 /** Every slug is known at build time; an unknown one is a 404, not an on-demand render. */
@@ -92,6 +95,21 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
   // Doc 3 §7: present only for a bundle whose cards declare a local term, which is the
   // same condition the generator writes the file under.
   const vocabulary = bundleVocabulary(bp.slug);
+
+  // The whole folder in one command. Built from `bundleFilePaths`, which is derived beside
+  // `exportBundle` from the same constants and held to its output by
+  // `lib/content/bundle-export.test.ts`, so the URL list a reader pastes into a terminal is
+  // the file list the generator actually wrote — not a second, hand-kept copy of it. The
+  // same `vocabulary` value decides both the extra row in `DownloadPanel` and the extra URL
+  // in the command, so a folder can never be fetched short of the file that prices it.
+  const cloneCommand = bundleDownloadCommand(
+    bp.slug,
+    bundleFilePaths({ cardRefs: bp.cardRefs, vocabulary: vocabulary !== undefined }),
+  );
+  const clone = {
+    command: cloneCommand,
+    cliCommand: `darkprint clone ${bp.slug}`,
+  };
 
   // The index row, for the two facts the view model does not carry: the vocabulary
   // version the manifest was written against, and how many distinct cards are pinned.
@@ -215,7 +233,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
                 end. `ForkAction` is the disclosure spec §1 locks in rather than a second
                 file download of its own; the button beside it is the one real download
                 this row promises. */}
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
               <ForkAction />
               {/* The topology, not the runnable pipeline: doc 2 §11 item 10's
                   command-line artefact is `factory.dot`, which the sidebar
@@ -226,6 +244,30 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               <ButtonLink href={topologyHref} download={TOPOLOGY_DOT} prefetch={false}>
                 Download blueprint.dot
               </ButtonLink>
+              {/* The whole folder, one click from the top of the page. It cannot live only
+                  inside `DownloadPanel`: that panel sits behind `<More summary="Download">`
+                  at the foot of this page, so everything in it is two clicks away, and this
+                  is the affordance `ForkAction`'s own "Take the whole folder from Download"
+                  link has finally been pointing at.
+
+                  LAST IN THE GROUP ON PURPOSE, and it is a layout constraint rather than a
+                  preference. Its panel is `right-0`-anchored, and only the group's final
+                  item is guaranteed to end at the group's right edge on whatever line the
+                  wrap puts it: `justify-end` packs every wrapped line to the right, so the
+                  last item's right edge is the content column's right edge at every width.
+                  Second in the group, this measured a 560px viewport wrapping it to the
+                  head of a line — trigger at 206→343 — and 73px of a 416px panel hanging
+                  off the left of the screen. Last, it measured wholly on screen at 320,
+                  360, 390, 430, 480, 520, 560, 640, 768, 900, 1024, 1280 and 1440.
+
+                  Both dropdowns in this row close each other
+                  (`components/ui/menu-group.ts`): their panels are wider than the gap
+                  between the triggers, so with both open the second covers the first. */}
+              <CloneMenu
+                kind="blueprint"
+                command={clone.command}
+                cliCommand={clone.cliCommand}
+              />
             </div>
           </div>
 
@@ -287,15 +329,15 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
       </header>
 
       {/* ---------- Body ---------- */}
-      {/* Panel reorg spec §A2, revised: the Score card is now the only thing riding in
-          `SynchronisedPanes`'s `aside` slot, sticky beside the graph — Requirements
+      {/* Panel reorg spec §A2, revised twice: the Score card rode in
+          `SynchronisedPanes`'s own `aside` slot, sticky beside the graph — Requirements
           and Bundle moved out of that column entirely, because stacking all three
           there made the column taller than the graph's own natural height, which
           left `position: sticky` with no slack to move Score within (a box already
           exactly as tall as the row it sits in has nowhere to go as the page
-          scrolls). Requirements and Bundle now sit full width, below the graph+aside
-          row, next to "Jump to a node" — the graph keeps its natural size instead of
-          being stretched or grown to manufacture room for something beside it.
+          scrolls). Score then moved into the page's own right column, and the graph
+          has now left the grid altogether so that it can be as wide as the body —
+          see its mount below for why, and for what that costs.
           The body used to be `mx-auto max-w-4xl`, which is 896px inside this page's
           1152px `container-page`. The author read the result: the panels have to occupy
           the same horizontal space as the title section above them, and a body inset by
@@ -321,28 +363,47 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           so the page had one shape for its first screen and another for the rest, and the
           Score card stopped being sticky the moment the graph ended.
 
-          The split is the page's now and runs the whole body: the left column carries the
-          graph, the panels and the engine's working, and the right one carries Score and
+          The split is the page's now and runs the body under the graph: the left column
+          carries the panels and the engine's working, and the right one carries Score and
           Bundle and stays put while the left scrolls. `lg:self-start` is what lets
           `sticky` move at all — a column stretched to the row's height has nowhere to go.
 
+          The graph panel is the one exception and it sits above this grid, full width. The
+          comment on its own mount has the measurement and the trade.
+
           Comments stay full width below, as asked. */}
+
+      {/* The graph and the card skeleton, consolidated: doc 2 §5.1's pane 1 and pane 2, the
+          first thing in the body after the header. Clicking a node — or picking one from the
+          dropdown beside the card skeleton — moves the same `selection` both panes share,
+          and the card it resolves opens its own page through the skeleton's "Open card"
+          link. The raw DOT and the raw card YAML (the four-pane view's panes 3 and 4) are
+          not redrawn here; `DownloadPanel` below already links to those exact bytes.
+
+          ── Why this one panel is outside the 2:1 body ──
+          The author: "in the graph panel of each blueprint, you should make the whole
+          blueprint visible". Seven of the nine archive graphs are six columns and 1150 flow
+          units across, and the width of the box is the only thing that decides what that
+          costs in type size — the drawings are width-bound at every viewport, so a taller
+          pane buys literally nothing. In the two-thirds column this panel used to share with
+          Score, the whole-graph fit is 0.61 and `AgentNode`'s 11px kind row renders at
+          6.7 CSS px. With the whole body it is 0.94 and 10.4, which is over the 10 CSS px
+          floor the site holds its figures to. That one difference is whether eight of the
+          nine blueprints are whole AND readable or only whole.
+
+          It is a real cost and it is the author's own earlier instruction that pays it: the
+          panels "should be placed like the structure we have in the node webpage where each
+          box on the left occupies 2/3 of the column", and the reorg spec §A2's reason for
+          Score being sticky beside the graph was that a reader gets "the glance and the
+          grade in one glance of the page". Score is still sticky and still travels with the
+          body — it is beside Tool scopes and the engine's working now instead of beside the
+          drawing. Every other panel keeps the 2:1 shape. If the trade is the wrong way
+          round, the fix is to put this panel back inside the left column and accept 6.7 CSS
+          px on seven of the nine, not to re-floor the fit. */}
+      <SynchronisedPanes model={paneModel} graph={bp.graph} className="mt-10" />
+
       <div className="mt-10 grid gap-8 lg:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-8 lg:col-span-2">
-        {/* The graph and the card skeleton, consolidated: doc 2 §5.1's pane 1 and
-            pane 2, the first thing in the body after the header. Clicking a
-            node — or picking one from the dropdown beside the card skeleton — moves
-            the same `selection` both panes share, and the card it resolves opens
-            its own page through the skeleton's "Open card" link. The raw DOT and
-            the raw card YAML (the four-pane view's panes 3 and 4) are not redrawn
-            here; `DownloadPanel` below already links to those exact bytes.
-
-            The Score card rides along in `aside`, sticky beside the graph rather
-            than under it — see the panel reorg spec §A2 for why: a reader gets the
-            glance (the graph, what it draws) and the grade (Score) in one glance of
-            the page, and Score stays in view while the graph is what scrolls. */}
-        <SynchronisedPanes model={paneModel} graph={bp.graph} />
-
         {/* Requirements and Bundle, full width, right after the graph+Score row and
             the "Jump to a node" block `SynchronisedPanes` renders below it — moved
             out of the sticky aside column (see the comment above) so the graph and
@@ -467,6 +528,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
                   },
                 })}
             cards={downloadCards}
+            clone={clone}
           />
         </More>
       </div>

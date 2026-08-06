@@ -4,8 +4,8 @@
    How far a reader has travelled through a tall section, 0..1.
 
    Spec §3.2 is the customer: a sticky viewport holding one node
-   card, seven annotations that attach one at a time as the reader
-   descends, and a dezoom at the end. All three read the same
+   card, a row of annotations that attach one at a time as the
+   reader descends, and a dezoom at the end. All three read the same
    number.
 
    Two decisions worth stating, because both are load-bearing:

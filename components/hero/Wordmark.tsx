@@ -109,21 +109,13 @@ const CLAIM = "Autonomy you can read as a graph.";
 const SUPPORT =
   "DOT graphs of agent pipelines, the YAML card behind every node, and a score for how much autonomy each one takes.";
 
-/**
- * The three counts the first viewport prints.
- *
- * Passed in rather than imported: `PLATFORM_STATS` lives in `@/lib/data`, which reaches
- * `lib/content/read.ts` and therefore `node:fs`, and this file is `"use client"` — the
- * import would go into the browser bundle and `read.ts` throws by hand the moment it finds
- * a `window`. `Hero` is a server component and reads the archive for us; these are plain
- * numbers by the time they cross the boundary, so they stay countable off `content/` at
- * build time rather than being written down here where they could go stale.
- */
-export interface WordmarkCounts {
-  blueprints: number;
-  nodes: number;
-  terms: number;
-}
+/* The first viewport used to print three counts ("9 blueprints · 53 node cards · 50
+   ontology terms") under the two buttons, handed down from `Hero` as a `stats` prop
+   because `PLATFORM_STATS` reaches `node:fs` and this file is `"use client"`. The author
+   removed the line; the prop, its `WordmarkCounts` shape and the `Hero` import went with
+   it rather than being left threaded through unused. `PLATFORM_STATS` itself stays —
+   `components/home/SectionDoors.tsx` still prints the same three figures on beat 5, where
+   the sentence that vouches for them ("nothing here is rounded up") lives. */
 
 /** The rule under the name, in scene units. Tall enough for the pulse's stroke. */
 const RULE = { width: 900, height: 6 } as const;
@@ -227,7 +219,7 @@ const AT = {
   cta: 1080,
 } as const;
 
-export function Wordmark({ stats }: { stats: WordmarkCounts }) {
+export function Wordmark() {
   const { ref, phase } = useReveal<HTMLDivElement>({ amount: 0.05 });
 
   useIsomorphicLayoutEffect(() => {
@@ -489,7 +481,7 @@ export function Wordmark({ stats }: { stats: WordmarkCounts }) {
         {SUPPORT}
       </p>
 
-      {/* The first viewport's two real actions, and the three figures behind them.
+      {/* The first viewport's two real actions.
 
           Measured before this: the only interactive things above the fold were a CLI chip
           wearing a COMING SOON badge and a "what a blueprint is ↓" cue, while the two
@@ -498,30 +490,23 @@ export function Wordmark({ stats }: { stats: WordmarkCounts }) {
 
           The labels are `SectionDoors`' two doors, verbatim: the landing opens and closes
           on the same two choices in the same words, which is the decision architecture the
-          page already ends on rather than a second, differently-worded offer. */}
-      <div data-mark="cta" className="mt-8 flex flex-col items-center">
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <ButtonLink href="/blueprints" variant="primary" size="lg">
-            Browse the blueprints
-          </ButtonLink>
-          <ButtonLink href="/build" variant="outline" size="lg">
-            Build your own
-          </ButtonLink>
-        </div>
+          page already ends on rather than a second, differently-worded offer.
 
-        {/* Proof rather than a promise, and the one line in the first viewport a reader
-            could check: `PLATFORM_STATS` counts `content/` at build time, so these three
-            move when the archive does. `.label` is the site's 11px mono tier; the numbers
-            take `tabular-nums` so they do not shift width against each other. */}
-        <p className="label mt-5 text-balance tabular-nums">
-          {/* Each count is atomic: on a 390px phone the line wraps, and without this it
-              wrapped inside a count — "50" on one line and "ONTOLOGY TERMS" on the next,
-              which reads as two different facts. It may break between counts, never
-              inside one. */}
-          <span className="whitespace-nowrap">{stats.blueprints} blueprints &middot;</span>{" "}
-          <span className="whitespace-nowrap">{stats.nodes} node cards &middot;</span>{" "}
-          <span className="whitespace-nowrap">{stats.terms} ontology terms</span>
-        </p>
+          `data-mark="cta"` sits on the button row itself. It used to sit on a column
+          wrapper that grouped these buttons with a line of three counts underneath; the
+          counts were removed at the author's request, and a wrapper around one child is a
+          box that only exists to be a timeline target. The mark moved down onto the row so
+          the beat still animates exactly what a reader can act on. */}
+      <div
+        data-mark="cta"
+        className="mt-8 flex flex-wrap items-center justify-center gap-3"
+      >
+        <ButtonLink href="/blueprints" variant="primary" size="lg">
+          Browse the blueprints
+        </ButtonLink>
+        <ButtonLink href="/build" variant="outline" size="lg">
+          Build your own
+        </ButtonLink>
       </div>
 
       {/* The CLI mention, moved here 2026-07-29 from the section's top-right corner —

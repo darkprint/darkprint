@@ -1,0 +1,49 @@
+id: schema-gate
+name: Schema Gate
+type: validation
+phase: testing
+
+action: >-
+  Check the candidate record against the registered schema, pass only what conforms, and emit
+  the violation list for everything that does not.
+spec: >-
+  Check the normalized record you are handed against the schema registered as
+  `schema-registry://warehouse-record@3`. Emit it byte-for-byte unchanged on `accepted` only
+  when it conforms exactly, a field the schema does not name is a failure, not a tolerance.
+  When it does not conform, emit one entry per breach on `violations`, each naming the field
+  and the specific constraint it broke: the repair step works from the constraint and can do
+  nothing with a bare rejection.
+model: claude-haiku-4-5
+agent: Validator
+tools: []
+mcp: []
+skill: skills/schema-gate.md
+params:
+  schema_ref: "schema-registry://warehouse-record@3"
+  strict: true
+
+inputs:
+  - name: candidate
+    type: json
+    description: The normalized record on its way into a system that expects a guarantee.
+outputs:
+  - name: accepted
+    type: json
+    description: The record unchanged, now carrying the guarantee that it matches the schema.
+  - name: violations
+    type: json
+    description: Field-level failures, one entry per breach, for the repair path to work from.
+dependencies:
+  - normalize
+cannot:
+  - edit a record to make it conform
+
+requires_human: false
+risk_markers: []
+notes: >-
+  `strict` rejects unknown fields as well as bad ones. That is what makes the gate a boundary
+  rather than a filter, and it is the reason nothing half-formed reaches the store.
+
+version: 1.0.0
+author: lupo
+ontology_version: 0.1.0

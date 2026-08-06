@@ -9,6 +9,7 @@ import {
   getRegistry,
   nodeCardVersions,
 } from "@/lib/content";
+import { cardDownloadCommand } from "@/lib/content/bundle-export";
 import { commentsFor, downloadsFor } from "@/lib/data/node-community";
 import { getAuthor } from "@/lib/data/users";
 import { compact, cx } from "@/lib/format";
@@ -16,6 +17,7 @@ import { CARD_BLOCKS } from "@/components/panes/model";
 import { termHref } from "@/lib/href";
 import { Comments } from "@/components/blueprint/Comments";
 import { ForkAction } from "@/components/blueprint/ForkAction";
+import { CloneMenu } from "@/components/blueprint/CloneMenu";
 import { AuthorChip } from "@/components/ui/Avatar";
 import { KindBadge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
@@ -27,11 +29,10 @@ import {
   type DependencyView,
   type PortView,
 } from "@/components/nodes/NodeInterfaces";
-import {
-  Ticked,
-  VersionHistory,
-  type NodeVersion,
-} from "@/components/nodes/VersionHistory";
+import { VersionHistory, type NodeVersion } from "@/components/nodes/VersionHistory";
+import { Ticked } from "@/components/ui/Ticked";
+import { FieldDisclosure } from "@/components/ui/FieldDisclosure";
+import { FIELD_NOTE } from "@/components/panes/field-notes";
 
 /**
  * An id outside `generateStaticParams` is a 404 at build time rather than a render at
@@ -131,13 +132,13 @@ export async function generateMetadata({ params }: PageProps<"/nodes/[...id]">) 
    skeleton and this table are two drawings of one document and a
    second copy of the grouping would drift.
 
-   Three fields the card carries are not in doc 1 §3's blocks and
-   are placed here, once, with the reason:
-
-     skill   behaviour. It is literally the behaviour document.
-     mcp     behaviour. What it reaches in order to do the work.
-     cannot  interfaces. §3.3 is "what arrives, what leaves"; a
-             prohibition is the one thing that must not arrive.
+   `skill`, `mcp` and `cannot` used to be hard-coded here, under a
+   paragraph explaining which block each belongs to, because doc 1
+   §3 files them under none. That decision now lives in
+   `CARD_BLOCKS` beside the keys, where it settles this table and
+   the blueprint page's card skeleton at once instead of only
+   this one — the skeleton was drawing neither the behaviour
+   document, nor the servers, nor the prohibition.
 
    ── Why the detail is a click and not prose ──
    The author asked the explanations off the default view ("non
@@ -148,8 +149,21 @@ export async function generateMetadata({ params }: PageProps<"/nodes/[...id]">) 
    a `<details>`. Native, so it needs no client component and it
    opens for a reader without script.
 
-   A row with nothing more to say is a plain `div`. A summary that
-   opens onto nothing is worse than no affordance at all.
+   ── One set of sentences, two surfaces ──
+   What each field is *for* is `FIELD_NOTE` in
+   `components/panes/field-notes.ts`, and the row that opens onto
+   it is `components/ui/FieldDisclosure.tsx`. Both are shared with
+   the blueprint page's card skeleton, which the author asked to
+   behave "like in the node webpage card". The `detail` below is
+   what is left after that split, and it is the half that could
+   not be shared: **this card's values**, resolved against the
+   ontology once per page — term chips, a params `<dl>`, the
+   priced risk markers — none of which survives a trip through the
+   skeleton's serializable model.
+
+   Every field has a note, so every row opens. A row whose key has
+   neither a note nor a detail is still a plain `div`: a summary
+   that opens onto nothing is worse than no affordance at all.
    ============================================================ */
 interface FieldValue {
   text: string;
@@ -172,6 +186,13 @@ interface FieldRow {
   /** A `CARD_BLOCKS` id. */
   block: string;
   name: string;
+  /**
+   * Wire key, when this row is not labelled with it. Only `phases` is: the document
+   * writes the singular `phase` and accepts a scalar or a sequence, and the plural is
+   * what a reader of a *resolved* card sees. `FIELD_NOTE` is keyed by the wire key on
+   * both surfaces, so the row has to say which one it is.
+   */
+  wire?: string;
   read: (card: NodeCard, view: FieldView) => FieldValue;
   /** Everything this page used to say in prose, behind the disclosure. */
   detail?: (card: NodeCard, view: FieldView) => React.ReactNode | undefined;
@@ -237,18 +258,14 @@ const FIELD_ROWS: readonly FieldRow[] = [
   {
     block: "identity",
     name: "phases",
+    wire: "phase",
     read: (_c, v) => list(v.phases.map((p) => p.label), "outside the five"),
+    /* The empty case used to be spelled out here — "the phases describe a blueprint's
+       shape, not every node in one" — and it is now the shared note, which says it for
+       the skeleton pane too. What is left is the half that is about *these* phases. */
     detail: (_c, v) =>
       v.phases.length === 0 ? (
-        /* The author's ruling, kept: the five phases describe a blueprint's shape and not
-           every node in one, so declaring none is an answer. It is the case a reader is
-           most likely to click on, which is why it earns a detail where a filled row of
-           labels does not. */
-        <Detail>
-          The phases describe a blueprint&apos;s shape, not every node in one: intake,
-          retrieval and routing are real work none of the five names. Declaring none is an
-          answer, not a blank.
-        </Detail>
+        undefined
       ) : (
         <div className="flex flex-col gap-2">
           {v.phases.map((phase) => (
@@ -286,46 +303,16 @@ const FIELD_ROWS: readonly FieldRow[] = [
     block: "behaviour",
     name: "model",
     read: (c) => one(c.model, "whatever the graph supplies"),
-    detail: (c) =>
-      c.model === undefined ? (
-        <Detail>Whatever the graph or the runner supplies. The ordinary case.</Detail>
-      ) : (
-        <Detail>
-          What its agent runs on.{" "}
-          <span className="text-fg">A default, not a fixed fact:</span> a graph&apos;s{" "}
-          <code className="font-mono text-[12px] text-muted">model_stylesheet</code> can
-          override it.
-        </Detail>
-      ),
   },
   {
     block: "behaviour",
     name: "agent",
     read: (c) => one(c.agent),
-    detail: (c) =>
-      c.agent === undefined ? undefined : (
-        <Detail>A label the author chose. Nothing in the engine reads it.</Detail>
-      ),
   },
   {
     block: "behaviour",
     name: "skill",
     read: (c) => one(c.skill),
-    detail: (c) =>
-      c.skill === undefined ? (
-        <Detail>
-          None. The card&apos;s <code className="font-mono text-[12px] text-muted">spec</code>{" "}
-          is the whole instruction.
-        </Detail>
-      ) : (
-        <Detail>
-          Where its written procedure lives, relative to the repository you run from.{" "}
-          <span className="text-fg">
-            A pointer only: no skill document travels in a DarkPrint bundle.
-          </span>{" "}
-          You write the file it names.
-        </Detail>
-      ),
   },
   {
     block: "behaviour",
@@ -349,13 +336,6 @@ const FIELD_ROWS: readonly FieldRow[] = [
     block: "behaviour",
     name: "mcp",
     read: (c) => list(c.mcp),
-    detail: (c) =>
-      c.mcp.length === 0 ? undefined : (
-        <Detail>
-          Servers it reaches, named as they are registered on your machine. Free text: the
-          vocabulary has no term for a process somebody installed.
-        </Detail>
-      ),
   },
   {
     block: "behaviour",
@@ -395,10 +375,11 @@ const FIELD_ROWS: readonly FieldRow[] = [
     block: "interfaces",
     name: "dependencies",
     read: (c) => list(c.dependencies),
+    /* Only the half that is about *these* dependencies. What the field is for is the
+       shared note above it. */
     detail: (_c, v) =>
       v.dependencies.length === 0 ? undefined : (
         <Detail>
-          Cards this one expects to hear from.{" "}
           {v.dependencies.filter((d) => !d.known).length > 0
             ? "An entry the registry does not publish names a DOT node rather than a card, so it has no page here."
             : "Every one of them is published here."}
@@ -442,13 +423,6 @@ const FIELD_ROWS: readonly FieldRow[] = [
     block: "evaluation",
     name: "requires_human",
     read: (c) => ({ text: String(c.requiresHuman), empty: !c.requiresHuman }),
-    detail: (c) => (
-      <Detail>
-        {c.requiresHuman
-          ? "A person acts here, so no graph containing this node is closed-loop."
-          : "Nobody stands here. The node runs unattended whenever the graph reaches it."}
-      </Detail>
-    ),
   },
   {
     block: "evaluation",
@@ -491,6 +465,9 @@ const FIELD_ROWS: readonly FieldRow[] = [
   { block: "service", name: "version", read: (c) => one(c.version) },
   { block: "service", name: "ontology_version", read: (c) => one(c.ontologyVersion) },
   { block: "service", name: "author", read: (c) => one(c.author, "unattributed") },
+  /* `CARD_BLOCKS` has always listed it and this table did not, so the two surfaces
+     disagreed about how many fields a card has. It is the last of the 23. */
+  { block: "service", name: "provenance", read: (c) => one(c.provenance, "not stated") },
 ];
 
 function Panel({
@@ -966,7 +943,10 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 in-page anchor target — `anchors.test.ts`) since this page has no
                 separate `DownloadPanel` for `ForkAction`'s `#download` link to
                 target. */}
-            <div id="download" className="ml-auto flex scroll-mt-24 items-center gap-2">
+            <div
+              id="download"
+              className="ml-auto flex scroll-mt-24 flex-wrap items-center justify-end gap-2"
+            >
               <ForkAction kind="node" />
               {source !== undefined && (
                 <ButtonLink
@@ -977,6 +957,23 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   Download card
                 </ButtonLink>
               )}
+              {/* The same affordance the blueprint page's header carries, at the address
+                  this page can honestly print. `scripts/generate-bundles.ts` writes every
+                  pinned card version a second time under `public/cards/`, so a card has a
+                  URL of its own rather than only one inside whichever blueprint happens to
+                  pin it — which would name a blueprint the reader did not ask about and
+                  404 the day it left the archive. The `data:` button beside this stays: it
+                  is the click-to-save path, and this is the paste-into-a-terminal one.
+
+                  Last in the group for the layout reason the blueprint page's copy of this
+                  comment records: only the final item is guaranteed to end at the group's
+                  right edge on a wrapped line, which is what its `right-0` panel is
+                  anchored to. */}
+              <CloneMenu
+                kind="node"
+                command={cardDownloadCommand(record.ref)}
+                cliCommand={`darkprint clone card ${record.ref}`}
+              />
             </div>
           </div>
 
@@ -1348,6 +1345,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                     <dl className="flex flex-col">
                       {rows.map((row) => {
                         const value = row.read(card, fieldView);
+                        const note = FIELD_NOTE[row.wire ?? row.name];
                         const detail = row.detail?.(card, fieldView);
                         const head = (
                           <>
@@ -1383,8 +1381,10 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
 
                         /* A row with nothing more to say stays a plain row. A summary
                            that opens onto nothing is a worse offer than no affordance,
-                           which is the same rule the vocabulary chips follow. */
-                        if (detail === undefined) {
+                           which is the same rule the vocabulary chips follow. Every key
+                           of doc 1 §3 has a note, so in practice this branch is the
+                           guard for a row added here before its note was written. */
+                        if (detail === undefined && note === undefined) {
                           return (
                             <div
                               key={row.name}
@@ -1395,37 +1395,29 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                           );
                         }
 
+                        /* The marker's placement, its 11px size and the `pl` that
+                           reserves its gutter all moved into `FieldDisclosure`, which
+                           the blueprint page's card skeleton now draws its own rows
+                           with. The reasoning went with them; the short of it is that a
+                           browser's native triangle sits outside this grid and pushes
+                           the first column out of line with the rows that have none. */
                         return (
-                          <details
+                          <FieldDisclosure
                             key={row.name}
-                            className="group border-t border-line/70 first:border-t-0"
+                            className="border-t border-line/70 first:border-t-0"
+                            summaryClassName="grid gap-x-4 gap-y-1 py-2 pl-[1.15rem] transition-colors hover:bg-surface-2/50 sm:grid-cols-[9rem_minmax(0,1fr)]"
+                            bodyClassName="flex flex-col gap-3 pb-3 pl-[1.15rem] sm:pl-[10.15rem]"
+                            summary={head}
                           >
-                            <summary className="relative grid cursor-pointer list-none gap-x-4 gap-y-1 py-2 pl-[1.15rem] transition-colors hover:bg-surface-2/50 sm:grid-cols-[9rem_minmax(0,1fr)] [&::-webkit-details-marker]:hidden">
-                              {/* The marker is drawn rather than left to the browser: a
-                                  native triangle sits outside the grid and pushes the
-                                  first column out of alignment with the rows that have
-                                  no disclosure. `pl` on both branches keeps the two
-                                  kinds of row on one left edge.
-
-                                  11px, not 10: the site's mono floor is 11px and this was
-                                  the last place in the repo still under it. Not `.label`
-                                  — that class is for a meta label with words in it, and
-                                  uppercasing and tracking a single geometric glyph only
-                                  pushes it off its own left edge. The `top` moved with the
-                                  size: the marker is optically centred on the 12px `dt`
-                                  beside it, and a taller line box would otherwise drop it
-                                  a pixel. It is absolutely positioned, so the extra pixel
-                                  of width cannot reflow the row. */}
-                              <span
-                                aria-hidden
-                                className="pointer-events-none absolute left-0 top-[0.55rem] font-mono text-[11px] text-dim transition-transform group-open:rotate-90"
-                              >
-                                &#9656;
-                              </span>
-                              {head}
-                            </summary>
-                            <div className="pb-3 pl-[1.15rem] sm:pl-[10.15rem]">{detail}</div>
-                          </details>
+                            {/* What the field is for, first and the same on every card,
+                                then what this card in particular put in it. */}
+                            {note !== undefined && (
+                              <Detail>
+                                <Ticked text={note} />
+                              </Detail>
+                            )}
+                            {detail}
+                          </FieldDisclosure>
                         );
                       })}
                     </dl>

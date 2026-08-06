@@ -9,6 +9,20 @@
    the suite green). This module is the one measurement both guards call, so a fix that
    holds one of them cannot quietly stop holding the other.
 
+   ── What it now measures, which is the opposite of what it used to ──
+   Both of those defects were consequences of a policy the author has since overruled: the
+   fit was floored at `FRAME_MIN_ZOOM = 0.9` so that type stayed legible, and whatever did
+   not fit at that zoom was CROPPED, with `frame.ts` deciding where the crop fell so that no
+   word was cut in half. "Where does the crop fall" is not a question this site asks any
+   more — `components/graph/framing.ts` carries the author's ruling and the arithmetic —
+   so the quantity every assertion below is built on has changed with it:
+
+     before   is the part of the drawing on screen whole, and does the crop fall in a gap?
+     after    is the WHOLE drawing on screen, and what does its type measure when it is?
+
+   `Framing.whole` and `Framing.legiblePx` are those two questions. `frame.ts` and its own
+   test are gone; nothing computes a crop position because nothing crops.
+
    ── Why the boxes are recomputed rather than walked out of markup ──
    `components/viz/label-boxes.ts` measures a luminous scene by rendering it the way the
    server does and walking the `<svg>`, because such a scene IS its markup. A React Flow
@@ -21,25 +35,24 @@
    What replaces the walk is not a second arithmetic model of the drawing. It is the SAME
    production code the browser runs, called in the same order and handed the same numbers:
 
-     `components/graph/block.ts`   the real block width, the one `AgentNode` renders
-     `components/graph/frame.ts`   the real framing, which calls React Flow's own
-                                   `getViewportForBounds` underneath
-     `getViewportForBounds`        React Flow's own fit, for the vertical half
+     `components/graph/block.ts`     the real block width, the one `AgentNode` renders
+     `components/graph/framing.ts`   the real padding, ceiling and pane height
+     `getViewportForBounds`          React Flow's own fit, both axes
 
-   Checked against the browser rather than trusted. On `/blueprints/starter-software-factory`
-   this module's answer is the page's answer to the pixel at every width measured — 1440
-   gives zoom 1.1255 and a 55px margin, 900 gives 1.2727, 640 gives 0.9 with the frame at
-   34.5px, 500 gives 0.9 at 64px, 390 gives 0.9 at 0 — all read off the running page.
+   Checked against the browser rather than trusted: `the archive frames with the canvas this
+   guard reads` in `components/panes/archive-labels.test.ts` pins the canvas at seven widths
+   against `.react-flow`'s own `offsetWidth` on the running page.
 
    ── Where the numbers come from, and why not from here ──
    An earlier version of `stage-labels.test.ts` restated `FRAME_MIN_ZOOM`, `MAX_ZOOM` and
    `FIT_PADDING` as local constants and claimed the copy meant they "cannot drift silently".
    That claim was false, and three separate mutations to the real source left the whole suite
-   green. So every number this module frames with is READ OUT OF THE SOURCE that owns it, the
-   way `components/graph/block.test.ts` reads `AgentNode.tsx`: `numberIn` pulls a constant out
-   of `BlueprintGraph.tsx` and throws if it stops being a plain literal, rather than falling
-   back to a default — a guard that quietly substituted one the moment a constant was renamed
-   would be the same silent copy, one level down.
+   green. So every number this module frames with comes from the module that owns it. Those
+   that are shared with the pages — the padding, the ceiling, the pane height — are IMPORTED
+   from `framing.ts`, which is stronger than parsing them: a rename fails the build rather
+   than a regex. Those that live inside `BlueprintGraph.tsx` because only its own edges use
+   them are still read out of the source by `numberIn`, which throws rather than falling
+   back to a default, the way `components/graph/block.test.ts` reads `AgentNode.tsx`.
 
    ── Two places the measurement is deliberately generous ──
    Both err towards reporting a clip that a real drawing would have survived, never the
@@ -48,18 +61,20 @@
    - A name's box is the whole text column of its block (`BLOCK_TEXT_INSET`), not the name's
      own advance width. Every real name is narrower and left-aligned inside it, so no font
      metric enters the measurement.
-   - Where the drawing FITS, the boxes are computed at the widest zoom the fit could possibly
-     reach across (`zoomAcross`). The real zoom is `min(xZoom, yZoom)` and may be far smaller,
-     which draws a strictly smaller drawing inside the same frame.
+   - The drawing's height is `BLOCK_MAX_HEIGHT`, the tall end of the interval `block.ts`
+     states, against a tallest archive block measured in the browser at 120px. A taller
+     modelled drawing binds the vertical axis sooner, so this reports a height-bound fit the
+     page survived rather than missing one the page has.
 
    `schematicAir` is generous in the same direction and says how.
 
    ── What "clipped" means, and what it does not ──
-   A name is clipped when the frame's edge is drawn THROUGH it. A name wholly outside the
-   frame is not clipped: it is off-frame, the reader drags to it, and `PanHint` says so on
-   exactly the drawings where that is true. The distinction is the whole trade
-   `BlueprintGraph.tsx`'s `FRAME_MIN_ZOOM` docblock records, and it is why `drawnNames` is a
-   filter and not an assertion.
+   A name is clipped when the frame's edge is drawn THROUGH it; a name wholly outside the
+   frame is off-frame instead. Under the old cropping policy that distinction carried the
+   whole trade, which is why `drawnNames` is a filter rather than an assertion. It is kept
+   because it is still the honest way to describe a viewport, but the callers no longer lean
+   on it: what they assert now is that `drawnNames` returns EVERY node, at every width, on
+   every blueprint. A drawing with a name off-frame is a failure, not a trade.
 
    ── Why it is a plain module and not a `*.test.ts` ──
    `components/ui/visible-text.ts` records the reason: a helper that is itself a `*.test.ts`
@@ -81,7 +96,13 @@ import {
   BLOCK_TEXT_INSET,
   BLOCK_WIDTH,
 } from "./block";
-import { frameAcross, type FrameOptions } from "./frame";
+import {
+  FIT_PADDING,
+  LEGIBLE_ZOOM,
+  MAX_ZOOM,
+  PAN_MIN_ZOOM,
+  type FramePadding,
+} from "./framing";
 
 /**
  * How much daylight a schematic has to leave between what it draws and the canvas border.
@@ -124,19 +145,20 @@ export function numberIn(source: string, file: string, name: string): number {
   return Number(found[1]);
 }
 
-/** The absolute band the fit keeps clear above and below the drawing, in CSS px. */
-export const FIT_BAND = numberIn(GRAPH_SOURCE, GRAPH_FILE, "FIT_BAND");
-
-/** The three numbers `BlueprintGraph.tsx` frames with, as it declares them. */
-export const FRAME: FrameOptions = {
-  minZoom: numberIn(GRAPH_SOURCE, GRAPH_FILE, "FRAME_MIN_ZOOM"),
-  maxZoom: numberIn(GRAPH_SOURCE, GRAPH_FILE, "MAX_ZOOM"),
-  padding: {
-    x: numberIn(GRAPH_SOURCE, GRAPH_FILE, "FIT_PADDING"),
-    // The band is a CSS length to React Flow, and `numberIn`'s own throw is what makes the
-    // interpolation safe rather than a cast standing in for a check.
-    y: `${FIT_BAND}px` as `${number}px`,
-  },
+/**
+ * The three numbers `BlueprintGraph.tsx` hands React Flow's fit, from the module that
+ * declares them.
+ *
+ * `minZoom` is `PAN_MIN_ZOOM` and not a framing floor, which is the whole change: the
+ * component passes no `minZoom` in its `fitViewOptions`, so React Flow falls back to the
+ * instance's, and that number is set far below any fit this site produces precisely so that
+ * it never clamps one. Restating it here as the fit's floor is therefore not a paraphrase —
+ * it is what React Flow actually resolves.
+ */
+export const FRAME: { minZoom: number; maxZoom: number; padding: FramePadding } = {
+  minZoom: PAN_MIN_ZOOM,
+  maxZoom: MAX_ZOOM,
+  padding: FIT_PADDING,
 };
 
 /** What a stepped-off edge label is made of, from the component that steps it. */
@@ -168,13 +190,38 @@ export interface NameBox {
   blockRight: number;
 }
 
-/** The viewport a reader arrives at, and whether it had to crop to get there. */
+/** The viewport a reader arrives at, and what the drawing measures once they are there. */
 export interface Framing {
   /** Translation across, in canvas px. `blockLeft = x + flowX * zoom`. */
   x: number;
   zoom: number;
-  /** Whether the drawing fits across at that zoom — false means the frame crops. */
-  fitsAcross: boolean;
+  /**
+   * Whether every block's box is inside the canvas — the contract, as a boolean.
+   *
+   * It should be true of every blueprint at every width the site supports. It is computed
+   * rather than assumed so that a caller asserting it is asserting something.
+   */
+  whole: boolean;
+  /**
+   * What `AgentNode`'s 11px kind row renders at, in CSS px, at this framing.
+   *
+   * The quantity that replaced the framing floor. `FRAME_MIN_ZOOM` used to guarantee it was
+   * at least 10 and cropped whatever that cost; nothing guarantees it now, so it is reported
+   * per blueprint per width and asserted where the arithmetic allows it. See
+   * `components/graph/framing.ts` for the table and for which blueprint fails it where.
+   */
+  legiblePx: number;
+  /**
+   * Which axis the fit is bound by.
+   *
+   * `"width"` on every archive drawing at every width, by construction: the pane's height is
+   * computed FROM the width-bound zoom (`graphPaneHeight`), so a `"height"` here means the
+   * pane is shorter than the drawing it was sized for and the whole drawing has been shrunk
+   * to fit a number that was supposed to follow it. That is a defect with no visible symptom
+   * other than a slightly smaller drawing, which is exactly the kind that survives a
+   * screenshot, so it is measured.
+   */
+  boundBy: "width" | "height";
   /** Every node, drawn or not. `drawnNames` is the filter that says what is on screen. */
   boxes: NameBox[];
 }
@@ -185,7 +232,16 @@ export interface Air {
   bottom: number;
 }
 
-/** The blocks of one graph, across the flow axis only. Height plays no part — see `frame.ts`. */
+/**
+ * The site's mono floor, which is the size `AgentNode` draws a node's kind row at.
+ *
+ * `Framing.legiblePx` is this multiplied by the zoom, so it answers "what does the smallest
+ * type in the drawing actually measure". The node's name is a 14px row and survives a
+ * smaller zoom; the kind row is the one that goes first, so it is the one measured.
+ */
+const MONO_FLOOR = 11;
+
+/** The blocks of one graph, across the flow axis only — where each one starts and ends. */
 function blocksOf(nodes: readonly DrawnNode[]) {
   return nodes.map((node) => ({ x: node.position.x, width: BLOCK_WIDTH }));
 }
@@ -202,57 +258,103 @@ function spanOf(blocks: readonly { x: number; width: number }[]) {
 }
 
 /**
- * Where every node name lands, at one canvas width.
+ * Where every node name lands, in a canvas of a stated size.
  *
  * Returns canvas coordinates, not viewport ones, and the difference matters: the box a name
  * can be cut by is the canvas, and a name sliced at the canvas's own left edge is still
  * comfortably inside the viewport. Comparing against the viewport would pass the exact
  * defect these guards exist to catch.
  *
- * ── Why the fitting branch is not taken on `frameAcross`'s say-so ──
- * The zoom is `max(zoomAcross, minZoom)` whichever branch is taken, so a `frameAcross` that
- * wrongly returned nothing on an overflowing drawing is measured at the floor, centred —
- * which is exactly the old framing, and exactly what a caller's assertions report as cut. A
- * guard that trusted the code under test to say when it had nothing to fix would have passed
- * on the very defect it exists to catch.
+ * ── Why the height is required, when it never used to be ──
+ * The old answer was horizontal only, and it was entitled to be: the fit was floored, and
+ * a floored fit sits at `minZoom` exactly whatever the heights are, so the vertical axis
+ * could not change the across answer. Nothing is floored
+ * now. The fit is `min(xZoom, yZoom)` with no clamp under it, so a pane an inch too short
+ * shrinks the WHOLE drawing — and a guard that measured `xZoom` alone would report a
+ * drawing wider than the one the page draws and pass assertions the page fails.
+ *
+ * ── Which block height, and why the tall end ──
+ * `BLOCK_MAX_HEIGHT`, the tall end of the interval `block.ts` states, because a taller
+ * drawing is the one that binds the vertical axis first. Measured in the browser at 1440,
+ * the archive's tallest block is 120px against that ceiling of 160, so the modelled drawing
+ * is taller than the real one and this errs towards reporting a height-bound fit that the
+ * page survived — never the other way round.
  */
 export function frameSchematic(
   nodes: readonly DrawnNode[],
   canvasWidth: number,
+  canvasHeight: number,
 ): Framing {
   const blocks = blocksOf(nodes);
   const { left, right } = spanOf(blocks);
+  let top = Infinity;
+  let bottom = -Infinity;
+  for (const node of nodes) {
+    top = Math.min(top, node.position.y);
+    bottom = Math.max(bottom, node.position.y);
+  }
 
-  /* The widest the drawing can possibly be drawn across, whatever the heights turn out to
-     be: React Flow's own `xZoom`, or the floor where the floor clamps it up.
-     `getViewportForBounds` is asked for it the same way `frame.ts` asks — through a
-     unit-height bounds — so the two files cannot disagree about React Flow's arithmetic. */
-  const across = getViewportForBounds(
+  /* React Flow's own fit, both axes, with the numbers the component hands it. Called rather
+     than reimplemented, so this file cannot disagree with the library about its own
+     arithmetic — including the asymmetric-padding correction, which a hand-written
+     `(canvas - 2p) / width` would miss. */
+  const fitted = getViewportForBounds(
+    {
+      x: left,
+      y: top,
+      width: right - left,
+      height: bottom - top + BLOCK_MAX_HEIGHT,
+    },
+    canvasWidth,
+    canvasHeight,
+    FRAME.minZoom,
+    FRAME.maxZoom,
+    FRAME.padding,
+  );
+
+  /* The zoom each axis would have reached alone, to say which one bound. Asked for through a
+     degenerate bounds on the other axis — one flow unit tall, or one wide — which is how
+     `getViewportForBounds` is made to answer about a single axis, and it keeps even this
+     question inside the library's arithmetic. */
+  const acrossOnly = getViewportForBounds(
     { x: left, y: 0, width: right - left, height: 1 },
     canvasWidth,
-    canvasWidth,
-    0,
+    canvasHeight,
+    FRAME.minZoom,
     Number.MAX_SAFE_INTEGER,
     FRAME.padding,
   ).zoom;
 
-  const zoom = Math.max(across, FRAME.minZoom);
-  const framed = frameAcross(blocks, canvasWidth, FRAME);
-  const fitted = framed ?? { zoom, x: canvasWidth / 2 - ((left + right) / 2) * zoom };
+  const boxes = nodes.map((node) => ({
+    text: `${node.label} (${node.id})`,
+    column: node.position.x,
+    left: fitted.x + (node.position.x + BLOCK_TEXT_INSET) * fitted.zoom,
+    right: fitted.x + (node.position.x + BLOCK_WIDTH - BLOCK_TEXT_INSET) * fitted.zoom,
+    blockLeft: fitted.x + node.position.x * fitted.zoom,
+    blockRight: fitted.x + (node.position.x + BLOCK_WIDTH) * fitted.zoom,
+  }));
 
   return {
     x: fitted.x,
     zoom: fitted.zoom,
-    fitsAcross: across >= FRAME.minZoom,
-    boxes: nodes.map((node) => ({
-      text: `${node.label} (${node.id})`,
-      column: node.position.x,
-      left: fitted.x + (node.position.x + BLOCK_TEXT_INSET) * fitted.zoom,
-      right: fitted.x + (node.position.x + BLOCK_WIDTH - BLOCK_TEXT_INSET) * fitted.zoom,
-      blockLeft: fitted.x + node.position.x * fitted.zoom,
-      blockRight: fitted.x + (node.position.x + BLOCK_WIDTH) * fitted.zoom,
-    })),
+    whole: boxes.every((box) => box.blockLeft >= -0.5 && box.blockRight <= canvasWidth + 0.5),
+    legiblePx: fitted.zoom * MONO_FLOOR,
+    /* `MAX_ZOOM` is not the height binding, and reading it as one was the first version of
+       this line: `starter-software-factory` fits a 1124px canvas at 1.97 and is drawn at
+       the ceiling, so a comparison against the across-only zoom alone called every wide
+       viewport height-bound on the one blueprint whose pane is sized by the cap. The
+       question is whether the pane's HEIGHT took the drawing below what the width and the
+       ceiling between them allow, which is what the ceiling belongs inside. A hair of
+       tolerance because the two are equal by construction whenever the pane was sized from
+       the width, and floating point does not promise `a === a` across two routes to it. */
+    boundBy: fitted.zoom <= Math.min(acrossOnly, FRAME.maxZoom) - 1e-9 ? "height" : "width",
+    boxes,
   };
+}
+
+/** Whether a framing draws its own type at or above the 10 CSS px the site holds figures to. */
+export function isLegible(framing: Framing): boolean {
+  return framing.legiblePx >= MONO_FLOOR * LEGIBLE_ZOOM;
 }
 
 /** The names the frame draws: every one whose box meets the canvas. See the header. */
@@ -313,8 +415,8 @@ export function columnPitch(nodes: readonly DrawnNode[]): number | undefined {
  * between `acceptance criteria` and the canvas's own top border.
  *
  * ── Why this needs a block's height when the horizontal half does not ──
- * `frame.ts`'s docblock has the argument for why the across answer never needs one. The down
- * answer does: the air is `(canvas - drawing) / 2`, and the drawing's height is the row gap
+ * The across answer never needed one while the fit was floored, because a floored fit is at
+ * `minZoom` whatever the heights are. The down answer always does: the air is `(canvas - drawing) / 2`, and the drawing's height is the row gap
  * plus a block, which is whatever the name wrapped to. So `block.ts` states that one quantity
  * as an INTERVAL, measured, and this function takes the worst end of it at each of the two
  * places it enters — which are opposite ends, and that is the whole care this needs:

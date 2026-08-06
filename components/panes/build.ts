@@ -203,8 +203,14 @@ function fieldValue(
       return optional(card.model, "not named");
     case "agent":
       return optional(card.agent, "not named");
+    case "skill":
+      // A path, and the empty case is a statement about the card rather than a gap: doc 1
+      // §3.2 says a node whose `spec` is the whole instruction declares no skill.
+      return optional(card.skill, "no skill document is pointed at");
     case "tools":
       return list(card.tools, "none required");
+    case "mcp":
+      return list(card.mcp, "no server is named");
     case "params":
       return list(Object.keys(card.params), "none set");
     case "inputs":
@@ -225,6 +231,11 @@ function fieldValue(
       };
     case "dependencies":
       return list(card.dependencies, "no upstream node is named");
+    case "cannot":
+      // The negative half of §3.3. `[]` is a complete answer and is not drawn as a gap:
+      // most cards declare nothing here, and the ones that do are making a claim the
+      // resolver checks rather than filling in a form.
+      return list(card.cannot, "nothing is ruled out");
     case "requires_human":
       // Doc 2 §1.1. Both states are a design decision and the two sentences are written
       // to weigh the same. Neither one is a result.

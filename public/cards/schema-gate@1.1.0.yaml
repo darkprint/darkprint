@@ -1,0 +1,56 @@
+id: schema-gate
+name: Schema Gate
+type: validation
+phase: testing
+
+action: >-
+  Check the candidate record against the registered schema plus any assertions attached for
+  this run, pass only what clears both, and emit the violation list for the rest.
+spec: >-
+  Check the normalized record you are handed against the schema registered as
+  `schema-registry://forge-record@2`, and against any extra rules handed to you alongside it
+  cross-field invariants included. Emit the record byte-for-byte unchanged on `accepted`
+  only when it clears both; a field the schema does not name is a failure, not a tolerance.
+  Otherwise emit one entry per breach on `violations`, each naming the field and the specific
+  constraint it broke, and stop at twenty-five entries so one unparseable batch cannot flood
+  whatever repairs them.
+model: claude-haiku-4-5
+agent: Validator
+tools: []
+mcp: []
+skill: skills/schema-gate.md
+params:
+  schema_ref: "schema-registry://forge-record@2"
+  strict: true
+  max_violations: 25
+
+inputs:
+  - name: candidate
+    type: json
+    description: The normalized record on its way into a system that expects a guarantee.
+  - name: assertions
+    type: json
+    required: false
+    description: Extra per-run rules checked on top of the schema, such as cross-field invariants.
+outputs:
+  - name: accepted
+    type: json
+    description: The record unchanged, now carrying the guarantee that it matches the schema.
+  - name: violations
+    type: json
+    description: Field-level failures, one entry per breach, for the repair path to work from.
+dependencies:
+  - normalize
+cannot:
+  - edit a record to make it conform
+
+requires_human: false
+risk_markers: []
+notes: >-
+  `max_violations` truncates the report on genuinely broken input so a single unparseable batch
+  cannot flood the repair loop. `assertions` is optional: with none attached the gate behaves
+  exactly as version 1.0.0 does.
+
+version: 1.1.0
+author: lupo
+ontology_version: 0.1.0
