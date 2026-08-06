@@ -16,21 +16,19 @@
    figure the way the server does, walks the `<svg>`, and reads each word's box out of the
    markup — because a luminous scene IS its markup.
 
-   A React Flow schematic is not. Its blocks are absolutely-positioned HTML that no
-   `renderToStaticMarkup` ever lays out, and the framing that decides what is cropped is
-   computed from a canvas the server has not measured. So a walk over the markup would
-   report nothing at all, which is the one failure mode `label-boxes.ts`'s own header
-   refuses ("a walk that silently matched nothing passes every assertion a caller could
-   write underneath it").
+   A React Flow schematic is not, and `components/graph/schematic-boxes.ts` is where the
+   replacement for the walk lives: the SAME production code the browser runs, called in the
+   same order and handed the same numbers. Its header carries that argument in full, along
+   with the two places the measurement is deliberately generous and what "clipped" means.
+   This file is the half that is about `/build`'s own pane — its canvas, its combinations,
+   and the widths it failed at.
 
-   What replaces the walk is not a second arithmetic model of the drawing. It is the SAME
-   production code the browser runs, called in the same order and handed the same numbers:
-
-     `state.ts`                    the real positions, off the real resolved bundle
-     `components/graph/block.ts`   the real block width, the one `AgentNode` renders
-     `components/graph/frame.ts`   the real framing, which calls React Flow's own
-                                   `getViewportForBounds` underneath
-     `getViewportForBounds`        React Flow's own fit, for the vertical half
+   The one thing worth repeating here, because it is what a reader of a green run needs:
+   a name wholly outside the frame is NOT clipped. It is off-frame, the reader drags to it,
+   and `PanHint` says so. A 390px viewport gives the canvas 322px, the starter's drawing is
+   550 flow units across, and `0.9` is the floor below which the type stops being readable:
+   550 x 0.9 = 495 does not go into 322, and no amount of tuning makes it. What CAN be true,
+   and is what this file pins, is that the reader is never shown half a word.
 
    ── Where the numbers come from, and why not from here ──
    An earlier version of this file restated `FRAME_MIN_ZOOM`, `MAX_ZOOM` and `FIT_PADDING`
@@ -40,59 +38,33 @@
    pane's phone-width `p-2` deleted, and nothing here noticed, because nothing here was
    reading any of them.
 
-   So every number this file frames with is READ OUT OF THE SOURCE that owns it, the way
-   `components/graph/block.test.ts` reads `AgentNode.tsx`: `numberIn` pulls the constants
-   out of `BlueprintGraph.tsx` and throws if one of them stops being a plain literal, and
-   the pane's own canvas — its wrapper padding and its `clamp()` height — is parsed off
-   `ChoiceGraphPane.tsx`'s classes. `frames the page with the numbers it reads` below
-   checks the other half: that the component really hands those constants to React Flow's
-   fit and to `frameAcross`, so this file cannot be measuring a framing the page never uses.
+   So every number the framing uses is READ OUT OF THE SOURCE that owns it — `numberIn` and
+   `FRAME` in `schematic-boxes.ts` — and the pane's own canvas, its wrapper padding and its
+   `clamp()` height, is parsed off `ChoiceGraphPane.tsx`'s classes below. `frames the page
+   with the numbers it reads` checks the other half: that the component really hands those
+   constants to React Flow's fit and to `frameAcross`, so this file cannot be measuring a
+   framing the page never uses.
 
    What stays literal is the CSS chain's two 1px borders and the `sm` breakpoint, named in
    `canvasWidth` with the reason: they are Tailwind's own defaults on utilities that carry
    no number to read, and the chain they belong to is checked against the browser rather
    than trusted — 1440 gives 1124 and 390 gives 322, both read off the running page.
-
-   ── Two places the measurement is deliberately generous ──
-   Both err towards reporting a clip that a real drawing would have survived, never the
-   other way:
-
-   - A name's box is the whole text column of its block (`BLOCK_TEXT_INSET`), not the
-     name's own advance width. Every real name is narrower and left-aligned inside it.
-   - Where the drawing FITS, the boxes are computed at the widest zoom the fit could
-     possibly reach across (`xZoom`). The real zoom is `min(xZoom, yZoom)` and may be far
-     smaller, which draws a strictly smaller drawing inside the same frame.
-
-   The vertical half is generous in the same direction and says how: see `measureStageAir`.
-
-   ── What "clipped" means, and what it does not ──
-   A name is clipped when the frame's edge is drawn THROUGH it. A name wholly outside the
-   frame is not clipped: it is off-frame, the reader drags to it, and `PanHint` says so on
-   exactly the drawings where that is true. The distinction is not a convenience — it is
-   the whole trade `BlueprintGraph.tsx`'s `FRAME_MIN_ZOOM` docblock records. A 390px
-   viewport gives the canvas 322px, the starter's drawing is 550 flow units across, and
-   `0.9` is the floor below which the type stops being readable: 550 x 0.9 = 495 does not
-   go into 322, and no amount of tuning makes it. What CAN be true, and is what this file
-   pins, is that the reader is never shown half a word.
-
-   So `measureStageLabels` returns the names the frame draws — every name whose box meets
-   the canvas — and the assertions below say each one is whole.
    ============================================================ */
-
-import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import {
-  BLOCK_MAX_HEIGHT,
-  BLOCK_MIN_HEIGHT,
-  BLOCK_TEXT_INSET,
-  BLOCK_WIDTH,
-} from "@/components/graph/block";
-import { frameAcross, type FrameOptions } from "@/components/graph/frame";
-import { getViewportForBounds } from "@xyflow/react";
+  FIT_BAND,
+  FRAME,
+  GRAPH_SOURCE,
+  MIN_CLEARANCE,
+  drawnNames,
+  frameSchematic,
+  schematicAir,
+  sourceFile,
+  type Air,
+  type NameBox,
+} from "@/components/graph/schematic-boxes";
 
 import { ALL_COMBINATIONS, DEFAULT_ITERATIONS } from "./choices";
 import { buildState, type BuildState } from "./state";
@@ -110,63 +82,10 @@ const base = { output: "python", approval: "tester", maxIterations: DEFAULT_ITER
  */
 const WIDTHS = [1440, 1200, 1024, 900, 768, 390] as const;
 
-/**
- * How much daylight the stage has to leave between what it draws and the canvas border.
- *
- * A canonical spacing tier, and the point of naming a number at all: `>= 0` is not a
- * margin. The measurement this replaced came back at 0.3px at three widths and passed
- * every assertion that had been written about it, because none had been.
- */
-const MIN_CLEARANCE = 8;
+/* --------------------- the pane's own canvas, read where it lives --------------------- */
 
-/* --------------------- the numbers, read where they live --------------------- */
-
-const REPO_ROOT = execFileSync("git", ["rev-parse", "--show-toplevel"], {
-  encoding: "utf-8",
-}).trim();
-
-const GRAPH_FILE = "components/graph/BlueprintGraph.tsx";
 const PANE_FILE = "components/build/ChoiceGraphPane.tsx";
-const GRAPH_SOURCE = readFileSync(join(REPO_ROOT, GRAPH_FILE), "utf-8");
-const PANE_SOURCE = readFileSync(join(REPO_ROOT, PANE_FILE), "utf-8");
-
-/**
- * One module-scope numeric constant, taken out of the file that owns it.
- *
- * Throws rather than falling back, and the message names the file: a guard that quietly
- * substituted a default the moment a constant was renamed would be the same silent copy
- * this replaced, one level down.
- */
-function numberIn(source: string, file: string, name: string): number {
-  const found = new RegExp(`\\bconst ${name} = (-?\\d+(?:\\.\\d+)?);`).exec(source);
-  if (found === null) {
-    throw new Error(
-      `${file} no longer declares \`${name}\` as a plain number literal, so this guard ` +
-        `cannot read the value the page frames with. Update the reader, not the copy.`,
-    );
-  }
-  return Number(found[1]);
-}
-
-const FIT_BAND = numberIn(GRAPH_SOURCE, GRAPH_FILE, "FIT_BAND");
-
-/** The three numbers `BlueprintGraph.tsx` frames with, as it declares them. */
-const FRAME: FrameOptions = {
-  minZoom: numberIn(GRAPH_SOURCE, GRAPH_FILE, "FRAME_MIN_ZOOM"),
-  maxZoom: numberIn(GRAPH_SOURCE, GRAPH_FILE, "MAX_ZOOM"),
-  padding: {
-    x: numberIn(GRAPH_SOURCE, GRAPH_FILE, "FIT_PADDING"),
-    // The band is a CSS length to React Flow, and the assertion is what makes the
-    // interpolation safe rather than a cast standing in for a check.
-    y: `${FIT_BAND}px` as `${number}px`,
-  },
-};
-
-/** What a stepped-off edge label is made of, from the component that steps it. */
-const LABEL = {
-  height: numberIn(GRAPH_SOURCE, GRAPH_FILE, "LABEL_HEIGHT"),
-  clear: numberIn(GRAPH_SOURCE, GRAPH_FILE, "LABEL_CLEAR"),
-};
+const PANE_SOURCE = sourceFile(PANE_FILE);
 
 /**
  * The graph wrapper's padding, in CSS px per side, off the pane's own class list.
@@ -245,154 +164,31 @@ function canvasHeight(viewport: number): number {
   return paneHeight(viewport) - 2;
 }
 
-/* --------------------- across --------------------- */
+/* --------------------- the drawing, at one viewport width --------------------- */
 
-/** One node name, in canvas coordinates: 0 is the frame's left edge. */
-interface NameBox {
-  text: string;
-  left: number;
-  right: number;
-}
-
-/** The drawn blocks of one combination, across the flow axis only. */
-function blocksOf(state: BuildState) {
+/** The nodes of one combination. A combination that does not resolve is not measurable. */
+function nodesOf(state: BuildState) {
   const graph = state.graph;
   if (graph === undefined) throw new Error("the combination under measurement must resolve");
-  return { graph, blocks: graph.nodes.map((node) => ({ x: node.position.x, width: BLOCK_WIDTH })) };
+  return graph.nodes;
 }
 
 /**
- * Where every node name the frame draws actually lands, at one viewport width.
+ * Every node name the frame draws, in canvas coordinates: 0 is the frame's left edge.
  *
- * Returns canvas coordinates, not viewport ones, and the difference matters: the box a
- * name can be cut by is the canvas, and a name sliced at the canvas's own left edge is
- * still comfortably inside the viewport. Comparing against the viewport would pass the
- * exact defect this file exists to catch.
+ * The distinction between canvas and viewport coordinates matters: the box a name can be
+ * cut by is the canvas, and a name sliced at the canvas's own left edge is still comfortably
+ * inside the viewport. Comparing against the viewport would pass the exact defect this file
+ * exists to catch. `schematic-boxes.ts` does the arithmetic; this only supplies the canvas.
  */
 function measureStageLabels(state: BuildState, viewport: number): NameBox[] {
-  const { graph, blocks } = blocksOf(state);
   const width = canvasWidth(viewport);
-
-  let left = Infinity;
-  let right = -Infinity;
-  for (const block of blocks) {
-    left = Math.min(left, block.x);
-    right = Math.max(right, block.x + block.width);
-  }
-
-  /* The widest the drawing can possibly be drawn across, whatever the heights turn out to
-     be: React Flow's own `xZoom`, or the floor where the floor clamps it up.
-     `getViewportForBounds` is asked for `xZoom` the same way `frame.ts` asks — through a
-     unit-height bounds — so the two files cannot disagree about React Flow's arithmetic. */
-  const across = getViewportForBounds(
-    { x: left, y: 0, width: right - left, height: 1 },
-    width,
-    width,
-    0,
-    Number.MAX_SAFE_INTEGER,
-    FRAME.padding,
-  ).zoom;
-
-  /* `frame.ts` speaks only where the drawing cannot fit; everywhere else React Flow
-     centres it. Note what this deliberately does NOT do: it does not take the fitting
-     branch just because `frameAcross` stayed silent. The zoom is `max(across, minZoom)`
-     either way, so a `frameAcross` that wrongly returned nothing on an overflowing drawing
-     is measured at the floor, centred — which is exactly the old framing, and exactly what
-     the assertions below report as cut. A guard that trusted the code under test to say
-     when it had nothing to fix would have passed on the very defect it exists to catch. */
-  const frame = frameAcross(blocks, width, FRAME);
-  const zoom = Math.max(across, FRAME.minZoom);
-  const fitted = frame ?? { zoom, x: width / 2 - ((left + right) / 2) * zoom };
-
-  const boxes = graph.nodes.map((node) => ({
-    text: `${node.label} (${node.id})`,
-    left: fitted.x + (node.position.x + BLOCK_TEXT_INSET) * fitted.zoom,
-    right: fitted.x + (node.position.x + BLOCK_WIDTH - BLOCK_TEXT_INSET) * fitted.zoom,
-  }));
-
-  // Only the names the frame draws. One wholly off-frame is not clipped — see the header.
-  return boxes.filter((box) => box.right > 0 && box.left < width);
+  return drawnNames(frameSchematic(nodesOf(state), width), width);
 }
 
-/* --------------------- down --------------------- */
-
-/** The clearance between the outermost thing the stage draws and the canvas, both ends. */
-interface StageAir {
-  top: number;
-  bottom: number;
-}
-
-/**
- * How much daylight the fit leaves above and below everything the drawing draws.
- *
- * The defect this answers: React Flow's fit measures the NODES, and an edge label is not a
- * node. `SchematicEdge` steps a chip off any block it would be written across, so a label
- * about the top row is drawn OUTSIDE the box the fit was computed from. Nothing told the
- * fit that, and the fraction it had been given happened to cover it by a hair — measured
- * on the mounted stage, 2.2px at 1440, 1.7px at 1200 and 0.3px at 768, 900 and 1024
- * between `acceptance criteria` and the canvas's own top border.
- *
- * ── Why this needs a block's height when the horizontal half does not ──
- * `frame.ts`'s docblock has the argument for why the across answer never needs one. The
- * down answer does: the air is `(canvas - drawing) / 2`, and the drawing's height is the
- * row gap plus a block, which is whatever the name wrapped to. So `block.ts` states that
- * one quantity as an INTERVAL, measured, and this function takes the worst end of it at
- * each of the two places it enters — which are opposite ends, and that is the whole care
- * this function needs:
- *
- * - the AIR is computed from the tallest drawing (`BLOCK_MAX_HEIGHT`), because a taller
- *   drawing leaves less room. React Flow's own fit is asked for it, so the padding, the
- *   floor, the ceiling and its asymmetric-padding correction are its arithmetic and not a
- *   second copy of it here.
- * - the REACH is computed from the shortest (`BLOCK_MIN_HEIGHT`), because a shorter drawing
- *   fits at a larger zoom and a larger zoom draws a longer step-off and a bigger chip.
- *
- * Taking the tall end for both would have been the comfortable mistake: it makes the air
- * look small AND the chip look small, and the two errors cancel into a number that is not
- * a bound on anything.
- *
- * ── The reach ──
- * A stepped-off chip's centre sits `LABEL_HEIGHT / 2 + LABEL_CLEAR` flow units past the
- * edge of the block it left — that is `SchematicEdge`'s own step — and it draws its 20px
- * box around that centre. The box is counter-scaled below zoom 1, so it renders at a
- * constant 20 CSS px there and grows with the drawing above it.
- */
-function measureStageAir(state: BuildState, viewport: number): StageAir {
-  const { graph, blocks } = blocksOf(state);
-  const width = canvasWidth(viewport);
-  const height = canvasHeight(viewport);
-
-  let left = Infinity;
-  let right = -Infinity;
-  let top = Infinity;
-  let bottom = -Infinity;
-  for (const block of blocks) {
-    left = Math.min(left, block.x);
-    right = Math.max(right, block.x + block.width);
-  }
-  for (const node of graph.nodes) {
-    top = Math.min(top, node.position.y);
-    bottom = Math.max(bottom, node.position.y);
-  }
-
-  const fit = (blockHeight: number) =>
-    getViewportForBounds(
-      { x: left, y: top, width: right - left, height: bottom - top + blockHeight },
-      width,
-      height,
-      FRAME.minZoom,
-      FRAME.maxZoom,
-      FRAME.padding,
-    );
-
-  const tallest = fit(BLOCK_MAX_HEIGHT);
-  const zoom = fit(BLOCK_MIN_HEIGHT).zoom;
-  const reach =
-    (LABEL.height / 2 + LABEL.clear) * zoom + (LABEL.height / 2) * Math.max(1, zoom);
-
-  const drawnTop = tallest.y + top * tallest.zoom;
-  const drawnBottom = tallest.y + (bottom + BLOCK_MAX_HEIGHT) * tallest.zoom;
-  return { top: drawnTop - reach, bottom: height - drawnBottom - reach };
+/** And down: the air the fit leaves for a stepped-off edge label. See `schematicAir`. */
+function measureStageAir(state: BuildState, viewport: number): Air {
+  return schematicAir(nodesOf(state), canvasWidth(viewport), canvasHeight(viewport));
 }
 
 /* --------------------- the assertions --------------------- */
