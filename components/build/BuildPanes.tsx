@@ -16,6 +16,7 @@ import { cx } from "@/lib/format";
 import type { NodeCard, OntologyView } from "@/lib/core";
 import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
 import { ChoiceGraphPane, type NodeChoice } from "./ChoiceGraphPane";
+import { nextTabIndex } from "./tablist";
 import { termTally, VocabularyPane } from "./VocabularyPane";
 import type { StepId, StepReading } from "./steps";
 
@@ -132,6 +133,7 @@ export function BuildPanes({
   graphId,
   stepId,
   reading = "dot",
+  paneNumber = 1,
   className,
 }: {
   model: PaneModel;
@@ -147,6 +149,20 @@ export function BuildPanes({
   /** Which step is open, so a step change can reopen the frame on that step's reading. */
   stepId: StepId;
   reading?: StepReading;
+  /**
+   * The ordinal pane 1's `id="pane-N-heading"` is built from.
+   *
+   * Defaults to `1`, which was a hardcoded literal here until `WorkspaceStage.tsx` needed
+   * it to vary: `GuidedPath.tsx` never mounts more than one `BuildPanes` at a time, so one
+   * fixed number never collided with anything. `WorkspaceStage.tsx` mounts two —
+   * `reading="dot"` and `reading="card"` — in the same document at once (both tab bodies
+   * render at SSR; see its own header docblock), plus a third, standalone
+   * `ChoiceGraphPane` for its `Graph` tab. All three draw pane 1, so without a way to tell
+   * them apart every one would emit the same `id="pane-1-heading"` — three duplicate ids
+   * in one document, unconditionally, on every render. Existing callers that never pass
+   * this keep today's literal `1` and are unaffected.
+   */
+  paneNumber?: number;
   className?: string;
 }) {
   const focus = resolveFocus(model, selection);
@@ -179,20 +195,18 @@ export function BuildPanes({
    * readings re-draws the same node three ways, and that is the thing the view exists to
    * show. `useRovingListbox` itself is vertical (ArrowUp and ArrowDown) and this row is
    * horizontal, which is why it is not reused.
+   *
+   * The index math itself — wrap at both ends, jump on Home/End — is `./tablist.ts`'s
+   * `nextTabIndex`, orientation `"both"`: Down and Up, because the list is vertical now and
+   * `aria-orientation` says so, AND Right and Left, because the card's two views sit side
+   * by side inside their row, so both axes are real on screen. `WorkspaceStage.tsx` needed
+   * the same wrap-and-jump rule for its own tablist, so it is factored out there rather than
+   * copied a third time; this call site's behaviour is unchanged by the extraction.
    */
   function onTabKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const at = READINGS.findIndex((entry) => entry.id === open);
-    let next = -1;
-    /* Down and Up, because the list is vertical now and `aria-orientation` says so.
-       Right and Left stay bound as well: the card's two views sit side by side inside
-       their row, so both axes are real on screen. */
-    if (event.key === "ArrowDown" || event.key === "ArrowRight")
-      next = (at + 1) % READINGS.length;
-    else if (event.key === "ArrowUp" || event.key === "ArrowLeft")
-      next = (at - 1 + READINGS.length) % READINGS.length;
-    else if (event.key === "Home") next = 0;
-    else if (event.key === "End") next = READINGS.length - 1;
-    else return;
+    const next = nextTabIndex(event.key, at, READINGS.length, "both");
+    if (next === undefined) return;
     event.preventDefault();
     setOpen(READINGS[next].id);
     tabRefs.current[next]?.focus();
@@ -324,7 +338,7 @@ export function BuildPanes({
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)] lg:items-start">
         <ChoiceGraphPane
-          paneNumber={1}
+          paneNumber={paneNumber}
           showNumber={false}
           graph={graph}
           model={model}
