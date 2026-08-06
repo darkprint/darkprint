@@ -33,7 +33,7 @@ const SOURCE = readFileSync(
 
 /**
  * Comments out, so what is left is roughly what a reader sees. Same method and same
- * reason as `components/build/path.test.ts`: the header comment on this file discusses the
+ * reason as `components/build/workspace.test.ts`: the header comment on this file discusses the
  * false attribution in order to explain why it is gone, and reading that as a breach would
  * push the next author to stop writing the reason down.
  */

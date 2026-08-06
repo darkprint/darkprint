@@ -47,8 +47,10 @@ type StepId = 1 | 2 | 3 | 4;
  * content they had never seen, with the rail a thousand pixels over their head. The
  * heading takes focus on a step change, which puts the scroll position at the top of the
  * new step, announces the step to a screen reader, and gives the panel body the
- * level-two heading its outline never had. `components/build/GuidedPath.tsx` solves the
- * same problem on the sibling wizard the same way.
+ * level-two heading its outline never had. `/build` was the sibling wizard and solved the
+ * same problem the same way; it is one workspace now
+ * (`components/build/BuildWorkspace.tsx`), so this is the last multi-step flow on the site
+ * and the only place the pattern still has to hold.
  */
 const STEPS: { id: StepId; label: string; heading: string }[] = [
   { id: 1, label: "Upload", heading: "Upload the bundle" },
@@ -1126,9 +1128,10 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
           The counter used to exist on step 4 alone, where it told a reader who had
           already arrived that they had arrived; everywhere else the position was
           readable only by counting the rail at the top of a panel three viewports up.
-          It prints on every step now, between the two controls, exactly as the sibling
-          wizard prints it (`components/build/GuidedPath.tsx`). `STEPS.length` rather
-          than a typed 4, so the two can never disagree. */}
+          It prints on every step now, between the two controls. `/build` printed the same
+          counter until its steps were deleted, and this flow keeps it because it still has
+          steps: four panels, in order, with an advance control at the bottom of each.
+          `STEPS.length` rather than a typed 4, so the two can never disagree. */}
       {!(step === 4 && submitted) && (
         <div className="flex items-center justify-between gap-3 border-t border-line bg-surface-2/40 px-5 py-4 sm:px-8">
           <Button variant="ghost" onClick={back} disabled={step === 1}>

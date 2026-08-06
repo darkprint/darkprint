@@ -446,7 +446,7 @@ describe("choice 2: who decides the work is finished", () => {
   /**
    * Spec part 2, on the surfaces the reader keeps.
    *
-   * `notes` on the approval card is rendered in pane 4 of the guided path and written
+   * `notes` on the approval card is rendered in `/build`'s Cards tab and written
    * byte for byte into the downloaded bundle, and `manifest.description` is the field
    * `toBlueprintView` reads as the body copy of a blueprint page. Both used to spell the
    * autonomy reading as an ordinal — "the blueprint reads autonomy level 3. Without it,
@@ -768,7 +768,7 @@ describe("doc 2 §5.6: what the slider actually moves", () => {
 
   /**
    * §5.6 wants the trade delivered by the control rather than argued underneath it, so the
-   * slider carries three figures (`CapSlider`'s readings, in `GuidedPath.tsx`): what a run
+   * slider carries three figures (`CapSlider`'s readings, in `BuildWorkspace.tsx`): what a run
    * may spend, how many passes it may take, and how many rounds of failure evidence the
    * debugger can accumulate on the way. Each has to move at every position of the slider,
    * or a reader dragging it through that stretch watches nothing happen.

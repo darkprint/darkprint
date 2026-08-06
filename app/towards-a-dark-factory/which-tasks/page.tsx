@@ -123,7 +123,7 @@ export default function WhichTasksPage() {
           <p className="prose-lane text-sm leading-relaxed text-muted">
             A yes now has somewhere to go: the{" "}
             <Link href="/build" className={INLINE}>
-              guided path
+              build workspace
             </Link>
             , and the{" "}
             <Link href="/blueprints" className={INLINE}>

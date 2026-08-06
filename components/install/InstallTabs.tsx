@@ -9,16 +9,20 @@ export function InstallTabs() {
   const [active, setActive] = useState<string>(MCP_CLIENTS[0].id);
   const current = MCP_CLIENTS.find((c) => c.id === active) ?? MCP_CLIENTS[0];
   // Ties each tab to the one panel it discloses, the same `id`/`aria-controls`/
-  // `aria-labelledby` triangle `components/build/BuildPanes.tsx` uses for its own tabs.
+  // `aria-labelledby` triangle `components/build/WorkspaceStage.tsx` uses for the five
+  // tabs of `/build`'s stage.
   const tabsId = useId();
 
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   /**
    * Arrow keys across the tablist, with selection following focus — the same
-   * automatic-activation tablist `components/build/BuildPanes.tsx`'s `onTabKeyDown`
-   * implements for its own three readings, ported here rather than reinvented for this
-   * simpler, single-row list of clients.
+   * automatic-activation rule `components/build/tablist.ts` holds for every other tablist
+   * on the site, written out here rather than imported. It was ported from `/build`'s own
+   * tablist before that rule was factored out, and `tablist.ts`'s docblock records why this
+   * copy was left where it is: `nextTabIndex(key, at, MCP_CLIENTS.length, "horizontal")` is
+   * exactly the branch below, and swapping to it is a change worth making the day this file
+   * is open for another reason.
    */
   function onTabKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const at = MCP_CLIENTS.findIndex((client) => client.id === active);

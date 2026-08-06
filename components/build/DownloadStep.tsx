@@ -247,18 +247,17 @@ export function DownloadStep({
         best fits a goal like this one.
       </p>
 
-      {/* `AgentHandoff` does not render inside this component. Today it still sits one
-          level up, in `GuidedPath`, immediately below the step's exit row — the wiring
-          `GuidedPath.tsx` owns and this task does not touch.
+      {/* `AgentHandoff` does not render inside this component. It sits one level up, in
+          `BuildWorkspace.tsx`, in the other half of the grid this box is one cell of.
           ------------------------------------------------------------
           It is the author's own generalisation of the path (2026-08-04) and the mirror of
           the `AGENTS.md` named above. It used to be read as a second, optional offer
           standing between the artefact and the only control that left the step (measured
           at 1440px, before it moved: the first download link at y=690, "Validate it" at
           y=2274, 570px of that offer in between). That measurement explained why it moved
-          out of this component; it is not what it is now. Task 5 promotes it to a co-equal
-          exit from `/build` — take this folder as files, or take the brief instead — so
-          whatever page mounts the two places them side by side, with neither one a
+          out of this component; it is not what it is now. Task 5 promoted it to a co-equal
+          exit from `/build` — take this folder as files, or take the brief instead — and
+          `BuildWorkspace.tsx` places the two side by side on one row, with neither a
           postscript to the other and no step position printed around either.
           `AgentHandoff` keeps its own link to `/upload`. */}
     </div>

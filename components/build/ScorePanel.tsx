@@ -10,9 +10,11 @@ import { autonomyStatement, cx } from "@/lib/format";
    ------------------------------------------------------------
    Doc 2 §5.7: "il pannello dei punteggi resta sempre visibile
    durante le scelte. Se sparisce, il ciclo di feedback si spezza e
-   le scelte tornano a essere un form burocratico." So it is
-   sticky, it is mounted once for the whole path, and every step
-   renders next to it.
+   le scelte tornano a essere un form burocratico." So `ScoreStrip`
+   sits in the stage header, above the graph and outside every
+   tabpanel, and the panel itself is the body of the `Score` tab
+   (`WorkspaceStage.tsx`): whichever of the five tabs is open, the
+   readings are on screen while the three controls are moved.
 
    Doc 2 §1.1 decides how the autonomy half is drawn, and it is the
    same reading `AutonomyMeter` and the explainability panel already
@@ -20,8 +22,8 @@ import { autonomyStatement, cx } from "@/lib/format";
    ordinal, no track with an empty half, no colour ramp climbing
    towards 4, and the space underneath spent on **where the people
    are**. This one adds the
-   thing the path needs and a static page does not: when a choice
-   moves a number, the panel says what it was. Stated in the same
+   thing the workspace needs and a static page does not: when a
+   choice moves a number, the panel says what it was. Stated in the same
    type and colour as everything else, because a choice that moves a
    number has not lost anything.
 
@@ -72,31 +74,30 @@ function Rationale({ text }: { text: string }) {
 /**
  * The same figures in one line, for the width where the panel cannot sit beside the step.
  *
- * Doc 2 §5.7 asks for the score panel to stay visible *while the choices are made*. On a
- * wide screen the panel does that on its own, sticky in the second column. Below `lg` the
- * page is one column and the four panes are stacked, so the panel is two screens under the
- * control that moves it: the reader flips the demonstration switch in pane 1 and the answer
- * is somewhere past pane 4. This strip is mounted directly above the panes and sticks under
- * the site header, so the numbers stay on screen for the whole height of them.
+ * Doc 2 §5.7 asks for the score panel to stay visible *while the choices are made*, and the
+ * panel itself cannot do that on its own here: it is the body of one of the stage's five
+ * tabs, so it is off screen on the four tabs a reader spends most of their time on. This
+ * strip is the same figures in one line, mounted in the stage header above the graph, where
+ * no tab can close it and the controls below stay in the same viewport as the numbers they
+ * move.
  *
- * `aria-hidden`, because it is the panel's figures a second time. The panel below carries
- * the headings, the rationales and the findings, and a screen reader should hear that one
- * rather than a truncated copy of it first.
+ * `aria-hidden`, because it is the panel's figures a second time. The panel carries the
+ * headings, the rationales and the findings, and a screen reader should hear that one rather
+ * than a truncated copy of it first — `WorkspaceStage.tsx` mirrors this line into a live
+ * region of its own for exactly that reason, and its docblock records why.
  */
 export function ScoreStrip({
   autonomy,
   security,
   budget,
   errors = [],
-  demo = false,
   className,
 }: Omit<ScorePanelProps, "digest" | "previous">) {
   return (
     <div
       aria-hidden
       className={cx(
-        "flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border px-3 py-2 font-mono text-[11px] backdrop-blur-md",
-        demo ? "border-signal/50 bg-signal/10" : "border-line bg-surface-2/90",
+        "flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-md border border-line bg-surface-2/90 px-3 py-2 font-mono text-[11px] backdrop-blur-md",
         className,
       )}
     >
@@ -115,7 +116,6 @@ export function ScoreStrip({
         <span className="text-dim">{budget.modelCallsAtMost} model calls at most</span>
       )}
       {errors.length > 0 && <span className="text-signal">does not resolve</span>}
-      {demo && <span className="ml-auto text-signal">demonstration on</span>}
     </div>
   );
 }
@@ -126,7 +126,8 @@ export interface ScorePanelProps {
    *
    * Defaults to `h2` so `/blueprints/[slug]` is untouched: `references/reading.md` lists
    * that route as an approved benchmark, and a heading level is part of what was
-   * approved. `/build` opts in, because there the step's own `h2` is the section.
+   * approved. `/build` opts in, because there the workspace's own `h2` heads the section
+   * this panel is one tab of.
    */
   headingLevel?: "h2" | "h3";
   autonomy?: AutonomyResult;
@@ -139,22 +140,19 @@ export interface ScorePanelProps {
    * The readings before the last choice, when they differ from the current ones.
    *
    * Autonomy arrives as its class and security as its level, which is the same split the
-   * two halves of the panel print — see `PathLevels`.
+   * two halves of the panel print.
    */
   previous?: { autonomy?: string; security?: number };
   /**
    * What the engine refused about the graph on screen, from `BuildState.errors`.
    *
-   * Empty for all eighty combinations the path offers. Non-empty while §5.4's switch is
-   * on, because the builder declares `cannot: [acceptance-criteria]` and the demonstration
-   * edge carries that type: `bundle/prohibition-violated`, and the bundle does not
-   * resolve. A panel that answered that with "security level 2" and nothing else would be
-   * putting a reading on a graph `/upload` refuses to score and `lib/content/read.ts`
-   * refuses to load, next to a card in pane 4 that says the bundle failed.
+   * Empty for all eighty combinations `/build` offers, and `app/build/page.tsx` fails the
+   * build rather than shipping a combination that is not. It is still drawn, above the
+   * readings rather than beside them, because the alternative is a panel that answers a
+   * refused graph with "security level 2" and nothing else: a reading on a graph `/upload`
+   * would refuse to score and `lib/content/read.ts` would refuse to load.
    */
   errors?: readonly Diagnostic[];
-  /** True while doc 2 §5.4's switch is on, so the panel can say what it is describing. */
-  demo?: boolean;
   className?: string;
 }
 
@@ -166,7 +164,6 @@ export function ScorePanel({
   budget,
   previous,
   errors = [],
-  demo = false,
   className,
 }: ScorePanelProps) {
   const people = autonomy?.contributions.filter((c) => c.requiresHuman) ?? [];
@@ -182,10 +179,10 @@ export function ScorePanel({
           ------------------------------------------------------------
           Doc 2 §5.7 is quoted at the top of this file: if the panel disappears "il ciclo
           di feedback si spezza e le scelte tornano a essere un form burocratico". For a
-          reader using a screen reader the panel had disappeared. Moving a radio, the cap
-          slider or the demo switch changed the autonomy class, the security level, the
-          `was …` markers and the run budget with no announcement and no focus move —
-          `/build` carried exactly one live region and it described *node selection*.
+          reader using a screen reader the panel had disappeared. Moving a radio or the cap
+          slider changed the autonomy class, the security level, the `was …` markers and the
+          run budget with no announcement and no focus move — `/build` carried exactly one
+          live region and it described *node selection*.
 
           Polite and atomic, so a run of slider steps settles into one utterance rather
           than narrating every intermediate value. The visible readings below stay as
@@ -205,9 +202,10 @@ export function ScorePanel({
               .join(" ")}
       </p>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        {/* `h3` on a page that already has an `h2` for the step. /build's step 7 had three
-            sibling `h2`s: the step's own, this one, and `DownloadPanel`'s, so the outline
-            said the page had three equal sections when it has one with two panels in it.
+        {/* `h3` on a page that already has an `h2` over it. /build once had three sibling
+            `h2`s in one screen: the step's own, this one, and `DownloadPanel`'s, so the
+            outline said the page had three equal sections when it had one with two panels
+            in it. The workspace has one `h2` per section and this panel nests under it.
             Opt-in rather than changed outright: this component and `DownloadPanel` also
             render on `/blueprints/[slug]`, which `references/reading.md` lists as an
             approved benchmark not to edit. */}
@@ -220,17 +218,6 @@ export function ScorePanel({
           </span>
         )}
       </div>
-
-      {/* The switch is a view over a different topology, and the numbers below belong to
-          that one while it is on. Saying so here is what stops the panel from reading as
-          a report on the artefact the reader is about to download. */}
-      {demo && (
-        <p className="rounded border border-dashed border-signal/50 bg-signal/5 px-2.5 py-1.5 text-[11px] leading-relaxed text-muted">
-          <span className="font-mono text-signal">demonstration on</span>. The readings
-          below describe the graph with the extra edge in it. Your blueprint is unchanged,
-          and the download does not carry the edge.
-        </p>
-      )}
 
       {/* What the engine refused, above what it computed. The security level under it is
           a reading taken on a bundle that does not resolve, and a panel that printed the

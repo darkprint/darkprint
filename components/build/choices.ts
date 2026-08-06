@@ -1,5 +1,5 @@
 /* ============================================================
-   The guided path — the three choices, as the page offers them
+   /build — the three choices, as the page offers them
    ------------------------------------------------------------
    Doc 2 §5.3's questions, and nothing else. The vocabularies, the
    clamp, the eight structural variants and the bundle writer all
@@ -11,8 +11,15 @@
    than a comment: 4 output kinds × 2 approval modes = 8 structural
    variants, and the cap is a parameter that multiplies none of
    them. Every one of the 80 combinations has to produce a factory
-   that runs, so `path.test.ts` walks `ALL_COMBINATIONS` through the
-   real engine instead of sampling the ones a developer clicks.
+   that runs, so `workspace.test.ts` walks `ALL_COMBINATIONS`
+   through the real engine instead of sampling the ones a developer
+   clicks, and `app/build/page.tsx` walks it again at build time.
+
+   §5.4's demonstration switch was a fourth control here until the
+   restructure deleted the step it lived on. `LEAK_EDGE` below is
+   what is left of it, and it is not a control: it names the edge
+   the starter does not have, for the absence `state.ts` declares
+   and the three readings draw.
 
    CLIENT-SAFE and pure.
    ============================================================ */
@@ -44,9 +51,9 @@ export interface RadioOption<T extends string> {
 /**
  * Doc 2 §5.2's node ids, as `starterNodes` spells them.
  *
- * Named because the path teaches specific nodes: §5.4's switch is about `planner` and
- * `builder`, §5.5's loop is about `tester` and `debugger`. Every use is guarded on the id
- * being in the assembled graph, so a renamed node drops the step that points at it rather
+ * Named because specific nodes carry specific lessons: §5.4's absent edge runs between
+ * `planner` and `builder`, §5.5's loop is `tester` and `debugger`. Every use is guarded on
+ * the id being in the assembled graph, so a renamed node drops whatever points at it rather
  * than pointing at nothing.
  */
 export const STARTER_NODES = {
@@ -88,8 +95,8 @@ export const OUTPUT_OPTIONS: readonly RadioOption<StarterOutput>[] = STARTER_OUT
  *
  * Both rows describe a design. Neither is phrased as a step towards the other, neither
  * carries a recommendation, and the difference between them is stated as a difference in
- * who acts. The level each one produces is the engine's and appears in the panel beside
- * the graph it describes; nothing here previews it as a target.
+ * who acts. The level each one produces is the engine's and appears in the strip above the
+ * graph it describes; nothing here previews it as a target.
  */
 export const APPROVAL_OPTIONS: readonly RadioOption<StarterApproval>[] = [
   {
@@ -121,7 +128,7 @@ export const DEFAULT_CHOICES: StarterChoices = {
 };
 
 /**
- * Every combination the path can produce, in a stable order.
+ * Every combination the workspace can produce, in a stable order.
  *
  * The 8 structural variants at each of the 10 caps. §5.7 counts 8 cases because the cap
  * moves no edge; it does move the card the run is bounded by, that card's MINOR version

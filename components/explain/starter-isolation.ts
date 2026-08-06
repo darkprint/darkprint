@@ -38,7 +38,7 @@ import {
 } from "@/lib/content";
 import { graphForBlueprint } from "@/lib/graph-seed";
 
-/** The blueprint doc 2 §5.2 builds the guided path on, and the one this page reads. */
+/** The blueprint doc 2 §5.2 builds `/build`'s starter on, and the one this page reads. */
 export const STARTER_SLUG = "starter-software-factory";
 
 /**

@@ -12,8 +12,10 @@ import { cx } from "@/lib/format";
    outright. The climb's four-phase account is in the same position.
 
    So the device is one component rather than three copies. It was
-   written inside `components/build/steps.tsx` and moved here the
-   moment a second page needed it.
+   written inside `/build`'s own step prose and moved here the
+   moment a second page needed it; that route's steps have since
+   been deleted and this component outlived them, which is the
+   argument for having moved it.
 
    A native `<details>`, the same disclosure `DownloadPanel` and
    `DiagnosticList` already use, so the whole site opens one the

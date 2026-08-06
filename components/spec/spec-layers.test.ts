@@ -35,7 +35,7 @@ const SOURCE = readFileSync(
  * figure title carries a glob over the card directory, so a slash-star sits inside a
  * string literal and a naive strip runs from there to the next real closer, eating the
  * caption and lane 1. That is precisely the copy the last two cases are about. Same
- * treatment and same reason as `components/build/path.test.ts`.
+ * treatment and same reason as `components/build/workspace.test.ts`.
  */
 const MARKUP = SOURCE.replace(/(^|[\s{(=,])\/\*[\s\S]*?\*\//g, "$1");
 

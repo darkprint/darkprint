@@ -15,8 +15,9 @@
    Two kinds of test live here. `nextMarks` — the pure diff `choose()` commits, exported from
    `BuildWorkspace.tsx` for exactly this file to import — gets driven directly, sequence and
    all, with no rendering at all. The SSR markup tests below it pin the shape a static build
-   actually ships: both route-box hrefs, the absence of the step machinery `GuidedPath.tsx`
-   carried, and the section headings this fix round's other findings touched.
+   actually ships: both route-box hrefs, the absence of the step machinery the deleted
+   `GuidedPath.tsx` carried, and the section headings this fix round's other findings
+   touched.
    ============================================================ */
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -86,8 +87,8 @@ describe("BuildWorkspace — SSR markup", () => {
   });
 
   it("carries no step counter and no Back/Next pair", () => {
-    // `GuidedPath.tsx`'s own step machinery — deleted from this route by task 6, and never
-    // reintroduced by this fix round's other edits.
+    // The step machinery the deleted `GuidedPath.tsx` carried — off this route since task 6,
+    // and never reintroduced by any edit since.
     const text = plainText(html);
     expect(text).not.toMatch(/step\s+\d+\s+of\s+\d+/i);
     expect(text).not.toContain("← Back");

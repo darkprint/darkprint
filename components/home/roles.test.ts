@@ -137,7 +137,7 @@ describe("the props the drawing is built from", () => {
 
 /**
  * Comments out, so what is left is roughly what a reader sees. Same method and same
- * reason as `components/build/path.test.ts`.
+ * reason as `components/build/workspace.test.ts`.
  */
 function visibleCopy(source: string): string {
   return source

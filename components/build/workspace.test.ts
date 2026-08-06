@@ -1,6 +1,14 @@
 /* ============================================================
-   The guided path, walked end to end
+   The workspace's whole choice space, resolved
    ------------------------------------------------------------
+   This is `path.test.ts` less the eight-step path. That file
+   walked `ALL_COMBINATIONS` through the real engine and, at the
+   end, asserted the order of the steps a reader clicked through;
+   the steps are gone (`docs/superpowers/specs/2026-08-06-build-
+   restructure-design.md` §2.1), the enumeration is not, and it is
+   the enumeration that carries the guarantee. Everything here
+   walks the same eighty combinations the workspace can produce.
+
    Doc 2 §5.7: "Tutte e 8 devono produrre una fabbrica scaricabile
    e funzionante. Da esplicitare, altrimenti si testano i percorsi
    principali e i restanti si rompono in silenzio." So this walks
@@ -23,8 +31,10 @@
      4. doc 2 §1.1 holds in the copy: no evaluative language about
         the autonomy level anywhere the reader can see it.
 
-   The last one reaches into the step prose, because that is where
-   §1.1 is most easily lost and the hardest thing to notice going.
+   The last one used to reach into the step prose. There is no step
+   prose; it reaches into the workspace, its stage and its two
+   exits instead, which is where the same sentences are written
+   now and where §1.1 is still the easiest thing to lose.
    ============================================================ */
 
 import { readFileSync, readdirSync } from "node:fs";
@@ -57,7 +67,6 @@ import {
 import { autonomyStatement } from "@/lib/format";
 import { ALL_COMBINATIONS, APPROVAL_OPTIONS, OUTPUT_OPTIONS } from "./choices";
 import { buildState, uncappedReading } from "./state";
-import { STEPS } from "./steps";
 
 const ONTOLOGY = ontologyView(CORE_ONTOLOGY);
 
@@ -89,11 +98,11 @@ describe("the choice space", () => {
 
 /* --------------------- every combination is a working factory --------------------- */
 
-describe("every combination the path can produce", () => {
+describe("every combination the workspace can produce", () => {
   it.each(ALL_COMBINATIONS.map((choices) => [label(choices), choices] as const))(
     "%s resolves with no error and exports a runnable factory",
     (_name, choices) => {
-      const state = buildState(choices, false);
+      const state = buildState(choices);
 
       expect(hasErrors(state.diagnostics)).toBe(false);
       expect(state.blueprint).toBeDefined();
@@ -127,7 +136,7 @@ describe("every combination the path can produce", () => {
 
   it("puts the chosen cap on the debugger card of every combination", () => {
     for (const choices of ALL_COMBINATIONS) {
-      const state = buildState(choices, false);
+      const state = buildState(choices);
       const node = state.blueprint?.nodes.find((n) => n.nodeId === "debugger");
       expect(node, label(choices)).toBeDefined();
       expect(readIterationCap(node?.card.params ?? {}), label(choices)).toBe(
@@ -137,12 +146,12 @@ describe("every combination the path can produce", () => {
   });
 
   it("declares a progress criterion and an escalation rule alongside the cap", () => {
-    // Doc 2 §5.5 asks for three things, and the loop step says which of them the analyzer
-    // can see. The step's prose reads the other two off `params`; if the generator stops
-    // writing them the prose falls back to a weaker sentence, and this is the test that
+    // Doc 2 §5.5 asks for three things, and the cap control's own copy says which of them
+    // the analyzer can see. That copy reads the other two off `params`; if the generator
+    // stops writing them the sentence falls back to a weaker one, and this is the test that
     // notices rather than the reader.
     for (const choices of ALL_COMBINATIONS) {
-      const state = buildState(choices, false);
+      const state = buildState(choices);
       const params =
         state.blueprint?.nodes.find((n) => n.nodeId === "debugger")?.card.params ?? {};
       expect(params.stop_on_repeated_evidence, label(choices)).toBeDefined();
@@ -153,11 +162,11 @@ describe("every combination the path can produce", () => {
 
 /* --------------------- isolation, both halves --------------------- */
 
-describe("the lesson the path is built on", () => {
+describe("the lesson the workspace is built on", () => {
   it("keeps the criteria away from the builder in all eight variants", () => {
     for (const variant of STARTER_VARIANTS) {
       const choices = { ...variant, maxIterations: 3 };
-      const state = buildState(choices, false);
+      const state = buildState(choices);
       const security = state.analysis?.security;
       expect(security, starterSlug(variant)).toBeDefined();
       expect(
@@ -172,7 +181,8 @@ describe("the lesson the path is built on", () => {
     const state = buildState({ output: "python", approval: "tester", maxIterations: 3 });
     const model = state.paneModel;
     expect(model).toBeDefined();
-    // Pane 1's "not drawn" group, pane 3's ghost row, pane 2 and 4's field anchor.
+    // The graph's "not drawn" group, the DOT reading's ghost row, and the field anchor the
+    // card reading resolves it to — one selection, three tabs of the stage.
     const edge = model?.absences.find((a) => a.id === "criteria-to-builder");
     expect(edge?.edge).toEqual({ source: "planner", target: "builder" });
     expect(edge?.dot?.afterLine).toBeGreaterThan(0);
@@ -180,68 +190,42 @@ describe("the lesson the path is built on", () => {
     expect(prose?.field).toEqual({ nodeId: "builder", key: "spec" });
   });
 
-  it("fires criteria-leak with the switch on, and never in the artefact", () => {
-    const choices = { output: "python", approval: "tester", maxIterations: 3 } as const;
-    const clean = buildState(choices, false);
-    const leaked = buildState(choices, true);
-
-    const before = clean.analysis?.security;
-    const after = leaked.analysis?.security;
-    expect(before).toBeDefined();
-    expect(after).toBeDefined();
-    expect(after?.findings.some((f) => f.marker === "criteria-leak")).toBe(true);
-    expect(after?.findings.some((f) => f.nodeId === "builder")).toBe(true);
-    // The demonstration costs points. Which points is the engine's business, so this
-    // asserts the direction and not a figure.
-    expect(after!.level).toBeLessThan(before!.level);
-
-    // Doc 2 §5.4 and §5.3: the switch must not be persistable. The leaked state offers no
-    // files at all, and the artefact for the same choices does not carry the edge.
-    expect(leaked.files).toEqual([]);
-    expect(leaked.bundle.dot).toContain("planner  -> builder");
-    expect(clean.bundle.dot).not.toContain("planner  -> builder");
-    for (const file of clean.files) expect(file.text).not.toContain("planner  -> builder");
-  });
-
   /**
-   * The other half of what the switch does, which the panel was not reading.
+   * What is left of `path.test.ts`'s two demonstration-switch tests.
    *
-   * `code-builder@1.0.0` declares `cannot: [acceptance-criteria]`, so the demonstration
-   * edge does not merely cost security points: it makes the bundle fail to resolve. The
-   * card the reader is looking at in pane 4 says so on its own `notes` — "an edge carrying
-   * the criteria into this node fails the bundle with `bundle/prohibition-violated`,
-   * whatever the prose says" — while the panel beside it reported a level and stopped, so
-   * the two contradicted each other on one screen.
+   * Those tests drove `buildState(choices, true)`, which put doc 2 §5.4's leak edge into the
+   * bundle so the panel could report what it costs. The switch was a control on a step, the
+   * steps are gone, and the parameter went with them — but the half of those tests that was
+   * never about the switch is the half that matters here: the artefact a reader downloads
+   * carries no edge from the planner to the builder, and it resolves clean. Asserted on all
+   * eight variants rather than one, because the prohibition is a property of the builder's
+   * card and every variant has its own copy of it.
    *
-   * `BuildState.errors` is what closes that, and it is asserted on all eight variants
-   * rather than on the one the sibling test above uses: the prohibition is a property of
-   * the builder's card, which every variant has its own copy of.
+   * Both spellings of the edge are checked. `lib/starter/variants.ts` writes the DOT with
+   * two spaces before the arrow (`planner  -> builder`) and the sibling test above checks the
+   * one-space form the analyzer's own findings use, so a change to either formatter cannot
+   * quietly slip the edge past both.
    */
-  it("refuses the bundle behind the switch, in all eight variants", () => {
+  it("resolves clean and carries no leak edge, in all eight variants", () => {
     for (const variant of STARTER_VARIANTS) {
       const choices = { ...variant, maxIterations: 3 };
-      const clean = buildState(choices, false);
-      const leaked = buildState(choices, true);
+      const state = buildState(choices);
       const where = starterSlug(variant);
 
-      // The artefact resolves. Anything else and the path hands out a broken factory.
-      expect(clean.errors, `${where} clean`).toEqual([]);
-
-      expect(
-        leaked.errors.map((d) => d.code),
-        `${where} leaked`,
-      ).toContain("bundle/prohibition-violated");
-      const violation = leaked.errors.find(
-        (d) => d.code === "bundle/prohibition-violated",
-      );
-      expect(violation?.message).toContain("builder");
-      expect(violation?.message).toContain("acceptance-criteria");
+      // The artefact resolves. Anything else and the workspace hands out a broken factory.
+      expect(state.errors, `${where} errors`).toEqual([]);
+      expect(hasErrors(state.diagnostics), where).toBe(false);
 
       // `errors` is the error-severity half of `diagnostics` and never a separate list.
-      expect(leaked.errors).toEqual(
-        leaked.diagnostics.filter((d) => d.severity === "error"),
+      expect(state.errors, where).toEqual(
+        state.diagnostics.filter((d) => d.severity === "error"),
       );
-      expect(hasErrors(leaked.diagnostics)).toBe(true);
+
+      expect(state.bundle.dot, where).not.toContain("planner  -> builder");
+      for (const file of state.files) {
+        expect(file.text, `${where} ${file.path}`).not.toContain("planner  -> builder");
+        expect(file.text, `${where} ${file.path}`).not.toContain("planner -> builder");
+      }
     }
   });
 });
@@ -273,8 +257,8 @@ describe("the iteration cap", () => {
   });
 
   it("is what stands between the loop and an unbounded-loop charge", () => {
-    // The one figure the loop step quotes that is not on the slider. It has to be the
-    // engine's, and it has to be a real drop, or the sentence beside it is decoration.
+    // The one figure about the cap that is not on the slider. It has to be the engine's, and
+    // it has to be a real drop, or a sentence quoting it is decoration.
     const choices = { output: "python", approval: "tester", maxIterations: 3 } as const;
     const capped = buildState(choices).analysis?.security;
     const uncapped = uncappedReading(choices);
@@ -319,13 +303,24 @@ const FORBIDDEN = [
   "downgrade",
 ];
 
-/** Every file whose strings a reader can end up looking at. */
+/**
+ * Every file whose strings a reader of `/build` can end up looking at.
+ *
+ * `steps.tsx` and `GuidedPath.tsx` used to head this list and are deleted. What replaced
+ * them is named here in their place — `BuildWorkspace.tsx` (the route's single mount, which
+ * writes the lead-in copy the steps used to), `WorkspaceStage.tsx` (the stage and its five
+ * tab bodies) and `AgentHandoff.tsx` (the second exit, promoted to co-equal). Dropping the
+ * two deleted paths without adding these three would have quietly narrowed a §1.1 guard to
+ * the files that happen to have survived, which is the opposite of what deleting a step
+ * machinery is supposed to cost.
+ */
 const COPY_FILES = [
-  "components/build/steps.tsx",
   "components/build/choices.ts",
   "components/build/ScorePanel.tsx",
   "components/build/controls.tsx",
-  "components/build/GuidedPath.tsx",
+  "components/build/BuildWorkspace.tsx",
+  "components/build/WorkspaceStage.tsx",
+  "components/build/AgentHandoff.tsx",
   "components/build/DownloadStep.tsx",
   "components/build/ChoiceGraphPane.tsx",
   "app/build/page.tsx",
@@ -448,9 +443,7 @@ const EM_DASH_FILES = [
   ...new Set([
     ...COPY_FILES,
     ...LIB_COPY_FILES,
-    "components/build/path-state.ts",
     "components/build/state.ts",
-    "components/build/BuildPanes.tsx",
     "components/panes/GraphPane.tsx",
     "components/panes/SkeletonPane.tsx",
     "components/panes/SourcePane.tsx",
@@ -580,64 +573,6 @@ describe("autonomy is a description, not a verdict", () => {
         without.analysis?.autonomy.contributions.filter((c) => c.requiresHuman),
         output,
       ).toHaveLength(0);
-    }
-  });
-});
-
-/* --------------------- the path itself --------------------- */
-
-describe("the steps", () => {
-  it("run whole → part → whole, with the loop last before the download", () => {
-    const ids = STEPS.map((step) => step.id);
-    expect(ids[0]).toBe("whole");
-    expect(ids[1]).toBe("node");
-    // Doc 2 §5.3: the output kind comes first of the three choices.
-    expect(ids.indexOf("output")).toBeLessThan(ids.indexOf("approval"));
-    expect(ids.indexOf("approval")).toBeLessThan(ids.indexOf("loop"));
-    // §5.4 sits where the reader is already on the builder and the tester.
-    expect(ids.indexOf("switch")).toBeGreaterThan(ids.indexOf("node"));
-    expect(ids.indexOf("switch")).toBeLessThan(ids.indexOf("loop"));
-    // §5.6: the loop is the finale, and the download closes the path.
-    expect(ids[ids.length - 1]).toBe("download");
-  });
-
-  /**
-   * The order the demonstration step reports two answers in, locked against a density pass.
-   *
-   * `code-builder@1.0.0` declares `cannot: [acceptance-criteria]`, so the switch does not
-   * merely cost security points: the bundle stops resolving, and the sibling test above
-   * asserts `bundle/prohibition-violated` on all eight variants. An error is the end of the
-   * matter everywhere else on the site, so it has to be the first thing the step says.
-   *
-   * Redesign spec §4.3 folded the second answer, the security reading, behind a disclosure.
-   * Folding the first one away with it, or letting the metric print above it, would put the
-   * page back in the state that made this a finding: a level reported for a graph the
-   * engine refuses, beside a card in the frame whose own `notes` say it fails. Source order
-   * is the cheap way to hold that, because the refusal is a plain block and the reading is
-   * a `More`.
-   */
-  it("reports the refusal before the security reading, and never folds it away", () => {
-    const source = readFileSync(join(process.cwd(), "components/build/steps.tsx"), "utf8");
-    const at = source.indexOf("export function SwitchReading");
-    expect(at, "SwitchReading is gone from steps.tsx").toBeGreaterThan(-1);
-    const step = source.slice(at);
-
-    const refusal = step.indexOf("The bundle does not resolve");
-    const metric = step.indexOf("from the security metric");
-    expect(refusal, "the refusal copy is gone").toBeGreaterThan(-1);
-    expect(metric, "the security reading is gone").toBeGreaterThan(-1);
-    expect(refusal).toBeLessThan(metric);
-    expect(step.slice(0, refusal), "the refusal is inside a disclosure").not.toContain(
-      "<More",
-    );
-  });
-
-  it("hangs every choice on a node the graph actually has", () => {
-    const state = buildState({ output: "python", approval: "tester", maxIterations: 3 });
-    const ids = new Set(state.blueprint?.nodes.map((node) => node.nodeId) ?? []);
-    for (const step of STEPS) {
-      if (step.choiceNode === undefined) continue;
-      expect(ids.has(step.choiceNode), step.id).toBe(true);
     }
   });
 });

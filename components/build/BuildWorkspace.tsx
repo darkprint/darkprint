@@ -24,8 +24,9 @@ import { WorkspaceStage } from "./WorkspaceStage";
    implements, §2.1-§2.4. The shape is fixed there: a route-box that sends the four deleted
    teaching steps to the pages that already own them, the stage `WorkspaceStage` (task 3)
    draws, the three controls that move it, and the two co-equal exits `DownloadStep` and
-   `AgentHandoff` became in task 5. `GuidedPath.tsx` did all of this across eight screens,
-   most of them reading rather than choosing (spec §1.1); this does it on one.
+   `AgentHandoff` became in task 5. The deleted `GuidedPath.tsx` did all of this across
+   eight screens, most of them reading rather than choosing (spec §1.1); this does it on
+   one.
 
    ── One state object, one diff ──
    `choices` is the only thing a reader moves. `state` is `buildState(choices)`, memoized so
@@ -66,7 +67,7 @@ import { WorkspaceStage } from "./WorkspaceStage";
    callers are the only heading in their section. `/build`'s Score tab passes `h3`
    deliberately (`WorkspaceStage.tsx`'s own comment: "whatever page mounts this stage owns
    the section's `h2`") because `VocabularyPane`'s tab heading and `ScorePanel`'s tab heading
-   both sit one level below whatever wraps the stage. `GuidedPath.tsx` supplied that `h2` as
+   both sit one level below whatever wraps the stage. The deleted path supplied that `h2` as
    the current step's own title; there is no step here, so a heading naming this whole
    section is what supplies it instead — the workspace and its three controls are one
    section, and everything inside `WorkspaceStage` nests under this single heading rather
@@ -78,20 +79,20 @@ import { WorkspaceStage } from "./WorkspaceStage";
    close together read as a mistake rather than as agreement, and a third copy sits behind
    the Score tab (`ScorePanel.tsx`'s own heading there, unaffected by this change — it heads
    its own tabpanel and is never on screen at the same time as this one). The fix is this
-   heading's OWN wording, not suppressing `ScoreStrip`'s: `ScoreStrip` is shared with
-   `GuidedPath.tsx`, where no sibling heading says the same words next to it, so changing its
-   text would be fixing a collision that page does not have. "Your workspace" names the same
-   section this docblock already describes — the graph, the tabs, the score strip and the
-   three controls, one section — without echoing the strip's own label.
+   heading's OWN wording, not suppressing `ScoreStrip`'s: the strip's eyebrow answers "whose
+   blueprint are these figures about", which is the right label for a row of figures and the
+   wrong one for the section around it. "Your workspace" names the same section this docblock
+   already describes — the graph, the tabs, the score strip and the three controls, one
+   section — without echoing the strip's own label.
 
    ── The route-box replaces four deleted teaching steps, not the two exits ──
-   Spec §1.2: three of `GuidedPath.tsx`'s eight steps re-taught `/what-a-blueprint-is`'s three
-   parts in the same words and the same order, and a fourth re-taught `/spec/topology`'s
-   absent edge. Neither page benefits from a third copy on this one, so what is here instead
-   is a single `.route-box` — the site's one "this box leaves the page" primitive
-   (`app/globals.css`) — holding both destinations before the reader starts choosing. One
-   box, two links, read once by whoever wants the theory and scrolled past once by everyone
-   else, exactly as spec §2.2 asks. This is a different box from the one lower down that
+   Spec §1.2: three of the deleted path's eight steps re-taught `/what-a-blueprint-is`'s
+   three parts in the same words and the same order, and a fourth re-taught
+   `/spec/topology`'s absent edge. Neither page benefits from a third copy on this one, so
+   what is here instead is a single `.route-box` — the site's one "this box leaves the page"
+   primitive (`app/globals.css`) — holding both destinations before the reader starts
+   choosing. One box, two links, read once by whoever wants the theory and scrolled past
+   once by everyone else, exactly as spec §2.2 asks. This is a different box from the one lower down that
    introduces the two exits: that heading names what a reader leaves WITH, this one names
    where they can read more before they choose anything.
    ============================================================ */
@@ -123,8 +124,8 @@ export function BuildWorkspace() {
     setMarks((current) => current.filter((mark) => mark !== surface));
   }
 
-  // One sentence a reader can check the download against. Mirrors the summary
-  // `GuidedPath.tsx`'s own download step built from the same three choices.
+  // One sentence a reader can check the download against, built from the same three
+  // choices the artefact below it is built from.
   const summary = `It builds ${outputSubject(choices.output)}, ${
     choices.approval === "human"
       ? "holds the run until a named approver accepts"
@@ -144,8 +145,8 @@ export function BuildWorkspace() {
             What a blueprint is made of
           </span>
           <span className="text-[13px] leading-relaxed text-muted">
-            The graph, a card for every node, and the vocabulary both are written against —
-            the same three readings the tabs below draw.
+            The graph, a card for every node, and the vocabulary both are written against.
+            The tabs below draw the same three readings.
           </span>
         </Link>
         <Link

@@ -26,7 +26,7 @@ export type AgentFlowNode = Node<AgentNodeFlowData, "agent">;
  * reads a click on a node as doc 2 §5.1's synchronised selection, and
  * `components/build/ChoiceGraphPane` reads one as doc 2 §5.7's "le scelte si fanno dentro
  * la vista del grafo, cliccando sul nodo interessato". A whole-block link would have taken
- * a reader out of the guided path at the exact moment they were making a choice in it.
+ * a reader off `/build` at the exact moment they were making a choice in its graph.
  * A modifier click was the other candidate and it fails a different way: nothing on screen
  * would say it exists, and a keyboard reader has no modifier to hold.
  *

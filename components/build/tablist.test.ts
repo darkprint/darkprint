@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { nextTabIndex } from "./tablist";
 
 describe("nextTabIndex", () => {
-  describe('orientation "both" — BuildPanes.tsx\'s own tablist', () => {
+  describe('orientation "both" — a vertical list whose rows read left to right', () => {
     it("moves forward on ArrowDown and on ArrowRight", () => {
       expect(nextTabIndex("ArrowDown", 1, 4, "both")).toBe(2);
       expect(nextTabIndex("ArrowRight", 1, 4, "both")).toBe(2);

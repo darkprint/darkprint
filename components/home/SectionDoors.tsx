@@ -14,7 +14,7 @@
    `/towards-a-dark-factory` and is reachable from the nav.
 
    ── What stayed, and why it had to ──
-   The line about where the guided path stops. Spec §0.4: nothing
+   The line about where `/build` stops. Spec §0.4: nothing
    may be described as working that is not built, "say so wherever
    the question arises", and a door that says "build your own" is
    exactly where it arises. One sentence is enough to be honest;
@@ -50,7 +50,7 @@
    grep rather than a stale number.
 
    ── And the limit statement moved into it ──
-   "The guided path ends at the download. There is nowhere to publish
+   "The workspace ends at the download. There is nowhere to publish
    yet." hung under the two-column grid, centred, attached to
    neither door. It is about the build door specifically. A sentence
    that qualifies one of two options and is printed under both of
@@ -69,22 +69,27 @@ const COUNTS: { value: number; label: string }[] = [
 ];
 
 /**
- * What the guided path is, in three figures — the build door's answer to `COUNTS`.
+ * What `/build` is, in three figures — the build door's answer to `COUNTS`.
  *
- * Written here rather than imported, and each one says where it is read from. `STEPS` and
- * the choice groups live in `components/build/`, which is `"use client"` and pulls
- * `lib/core` and `lib/starter` behind it; importing either for three integers would put
- * the whole authoring path in the landing's bundle and in `beats.test.ts`'s render. The
+ * Written here rather than imported, and each one says where it is read from. The choice
+ * groups and the enumeration live in `components/build/`, which is `"use client"` and pulls
+ * `lib/core` and `lib/starter` behind it; importing them for three integers would put the
+ * whole authoring surface in the landing's bundle and in `beats.test.ts`'s render. The
  * comments are the check: all three are one grep away.
+ *
+ * The first figure used to be "8 steps", read off a `STEPS` table that no longer exists:
+ * `/build` is one workspace now and the eight-step path was deleted with it. What replaced
+ * it is the figure that survived the restructure unchanged, because it is a property of the
+ * generator rather than of the page drawn over it.
  */
 const PATH: { value: number; label: string }[] = [
-  /* `STEPS` in components/build/steps.tsx: whole · node · vocabulary · output · switch ·
-     approval · loop · download. */
-  { value: 8, label: "steps" },
-  /* components/build/choices.ts, the three headed sections: the output kind, the approval
-     mode, the iteration cap. The switch on step 5 is a demonstration, not a fourth choice
-     — nothing would ship it, which is what that step says. */
+  /* components/build/choices.ts, the three controls under the stage: the output kind, the
+     approval mode, the iteration cap. */
   { value: 3, label: "choices" },
+  /* `ALL_COMBINATIONS` in components/build/choices.ts: 4 output kinds × 2 approval modes ×
+     10 caps, every one of which app/build/page.tsx resolves through the engine at build
+     time. */
+  { value: 80, label: "combinations" },
   /* `exportBundle` writes one folder, whatever the eighty combinations resolve to. */
   { value: 1, label: "bundle" },
 ];
@@ -201,19 +206,19 @@ export function SectionDoors() {
 
           <Door
             title="Build your own"
-            line="An hour of choices, and a blueprint that downloads to your machine."
+            line="Three choices, and a blueprint that downloads to your machine."
             href="/build"
-            cta="Start the guided path"
+            cta="Open the workspace"
           >
             <Figures items={PATH} />
-            {/* What the eight steps hand over. The gallery door's caption says its figures
+            {/* What the three choices hand over. The gallery door's caption says its figures
                 are exact; this one says what its figures produce, which is the equivalent
-                question for a path rather than an archive. */}
+                question for a workspace rather than an archive. */}
             <Caption>A .dot topology, the cards it pins, and a README you can run.</Caption>
             {/* Spec §0.4, moved here from under the grid. It qualifies this door and only
                 this one, and a sentence centred under two columns attaches to neither. */}
             <Caption>
-              The guided path ends at the download. There is nowhere to publish yet.
+              The workspace ends at the download. There is nowhere to publish yet.
             </Caption>
           </Door>
         </div>

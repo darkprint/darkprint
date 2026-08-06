@@ -1,7 +1,7 @@
 /* ============================================================
-   The guided path — one set of choices, resolved
+   /build — one set of choices, resolved
    ------------------------------------------------------------
-   Everything the path shows about a factory comes out of this
+   Everything the workspace shows about a factory comes out of this
    function, and everything it produces comes out of `loadBundle`.
    No reading on `/build` is animated, interpolated or written into
    a string: the autonomy class, the security level, the findings,
@@ -20,11 +20,17 @@
    keeps *execution* off the server; static analysis is not
    execution.
 
-   ── The switch is not a choice ──
-   Doc 2 §5.3 and §5.4: a demonstration and a decision must never
-   mix. `criteriaVisibleToBuilder` is set on the bundle the panes
-   draw and never on the bundle the files come from, so the edge
-   cannot reach a download however the reader leaves the step.
+   ── One bundle per state, and it is the one that downloads ──
+   This function used to take a second argument, `demo`, which set
+   `criteriaVisibleToBuilder` on the bundle the panes drew while
+   refusing to export any file from it: doc 2 §5.4's demonstration
+   switch lived on a step and had to be unable to reach a download.
+   The steps are gone (restructure spec §2.1) and so is the switch,
+   so there is now exactly one bundle per set of choices and the
+   reader is looking at the bytes they are about to take away.
+   `lib/starter/variants.ts` still knows how to write the leaked
+   graph; the surface that asks it to is `/what-it-isnt`, through
+   `components/explain/starter-isolation.ts`.
    ============================================================ */
 
 import {
@@ -56,17 +62,18 @@ import { LEAK_EDGE } from "./choices";
 /**
  * One vocabulary view for the tab.
  *
- * `ontologyView(CORE_ONTOLOGY)` with no local extensions, and `path.test.ts` verifies every
- * variant against exactly this. The generated cards declare only curated terms, so the
+ * `ontologyView(CORE_ONTOLOGY)` with no local extensions, and `workspace.test.ts` verifies
+ * every variant against exactly this. The generated cards declare only curated terms, so the
  * browser and the build agree on every score by construction rather than by coincidence,
- * and the folder the path hands over needs no vocabulary file to reproduce its own numbers
- * (`lib/content/bundle-export.ts` writes one only for a bundle that declares a local term).
+ * and the folder the workspace hands over needs no vocabulary file to reproduce its own
+ * numbers (`lib/content/bundle-export.ts` writes one only for a bundle that declares a
+ * local term).
  */
 const ONTOLOGY = ontologyView(CORE_ONTOLOGY);
 
-/** Everything the path renders for one combination of choices. */
+/** Everything the workspace renders for one combination of choices. */
 export interface BuildState {
-  /** The bundle the reader is looking at. Carries the demonstration edge while it is on. */
+  /** The bundle the reader is looking at, which is the bundle the files come from. */
   bundle: Bundle;
   blueprint?: ResolvedBlueprint;
   analysis?: BlueprintAnalysis;
@@ -75,34 +82,35 @@ export interface BuildState {
    * The error-severity half of `diagnostics`, which is the half that decides whether this
    * bundle is a thing anybody could publish.
    *
-   * Non-empty exactly while doc 2 §5.4's switch is on. The builder's card declares
-   * `cannot: [acceptance-criteria]` and the demonstration edge carries that type, so the
-   * bundle behind the switch does not resolve — and the builder card the reader is looking
-   * at in pane 4 says so in its own `notes`, which is why the panel beside it cannot
-   * report a security level and stop there. Empty for all eighty real combinations, and
-   * `path.test.ts` walks them to keep it that way.
+   * Empty for all eighty combinations, and two things keep it that way rather than one:
+   * `workspace.test.ts` walks the enumeration through this function, and
+   * `app/build/page.tsx` walks it again through `loadBundle` at build time and throws on a
+   * single error-severity diagnostic. So the non-empty branch is unreachable in a shipped
+   * build by construction. It is still carried, and `ScorePanel` still prints it above the
+   * readings, because the alternative is a page that would score a graph the engine had
+   * refused: `loadBundle` is the authority on that, not this file, and if it ever refuses
+   * one of the eighty the workspace has to say so rather than report a level.
    */
   errors: readonly Diagnostic[];
   graph?: BlueprintGraph;
   paneModel?: PaneModel;
-  /** The files of the artefact. Empty while the switch is on, because that is not it. */
+  /** The files of the artefact, exported from the bundle above and no other. */
   files: readonly ExportedFile[];
   /** What the cap bounds, in whole numbers taken off the graph. */
   budget: StarterRunBudget;
-  /** True while doc 2 §5.4's switch is on. Nothing persisted is derived from it. */
-  demo: boolean;
 }
 
 /**
  * The absence doc 2 §5.1 asks to be shown on three representations at once.
  *
- * Declared only while the edge really is missing. With the switch on the statement is in
- * the file, so a ghost row would contradict the line three rows above it and the "not
- * drawn" group would list an edge the drawing draws. Guarded on both endpoints being in
- * the graph, like `absencesFor` in the archive's own view.
+ * Guarded on both endpoints being in the graph, like `absencesFor` in the archive's own
+ * view: an absence declared between nodes one of which is not drawn would put a ghost row
+ * under a reading that has nowhere to anchor it. Every bundle this file resolves has the
+ * edge missing, which is the whole of doc 2 §5.2, so there is no second branch here any
+ * more; the one that used to exist returned nothing while the demonstration switch was on
+ * and the statement really was in the file.
  */
-function absences(nodeIds: readonly string[], leaked: boolean): PaneAbsenceInput[] {
-  if (leaked) return [];
+function absences(nodeIds: readonly string[]): PaneAbsenceInput[] {
   const present = new Set(nodeIds);
   if (!present.has(LEAK_EDGE.source) || !present.has(LEAK_EDGE.target)) return [];
   return [
@@ -124,7 +132,7 @@ function absences(nodeIds: readonly string[], leaked: boolean): PaneAbsenceInput
 }
 
 /**
- * One combination of choices, resolved into everything the path shows.
+ * One combination of choices, resolved into everything the workspace shows.
  *
  * Total: a bundle the engine cannot resolve comes back with its diagnostics and no
  * blueprint rather than throwing, so the page can say what went wrong. `app/build/page.tsx`
@@ -132,10 +140,8 @@ function absences(nodeIds: readonly string[], leaked: boolean): PaneAbsenceInput
  * what makes that branch unreachable in a shipped build; this is what makes it legible if
  * it ever is not.
  */
-export function buildState(choices: StarterChoices, demo = false): BuildState {
-  const bundle = buildStarterBundle(
-    demo ? { ...choices, criteriaVisibleToBuilder: true } : choices,
-  );
+export function buildState(choices: StarterChoices): BuildState {
+  const bundle = buildStarterBundle(choices);
   const result = loadBundle(bundle, { ontology: ONTOLOGY });
 
   const state: BuildState = {
@@ -144,7 +150,6 @@ export function buildState(choices: StarterChoices, demo = false): BuildState {
     errors: result.diagnostics.filter((d) => d.severity === "error"),
     files: [],
     budget: starterRunBudget(choices),
-    demo,
   };
   if (result.blueprint === undefined || result.analysis === undefined) return state;
 
@@ -170,25 +175,20 @@ export function buildState(choices: StarterChoices, demo = false): BuildState {
     title: blueprint.manifest.title,
     dot: blueprint.dot,
     nodes: paneNodes,
-    absences: absences(
-      blueprint.nodes.map((node) => node.nodeId),
-      demo,
-    ),
+    absences: absences(blueprint.nodes.map((node) => node.nodeId)),
   });
 
   // The artefact, and only from the bundle the reader chose. `exportBundle` is the same
   // function the archive's own downloads go through, so a factory built here and a
   // blueprint pulled from the gallery are the same kind of folder.
-  if (!demo) {
-    state.files = exportBundle({
-      blueprint,
-      analysis: result.analysis,
-      cards: Object.entries(bundle.cardFiles).map(([file, text]) => ({
-        ref: file.replace(/^cards\//, "").replace(/\.yaml$/, ""),
-        text,
-      })),
-    });
-  }
+  state.files = exportBundle({
+    blueprint,
+    analysis: result.analysis,
+    cards: Object.entries(bundle.cardFiles).map(([file, text]) => ({
+      ref: file.replace(/^cards\//, "").replace(/\.yaml$/, ""),
+      text,
+    })),
+  });
   return state;
 }
 

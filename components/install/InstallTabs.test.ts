@@ -27,7 +27,7 @@ describe("InstallTabs", () => {
   });
 
   /**
-   * Roving tabindex, the same contract `components/build/BuildPanes.tsx`'s own tablist
+   * Roving tabindex, the same contract `components/build/WorkspaceStage.tsx`'s own tablist
    * holds: exactly one tab stop in the whole group, on the active tab. This is as much of
    * the keyboard behaviour as static markup can see — there is no jsdom/testing-library
    * in this repo to dispatch a real ArrowRight and observe focus move, so the

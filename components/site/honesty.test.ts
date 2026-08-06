@@ -94,13 +94,13 @@ const WHICH_TASKS = renderToStaticMarkup(createElement(WhichTasksChecks));
 const SCORING = renderToStaticMarkup(createElement(ScoringModel));
 
 /**
- * `/build`'s two exits (task 5), rendered with the same default choices `GuidedPath.tsx`
- * seeds the path with — real content off `lib/starter/`, not a fixture, exactly like every
- * other surface in this file. Both carry the same "not built yet" sentence about registry
+ * `/build`'s two exits (task 5), rendered with the same `DEFAULT_CHOICES` the workspace
+ * opens on — real content off `lib/starter/`, not a fixture, exactly like every other
+ * surface in this file. Both carry the same "not built yet" sentence about registry
  * retrieval over MCP, and both are asserted below rather than one standing in for the
  * other: a reader who opens only one of the two exits still has to meet the limit.
  */
-const BUILD = buildState(DEFAULT_CHOICES, false);
+const BUILD = buildState(DEFAULT_CHOICES);
 const DOWNLOAD_STEP = renderToStaticMarkup(
   createElement(DownloadStep, {
     files: BUILD.files,

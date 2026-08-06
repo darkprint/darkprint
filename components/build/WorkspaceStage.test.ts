@@ -43,11 +43,11 @@ describe("WorkspaceStage", () => {
   });
 
   it("mounts exactly one React Flow graph on the whole stage", () => {
-    // Critical review finding: an earlier version mounted `BuildPanes` for the DOT and
-    // Cards tabs, and `BuildPanes` draws its own `ChoiceGraphPane` internally — three React
-    // Flow canvases in one document for a stage that wants one. `WorkspaceStage.tsx` now
-    // mounts `ChoiceGraphPane` once (the `Graph` tab) and reaches for `SourcePane` directly
-    // for `DOT` and `Cards`. `.rf-blueprint` is `BlueprintGraph.tsx`'s own wrapper class,
+    // Critical review finding: an earlier version mounted the deleted path's own four-pane
+    // component for the DOT and Cards tabs, and that component drew its own
+    // `ChoiceGraphPane` internally — three React Flow canvases in one document for a stage
+    // that wants one. `WorkspaceStage.tsx` now mounts `ChoiceGraphPane` once (the `Graph`
+    // tab) and reaches for `SourcePane` directly for `DOT` and `Cards`. `.rf-blueprint` is `BlueprintGraph.tsx`'s own wrapper class,
     // present once per mounted canvas regardless of `hidden`.
     const html = renderToStaticMarkup(
       createElement(WorkspaceStage, { state: buildState(base), marks: [], onTabOpen: () => {} }),
@@ -57,9 +57,9 @@ describe("WorkspaceStage", () => {
   });
 
   it("gives every tab label a body that actually matches it — DOT shows DOT, Cards shows YAML", () => {
-    // Critical review finding: `BuildPanes` carries its own internal four-reading tablist,
-    // so a tab labelled `DOT` could privately be showing card YAML if a reader had clicked
-    // inside that nested tablist — "what the label says is what the body shows" was not
+    // Critical review finding: the four-pane component this stage replaced carried its own
+    // internal four-reading tablist, so a tab labelled `DOT` could privately be showing card
+    // YAML if a reader had clicked inside that nested tablist — "what the label says is what the body shows" was not
     // actually true. `SourcePane` has no tablist of its own, so each of the two panels can
     // only ever be the one document it was given.
     const html = renderToStaticMarkup(
@@ -202,12 +202,12 @@ describe("WorkspaceStage", () => {
   });
 
   /**
-   * Fix round 2 finding: removing the two `BuildPanes` mounts (Critical 2, fix round 1) also
-   * removed `BuildPanes.tsx`'s own selection announcer (`announce(model, focus)`), leaving a
+   * Fix round 2 finding: removing the two four-pane mounts (Critical 2, fix round 1) also
+   * removed that component's own selection announcer (`announce(model, focus)`), leaving a
    * screen reader with no announcement at all when a node, a DOT line or a card field is
    * selected. The coordinator's corrected ruling: the invariant is one live region PER
-   * CHANNEL, not one per page — `GuidedPath.tsx` itself carries a score announcer AND a
-   * selection announcer simultaneously, because they answer different questions. This stage
+   * CHANNEL, not one per page — the deleted path carried a score announcer AND a selection
+   * announcer simultaneously, because they answer different questions. This stage
    * now does too, and this test pins both: the selection sentence is reused verbatim from
    * `announce()` (`@/components/panes/model`), not a second phrasing, and it sits outside
    * every tabpanel's `hidden` wrapper — unconditionally, since selection can change from the
@@ -249,7 +249,7 @@ describe("WorkspaceStage", () => {
     // The one `ChoiceGraphPane` and the two `SourcePane`s each build `id="pane-N-heading"`
     // from an explicit `paneNumber` (1, 2, 3) that this file assigns directly — regression
     // guard against that drifting back into a collision, the way an earlier version's
-    // `BuildPanes`-based design genuinely did (three simultaneous `ChoiceGraphPane`s all
+    // four-pane design genuinely did (three simultaneous `ChoiceGraphPane`s all
     // defaulting to `paneNumber={1}`; caught by this exact style of test before the
     // composition was rewritten to mount one graph instead of three).
     const html = renderToStaticMarkup(

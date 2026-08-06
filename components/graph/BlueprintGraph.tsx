@@ -36,7 +36,7 @@ const EDGE_COLOR = {
  * The floor the schematic is never drawn below, and why it has one.
  *
  * `fitView` alone will shrink a graph until it fits whatever box it was given, and the box
- * on a phone is small: measured on a 390px viewport, step 1 of the guided path settled at
+ * on a phone is small: measured on a 390px viewport, `/build`'s own graph settled at
  * zoom 0.407 in a 314×338 canvas, which renders `AgentNode`'s 14px name at 5.7 CSS px and
  * its 11px kind row at 4.5. That is not a small drawing, it is an unreadable one.
  *
@@ -47,8 +47,8 @@ const EDGE_COLOR = {
  * So the fit is allowed to crop instead. Below this zoom the graph stops shrinking, keeps
  * its type legible, and the reader pans to the rest; `PanHint` says so, on the drawings
  * where it is actually true. `0.9` is where an 11px glyph still clears the 10 CSS px floor
- * `components/viz/flow.ts` holds the hand-drawn scenes to. This is the change
- * `components/build/GuidedPath.tsx` recorded as still owed.
+ * `components/viz/flow.ts` holds the hand-drawn scenes to. This is the change `/build`'s
+ * own graph recorded as still owed, back when that route drew it 400px wide inside a pane.
  *
  * It costs a crop on the wide drawings, and that cost is real: `incident-commander` is
  * seven nodes in one row and fitted at 0.528 in the archive's 731px column, so it now shows
@@ -469,8 +469,8 @@ function FrameAcross({ blocks }: { blocks: readonly { x: number; width: number }
  *
  * A node whose seed carries a `cardId` draws its name as a link to `/nodes/<id>`, which
  * is spec part 3. Nothing on this component switches that on: the seed carries the id
- * only when the caller told `graphForBlueprint` the cards are in the registry, so the
- * guided path's schematics and the upload wizard's carry none and the archive's do.
+ * only when the caller told `graphForBlueprint` the cards are in the registry, so
+ * `/build`'s stage and the upload wizard's schematics carry none and the archive's do.
  *
  * That flag alone does **not** decide which mounted schematic shows links, and reading it
  * that way was a bug. One graph object can be handed to more than one mount: the blueprint

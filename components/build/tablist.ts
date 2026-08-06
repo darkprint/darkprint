@@ -1,23 +1,21 @@
 /* ============================================================
    One roving tablist, shared
    ------------------------------------------------------------
-   `BuildPanes.tsx`'s three-reading tablist and `InstallTabs.tsx`'s client-picker tablist
-   each hand-write the same rule: find the open tab's index, read the arrow key that was
-   pressed, wrap at both ends, jump on Home/End, move focus with the selection.
-   `InstallTabs.tsx`'s own comment already says its copy was "ported here rather than
-   reinvented" from `BuildPanes.tsx`. `WorkspaceStage.tsx` needs the identical rule a third
-   time, for the stage's own Graph/DOT/Cards/Vocabulary/Score row, and a third hand-written
-   copy is exactly what that comment was warning against: two of the three copies would stop
-   being "ported from the one implementation" the moment there no longer was one.
+   Three tablists on this site hand-wrote the same rule: find the open tab's index, read the
+   arrow key that was pressed, wrap at both ends, jump on Home/End, move focus with the
+   selection. `/build`'s four-pane view wrote it first; `InstallTabs.tsx`'s client picker
+   says in its own comment that its copy was ported from that one rather than reinvented;
+   and `WorkspaceStage.tsx` needed the identical rule a third time, for the stage's
+   Graph/DOT/Cards/Vocabulary/Score row. A third hand-written copy was exactly what that
+   comment was warning against: a copy stops being "ported from the one implementation" the
+   moment there no longer is one, which is now literally true — the four-pane view was
+   deleted along with the eight-step path it was the interface of.
 
    So this is the rule, factored out once: which index a key moves a roving tablist to,
-   given where it is now and how many tabs there are. `BuildPanes.tsx` is refactored to call
-   it below — its own behaviour is unchanged; see `nextTabIndex`'s `"both"` orientation,
-   which is exactly the four-arrow binding its `onTabKeyDown` used to write inline, wrapping
-   the same way at the same two ends. `InstallTabs.tsx` is left as it is: this task's brief
-   did not ask for it, its copy already carries its own comment explaining the reuse it
-   intends, and touching a second unrelated file behind this task's brief would be a bigger
-   diff than the line it would save there.
+   given where it is now and how many tabs there are. `WorkspaceStage.tsx` calls it.
+   `InstallTabs.tsx` is left as it is: the task that factored this out was not asked for it,
+   its copy already carries its own comment explaining the reuse it intends, and touching a
+   second unrelated file would be a bigger diff than the line it would save there.
 
    Pure and React-free, like `./surfaces.ts`: a keyboard mapping has no reason to import a
    hook, and staying import-free is what lets a `.test.ts` exercise it directly without
@@ -31,9 +29,11 @@
  * that carries no `aria-orientation`, and what `InstallTabs.tsx`'s single row of clients and
  * `WorkspaceStage.tsx`'s top-level Graph/DOT/Cards/Vocabulary/Score row both are.
  * `"vertical"` binds only ArrowUp/ArrowDown. `"both"` binds all four keys to the same step,
- * which is `BuildPanes.tsx`'s own tablist: `aria-orientation="vertical"` on the list as a
- * whole, but each part's row of view buttons reads left-to-right, so both axes are real on
- * screen there, and its own comment says so.
+ * which is what a tablist wants when `aria-orientation="vertical"` describes the list as a
+ * whole but each row inside it reads left to right, so both axes are real on screen.
+ * `/build`'s deleted four-pane view was that shape and is why the member exists; nothing
+ * mounts it today, and `tablist.test.ts` is what keeps the behaviour honest for whatever
+ * asks for it next.
  */
 export type TabOrientation = "horizontal" | "vertical" | "both";
 

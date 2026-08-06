@@ -9,7 +9,7 @@ import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
 export const metadata: Metadata = {
   title: "Build your own blueprint",
   description:
-    "The guided path through a blueprint's three parts: the graph, a card for every node, and the vocabulary both are written against. Start from the five-node starter, make three choices that stay in the artefact, and finish holding a blueprint that runs from your own command line. Every score is computed by the same static analysis the registry uses. Nothing is uploaded and there is nowhere to save it yet.",
+    "One workspace over a blueprint's three parts: the graph, a card for every node, and the vocabulary both are written against. Start from the five-node starter, make three choices that stay in the artefact, and leave holding a blueprint that runs from your own command line. Every score is computed by the same static analysis the registry uses. Nothing is uploaded and there is nowhere to save it yet.",
 };
 
 /* ============================================================
@@ -46,8 +46,9 @@ export const metadata: Metadata = {
    "chi sceglie l'approvazione umana non deve vedere niente che
    somigli a una penalità". The deliverable of the hour is a factory
    the reader owns and can run. Which class the analyzer reads off it
-   is the reader's design decision, stated in the panel beside the
-   graph and never set as the target of the page.
+   is the reader's design decision, stated in the strip above the
+   graph and in full behind the Score tab, and never set as the
+   target of the page.
    ============================================================ */
 
 /** The same vocabulary the workspace builds in the browser, so the two agree by construction. */

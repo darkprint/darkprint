@@ -428,20 +428,22 @@ describe("beat 5 says where its numbers come from", () => {
    * It was the one disclosure on the landing that nothing held. `honesty.test.ts`'s
    * ledger does not carry it — that table is keyed to `/blueprints/...` and `/spec/card`
    * surfaces — and this file checked beat 5's counts but not the sentence that qualifies
-   * what the counted path actually ends at. A grep for the words finds them in exactly
+   * what the counted route actually ends at. A grep for the words finds them in exactly
    * one source file, `SectionDoors.tsx` itself, which is the state that file's own
    * header describes as how a limit statement leaves the site by accident. It has now
    * left twice.
    *
-   * The sentence moved during this pass — it was an orphan under the section, and it is
-   * now the second caption inside the door it qualifies — which is precisely the edit
-   * during which a sentence goes missing. Held verbatim, not by paraphrase, and read out
-   * of `readable()` so it must be text a reader sees rather than a `title` or an
+   * The sentence moved once — it was an orphan under the section, and it is now the second
+   * caption inside the door it qualifies — which is precisely the edit during which a
+   * sentence goes missing. Its subject moved a second time, when `/build`'s eight-step
+   * guided path became one workspace: the noun changed and the limit did not, which is the
+   * other way this kind of sentence disappears. Held verbatim, not by paraphrase, and read
+   * out of `readable()` so it must be text a reader sees rather than a `title` or an
    * `sr-only`.
    */
-  it("states, beside the guided path, that the path stops at the download", () => {
+  it("states, inside the build door, that /build stops at the download", () => {
     expect(words).toContain(
-      "The guided path ends at the download. There is nowhere to publish yet.",
+      "The workspace ends at the download. There is nowhere to publish yet.",
     );
   });
 });

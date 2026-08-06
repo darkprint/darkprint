@@ -1271,7 +1271,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 </ul>
 
                 {/* No em dash in here, even though `app/nodes` is outside the trees
-                    `components/build/path.test.ts` guards. That exemption exists for copy
+                    `components/build/workspace.test.ts` guards. That exemption exists for copy
                     that predates doc 2 §2.5, not as a licence for new copy, and the guard
                     file says as much about `ForkAction.tsx`. This sentence was written in
                     this pass, so it follows the rule the guard cannot see it break. */}

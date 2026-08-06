@@ -9,16 +9,27 @@ import { withoutCardLinks } from "@/lib/graph-seed";
 import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
 
 /* ============================================================
-   Pane 1 on the guided path: the graph, and the choice in it.
+   The graph on /build, and the per-node choice slot in it.
    ------------------------------------------------------------
    Doc 2 §5.7: "le scelte si fanno dentro la vista del grafo,
    cliccando sul nodo interessato, non in un form laterale. Il grafo
-   è l'interfaccia, non l'illustrazione." So the control for the
-   step's choice lives in this pane, directly under the drawing, and
-   it opens when the node it belongs to is the selected one. Click
-   the `debugger` and the cap is there; click something else and the
-   pane says which node to go to and offers a button that goes
-   there, so a keyboard reader has the same way in as a pointer.
+   è l'interfaccia, non l'illustrazione." The `choice` prop below is
+   what that asked for: a control rendered inside this pane, directly
+   under the drawing, opening when the node it belongs to is the
+   selected one. Click the `debugger` and the cap is there; click
+   something else and the pane says which node to go to and offers a
+   button that goes there, so a keyboard reader has the same way in
+   as a pointer.
+
+   Nothing fills that slot today. The restructure spec's §2.2 put the
+   three controls in one panel that stays put below the stage,
+   because the property it wanted most was that a reader sees the
+   before and the after of their own choice — which needs the graph
+   to hold still while the choice is made, not to be re-entered
+   through it. The graph is still the interface rather than the
+   illustration: it is the whole stage now instead of one pane of
+   four. The slot is left in place because it is the only home a
+   per-node control has if one is wanted again.
 
    `components/panes/GraphPane` is the archive's version of this and
    is reused unchanged on every blueprint page. This one is not a
@@ -30,16 +41,18 @@ import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
    behaviour, built from the same hook.
 
    ── Why this one is drawn brighter than the rest ──
-   Redesign spec §4.3 asks for a clear primary among the four
-   panes. On this route the graph is where the choice is made, so
-   it keeps its own frame in `border-line-bright` while the three
-   readings share one box behind a tablist in `BuildPanes`. The
-   weight is carried by the border rather than by size, because the
-   two columns have to stay the same width for the drawing and the
-   documents to be read against each other.
+   Redesign spec §4.3 asked for a clear primary among the four panes
+   this route used to draw at once, and the answer was a frame in
+   `border-line-bright` while the three readings shared one box
+   behind a tablist. There is one pane on screen at a time now
+   (`WorkspaceStage.tsx`'s five tabs, of which this is the first),
+   so the border no longer separates a primary from its siblings —
+   it is the stage's own edge. It is kept because the weight is
+   carried by the border rather than by size, which is what lets the
+   drawing and the documents keep the same width as each other.
    ============================================================ */
 
-/** The choice this step attaches to a node of the graph. */
+/** A control attached to one node of the graph. Currently unused; see the header. */
 export interface NodeChoice {
   /** The node the question is about. */
   nodeId: string;
@@ -84,8 +97,8 @@ export function ChoiceGraphPane({
 }) {
   /**
    * This pane reads a click on a node as doc 2 §5.7's choice, so no node in it may also
-   * be a link out of the page. The guided path's bundles are generated in the browser and
-   * their cards have no page, so `graphForBlueprint` leaves the ids off already; stating
+   * be a link out of the page. `/build`'s bundles are generated in the browser and their
+   * cards have no page, so `graphForBlueprint` leaves the ids off already; stating
    * it here means the pane does not depend on that staying true somewhere else.
    */
   const drawn = useMemo(() => withoutCardLinks(graph), [graph]);
@@ -152,9 +165,9 @@ export function ChoiceGraphPane({
   }
 
   // `graphNodeId` rather than `node.nodeId`: it is the node the drawing rings, which an
-  // absence moves to the node the absence is about. The demonstration step selects the
-  // absent edge on purpose, so a control gated on the plain node id would hide itself at
-  // exactly the moment doc 2 §5.4 wants it in front of the reader.
+  // absence moves to the node the absence is about. Selecting the absent edge is a thing a
+  // reader does deliberately, and a control gated on the plain node id would hide itself the
+  // moment they did it — on the very node the absence is about.
   const choiceOpen = choice !== undefined && focus.graphNodeId === choice.nodeId;
 
   return (

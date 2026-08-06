@@ -5,17 +5,27 @@ import { cx } from "@/lib/format";
 import { MAX_ITERATIONS, MIN_ITERATIONS, type RadioOption } from "./choices";
 
 /* ============================================================
-   The three controls the path is made of.
+   The three controls the workspace is made of.
    ------------------------------------------------------------
-   Native radios, a native range input and a native checkbox, each
-   with a real label. The site's own styling is applied over them
-   rather than instead of them: these controls decide what a reader
+   Two native radio groups and a native range input, each with a
+   real label. The site's own styling is applied over them rather
+   than instead of them: these controls decide what a reader
    downloads, and reimplementing a radio group out of divs would
    put that decision behind a keyboard interaction nobody
    specified.
 
-   All three are rendered inside pane 1, on the node the choice is
-   about (doc 2 §5.7).
+   A fourth control used to live here, `DemoSwitch`: doc 2 §5.4's
+   demonstration, mounted on the step that taught the absent edge.
+   It went out with the steps (restructure spec §2.1). The
+   demonstration itself did not go anywhere — `/what-it-isnt`
+   builds the leaked graph and reads the same figures off the
+   engine (`components/explain/starter-isolation.ts`) — but it is
+   no longer a control sitting beside the three that do persist,
+   which is what §5.3 asks for anyway: a demonstration and a
+   decision must never be mixed.
+
+   All three are rendered in one panel below the stage, so they
+   stay put while the graph above them changes (spec §2.2).
    ============================================================ */
 
 export function RadioChoice<T extends string>({
@@ -168,48 +178,3 @@ export function CapSlider({
   );
 }
 
-/**
- * Doc 2 §5.4's switch, and the one control on the page that is not a choice.
- *
- * It is drawn apart from the three radios and the slider, and it says on itself that it
- * does not persist. §5.3's rule is that a demonstration and a decision must never be
- * mixed; the code enforces it (the export is taken from the bundle without the edge, and
- * the switch resets when the step changes), and the label states it so the reader does not
- * have to take the code's word for it.
- */
-export function DemoSwitch({
-  on,
-  onChange,
-  label,
-}: {
-  on: boolean;
-  onChange: (next: boolean) => void;
-  label: string;
-}) {
-  const id = useId();
-  return (
-    <div
-      className={cx(
-        "flex flex-col gap-1.5 rounded-md border border-dashed px-3 py-2.5 transition-colors",
-        on ? "border-signal bg-signal/10" : "border-line-bright bg-surface",
-      )}
-    >
-      <label htmlFor={id} className="flex cursor-pointer items-start gap-2.5">
-        <input
-          id={id}
-          type="checkbox"
-          checked={on}
-          onChange={(event) => onChange(event.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-signal)]"
-        />
-        <span className={cx("text-[13px] leading-snug", on ? "text-signal" : "text-fg")}>
-          {label}
-        </span>
-      </label>
-      <p className="pl-[1.625rem] text-[11px] leading-snug text-dim">
-        A demonstration. It goes back off when you leave this step, and no file you download
-        carries the edge.
-      </p>
-    </div>
-  );
-}

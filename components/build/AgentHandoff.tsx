@@ -113,7 +113,7 @@ export function AgentHandoff({ className }: { className?: string }) {
         Have your agent write one for your own goal
       </h3>
       <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
-        The worked example only ever builds software — that is the one starter it
+        The worked example only ever builds software, which is the one starter it
         demonstrates. For a different goal, hand the brief below to Claude Code, Gemini or
         Codex. It asks for the same things in the same order, starting with what each node
         must never receive.

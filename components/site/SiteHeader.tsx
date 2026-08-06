@@ -60,9 +60,8 @@ export const NAV = [
   // rather than with the registry surfaces, because it is something to do rather than
   // something to browse.
   { href: "/build", label: "Build one", group: "learn" },
-  // `/spec` answers the question the guided path raises: the reader has just written a
-  // graph and a card, and this is what the three layers they were writing in actually
-  // are.
+  // `/spec` answers the question `/build` raises: the reader has just written a graph
+  // and a card, and this is what the three layers they were writing in actually are.
   { href: "/spec", label: "Spec", group: "learn" },
   // A child of `/spec`, not a fifth `learn` destination in its own right: it grades what
   // the three layers above it describe. Placed directly after `/spec` for that reason.

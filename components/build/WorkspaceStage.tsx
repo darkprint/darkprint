@@ -30,34 +30,32 @@ import { VocabularyPane } from "./VocabularyPane";
    made is why `ScoreStrip` sits in the header rather than behind its own tab: it is the one
    reading that has to survive every tab switch.
 
-   This component composes `ChoiceGraphPane`, `SourcePane` (the same pane `BuildPanes.tsx`
-   uses internally for its own DOT and card readings), `VocabularyPane` and `ScorePanel`, and
-   owns the one thing none of them did before: which tab is open, and which tabs carry the
-   reader's own `•` change marker. The three controls that move the reader's choices, and the
-   wiring that turns `changedSurfaces` into this component's `marks` prop, are a later task's
-   job; this one takes `state` and `marks` as given.
+   This component composes `ChoiceGraphPane`, `SourcePane` (`@/components/panes/SourcePane`,
+   the same pane the archive's own four-pane view draws its DOT and its card YAML with),
+   `VocabularyPane` and `ScorePanel`, and owns the one thing none of them did before: which
+   tab is open, and which tabs carry the reader's own `•` change marker. `BuildWorkspace.tsx`
+   owns the three controls above this and hands `marks` down.
 
-   ── Why `SourcePane` directly, and not `BuildPanes` ──
-   A first version of this file rendered `DOT` and `Cards` as two full `BuildPanes` mounts,
-   because `BuildPanes` already draws exactly those two readings. That was wrong on
-   inspection: `BuildPanes` also draws its own `ChoiceGraphPane` (three React Flow instances
-   in one document, for a stage that wants one) and its own complete four-reading tablist
-   (so a click inside the tab labelled `DOT` could switch that mount to card YAML, silently
+   ── Why `SourcePane` directly, and not the four-pane component ──
+   The path this stage replaced had its own four-pane component (`BuildPanes.tsx`, deleted
+   with it) that already drew exactly the DOT and card readings, and a first version of this
+   file rendered `DOT` and `Cards` as two full mounts of it. That was wrong on inspection:
+   that component also drew its own `ChoiceGraphPane` (three React Flow instances in one
+   document, for a stage that wants one) and its own complete four-reading tablist (so a
+   click inside the tab labelled `DOT` could switch that mount to card YAML, silently
    contradicting the outer tab's own label — "what the label says is what the body shows"
    is the actual requirement, and a tablist nested inside a tablist cannot honour it). It also
    re-drew the cramped two-column apparatus this whole restructure exists to delete, at
    roughly 122KB of SSR markup for two panes.
 
    So `Graph` mounts the ONE `ChoiceGraphPane` this stage has, and `DOT`/`Cards` mount
-   `SourcePane` (`@/components/panes/SourcePane`) directly — the same component
-   `BuildPanes.tsx` reaches for internally, with the same `dotMeanings`/`cardMeanings`
-   derivations and the same `selectDotLine`/`selectCardLine` handlers, copied here rather
-   than imported because they close over this component's own `model`/`focus`/`selection`
-   rather than `BuildPanes`' props. One consequence: this file and `BuildPanes.tsx` now both
-   carry a copy of that small amount of glue. Folding both into one shared hook is a real
-   simplification worth making later; it was not done here because it touches
-   `BuildPanes.tsx`'s own internals for the sake of a component this task does not otherwise
-   need to change, which is a larger diff than the duplication it would remove.
+   `SourcePane` directly, with their own `dotMeanings`/`cardMeanings` derivations and their
+   own `selectDotLine`/`selectCardLine` handlers: the same small glue every caller of that
+   pane writes, closing over this component's own `model`/`focus`/`selection`.
+   `components/panes/SynchronisedPanes.tsx` is the other caller and writes its own copy of
+   it. Folding both into one shared hook is a real simplification still worth making; it was
+   not done here because the second caller is the archive's, and changing how every blueprint
+   page draws its documents is a larger diff than the duplication it would remove.
 
    ── `Graph` is not a `Surface`, and marks nothing ──
    `Surface` (`./surfaces.ts`) has four members — `dot`, `cards`, `vocabulary`, `score` — one
@@ -70,13 +68,11 @@ import { VocabularyPane } from "./VocabularyPane";
    principled way to know which happened without re-deriving `changedSurfaces`' own diff a
    second time, on a different artefact, which is exactly the "lookup table pretending to be
    a check" `surfaces.ts`'s own docblock argues against. So `Graph` carries no `•` marker and
-   calls no `onTabOpen`. The things that DO redraw the graph — the approval choice, which
-   adds or removes the `approver` node and its edges (`lib/starter/cards.ts`'s `approver`),
-   and doc 2 §5.4's demonstration switch, which adds the leak edge straight into the bundle
-   `graphForBlueprint` resolves — need no marker to be seen: the reader watches the drawing
-   itself change the moment either one fires. The output choice and the cap move neither the
-   node set nor the edge set, so neither would ever light `Graph` in the first place even if
-   it could carry a marker.
+   calls no `onTabOpen`. The one thing that DOES redraw the graph — the approval choice,
+   which adds or removes the `approver` node and its edges (`lib/starter/cards.ts`'s
+   `approver`) — needs no marker to be seen: the reader watches the drawing itself change the
+   moment it fires. The output choice and the cap move neither the node set nor the edge set,
+   so neither would ever light `Graph` in the first place even if it could carry a marker.
 
    ── Every tab body renders, every time ──
    The stage is mounted once and the reader flips between tabs with no navigation, so every
@@ -97,18 +93,17 @@ import { VocabularyPane } from "./VocabularyPane";
    and no class name spells `opacity-0` anywhere in it.
 
    ── Two live regions, one per channel — not "one live region, full stop" ──
-   An earlier version of this docblock said "exactly one live region is reachable" and
-   quoted `GuidedPath.tsx`'s "one live region per width, never two" as its authority. Both
-   the target and the citation were wrong, corrected here so nobody re-derives the same
-   mistake from this file's own history: the rule is one live region PER CHANNEL, not one
-   per page. `GuidedPath.tsx` itself ships two simultaneous live regions — a score announcer
-   and `BuildPanes.tsx`'s own selection announcer (`announce(model, focus)`, `<p
-   aria-live="polite">`) — because a score reading and "what node is selected right now"
-   answer different questions, and folding them into one sentence would make every selection
-   change re-announce the score along with it. The invariant `GuidedPath.tsx` actually
-   documents is scoped to the score channel alone: `ScoreStrip` at one width, `ScorePanel`'s
-   own live paragraph at the other, never both live at once — never two **on that one
-   channel**.
+   An earlier version of this docblock said "exactly one live region is reachable" and cited
+   the deleted path's "one live region per width, never two" as its authority. Both the
+   target and the citation were wrong, corrected here so nobody re-derives the same mistake
+   from this file's own history: the rule is one live region PER CHANNEL, not one per page.
+   That page itself shipped two simultaneous live regions — a score announcer and its
+   four-pane view's selection announcer (`announce(model, focus)`, `<p aria-live="polite">`)
+   — because a score reading and "what node is selected right now" answer different
+   questions, and folding them into one sentence would make every selection change
+   re-announce the score along with it. The invariant it actually documented was scoped to
+   the score channel alone: `ScoreStrip` at one width, `ScorePanel`'s own live paragraph at
+   the other, never both live at once — never two **on that one channel**.
 
    So this stage carries two live regions, deliberately, and removing either one back down
    to "just one" would be a regression, not a cleanup:
@@ -127,22 +122,21 @@ import { VocabularyPane } from "./VocabularyPane";
 
    **The selection channel.** Selecting a node in the graph, a line of the DOT or a field of
    the card is stage-level state (`selection`, shared by all three readings), and it needs
-   its own announcement the same way `BuildPanes.tsx` gives it one — via the SAME
-   `announce(model, focus)` (`@/components/panes/model`), not a second phrasing invented
-   here. Unlike the score channel, this one is not handed off between tabs: it sits at stage
+   its own announcement the same way the archive's own four-pane view gets one — via the
+   SAME `announce(model, focus)` (`@/components/panes/model`), not a second phrasing
+   invented here. Unlike the score channel, this one is not handed off between tabs: it sits at stage
    level, outside every tabpanel's `hidden` wrapper, unconditionally, because a reader can
    change the selection from the `Graph` tab, the `DOT` tab or the `Cards` tab alike, and the
    announcement has to be reachable regardless of which of those is open.
    ============================================================ */
 
-/** The vocabulary every resolved bundle on `/build` is checked against. Same instance
-    `GuidedPath.tsx` and `state.ts` use, so a term this stage shows is one the engine
-    actually resolved the bundle with. */
+/** The vocabulary every resolved bundle on `/build` is checked against. The same
+    `ontologyView(CORE_ONTOLOGY)` `state.ts` resolves with, so a term this stage shows is one
+    the engine actually resolved the bundle with. */
 const ONTOLOGY = ontologyView(CORE_ONTOLOGY);
 
-/** No card reading ever lights a secondary DOT-style range — `BuildPanes.tsx`'s own `NO_LINES`
-    constant, copied for the same reason: an empty array shared across renders rather than a
-    fresh one allocated on every `SourcePane` call. */
+/** No card reading ever lights a secondary DOT-style range. One empty array shared across
+    renders rather than a fresh one allocated on every `SourcePane` call. */
 const NO_LINES: readonly number[] = [];
 
 /** One tab of the stage. Not a superset of `Surface` any more: `graph` maps to no surface at
@@ -193,10 +187,10 @@ export function WorkspaceStage({
   const [open, setOpen] = useState<TabId>("graph");
 
   /**
-   * One selection, shared by the graph, the DOT reading and the card reading, exactly as
-   * `GuidedPath.tsx` shares one across the whole path. Seeded off the first node this
-   * bundle resolved to rather than a starter node id: a workspace stage has no fixed step
-   * to assume `builder` or `planner` exists, only the graph in front of it.
+   * One selection, shared by the graph, the DOT reading and the card reading — doc 2 §5.1's
+   * synchronised view, held at stage level. Seeded off the first node this bundle resolved
+   * to rather than a starter node id: this stage has no step to tell it that `builder` or
+   * `planner` exists, only the graph in front of it.
    */
   const [selection, setSelection] = useState<PaneSelection>(() => ({
     nodeId: state.paneModel?.nodes[0]?.nodeId ?? "",
@@ -252,8 +246,8 @@ export function WorkspaceStage({
     if (surface !== undefined && marks.includes(surface)) onTabOpen(surface);
   }, [marks, open, onTabOpen]);
 
-  /** The house tablist pattern (`./tablist.ts`, factored out of `BuildPanes.tsx`), bound
-      horizontal: this row reads left to right and carries no `aria-orientation`. */
+  /** The house tablist pattern (`./tablist.ts`), bound horizontal: this row reads left to
+      right and carries no `aria-orientation`. */
   function onTabKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const at = TABS.findIndex((tab) => tab.id === open);
     const next = nextTabIndex(event.key, at, TABS.length, "horizontal");
@@ -271,23 +265,21 @@ export function WorkspaceStage({
     setSelection({ nodeId });
   }
 
-  /** Mirrors `BuildPanes.tsx`'s own `selectAbsence`: every reading below shares this one
-      selection, so an absence picked from the graph, the DOT or the card resolves the same
-      way regardless of which tab it was picked from. */
+  /** Every reading below shares this one selection, so an absence picked from the graph,
+      the DOT or the card resolves the same way regardless of which tab it was picked
+      from. */
   function selectAbsence(absenceId: string) {
     const absence = model?.absences.find((entry) => entry.id === absenceId);
     setSelection({ nodeId: absence?.nodeId ?? selection.nodeId, absence: absenceId });
   }
 
-  /** What each line of the DOT is, for `SourcePane`'s accessible per-line text. Mirrors
-      `BuildPanes.tsx`'s own `dotMeanings`. */
+  /** What each line of the DOT is, for `SourcePane`'s accessible per-line text. */
   const dotMeanings = useMemo(
     () => (model === undefined ? [] : model.dot.split("\n").map((_, i) => lineMeaning(model, i + 1))),
     [model],
   );
 
-  /** What each line of the selected card's YAML is. Mirrors `BuildPanes.tsx`'s own
-      `cardMeanings`. */
+  /** What each line of the selected card's YAML is. */
   const cardMeanings = useMemo(() => {
     const card = focus?.card;
     if (card === undefined) return [];
@@ -327,15 +319,15 @@ export function WorkspaceStage({
           security === undefined ? null : `Security: level ${security.level} of 4.`,
           state.errors.length === 0 ? null : "This graph does not resolve.",
           `${state.budget.modelCallsAtMost} model calls at most.`,
-          state.demo ? "Demonstration on." : null,
         ]
           .filter(Boolean)
           .join(" ");
 
   /**
-   * The selection channel's sentence — `BuildPanes.tsx`'s own `announce(model, focus)`
-   * (`@/components/panes/model`), reused rather than re-derived so the two files never grow
-   * two different phrasings of "what is selected right now" for the same underlying model.
+   * The selection channel's sentence — `announce(model, focus)`
+   * (`@/components/panes/model`), reused rather than re-derived so this stage and the
+   * archive's own four-pane view never grow two different phrasings of "what is selected
+   * right now" for the same underlying model.
    * `""` while the bundle does not resolve: there is no node to describe, and an empty
    * `aria-live` region announces nothing rather than a stale or misleading sentence.
    */
@@ -417,7 +409,6 @@ export function WorkspaceStage({
           {...(security === undefined ? {} : { security })}
           budget={state.budget}
           errors={state.errors}
-          demo={state.demo}
         />
       </div>
 
@@ -534,16 +525,16 @@ export function WorkspaceStage({
         hidden={open !== "score"}
       >
         <ScorePanel
-          // `h3`: whatever page mounts this stage owns the section's `h2` (`app/build/page.tsx`
-          // by the time a later task wires this in), the same reasoning `GuidedPath.tsx`
-          // records at its own `ScorePanel` call.
+          // `h3`: whatever page mounts this stage owns the section's `h2`, and
+          // `BuildWorkspace.tsx` is what does — its "Your workspace" heading wraps this
+          // stage, the tabs and the three controls as one section, so the tab headings
+          // inside it sit one level below that rather than beside it.
           headingLevel="h3"
           {...(autonomy === undefined ? {} : { autonomy })}
           {...(security === undefined ? {} : { security })}
           {...(state.blueprint === undefined ? {} : { digest: state.blueprint.digest })}
           budget={state.budget}
           errors={state.errors}
-          demo={state.demo}
         />
       </div>
     </div>

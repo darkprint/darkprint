@@ -1,11 +1,11 @@
 /* ============================================================
    The bundle-equivalence harness
    ------------------------------------------------------------
-   `/build` is about to lose its eight-step guided path in favour
-   of a single workspace, which deletes the presentation code that
-   currently walks the reader to a download. Nothing in that
-   presentation code is allowed to change what the download
-   contains: the graph, the cards and every byte of prose in them.
+   `/build` lost its eight-step guided path in favour of a single
+   workspace, which deleted the presentation code that used to walk
+   the reader to a download. Nothing in that presentation code was
+   allowed to change what the download contains: the graph, the
+   cards and every byte of prose in them.
 
    This file is the proof. It hashes every file in the bundle each
    of the 80 combinations produces — `output` x `approval` x
@@ -20,8 +20,9 @@
 
    This is deliberately a guard on the *artefact*, not on how the
    page gets there. It asserts nothing about steps, panes or state
-   machines, so it survives the restructuring even as everything
-   around it is rewritten.
+   machines, so it survived the restructuring while everything
+   around it was rewritten, and the snapshot has not moved since it
+   was first written.
 
    All three `Bundle` fields (`lib/core/bundle/types.ts`) are hashed
    — `manifest`, `dot` and `cardFiles` — not just the latter two. A
