@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { hasErrors, loadBundle, ontologyView, CORE_ONTOLOGY } from "@/lib/core";
 import { buildStarterBundle, starterSlug } from "@/lib/starter/variants";
 import { Eyebrow, SectionHeading } from "@/components/ui/SectionHeading";
+import { BuildWorkspace } from "@/components/build/BuildWorkspace";
 import { ALL_COMBINATIONS } from "@/components/build/choices";
-import { GuidedPath } from "@/components/build/GuidedPath";
 import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
 
 export const metadata: Metadata = {
@@ -13,16 +13,19 @@ export const metadata: Metadata = {
 };
 
 /* ============================================================
-   /build — doc 2 §5, items 12 and 13.
+   /build — doc 2 §5, items 12 and 13. Restructured as one workspace
+   per docs/superpowers/specs/2026-08-06-build-restructure-design.md.
    ------------------------------------------------------------
-   The page itself is thin. The path is a client component because
-   the reader is choosing between eighty bundles and each one has to
-   be generated, scored and exported for whichever they land on;
-   `lib/starter/variants` is pure and client-safe, the engine
-   already runs in the browser on `/upload`, and precomputing eighty
-   finished states would put megabytes on a page a reader sees one
-   state of. Doc 1 §0.1.3 keeps *execution* off the server, and
-   static analysis is not execution.
+   The page itself is thin. `BuildWorkspace` — one large graph, three
+   simultaneous controls, two co-equal exits — replaces what used to
+   be an eight-step path here, and it is a client component for the
+   same reason the path was: the reader is choosing between eighty
+   bundles and each one has to be generated, scored and exported for
+   whichever they land on; `lib/starter/variants` is pure and
+   client-safe, the engine already runs in the browser on `/upload`,
+   and precomputing eighty finished states would put megabytes on a
+   page a reader sees one state of. Doc 1 §0.1.3 keeps *execution*
+   off the server, and static analysis is not execution.
 
    What the server does is the part a browser cannot: it walks the
    whole choice space before the page ships. Doc 2 §5.3 is blunt
@@ -47,13 +50,13 @@ export const metadata: Metadata = {
    graph and never set as the target of the page.
    ============================================================ */
 
-/** The same vocabulary the path builds in the browser, so the two agree by construction. */
+/** The same vocabulary the workspace builds in the browser, so the two agree by construction. */
 const ONTOLOGY = ontologyView(CORE_ONTOLOGY);
 
 let checked = false;
 
 /**
- * Every combination the path can produce, resolved once per build.
+ * Every combination the workspace can produce, resolved once per build.
  *
  * Memoized at module scope because a static build renders a page more than once and this
  * is the same answer every time. Throws with every failing combination listed, rather than
@@ -83,7 +86,7 @@ function verifyEveryVariant(): number {
   if (problems.length > 0) {
     throw new Error(
       [
-        `The guided path can produce a blueprint that does not resolve: ${problems.length} problem${
+        `The workspace can produce a blueprint that does not resolve: ${problems.length} problem${
           problems.length === 1 ? "" : "s"
         } across ${ALL_COMBINATIONS.length} combinations.`,
         "",
@@ -104,7 +107,7 @@ export default function BuildPage() {
   return (
     <div className="container-page py-12">
       <header className="max-w-3xl">
-        <Eyebrow>Guided path</Eyebrow>
+        <Eyebrow>Workspace</Eyebrow>
         {/* Redesign spec §4.3: the header is the first thing a reader skips, so it holds
             one sentence of orientation and one of honesty. What left it is the promise
             that there is nowhere to save the result, which `DownloadPanel` states at the
@@ -114,23 +117,28 @@ export default function BuildPage() {
           className="mt-3"
           as="h1"
           title="Build your own blueprint"
-          /* Says what the reader is about to work on, not only how long it takes.
+          /* Doc 2 §5.3/§5.7 named the choices; the build-restructure spec's §2.4 fixed
+             where the hour goes.
              ------------------------------------------------------------
-             The author, on this page: "very confused. You should totally revisit under
-             the goal of providing support of what are the components of a blueprint."
+             The previous lead opened on "About an hour". The author, 2026-08-06, on
+             exactly that line: "the 'about one hour' push away a user." The hour was
+             never the true cost of this page — three radio buttons and a download take a
+             few minutes — and what actually takes an hour is wiring the resulting folder
+             into a reader's own agent runner afterwards, which is why it now lives on
+             `DownloadStep` (task 5), stated in the past tense of a download already in
+             hand rather than as a promise about what is still ahead on this screen.
 
-             The lead promised an hour, a starter and three choices, and named none of the
-             parts those choices are choices *about*. `/what-a-blueprint-is` is the item
-             above this one in the Learn menu and it teaches three components; a reader
-             arriving from it met four panes numbered 2, 3 and 4, named `Skeleton`, `DOT`
-             and `Card`, and no vocabulary anywhere. The three parts are named here, in
-             the same words and the same order that page uses, so the two pages are
-             teaching one thing. */
-          lead="About an hour. A blueprint is three files that check each other: a graph, a card for every node in it, and one vocabulary both are written against. You start from the five-node starter, make three choices, and every choice changes all three."
+             What replaces it names the artefact and the three choices' shared subject
+             instead: the five-node starter, and that every choice moves the graph, the
+             cards and the vocabulary together. That second claim is not asserted here on
+             faith — `components/build/surfaces.ts` diffs the real bundle before and after
+             every choice and only marks a tab whose bytes actually moved, so the workspace
+             below is checking the sentence this lead makes, not just repeating it. */
+          lead="Start from the five-node starter and change it with three choices. Every choice rewrites the graph, the cards and the vocabulary together."
         />
         <p className="mt-4 text-[15px] leading-relaxed text-muted">
-          Each of the three is beside the drawing below, and every score on the page is
-          computed in this tab, by the analysis the gallery runs, on the exact bytes you
+          Each of the three sits in the panel under the graph, and every score on the page
+          is computed in this tab, by the analysis the gallery runs, on the exact bytes you
           download. Nothing is uploaded.
         </p>
         {/* Doc 2 §5.7's count, stated rather than claimed: the number is the length of the
@@ -142,7 +150,7 @@ export default function BuildPage() {
       </header>
 
       <div className="mt-10">
-        <GuidedPath />
+        <BuildWorkspace />
       </div>
 
       {/* The one outbound link on this page was `/upload`, inside a 13px `text-dim`
