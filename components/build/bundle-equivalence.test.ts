@@ -14,14 +14,28 @@
    `lib/starter/variants.ts`), so as long as the restructuring
    calls the same function with the same choices, the digests
    cannot move. If a later task's refactor changes a single
-   character anywhere in a card or the DOT, this snapshot fails,
-   which is the whole point: the test that cannot fail is not a
-   safety net.
+   character anywhere in a card, the DOT or the manifest, this
+   snapshot fails, which is the whole point: the test that cannot
+   fail is not a safety net.
 
    This is deliberately a guard on the *artefact*, not on how the
    page gets there. It asserts nothing about steps, panes or state
    machines, so it survives the restructuring even as everything
    around it is rewritten.
+
+   All three `Bundle` fields (`lib/core/bundle/types.ts`) are hashed
+   — `manifest`, `dot` and `cardFiles` — not just the latter two. A
+   first version of this file hashed only `dot` and `cardFiles`, and
+   an edit to a manifest-only field (`summaryTail`, which feeds
+   `BundleManifest.summary` — the title, summary and tags a reader
+   sees before ever opening the download) passed straight through
+   it undetected. That is exactly the hole a later task could widen
+   by accident, so the fix is load-bearing: do not narrow this back
+   to two fields for tidiness. `manifest` is serialised through
+   `stableStringify` rather than `JSON.stringify` because
+   `BundleManifest` is a plain object produced fresh on every call —
+   nothing here should depend on the property order the producer
+   happens to write it in.
    ============================================================ */
 
 import { createHash } from "node:crypto";
@@ -31,10 +45,30 @@ import { buildStarterBundle } from "@/lib/starter/variants";
 
 import { ALL_COMBINATIONS, type StarterChoices } from "./choices";
 
-/** Every file in a bundle, hashed in a stable order. */
+/**
+ * `JSON.stringify` with object keys sorted at every level, so two values that differ only
+ * in the order their producer wrote their fields serialise identically. Arrays keep their
+ * order — order is meaningful there — and every other JSON-safe value falls through to
+ * `JSON.stringify` unchanged.
+ */
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(",")}]`;
+  }
+  if (value !== null && typeof value === "object") {
+    const keys = Object.keys(value as Record<string, unknown>).sort();
+    const entries = keys.map(
+      (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`,
+    );
+    return `{${entries.join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/** Every field of a bundle — manifest, DOT and every card file — hashed in a stable order. */
 function bundleDigest(choices: StarterChoices): string {
   const bundle = buildStarterBundle(choices);
-  const parts: string[] = [`dot:${bundle.dot}`];
+  const parts: string[] = [`manifest:${stableStringify(bundle.manifest)}`, `dot:${bundle.dot}`];
   for (const name of Object.keys(bundle.cardFiles).sort()) {
     parts.push(`card:${name}:${bundle.cardFiles[name]}`);
   }
