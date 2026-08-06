@@ -4,6 +4,7 @@ import { useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { CORE_ONTOLOGY, ontologyView } from "@/lib/core";
 import { cx } from "@/lib/format";
 import {
+  announce,
   fieldForCardLine,
   lineMeaning,
   resolveFocus,
@@ -95,22 +96,43 @@ import { VocabularyPane } from "./VocabularyPane";
    `WorkspaceStage.test.ts` pins both halves of this: the DOT body's text is in the markup,
    and no class name spells `opacity-0` anywhere in it.
 
-   ── One live region, always reachable ──
-   `ScoreStrip` is `aria-hidden` by its own design (`ScorePanel.tsx`: it is a second printing
-   of the panel's figures, meant to sit beside an accessible copy rather than stand in for
-   one). Putting only `ScoreStrip` in the header and leaving `ScorePanel`'s own
-   `role="status" aria-live="polite"` paragraph inside the `Score` tab's `hidden` tabpanel —
-   which is what a first version of this file did — leaves a screen reader with NO accessible
-   score at all on arrival, and NO announcement of a later change, unless the reader happens
-   to already be on the `Score` tab when it happens. `GuidedPath.tsx` documents the invariant
-   this breaks: "one live region per width, never two."
+   ── Two live regions, one per channel — not "one live region, full stop" ──
+   An earlier version of this docblock said "exactly one live region is reachable" and
+   quoted `GuidedPath.tsx`'s "one live region per width, never two" as its authority. Both
+   the target and the citation were wrong, corrected here so nobody re-derives the same
+   mistake from this file's own history: the rule is one live region PER CHANNEL, not one
+   per page. `GuidedPath.tsx` itself ships two simultaneous live regions — a score announcer
+   and `BuildPanes.tsx`'s own selection announcer (`announce(model, focus)`, `<p
+   aria-live="polite">`) — because a score reading and "what node is selected right now"
+   answer different questions, and folding them into one sentence would make every selection
+   change re-announce the score along with it. The invariant `GuidedPath.tsx` actually
+   documents is scoped to the score channel alone: `ScoreStrip` at one width, `ScorePanel`'s
+   own live paragraph at the other, never both live at once — never two **on that one
+   channel**.
 
-   The fix is a second, purpose-built `sr-only` live region in the header, mirroring
-   `ScorePanel`'s own sentence, and it is rendered ONLY while the `Score` tab is closed —
-   `ScorePanel`'s own internal live region takes over the instant that tab opens, since its
-   wrapping `hidden` attribute clears in the same render that closes this one. That keeps
-   "never two" true across tabs, not only across widths: exactly one live region is reachable
-   whichever of the five tabs is open, on every width.
+   So this stage carries two live regions, deliberately, and removing either one back down
+   to "just one" would be a regression, not a cleanup:
+
+   **The score channel.** `ScoreStrip` is `aria-hidden` by its own design (`ScorePanel.tsx`:
+   it is a second printing of the panel's figures, meant to sit beside an accessible copy
+   rather than stand in for one). A version of this file that put only `ScoreStrip` in the
+   header and left `ScorePanel`'s own `role="status" aria-live="polite"` paragraph inside the
+   `Score` tab's `hidden` tabpanel gave a screen reader NO accessible score on arrival and NO
+   announcement of a later change unless already on the `Score` tab. The fix is a second,
+   purpose-built `sr-only` live region in the header, mirroring `ScorePanel`'s own sentence,
+   rendered ONLY while the `Score` tab is closed — `ScorePanel`'s own internal live region
+   takes over the instant that tab opens, since its wrapping `hidden` attribute clears in the
+   same render that closes this one. Exactly one score-channel region is reachable whichever
+   of the five tabs is open.
+
+   **The selection channel.** Selecting a node in the graph, a line of the DOT or a field of
+   the card is stage-level state (`selection`, shared by all three readings), and it needs
+   its own announcement the same way `BuildPanes.tsx` gives it one — via the SAME
+   `announce(model, focus)` (`@/components/panes/model`), not a second phrasing invented
+   here. Unlike the score channel, this one is not handed off between tabs: it sits at stage
+   level, outside every tabpanel's `hidden` wrapper, unconditionally, because a reader can
+   change the selection from the `Graph` tab, the `DOT` tab or the `Cards` tab alike, and the
+   announcement has to be reachable regardless of which of those is open.
    ============================================================ */
 
 /** The vocabulary every resolved bundle on `/build` is checked against. Same instance
@@ -252,12 +274,12 @@ export function WorkspaceStage({
   const security = state.analysis?.security;
 
   /**
-   * The one sentence a screen reader hears for the score, always reachable except while the
-   * `Score` tab is open — see the header docblock's "one live region, always reachable".
-   * Mirrors `ScorePanel.tsx`'s own live-region sentence and `ScoreStrip`'s visible content,
-   * so what gets announced is what the header already shows, said as a sentence.
+   * The score channel's sentence, reachable except while the `Score` tab is open — see the
+   * header docblock's "Two live regions, one per channel". Mirrors `ScorePanel.tsx`'s own
+   * live-region sentence and `ScoreStrip`'s visible content, so what gets announced is what
+   * the header already shows, said as a sentence.
    */
-  const announcement =
+  const scoreAnnouncement =
     autonomy === undefined && security === undefined
       ? "No readings yet."
       : [
@@ -270,11 +292,27 @@ export function WorkspaceStage({
           .filter(Boolean)
           .join(" ");
 
+  /**
+   * The selection channel's sentence — `BuildPanes.tsx`'s own `announce(model, focus)`
+   * (`@/components/panes/model`), reused rather than re-derived so the two files never grow
+   * two different phrasings of "what is selected right now" for the same underlying model.
+   * `""` while the bundle does not resolve: there is no node to describe, and an empty
+   * `aria-live` region announces nothing rather than a stale or misleading sentence.
+   */
+  const selectionAnnouncement = model !== undefined && focus !== undefined ? announce(model, focus) : "";
+
   return (
     <div className="flex flex-col gap-4">
+      {/* Stage-level, unconditional — see the header docblock's "The selection channel".
+          Selection can change from the Graph, DOT or Cards tab alike, so this cannot be
+          handed off the way the score region below is; it is simply always present. */}
+      <p aria-live="polite" className="sr-only">
+        {selectionAnnouncement}
+      </p>
+
       {open !== "score" && (
         <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
-          {announcement}
+          {scoreAnnouncement}
         </p>
       )}
 

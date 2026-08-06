@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { announce, resolveFocus } from "@/components/panes/model";
 import { plainText } from "@/components/ui/visible-text";
 import { DEFAULT_ITERATIONS } from "./choices";
 import { buildState } from "./state";
@@ -151,8 +152,9 @@ describe("WorkspaceStage", () => {
    * Critical review finding: `ScoreStrip` is `aria-hidden` by its own design
    * (`ScorePanel.tsx`), and `ScorePanel`'s own accessible live region used to sit inside the
    * `Score` tab's `hidden` tabpanel — reachable only while a reader happened to already be on
-   * that tab. `GuidedPath.tsx`'s own invariant is "one live region per width, never two";
-   * this is the same invariant held across tabs instead of widths.
+   * that tab. The invariant this restores, stated precisely per the coordinator's own
+   * correction: one live region per CHANNEL (score is one channel; selection, covered by a
+   * later test in this file, is another) — not one live region for the whole page.
    */
   it("puts an accessible summary of the score in a live region reachable on arrival", () => {
     const state = buildState(base);
@@ -197,6 +199,50 @@ describe("WorkspaceStage", () => {
     const firstTabpanel = html.indexOf('role="tabpanel"');
     expect(headerStatus).toBeGreaterThan(-1);
     expect(headerStatus).toBeLessThan(firstTabpanel);
+  });
+
+  /**
+   * Fix round 2 finding: removing the two `BuildPanes` mounts (Critical 2, fix round 1) also
+   * removed `BuildPanes.tsx`'s own selection announcer (`announce(model, focus)`), leaving a
+   * screen reader with no announcement at all when a node, a DOT line or a card field is
+   * selected. The coordinator's corrected ruling: the invariant is one live region PER
+   * CHANNEL, not one per page — `GuidedPath.tsx` itself carries a score announcer AND a
+   * selection announcer simultaneously, because they answer different questions. This stage
+   * now does too, and this test pins both: the selection sentence is reused verbatim from
+   * `announce()` (`@/components/panes/model`), not a second phrasing, and it sits outside
+   * every tabpanel's `hidden` wrapper — unconditionally, since selection can change from the
+   * `Graph`, `DOT` or `Cards` tab alike — while the score channel keeps exactly one
+   * reachable region, as it already did before this fix round.
+   */
+  it("keeps the score and selection channels present and distinct — two live regions, not one", () => {
+    const state = buildState(base);
+    if (state.paneModel === undefined) throw new Error("the base combination must resolve");
+    const html = renderToStaticMarkup(
+      createElement(WorkspaceStage, { state, marks: [], onTabOpen: () => {} }),
+    );
+    const firstTabpanel = html.indexOf('role="tabpanel"');
+    expect(firstTabpanel).toBeGreaterThan(-1);
+
+    // The selection channel: `announce()`'s own sentence, present before any tabpanel — i.e.
+    // outside every `hidden` wrapper, unconditionally (selection is stage-level state, never
+    // handed off between tabs the way the score channel is).
+    const seededFocus = resolveFocus(state.paneModel, { nodeId: state.paneModel.nodes[0].nodeId });
+    expect(seededFocus).not.toBeUndefined();
+    const selectionSentence = seededFocus === undefined ? "" : announce(state.paneModel, seededFocus);
+    const selectionIndex = html.indexOf(selectionSentence);
+    expect(selectionIndex).toBeGreaterThan(-1);
+    expect(selectionIndex).toBeLessThan(firstTabpanel);
+    // Distinct from the score sentence — the two channels must never collapse into one.
+    expect(selectionSentence).not.toContain("model calls at most");
+
+    // The score channel: exactly one reachable `role="status"` region by default (the
+    // header's; `ScorePanel`'s own sits behind the `Score` tabpanel's `hidden` attribute) —
+    // re-checked here to confirm it survives sitting alongside the new selection region.
+    const statusRegions = html.match(/role="status"/g) ?? [];
+    expect(statusRegions).toHaveLength(2);
+    const scoreRegionIndex = html.indexOf('role="status"');
+    expect(scoreRegionIndex).toBeGreaterThan(-1);
+    expect(scoreRegionIndex).toBeLessThan(firstTabpanel);
   });
 
   it("gives every element on the stage a unique id", () => {
