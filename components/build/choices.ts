@@ -31,7 +31,7 @@ import {
 } from "@/lib/starter/variants";
 
 export type { StarterApproval, StarterChoices, StarterOutput };
-export { MAX_ITERATIONS, MIN_ITERATIONS, clampIterations };
+export { DEFAULT_ITERATIONS, MAX_ITERATIONS, MIN_ITERATIONS, clampIterations };
 
 /** One option of a radio group: the value, its label, and one line under it. */
 export interface RadioOption<T extends string> {
