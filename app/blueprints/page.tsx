@@ -59,51 +59,62 @@ export default function BlueprintsPage() {
   const categories = registry.categories();
 
   return (
-    <>
-      <div className="container-page pt-12 sm:pt-16">
-        {/* `h1`, which every other index on the site passes and this one did not. It
-            mattered less while this page was one heading; the sr-only "The shelf" `h2`
-            under it means a page whose outline starts at level two gives a screen reader
-            a sibling `h2` and no title. */}
-        {/* The lead was 49 words defining the noun, on the surface a reader reaches
-            after deciding they want one. `/what-a-blueprint-is` is a nav item one click
-            away whose entire job is that definition, and the landing spends five beats on
-            it before anybody arrives here. What this page owes a visitor is what is on
-            the shelf and what to do with it. */}
-        <SectionHeading
-          as="h1"
-          eyebrow="Registry"
-          title="Blueprints"
-          lead={
-            <>
-              Every one is a folder of text: read the graph here, take it away, run it
-              with your own tools.{" "}
-              <Link
-                href="/what-a-blueprint-is"
-                className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"
-              >
-                What a blueprint is <span aria-hidden>&rarr;</span>
-              </Link>
-            </>
-          }
-        />
-      </div>
+    /* One container, not two.
+       ------------------------------------------------------------
+       The heading block and the shelf used to sit in separate `container-page` wrappers,
+       the second carrying its own `py-16 sm:py-20` — so the gap between the lead and the
+       first control was the second wrapper's top padding, 80px, and this page opened with
+       a different amount of air from the two registry indexes built out of the same
+       `SectionHeading`. Measured at 1440 with the lead bottom at y=252 on all three:
+       `/blueprints` 80px, `/nodes` 40px, `/ontology` 40px.
 
-      <div className="container-page py-16 sm:py-20">
-        {/* Visually gone at the author's request, and still in the outline. The browser
-            below labels each of its controls and carries no heading of its own, so
-            deleting this outright would leave the grid as the one region on the page a
-            screen reader reaches with no name, under an `h1` that names the whole route.
-            `sr-only` is the version of this heading that costs a sighted reader nothing.
+       40px is the canonical `block` tier, which the vertical scale names for exactly this
+       step (SectionHeading → content), and it is what both siblings already spend. So
+       `mb-10` here rather than the `mb-16` the brief reached for: 64px is the `section`
+       tier — section↔section — and taking it would have unified nothing, it would have
+       made this page the odd one out in the other direction. */
+    <div className="container-page py-12 sm:py-16">
+      {/* `h1`, which every other index on the site passes and this one did not. It
+          mattered less while this page was one heading; the sr-only "The shelf" `h2`
+          under it means a page whose outline starts at level two gives a screen reader
+          a sibling `h2` and no title. */}
+      {/* The lead was 49 words defining the noun, on the surface a reader reaches
+          after deciding they want one. `/what-a-blueprint-is` is a nav item one click
+          away whose entire job is that definition, and the landing spends five beats on
+          it before anybody arrives here. What this page owes a visitor is what is on
+          the shelf and what to do with it. */}
+      <SectionHeading
+        as="h1"
+        className="mb-10"
+        eyebrow="Registry"
+        title="Blueprints"
+        lead={
+          <>
+            Every one is a folder of text: read the graph here, take it away, run it
+            with your own tools.{" "}
+            <Link
+              href="/what-a-blueprint-is"
+              className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"
+            >
+              What a blueprint is <span aria-hidden>&rarr;</span>
+            </Link>
+          </>
+        }
+      />
 
-            The sentence that stood here described the two orderings and said both are
-            seeded. Doc 2 §0.4 wants that marker at the point of offer, and it is still
-            made three times where the offer actually is: both options say `seeded` in
-            the option text, the control bar repeats it beside the select, and every
-            tile's two counts carry it in `ContentCard`. */}
-        <h2 className="sr-only">The shelf</h2>
-        <GalleryBrowser blueprints={blueprints} categories={categories} />
-      </div>
-    </>
+      {/* Visually gone at the author's request, and still in the outline. The browser
+          below labels each of its controls and carries no heading of its own, so
+          deleting this outright would leave the grid as the one region on the page a
+          screen reader reaches with no name, under an `h1` that names the whole route.
+          `sr-only` is the version of this heading that costs a sighted reader nothing.
+
+          The sentence that stood here described the two orderings and said both are
+          seeded. Doc 2 §0.4 wants that marker at the point of offer, and it is still
+          made three times where the offer actually is: both options say `seeded` in
+          the option text, the control bar repeats it beside the select, and every
+          tile's two counts carry it in `ContentCard`. */}
+      <h2 className="sr-only">The shelf</h2>
+      <GalleryBrowser blueprints={blueprints} categories={categories} />
+    </div>
   );
 }

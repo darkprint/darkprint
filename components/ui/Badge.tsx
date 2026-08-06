@@ -38,7 +38,12 @@ export function SourceBadge({ source }: { source: MetricSource }) {
   const meta = METRIC_SOURCE_META[source];
   return (
     <span
-      className="inline-flex items-center gap-1 rounded font-mono text-[11px] uppercase tracking-[0.12em]"
+      // `rounded-sm` rather than a bare `rounded`: both compile to the same 5px token now
+      // that app/globals.css sets `--radius: var(--radius-sm)`, but the named step says
+      // which rung of the four-step ladder (sm 5 · md 8 · lg 12 · xl 18) this is on, and
+      // it can be grepped. Neither of these badges carries a hover, so neither takes a
+      // press: nothing here is pressable.
+      className="inline-flex items-center gap-1 rounded-sm font-mono text-[11px] uppercase tracking-[0.12em]"
       style={{ color: meta.color }}
       title={meta.blurb}
     >

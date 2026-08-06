@@ -43,7 +43,29 @@ export function ContentCard({
   return (
     <article
       className={cx(
-        "group relative flex flex-col overflow-hidden rounded-lg border border-line bg-surface transition-all duration-200 hover:border-line-bright hover:shadow-[0_12px_40px_-24px_var(--color-cyan)]",
+        /* One clock for one gesture. Pointing at a tile used to produce three arrivals:
+           the article transitioned `all` over 200ms, the title had no transition at all
+           and snapped to cyan in the same frame, and the drawing scaled over 300ms — so
+           the element the eye is actually on was the one that moved first and alone. All
+           three now run at `--dur-base` (180ms) on `--ease-out`.
+
+           `transition-all` is also what made the hover expensive: it animates every
+           animatable property, and the one it did animate is a 40px-blur box-shadow
+           repainted off the GPU on every frame, on a three-column grid that fires
+           continuously as the pointer crosses the page. The property list is explicit.
+
+           `hoverable:` gates hover on `(hover: hover) and (pointer: fine)`; without it a
+           tapped tile on a phone keeps its lit border until the route changes. Press is
+           the >200px band: 0.99. `:active` matches ancestors of the activated element, so
+           pressing anywhere on the stretched hit target presses the whole card.
+
+           `scale` is listed alongside `transform` on purpose. Tailwind v4 compiles
+           `scale-[0.99]` to the individual `scale` property, not to a `transform`
+           function — measured in Chrome, a list naming only `transform` leaves the press
+           untransitioned and the card snaps between the two sizes. (v4's own
+           `transition-transform` shorthand expands to `transform, translate, scale,
+           rotate` for the same reason; this is the explicit spelling of that.) */
+        "group relative flex flex-col overflow-hidden rounded-lg border border-line bg-surface transition-[border-color,box-shadow,transform,scale] duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-line-bright hoverable:hover:shadow-[0_12px_40px_-24px_var(--color-cyan)] hoverable:active:scale-[0.99]",
         className,
       )}
     >
@@ -69,7 +91,7 @@ export function ContentCard({
           top-2`, so it now sits on this row, and padding the whole block would move the
           drawing's left edge off the card's grid as well. */}
       <div className="flex flex-col gap-1.5 px-4 pb-3 pt-4">
-        <h3 className="pr-8 font-display text-lg font-semibold leading-snug text-fg group-hover:text-cyan">
+        <h3 className="pr-8 font-display text-lg font-semibold leading-snug text-fg transition-colors duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:group-hover:text-cyan">
           {item.title}
         </h3>
         {/* What it is for, directly under the name and above the drawing.
@@ -78,24 +100,39 @@ export function ContentCard({
             know the registry; somebody arriving with a goal has neither, and the sentence
             saying what the thing does was the one part of the tile they needed first.
             Doc 2 §0: the site exists to get people downloading these, and a shelf nobody
-            can scan by purpose does not. */}
-        <p className="line-clamp-2 pr-8 text-sm leading-snug text-muted">{item.summary}</p>
+            can scan by purpose does not.
+
+            Three lines, not two: the preview below gave up 48px (h-40 → h-28) and this is
+            the sentence a reader decides by, so it is where that height goes. Two lines
+            truncated most summaries mid-clause, which is the worst possible place to stop
+            a sentence whose whole job is to say what the pipeline is for. */}
+        <p className="line-clamp-3 pr-8 text-sm leading-snug text-muted">{item.summary}</p>
       </div>
 
       {/* preview */}
-      <div className="relative h-40 overflow-hidden border-y border-line bg-blueprint-deep/40 bp-grid">
-        {/* `nodeLabels={false}`: this frame is 369×158 and the drawing's viewBox is
-            570×220, a uniform scale of 0.647, so the node names rendered at 7.1
-            effective pixels and their kind labels at 6.5 — 5.8 and 5.2 on a phone —
-            clipped at 15 characters. The glyph, the kind colour and the topology all
-            survive that scale; the words did not. See the prop's own comment. */}
+      {/* `h-28` and not `h-40`: at 160px the drawing was the largest element on a 401px
+          card and carried the least information — nine graphs at that size are visually
+          interchangeable, and the shelf is scanned by name and by sentence. 112px is
+          enough to read a constellation of lit discs as a shape, and the 48px it gives
+          back buys the summary its third line above. */}
+      <div className="relative h-28 overflow-hidden border-y border-line bg-blueprint-deep/40 bp-grid">
+        {/* `nodeLabels={false}`: this frame is 369 wide and 94 high inside its padding,
+            the drawing's viewBox is 570×220, and `preserveAspectRatio="xMidYMid meet"`
+            takes the smaller of the two ratios — so the uniform scale was 0.647 at
+            `h-40` and is 0.427 now. Node names rendered at 7.1 effective pixels then and
+            would render at 4.7 now, against a 10 CSS px floor. The glyph, the kind
+            colour and the topology all survive that scale; the words never did. See the
+            prop's own comment. */}
         <GraphThumbnail
           graph={item.graph}
           nodeLabels={false}
-          className="h-full w-full p-2 opacity-90 transition-transform duration-300 group-hover:scale-[1.03]"
+          className="h-full w-full p-2 opacity-90 transition-transform duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:group-hover:scale-[1.03]"
           ariaLabel={`${item.title} pipeline preview`}
         />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-surface to-transparent" />
+        {/* The soft landing into the card body, re-proportioned with the frame: it was
+            40px of 160 (25%) and would have been 40px of 112 (36%), which put the whole
+            bottom rank of nodes under the fade. 24px of 112 restores the ratio. */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-surface to-transparent" />
       </div>
 
       {/* body */}

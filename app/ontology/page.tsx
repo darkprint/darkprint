@@ -43,7 +43,11 @@ function Roots({ ids }: { ids: readonly string[] }) {
     <>
       {ids.map((id, i) => (
         <span key={id}>
-          {i > 0 && <span className="text-faint"> · </span>}
+          {/* `text-dim`, not `text-faint`. The separator is live text sitting between two
+              term ids a reader is meant to read as a list, and `--color-faint` is 1.83:1
+              — `app/globals.css` reserves it for decorative separators that are
+              `aria-hidden`, which this one is not. */}
+          {i > 0 && <span className="text-dim"> · </span>}
           <Id>{id}</Id>
         </span>
       ))}
@@ -70,16 +74,17 @@ function KindHeader({
   const presentation = TERM_KIND_META[kind];
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3">
-      <h2
-        id={id}
-        className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-dim"
-      >
+      {/* `.label-lead` and `.label`, the two mono tiers this row is: a panel title and
+          the meta beside it. Both were hand-typed as the same 11px dim run, so the
+          thing a reader lands on from the index above and the thing describing it were
+          told apart by nothing at all. */}
+      <h2 id={id} className="label-lead flex items-center gap-2">
         <span aria-hidden style={{ color: presentation.color }}>
           {presentation.glyph}
         </span>
         {presentation.plural}
       </h2>
-      <span className="font-mono text-[11px] text-dim">
+      <span className="label">
         {count} term{count === 1 ? "" : "s"}
         {meta !== undefined && ` · ${meta}`}
       </span>
@@ -164,7 +169,11 @@ export default function OntologyPage() {
   ];
 
   return (
-    <div className="container-page py-12">
+    /* `py-12 sm:py-16` and a `mb-16` under the heading: the section tier, which is what
+       every document-page header on the site opens with now. This page used a flat
+       `py-12` and then an ad-hoc `mt-10` under the heading, so the three registry shelves
+       — blueprints, nodes, ontology — each opened with a different amount of air. */
+    <div className="container-page py-12 sm:py-16">
       {/* The lead was 62 words listing all five fields, which the figure below now
           draws. It says what the vocabulary is for and stops. */}
       <SectionHeading
@@ -172,6 +181,7 @@ export default function OntologyPage() {
         eyebrow="The shared vocabulary"
         title="Ontology"
         lead={`Five lists of terms, ${coreTerms} of them curated as ${title} v${version}. Every structural field on a node card points into one of them rather than saying something in free text, which is what lets an analyzer reason about a graph it has never seen.`}
+        className="mb-16"
       />
 
       {/* ---------- The five kinds ----------
@@ -192,7 +202,24 @@ export default function OntologyPage() {
           it, and its actual root terms, so the top of the page is the vocabulary rather
           than a picture of its outline. The shape is said in words, where it can be
           precise: "flat and closed" is a fact, a row of five dots is a guess. */}
-      <div className="mt-10">
+      {/* ---------- and the index ----------
+
+          The rows are links now, one per kind, into the five sections below. /ontology is
+          50 terms over eight viewports and it shipped with no lookup at all — no search,
+          no filter, nothing but Cmd-F — while the two sibling shelves of 9 and 53 items
+          both open with a search panel. This is the surface a reader arrives at holding a
+          specific word.
+
+          This is the cheap half of a way in, on purpose. A real `TermBrowser` — a filter
+          box narrowing all 50 rows across the five kinds at once — is a new client
+          component with its own state, its own empty state and its own no-JS story, and
+          it belongs in its own pass. What it is not is a reason to leave the figure that
+          already names all five kinds unlinked.
+
+          `max-w-4xl`, the same column the five panels below take: this figure is their
+          index, and an index that overhangs the sections it points at is drawing a
+          relation the page does not have. It costs the gloss column 22px. */}
+      <div className="max-w-4xl">
         <h2 className="sr-only">The five kinds of term</h2>
         <ReachList
           label="Five lists, five fields"
@@ -206,26 +233,51 @@ export default function OntologyPage() {
             </>
           }
         >
-          <ReachRow field="phase" value={`${phases.length} terms`}>
+          <ReachRow
+            field="phase"
+            value={`${phases.length} terms`}
+            href="#phases"
+            hrefLabel={`Phases, ${phases.length} terms`}
+          >
             <KindLink href="#phases">Phases</KindLink>, the lifecycle:{" "}
             <Roots ids={phases.map((t) => t.id)} />. Flat and closed, and the one dimension
             a local namespace cannot extend.
           </ReachRow>
-          <ReachRow field="type" value={`${nodeTypes.length} terms`}>
+          <ReachRow
+            field="type"
+            value={`${nodeTypes.length} terms`}
+            href="#node-types"
+            hrefLabel={`Node types, ${nodeTypes.length} terms`}
+          >
             <KindLink href="#node-types">Node types</KindLink>, what kind of step this is:{" "}
             <Roots ids={termRootIds(view, "node-type")} />. A forest, so a rule about a
             parent catches every child that ships later.
           </ReachRow>
-          <ReachRow field="tools" value={`${tools.length} terms`}>
+          <ReachRow
+            field="tools"
+            value={`${tools.length} terms`}
+            href="#tools"
+            hrefLabel={`Tool capabilities, ${tools.length} terms`}
+          >
             <KindLink href="#tools">Tool capabilities</KindLink>, what the node is
             permitted to do. One root, everything else a sibling under it.
           </ReachRow>
-          <ReachRow field="risk_markers" value={`${riskMarkers.length} terms`}>
+          <ReachRow
+            field="risk_markers"
+            value={`${riskMarkers.length} terms`}
+            href="#risk-markers"
+            hrefLabel={`Risk markers, ${riskMarkers.length} terms`}
+          >
             <KindLink href="#risk-markers">Risk markers</KindLink>, what it could damage:{" "}
             <Roots ids={termRootIds(view, "risk-marker")} />. Each priced one carries a
             weight the security metric charges.
           </ReachRow>
-          <ReachRow field="inputs · outputs" value={`${dataTypes.length} terms`}>
+          <ReachRow
+            field="inputs · outputs"
+            value={`${dataTypes.length} terms`}
+            href="#data-types"
+            hrefLabel={`Data types, ${dataTypes.length} terms`}
+          >
             <KindLink href="#data-types">Data types</KindLink>, what travels along an edge.
             A lattice under <Id>any</Id>: an edge type-checks when the producer&apos;s type
             is the consumer&apos;s, or narrower.
@@ -244,7 +296,21 @@ export default function OntologyPage() {
 
           Nothing was cut to do it. Every paragraph is where it was, in the order it was,
           one block further down. */}
-      <div className="mt-12 flex flex-col gap-8">
+      {/* ---------- one right edge ----------
+
+          Measured on all five panels before this: the term grid was 896px (`max-w-4xl`,
+          set inside `TermTable`/`TermTree`) ending at x=1050, inside a `.panel` 1152px
+          wide whose border sat at x=1285 — 235px of dead gutter, identical on every one
+          of them — while the notes under each grid were `max-w-3xl` (768px) and the
+          panel's own header rule spanned the full 1152. Four right edges in one box, and
+          the weight column, whose whole job is to be compared down a column, was
+          right-aligned to an invisible one.
+
+          The width comes off the components and onto the panel. `max-w-4xl` here caps the
+          column once, so the panel border, its header rule and the grid inside it are the
+          same 896px edge; the reading measure moves onto the paragraphs, via
+          `prose-lane`, which is the only thing in the box that actually has a measure. */}
+      <div className="mt-16 flex max-w-4xl flex-col gap-8">
         {/* Phases — doc 3 §1–§2, doc 2 §8 */}
         <section
           id="phases"
@@ -260,7 +326,7 @@ export default function OntologyPage() {
           <div className="flex flex-col gap-5 px-5 py-5">
             <TermTable terms={phases} />
             <div className="flex flex-col gap-4 border-t border-line pt-5">
-              <p className="max-w-3xl text-sm leading-relaxed text-muted">
+              <p className="prose-lane text-sm leading-relaxed text-muted">
                 These five are what the word <em>blueprint</em> means here, from the request
                 to a plan, from the plan to an artefact, to the checks, to the fix, to the
                 release, so they are listed in that order rather than alphabetically. A node
@@ -273,7 +339,7 @@ export default function OntologyPage() {
                   reader somewhere else wears this, and nothing else does." A caveat about
                   phases is not an exit. It reads as prose now, under the same rule as the
                   paragraph above it, and loses nothing a reader was using. */}
-              <p className="max-w-3xl text-sm leading-relaxed text-muted">
+              <p className="prose-lane text-sm leading-relaxed text-muted">
                 A card&apos;s <Id>phase</Id> names one of them, several of them, or none.
                 The five describe the blueprint, not every node inside it: an intake, a
                 retrieval step and a router each do work that none of the five names, and a
@@ -304,7 +370,7 @@ export default function OntologyPage() {
           <div className="flex flex-col gap-5 px-5 py-5">
             <TermTree kind="node-type" ontology={view} />
             <div className="flex flex-col gap-4 border-t border-line pt-5">
-              <p className="max-w-3xl text-sm leading-relaxed text-muted">
+              <p className="prose-lane text-sm leading-relaxed text-muted">
                 A subtype indented under its parent is <Id>broader</Id>&apos;s other end, and
                 the relation is load-bearing: a node typed <Id>human-input</Id> puts a person
                 in the loop because{" "}
@@ -312,7 +378,7 @@ export default function OntologyPage() {
                 only question the autonomy metric asks, not because anybody remembered to
                 tick a flag.
               </p>
-              <p className="max-w-3xl text-sm leading-relaxed text-muted">
+              <p className="prose-lane text-sm leading-relaxed text-muted">
                 There are {nodeTypeRoots} roots below, not one. <Id>agent</Id> and{" "}
                 <Id>tool</Id> stand on their own; <Id>human-in-the-loop</Id> and{" "}
                 <Id>evaluative</Id> are abstract categories that exist to be asked about and
@@ -320,7 +386,7 @@ export default function OntologyPage() {
                 assert a relation the vocabulary does not draw, so there isn&apos;t one.
               </p>
               {renamed?.deprecated?.replacedBy !== undefined && (
-                <p className="max-w-3xl text-sm leading-relaxed text-muted">
+                <p className="prose-lane text-sm leading-relaxed text-muted">
                   Nothing is ever deleted. <Id>{renamed.id}</Id> was renamed to{" "}
                   <Id>{renamed.deprecated.replacedBy}</Id>; the old id stays in the
                   vocabulary, keeps resolving, and carries a pointer at its successor, so
@@ -351,7 +417,7 @@ export default function OntologyPage() {
           <div className="flex flex-col gap-5 px-5 py-5">
             <TermTree kind="risk-marker" ontology={view} showWeight />
             <div className="flex flex-col gap-4 border-t border-line pt-5">
-              <p className="max-w-3xl text-sm leading-relaxed text-muted">
+              <p className="prose-lane text-sm leading-relaxed text-muted">
                 The security analyzer starts every blueprint at a clean 4 and subtracts the weight of every marker present, then clamps the
                 result into 1–4. A marker counts <strong className="font-medium text-fg">
                 once for the whole blueprint</strong> however many nodes carry it, gravity,
@@ -360,7 +426,7 @@ export default function OntologyPage() {
                 <Id>unbounded-loop</Id>, <Id>unvalidated-external-access</Id> and{" "}
                 <Id>criteria-leak</Id>.
               </p>
-              <p className="max-w-3xl text-sm leading-relaxed text-muted">
+              <p className="prose-lane text-sm leading-relaxed text-muted">
                 The core weights live in the engine&apos;s configuration rather than here, so
                 a recalibration touches one file and the vocabulary keeps meaning what it
                 meant; a marker coined in somebody&apos;s own namespace declares its own,
@@ -390,7 +456,7 @@ export default function OntologyPage() {
           <div className="flex flex-col gap-5 px-5 py-5">
             <TermTree kind="data-type" ontology={view} />
             <div className="flex flex-col gap-4 border-t border-line pt-5">
-              <p className="max-w-3xl text-sm leading-relaxed text-muted">
+              <p className="prose-lane text-sm leading-relaxed text-muted">
                 Every port on every card declares one, and the resolver checks both ends before a blueprint is allowed to load: an edge
                 type-checks when the producer&apos;s type is the consumer&apos;s, or
                 something narrower than it. <Id>any</Id> sits at the top and accepts
@@ -413,7 +479,7 @@ export default function OntologyPage() {
           <div className="flex flex-col gap-5 px-5 py-5">
             <TermTree kind="tool" ontology={view} />
             <div className="flex flex-col gap-4 border-t border-line pt-5">
-              <p className="max-w-3xl text-sm leading-relaxed text-muted">
+              <p className="prose-lane text-sm leading-relaxed text-muted">
                 A card lists capabilities, not vendors,{" "}
                 <Id>web-search</Id> rather than the name of one search API, so the same
                 blueprint can be run on a different stack without rewriting a single card.
@@ -432,8 +498,10 @@ export default function OntologyPage() {
           every reader arriving to look one up read 0.41 screens about a three-layer
           promotion model, one layer of which is not built, before reaching any. It is
           worth saying and it is not what the page is for. */}
-      <div className="mt-16 border-t border-line pt-12">
-      <section className="mt-12 flex flex-col gap-5" aria-labelledby="governance-heading">
+      {/* One section tier of air above the rule and one below it, rather than the 48 + 48
+          this stacked as `pt-12` on the divider and `mt-12` on the section inside it. */}
+      <div className="mt-16 border-t border-line pt-16">
+      <section className="flex flex-col gap-5" aria-labelledby="governance-heading">
         <div className="flex flex-col gap-3">
           <h2
             id="governance-heading"
@@ -441,7 +509,7 @@ export default function OntologyPage() {
           >
             One curated core, room for local terms
           </h2>
-          <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
+          <p className="prose-lane text-[15px] leading-relaxed text-muted">
             A vocabulary everybody writes against has to hold two things at once:
             stability for the common good, and freedom to experiment. DarkPrint splits
             the difference in three layers, and they are not equally real yet, so each
@@ -453,9 +521,7 @@ export default function OntologyPage() {
           {layers.map((layer) => (
             <li key={layer.id} className="panel tick-frame flex flex-col gap-3 p-5">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
-                  {layer.step}
-                </span>
+                <span className="label">{layer.step}</span>
                 <span
                   className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em]"
                   style={{ color: layer.color }}

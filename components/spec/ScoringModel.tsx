@@ -66,7 +66,7 @@ import { getOntologyView } from "@/lib/content";
 import { AUTONOMY_LABELS, cx } from "@/lib/format";
 import { termHref } from "@/lib/href";
 import { More } from "@/components/ui/More";
-import { SectionHeading } from "@/components/ui/SectionHeading";
+import { PanelHeading, SectionHeading } from "@/components/ui/SectionHeading";
 
 /** Doc 3 §5's `clamp(raw, 1, 4)`, the scale the weights are subtracted from. */
 const CEILING = 4;
@@ -176,7 +176,11 @@ function bandRows(config: DarkprintConfig): { rule: string; label: string }[] {
   ];
 }
 
-const TH = "pb-2 text-left font-normal uppercase tracking-[0.14em] text-[11px] text-dim";
+/* `.label` rather than a fourth hand-typed mono run. A `<th>` is the canonical column
+   header, which is exactly the job the 11px tier is defined for, and the class carries
+   the tracking that separates it from `.label-lead` at a glance. `font-normal` stays
+   because a `<th>` is bold by default and the tier is not. */
+const TH = "pb-2 text-left font-normal label";
 
 /**
  * The subtracted amount, and a bar showing it against the whole security budget.
@@ -190,6 +194,14 @@ const TH = "pb-2 text-left font-normal uppercase tracking-[0.14em] text-[11px] t
  * The bar's full width is `CEILING`, which the column header states, so a reader can see
  * what fraction of everything a marker is worth. `aria-hidden`, because the number beside
  * it is the same fact and one reading is enough.
+ *
+ * SIGNAL, not amber. The bar prices a risk marker, and a risk marker is a defect the graph
+ * carries — the family `--color-signal` names. Amber on this site says one of exactly two
+ * things, "not built yet" and "this box leaves the page", and both appear on this page: a
+ * `○ not built` disclosure two bands up and a `.route-box` in the pager below. Eight amber
+ * bars between them made the palette say nothing. At 60% the bar states a price without
+ * reading as an alarm, which is the distinction `--color-signal` at full strength carries
+ * on a diagnostic.
  */
 function Subtracts({ value, dim = false }: { value: number; dim?: boolean }) {
   return (
@@ -199,7 +211,7 @@ function Subtracts({ value, dim = false }: { value: number; dim?: boolean }) {
         className="hidden h-1.5 w-16 overflow-hidden rounded-full bg-line sm:block"
       >
         <span
-          className={cx("block h-full rounded-full", dim ? "bg-dim/50" : "bg-amber")}
+          className={cx("block h-full rounded-full", dim ? "bg-dim/50" : "bg-signal/60")}
           style={{ width: `${Math.min(100, (value / CEILING) * 100)}%` }}
         />
       </span>
@@ -230,30 +242,31 @@ export function ScoringModel({
   const { minRuns, outlierZScore } = config.telemetry;
 
   return (
-    /* No `container-page` and no outer padding: the route's own wrapper supplies both,
-       and carrying a second set here gave `/spec/scoring` two vertical rhythms. `id` and
+    /* No `container-page`, no outer padding and no rule of its own: the route wraps this
+       in its own full-bleed band, and carrying a second set of any of them gave
+       `/spec/scoring` two vertical rhythms and two boundaries at one seam. `id` and
        `scroll-mt-24` stay on this element, which is all `anchors.test.ts` requires of the
-       `#weights` bookmark. The rule above stays, because it is what separates this half
-       of the page from the one before it. */
-    <section id="weights" className="scroll-mt-24 flex flex-col gap-8 border-t border-line pt-14">
-        {/* No eyebrow. It carried "The arithmetic", and an eyebrow is how every page on
-            this site opens: a mono kicker above a title, which is what `SectionHeading`
-            draws at the top of `/spec/scoring` itself. Halfway down the route a second
-            one made the page look like it started twice, which the audit of this route
-            called its worst boundary defect. The heading stays, because the section
-            genuinely is a new subject; the kicker goes, because the section is not a new
-            page. */}
-        <SectionHeading
-          title="What each check is worth"
-          lead={`Security opens at ${CEILING} and subtracts. These are the amounts, read at build time out of the engine's configuration and the vocabulary this archive ships.`}
-        />
+       `#weights` bookmark. */
+    <section id="weights" className="scroll-mt-24 flex flex-col gap-10">
+        {/* A `.label-lead`, not an eyebrow. It carried "The arithmetic" as a cyan
+            `.eyebrow` once, and an eyebrow is how a PAGE opens on this site: halfway down
+            the route a second one made the page look like it started twice, which the
+            audit of this route called its worst boundary defect. Deleting it left the
+            section as the only one on the page with a bare heading. The 14px `fg` mono
+            tier is the answer to both — it is the label a block wears rather than the one
+            a page wears, and it is the shape the three bands above this one use. */}
+        <div className="flex flex-col gap-3">
+          <span className="label-lead">The arithmetic</span>
+          <SectionHeading
+            title="What each check is worth"
+            lead={`Security opens at ${CEILING} and subtracts. These are the amounts, read at build time out of the engine's configuration and the vocabulary this archive ships.`}
+          />
+        </div>
 
         {/* ---------- the weights ---------- */}
-        <div className="panel flex flex-col gap-4 p-6">
+        <div className="panel flex flex-col gap-4 p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h3 className="font-display text-lg font-semibold text-fg">
-              Risk markers
-            </h3>
+            <PanelHeading>Risk markers</PanelHeading>
             <span className="font-mono text-[11px] text-dim">
               held between {FLOOR} and {CEILING}
             </span>
@@ -274,7 +287,13 @@ export function ScoringModel({
                     what it says about the node
                   </th>
                   <th scope="col" className={`${TH} text-right`}>
-                    subtracts <span className="ml-1 normal-case tracking-normal text-faint">of {CEILING}</span>
+                    {/* `text-dim`, not `text-faint`. `--color-faint` is 1.83:1 and
+                        globals.css reserves it for decorative separators that carry
+                        `aria-hidden`. This is the denominator: without it the column
+                        reads as eight bare numbers on no scale, so it is the one word in
+                        the header a reader most needs and it was the least legible thing
+                        in the table. */}
+                    subtracts <span className="ml-1 normal-case tracking-normal text-dim">of {CEILING}</span>
                   </th>
                 </tr>
               </thead>
@@ -305,8 +324,16 @@ export function ScoringModel({
                         </span>
                       )}
                     </th>
-                    <td className="py-2.5 pr-4 leading-relaxed text-muted">
-                      {row.what}
+                    {/* Capped, because a table column is not exempt from the measure.
+                        These rationales ran 197–202 characters across the 1102px
+                        container at 12px — the longest lines anywhere on the site. A
+                        `max-width` on a `<td>` is only a hint to the table algorithm, so
+                        the cap goes on a block inside the cell where it is binding: 30rem
+                        at a 5.5px advance is about 87 characters. */}
+                    <td className="py-2.5 pr-4">
+                      <p className="max-w-[30rem] leading-relaxed text-muted">
+                        {row.what}
+                      </p>
                     </td>
                     <td className="w-[8.5rem] py-2.5">
                       <Subtracts value={row.weight} />
@@ -327,8 +354,10 @@ export function ScoringModel({
                   {/* Short, because the paragraph under the table carries the rest of
                       the sentence. Two full statements of doc 3 §7 within a screen of
                       each other is the kind of duplication the length pass removes. */}
-                  <td className="py-2.5 pr-4 leading-relaxed text-dim">
-                    A marker neither block above names.
+                  <td className="py-2.5 pr-4">
+                    <p className="max-w-[30rem] leading-relaxed text-dim">
+                      A marker neither block above names.
+                    </p>
                   </td>
                   <td className="w-[8.5rem] py-2.5">
                     <Subtracts value={unknown} dim />
@@ -342,7 +371,7 @@ export function ScoringModel({
               (`lib/core/analysis/security.ts`). The middle step is the one this panel
               shipped without, and the row above is now the only place on the site that
               states where a namespaced marker's amount comes from. */}
-          <p className="text-sm leading-relaxed text-muted">
+          <p className="prose-lane text-sm leading-relaxed text-muted">
             The engine reads the configuration first, then the marker&apos;s own declared
             weight where the bundle&apos;s vocabulary carries one, then nothing. An
             unrecognised marker weighs {weight(unknown)}, listed on the card and on the
@@ -350,7 +379,7 @@ export function ScoringModel({
           </p>
           {/* The reader's likely inference, stated against: a ceiling of four looks like
               four points of headroom, and the priced markers add to more than twice it. */}
-          <p className="text-sm leading-relaxed text-muted">
+          <p className="prose-lane text-sm leading-relaxed text-muted">
             The markers priced above add to {weight(total)} against a ceiling of {CEILING},
             so a graph can carry more than the reading has room for. The subtraction runs
             to the end and the result is held between {FLOOR} and {CEILING}: past the
@@ -360,10 +389,8 @@ export function ScoringModel({
 
         <div className="grid gap-5 md:grid-cols-2">
           {/* ---------- the bands ---------- */}
-          <div className="panel flex flex-col gap-4 p-6">
-            <h3 className="font-display text-lg font-semibold text-fg">
-              Autonomy cuts
-            </h3>
+          <div className="panel flex flex-col gap-4 p-5">
+            <PanelHeading>Autonomy cuts</PanelHeading>
             <table className="w-full border-collapse text-sm">
               <caption className="sr-only">
                 The fraction of unattended nodes, and the class name each range of it is
@@ -392,7 +419,7 @@ export function ScoringModel({
                 ))}
               </tbody>
             </table>
-            <p className="text-sm leading-relaxed text-muted">
+            <p className="prose-lane text-sm leading-relaxed text-muted">
               The fraction is the nodes that run with nobody waiting on them over every
               node in the graph, and the name is what every surface prints. A dark factory
               is counted from those nodes and never read off a cut.
@@ -400,11 +427,9 @@ export function ScoringModel({
           </div>
 
           {/* ---------- the half of criteria-leak that is textual ---------- */}
-          <div className="panel flex flex-col gap-4 p-6">
-            <h3 className="font-display text-lg font-semibold text-fg">
-              The criteria-leak threshold
-            </h3>
-            <p className="text-sm leading-relaxed text-muted">
+          <div className="panel flex flex-col gap-4 p-5">
+            <PanelHeading>The criteria-leak threshold</PanelHeading>
+            <p className="prose-lane text-sm leading-relaxed text-muted">
               The marker fires on the topology: a path from the node writing the
               acceptance criteria to the node writing the code. The engine also compares
               the two <code className="font-mono text-[0.92em] text-fg">spec</code> fields
@@ -417,7 +442,7 @@ export function ScoringModel({
             {/* Written off the flag rather than around it. A page that stated the
                 shipped behaviour in prose would say the opposite of the engine the day
                 somebody turns the check on, which is the whole reason it is a flag. */}
-            <p className="text-sm leading-relaxed text-muted">
+            <p className="prose-lane text-sm leading-relaxed text-muted">
               {similarityFiresMarker
                 ? `Crossing that threshold fires the marker on its own, so the ${weight(config.security.weights["criteria-leak"] ?? unknown)} above can be charged for prose alone.`
                 : `Crossing it is reported and subtracts nothing. The ${weight(config.security.weights["criteria-leak"] ?? unknown)} above is charged for a path in the graph and for nothing else.`}
@@ -429,11 +454,9 @@ export function ScoringModel({
         </div>
 
         {/* ---------- the two filters, and the fact that neither has ever run ---------- */}
-        <div className="panel flex flex-col gap-4 p-6">
+        <div className="panel flex flex-col gap-4 p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h3 className="font-display text-lg font-semibold text-fg">
-              Cost and time, if they are ever reported
-            </h3>
+            <PanelHeading>Cost and time, if they are ever reported</PanelHeading>
           </div>
           <dl className="flex flex-col gap-2 font-mono text-[12px]">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -453,8 +476,8 @@ export function ScoringModel({
           </dl>
           {/* The `○ not built` chip stood in the heading row, with `minRuns` and
               `outlierZScore` between it and the sentence that explains what it means. It
-              introduces that sentence now, which is the shape this route already uses at
-              `app/spec/scoring/page.tsx:124-133`: badge, then the claim, in one line.
+              introduces that sentence now, which is the shape this route already uses in
+              `app/spec/scoring/page.tsx`'s `NotBuilt`: badge, then the claim, in one line.
 
               Guardrails §2 is the reason to move it toward the sentence rather than away.
               The paragraph carries this route's one honesty-ledger entry, held `open`
@@ -462,12 +485,12 @@ export function ScoringModel({
               filters describe a design rather than a behaviour" — and its wording is
               untouched here. What changes is that the qualifier and the qualified thing
               are now one block instead of two separated by a definition list. */}
-          <p className="flex flex-wrap items-center gap-2 text-sm leading-relaxed text-muted">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
+          <p className="flex flex-wrap items-start gap-2 text-sm leading-relaxed text-muted">
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
               <span aria-hidden>○</span>
               not built
             </span>
-            <span>
+            <span className="prose-lane">
               Nothing on this site measures a run, so these two filters describe a design
               rather than a behaviour. There is no runner and no endpoint to report to, and
               the cost and time figures in the registry are seeded rows that say so on every
@@ -477,14 +500,14 @@ export function ScoringModel({
         </div>
 
         <More summary="Why these numbers are provisional, and what moving one costs">
-          <p className="text-sm leading-relaxed text-muted">
+          <p className="prose-lane text-sm leading-relaxed text-muted">
             Doc 3 §4 introduces the weights as{" "}
             <span className="italic">valori di partenza da tarare</span>, starting values
             to be calibrated, and doc 3 §9 leaves the cuts and the similarity threshold
             open in the same way. Doc 1 §11 is why they sit in one file rather than at the
             several places that read them.
           </p>
-          <p className="text-sm leading-relaxed text-muted">
+          <p className="prose-lane text-sm leading-relaxed text-muted">
             Moving any of them is a PATCH of the ontology version, because every score
             already published changes with it, which is why a score records the vocabulary
             version it was computed under (doc 3 §8). Four of the nine blueprints in this
@@ -496,7 +519,7 @@ export function ScoringModel({
               answer to a "why that number" a reader may not have, and §3.1's licence
               covers exactly this: reference depth folded, the statement it qualifies left
               in the open. */}
-          <p className="text-sm leading-relaxed text-muted">
+          <p className="prose-lane text-sm leading-relaxed text-muted">
             The similarity check warns rather than charging because a fuzzy match on prose
             is a proxy for criteria that only exist while the graph runs. The outlier
             filter exists because the hardware, the model and the size of the task vary

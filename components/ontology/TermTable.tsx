@@ -71,6 +71,26 @@ import { termHref } from "@/lib/href";
  * Five entries, not four: `phase` is one of the three dimensions a node card describes
  * itself with, alongside `node-type` and `risk-marker`. `data-type` and `tool` are the
  * two doc 1 needs for typed ports (§2 rule 3) and `tools[]` (§3.2).
+ *
+ * ── Why none of these five is a semantic colour any more ──
+ * This table needed five distinguishable colours and reached into the accent palette,
+ * because that is where the colours are. It cost three of them their meaning.
+ * `components/viz/tokens.ts` says in writing that `--color-signal` "exists for the one
+ * drawing that has a defect to show … nothing else should reach for it", and it was
+ * painting ten dictionary entries: `execution-risk`, `secret-access` and the rest are a
+ * *description* of what a node may do, declared on a card on purpose, not a fault the
+ * site found. `--color-violet` is "where a person acts", and it was also "phase", so it
+ * meant two things on one page. `--color-amber` is reserved for exactly two jobs —
+ * "not built yet" and "this box leaves the page" — and it was also "node type".
+ *
+ * The five below come off the blueprint pole instead, which is the site's drawing-ink
+ * register and carries no status at all. They read as a legend and spend nothing. They
+ * are ordered so the two closest pairs (blueprint-line/the cyan mix, and muted/dim) are
+ * never adjacent as the page scrolls: measured with CIEDE2000 against the panel ground,
+ * every neighbouring pair on `/ontology` is ≥16 ΔE apart, and the tightest pair anywhere
+ * in the set is 7.3. Every one of the five clears 5.4:1 on `--color-surface-2`, which no
+ * glyph here strictly needs — each is `aria-hidden` beside its own word — but a legend a
+ * low-vision reader cannot read is a legend that is not doing its job.
  */
 export const TERM_KIND_META: Record<
   TermKind,
@@ -80,31 +100,34 @@ export const TERM_KIND_META: Record<
     label: "Phase",
     plural: "Phases",
     glyph: "▷",
-    color: "var(--color-violet)",
+    color: "var(--color-blueprint-ink)",
   },
   "node-type": {
     label: "Node type",
     plural: "Node types",
     glyph: "◫",
-    color: "var(--color-amber)",
+    color: "var(--color-blueprint-line)",
   },
   "risk-marker": {
     label: "Risk marker",
     plural: "Risk markers",
     glyph: "▲",
-    color: "var(--color-signal)",
+    color: "var(--color-muted)",
   },
   "data-type": {
     label: "Data type",
     plural: "Data types",
     glyph: "◇",
-    color: "var(--color-cyan)",
+    // The one mixed value: a cyan pulled most of the way to the neutral, so the data-type
+    // legend keeps a hint of the ink the ports are drawn in without claiming the
+    // interactive colour. Mixed from tokens, so it moves when they do.
+    color: "color-mix(in oklab, var(--color-cyan-bright) 70%, var(--color-dim))",
   },
   tool: {
     label: "Tool capability",
     plural: "Tool capabilities",
     glyph: "⚙",
-    color: "var(--color-emerald)",
+    color: "var(--color-dim)",
   },
 };
 
@@ -369,7 +392,15 @@ export function TermRow({
         </div>
       </div>
 
-      <p className="min-w-0 text-[13px] leading-relaxed text-muted">{term.description}</p>
+      {/* `prose-lane` is the measure, and it belongs here rather than on the grid.
+          The width cap used to sit on the whole table (`max-w-4xl`) with a comment about
+          reading measure, which capped the *object* to protect the *paragraph* — so the
+          table stopped 235px short of its own panel border and nothing on the page shared
+          a right edge. Measure is a property of a line of prose; the grid can now run to
+          the panel's edge and this cell still breaks at 36rem. */}
+      <p className="prose-lane min-w-0 text-[13px] leading-relaxed text-muted">
+        {term.description}
+      </p>
 
       {showWeight && (
         <div className="font-mono text-[12px] tabular-nums text-fg md:text-right">
@@ -405,6 +436,10 @@ export function TermRow({
  *
  * `terms` is taken as given rather than re-sorted: the phases have to read in doc 3 §2's
  * lifecycle order, which is not the alphabetical order `byKind` returns.
+ *
+ * No width of its own. It fills whatever column it is mounted in — see `TermRow`, where
+ * the reading measure now sits on the description paragraph, which is the thing that has
+ * a measure. `/ontology` sets the width once, on the panel.
  */
 export function TermTable({
   terms,
@@ -419,7 +454,7 @@ export function TermTable({
     return <p className="text-sm text-dim">This vocabulary declares no terms of that kind.</p>;
   }
   return (
-    <div className={cx("max-w-4xl", className)}>
+    <div className={className}>
       <TermColumnHeader showWeight={showWeight} />
       <ul className="divide-y divide-line">
         {terms.map((term) => (

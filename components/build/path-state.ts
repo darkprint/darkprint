@@ -51,10 +51,30 @@ export interface PathState {
   demo: boolean;
   /** What the two levels read before the last control was used. */
   previous: PathLevels;
+  /**
+   * Every step index the reader has actually opened, the current one included.
+   *
+   * The step bar used to derive its completion tick from `index < stepIndex`, which is a
+   * claim about the cursor and not about the reader: loading `/build` cold and clicking
+   * the last tab as the very first interaction painted a green ✓ on all seven steps
+   * behind it. The tick is the strongest completion signal on the surface, and jumping
+   * straight to the download is the obvious impatient move on an eight-step path, so the
+   * one reader most likely to see it is the one it is most wrong about. Progress feedback
+   * that overstates progress is worse than none: it destroys the reader's own record of
+   * where they have been.
+   *
+   * `ReadonlySet` rather than `Set` on purpose. This value lives in React state, where a
+   * mutated set is the same object and re-renders nothing; the type makes `seen.add(…)`
+   * a compile error and leaves `new Set(state.seen).add(…)` — a fresh identity — as the
+   * only way to write it.
+   */
+  seen: ReadonlySet<number>;
 }
 
 export function initialPathState(choices: StarterChoices): PathState {
-  return { stepIndex: 0, choices, demo: false, previous: NO_LEVELS };
+  // Step 0 is open the moment the path mounts, so it is seen. It carries no tick while
+  // the reader is standing on it: `index !== stepIndex` is the other half of the rule.
+  return { stepIndex: 0, choices, demo: false, previous: NO_LEVELS, seen: new Set([0]) };
 }
 
 /** The three things a reader can do that change what the page is describing. */
@@ -82,9 +102,13 @@ export function movePath(
   switch (move.kind) {
     case "step": {
       const last = Math.max(stepCount - 1, 0);
+      const index = Math.min(Math.max(move.index, 0), last);
       return {
         ...state,
-        stepIndex: Math.min(Math.max(move.index, 0), last),
+        stepIndex: index,
+        // The clamped index, not the one that was asked for: what the reader is looking
+        // at is what they have seen, and Back on step 1 asks for −1.
+        seen: new Set(state.seen).add(index),
         // Both cleared by the same move, for the two reasons in the header.
         demo: false,
         previous: NO_LEVELS,

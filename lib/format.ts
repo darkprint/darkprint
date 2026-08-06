@@ -27,6 +27,30 @@ export function prettyDate(iso: string): string {
  * Those numbers are reported by whoever ran the thing. The label in the interface says
  * so, and everything the label promises — how many runs, how spread out they were, on
  * which model — travels with the figure rather than being averaged away.
+ *
+ * ── Why `reported` is emerald and no longer amber ──
+ * Amber is under contract for exactly two jobs, written down on `--color-amber` in
+ * `app/globals.css`: `ComingSoonBadge` ("not built yet") and `.route-box` / `.route-label`
+ * ("this box leaves the page"). A metric whose value *is* reported is neither, and this
+ * entry was spending amber six times on every blueprint scorecard, on the Cost vertex and
+ * axis name of every radar, and across three sections of `/spec/scoring` — far more amber
+ * than the two jobs it is reserved for, so the reserved meaning was the one that got lost.
+ *
+ * Emerald, because emerald already means "a figure read off the engine" and a reported
+ * cost is the closest thing on this card to one: a number that came from a run rather than
+ * from a graph walk (cyan, `auto`) or a ballot (violet, `community`). The three have to
+ * survive together on one scorecard, and emerald is the only accent in the set that keeps
+ * them apart for a red-green reader — simulated at full deuteranopia, cyan and violet both
+ * stay blue and land ΔE2000 5.1 apart, while emerald leaves the blue axis entirely for a
+ * warm tan at 34.2 from cyan and 37.1 from violet. That is exactly the separation amber
+ * used to provide, which is why amber worked here and why the replacement had to be warm.
+ * On the void ground emerald reads 10.52:1, so the axis name it paints still clears AA.
+ *
+ * It does not say "verified". Emerald is a *provenance* here, and the honesty is carried
+ * where it always was: the badge prints the word `reported`, its `title` says the figure
+ * is seeded because nothing has run, and the `○ not built` lines on `/spec/scoring` name
+ * the axes. Colour never carries a claim alone on this site — that rule is what makes it
+ * safe to reuse a hue for a second, adjacent meaning.
  */
 export const METRIC_SOURCE_META: Record<
   MetricSource,
@@ -41,7 +65,7 @@ export const METRIC_SOURCE_META: Record<
   reported: {
     label: "Reported by runners",
     short: "reported",
-    color: "var(--color-amber)",
+    color: "var(--color-emerald)",
     blurb:
       "Sent back by people who ran the blueprint on their own machine, never observed by DarkPrint. There is no runner and nothing has been reported, so the figure is seeded.",
   },
@@ -106,6 +130,12 @@ export function autonomyStatement(rationale: string): string {
  * `NODE_KIND_META.gate` keeps `--color-signal` and is not a counterexample. That is the
  * schematic's node-kind palette, which colours a *drawing* by what each node is, and the
  * explainability panel names the distinction where it matters.
+ *
+ * The same exemption, and only the same one, covers `NODE_KIND_META.retry` wearing amber
+ * while amber is under contract for `ComingSoonBadge` and `.route-box` everywhere else: a
+ * key that says "this shape is a retry node" is a legend for one drawing, not a status
+ * spent on the page around it. `METRIC_SOURCE_META.reported` did not have that cover — a
+ * scorecard badge is chrome, not a schematic — which is why it moved to emerald above.
  */
 export const HUMAN_PRESENCE_MARK = {
   glyph: "⏸",

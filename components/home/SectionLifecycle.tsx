@@ -59,12 +59,32 @@
    `aria-hidden`, all three: the glyph adds no information a screen reader needs beyond
    what `PanelHeading` already gives it, and a lone Unicode character with no context is a
    worse announcement than the heading beside it.
+
+   ── The order of the four panels, and why it is not the order they were written in ──
+   Connect used to be 01, on the grounds that MCP "is the way in that needs no download at
+   all, so it is first". That reasoning was about the capability. What it ignored is what
+   the reader's eye does with the resulting composition: the sequence opened on COMING SOON
+   and closed on COMING SOON, with the two things that actually ship sandwiched between two
+   absences, and on a void ground with an otherwise entirely cyan palette those two amber
+   pills were the highest-chroma objects in the viewport. The eye landed on "not built yet"
+   before it landed on "Download".
+
+   **What ships leads; what does not is grouped once and labelled once.** Download and
+   Compose are first because a reader can do both today. Connect and Upload follow, under a
+   single rule reading "Next, and not built yet", and inside that pair the per-panel marker
+   drops from an amber `ComingSoonBadge` to a dim inline note — the rule above them is now
+   carrying the fact, so the pill would be saying it twice in the loudest colour on the
+   page. Not one word of either disclosure moved: both sentences are verbatim where they
+   were, in the open beside the thing they qualify, which is what doc 2 §0.4 asks for and
+   what `honesty.test.ts` holds `/install`'s copy of to character-for-character.
+
+   Do not revert this to capability order. The honesty was never the problem; the
+   composition was.
    ============================================================ */
 
 import Link from "next/link";
 
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 
 const STARTER = "/blueprints/starter-software-factory";
 
@@ -85,7 +105,9 @@ function PanelHeading({
   return (
     <div className="flex items-center gap-3">
       <Mark mark={mark} />
-      <span className="font-mono text-[11px] tracking-[0.18em] text-dim">{index}</span>
+      {/* `.label` rather than a fourth hand-typed copy of the same five utilities: 11px
+          mono, 0.18em, `--color-dim`. Identical to what stood here, now spelled once. */}
+      <span className="label">{index}</span>
       <h3 className="font-display text-xl font-semibold text-fg">{title}</h3>
     </div>
   );
@@ -139,6 +161,22 @@ function Artefact({ lines }: { lines: readonly (readonly [string, string])[] }) 
 const linkCls =
   "mt-auto font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan";
 
+/**
+ * The per-panel "not built yet" marker, inside the labelled pair only.
+ *
+ * It was `ComingSoonBadge` — an amber pill, and `ComingSoonBadge` is still exactly right
+ * everywhere else on the site, where it is the only thing on its surface saying so. Here
+ * the rule above these two panels already says "Next, and not built yet" in the reader's
+ * scan path, so the pill was the same fact a second time, in the highest-chroma colour on
+ * a page that is otherwise void and cyan — loud enough that it landed before "Download"
+ * did. Dim mono, at the 11px floor, states it once more where a reader who jumped
+ * straight into a panel needs it, without competing with the panel's own heading.
+ * Lowercase on purpose: the caps are the section label's job, one tier up.
+ */
+function NotBuiltYet() {
+  return <span className="shrink-0 font-mono text-[11px] text-dim">not built yet</span>;
+}
+
 export function SectionLifecycle() {
   // `scroll-mt-24` because `SiteFooter` links `/#lifecycle` from every page and the
   // header is `sticky top-0` over a 4rem row. It was missing: the anchor guard walks the
@@ -164,46 +202,32 @@ export function SectionLifecycle() {
 
         {/* Four, not three, and two across rather than four.
             ------------------------------------------------------------
-            The author: "qui puoi anche connetterti [con] MCP al registry in modo tale da
-            connetterlo con un tuo Claude Code, for example, e [via] MCP andare a pescare
-            all'interno dei blueprint o dei node quello che fa più al caso tuo rispetto a
-            quel tipo di workflow che stai facendo. Quindi questo è molto importante."
+            Four narrow columns would put each artefact box under 250px and the file names
+            in them would truncate; two across gives every panel the width its listing
+            needs. The order — what ships, then what does not, under one rule — is argued
+            in this file's header; the short version is that two amber pills were reading
+            before the two capabilities that work.
 
-            It is the way in that needs no download at all, so it is first. Four narrow
-            columns would put each artefact box under 250px and the file names in them
-            would truncate; two across gives every panel the width its listing needs. */}
+            `min-w-0` on every article is load-bearing and not cosmetic. An `<article>` is
+            a grid item, a grid item's default `min-width: auto` is its min-content width,
+            and the widest monospace row in `Artefact` (panel 03's `claude mcp add …`, 331px
+            on its own) therefore set a floor of 407px — the string, plus the padding this
+            panel carried at the time (`p-6`) and its border — on a 342px track at 390×844.
+            Padding is `p-5` now, which subtracts 8 from that floor and fixes nothing: the
+            floor is the string, and no padding value on the eight-point scale is small
+            enough to get 331px of monospace into a 342px column. Only `min-w-0` does. The
+            `min-w-0 truncate` span inside `Artefact` was written to ellipsis exactly that
+            string and could never fire while its own grid-item ancestor refused to shrink:
+            `document.documentElement.scrollWidth` measured 431 against a 390 client width,
+            and `body { overflow-x: hidden }` in `app/globals.css` propagates to the
+            viewport, so those 41px were unreachable rather than scrollable — the Connect
+            panel's right border, the end of "executes it for you." and part of both
+            honesty disclosures were simply off the phone. `components/home/beats.test.ts`
+            holds the floor now. */}
         <div className="mt-10 grid gap-5 md:grid-cols-2">
-          {/* ---------- 01 · connect ---------- */}
-          <article className="panel flex flex-col gap-4 p-6">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <PanelHeading index="01" title="Connect" mark="⇄" />
-              <ComingSoonBadge />
-            </div>
-
-            <Artefact
-              lines={[
-                ["$", "claude mcp add darkprint -- npx -y darkprint mcp"],
-                ["→", "every blueprint and node card, as resources"],
-              ]}
-            />
-
-            {/* Doc 2 §0.4: the panel that describes an unbuilt thing says so beside the
-                thing, not in a footnote. `/install` carries the same sentence and
-                `honesty.test.ts` holds it there. */}
-            <p className="text-sm leading-relaxed text-muted">
-              Point <Mono>Claude Code</Mono>, Gemini or any MCP client at the registry and
-              let it pull the blueprint or the card that fits the work in front of it. The
-              server is not built yet, so this is what the setup will look like.
-            </p>
-
-            <Link href="/install" className={linkCls}>
-              See the setup
-            </Link>
-          </article>
-
-          {/* ---------- 02 · download ---------- */}
-          <article className="panel flex flex-col gap-4 p-6">
-            <PanelHeading index="02" title="Download" mark="↓" />
+          {/* ---------- 01 · download ---------- */}
+          <article className="panel flex min-w-0 flex-col gap-4 p-5">
+            <PanelHeading index="01" title="Download" mark="↓" />
 
             {/* The bundle's own file names, from `lib/content/bundle-export.ts`, so a
                 reader who takes the folder finds what this box promised. */}
@@ -226,9 +250,9 @@ export function SectionLifecycle() {
             </Link>
           </article>
 
-          {/* ---------- 03 · compose ---------- */}
-          <article className="panel flex flex-col gap-4 p-6">
-            <PanelHeading index="03" title="Compose" mark="⋈" />
+          {/* ---------- 02 · compose ---------- */}
+          <article className="panel flex min-w-0 flex-col gap-4 p-5">
+            <PanelHeading index="02" title="Compose" mark="⋈" />
 
             <Artefact
               lines={[
@@ -249,11 +273,53 @@ export function SectionLifecycle() {
             </Link>
           </article>
 
+          {/* ---------- the line the two working capabilities end at ----------
+              One rule, one label, spanning both columns, so the pair below it is read as a
+              group with a shared state rather than as two panels each carrying a warning.
+              It is a `.label` and not a heading: `app/globals.css` records that a mono
+              uppercase run is a label, and a label is not a heading level — this names a
+              condition the next two panels share, it does not open a sub-section of the
+              document outline. Spacing: the grid's own `gap-5` plus `mt-5` puts a block
+              tier (40px) above the rule, and `pt-3` keeps the label tight under it so it
+              reads as the rule's caption rather than as the next panel's own eyebrow. */}
+          <div className="mt-5 border-t border-line pt-3 md:col-span-2">
+            <span className="label">Next, and not built yet</span>
+          </div>
+
+          {/* ---------- 03 · connect ---------- */}
+          <article className="panel flex min-w-0 flex-col gap-4 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <PanelHeading index="03" title="Connect" mark="⇄" />
+              <NotBuiltYet />
+            </div>
+
+            <Artefact
+              lines={[
+                ["$", "claude mcp add darkprint -- npx -y darkprint mcp"],
+                ["→", "every blueprint and node card, as resources"],
+              ]}
+            />
+
+            {/* Doc 2 §0.4: the panel that describes an unbuilt thing says so beside the
+                thing, not in a footnote. `/install` carries the same sentence and
+                `honesty.test.ts` holds it there. Verbatim, and it stays verbatim through
+                any reordering of these panels. */}
+            <p className="text-sm leading-relaxed text-muted">
+              Point <Mono>Claude Code</Mono>, Gemini or any MCP client at the registry and
+              let it pull the blueprint or the card that fits the work in front of it. The
+              server is not built yet, so this is what the setup will look like.
+            </p>
+
+            <Link href="/install" className={linkCls}>
+              See the setup
+            </Link>
+          </article>
+
           {/* ---------- 04 · upload ---------- */}
-          <article className="panel flex flex-col gap-4 p-6">
+          <article className="panel flex min-w-0 flex-col gap-4 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <PanelHeading index="04" title="Upload yours" mark="↑" />
-              <ComingSoonBadge />
+              <NotBuiltYet />
             </div>
 
             <Artefact

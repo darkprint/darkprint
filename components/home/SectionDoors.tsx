@@ -30,6 +30,33 @@
    makes the three figures worth printing, and it was the only
    sentence on the site that made it. A number beside a door with
    nothing behind it is marketing.
+
+   ── Why the second door now carries figures too ──
+   `md:grid-cols-2` stretches both cells to the taller one and
+   `Door`'s `mt-auto` pins the button to the floor, so a door with no
+   children is not a shorter card: it is the same card with ~112px of
+   void in the middle of it. Measured inside the 305px cell it used
+   to be, the gallery door ran h3, line, counts, caption, CTA and the
+   build door ran h3, line, nothing, nothing, CTA. The reader is at the one
+   decision point on the landing, and the option with no evidence
+   under it reads as the lesser one or as the unfinished one — which
+   is backwards, because `/build` is the path that works end to end
+   today and the gallery is the one that only reads.
+
+   So the build door states its own shape in the same register: three
+   figures and a line saying what they buy. They are not counted off
+   disk the way `PLATFORM_STATS` is, and the constant below records
+   where each one is read from so a change to the path is a failing
+   grep rather than a stale number.
+
+   ── And the limit statement moved into it ──
+   "The guided path ends at the download. There is nowhere to publish
+   yet." hung under the two-column grid, centred, attached to
+   neither door. It is about the build door specifically. A sentence
+   that qualifies one of two options and is printed under both of
+   them qualifies the wrong one half the time, so it sits inside the
+   door it is about, in the same caption register as the gallery
+   door's own qualifier. Verbatim; spec §0.4 is why it exists.
    ============================================================ */
 
 import { PLATFORM_STATS } from "@/lib/data";
@@ -40,6 +67,66 @@ const COUNTS: { value: number; label: string }[] = [
   { value: PLATFORM_STATS.nodes, label: "node cards" },
   { value: PLATFORM_STATS.terms, label: "ontology terms" },
 ];
+
+/**
+ * What the guided path is, in three figures — the build door's answer to `COUNTS`.
+ *
+ * Written here rather than imported, and each one says where it is read from. `STEPS` and
+ * the choice groups live in `components/build/`, which is `"use client"` and pulls
+ * `lib/core` and `lib/starter` behind it; importing either for three integers would put
+ * the whole authoring path in the landing's bundle and in `beats.test.ts`'s render. The
+ * comments are the check: all three are one grep away.
+ */
+const PATH: { value: number; label: string }[] = [
+  /* `STEPS` in components/build/steps.tsx: whole · node · vocabulary · output · switch ·
+     approval · loop · download. */
+  { value: 8, label: "steps" },
+  /* components/build/choices.ts, the three headed sections: the output kind, the approval
+     mode, the iteration cap. The switch on step 5 is a demonstration, not a fourth choice
+     — nothing would ship it, which is what that step says. */
+  { value: 3, label: "choices" },
+  /* `exportBundle` writes one folder, whatever the eighty combinations resolve to. */
+  { value: 1, label: "bundle" },
+];
+
+/**
+ * The figures row, as one component rather than as two copies of it.
+ *
+ * The whole point of this pass is that the two doors present evidence in the same
+ * register; two hand-typed rows drift the first time one of them is touched, and the
+ * drift is invisible until somebody puts the cards side by side, which is the state this
+ * replaced. One component means "same register" is a property of the code.
+ */
+function Figures({ items }: { items: readonly { value: number; label: string }[] }) {
+  return (
+    <dl className="flex flex-wrap gap-x-6 gap-y-2 border-t border-blueprint-line/25 pt-4">
+      {items.map((item) => (
+        <div key={item.label}>
+          {/* The visible label is `aria-hidden` and the `dt` carries it instead,
+              so the pair is announced once as "blueprints, 9" rather than twice. */}
+          <dt className="sr-only">{item.label}</dt>
+          <dd className="flex items-baseline gap-1.5">
+            <span className="font-mono text-lg tabular-nums text-blueprint-ink">
+              {item.value}
+            </span>
+            <span
+              aria-hidden
+              className="font-mono text-[11px] uppercase tracking-[0.14em]"
+              style={{ color: "var(--color-blueprint-line)" }}
+            >
+              {item.label}
+            </span>
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** What the figures above it are worth. One line, under the row it qualifies. */
+function Caption({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs leading-relaxed text-blueprint-ink/70">{children}</p>;
+}
 
 function Door({
   title,
@@ -72,7 +159,7 @@ export function SectionDoors() {
   return (
     <section
       id="start"
-      className="relative overflow-hidden bg-blueprint-deep py-24 sm:py-28"
+      className="relative overflow-hidden bg-blueprint-deep py-20 sm:py-28"
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 bp-grid opacity-90" />
       <div
@@ -85,51 +172,31 @@ export function SectionDoors() {
       />
 
       <div className="container-page relative">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <span
-            className="font-mono text-[11px] uppercase tracking-[0.28em]"
-            style={{ color: "var(--color-blueprint-line)" }}
-          >
-            darkprint.io
-          </span>
+        {/* A `darkprint.io` mono strip stood above this heading and is gone. A domain name
+            is not a section label: it names the site a reader is already on, on the one
+            band that needs no naming — the cyanotype ground is a register nothing else on
+            the landing uses, and that is what says "this is the end of the argument". It
+            was also the site's only instance of 0.28em tracking, and the mono eyebrow is
+            rationed to one per page or per full-bleed band. */}
+        <div className="flex flex-col items-center text-center">
           <h2 className="max-w-3xl font-display text-4xl font-semibold leading-tight tracking-tight text-blueprint-ink sm:text-5xl">
             Read one, or build one
           </h2>
         </div>
 
-        <div className="mt-12 grid gap-5 md:grid-cols-2">
+        <div className="mt-10 grid gap-5 md:grid-cols-2">
           <Door
             title="Browse the blueprints"
             line="Every graph is published as the files it runs from."
             href="/blueprints"
             cta="Open the gallery"
           >
-            <dl className="flex flex-wrap gap-x-6 gap-y-2 border-t border-blueprint-line/25 pt-4">
-              {COUNTS.map((c) => (
-                <div key={c.label}>
-                  {/* The visible label is `aria-hidden` and the `dt` carries it instead,
-                      so the pair is announced once as "blueprints, 9" rather than twice. */}
-                  <dt className="sr-only">{c.label}</dt>
-                  <dd className="flex items-baseline gap-1.5">
-                    <span className="font-mono text-lg tabular-nums text-blueprint-ink">
-                      {c.value}
-                    </span>
-                    <span
-                      aria-hidden
-                      className="font-mono text-[11px] uppercase tracking-[0.14em]"
-                      style={{ color: "var(--color-blueprint-line)" }}
-                    >
-                      {c.label}
-                    </span>
-                  </dd>
-                </div>
-              ))}
-            </dl>
+            <Figures items={COUNTS} />
             {/* What the three figures are worth, in one line. `PLATFORM_STATS` counts
                 `content/` at build time, so this is checkable rather than decorative. */}
-            <p className="text-xs leading-relaxed text-blueprint-ink/70">
+            <Caption>
               Counted off the archive on the last deploy, and nothing here is rounded up.
-            </p>
+            </Caption>
           </Door>
 
           <Door
@@ -137,12 +204,19 @@ export function SectionDoors() {
             line="An hour of choices, and a blueprint that downloads to your machine."
             href="/build"
             cta="Start the guided path"
-          />
+          >
+            <Figures items={PATH} />
+            {/* What the eight steps hand over. The gallery door's caption says its figures
+                are exact; this one says what its figures produce, which is the equivalent
+                question for a path rather than an archive. */}
+            <Caption>A .dot topology, the cards it pins, and a README you can run.</Caption>
+            {/* Spec §0.4, moved here from under the grid. It qualifies this door and only
+                this one, and a sentence centred under two columns attaches to neither. */}
+            <Caption>
+              The guided path ends at the download. There is nowhere to publish yet.
+            </Caption>
+          </Door>
         </div>
-
-        <p className="mt-8 text-center text-sm leading-relaxed text-blueprint-ink/80">
-          The guided path ends at the download. There is nowhere to publish yet.
-        </p>
       </div>
     </section>
   );

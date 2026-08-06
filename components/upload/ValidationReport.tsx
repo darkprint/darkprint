@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { hasErrors, shortDigest, summarize, type LoadBundleResult } from "@/lib/core";
 import { autonomyStatement, cx } from "@/lib/format";
 import { graphForBlueprint } from "@/lib/graph-seed";
@@ -9,17 +9,32 @@ import { AutonomyMeter } from "@/components/ui/AutonomyMeter";
 import { DiagnosticList } from "@/components/ui/DiagnosticList";
 import { SourcePanel } from "@/components/ui/SourcePanel";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
+import { GraphPane } from "@/components/panes/GraphPane";
+import { buildPaneModel, type PaneNodeInput } from "@/components/panes/build";
+import { announce, resolveFocus } from "@/components/panes/model";
 
 /* --------------------- presentation --------------------- */
 
-const LABEL = "font-mono text-xs uppercase tracking-[0.14em] text-dim";
+/**
+ * The bundle-relative name every diagnostic on the topology is located against —
+ * `lib/core/bundle/resolve.ts`'s own `DOT_FILE`. The source panel below wears it as its
+ * title so a reader reading `blueprint.dot:2:3` in the validator report can see, without
+ * translating anything, which panel holds line 2.
+ */
+const DOT_FILE = "blueprint.dot";
 
 function clamp(value: number, low: number, high: number): number {
   return value < low ? low : value > high ? high : value;
 }
 
-/** "2 errors · 1 warning", or the affirmative form. Words, never a colour alone. */
-function verdictLine(result: LoadBundleResult): string {
+/**
+ * "2 errors · 1 warning", or the affirmative form. Words, never a colour alone.
+ *
+ * Exported because the downloadable `REPORT.md` on step 4 has to open on the same verdict
+ * the strip below prints. Two spellings of one count is how a report and the page it came
+ * from start disagreeing.
+ */
+export function verdictLine(result: LoadBundleResult): string {
   const counts = summarize(result.diagnostics);
   const parts: string[] = [];
   if (counts.error > 0) parts.push(`${counts.error} error${counts.error === 1 ? "" : "s"}`);
@@ -30,6 +45,8 @@ function verdictLine(result: LoadBundleResult): string {
   return parts.length === 0 ? "nothing to report" : parts.join(" · ");
 }
 
+const LABEL = "label";
+
 /**
  * What the validator found, and — only when it found nothing fatal — the schematic and
  * the two computed scores it unlocked.
@@ -37,12 +54,39 @@ function verdictLine(result: LoadBundleResult): string {
  * §8.3: the validator is the gate. A bundle carrying an error gets its diagnostics and
  * nothing else, because a score read off a graph the engine could not resolve is a
  * number with no claim behind it.
+ *
+ * ── Two things this component draws that it used not to ──
+ *
+ * **The graph.** `graphForBlueprint` was already being called here, and its result went
+ * to `BlueprintCanvas`, whose own docblock records that it stopped drawing a schematic
+ * when the detail page moved that job into `SynchronisedPanes`. So the one surface where
+ * the graph belongs to the reader who drew it answered with tables. `GraphPane` is the
+ * same component the detail page and `/build` mount, over the same `PaneModel` builder,
+ * so the lit-disc nodes, the absent-edge contrast floor and the click-to-select
+ * behaviour arrive here with no viz code written for this route.
+ *
+ * **The source, on the rejection.** `SourcePanel` used to live inside the `usable`
+ * branch only, which put the DOT one click away exactly when nothing was wrong with it
+ * and out of reach the moment a diagnostic cited a line of it. It is rendered for any
+ * bundle that carries a topology now, open by default when the bundle was rejected, and
+ * the cited lines are named above it so `blueprint.dot:2:3` and the gutter agree.
  */
 export function ValidationReport({
   result,
+  dot,
   className,
 }: {
   result: LoadBundleResult;
+  /**
+   * The topology as the reader supplied it.
+   *
+   * Only read when the DOT failed to parse: `result.blueprint` is absent in that case and
+   * it carries the only copy of the source, so without this the one rejection whose whole
+   * complaint is about a character position had no file to show. Resolution that got far
+   * enough to produce a blueprint uses the blueprint's own bytes, which are the ones the
+   * digest was taken over.
+   */
+  dot?: string;
   className?: string;
 }) {
   const { blueprint, analysis } = result;
@@ -54,11 +98,64 @@ export function ValidationReport({
     [usable, blueprint],
   );
 
+  /**
+   * The same serializable model `/blueprints/<slug>` builds at build time, built here in
+   * the tab instead. `lib/core` already runs on this page — `loadBundle` is called a few
+   * components up — so the DOT parse that supplies every line number costs this route
+   * nothing it was not already paying.
+   *
+   * No card document is attached: pane 2 is not mounted here, and the YAML is only ever
+   * read to give the skeleton its line ranges. The resolved card itself is passed, so the
+   * live region below can name the card a node pins rather than claim there is none.
+   */
+  const paneModel = useMemo(() => {
+    if (!usable || blueprint === undefined) return undefined;
+    const nodes: PaneNodeInput[] = blueprint.nodes.map((node) => ({
+      nodeId: node.nodeId,
+      label: node.card.name,
+      ref: node.ref,
+      card: node.card,
+    }));
+    return buildPaneModel({
+      slug: blueprint.manifest.slug,
+      title: blueprint.manifest.title,
+      dot: blueprint.dot,
+      dotFile: DOT_FILE,
+      nodes,
+    });
+  }, [usable, blueprint]);
+
+  /* Held by id rather than by index, and resolved through `resolveFocus`, which falls
+     back to the first node for an id this model does not carry. A reader who picked a
+     node, went back a step and dropped a different bundle therefore lands on something
+     drawn rather than on a blank pane. */
+  const [selectedNode, setSelectedNode] = useState<string | undefined>(undefined);
+  const focus =
+    paneModel === undefined
+      ? undefined
+      : resolveFocus(paneModel, {
+          nodeId: selectedNode ?? paneModel.nodes[0]?.nodeId ?? "",
+        });
+
+  /** The lines of the topology the validator pointed at, ascending and distinct. */
+  const citedLines = useMemo(() => {
+    const lines = new Set<number>();
+    for (const diagnostic of result.diagnostics) {
+      const at = diagnostic.location;
+      if (at?.file === DOT_FILE && at.line !== undefined) lines.add(at.line);
+    }
+    return [...lines].sort((a, b) => a - b);
+  }, [result.diagnostics]);
+
+  /* The bytes the reader dropped when nothing resolved, the bytes the digest was taken
+     over when something did. */
+  const source = blueprint?.dot ?? dot;
+
   const securityPercent =
     analysis === undefined ? 0 : Math.round((clamp(analysis.security.raw, 0, 4) / 4) * 100);
 
   return (
-    <div className={cx("flex flex-col gap-6", className)}>
+    <div className={cx("flex flex-col gap-5", className)}>
       {/* ---------- verdict strip ---------- */}
       <div className="panel flex flex-wrap items-center gap-x-4 gap-y-2 bg-surface-2/40 px-4 py-3">
         <span
@@ -80,17 +177,48 @@ export function ValidationReport({
         )}
       </div>
 
+      {/* ---------- the reader's own graph ----------
+          Directly under the verdict, because the site's whole claim is that autonomy is
+          something you read as a graph and this is the one page where the graph belongs
+          to the person looking at it. Click a block and the pane's own footer says what
+          that node hears from and what it sends to — the same selection behaviour the
+          detail page and `/build` have. */}
+      {graph !== undefined && paneModel !== undefined && focus !== undefined && (
+        <>
+          {/* Mounted whether or not anything has been picked, so a screen reader hears
+              the change rather than the region arriving with it. */}
+          <p aria-live="polite" className="sr-only">
+            {announce(paneModel, focus)}
+          </p>
+          <GraphPane
+            paneNumber={1}
+            graph={graph}
+            model={paneModel}
+            focus={focus}
+            graphId={`upload-${paneModel.slug}`}
+            /* 380, not the merged panel's 780 and not `BlueprintGraph`'s own 460. This
+               pane has the full 1152px container to itself with nothing sticky beside
+               it, so `fitView` is width-constrained on every archive-shaped graph and
+               anything taller than this is empty graticule above and below the drawing.
+               A deep graph still fits: the fit scales it down rather than clipping it,
+               and the pane's zoom controls are there. */
+            height={380}
+            onSelectNode={setSelectedNode}
+          />
+        </>
+      )}
+
       {/* ---------- every complaint, errors first ---------- */}
       <DiagnosticList diagnostics={result.diagnostics} title="Validator report" />
 
       {!usable ? (
         <div className="rounded-lg border border-line bg-surface-2/40 p-5">
-          <h3 className="font-display text-lg font-semibold text-fg">
+          <h3 className="font-display text-xl font-semibold text-fg">
             No schematic and no scores
           </h3>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+          <p className="prose-lane mt-4 text-sm leading-relaxed text-muted">
             {blueprint === undefined
-              ? "The DOT could not be parsed into a directed graph, so there is no topology to draw and nothing to analyse."
+              ? "The DOT could not be parsed into a directed graph, so there is no topology to draw and nothing to analyse. The source is open below, with the lines the validator named."
               : "The bundle resolved far enough to report on, but it still carries errors. DarkPrint will not put a number on a graph whose references it could not check, fix the errors above and the schematic, the autonomy fraction and the security ledger appear here."}
           </p>
         </div>
@@ -98,16 +226,16 @@ export function ValidationReport({
         <>
           <div className="flex flex-col gap-4">
             <div>
-              <h3 className="font-display text-lg font-semibold text-fg">
+              <h3 className="font-display text-xl font-semibold text-fg">
                 Auto-computed from your graph
               </h3>
-              <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted">
+              <p className="prose-lane mt-2 text-sm leading-relaxed text-muted">
                 Two of the six scores are produced by static analysis of the schematic
                 the moment it validates, no run required.
               </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2">
               {/* Autonomy */}
               <div className="panel flex flex-col gap-3 bg-surface-2/40 p-5">
                 <div className="flex items-center justify-between">
@@ -164,22 +292,38 @@ export function ValidationReport({
             </div>
           </div>
 
-          {/* The same schematic + explainability pair the detail page renders, over the
-              bundle this tab just resolved. */}
-          {graph !== undefined && (
-            <BlueprintCanvas graph={graph} analysis={analysis} />
-          )}
-
-          <SourcePanel
-            source={blueprint.dot}
-            language="DOT"
-            title="DOT source"
-            meta={shortDigest(blueprint.digest)}
-            downloadName={`${blueprint.manifest.slug}.dot`}
-            collapsible
-            defaultOpen={false}
-          />
+          {/* The ledger the two readings are made of: every contribution and every
+              finding, cross-referenced by node. The drawing above is the other half. */}
+          {graph !== undefined && <BlueprintCanvas graph={graph} analysis={analysis} />}
         </>
+      )}
+
+      {/* ---------- the topology, whatever the verdict ----------
+          This sat inside the branch above, so a reader told the problem was at
+          `blueprint.dot:2:3` was shown the file only in the case where nothing was wrong
+          with it. It is here now for any bundle that carries a topology at all, and it
+          opens itself on a rejection: the fix starts by looking at the line. */}
+      {source !== undefined && (
+        <div className="flex flex-col gap-2">
+          {citedLines.length > 0 && (
+            <p className="font-mono text-[11px] text-dim">
+              <span className="uppercase tracking-[0.18em] text-signal">cited</span>{" "}
+              {citedLines.map((line) => `line ${line}`).join(" · ")}. The gutter below
+              numbers them.
+            </p>
+          )}
+          <SourcePanel
+            source={source}
+            language="DOT"
+            title={DOT_FILE}
+            {...(blueprint === undefined ? {} : { meta: shortDigest(blueprint.digest) })}
+            downloadName={
+              blueprint === undefined ? DOT_FILE : `${blueprint.manifest.slug}.dot`
+            }
+            collapsible
+            defaultOpen={!usable}
+          />
+        </div>
       )}
     </div>
   );

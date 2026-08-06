@@ -10,6 +10,7 @@ import {
   type FlowTone,
 } from "@/components/viz";
 import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
+import { More } from "@/components/ui/More";
 
 /* ============================================================
    The four phases, drawn as the one thing that changes across
@@ -62,6 +63,32 @@ import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
    `components/ui/More.tsx` records: the text is in the prerendered
    HTML, keyboard reachable and findable by find-in-page, so what
    it changes is what is on screen before a click.
+
+   ── One card, two grounds, and which one the words sit on ──
+   The whole phase used to live inside the `Sheet`: the drawing,
+   the caption, the sentence about what the phase is worth, and the
+   disclosure. `Sheet` defaults to `register="blueprint"`, so all
+   of that sat on the cyanotype paper with `.bp-grid` running under
+   it — and the prose was written in `text-muted`, which is a
+   DARK-pole token. `app/globals.css` states the rule in its own
+   header: dark is the default surface and blueprint sections opt
+   in locally. Everywhere else on this site the cyanotype pole
+   carries DRAWINGS and prose sits on the void.
+
+   So the sheet keeps what is drawn — the scene, and the violet
+   caption naming what the person is reading, which labels the mark
+   inside the drawing — and the two paragraphs moved out to a
+   `.panel` directly under each card, on the void, where every
+   other body paragraph on the site lives.
+
+   The disclosure moved to `components/ui/More.tsx` at the same
+   time. This file wrote its own `<details>`, with the ▸ and a
+   trailing space inside one `inline-block` span; the space
+   collapses at the box edge, so all four cards shipped reading
+   "▸WHAT IT INVOLVES". `More` puts the marker in a flex row with
+   `gap-2`, which cannot collapse. Its summary is also differentiated
+   per phase now — four identical summaries told a reader nothing
+   about which one to open.
    ============================================================ */
 
 const FIG = {
@@ -192,39 +219,42 @@ function PhaseScene({ phase }: { phase: Phase }) {
 
 export function PhaseStrip() {
   return (
-    <ol className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <ol className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
       {PHASES.map((phase) => (
-        <li key={phase.n}>
-          <Sheet
-            label={phase.n}
-            title={phase.title}
-            className="h-full"
-            bodyClassName="p-3"
-          >
+        /* The drawing and its words are two objects in one column, not one object with
+           two grounds. The grid stretches every `li` in a row to the same height, and
+           `flex-1` spends the leftover on the panel, so the four panels start and end
+           level whatever their sentence costs. */
+        <li key={phase.n} className="flex flex-col gap-3">
+          <Sheet label={phase.n} title={phase.title} bodyClassName="p-3">
             <PhaseScene phase={phase} />
+            {/* Stays on the sheet: it names the violet mark drawn a centimetre above it,
+                in the mark's own colour, and reads as part of the drawing rather than as
+                a sentence about it. */}
             <p className="mt-2 text-center font-mono text-[11px] text-violet">
               <span aria-hidden>{HUMAN_PRESENCE_MARK.glyph} </span>
               {phase.doing}
             </p>
-            <p
-              className="mt-3 border-t pt-3 text-[13px] leading-relaxed text-muted"
-              style={{ borderColor: "var(--color-blueprint)" }}
-            >
-              {phase.alone}
-            </p>
-            <details className="group mt-3">
-              <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden font-mono text-[11px] uppercase tracking-[0.14em] text-dim transition-colors hover:text-fg">
-                <span
-                  aria-hidden
-                  className="inline-block transition-transform group-open:rotate-90"
-                >
-                  ▸{" "}
-                </span>
-                What it involves
-              </summary>
-              <p className="mt-2.5 text-[13px] leading-relaxed text-muted">{phase.body}</p>
-            </details>
           </Sheet>
+          <div className="panel flex flex-1 flex-col gap-3 p-5">
+            <p className="text-[13px] leading-relaxed text-muted">{phase.alone}</p>
+            {/* The summary is the phase's own outcome, so four disclosures on one screen
+                say four different things and a reader can decide which to open — which is
+                what `More`'s own docstring asks a summary to be. Derived rather than
+                typed out, so it cannot drift from the title above it.
+
+                And no `mt-auto` on it. Pinning the summary to the bottom of the panel
+                lines the four up while they are closed, and then one open card grows the
+                whole grid row and strands the other three summaries ~180px below the
+                sentence they belong to. A disclosure sits under its own paragraph. */}
+            <More
+              bare
+              className="border-t border-line pt-3"
+              summary={`What ${phase.n.toLowerCase()} involves: ${phase.title.toLowerCase()}`}
+            >
+              <p className="text-[13px] leading-relaxed text-muted">{phase.body}</p>
+            </More>
+          </div>
         </li>
       ))}
     </ol>

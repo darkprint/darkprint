@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { neighbours } from "./route";
+import { CLIMB_ROUTE, neighbours } from "./route";
 
 /* ============================================================
    Next and previous, across the three pages of §4.2.
@@ -14,6 +14,29 @@ import { neighbours } from "./route";
    A server component. It renders two links and reads its
    neighbours out of `route.ts`, so a page passes the one thing
    only it knows, which is where it is.
+
+   ── The rail, and why it was worth copying ──
+   `SpecPager` has drawn a five-stop rail with `aria-current` on the
+   current stop since the spec pages were split; this drew "TOWARDS
+   A DARK FACTORY · 1 OF 3" and two arrows and nothing else. Both
+   sequences sit in the same Learn nav group, so a reader crossing
+   from one to the other lost the ability to see the stops at all —
+   a pager with two arrows says what is adjacent and never how far
+   through you are, which is the question somebody who left a long
+   page is actually asking. The rail is the same markup as
+   `SpecPager`'s, pointed at `CLIMB_ROUTE`, numbering its stops the
+   way the overview's two doors number theirs.
+
+   The two components are deliberately NOT merged. They read their
+   own sequence out of their own file, and one pager that took a
+   sequence as a prop would be one more place for the two to
+   disagree about a route — which is the failure `route.ts` and
+   `sequence.ts` both exist to make impossible.
+
+   Where they still differ, this one is right: a lone arrow card
+   fills the row here (`flex-1`), where `SpecPager` pins its
+   singleton to `sm:col-start-2` and leaves a 568×115px hole beside
+   it. `SpecPager` should adopt `flex-1` in a later pass.
    ============================================================ */
 
 /* `route-box`, not `panel`: these two leave the page, and the author asked for the boxes
@@ -21,10 +44,25 @@ import { neighbours } from "./route";
    records why the distinction is shape as well as hue. */
 const CARD = "route-box group flex flex-1 flex-col gap-1.5 p-5";
 
-/** The pager's own position line, which is not a link and stays quiet. */
-const EYEBROW = "font-mono text-[11px] uppercase tracking-[0.18em] text-dim";
-
-export function RoutePager({ href }: { href: string }) {
+export function RoutePager({
+  href,
+  arrows = true,
+}: {
+  href: string;
+  /**
+   * Whether to draw the previous/next cards under the rail.
+   *
+   * `/towards-a-dark-factory` passes `false`. It is the parent of the sequence rather
+   * than a stop inside it, and it already ends on a two-door index naming both children
+   * in route order; the pager's NEXT card was the same amber door to the same
+   * destination a second time, ~1100px below the first with a whole section wedged
+   * between them. `.route-box` is a promise that a box leaves the page, and firing it
+   * three times for two destinations is how a reader stops being able to tell a new door
+   * from one they already read. The rail stays there: it is the only thing on that page
+   * that shows all three stops at once.
+   */
+  arrows?: boolean;
+}) {
   /* Position and count come out of the same lookup as the neighbours. This used to run
      its own `findIndex` beside `neighbours`, and both returned "not found" quietly: a page
      the route did not carry rendered "· 0 of 3" with no arrows. `neighbours` throws now,
@@ -34,35 +72,76 @@ export function RoutePager({ href }: { href: string }) {
   return (
     <nav
       aria-label="Towards a Dark Factory"
-      className="flex flex-col gap-4 border-t border-line pt-8"
+      className="flex flex-col gap-5 border-t border-line pt-8"
     >
-      <p className={EYEBROW}>
-        Towards a Dark Factory · {position} of {total}
-      </p>
-      <div className="flex flex-col gap-4 sm:flex-row">
-        {previous !== undefined && (
-          <Link href={previous.href} className={CARD}>
-            <span className="route-label">
-              <span aria-hidden>← </span>previous
-            </span>
-            <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors group-hover:text-amber-bright">
-              {previous.label}
-            </span>
-            <span className="text-sm leading-relaxed text-muted">{previous.blurb}</span>
-          </Link>
-        )}
-        {next !== undefined && (
-          <Link href={next.href} className={`${CARD} sm:text-right`}>
-            <span className="route-label">
-              next<span aria-hidden> →</span>
-            </span>
-            <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors group-hover:text-amber-bright">
-              {next.label}
-            </span>
-            <span className="text-sm leading-relaxed text-muted">{next.blurb}</span>
-          </Link>
-        )}
+      {/* The sequence's name and the rail read as one title block, so they sit closer to
+          each other than either does to the cards. The name is not in the rail: every
+          entry there is a page title, and none of them says which sequence it belongs
+          to. */}
+      <div className="flex flex-col gap-2">
+        <p className="label">
+          Towards a Dark Factory · {position} of {total}
+        </p>
+        {/* `aria-current="page"` on this page's own entry, and it stays a `span` rather
+            than a link to itself, which is a stop that goes nowhere. Same construction as
+            `SpecPager`'s rail. */}
+        <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px]">
+          {CLIMB_ROUTE.map((stop, i) => {
+            const step = String(i + 1).padStart(2, "0");
+            return (
+              <li key={stop.href} className="flex items-center gap-2">
+                {i > 0 && (
+                  <span aria-hidden className="text-faint">
+                    ·
+                  </span>
+                )}
+                {stop.href === href ? (
+                  <span aria-current="page" className="text-cyan">
+                    {step} {stop.label}
+                  </span>
+                ) : (
+                  <Link
+                    href={stop.href}
+                    className="text-dim transition-colors hoverable:hover:text-fg"
+                  >
+                    {step} {stop.label}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+        </ol>
       </div>
+
+      {arrows && (previous !== undefined || next !== undefined) && (
+        <div className="flex flex-col gap-5 sm:flex-row">
+          {previous !== undefined && (
+            <Link href={previous.href} rel="prev" className={CARD}>
+              <span className="route-label">
+                <span aria-hidden>← </span>previous
+              </span>
+              {/* `hoverable:` gates the hover on `(hover: hover) and (pointer: fine)`:
+                  a tap on a phone has no "leave", so an ungated `group-hover` latches
+                  the amber on whichever exit was last touched. */}
+              <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors hoverable:group-hover:text-amber-bright">
+                {previous.label}
+              </span>
+              <span className="text-sm leading-relaxed text-muted">{previous.blurb}</span>
+            </Link>
+          )}
+          {next !== undefined && (
+            <Link href={next.href} rel="next" className={`${CARD} sm:text-right`}>
+              <span className="route-label">
+                next<span aria-hidden> →</span>
+              </span>
+              <span className="font-display text-lg font-semibold leading-snug text-fg transition-colors hoverable:group-hover:text-amber-bright">
+                {next.label}
+              </span>
+              <span className="text-sm leading-relaxed text-muted">{next.blurb}</span>
+            </Link>
+          )}
+        </div>
+      )}
     </nav>
   );
 }

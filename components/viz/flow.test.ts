@@ -603,18 +603,28 @@ describe("the absent edge is visible on the paper it is drawn on", () => {
      deep blueprint blue towards the void, and that mix is the background every figure on
      this site sits on. */
   const sheet = mixOklab(colors["blueprint-deep"], colors.void, 0.62);
-  /* `.bp-grid`'s major rule, which is the line the landing's absence runs alongside. */
-  const graticule = over(colors["blueprint-line"], sheet, 0.22);
+  /* `.bp-grid`'s major rule, which is the line the landing's absence runs alongside. The
+     stylesheet paints two rules over the sheet, a major at 12% and a minor at 5%, and the
+     major is the brighter of the two, so it is the hardest backdrop the absent tone has to
+     clear. This was quoted at 22% for a while after the stylesheet had come down to 12% —
+     harmless to the result, because the number is a literal here and both figures clear the
+     floor, but a test that guards a colour has to name the colour that ships. */
+  const graticule = over(colors["blueprint-line"], sheet, 0.12);
 
   const absent = toneRgb(VIZ_TONE[FLOW_ABSENT_TONE], colors);
 
   it("reproduces the reading that made this a defect", () => {
     // A guard on the guard. If the colour maths above were wrong the two cases underneath
     // would pass on anything, so the tone that shipped is measured here and has to come
-    // back below the floor, at the ratio the fix was argued from.
+    // back below the floor. The pinned ratios are what `faint` reads today, against the
+    // sheet and against the 12% major rule; the fix was argued from 1.16:1 on the 22% rule
+    // the sheet carried then, and a fifth of a point of that came back when the rule was
+    // taken down. Both are a long way under 3:1, which is the reading that made this a
+    // defect.
     expect(contrast(colors.faint, sheet)).toBeLessThan(3);
     expect(contrast(colors.faint, sheet)).toBeCloseTo(1.78, 1);
-    expect(contrast(colors.faint, graticule)).toBeCloseTo(1.16, 1);
+    expect(contrast(colors.faint, graticule)).toBeLessThan(3);
+    expect(contrast(colors.faint, graticule)).toBeCloseTo(1.44, 1);
   });
 
   it("clears WCAG 1.4.11's 3:1 against the sheet", () => {
@@ -623,7 +633,7 @@ describe("the absent edge is visible on the paper it is drawn on", () => {
 
   it("clears it against the graticule it is drawn over as well", () => {
     // The landing's beat 2 runs the absence down a column that a major grid line sits in.
-    // `faint` scored 1.16:1 here, which is the same luminance as the graph paper.
+    // `faint` scores 1.44:1 here, which is all but the luminance of the graph paper.
     expect(contrast(absent, graticule)).toBeGreaterThanOrEqual(3);
   });
 
@@ -807,13 +817,41 @@ describe("no scene draws a node as a rectangle", () => {
     }
   });
 
+  /**
+   * Files under `components/graph/` where a `<rect>` is a region and not a node.
+   *
+   * Empty, and it is meant to stay that way. It exists because the exemption is real —
+   * `SectionLevels` draws a rectangle around level 4's harness, and a box around a region
+   * is not the rejected register — so the next author who needs one here has a declared,
+   * reviewable place to say so instead of loosening the scan.
+   */
+  const REGION_RECTS: readonly string[] = [];
+
   it("draws no node as a rectangle by hand either", () => {
     // Deleting the component and open-coding the same `<rect>` inside a scene would put
     // the register back with nothing to grep for. A `<rect>` is still allowed where it is
     // not a node: `SectionLevels` draws one around level 4's harness, which is a region.
+    //
+    // The `data-viz` net alone was not enough. `GraphThumbnail` — the drawing on all nine
+    // gallery tiles, on the profile grids and on `/spec`'s one worked example — drew
+    // every node as a rounded `<rect>` with a kind stripe and carried no viz attributes at
+    // all, so it walked straight through this case while `/blueprints` showed the reader
+    // the identical graph the landing draws as lit discs, in the register the author
+    // rejected by name, one click apart. Nothing under `components/graph/` draws a node
+    // any more, so nothing there may draw a rectangle either.
+    //
+    // The scan reads the whole file, comments included. That is deliberate — stripping
+    // them means a regex that has to know where a string ends, and a guard that quietly
+    // stops seeing half a file is worse than one that occasionally flags a sentence. A
+    // comment under `components/graph/` names the tag without its angle bracket.
     const offenders = TREE.filter((path) => {
       const text = readFileSync(join(ROOT, path), "utf8");
-      return /data-viz="node"[^>]*>\s*<rect/.test(text) || /<rect[^>]*data-viz="node"/.test(text);
+      if (/data-viz="node"[^>]*>\s*<rect/.test(text) || /<rect[^>]*data-viz="node"/.test(text)) {
+        return true;
+      }
+      return (
+        path.startsWith("components/graph/") && !REGION_RECTS.includes(path) && /<rect/.test(text)
+      );
     });
     expect(offenders).toEqual([]);
   });

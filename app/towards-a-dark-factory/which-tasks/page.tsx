@@ -49,6 +49,21 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    `WhichTasksChecks`'s second card says at greater length, and its
    link is the same link — repointed to `/spec/topology` when
    `/what-it-isnt` was removed.
+
+   ── The scale pass: this page was the last one off it ──
+   It shipped as a single `container-page flex flex-col gap-14
+   py-12` — 56px between sections and 48px of page padding, two
+   values that are not on the eight-point scale the rest of the
+   site now keeps, on the one page sitting between two that do.
+   `/spec` recorded the same conversion and the same reason: the
+   other two stops in this sequence, `/towards-a-dark-factory` and
+   `/towards-a-dark-factory/the-climb`, mark every seam with a
+   full-bleed edge and a ground change, so a reader crossing from
+   one to the next met a third rhythm in the middle of a
+   three-page route. The device here is theirs — `border-t`, an
+   alternating ground, and `py-16 sm:py-20` — and the four
+   components below it own their own headings, so each band is a
+   ground and a container and nothing else.
    ============================================================ */
 
 export const metadata: Metadata = {
@@ -64,37 +79,61 @@ const INLINE =
 
 export default function WhichTasksPage() {
   return (
-    <div className="container-page flex flex-col gap-14 py-12">
-      <header className="flex flex-col gap-6">
-        <SectionHeading
-          as="h1"
-          eyebrow="Before you build one"
-          title="Which tasks a dark factory can take"
-          lead="Four questions settle it, and all four are about the task rather than about the graph you would draw for it."
-        />
-        <WhichTasksGlance />
+    <>
+      <header className="border-b border-line bg-void py-16 sm:py-20">
+        <div className="container-page">
+          <SectionHeading
+            as="h1"
+            eyebrow="Before you build one"
+            title="Which tasks a dark factory can take"
+            lead="Four questions settle it, and all four are about the task rather than about the graph you would draw for it."
+          />
+          {/* The block tier, not the 24px this stacked at. The figure is what the lead
+              hands the reader to, and `SectionHeading` → content is 40px everywhere on
+              the site the scale reached. */}
+          <div className="mt-10">
+            <WhichTasksGlance />
+          </div>
+        </div>
       </header>
 
-      <WhichTasksExamples />
+      {/* No `border-t` on the first band: the header above it closes on its own
+          `border-b`, which is how `/the-climb` opens too. The grounds alternate from
+          here down so every seam is a change of ground as well as a rule. */}
+      <section className="bg-surface py-16 sm:py-20">
+        <div className="container-page">
+          <WhichTasksExamples />
+        </div>
+      </section>
 
-      <WhichTasksChecks />
+      <section className="border-t border-line bg-void py-16 sm:py-20">
+        <div className="container-page">
+          <WhichTasksChecks />
+        </div>
+      </section>
 
-      <WhichTasksRemedies />
+      <section className="border-t border-line bg-surface py-16 sm:py-20">
+        <div className="container-page">
+          <WhichTasksRemedies />
+        </div>
+      </section>
 
-      <div className="flex flex-col gap-6">
-        <p className="max-w-3xl text-sm leading-relaxed text-muted">
-          A yes now has somewhere to go: the{" "}
-          <Link href="/build" className={INLINE}>
-            guided path
-          </Link>
-          , and the{" "}
-          <Link href="/blueprints" className={INLINE}>
-            published graphs
-          </Link>
-          , whose authors handled the same four answers.
-        </p>
-        <RoutePager href={HERE} />
-      </div>
-    </div>
+      <section className="border-t border-line bg-void py-16 sm:py-20">
+        <div className="container-page flex flex-col gap-10">
+          <p className="prose-lane text-sm leading-relaxed text-muted">
+            A yes now has somewhere to go: the{" "}
+            <Link href="/build" className={INLINE}>
+              guided path
+            </Link>
+            , and the{" "}
+            <Link href="/blueprints" className={INLINE}>
+              published graphs
+            </Link>
+            , whose authors handled the same four answers.
+          </p>
+          <RoutePager href={HERE} />
+        </div>
+      </section>
+    </>
   );
 }

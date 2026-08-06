@@ -4,6 +4,42 @@
    DarkPrint design system
    Two poles: DARK (lights-off factory) and BLUEPRINT (cyanotype).
    Dark is the default surface; blueprint sections opt in locally.
+   ------------------------------------------------------------
+
+   ── THE CANONICAL VERTICAL SCALE ──
+   Seven named tiers, every one a multiple of 4 and mostly of 8. A value that
+   is not on this list is a number somebody typed, not a decision anybody made.
+
+     inline      8px   gap-2               glyph↔word, chip internals
+     tight      12px   gap-3 / p-3         label↔value, dense table row
+     element    16px   gap-4 / p-4         paragraph↔paragraph inside a panel
+     card       20px   gap-5 / p-5         card-grid gap, standard panel padding
+     block      40px   mt-10 / gap-10      SectionHeading→content, block↔block
+     section    64px   py-16 sm:py-20      section↔section, document-page header
+     band    80/112px  py-20 sm:py-28      full-bleed band with a ground change
+
+   Banned as structural values, each collapsing to the tier above it:
+   48 (py-12), 56 (py-14, gap-14), 32 (mt-8), 96 (mt-24). `p-6` on a panel
+   collapses to `p-5`; `p-8` collapses to `p-5` unless the panel is the whole
+   content of its section, in which case `p-8` stands.
+
+   Horizontally there is exactly one token, `--measure`, applied through
+   `.prose-lane`. It governs BODY PROSE ONLY. It is never put on a
+   `SectionHeading` lead — the author ruled twice that the lead must reach the
+   right edge of its column, and that ruling stands. Figures, tables, code
+   panes and listings keep the full container width.
+
+   ── THE Z LADDER ──
+   One ladder, five rungs. A new sticky element picks a rung; it does not
+   invent a number.
+
+     header                50
+     page chrome           40   sticky filter bars
+     section chrome        30   sticky group headings
+     card furniture        20   stars, author links
+     card hit target       10   the stretched link
+
+   Nothing inside a card may exceed 20.
    ============================================================ */
 
 @theme {
@@ -19,7 +55,7 @@
   --color-fg: #e9ebf5;
   --color-muted: #9aa1ba;
   --color-dim: #828aa3; /* ≥4.5:1 on the dark surfaces (WCAG AA) */
-  --color-faint: #3b4058; /* decorative separators only */
+  --color-faint: #3b4058; /* decorative separators only — 1.83:1, never live text, always aria-hidden */
 
   /* --- Blueprint / cyanotype pole --- */
   --color-blueprint: #0b2f7a;
@@ -27,23 +63,104 @@
   --color-blueprint-line: #74b4ff;
   --color-blueprint-ink: #cfe2ff;
 
-  /* --- Accents --- */
+  /* --- Accents ---
+     Each accent carries one meaning and the site does not spend it elsewhere:
+     cyan is interactive, violet is where a person acts, emerald is a figure
+     read off the engine, signal is a defect. */
   --color-cyan: #38bdf8;
   --color-cyan-bright: #7dd3fc;
+  /* Amber is reserved for exactly two jobs and nothing else: `ComingSoonBadge`
+     ("not built yet") and `.route-box` / `.route-label` ("this box leaves the
+     page"). If a third thing wants amber, it wants a different token. */
   --color-amber: #ffb020;
   --color-amber-bright: #ffcb5c;
   --color-violet: #a78bfa;
   --color-emerald: #34d399;
   --color-signal: #ff5470;
 
-  /* --- Radii --- */
-  --radius-xs: 3px;
-  --radius-sm: 5px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 18px;
+  /* Two more accents, `--color-key` and `--color-warn`, are declared in the
+     `@theme static` block below rather than here. Nothing consumes them yet —
+     waves 3-5 re-point the call sites — and Tailwind tree-shakes an unused
+     theme variable, so declared here they would not exist in `:root` at all and
+     the first `var(--color-key)` written in an SVG attribute would silently
+     paint nothing. */
+
+  /* --- Radii ---
+     Four steps plus `full`, and the rungs above and below are switched off so
+     nothing outside the ladder compiles at all.
+
+     `--radius` is the bare `rounded` utility, which Tailwind otherwise leaves
+     at its own untokenised 0.25rem — 67 call sites were quietly off the scale.
+     `xs` is gone because 3px and 5px are indistinguishable against a 1px
+     border, so it was a rung nobody could see. `2xl` and up are gone because
+     Tailwind's inherited `--radius-2xl` is 16px — SMALLER than this site's own
+     `--radius-xl` — so the ladder ran backwards past the fourth rung. */
+  --radius-sm: 5px; /* chips, code spans */
+  --radius-md: 8px; /* buttons, inputs, rows */
+  --radius-lg: 12px; /* .panel, .route-box, cards */
+  --radius-xl: 18px; /* full-bleed stages and sheets */
+  --radius: var(--radius-sm);
+  --radius-xs: initial;
+  --radius-2xl: initial;
+  --radius-3xl: initial;
+  --radius-4xl: initial;
+
+  /* --- Measure ---
+     The reading column: 36rem ≈ 84 characters at 15px. Applied through
+     `.prose-lane`, and only ever to body prose. */
+  --measure: 36rem;
+
+  /* --- Glow ---
+     One halo, spelled once. `components/viz/flow.ts` derives the SVG halo
+     rigorously from three stacked opacities; the DOM had five different
+     hand-typed spellings of the same gesture, so a lit control and a lit node
+     never quite agreed about what "on" looks like. Set `--glow` on the element
+     to choose the colour; the geometry is fixed.
+
+     READ THESE THROUGH THE UTILITY — `shadow-glow-sm`, `shadow-glow-md`,
+     `shadow-lift`, or `@apply` — and never through a bare
+     `box-shadow: var(--shadow-glow-md)`. A custom property resolves its own
+     `var()` references where it is DECLARED, so at `:root`, where `--glow` does
+     not exist, this token computes to guaranteed-invalid and then inherits that
+     way no matter what a descendant sets. The utility inlines the geometry onto
+     the element itself, where `--glow` is real. */
+  --shadow-glow-sm: 0 0 12px -4px var(--glow), 0 0 28px -10px var(--glow);
+  --shadow-glow-md: 0 0 20px -6px var(--glow), 0 0 48px -18px var(--glow);
+  --shadow-lift: 0 12px 40px -24px var(--glow);
 
   /* --- Fonts (values wired in @theme inline below) --- */
+}
+
+/* Tokens the compiler is not allowed to tree-shake.
+   ------------------------------------------------------------
+   `static` rather than a plain `@theme` block on purpose. Tailwind only emits a
+   theme variable it can see a utility using, which is fine for a colour that
+   five hundred `text-*` classes already reference and wrong for everything
+   below: a duration is meant to be readable from an inline style, a scene, or a
+   hand-written rule, and the two new accents have no consumer at all until
+   later waves re-point their call sites. A token that vanishes when nobody
+   happens to reference it is not a token — it is a comment. */
+@theme static {
+  /* MOTION. `--ease-out` and `--ease-in-out` also sit in Tailwind's own
+     `--ease-*` namespace, so setting them here re-points the `ease-out` /
+     `ease-in-out` utilities as well: one curve, one name, everywhere.
+     `components/viz/tokens.ts` mirrors these as `MOTION` for anime.js, which
+     accepts the `cubicBezier(...)` string form. The two must stay in step. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* THE default curve, everywhere */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-press: 120ms; /* :active */
+  --dur-fast: 160ms; /* menus, small state flips */
+  --dur-base: 180ms; /* hover / colour changes */
+  --dur-slow: 420ms;
+  --dur-reveal: 520ms; /* a figure arriving */
+
+  /* A key is a name in a document, not a status. YAML keys and node-card field
+     names were borrowing cyan, the interactive colour, which said "click me"
+     about a word that cannot be clicked. */
+  --color-key: var(--color-cyan-bright);
+  /* Warning severity. Darker and less saturated than `--color-amber`, so a
+     warning and a "not built yet" badge can never read as the same signal. */
+  --color-warn: #d9822b;
 }
 
 @theme inline {
@@ -51,6 +168,14 @@
   --font-mono: var(--font-jetbrains-mono);
   --font-display: var(--font-space-grotesk);
 }
+
+/* Every hover state in the UI layer is gated behind this.
+   ------------------------------------------------------------
+   Without it a tapped card or button on a phone latches its hover state and
+   keeps it until the route changes, because a touch pointer has no "leave".
+   `components/viz/flow.ts` already writes this media query by hand and
+   `flow.test.ts` already tests for it; the DOM layer never got it. */
+@custom-variant hoverable (@media (hover: hover) and (pointer: fine));
 
 /* ------------------------------------------------------------ */
 
@@ -93,213 +218,335 @@ body {
   background-clip: content-box;
 }
 
-/* ============================================================
-   Reusable primitives / textures
-   ============================================================ */
-
-/* Blueprint grid — thin cyan graticule on transparent bg.
-   Layer over a blue surface for the cyanotype look. */
-.bp-grid {
-  background-image:
-    linear-gradient(color-mix(in oklab, var(--color-blueprint-line) 22%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in oklab, var(--color-blueprint-line) 22%, transparent) 1px, transparent 1px),
-    linear-gradient(color-mix(in oklab, var(--color-blueprint-line) 10%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in oklab, var(--color-blueprint-line) 10%, transparent) 1px, transparent 1px);
-  background-size: 96px 96px, 96px 96px, 16px 16px, 16px 16px;
-  background-position: -1px -1px;
-}
-
-/* Dark technical dot/line grid for factory + neutral sections */
-.tech-grid {
-  background-image:
-    linear-gradient(color-mix(in oklab, var(--color-cyan) 6%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in oklab, var(--color-cyan) 6%, transparent) 1px, transparent 1px);
-  background-size: 48px 48px;
-}
-
-/* Fine dotted grid */
-.dot-grid {
-  background-image: radial-gradient(
-    color-mix(in oklab, var(--color-fg) 8%, transparent) 1px,
-    transparent 1px
-  );
-  background-size: 22px 22px;
-}
-
-/* Subtle film grain overlay (use on ::after with pointer-events:none) */
-.grain::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.04;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  mix-blend-mode: overlay;
-}
-
-/* Hairline card */
-.panel {
-  background: color-mix(in oklab, var(--color-surface) 92%, transparent);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-lg);
-}
-
-/* The one panel on a page that answers the question the page exists for.
+/* Focus ring.
    ------------------------------------------------------------
-   A stack of `.panel`s is a stack of equals, which is right until one of them is where a
-   reader should start. On `/nodes/[...id]` nine identical frames meant `Specification`,
-   which says what the node does, looked exactly like `Model, skill and servers`, which
-   is a prerequisite checklist.
+   Unlayered, and deliberately so: a keyboard ring that a component's own
+   utilities can outrank is not a guarantee.
 
-   A brighter edge and a lifted ground, and nothing else. Not a bigger heading: the
-   heading scale on that page is already doing structural work (36 → 20 → 13 → 11) and a
-   fourth size spent on emphasis would break the level it just made legible. At most one
-   per page — two leads is no lead.
+   No `border-radius` here. It looks like it is rounding the ring, but
+   `outline` has followed the element's own radius since 2023 — the
+   declaration was restyling the ELEMENT. Focusing `FavoriteStar` took its
+   computed border-radius from a circle to a 3px rounded square, mid-interaction.
 
-   This lives here rather than as Tailwind utilities at the call site because `.panel` is
-   an unlayered rule and unlayered CSS beats anything in a layer: `border-line-bright`
-   and `bg-surface-2/40` on the element resolved to the base `.panel` values and changed
-   nothing at all. A modifier next to what it modifies also keeps the two readable as one
-   decision. */
-.panel-lead {
-  background: color-mix(in oklab, var(--color-surface-2) 70%, transparent);
-  border-color: var(--color-line-bright);
-}
-
-/* A box that leaves the page.
-   ------------------------------------------------------------
-   The author, 2026-08-04: "the pages connects to other pages in a labrynth way. It is
-   not clear whther a section is ended or there is other to read. Make the box pointing
-   to other pages with a orange such to make a visual distinction with the rest
-   concepts."
-
-   So every box whose job is to send a reader somewhere else wears this, and nothing
-   else does. A reader scanning a page can then tell, without reading a word, which
-   blocks are the page and which are the exits.
-
-   ── Why shape and not only hue ──
-   This site's colours carry meaning: cyan is interactive, violet is where a person
-   acts, emerald is a figure read off the engine, signal is a defect, and amber is
-   "not built yet". Amber *is* the site's orange, so a wayfinding box and a
-   `ComingSoonBadge` cannot be told apart by hue alone, and on `/spec/scoring` they
-   appear on the same screen.
-
-   Shape carries the difference. `ComingSoonBadge` is a small uppercase pill with no
-   arrow; this is a full-width rectangle with a rule down its leading edge. A pill
-   states a status about the thing beside it. A bar with an arrow points away. Do not
-   round this to a pill, and do not put the badge in a rectangle.
-
-   ── Where this is used, and one place it is deliberately not ──
-   Both pagers, the three layer doors on `/spec`, and the climb's onward cards. The rule
-   is: a box whose job is to send a reader elsewhere wears this, and nothing else does.
-
-   `components/home/SectionDoors.tsx` is the exception and stays as it is. It draws on
-   `bg-blueprint-deep` in `blueprint-ink`, a register the rest of the site does not use,
-   and amber on that ground fights the palette rather than reading as a signpost. It also
-   does not need the help: a full-bleed section in a register of its own already says "you
-   have left the page's argument", which is the whole job. Consistency is worth having
-   because it makes a language, and a language applied where it makes a block harder to
-   read is not one. */
-.route-box {
-  background: color-mix(in oklab, var(--color-amber) 5%, transparent);
-  border: 1px solid color-mix(in oklab, var(--color-amber) 30%, transparent);
-  border-inline-start: 2px solid color-mix(in oklab, var(--color-amber) 70%, transparent);
-  border-radius: var(--radius-lg);
-  transition: border-color 150ms, background-color 150ms;
-}
-.route-box:hover {
-  background: color-mix(in oklab, var(--color-amber) 9%, transparent);
-  border-color: color-mix(in oklab, var(--color-amber) 55%, transparent);
-  border-inline-start-color: var(--color-amber);
-}
-/* The eyebrow inside one. Amber rather than the cyan `.eyebrow` spends, because inside
-   a route box the label is part of the signpost rather than a section heading. */
-.route-label {
-  font-family: var(--font-mono), monospace;
-  /* 0.6875rem = 11px. At 0.66rem this computed to 10.56px — the site's own floor is
-     11px mono, and this token sits on every wayfinding box there is: the `/spec` doors,
-     both pagers, `RoutePager`, `SpecPager`. The one label whose job is to tell a reader
-     where they can go was the smallest live text on the page. */
-  font-size: 0.6875rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-amber);
-}
-
-/* Mono label / eyebrow */
-.eyebrow {
-  font-family: var(--font-mono), monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--color-cyan);
-}
-
-/* Corner tick decoration (blueprint drawing frames) */
-.tick-frame {
-  position: relative;
-}
-.tick-frame::before,
-.tick-frame::after {
-  content: "";
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border-color: currentColor;
-  opacity: 0.6;
-}
-.tick-frame::before {
-  top: -1px;
-  left: -1px;
-  border-top: 1px solid;
-  border-left: 1px solid;
-}
-.tick-frame::after {
-  bottom: -1px;
-  right: -1px;
-  border-bottom: 1px solid;
-  border-right: 1px solid;
-}
-
-/* Page container */
-.container-page {
-  width: 100%;
-  max-width: 1200px;
-  margin-inline: auto;
-  padding-inline: 1.5rem;
-}
-
-/* Focus ring */
+   And no transition, ever. Tailwind v4's `.transition-colors` includes
+   `outline-color`, so the ring was fading from `currentColor` to cyan over
+   150ms; sampled at 60ms it is a washed blue, and a reader tabbing at
+   80–120ms per stop never sees it arrive. A focus ring is a statement of
+   fact about where the keyboard is, and a fact does not ease in. */
 :where(a, button, input, textarea, select, [tabindex]):focus-visible {
   outline: 2px solid var(--color-cyan);
   outline-offset: 2px;
-  border-radius: 3px;
+  transition-property: none;
 }
 
-/* Utility animations */
-@keyframes dash-flow {
-  to {
-    stroke-dashoffset: -1000;
+/* Cursor.
+   ------------------------------------------------------------
+   Tailwind v4 dropped preflight's `button { cursor: pointer }` and nothing
+   replaced it, so every `<button>`, `[role="tab"]` and `<summary>` on the site
+   rendered an arrow while every `<a>` beside it rendered a hand — the two
+   halves of the same affordance disagreeing about whether they are clickable.
+   Disabled controls are excluded: they are not clickable, and saying otherwise
+   is the same lie in the other direction. */
+:where(button, summary, [role="button"], [role="tab"]):not(:disabled):not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+/* ============================================================
+   Reusable primitives / textures
+
+   LAYERED, and that is the whole point of this block. Tailwind declares
+   `@layer theme, base, components, utilities` and unlayered CSS beats every
+   one of them regardless of specificity — so while these rules sat outside a
+   layer, a single class here silently outranked any utility a call site put on
+   the same element. Six overrides were provably dead: a 2px cyan top rule on
+   `/the-climb` computed as a 1px `--color-line` hairline, and four
+   `bg-surface-2/40` panels on the upload flow changed nothing at all.
+
+   A primitive is a default. A utility at the call site is a decision about one
+   element. The decision has to win.
+   ============================================================ */
+
+@layer components {
+  /* Blueprint grid — thin cyan graticule on transparent bg.
+     Layer over a blue surface for the cyanotype look.
+
+     The stops were 22%/10% and are now 12%/5%. At the old weight the graph
+     paper on a gallery thumbnail was brighter than the node drawn on it, which
+     inverts the one relation this whole visual language rests on: a lit figure
+     on a dark ground. The sheet is the ground. It recedes. */
+  .bp-grid {
+    background-image:
+      linear-gradient(color-mix(in oklab, var(--color-blueprint-line) 12%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--color-blueprint-line) 12%, transparent) 1px, transparent 1px),
+      linear-gradient(color-mix(in oklab, var(--color-blueprint-line) 5%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--color-blueprint-line) 5%, transparent) 1px, transparent 1px);
+    background-size: 96px 96px, 96px 96px, 16px 16px, 16px 16px;
+    background-position: -1px -1px;
+  }
+
+  /* Dark technical dot/line grid for factory + neutral sections */
+  .tech-grid {
+    background-image:
+      linear-gradient(color-mix(in oklab, var(--color-cyan) 6%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--color-cyan) 6%, transparent) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* Fine dotted grid */
+  .dot-grid {
+    background-image: radial-gradient(
+      color-mix(in oklab, var(--color-fg) 8%, transparent) 1px,
+      transparent 1px
+    );
+    background-size: 22px 22px;
+  }
+
+  /* Subtle film grain overlay (use on ::after with pointer-events:none) */
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+  }
+
+  /* Hairline card */
+  .panel {
+    background: color-mix(in oklab, var(--color-surface) 92%, transparent);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-lg);
+  }
+
+  /* The one panel on a page that answers the question the page exists for.
+     ------------------------------------------------------------
+     A stack of `.panel`s is a stack of equals, which is right until one of them is where a
+     reader should start. On `/nodes/[...id]` nine identical frames meant `Specification`,
+     which says what the node does, looked exactly like `Model, skill and servers`, which
+     is a prerequisite checklist.
+
+     A brighter edge and a lifted ground, and nothing else. Not a bigger heading: the
+     heading scale on that page is already doing structural work (36 → 20 → 13 → 11) and a
+     fourth size spent on emphasis would break the level it just made legible. At most one
+     per page — two leads is no lead.
+
+     This lives here rather than as Tailwind utilities at the call site because a modifier
+     next to what it modifies keeps the two readable as one decision. It used to live here
+     for a second reason as well — `.panel` was unlayered, so `border-line-bright` and
+     `bg-surface-2/40` on the element resolved to the base `.panel` values and changed
+     nothing at all. That is no longer true: this block is layered now, and a utility at a
+     call site wins. Which means the four upload-flow panels that asked for
+     `bg-surface-2/40` and got nothing will start getting it. */
+  .panel-lead {
+    background: color-mix(in oklab, var(--color-surface-2) 70%, transparent);
+    border-color: var(--color-line-bright);
+  }
+
+  /* A box that leaves the page.
+     ------------------------------------------------------------
+     The author, 2026-08-04: "the pages connects to other pages in a labrynth way. It is
+     not clear whther a section is ended or there is other to read. Make the box pointing
+     to other pages with a orange such to make a visual distinction with the rest
+     concepts."
+
+     So every box whose job is to send a reader somewhere else wears this, and nothing
+     else does. A reader scanning a page can then tell, without reading a word, which
+     blocks are the page and which are the exits.
+
+     ── Why shape and not only hue ──
+     This site's colours carry meaning: cyan is interactive, violet is where a person
+     acts, emerald is a figure read off the engine, signal is a defect, and amber is
+     "not built yet". Amber *is* the site's orange, so a wayfinding box and a
+     `ComingSoonBadge` cannot be told apart by hue alone, and on `/spec/scoring` they
+     appear on the same screen.
+
+     Shape carries the difference. `ComingSoonBadge` is a small uppercase pill with no
+     arrow; this is a full-width rectangle with a rule down its leading edge. A pill
+     states a status about the thing beside it. A bar with an arrow points away. Do not
+     round this to a pill, and do not put the badge in a rectangle.
+
+     ── Where this is used, and one place it is deliberately not ──
+     Both pagers, the three layer doors on `/spec`, and the climb's onward cards. The rule
+     is: a box whose job is to send a reader elsewhere wears this, and nothing else does.
+
+     `components/home/SectionDoors.tsx` is the exception and stays as it is. It draws on
+     `bg-blueprint-deep` in `blueprint-ink`, a register the rest of the site does not use,
+     and amber on that ground fights the palette rather than reading as a signpost. It also
+     does not need the help: a full-bleed section in a register of its own already says "you
+     have left the page's argument", which is the whole job. Consistency is worth having
+     because it makes a language, and a language applied where it makes a block harder to
+     read is not one. */
+  .route-box {
+    background: color-mix(in oklab, var(--color-amber) 5%, transparent);
+    border: 1px solid color-mix(in oklab, var(--color-amber) 30%, transparent);
+    border-inline-start: 2px solid color-mix(in oklab, var(--color-amber) 70%, transparent);
+    border-radius: var(--radius-lg);
+    transition:
+      border-color var(--dur-base) var(--ease-out),
+      background-color var(--dur-base) var(--ease-out);
+  }
+  /* Gated on a fine pointer for the same reason the `hoverable` variant exists: a tap
+     on a phone has no "leave", so an ungated hover latches the brightened edge on
+     whichever exit the reader last touched and leaves it brighter than the one they
+     are reading. */
+  @media (hover: hover) and (pointer: fine) {
+    .route-box:hover {
+      background: color-mix(in oklab, var(--color-amber) 9%, transparent);
+      border-color: color-mix(in oklab, var(--color-amber) 55%, transparent);
+      border-inline-start-color: var(--color-amber);
+    }
+  }
+  /* The eyebrow inside one. Amber rather than the cyan `.eyebrow` spends, because inside
+     a route box the label is part of the signpost rather than a section heading. */
+  .route-label {
+    font-family: var(--font-mono), monospace;
+    /* 0.6875rem = 11px. At 0.66rem this computed to 10.56px — the site's own floor is
+       11px mono, and this token sits on every wayfinding box there is: the `/spec` doors,
+       both pagers, `RoutePager`, `SpecPager`. The one label whose job is to tell a reader
+       where they can go was the smallest live text on the page. */
+    font-size: 0.6875rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-amber);
+  }
+
+  /* ── The three mono tiers, and there are only three ──
+     ------------------------------------------------------------
+     `.eyebrow` names a page or a full-bleed band. `.label-lead` titles a panel or a
+     block — the thing a reader starts at. `.label` heads a column or tags a value.
+     11px is the absolute floor and there are no exceptions to it; `.eyebrow` was
+     0.72rem, which is 11.52px, a subpixel size contradicting the floor that
+     `.route-label` writes down two rules above.
+
+     The tracking runs BACKWARDS against the size on purpose: the 14px tier tracks
+     tighter (0.14em) than the 11px tier (0.18em). That is how a technical drawing
+     sheet ranks a title block against its callouts, and it means the two tiers can
+     never again be told apart only by 2px of size — which is what happened when
+     seven files each hand-typed `font-mono text-[11px] uppercase tracking-[0.18em]
+     text-dim` and one of them meant it as a heading.
+
+     A mono uppercase run is a LABEL, and a label is not a heading level. If it needs
+     to appear in the document outline it is a `PanelHeading`, not a `.label`. */
+  .eyebrow {
+    font-family: var(--font-mono), monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-cyan);
+  }
+  .label-lead {
+    font-family: var(--font-mono), monospace;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    color: var(--color-fg);
+  }
+  .label {
+    font-family: var(--font-mono), monospace;
+    font-size: 0.6875rem;
+    font-weight: 400;
+    letter-spacing: 0.18em;
+    line-height: 1.3;
+    text-transform: uppercase;
+    color: var(--color-dim);
+  }
+
+  /* Corner tick decoration (blueprint drawing frames) */
+  .tick-frame {
+    position: relative;
+  }
+  .tick-frame::before,
+  .tick-frame::after {
+    content: "";
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-color: currentColor;
+    opacity: 0.6;
+  }
+  .tick-frame::before {
+    top: -1px;
+    left: -1px;
+    border-top: 1px solid;
+    border-left: 1px solid;
+  }
+  .tick-frame::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 1px solid;
+    border-right: 1px solid;
+  }
+
+  /* Page container */
+  .container-page {
+    width: 100%;
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+  }
+
+  /* The reading column.
+     ------------------------------------------------------------
+     One token, one class, one number, for every paragraph of body prose on the
+     site — replacing `max-w-3xl`, `max-w-2xl`, `max-w-[62ch]`, `max-w-[74ch]`,
+     `max-w-[68ch]` and `max-w-[52rem]`, which were six answers to one question.
+     Figures, tables, code panes and listings are NOT prose and keep the full
+     container. A `SectionHeading` lead is not prose either — it is a deck, it
+     reaches the right edge, and that is a standing ruling. */
+  .prose-lane {
+    max-width: var(--measure);
+  }
+
+  /* A lit thing.
+     ------------------------------------------------------------
+     The DOM half of the luminous register. `components/viz/flow.ts` derives the
+     SVG halo from three stacked opacities; this is the same gesture for an HTML
+     element, so a lit disc in a figure and a lit control in the chrome agree
+     about what "on" looks like. Re-point `--glow` to change the colour without
+     restating the geometry.
+
+     `@apply` rather than `box-shadow: var(--shadow-glow-md)`, and the difference
+     is not stylistic: the token references `--glow`, and a custom property
+     resolves its own `var()`s where it is declared. Written the direct way the
+     token computes to guaranteed-invalid at `:root` and inherits down as
+     nothing, so `.lit` would paint no shadow at all. `@apply` inlines the
+     geometry into this rule, where `--glow` exists. */
+  .lit {
+    --glow: var(--color-cyan);
+    @apply shadow-glow-md;
+  }
+
+  /* A dropdown arriving.
+     ------------------------------------------------------------
+     `@starting-style` rather than a keyframe, because the panel is inside a
+     `<details>`: there is no mount to hook, the browser simply starts painting
+     it. The transform origin is the corner it hangs from, so it reads as the
+     panel unfolding out of the trigger rather than as a box growing in place.
+
+     Additive in the strict sense: the resting state IS the finished state, so a
+     panel that never gets its starting style is a panel that is simply open. */
+  details[open] > .menu-panel {
+    opacity: 1;
+    transform: scale(1);
+    transform-origin: top right;
+    transition:
+      opacity var(--dur-fast) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out);
+
+    @starting-style {
+      opacity: 0;
+      transform: scale(0.97);
+    }
   }
 }
-@keyframes pulse-soft {
-  0%, 100% { opacity: 0.55; }
-  50% { opacity: 1; }
-}
-@keyframes float-y {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-@keyframes scan {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(200%); }
-}
-.anim-pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
-.anim-float { animation: float-y 5s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  .anim-pulse-soft, .anim-float { animation: none; }
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 /* One cell of a staggered strip arriving.

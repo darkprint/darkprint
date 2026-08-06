@@ -201,23 +201,31 @@ export function WhichTasksGlance() {
           it now carries alone. `WhichTasksRemedies` used to open its third card with this
           caption's 04 sentence word for word; that copy is the one that went, and this is
           the one that stayed, because it stands beside the branch it describes. */}
-      <figcaption className="flex flex-col gap-4 text-sm leading-relaxed text-muted lg:pt-2">
+      {/* The scale pass put `.prose-lane` on it. This caption is body prose and it had no
+          measure at all, so on a 1440 it ran the full 1152px container — roughly 180
+          characters a line at 14px, the widest paragraph on the route, sitting directly
+          under a figure whose whole job is to be taken in at a glance. The drawing keeps
+          the container; the reading of it does not, which is the rule `FigureFrame`
+          already carries on `/spec`.
+
+          The two callouts are `.label` now. They were `tracking-[0.14em]` at 11px, which
+          is the 14px tier's tracking on the 11px tier's size — the exact collision the
+          three mono tiers were separated to make impossible. Their colours stay: they are
+          the figure's own two branches quoted in the caption that reads it, so the amber
+          edge above and the amber callout here have to match. */}
+      <figcaption className="prose-lane flex flex-col gap-4 text-sm leading-relaxed text-muted lg:pt-2">
         <p>
           A dark factory runs with nobody watching it, so the design rests on one property
           of the work: whether something other than your judgement can tell the
           graph it is finished.
         </p>
         <p>
-          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-amber">
-            01 to 03{" "}
-          </span>
+          <span className="label text-amber">01 to 03</span>{" "}
           name something missing you can supply: a harness nobody has written, a target
           nobody has decided. Answer them and ask again.
         </p>
         <p>
-          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-violet">
-            04{" "}
-          </span>
+          <span className="label text-violet">04</span>{" "}
           works differently. No amount of coverage makes a wrong answer cheap once it is in
           production, so the graph changes instead of the task: a person at the step where a
           mistake becomes expensive, everything upstream running unattended.

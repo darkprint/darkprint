@@ -37,6 +37,15 @@
        so the prerendered markup *is* the static layout and hydration
        agrees with it before anything moves.
 
+   One thing is added on top of all three rather than taken from any
+   of them: at `lg` each of the seven heads is a button that puts the
+   page where its own step is the one being read. The rail collapses
+   six heads out of seven, so the argument's later notes depend on
+   earlier ones the reader can no longer see, and scrolling back up by
+   feel through a pinned section is not a way to re-read a sentence.
+   The button is additive in the strict sense — it exists only where
+   `motion` is true, so the static list is the list it always was.
+
    The dezoom is written straight to the DOM from `onProgress` rather
    than through React state. The reel and the seven steps are
    discrete and re-render happily a hundred times across the scroll;
@@ -47,11 +56,12 @@
    properties are written to, so the two never fight over it.
    ============================================================ */
 
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { animate } from "animejs";
 
-import { Sheet, VIZ, toneColor } from "@/components/viz";
+import { MOTION, Sheet, VIZ, toneColor } from "@/components/viz";
+import { EASE_OUT } from "@/components/viz/easing";
 import { stagesShown, useScrollProgress } from "@/components/viz/useScrollProgress";
 import { Ticked } from "@/components/nodes/VersionHistory";
 import { cx } from "@/lib/format";
@@ -60,12 +70,14 @@ import { resolveAnnotations } from "./annotations";
 import { DezoomGraph, LANDING_ORIGIN } from "./DezoomGraph";
 import {
   NC,
+  STAGE_HEIGHT,
   STEP_RESERVE,
   bandCentre,
   dezoom,
   leaderPath,
   railCentre,
   reelShift,
+  stepScrollTop,
 } from "./geometry";
 import { YamlListing } from "./YamlListing";
 import { tokenizeYaml } from "./yaml";
@@ -76,6 +88,12 @@ import { tokenizeYaml } from "./yaml";
  * written to it imperatively, and a style prop rebuilt each render would race them.
  */
 const CARD_STYLE: React.CSSProperties = { transformOrigin: LANDING_ORIGIN };
+
+/**
+ * The stage's height, hoisted for the same reason and set at every width. It is inert
+ * until the `lg:h-[var(--nc-stage)]` utility reads it, which is only emitted with motion.
+ */
+const STAGE_STYLE = { "--nc-stage": STAGE_HEIGHT } as React.CSSProperties;
 
 /** Two digits, so the rail's numbers form a column rather than a ragged edge. */
 function two(n: number): string {
@@ -140,12 +158,24 @@ export function NodeCardStage({
       : leaderPath(bandCentre(current, shift), railCentre(active), NC.gutter);
 
   /*
-   * The leader draws itself as each step attaches.
+   * The leader reaches for each step as it attaches.
    *
    * `pathLength={1}` is what makes this need no measurement: the browser rescales the
    * path's own length to 1, so a dash array of 1 is exactly the whole run whatever the
-   * elbow's real geometry is, and anime.js only has to walk the offset from 1 to 0. The
-   * attribute in the markup is `0`, so with no JS the leader is drawn.
+   * elbow's real geometry is, and anime.js only has to walk the offset. The attribute in
+   * the markup is `0`, so with no JS the leader is drawn.
+   *
+   * It used to walk that offset from 1 — from nothing — over 420ms. But `d` is recomputed
+   * in the same render, so the elbow was already standing somewhere else by the time the
+   * draw began: the line vanished, jumped, and rebuilt itself from the listing edge on
+   * every step, which reads as a glitch rather than as a connection. From 0.35 the run is
+   * already there and only its last third travels, so what the reader sees is the leader
+   * reaching across to its new head. Two thirds of the distance in half the time.
+   *
+   * `revert()` and not `pause()` on the way out. A paused animation leaves its inline
+   * `stroke-dashoffset` behind wherever it stopped, so an interrupted step stranded a
+   * partly drawn leader that nothing would ever finish; reverting hands the element back
+   * to the `strokeDashoffset={0}` in the markup, which is the drawn state.
    *
    * `offsetParent` is null while an element is `display: none`, which is the gutter's
    * state through the whole stacked layout. Reading it is how this asks "is the
@@ -158,23 +188,64 @@ export function NodeCardStage({
     const gutter = gutterRef.current;
     if (path === null || gutter === null || gutter.offsetParent === null) return;
     const drawn = animate(path, {
-      strokeDashoffset: [1, 0],
-      duration: 420,
-      ease: "outQuad",
+      strokeDashoffset: [0.35, 0],
+      // Shorter than the reel's own 500ms glide underneath it, so the line has arrived by
+      // the time the run it points at stops moving.
+      duration: 240,
+      ease: EASE_OUT,
     });
     const body = listRef.current?.querySelector('[data-nc-body="active"]');
     const raised =
       body === null || body === undefined
         ? undefined
-        : animate(body, { opacity: [0, 1], translateY: [8, 0], duration: 420, ease: "outQuad" });
+        : animate(body, {
+            opacity: [0, 1],
+            translateY: [8, 0],
+            duration: MOTION.slow,
+            ease: EASE_OUT,
+          });
     return () => {
-      drawn.pause();
-      raised?.pause();
+      drawn.revert();
+      raised?.revert();
     };
   }, [motion, active]);
 
+  /*
+   * Any of the seven notes, on demand.
+   *
+   * The rail collapses six of the seven heads at `lg`, so a reader who has reached note 07
+   * ("What must never arrive") cannot re-read note 04 ("What it can reach") that the
+   * seventh depends on without scrolling back up by feel. `stepScrollTop` inverts the
+   * `progress -> step` map the whole section is driven by, so a head can put the page
+   * exactly where that step is the one being read.
+   *
+   * Below `lg` there is no pin to travel and no reel to drive, and the same `offsetParent`
+   * probe the leader uses answers that without a second `matchMedia`. There, every note is
+   * already open, so "go to note 4" means bringing note 4 to the top of the screen.
+   */
+  const goToStep = useCallback(
+    (index: number) => {
+      const section = ref.current;
+      const gutter = gutterRef.current;
+      if (section === null) return;
+      if (gutter === null || gutter.offsetParent === null) {
+        listRef.current?.children.item(index)?.scrollIntoView({
+          block: "start",
+          behavior: "smooth",
+        });
+        return;
+      }
+      const rect = section.getBoundingClientRect();
+      window.scrollTo({
+        top: stepScrollTop(index, count, window.scrollY + rect.top, rect.height, window.innerHeight),
+        behavior: "smooth",
+      });
+    },
+    [count, ref],
+  );
+
   return (
-    <div ref={ref} className={cx("relative", motion && "lg:h-[420vh]")}>
+    <div ref={ref} style={STAGE_STYLE} className={cx("relative", motion && "lg:h-[var(--nc-stage)]")}>
       <div className={cx("relative", motion && "lg:sticky lg:top-24")}>
         {/* ---------- the card, which shrinks ---------- */}
         <div
@@ -200,14 +271,45 @@ export function NodeCardStage({
             <div
               className={cx(
                 "flex flex-col gap-8",
+                /* 28px of gutter and a 20rem rail, which is 96px more column for the
+                   listing than the 44/22rem it had. The card's longest row measures 784px
+                   and the listing had 708: sixteen of the fifty-two rows were cut, and the
+                   `action`, `spec`, `description` and `notes` blocks the annotations are
+                   about are exactly the long ones. At 756px two rows overflow. 20rem is
+                   the floor for the rail: an annotation body is capped at 300 characters
+                   against a 132px box, which is six lines at 13px in a 320px column and
+                   seven in anything narrower. */
                 motion &&
-                  "lg:grid lg:grid-cols-[minmax(0,1fr)_44px_minmax(0,22rem)] lg:items-start lg:gap-0",
+                  "lg:grid lg:grid-cols-[minmax(0,1fr)_28px_minmax(0,20rem)] lg:items-start lg:gap-0",
               )}
             >
               {/* ---------- the listing ---------- */}
               <div
+                /* A scroll container with no focusable child cannot be reached from the
+                   keyboard at all (WCAG 2.1.1, Level A): there is nothing to tab to, so
+                   whatever runs past the right edge is available to a mouse and to nobody
+                   else. `role="region"` with a name is what makes the stop worth having.
+                   `CardWalk` carries the same pair over the same listing. */
+                tabIndex={0}
+                role="region"
+                aria-label={`${cardRef}, ${lines.length} lines`}
                 className={cx(
                   "overflow-x-auto rounded border border-blueprint/70 bg-void/70",
+                  /* The right edge, faded, so what is left over reads as an edge rather
+                     than as a cut. Widening the column takes the overflow from sixteen
+                     rows to two, and no column this figure can be given holds a 102
+                     character line beside seven notes. It has to be on THIS element and
+                     not on the reel inside it: the mask is painted over the scroll
+                     container's own box, which is the part that stays still while the
+                     content moves under it.
+
+                     1.5rem, where `CardWalk` uses 3rem over the same listing, because the
+                     two are hiding different amounts. There, 137px runs past the edge and
+                     the fade has to be legible as an edge in its own right. Here it is
+                     30px on two rows out of fifty-two, and a 3rem fade reached back far
+                     enough to dim the last three characters of every 95-character line
+                     that *does* fit, which states a truncation that is not there. */
+                  "[mask-image:linear-gradient(to_right,black_calc(100%_-_1.5rem),transparent)]",
                   motion && "lg:h-[420px] lg:overflow-y-hidden",
                 )}
               >
@@ -270,7 +372,10 @@ export function NodeCardStage({
                       <div
                         className={cx(
                           "flex items-baseline gap-3",
-                          motion && "lg:h-9 lg:items-center lg:overflow-hidden",
+                          /* `relative` only with motion, because it is only there to hold
+                             the head button's stretched hit target, and the static list
+                             has no button in it. */
+                          motion && "relative lg:h-9 lg:items-center lg:overflow-hidden",
                         )}
                       >
                         {/* Same split as the listing's marking: the base classes are the
@@ -290,13 +395,43 @@ export function NodeCardStage({
                         >
                           {two(annotation.step)}
                         </span>
+                        {/* The heading stays a heading and the button goes inside it.
+                            `<h3>` is flow content and a button may only hold phrasing
+                            content, so the other way round is invalid markup and flattens
+                            the heading out of the document outline; an accordion header
+                            has this shape for the same reason. The button's own text is
+                            the note's title, so its accessible name is what the reader
+                            sees rather than "01 What it can reach L19-21".
+
+                            NO STRETCHED `after:inset-0` HIT TARGET, and this is the second
+                            attempt: one was written, and a press scale on the same element
+                            silently unbuilds it. `transform` makes an element the
+                            containing block for its own absolutely positioned pseudo, so
+                            the instant `:active` applied, the target collapsed from the
+                            320px row to the 132px title, `mouseup` landed outside the
+                            element `mousedown` had gone to, and Chrome dispatched the click
+                            on the row instead of on the button. The head simply did not
+                            respond to a click on its right half. `lg:h-9` gives the button
+                            the row's own height instead: a 132x36 target, past WCAG 2.5.8's
+                            24x24 floor, and it presses as itself. */}
                         <h3
                           className={cx(
                             "text-sm font-medium text-fg",
                             motion && !attached && "lg:text-dim",
                           )}
                         >
-                          {annotation.title}
+                          {motion ? (
+                            <button
+                              type="button"
+                              onClick={() => goToStep(index)}
+                              aria-current={isActive ? "step" : undefined}
+                              className="cursor-pointer text-left transition-[transform,scale,color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:text-cyan hoverable:active:scale-[0.97] lg:flex lg:h-9 lg:items-center"
+                            >
+                              {annotation.title}
+                            </button>
+                          ) : (
+                            annotation.title
+                          )}
                         </h3>
                         <span className="ml-auto shrink-0 font-mono text-[11px] text-dim">
                           {annotation.from === annotation.to

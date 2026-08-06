@@ -64,22 +64,40 @@ export async function generateMetadata({ params }: PageProps<"/nodes/[...id]">) 
 
 /* --------------------- small local furniture --------------------- */
 
-/**
- * The two label steps, which used to be one.
- *
- * `LABEL` was every section heading on this page *and* every sub-group label inside
- * them: `Interfaces` and `Cannot receive` were set exactly like `Phases`, `Agent`,
- * `Tools` and `Parameters`, at 11px `text-dim`. Eleven label strings across three
- * structural levels in one style, on a page 4300–5500px long where the section heading
- * is the only wayfinding there is. Below it the H1 is 36px, so the type scale stepped
- * 36 → 11 with nothing in between and 65% of the page's characters at 12px or under.
- *
- * `SECTION` is the step that was missing: same mono and same tracking, so it still reads
- * as the same family, but 13px and `text-fg` — brighter and larger than anything nested
- * inside it. A reader scanning for a section now has one thing to look for.
- */
-const SECTION = "font-mono text-[13px] uppercase tracking-[0.18em] text-fg";
-const LABEL = "font-mono text-[11px] uppercase tracking-[0.18em] text-dim";
+/* ============================================================
+   The mono tiers on this page, and there are only the two.
+   ------------------------------------------------------------
+   This file used to declare its own pair, `SECTION` (13px/0.18em
+   `text-fg`) and `LABEL` (11px/0.18em `text-dim`), and around them
+   four more spellings grew: 12px/0.18em amber for a block title,
+   11px/0.14em dim and 11px/0.14em violet for the two prohibition
+   badges, 11px/0.14em dim for the digest caption, and the field
+   table's own 12px amber keys. Measured live: six mono uppercase
+   tiers between 11px and 13px, on the site's longest page.
+
+   Both constants are gone in favour of `.label-lead` and `.label`
+   from `globals.css`, which are the same two steps drawn once for
+   the whole site — 14px/0.14em `text-fg` for the thing a reader
+   starts at, 11px/0.18em `text-dim` for a column header or a meta
+   label. The tracking runs backwards against the size on purpose;
+   the rule is written out beside the classes.
+
+   The rule that comes with them: **a mono uppercase run is a
+   LABEL, and a label is not a heading level.** Every panel title
+   here is a real `<h2>` wearing `.label-lead`, and the two `<h3>`s
+   that were only sub-group captions (`Notes from the author`,
+   `Risk markers`) are `<span className="label">` now and stop
+   claiming an outline position they never earned.
+
+   Two panel titles on this page are drawn by components no wave
+   touches — `components/nodes/VersionHistory.tsx` and
+   `components/ui/SourcePanel.tsx` both hard-code the old
+   13px/0.18em spelling — which is why the six titles stay in the
+   mono register rather than being promoted to display type. A
+   32px `Specification` beside a 13px `Card source` would fracture
+   the row this pass exists to unify; 14px `.label-lead` beside
+   13px does not.
+   ============================================================ */
 
 /**
  * Main-column panel: a hairline header bar over its body, like the schematic's.
@@ -449,7 +467,7 @@ const FIELD_ROWS: readonly FieldRow[] = [
                 <>
                   {" "}
                   Costs{" "}
-                  <span className="text-amber">{formatWeight(risk.weight)}</span> of the
+                  <span className="text-warn">{formatWeight(risk.weight)}</span> of the
                   blueprint&apos;s security reading.
                 </>
               )}
@@ -480,6 +498,7 @@ function Panel({
   label,
   meta,
   lead = false,
+  className,
   children,
 }: {
   id: string;
@@ -487,12 +506,24 @@ function Panel({
   meta?: string;
   /** The panel a reader should land on first. At most one per page. */
   lead?: boolean;
+  /**
+   * The call site's own classes, and in practice its own `scroll-mt-`.
+   *
+   * The offset below is already unconditional, so nothing here needs one to work.
+   * `components/site/anchors.test.ts` reads the *source*, though, and the tag it
+   * finds for `id="specification"` is this component's call site, where the id is a
+   * prop rather than an attribute — so the guard cannot see the offset that the
+   * component supplies. `SidePanel` below already carries this prop for exactly that
+   * reason. Passing `scroll-mt-24` beside the id keeps the guard honest about the
+   * five anchors the card map now links, rather than teaching it to look away.
+   */
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
     <section
       id={id}
-      className={cx("panel scroll-mt-24 overflow-hidden", lead && "panel-lead")}
+      className={cx("panel scroll-mt-24 overflow-hidden", lead && "panel-lead", className)}
       aria-labelledby={`${id}-heading`}
     >
       {/* The meta sits beside its heading, not at the far edge.
@@ -504,7 +535,7 @@ function Panel({
           `justify-between` the position is the whole problem. Left-aligned with a fixed
           gap, the pair reads as one line and wraps together. */}
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line px-4 py-3">
-        <h2 id={`${id}-heading`} className={SECTION}>
+        <h2 id={`${id}-heading`} className="label-lead">
           {label}
         </h2>
         {meta !== undefined && (
@@ -546,7 +577,7 @@ function SidePanel({
       className={cx("panel p-5", className)}
       aria-labelledby={`${id}-heading`}
     >
-      <h2 id={`${id}-heading`} className={cx(SECTION, "mb-4 block")}>
+      <h2 id={`${id}-heading`} className="label-lead mb-4 block">
         {label}
       </h2>
       {children}
@@ -554,13 +585,116 @@ function SidePanel({
   );
 }
 
-/** A vocabulary term, rendered as the violet code chip the ontology pages use. */
+/** One row of the card map: where a section is, and how much is in it. */
+interface MapEntry {
+  /** Written as a literal at the call site, never derived. See `CardMap`. */
+  href: string;
+  /** The section's own label, so the rail and the panel cannot drift apart. */
+  label: string;
+  /** One figure, so a reader can tell a 20-word section from a 1500px one. */
+  meta: string;
+  /**
+   * The `:target` mark, spelled out per row because Tailwind scans source text.
+   *
+   * `body:has(#fields:target) &` is the whole mechanism: the page is static and there
+   * is no scroll spy, so "the current section" means the one the reader jumped to,
+   * which is exactly what `:target` is. No JavaScript, nothing to hydrate, and the
+   * unmarked state — every rule `--color-line` — is already the finished drawing.
+   */
+  mark: string;
+}
+
+/**
+ * The rail's third panel, on space that was already paid for.
+ *
+ * The aside is `position: sticky` and 464px tall in a column 4073px long, so from
+ * roughly y=863 down there were about 355px of visible empty rail on every screen for
+ * the remaining three and a half viewports — three captures of this page in a row show
+ * the same two panels frozen with nothing beneath them. Meanwhile the field table is
+ * 1460px, 36% of the page, and was the block most in need of a way in.
+ *
+ * Six rows, one per section, each with the one figure that says how much is behind it.
+ * It is a `<nav>` rather than a `<section>` because that is what it is, and it is not
+ * hidden below `lg`: on a phone the aside stacks under the main column, where the same
+ * six links read as a way back up rather than a way in. A list of six anchors is worth
+ * having in both places; hiding content by viewport is not.
+ */
+function CardMap({ entries }: { entries: readonly MapEntry[] }) {
+  return (
+    <nav aria-labelledby="card-map-heading" className="panel p-5">
+      <span id="card-map-heading" className="label-lead mb-4 block">
+        On this card
+      </span>
+      <ul className="flex flex-col">
+        {entries.map((entry) => (
+          <li key={entry.href}>
+            <a
+              href={entry.href}
+              className={cx(
+                "group flex items-baseline justify-between gap-3 border-l-2 border-l-line py-2 pl-3",
+                "transition-[transform,scale,color,background-color,border-color] duration-[var(--dur-base)] ease-out",
+                "hoverable:hover:border-l-line-bright hoverable:hover:bg-surface-2/60",
+                "active:scale-[0.99] active:duration-[var(--dur-press)]",
+                entry.mark,
+              )}
+            >
+              <span className="min-w-0 text-sm leading-snug text-fg hoverable:group-hover:text-cyan">
+                {entry.label}
+              </span>
+              <span className="label shrink-0">{entry.meta}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+/**
+ * The chip geometry every pill on this page shares, and the press it answers with.
+ *
+ * `leading-none` so an 11px pill is 11 + 8 + 2 tall rather than whatever the inherited
+ * line-height happens to make it, which is what let two chips at the same font size sit
+ * at two different heights in the same row.
+ *
+ * `CHIP_PRESS` is written out rather than folded into `CHIP` because two chips on this
+ * page are statements rather than controls, and a press on something that cannot be
+ * pressed is a lie. The property list names `scale` explicitly: Tailwind v4 emits
+ * `scale:` as its own CSS property, so a hand-written `transition-[transform,…]` list
+ * does not cover it and the press would snap instead of ramping.
+ */
+const CHIP =
+  "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] leading-none";
+const CHIP_PRESS =
+  "transition-[transform,scale,color,background-color,border-color] duration-[var(--dur-base)] ease-out active:scale-[0.97] active:duration-[var(--dur-press)]";
+
+/** The one link chip: cyan ground, cyan edge, and a brighter edge under a fine pointer. */
+const CHIP_LINK = "border-cyan/40 bg-cyan/10 text-cyan hoverable:hover:border-cyan";
+
+/**
+ * A link into the vocabulary, drawn once.
+ *
+ * ── One shape ──
+ * This page drew the same meaning — "a reference into the ontology" — in two chips at
+ * once: this one at `rounded` / `px-2 py-0.5` / 12px, and the header's type and phase
+ * chips at `rounded-full` / `px-2.5 py-1` / 11px. Two radii and two sizes, on screen
+ * together on every card that declares a tool or an enforced prohibition. The pill wins
+ * because the header's row is where a reader meets the shape first.
+ *
+ * ── One colour ──
+ * Cyan, not violet. These are links, and cyan is this site's interactive colour;
+ * violet is reserved for where a person acts, which `lib/format.ts`'s
+ * `HUMAN_PRESENCE_MARK` names and `components/ui/autonomy-surfaces.test.ts` guards. A
+ * vocabulary chip in violet spends the human-presence colour on a word nobody stands
+ * behind, which is exactly what made the `⏸ human in the loop` chip beside it — the one
+ * chip here that really is about a person — indistinguishable from its neighbours.
+ */
 function TermChip({ href, label, aria }: { href: string; label: string; aria: string }) {
   return (
     <Link
       href={href}
       aria-label={aria}
-      className="inline-flex items-center rounded border border-violet/40 bg-violet/10 px-2 py-0.5 font-mono text-[12px] text-violet transition-colors hover:border-violet"
+      className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}
     >
       {label}
     </Link>
@@ -723,15 +857,69 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   const downloads = downloadsFor(card.id);
   const specWords = card.spec.trim().split(/\s+/).filter(Boolean).length;
 
+  /* The rail's map of this page.
+     ------------------------------------------------------------
+     Every `href` is a literal, and so is every `:target` mark. Both are read out of
+     the source rather than out of the DOM — `components/site/anchors.test.ts` walks
+     `href: "#…"` written in a table for exactly this shape, and Tailwind's scanner
+     only compiles a class it can see spelled out. Deriving either from `label` would
+     produce links no guard checks and marks that never compile, which is the failure
+     mode both tools were written to catch. */
+  const cardMap: readonly MapEntry[] = [
+    {
+      href: "#specification",
+      label: "Specification",
+      meta: `${specWords} words`,
+      mark: "[body:has(#specification:target)_&]:border-l-cyan",
+    },
+    {
+      href: "#interfaces",
+      label: "Interfaces",
+      meta: `${card.inputs.length} in · ${card.outputs.length} out`,
+      mark: "[body:has(#interfaces:target)_&]:border-l-cyan",
+    },
+    {
+      href: "#prohibitions",
+      label: "Cannot receive",
+      meta: prohibitions.length === 0 ? "none" : `${prohibitions.length} declared`,
+      mark: "[body:has(#prohibitions:target)_&]:border-l-cyan",
+    },
+    {
+      href: "#fields",
+      label: "Every field",
+      meta: `${declared} declared`,
+      mark: "[body:has(#fields:target)_&]:border-l-cyan",
+    },
+    {
+      href: "#version-history",
+      label: "Version history",
+      meta: `${versions.length} version${versions.length === 1 ? "" : "s"}`,
+      mark: "[body:has(#version-history:target)_&]:border-l-cyan",
+    },
+    {
+      href: "#card-source",
+      label: "Card source",
+      meta: source === undefined ? "digest only" : "yaml",
+      mark: "[body:has(#card-source:target)_&]:border-l-cyan",
+    },
+  ];
+
   return (
     <div className="container-page py-10 lg:py-12">
       {/* ---------- Header ---------- */}
       <header className="flex flex-col gap-5">
         <nav className="font-mono text-xs text-dim" aria-label="Breadcrumb">
-          <Link href="/nodes" className="transition-colors hover:text-cyan">
+          <Link href="/nodes" className="transition-colors hoverable:hover:text-cyan">
             ← Nodes
           </Link>
-          <span className="mx-2 text-faint">/</span>
+          {/* `--color-faint` is 1.83:1 and `globals.css` allows it on decorative
+              separators only, always `aria-hidden`. The `<nav>` and its two entries
+              already carry the hierarchy, so the slash is decoration and is marked as
+              such rather than being lifted to `--color-dim` — a 5.4:1 slash would read
+              as the third item in a two-item trail. */}
+          <span aria-hidden className="mx-2 text-faint">
+            /
+          </span>
           <span className="text-muted">{typeLabel}</span>
         </nav>
 
@@ -806,7 +994,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             <Link
               href={typeHref}
               aria-label={`Ontology node type: ${typeLabel}`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-violet/10 px-2.5 py-1 font-mono text-[11px] text-violet transition-colors hover:border-violet"
+              className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}
             >
               <span className="text-muted">type ·</span>
               {typeLabel}
@@ -817,31 +1005,40 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 key={phase.id}
                 href={phase.href}
                 aria-label={`Ontology phase: ${phase.label}`}
-                className="inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-violet/10 px-2.5 py-1 font-mono text-[11px] text-violet transition-colors hover:border-violet"
+                className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}
               >
                 <span className="text-muted">phase ·</span>
                 {phase.label}
                 <span aria-hidden>→</span>
               </Link>
             ))}
-            {/* Violet, like the two chips beside it and like the explainability
-                panel's own human rows, rather than the alarm pink it used to wear.
+            {/* The one violet chip in the row, and now the only violet on the page.
                 Doc 2 §1.1: this states where a person acts, which is a third fact read
-                off the card — not a warning about the card. */}
+                off the card — not a warning about the card, so not the alarm pink it
+                used to wear either.
+
+                It used to be one of five violet chips, which meant the colour said
+                nothing: a reader could not tell the chip about a person from the chip
+                about a node type. The vocabulary links beside it are cyan now, because
+                they are links, and violet is left doing the one job
+                `lib/format.ts`'s `HUMAN_PRESENCE_MARK` reserves it for. */}
             {card.requiresHuman && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-violet/10 px-2.5 py-1 font-mono text-[11px] text-violet">
+              <span className={cx(CHIP, "border-violet/40 bg-violet/10 text-violet")}>
                 <span aria-hidden>⏸</span> human in the loop
               </span>
             )}
             {/* The negative half of the interface, named in the header so it is not
-                something a reader finds only by scrolling. It wears the same chip as the
-                dimensions beside it because it is the same kind of fact: something the
-                card states about itself. The panel below carries the entries. */}
+                something a reader finds only by scrolling.
+
+                A link now, not a statement: the panel carrying the entries is 1500px
+                down and this was the only mention of them above the fold. That also
+                settles its colour — it goes somewhere, so it is cyan like the two
+                vocabulary chips, and the row's remaining violet is the human one. */}
             {prohibitions.length > 0 && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-violet/10 px-2.5 py-1 font-mono text-[11px] text-violet">
+              <a href="#prohibitions" className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}>
                 <span className="text-muted">cannot ·</span>
                 {prohibitions.length} declared
-              </span>
+              </a>
             )}
             {/* Risk, in the header, which is the one fact a reader deciding whether to
                 wire this node most needs and the one the header did not carry.
@@ -853,15 +1050,23 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 the markers only appeared in the aside, which on a phone is DOM-ordered
                 after the whole main column — about 3000px down, below a raw YAML dump.
 
-                Amber, matching the marker cards in the aside it links to rather than the
-                violet the vocabulary chips beside it wear, because this is not another
-                dimension read off the card: it is the one chip here that should make a
-                reader stop. Rendered only when there are markers, so the quiet case
-                stays quiet — the same ruling the phase chips follow above. */}
+                `--color-warn`, matching the marker cards in the aside it links to, and
+                no longer `--color-amber`. Amber is spent on two things and this is
+                neither: `ComingSoonBadge` ("not built yet") and `.route-box` ("this box
+                leaves the page"). The collision was live in this very row — the `◐
+                seeded` honesty marker three chips to the left is amber because nothing
+                stands behind that number, and a risk marker in the same hue said the
+                risk was equally notional. Warn is the darker, less saturated tier the
+                token exists for, still 6.7:1 on this ground. Rendered only when there
+                are markers, so the quiet case stays quiet. */}
             {risks.length > 0 && (
               <a
                 href="#evaluation"
-                className="inline-flex items-center gap-1.5 rounded-full border border-amber/40 bg-amber/10 px-2.5 py-1 font-mono text-[11px] text-amber transition-colors hover:border-amber"
+                className={cx(
+                  CHIP,
+                  "border-warn/50 bg-warn/10 text-warn hoverable:hover:border-warn",
+                  CHIP_PRESS,
+                )}
               >
                 <span aria-hidden>△</span>
                 {risks.length} risk marker{risks.length === 1 ? "" : "s"}
@@ -877,8 +1082,12 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
 
       </header>
 
-      {/* ---------- Body ---------- */}
-      <div className="mt-10 grid gap-8 lg:grid-cols-3">
+      {/* ---------- Body ----------
+          `gap-10`, not `gap-8`. 32px is off the eight-point ladder this redesign holds
+          the site to — block↔block is 40 — and it was the gap between every panel on the
+          page, so the one value the reader meets most often was the one furthest from
+          the scale. */}
+      <div className="mt-10 grid gap-10 lg:grid-cols-3">
         {/* MAIN
 
             `min-w-0` is load-bearing and this is not a style choice. A grid item defaults
@@ -897,7 +1106,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             With `min-w-0` the track resolves to the container and the inner scroll
             regions (the table's own `overflow-x-auto`, the source panel's) do the
             scrolling they were always meant to do. Verified: `scrollWidth` 807 → 367. */}
-        <div className="flex min-w-0 flex-col gap-8 lg:col-span-2">
+        <div className="flex min-w-0 flex-col gap-10 lg:col-span-2">
           {/* What the node actually does, and the first thing on the page after the
               header, because it is the only field that answers the question the page
               exists for.
@@ -921,6 +1130,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
               backtick spans the specs use, the same way the author's notes are drawn. */}
           <Panel
             id="specification"
+            className="scroll-mt-24"
             label="Specification"
             meta={`${specWords} words · handed to the agent`}
             lead
@@ -935,6 +1145,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
 
           <Panel
             id="interfaces"
+            className="scroll-mt-24"
             label="Interfaces"
             meta={`${card.inputs.length} in · ${card.outputs.length} out`}
           >
@@ -952,6 +1163,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
               so it gets a panel of its own rather than a line inside Behaviour. */}
           <Panel
             id="prohibitions"
+            className="scroll-mt-24"
             label="Cannot receive"
             meta={
               prohibitions.length === 0
@@ -1004,14 +1216,21 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                         className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line bg-surface-2 px-3 py-2.5"
                       >
                         <span className="font-mono text-[12px] text-fg">{p.entry}</span>
-                        <span className="inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
+                        <span className="label inline-flex items-center gap-1">
                           <span aria-hidden>◌</span> free text
                         </span>
                       </li>
                     ) : (
+                      /* Emerald, not violet. What separates this row from the one above
+                         it is that the resolver holds the graph to it — a fact read off
+                         the engine, which is the job emerald carries everywhere else on
+                         this page (the download figure, the `✓ none declared` line in
+                         the aside). Violet had to go regardless: it is reserved for
+                         where a person acts, and the chip inside this row is a cyan link
+                         now, so a violet frame around it named nothing at all. */
                       <li
                         key={p.entry}
-                        className="flex flex-col gap-1.5 rounded-md border border-violet/40 bg-violet/5 px-3 py-2.5"
+                        className="flex flex-col gap-1.5 rounded-md border border-emerald/30 bg-emerald/5 px-3 py-2.5"
                       >
                         <span className="flex flex-wrap items-center justify-between gap-2">
                           <TermChip
@@ -1019,7 +1238,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                             label={p.entry}
                             aria={`Ontology data type: ${p.term.label}`}
                           />
-                          <span className="inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-[0.14em] text-violet">
+                          <span className="label inline-flex items-center gap-1 text-emerald">
                             <span aria-hidden>⊘</span> enforced
                           </span>
                         </span>
@@ -1093,21 +1312,36 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
               `/concepts` in the `skill` and `model` rows of `WhatACardReaches`. The
               footnote under this table points there rather than restating them per card,
               53 times over. */}
-          <Panel id="fields" label="Every field on this card" meta={`${declared} declared, in five blocks`}>
+          <Panel
+            id="fields"
+            className="scroll-mt-24"
+            label="Every field on this card"
+            meta={`${declared} declared, in five blocks`}
+          >
             <div className="flex flex-col gap-5">
               {CARD_BLOCKS.map((block) => {
                 const rows = FIELD_ROWS.filter((row) => row.block === block.id);
                 if (rows.length === 0) return null;
                 return (
                   <section key={block.id} className="flex flex-col gap-2">
-                    {/* The block header, in the skeleton's own words. Amber, which the
-                        author asked to stay this page's prominent colour and which is
-                        already what `SkeletonPane` draws these five headings in. */}
+                    {/* The block title, in the skeleton's own words.
+                        ------------------------------------------------------------
+                        `--color-key`, not `--color-amber`. Amber carries two meanings
+                        on this site and neither is this one: "not built yet" and "this
+                        box leaves the page". Painted on five block titles and eighteen
+                        field names it made a single viewport of this page carry about
+                        twenty amber items, none of them coming soon and none of them an
+                        exit, which is the largest single dilution of a semantic colour
+                        the site had. A key is a name in a document, not a status.
+
+                        `.label-lead` rather than an `<h3>`, for the reason `globals.css`
+                        writes down: a mono uppercase run is a label, and a label is not
+                        a heading level. The panel's own `<h2>` is the outline position
+                        this group sits under; five sibling `<h3>`s at 12px underneath a
+                        13px `<h2>` were claiming a level the type never drew. */}
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                      <h3 className="font-mono text-[12px] uppercase tracking-[0.18em] text-amber">
-                        {block.label}
-                      </h3>
-                      <span className="font-mono text-[11px] text-dim">{block.ref}</span>
+                      <span className="label-lead text-key">{block.label}</span>
+                      <span className="label">{block.ref}</span>
                     </div>
                     <p className="text-[13px] leading-relaxed text-dim">{block.purpose}</p>
 
@@ -1117,7 +1351,12 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                         const detail = row.detail?.(card, fieldView);
                         const head = (
                           <>
-                            <dt className="font-mono text-[12px] text-amber">{row.name}</dt>
+                            {/* `text-key`, the same repoint as the block title above and
+                                the eighteen rows this is one of. Not `text-cyan`: cyan
+                                says a thing can be clicked and a field name cannot, so
+                                the key tier is a step brighter and carries no underline
+                                and no hover. */}
+                            <dt className="font-mono text-[12px] text-key">{row.name}</dt>
                             <dd
                               className={cx(
                                 "min-w-0 font-mono text-[12px] leading-relaxed",
@@ -1132,7 +1371,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                                   {"  "}
                                   <a
                                     href={row.seeHref}
-                                    className="text-[11px] text-dim underline decoration-line underline-offset-4 transition-colors hover:text-amber"
+                                    className="text-[11px] text-dim underline decoration-line underline-offset-4 transition-colors hoverable:hover:text-cyan"
                                   >
                                     {row.seeLabel}
                                   </a>
@@ -1166,10 +1405,20 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                                   native triangle sits outside the grid and pushes the
                                   first column out of alignment with the rows that have
                                   no disclosure. `pl` on both branches keeps the two
-                                  kinds of row on one left edge. */}
+                                  kinds of row on one left edge.
+
+                                  11px, not 10: the site's mono floor is 11px and this was
+                                  the last place in the repo still under it. Not `.label`
+                                  — that class is for a meta label with words in it, and
+                                  uppercasing and tracking a single geometric glyph only
+                                  pushes it off its own left edge. The `top` moved with the
+                                  size: the marker is optically centred on the 12px `dt`
+                                  beside it, and a taller line box would otherwise drop it
+                                  a pixel. It is absolutely positioned, so the extra pixel
+                                  of width cannot reflow the row. */}
                               <span
                                 aria-hidden
-                                className="pointer-events-none absolute left-0 top-[0.6rem] font-mono text-[10px] text-dim transition-transform group-open:rotate-90"
+                                className="pointer-events-none absolute left-0 top-[0.55rem] font-mono text-[11px] text-dim transition-transform group-open:rotate-90"
                               >
                                 &#9656;
                               </span>
@@ -1187,9 +1436,13 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
 
             <p className="mt-4 border-t border-line pt-3 text-xs leading-relaxed text-dim">
               What each of these fields is for, once rather than on every card:{" "}
+              {/* Cyan, because it is a link. Amber marks a *box* that leaves the page —
+                  `.route-box`, which is a rectangle with a rule down its leading edge —
+                  and an inline sentence link wearing the same hue was a third meaning
+                  for the colour on a page that already had two too many. */}
               <Link
                 href="/concepts"
-                className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"
+                className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:decoration-cyan"
               >
                 eval, harness and the rest <span aria-hidden>&rarr;</span>
               </Link>
@@ -1200,7 +1453,10 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                  this is a paragraph the author wrote, and folding it into a `dd` would
                  make one row twenty times the height of the others. */
               <div className="mt-5 flex flex-col gap-2 border-t border-line pt-5">
-                <h3 className={LABEL}>Notes from the author</h3>
+                {/* A caption, not a heading. It labels one paragraph inside a section
+                    that already has its `<h2>`, and an `<h3>` here put a third outline
+                    level on the page that the type never drew. */}
+                <span className="label">Notes from the author</span>
                 <p className="border-l-2 border-line-bright pl-4 text-[15px] leading-relaxed text-muted">
                   <Ticked text={card.notes} />
                 </p>
@@ -1208,7 +1464,12 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             )}
           </Panel>
 
-          <VersionHistory versions={history} />
+          {/* Wrapped only to give the card map something to land on. `VersionHistory`
+              renders its own `<section>` and its own `<h2>` and takes no `id`, so the
+              scroll target and its offset have to live on a box around it. */}
+          <div id="version-history" className="scroll-mt-24">
+            <VersionHistory versions={history} />
+          </div>
 
           {/* Card source, closed.
               ------------------------------------------------------------
@@ -1254,9 +1515,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                     `title` of the Identity row, which a keyboard or touch reader cannot
                     reach and nobody can copy; this is the one place it exists as text. */}
                 <p className="flex flex-wrap items-baseline gap-2 font-mono text-[11px]">
-                  <span className="uppercase tracking-[0.14em] text-dim">
-                    digest
-                  </span>
+                  <span className="label">digest</span>
                   <span className="break-all text-muted">{record.digest}</span>
                 </p>
                 <p className="text-xs leading-relaxed text-dim">
@@ -1269,7 +1528,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
               /* No document, so no `SourcePanel` and therefore no heading from it — the
                  section still needs the one its `aria-labelledby` names. */
               <>
-                <h2 id="card-source-heading" className={SECTION}>
+                <h2 id="card-source-heading" className="label-lead">
                   Card source
                 </h2>
                 <p className="panel px-4 py-3 text-sm text-muted">
@@ -1295,7 +1554,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             regions to tell apart. */}
         <aside
           aria-label="Card metadata"
-          className="flex min-w-0 flex-col gap-6 lg:sticky lg:top-20 lg:self-start"
+          className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-20 lg:self-start"
         >
           {/* "Risk and autonomy", not "Evaluation metadata". The panel answers two
               questions a reader has — can this node do damage, and does anybody watch —
@@ -1357,8 +1616,10 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
 
               const risk = (
                 <div key="risk" className="flex flex-col gap-2">
+                  {/* A caption over a list, not a heading. The panel's own `<h2>` is the
+                      outline position; this names the half of it below the rule. */}
                   <div className="flex items-center gap-2">
-                    <h3 className={LABEL}>Risk markers</h3>
+                    <span className="label">Risk markers</span>
                     <span className="font-mono text-[11px] text-dim">{risks.length}</span>
                   </div>
                   {risks.length > 0 ? (
@@ -1372,10 +1633,17 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                                  name was the label plus the whole description, 58 and 90
                                  characters, read out in full on every tab stop. */
                               aria-label={risk.label}
-                              className="flex flex-col gap-1 rounded-md border border-amber/30 bg-amber/5 px-3 py-2 transition-colors hover:border-amber/60"
+                              /* `--color-warn`, the severity tier, rather than
+                                 `--color-amber`. These cards and the `◐ seeded` marker in
+                                 the header are the two amber surfaces a reader meets on
+                                 the same card, and one of them means "nothing stands
+                                 behind this number" while the other means "this node can
+                                 do damage". The token exists so those two can never be
+                                 the same signal again. */
+                              className="flex flex-col gap-1 rounded-md border border-warn/40 bg-warn/5 px-3 py-2 transition-[transform,scale,color,background-color,border-color] duration-[var(--dur-base)] ease-out hoverable:hover:border-warn active:scale-[0.99] active:duration-[var(--dur-press)]"
                             >
                               <span className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-amber">
+                                <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-warn">
                                   <span
                                     className="h-1 w-1 rounded-full bg-current"
                                     aria-hidden
@@ -1383,7 +1651,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                                   {risk.label}
                                 </span>
                                 {risk.weight !== undefined && (
-                                  <span className="font-mono text-[11px] tabular-nums text-amber">
+                                  <span className="font-mono text-[11px] tabular-nums text-warn">
                                     {/* Two decimals, as everywhere else: weights are
                                         quarter-points and 2 would read as an integer. */}
                                     weight {formatWeight(risk.weight)}
@@ -1462,7 +1730,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 <dd className="font-mono text-sm text-fg">
                   <a
                     href="#card-source"
-                    className="underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan hover:decoration-cyan"
+                    className="underline decoration-line-bright underline-offset-4 transition-colors hoverable:hover:text-cyan hoverable:hover:decoration-cyan"
                   >
                     {shortDigest(record.digest)}
                   </a>
@@ -1476,6 +1744,8 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
               </div>
             </dl>
           </SidePanel>
+
+          <CardMap entries={cardMap} />
         </aside>
       </div>
 

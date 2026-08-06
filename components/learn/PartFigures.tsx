@@ -1,6 +1,16 @@
 import type { NodeCard } from "@/lib/core";
-import type { BlueprintGraph, FlowNodeSeed } from "@/lib/types";
-import { NODE_KIND_META } from "@/lib/format";
+import type { AgentNodeKind, BlueprintGraph, FlowNodeSeed } from "@/lib/types";
+import {
+  FLOW,
+  FlowAbsence,
+  FlowEdge,
+  FlowNode,
+  FlowScene,
+  HumanFlowNode,
+  labelOffset,
+  type FlowTone,
+  type Point,
+} from "@/components/viz";
 
 /* ============================================================
    The three figures on `/what-a-blueprint-is`, drawn properly.
@@ -28,12 +38,29 @@ import { NODE_KIND_META } from "@/lib/format";
    criteria" is nineteen characters. Set on the curve in a figure
    this compact they land at roughly 7 CSS pixels, under the
    10-pixel floor `components/viz/flow.ts` sets, and they collide
-   with the node boxes either side. So each edge wears a numbered
-   pill and the five names are listed under the drawing as real
-   DOM text at 11px, which is the same numbered-annotation move
-   `/reading-the-radar` makes with the radar. A plate and its key.
+   with the discs either side. So each edge wears a numeral and the
+   five names are listed under the drawing as real DOM text at 11px,
+   which is the same numbered-annotation move `/reading-the-radar`
+   makes with the radar. A plate and its key.
+
+   ── One register for a node, site-wide ──
+   The graph figure drew every node as a rounded `<rect>` with a
+   2.5-unit kind stripe down its left flank. That is the CAD box the
+   author rejected by name, and it was the last of them: the landing
+   draws this exact blueprint as lit discs, `GraphThumbnail` draws it
+   as lit discs on all nine gallery tiles, and one click away this
+   page said a node was a box. `components/viz/flow.test.ts` was
+   written to stop precisely that and could not see it — its scan
+   reaches `[data-viz="node"]` and `components/graph/`, and these
+   rects carried neither. So the drawing is now a `FlowScene` of
+   `FlowNode` discs and `FlowEdge` curves, and every number in it
+   comes out of `components/viz/flow.ts` rather than out of this
+   file.
 
    Server components: no state, no effects, no client boundary.
+   `FlowGlyphs.tsx` guarantees that — nothing in it holds state or
+   imports an animation engine — so this is the finished drawing at
+   SSR with no script, which is the only state it ever has.
    ============================================================ */
 
 /* ==================== shared frame ==================== */
@@ -65,61 +92,77 @@ function Frame({
 
 /* ==================== 01 · the graph ==================== */
 
-/* Two sets of box metrics, because one solve cannot serve both widths.
-   ------------------------------------------------------------
-   The wide placement carries each node's display name over two lines ("Acceptance /
-   Tester") in a 100-unit box. On a phone the figure renders about 302px against a 452-unit
-   viewBox, which puts those same 13-unit labels at 8.7 CSS px: under the floor, and the
-   identical defect `ScoreRadar` was just fixed for, arrived at from the other side.
+/**
+ * How a node kind is lit.
+ *
+ * The rejected drawing carried kind as a 2.5-unit stripe down the left flank of a box.
+ * In this register a node *is* its colour, so the stripe has nowhere to go and nowhere
+ * it needs to: the disc takes the tone directly.
+ *
+ * Two rules the map exists to hold, both of them the vocabulary's rather than this
+ * file's. A node where a person stands is `HumanFlowNode` and never a tinted disc —
+ * `FlowTone` has no `human` member for exactly that reason, so the map spells `"human"`
+ * and the component branches, rather than passing a violet through. And `signal` is not
+ * reachable from here at all: it is the alarm colour, spent on a defect, and a human
+ * gate is a design decision rather than a defect (`NODE_KIND_META` keeps signal pink for
+ * the schematic's own palette, which is a different drawing with its own legend).
+ */
+const NODE_TONE: Record<AgentNodeKind, FlowTone | "human"> = {
+  start: "cyan",
+  planner: "cyan",
+  executor: "emerald",
+  verifier: "cyan",
+  router: "cyan",
+  negotiator: "cyan",
+  retry: "cyan",
+  memory: "dim",
+  tool: "dim",
+  gate: "human",
+  "human-input": "human",
+  ship: "emerald",
+};
 
-   The compact placement carries the node *id* on one line in a narrower box. That is not a
-   downgrade. The ids are what the DOT file actually contains, so the small drawing is the
-   more literal picture of the file this part is about. */
-const WIDE = { nw: 100, gap: 62 };
-const COMPACT = { nw: 80, gap: 46 };
-const NH = 46;
-/* Type size inside the drawing, in viewBox units, which is the only place it can be set
-   and the reason it needs a comment.
-
-   A number here is not pixels. It is scaled by rendered-width ÷ viewBox-width, and this
-   figure's viewBox is 452 wide against roughly 394 rendered, so a unit is 0.87 of a CSS
-   pixel. `components/viz/flow.ts` sets the floor at 10 CSS px, on the grounds that "the
-   site's own smallest chrome is 11-pixel mono, and a label inside a drawing has no
-   business being smaller than the caption under it". 13 units clears it at 11.3.
-
-   The first draft set 11.5 and looked fine in the file. On the page it rendered at 8.
-   `components/viz/tokens.ts` carries the same hazard with the same warning. */
-const TEXT = 13;
-const PILL_R = 11;
-/** Distance between the `y: 0` and `y: 100` rows. `y: 50` lands halfway, which is why. */
-const ROW_STEP = 84;
-const PAD_X = 14;
-/** Leaves room for the return corridor and its pill above the top row of boxes. */
-const PAD_TOP = 34;
-/** The lane a return edge crosses on, above the drawing. */
-const TOP_LANE = 12;
-
-const EDGE_COLOR = {
-  flow: "var(--color-blueprint-line)",
-  control: "var(--color-violet)",
-  fallback: "var(--color-amber)",
-} as const;
-
-const EDGE_DASH = { flow: undefined, control: "5 4", fallback: "5 4" } as const;
-
-type Pt = { x: number; y: number };
-
-/** Cubic control offset, and the point that falls out of it at t = 0.5. */
-function bezier(a: Pt, b: Pt): { d: string; mid: Pt } {
-  const dx = Math.max(28, Math.abs(b.x - a.x) * 0.5);
-  return {
-    d: `M ${a.x} ${a.y} C ${a.x + dx} ${a.y}, ${b.x - dx} ${b.y}, ${b.x} ${b.y}`,
-    mid: {
-      x: (a.x + 3 * (a.x + dx) + 3 * (b.x - dx) + b.x) / 8,
-      y: (a.y + 3 * a.y + 3 * b.y + b.y) / 8,
-    },
-  };
+/**
+ * Where the discs go, for one of the two widths this figure is drawn at.
+ *
+ * A luminous node is described by one number (`components/viz/flow.ts`): the radius of
+ * the lit core, off which the halo, the ring, the focus indicator, the pointer target,
+ * the drop of the label and the trim on every curve all follow. So a placement is a
+ * radius and a grid, and nothing here draws a shape.
+ */
+interface Placement {
+  /** Radius of every lit core. `FLOW.node.r` is 7, which is a dot in a frame this wide. */
+  r: number;
+  /** Left and right margin. Half the widest node label has to fit inside it. */
+  padX: number;
+  /** Space above the top row's centre, which is where the return curve is given. */
+  padTop: number;
+  /** Space under the bottom row's label baseline. */
+  padBottom: number;
+  colGap: number;
+  /** Distance between the `y: 0` and `y: 100` rows. `y: 50` lands halfway, which is why. */
+  rowStep: number;
 }
+
+/* Two placements, because one solve cannot serve both widths, and the frame width is the
+   whole of the reason.
+   ------------------------------------------------------------
+   A label inside an `<svg>` is drawn in viewBox units, so a reader sees
+   `FLOW.label.size × (rendered CSS width ÷ frame width)`. This figure renders at about
+   376 CSS px in the wide band and about 302 on a phone, so the same 13 units land at 10.8
+   and at 10.6 against the two frames below, both over the 10-pixel floor
+   `components/viz/flow.ts` sets. `components/learn/figures.test.ts` does that arithmetic
+   for all three real placements and fails if either frame is widened.
+
+   Both placements carry the DOT id rather than the card's display name, and that is not a
+   downgrade at the wide end. A luminous node says one line — there is no second line in
+   this register — and "Acceptance Tester" set on one line is 137 units of a 452-unit
+   frame, which runs under the numeral of every curve arriving at it. The ids are what the
+   DOT file actually contains, so the drawing is the more literal picture of the file this
+   part is about; `FlowNode`'s `name` hands a screen reader the display name anyway. */
+const WIDE: Placement = { r: 10, padX: 90, padTop: 48, padBottom: 6, colGap: 136, rowStep: 130 };
+
+const COMPACT: Placement = { r: 8, padX: 78, padTop: 44, padBottom: 6, colGap: 107, rowStep: 128 };
 
 /**
  * The graph, its five edges numbered, and the one edge that is not there.
@@ -128,8 +171,17 @@ function bezier(a: Pt, b: Pt): { d: string; mid: Pt } {
  * page's prose says "an edge nobody drew is a connection somebody decided against", and
  * nothing on the site draws that. It is drawable here because it is a fact in the archive:
  * `code-builder.cannot` names `acceptance-criteria`, which is a term in the ontology, so
- * the resolver enforces it and a bundle carrying that edge fails validation. The dashed
- * stroke with a cross on it is that rule, in the one place the prose claims it matters.
+ * the resolver enforces it and a bundle carrying that edge fails validation. `FlowAbsence`
+ * is that rule, in the one place the prose claims it matters — the same glyph the landing
+ * spends on the same missing run, so a reader who arrives here from the landing is looking
+ * at the same drawing twice rather than at two registers.
+ *
+ * It carries no word of its own, and that is the one thing this figure withholds from the
+ * vocabulary. `FlowAbsence` labels itself with the prohibition it would violate, and the
+ * prohibition is a field of a card this component is never handed; typing the term in
+ * would be the invented fact the page's own header says it cannot afford. The key under
+ * the drawing names it instead, as real DOM text at 11px, which is where the other five
+ * runs are named too.
  */
 export function GraphFigure({
   graph,
@@ -138,206 +190,164 @@ export function GraphFigure({
 }: {
   graph: BlueprintGraph;
   title: string;
-  /** Narrow boxes carrying the DOT id on one line, for placements under `sm`. */
+  /** The squarer frame, for placements under `sm`. See the note on `WIDE`/`COMPACT`. */
   compact?: boolean;
 }) {
-  const { nw: NW, gap: COL_GAP } = compact ? COMPACT : WIDE;
+  const place = compact ? COMPACT : WIDE;
   const xs = [...new Set(graph.nodes.map((n) => n.position.x))].sort((a, b) => a - b);
-  const at = (n: FlowNodeSeed): Pt => ({
-    x: PAD_X + xs.indexOf(n.position.x) * (NW + COL_GAP),
-    y: PAD_TOP + (n.position.y / 100) * ROW_STEP,
-  });
+  /* The bottom row's `y`, read off the graph instead of assumed.
+     ------------------------------------------------------------
+     These coordinates come from `lib/content/layout.ts`, whose `rowGap` is a layout
+     constant, not a contract — it moved from 100 to 140 the day a lit node grew a second
+     row and needed the clearance. This function used to divide by a literal 100 and to
+     look the second node up by `y === 100`, so that move silently made `builder` and
+     `deployer` undefined and dropped both labels 45 units below the sheet.
+     `components/viz/scene-labels.test.ts` caught it; deriving the span means the next
+     change to `rowGap` cannot. */
+  const ySpan = Math.max(1, ...graph.nodes.map((n) => n.position.y));
+  const centre = (n: FlowNodeSeed): Point => [
+    place.padX + xs.indexOf(n.position.x) * place.colGap,
+    place.padTop + (n.position.y / ySpan) * place.rowStep,
+  ];
   const byId = new Map(graph.nodes.map((n) => [n.id, n]));
-  const W = PAD_X * 2 + xs.length * NW + (xs.length - 1) * COL_GAP;
-  const H = PAD_TOP + ROW_STEP + NH + 14;
+  const W = place.padX * 2 + Math.max(0, xs.length - 1) * place.colGap;
+  const H = Math.round(place.padTop + place.rowStep + labelOffset(place.r) + place.padBottom);
+  /** The row a `y: 50` node sits on, and the line every forward curve bows away from. */
+  const midY = place.padTop + place.rowStep / 2;
 
-  /* A forward edge runs between the right port of its source and the left port of its
-     target. A return edge, whose target sits at or behind its source, cannot: the straight
-     drop from either box in the last column lands on the other one. It leaves by the left
-     port instead, into a vertical corridor in the gap before its own column, down to a
-     lane under the bottom row, and up into its target's underside. */
-  const routed = graph.edges.map((e, i) => {
-    const s = byId.get(e.source);
-    const t = byId.get(e.target);
-    if (s === undefined || t === undefined) return null;
-    const a = at(s);
-    const b = at(t);
-    const variant = e.variant ?? "flow";
-    if (b.x < a.x) {
-      /* Over the top, and off the mid port.
-         ------------------------------------------------------------
-         Two separate things forced this route. On this blueprint the debugger both
-         receives `failure evidence` and sends `patch`, so taking the mid port for both
-         laid the outbound stub along the inbound arrowhead: two edges in opposite
-         directions sharing eleven units of the same line, which no bounding-box check
-         would catch. And the first fix, dropping to a lane under the drawing, put the
-         outbound stub straight through the numbered pill of the edge arriving beside it.
+  /* Which pairs answer each other, so a loop's two arms can be told from a plain run. */
+  const runs = new Set(graph.edges.map((e) => `${e.source} ${e.target}`));
 
-         Above is where a feedback path goes on a schematic anyway, and
-         `GraphThumbnail` already routes one "through a corridor above the drawing" for
-         the same reason. The stub leaves high on the left flank, the corridor stands in
-         the gap before the source's own column, and the edge comes down into the top of
-         its target. */
-      const corridor = a.x - COL_GAP / 2 - 4;
-      const foot = b.x + NW / 2;
-      return {
-        e,
-        i,
-        variant,
-        d: `M ${a.x} ${a.y + 11} H ${corridor} V ${TOP_LANE} H ${foot} V ${b.y - 6}`,
-        mid: { x: (corridor + foot) / 2, y: TOP_LANE },
-        head: { x: foot, y: b.y - 6, down: true },
-      };
-    }
-    const from = { x: a.x + NW, y: a.y + NH / 2 };
-    const to = { x: b.x - 2, y: b.y + NH / 2 };
-    const { d, mid } = bezier(from, to);
-    return { e, i, variant, d, mid, head: { x: to.x, y: to.y, down: false } };
-  });
+  /* Which way a curve bows, and by how much.
+     ------------------------------------------------------------
+     One rule: bow away from the middle row. `edgeControl` offsets the control point
+     perpendicular to the run, so a bend's sign means "which side" relative to the way the
+     run travels, and stating the rule against the drawing rather than against each edge
+     is what pulls the two curves arriving at a middle node apart instead of laying them
+     on each other.
+
+     A loop takes the wide bend and its two arms fall out of the same number, which is the
+     placement trick `components/home/graph.ts` records for this same blueprint: the return
+     run travels the other way, so the same bend puts it on the other side. A second
+     constant for the return is a second constant to keep in step, and the first draft that
+     used one swung the debugger's answer down past the deployer.
+
+     What it does not solve, stated rather than discovered: a return run that crosses more
+     than the column it left would bow toward the middle of the drawing and could pass
+     under a disc. No bundle in the archive has one — the layered layout only ever breaks
+     an edge back to its immediate neighbour — and a real one wants routing, not a bend. */
+  const bendFor = (a: Point, b: Point, loop: boolean): number => {
+    const size = loop ? FLOW.edge.bend.wide : FLOW.edge.bend.gentle;
+    const my = (a[1] + b[1]) / 2;
+    if (my === midY) return loop ? size : 0;
+    return my < midY ? -size : size;
+  };
 
   /* The prohibited edge is drawn where it would go if somebody drew it: between the two
      nodes in the first column, which is exactly the hop `code-builder` forbids. */
   const planner = graph.nodes.find((n) => n.position.x === xs[0] && n.position.y === 0);
-  const builder = graph.nodes.find((n) => n.position.x === xs[0] && n.position.y === 100);
+  const builder = graph.nodes.find((n) => n.position.x === xs[0] && n.position.y === ySpan);
+
+  /* The topology in a sentence, for a reader who is not going to walk the discs. It is
+     read off the same edge list the drawing is, so it cannot describe a graph the figure
+     is not showing. */
+  const said: string[] = [`${graph.nodes.length} nodes.`];
+  for (const [i, e] of graph.edges.entries()) {
+    const carrying = e.label === undefined ? "" : `, carrying ${e.label}`;
+    said.push(`${i + 1}: ${e.source} to ${e.target}${carrying}.`);
+  }
+  if (planner !== undefined && builder !== undefined) {
+    said.push(
+      `One run is deliberately missing, from ${planner.id} to ${builder.id}, because the card on ${builder.id} forbids it.`,
+    );
+  }
 
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      className="w-full"
-      role="img"
-      aria-label={`${title}: five nodes, five edges, and one edge the cards forbid`}
+    <FlowScene
+      width={W}
+      height={H}
+      label={`${title}: ${graph.nodes.length} nodes, ${graph.edges.length} edges, and one edge the cards forbid`}
+      description={said.join(" ")}
     >
-      {routed.map((r) =>
-        r === null ? null : (
-          <g key={r.e.id}>
-            <path
-              d={r.d}
-              fill="none"
-              stroke={EDGE_COLOR[r.variant]}
-              strokeWidth={1.4}
-              strokeDasharray={EDGE_DASH[r.variant]}
-              strokeLinejoin="round"
-              opacity={0.85}
-            />
-            <path
-              d={
-                r.head.down
-                  ? `M ${r.head.x - 4.5} ${r.head.y - 8} L ${r.head.x} ${r.head.y} L ${r.head.x + 4.5} ${r.head.y - 8} Z`
-                  : `M ${r.head.x - 8} ${r.head.y - 4.5} L ${r.head.x} ${r.head.y} L ${r.head.x - 8} ${r.head.y + 4.5} Z`
-              }
-              fill={EDGE_COLOR[r.variant]}
-            />
-            <circle
-              cx={r.mid.x}
-              cy={r.mid.y}
-              r={PILL_R}
-              fill="var(--color-void)"
-              stroke={EDGE_COLOR[r.variant]}
-              strokeWidth={1.2}
-            />
-            <text
-              x={r.mid.x}
-              y={r.mid.y}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontFamily="var(--font-mono), monospace"
-              fontSize={TEXT}
-              fill={EDGE_COLOR[r.variant]}
-            >
-              {r.i + 1}
-            </text>
-          </g>
-        ),
-      )}
+      {/* Curves first: a disc is drawn over the ends of its own runs, and a label's
+          knockout cuts whatever passes behind it out of the way. */}
+      {graph.edges.map((e, i) => {
+        const s = byId.get(e.source);
+        const t = byId.get(e.target);
+        if (s === undefined || t === undefined) return null;
+        const from = centre(s);
+        const to = centre(t);
+        return (
+          <FlowEdge
+            key={e.id}
+            from={from}
+            to={to}
+            bend={bendFor(from, to, runs.has(`${e.target} ${e.source}`))}
+            fromRadius={place.r}
+            toRadius={place.r}
+            label={String(i + 1)}
+            name={`${i + 1}, ${e.label ?? `${e.source} to ${e.target}`}`}
+            reveal="always"
+          />
+        );
+      })}
 
       {planner !== undefined && builder !== undefined && (
-        <g>
-          <line
-            x1={at(planner).x + NW / 2}
-            y1={at(planner).y + NH}
-            x2={at(builder).x + NW / 2}
-            y2={at(builder).y}
-            stroke="var(--color-signal)"
-            strokeWidth={1.4}
-            strokeDasharray="3 4"
-            opacity={0.9}
-          />
-          <g
-            transform={`translate(${at(planner).x + NW / 2}, ${at(planner).y + NH + (at(builder).y - at(planner).y - NH) / 2})`}
-          >
-            <circle
-              r={PILL_R}
-              fill="var(--color-void)"
-              stroke="var(--color-signal)"
-              strokeWidth={1.2}
-            />
-            <path
-              d="M -4.5 -4.5 L 4.5 4.5 M 4.5 -4.5 L -4.5 4.5"
-              stroke="var(--color-signal)"
-              strokeWidth={1.7}
-              strokeLinecap="round"
-            />
-          </g>
-        </g>
+        <FlowAbsence
+          from={centre(planner)}
+          to={centre(builder)}
+          fromRadius={place.r}
+          toRadius={place.r}
+          name={`the run from ${planner.id} to ${builder.id}, which the cards forbid`}
+        />
       )}
 
       {graph.nodes.map((n) => {
-        const p = at(n);
-        const meta = NODE_KIND_META[n.kind];
-        const words = n.label.split(" ");
-        const lines = compact
-          ? [n.id]
-          : words.length > 1
-            ? [words[0], words.slice(1).join(" ")]
-            : [n.label];
-        return (
-          <g key={n.id}>
-            <rect
-              x={p.x}
-              y={p.y}
-              width={NW}
-              height={NH}
-              rx={7}
-              fill="var(--color-surface)"
-              stroke="var(--color-line-bright)"
-              strokeWidth={1}
-            />
-            {/* The kind, as a bar rather than a word: five node names already fill these
-                boxes, and the schematic's own palette is what carries kind everywhere
-                else on the site. */}
-            <rect x={p.x} y={p.y + 8} width={2.5} height={NH - 16} rx={1.5} fill={meta.color} />
-            {lines.map((line, k) => (
-              <text
-                key={line}
-                x={p.x + 13}
-                y={p.y + (lines.length === 1 ? NH / 2 : 19 + k * 15)}
-                dominantBaseline={lines.length === 1 ? "central" : undefined}
-                fontFamily="var(--font-mono), monospace"
-                fontSize={TEXT}
-                fill="var(--color-fg)"
-              >
-                {line}
-              </text>
-            ))}
-          </g>
+        const [x, y] = centre(n);
+        const tone = NODE_TONE[n.kind];
+        /* The visible word is the id and the accessible name is the card's display name,
+           which is the split `FlowNode.name` is for. Undefined where the two would say
+           the same thing, so a screen reader is never handed a word twice. */
+        const name = n.label === n.id ? undefined : n.label;
+        return tone === "human" ? (
+          <HumanFlowNode key={n.id} x={x} y={y} r={place.r} label={n.id} reveal="always" />
+        ) : (
+          <FlowNode
+            key={n.id}
+            x={x}
+            y={y}
+            r={place.r}
+            tone={tone}
+            label={n.id}
+            name={name}
+            reveal="always"
+          />
         );
       })}
-    </svg>
+    </FlowScene>
   );
 }
 
-/** The five edge names, under the drawing, keyed to the pills on it. */
+/**
+ * The five edge names, under the drawing, keyed to the numerals on it.
+ *
+ * The numeral is the whole of the tie, and it used to be the colour as well: the drawing
+ * painted a control run violet and a fallback run amber, and this key repeated those two
+ * colours on its numbers. Neither the figure nor its caption ever said what either colour
+ * meant, so it was a distinction a reader could see and not decode. Every present run is
+ * the sheet's own line colour now, which is how the landing draws this same blueprint, and
+ * what each one carries is written out here in words.
+ */
 export function GraphKey({ graph }: { graph: BlueprintGraph }) {
   return (
     <span className="flex flex-wrap gap-x-3 gap-y-1">
       {graph.edges.map((e, i) => (
         <span key={e.id} className="whitespace-nowrap">
-          <span style={{ color: EDGE_COLOR[e.variant ?? "flow"] }}>{i + 1}</span>{" "}
-          {e.label ?? e.target}
+          <span className="text-fg">{i + 1}</span> {e.label ?? e.target}
         </span>
       ))}
       <span className="whitespace-nowrap">
-        <span style={{ color: "var(--color-signal)" }}>&#10005;</span> forbidden by the card
+        <span className="text-fg">&#9676;</span> the dashed run the cards forbid
       </span>
     </span>
   );
@@ -375,7 +385,15 @@ function Field({
  * the one on top, so the drawing states the same fact the prose does and cannot drift from
  * it. The open card shows the interface: what arrives, what leaves, and what is forbidden.
  * `cannot` is in `--color-signal` because it is the half of a card nothing else on this
- * page shows, and it is the field the graph figure's crossed edge is drawn from.
+ * page shows, and it is the field the graph figure's dashed absent run is drawn from.
+ *
+ * The word was "crossed" until the graph went luminous. That figure used to hang a ✕ in a
+ * circle on the prohibited run, in `--color-signal`, and `FlowAbsence` withholds both: the
+ * alarm colour would say a defect had been found, and an absent edge in the starter
+ * blueprint is the design working. The absence is now four withheld things — no halo, no
+ * travelling light, a dash, a neutral tone — so the only red left on this page is here, on
+ * the field the prohibition is written in. That is the right place for it: a card states
+ * the rule, and the drawing shows the run obeying it.
  */
 export function CardStackFigure({ card, nodes }: { card: NodeCard; nodes: number }) {
   const input = card.inputs[0];

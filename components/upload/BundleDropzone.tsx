@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type DragEvent } from "react";
 import {
   CORE_ONTOLOGY,
   formatForFilename,
@@ -89,8 +89,6 @@ const DOT_OPENING = /^\s*(strict\s+)?(di)?graph\b/i;
 
 /** Files are read into memory and hashed in this tab, so the cap is a courtesy to the tab. */
 const MAX_KB = 512;
-
-const fieldLabelCls = "font-mono text-[11px] uppercase tracking-[0.14em] text-dim";
 
 /* --------------------- classification --------------------- */
 
@@ -356,6 +354,25 @@ const ROLE_META: Record<FileRole, { glyph: string; label: string; color: string 
 };
 
 /**
+ * The four things a bundle is made of, in the order the validator reads them, plus the
+ * files it does not read at all.
+ *
+ * This is the manifest that replaces the flat chip list once anything is staged. Ten
+ * files used to arrive as ten visually uniform chips under an 11px summary line, so the
+ * one question a reader actually has at that moment — is the `.dot` the whole flow gates
+ * on in there? — could only be answered by reading every chip. Grouped by role it is
+ * answered by looking at the first row, which is why that row is drawn whether or not it
+ * has anything in it.
+ */
+const MANIFEST_ROWS: readonly { role: FileRole; label: string }[] = [
+  { role: "topology", label: "topology" },
+  { role: "manifest", label: "manifest" },
+  { role: "card", label: "cards" },
+  { role: "vocabulary", label: "vocabulary" },
+  { role: "ignored", label: "not read" },
+];
+
+/**
  * Later files of the same name replace earlier ones — re-picking a file is an edit.
  * Names are the selection's key, so a single drop carrying two `solver.yaml` from two
  * directories collapses to the last of them rather than leaving an unaddressable twin.
@@ -452,86 +469,203 @@ export function BundleDropzone({
     setNotice(null);
   }
 
+  /** The picker, shared by the empty target and the loaded strip. */
+  const picker = (
+    <input
+      ref={inputRef}
+      type="file"
+      multiple
+      accept=".dot,.gv,.yaml,.yml,.json"
+      className="hidden"
+      onChange={(e) => {
+        const input = e.currentTarget;
+        void take(input.files).then(() => {
+          // Cleared so re-picking the same file after an edit still fires a change.
+          input.value = "";
+        });
+      }}
+    />
+  );
+
+  /** Drag handlers, identical on both states: the strip is still a drop target. */
+  const dropHandlers = {
+    onDragOver: (e: DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setDragging(true);
+    },
+    onDragLeave: () => setDragging(false),
+    onDrop: (e: DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setDragging(false);
+      void take(e.dataTransfer.files);
+    },
+  };
+
+  const loaded = files.length > 0;
+
   return (
     <div className="flex flex-col gap-3">
-      {/* Drop zone */}
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => inputRef.current?.click()}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            inputRef.current?.click();
-          }
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragging(false);
-          void take(e.dataTransfer.files);
-        }}
-        className={cx(
-          "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed px-6 py-14 text-center transition-colors",
-          dragging
-            ? "border-cyan bg-cyan/5"
-            : "border-line-bright hover:border-cyan/60 hover:bg-surface-2/40",
-        )}
-      >
-        <span
-          className="flex h-12 w-12 items-center justify-center rounded-lg border border-line bg-surface-2 text-xl text-cyan"
-          aria-hidden
-        >
-          ⇪
-        </span>
-        <div className="flex flex-col gap-1">
-          <p className="text-sm text-fg">
-            Drop the whole bundle here, the{" "}
-            <span className="font-mono text-cyan">.dot</span> graph and the{" "}
-            <span className="font-mono text-cyan">.yaml</span> cards it pins
-          </p>
-          <p className="text-xs text-dim">
-            or click to browse, the files are read in this tab and nothing is uploaded
-          </p>
-          <p className="text-xs text-dim">
-            A folder downloaded from a blueprint page works as it stands. Bring{" "}
-            <span className="font-mono">extensions.yaml</span> along with it when it has
-            one: it defines the local terms its cards declare.
-          </p>
-        </div>
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          accept=".dot,.gv,.yaml,.yml,.json"
-          className="hidden"
-          onChange={(e) => {
-            const input = e.currentTarget;
-            void take(input.files).then(() => {
-              // Cleared so re-picking the same file after an edit still fires a change.
-              input.value = "";
-            });
+      {/* ── The target, in two states ──
+          Empty, it is the largest thing on the step and says what a bundle is made of.
+          Loaded, it collapses to a strip: with ten files staged the 240px dashed box was
+          still about a third of the first viewport and still read "Drop the whole bundle
+          here", describing a state the reader had already left, while the confirmation
+          they actually needed was an 11px line under it. The manifest below takes its
+          place, and `clear all` moves to this strip's right edge where the thing it
+          clears now is. */}
+      {!loaded ? (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => inputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              inputRef.current?.click();
+            }
           }}
-        />
-      </div>
+          {...dropHandlers}
+          className={cx(
+            "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed px-6 py-14 text-center transition-colors",
+            dragging
+              ? "border-cyan bg-cyan/5"
+              : "border-line-bright hoverable:hover:border-cyan/60 hoverable:hover:bg-surface-2/40",
+          )}
+        >
+          <span
+            className="flex h-12 w-12 items-center justify-center rounded-lg border border-line bg-surface-2 text-xl text-cyan"
+            aria-hidden
+          >
+            ⇪
+          </span>
+          <div className="flex flex-col gap-1">
+            <p className="text-sm text-fg">
+              Drop the whole bundle here, the{" "}
+              <span className="font-mono text-cyan">.dot</span> graph and the{" "}
+              <span className="font-mono text-cyan">.yaml</span> cards it pins
+            </p>
+            <p className="text-xs text-dim">
+              or click to browse, the files are read in this tab and nothing is uploaded
+            </p>
+            <p className="text-xs text-dim">
+              A folder downloaded from a blueprint page works as it stands. Bring{" "}
+              <span className="font-mono">extensions.yaml</span> along with it when it has
+              one: it defines the local terms its cards declare.
+            </p>
+          </div>
+          {picker}
+        </div>
+      ) : (
+        /* Not `role="button"` this time: the strip holds two real controls, and a
+           clickable box wrapped round them would take the click meant for either. */
+        <div
+          {...dropHandlers}
+          className={cx(
+            "flex h-14 items-center justify-between gap-3 rounded-lg border-2 border-dashed px-4 transition-colors",
+            dragging ? "border-cyan bg-cyan/5" : "border-line",
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="flex items-center gap-2 font-mono text-xs text-cyan underline-offset-4 transition-colors hoverable:hover:text-cyan-bright hoverable:hover:underline"
+          >
+            <span aria-hidden>⇪</span>
+            add more files
+          </button>
+          <div className="flex items-center gap-4">
+            <span className="font-mono text-[11px] text-dim">
+              {plural(files.length, "file")}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                onChange([]);
+                setNotice(null);
+              }}
+              className="font-mono text-xs text-dim underline-offset-4 transition-colors hoverable:hover:text-signal hoverable:hover:underline"
+            >
+              clear all
+            </button>
+          </div>
+          {picker}
+        </div>
+      )}
 
-      {/* Selection summary + shortcuts */}
+      {/* ── The manifest ──
+          Grouped by the role each file was given, in the order the validator reads them.
+          The topology row is drawn even when it is empty and carries the `.label-lead`
+          tier rather than `.label`, because `canAdvance` gates on that one file: it is
+          the row a reader has to be able to check without reading any of the others. */}
+      {loaded && (
+        <ul className="flex flex-col divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface-2/40">
+          {MANIFEST_ROWS.map(({ role, label }) => {
+            const entries = parts.roles.filter((entry) => entry.role === role);
+            if (entries.length === 0 && role !== "topology") return null;
+            const meta = ROLE_META[role];
+            const lead = role === "topology";
+            const missing = entries.length === 0;
+            return (
+              <li
+                key={role}
+                className={cx(
+                  "flex flex-wrap items-baseline gap-x-4 gap-y-2 px-4 py-3",
+                  lead && "bg-surface-2",
+                )}
+              >
+                <span className="flex w-full shrink-0 items-center gap-2 sm:w-32">
+                  <span
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ background: missing ? "var(--color-warn)" : meta.color }}
+                    aria-hidden
+                  />
+                  <span className={lead ? "label-lead" : "label"}>
+                    {role === "card" ? plural(entries.length, "card") : label}
+                  </span>
+                </span>
+
+                {missing ? (
+                  <span className="min-w-0 flex-1 text-xs leading-relaxed text-warn">
+                    Nothing here is a <span className="font-mono">.dot</span>. Without a
+                    topology there is nothing to resolve, and the next step stays locked.
+                  </span>
+                ) : (
+                  <ul className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+                    {entries.map(({ file, note }) => (
+                      <li
+                        key={file.name}
+                        className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg"
+                        title={note}
+                      >
+                        {file.name}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onChange(files.filter((f) => f.name !== file.name))
+                          }
+                          aria-label={`Remove ${file.name}`}
+                          className="ml-0.5 text-dim transition-colors hoverable:hover:text-signal"
+                        >
+                          ×
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {/* Shortcuts. `clear all` used to sit here and now lives on the strip above, beside
+          the selection it clears. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <span className="font-mono text-xs text-dim">
-          {files.length === 0
-            ? "No files selected"
-            : `${plural(files.length, "file")} · ${
-                parts.dot === undefined ? "no topology" : parts.dot.name
-              } · ${plural(parts.cards.length, "card")}`}
-        </span>
+        {!loaded && <span className="font-mono text-xs text-dim">No files selected</span>}
         <button
           type="button"
           onClick={onLoadExample}
-          className="font-mono text-xs text-cyan underline-offset-4 transition-colors hover:text-cyan-bright hover:underline"
+          className="font-mono text-xs text-cyan underline-offset-4 transition-colors hoverable:hover:text-cyan-bright hoverable:hover:underline"
         >
           load the {exampleLabel} example →
         </button>
@@ -539,55 +673,11 @@ export function BundleDropzone({
           type="button"
           onClick={() => setPasteOpen((v) => !v)}
           aria-expanded={pasteOpen}
-          className="font-mono text-xs text-muted underline-offset-4 transition-colors hover:text-fg hover:underline"
+          className="font-mono text-xs text-muted underline-offset-4 transition-colors hoverable:hover:text-fg hoverable:hover:underline"
         >
           {pasteOpen ? "hide the paste box" : "paste source instead →"}
         </button>
-        {files.length > 0 && (
-          <button
-            type="button"
-            onClick={() => {
-              onChange([]);
-              setNotice(null);
-            }}
-            className="ml-auto font-mono text-xs text-dim underline-offset-4 transition-colors hover:text-signal hover:underline"
-          >
-            clear all
-          </button>
-        )}
       </div>
-
-      {/* The files themselves */}
-      {files.length > 0 && (
-        <ul className="flex flex-wrap gap-1.5">
-          {parts.roles.map(({ file, role, note }) => {
-            const meta = ROLE_META[role];
-            return (
-              <li
-                key={file.name}
-                className="inline-flex items-center gap-1.5 rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg"
-                title={note}
-              >
-                <span
-                  className="h-1 w-1 rounded-full"
-                  style={{ background: meta.color }}
-                  aria-hidden
-                />
-                {file.name}
-                <span className="text-dim">{meta.label}</span>
-                <button
-                  type="button"
-                  onClick={() => onChange(files.filter((f) => f.name !== file.name))}
-                  aria-label={`Remove ${file.name}`}
-                  className="ml-0.5 text-dim transition-colors hover:text-signal"
-                >
-                  ×
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
 
       {/* Both notes can be true at once — a skipped file and an unreadable manifest are
           separate facts, and collapsing them would hide whichever came second.
@@ -600,15 +690,17 @@ export function BundleDropzone({
         role="status"
         aria-label="Selection warnings"
       >
+        {/* `--color-warn`, not `--color-amber`. Amber carries exactly two jobs on this
+            site — "not built yet" and "this box leaves the page" — and the content-kind
+            selector on this same step spends it on the first of them. A warning wearing
+            the same hue said the two were the same signal. */}
         {notes.map((note) => (
           <li key={note} className="flex items-start gap-2 text-xs leading-relaxed text-muted">
-            <span className="font-mono text-amber" aria-hidden>
+            <span className="font-mono text-warn" aria-hidden>
               ▲
             </span>
             <span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-amber">
-                warning{" "}
-              </span>
+              <span className="label text-warn">warning </span>
               {note}
             </span>
           </li>
@@ -618,7 +710,7 @@ export function BundleDropzone({
       {/* Paste */}
       {pasteOpen && (
         <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface-2/40 p-4">
-          <label className={fieldLabelCls} htmlFor="paste-source">
+          <label className="label" htmlFor="paste-source">
             Paste source
           </label>
           <textarea
@@ -631,11 +723,27 @@ export function BundleDropzone({
             className="w-full resize-y rounded-md border border-line bg-surface-2 px-3 py-2 font-mono text-xs text-fg placeholder:text-dim transition-colors focus:border-cyan focus:outline-none"
           />
           <div className="flex flex-wrap items-center gap-3">
+            {/* The `title` is the disabled state finally saying why. `Button` drops
+                `pointer-events-none` from its disabled treatment precisely so this
+                tooltip can be reached (the `disabled` attribute still blocks the
+                click), and `cursor-not-allowed` without it was a control that
+                announced it was off and refused to say what would turn it on. It is
+                conditional: an enabled button with a tooltip repeating its own label
+                is noise. The sentence names the empty box and the gesture that fills
+                it, and stops there — what a paste is then taken to be is already the
+                line sitting next to this button, and saying it twice in two registers
+                is worse than saying it once. */}
             <Button
               size="sm"
               variant="outline"
               onClick={addPaste}
               disabled={draft.trim() === ""}
+              {...(draft.trim() === ""
+                ? {
+                    title:
+                      "Nothing to add: the box above is empty. Type or paste the source into it and this turns on.",
+                  }
+                : {})}
             >
               Add to the selection
             </Button>

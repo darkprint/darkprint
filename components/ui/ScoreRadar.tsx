@@ -211,7 +211,9 @@ export function ScoreRadar({
                    hue against five small marks and work out which axis was which. Naming
                    the axis in that colour closes the chain: label, vertex and legend
                    entry are one object. All three sources clear 4.5:1 on this ground
-                   (cyan 9.44, amber 11.06, violet 7.46). */
+                   (cyan 9.44, emerald 10.52, violet 7.43). The middle one used to read
+                   amber and was remeasured when `METRIC_SOURCE_META.reported` moved off
+                   it — see the argument recorded above that constant in `lib/format.ts`. */
                 fill={meta.color}
               >
                 {SHORT[m.key]}

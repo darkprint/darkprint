@@ -114,8 +114,18 @@ function describe(covered: readonly string[], missing: readonly string[]): strin
 
 /* --------------------- compact: the gallery card --------------------- */
 
+/**
+ * 11px, not 9px. The site writes its own mono floor down two rules from here — every
+ * `.eyebrow`, `.label` and `.route-label` in app/globals.css is 0.6875rem and nothing is
+ * allowed below it — and this strip is the one place that had quietly gone under. A
+ * three-letter phase name is already the most abbreviated text on the card; setting it two
+ * steps below the floor made it the hardest thing on the card to read as well.
+ *
+ * `px-1` stays: the five cells plus their label measure well inside the narrowest card at
+ * 390px, so the room is bought without taking it out of the type.
+ */
 const CELL =
-  "rounded-sm border px-1 py-[2px] font-mono text-[9px] uppercase leading-none tracking-[0.06em]";
+  "rounded-sm border px-1 py-[2px] font-mono text-[11px] uppercase leading-none tracking-[0.06em]";
 
 /**
  * The lifecycle strip, sized for a card footer.
@@ -147,10 +157,7 @@ export function PhaseCoverageBadge({
 
   return (
     <div className={cx("flex items-center gap-2", className)} title={sentence}>
-      <span
-        aria-hidden
-        className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim"
-      >
+      <span aria-hidden className="label">
         phases
       </span>
       <span aria-hidden className="flex items-center gap-1">

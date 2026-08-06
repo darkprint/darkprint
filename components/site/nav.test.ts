@@ -68,6 +68,35 @@ function split(href: string): { path: string; fragment: string } {
   return { path: href.slice(0, at), fragment: href.slice(at + 1) };
 }
 
+/**
+ * Every label the header attaches to a control pointing at `href`.
+ *
+ * `/upload` is the one destination the two tables cannot check against each other,
+ * because it is an action rather than a `NAV` row: the header renders it as a button in
+ * the wide row and again as the last link of the phone panel, and neither is in the table
+ * `HEADER_LABELS` is built from. That exemption cost exactly what an exemption costs —
+ * for two passes the wide row said "Validate", the phone panel said "Validate a bundle",
+ * the footer agreed with the panel, and the page all three point at was titled "Share a
+ * blueprint", a promise of publishing on a site with no backend to publish to. Four
+ * names, one destination, and the loudest of them was on the page itself.
+ *
+ * Read out of the source rather than off a render, for the same reason the panel checks
+ * further down are: the header calls `usePathname`.
+ *
+ * The opening tag is taken to end at the first `>` NOT preceded by `=`. The phone panel's
+ * link carries `onClick={() => setOpen(false)}`, and an arrow is not a tag end.
+ */
+function headerLabelsFor(source: string, href: string): string[] {
+  return source
+    .split(`href="${href}"`)
+    .slice(1)
+    .map((rest) => {
+      const body = rest.slice(rest.search(/(?<!=)>/) + 1);
+      return body.slice(0, body.indexOf("<")).trim();
+    })
+    .filter((label) => label !== "");
+}
+
 /** Whether `app/<route>/page.tsx` exists. `/` is `app/page.tsx`. */
 function routeExists(path: string): boolean {
   const dir = path === "/" ? "app" : join("app", path.slice(1));
@@ -179,6 +208,31 @@ describe("a route is called the same thing everywhere", () => {
     expect(disagreements).toEqual([]);
   });
 
+  /** The exemption closed. See `headerLabelsFor`. */
+  it("gives every `/upload` control in the header the footer's label", () => {
+    const footer = FOOTER.find((link) => link.href === "/upload")?.label;
+    expect(footer, "the footer stopped carrying /upload").toBeDefined();
+    const labels = headerLabelsFor(read("components/site/SiteHeader.tsx"), "/upload");
+    // Two today: the button in the wide row and the last row of the phone panel. A floor
+    // rather than a count — it is here to fail when the scan stops matching, not to pin
+    // the header's shape.
+    expect(labels.length, "the header names /upload nowhere").toBeGreaterThan(1);
+    expect([...new Set(labels)]).toEqual([footer]);
+  });
+
+  /**
+   * And the page answers to it. `/towards-a-dark-factory` is held to its nav label the
+   * same way two blocks down, for the same reason: a reader who clicks a label wants to
+   * see what they clicked at the top of what loads, with nothing to re-resolve on
+   * arrival. Both halves — the `h1` and the browser tab.
+   */
+  it("titles the upload page with the label that sends a reader to it", () => {
+    const label = FOOTER.find((link) => link.href === "/upload")?.label;
+    const source = read("app/upload/page.tsx");
+    expect(source).toContain(`title="${label}"`);
+    expect(source).toContain(`title: "${label}",`);
+  });
+
   it("never puts one label on two routes", () => {
     for (const [where, links] of [
       ["header", NAV as readonly { href: string; label: string }[]],
@@ -234,6 +288,11 @@ describe("the nav is a complete map of the routes", () => {
    * Every top-level page under `app/`, minus the ones reached from somewhere other than
    * the nav: the landing is the wordmark, `/upload` has its own button in both the header
    * and the footer, and the dynamic segments are reached from their index.
+   *
+   * `upload` is exempt from the TABLE and no longer exempt from the LABELS — the first
+   * block of this file now reads its controls out of the header source and holds them to
+   * the footer's wording, which is the check every other route gets for free by being a
+   * `NAV` row.
    */
   const ELSEWHERE = new Set(["upload"]);
 

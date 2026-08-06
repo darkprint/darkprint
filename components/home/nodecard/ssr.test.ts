@@ -27,6 +27,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { NODE_CARD_ANNOTATIONS } from "./annotations";
+import { CardWalk } from "./CardWalk";
 import { NodeCardStage } from "./NodeCardStage";
 
 const CARD = readFileSync(
@@ -136,5 +137,77 @@ describe("the card is in the markup before any script runs", () => {
     expect(TEXT).toContain("dark factory");
     expect(TEXT.toLowerCase()).not.toContain("autonomy level");
     expect(TEXT.toLowerCase()).not.toContain("level 4");
+  });
+});
+
+/* ============================================================
+   The landing's copy of the same walk, and the one class of bug
+   this pair of components has now shipped twice.
+
+   `CardWalk` gates its choreography two ways at once. `motion` is
+   false on the server and on the first client render, so nothing
+   choreographed is emitted at all; and every choreographed class
+   carries `lg:`, so even once `motion` flips, a phone is left with
+   the stacked listing at its own height.
+
+   Those two gates only agree while the values they carry are in
+   CLASSES. An inline `style` has no breakpoint. The reel shipped
+   its shift as `style={{ transform }}` beside a window clip written
+   as `lg:h-[…] lg:overflow-y-hidden`, and the pair came apart at
+   exactly the place the file's own comment says it must not: on a
+   390px phone the transform ran to -638px against a container that
+   never clips, sliding 28 of 52 lines out of the top of a box that
+   then opened 647px of empty space under the last one.
+
+   So this is not a test about a transform. It is a test that no
+   geometry reaches the un-prefixed markup: whatever the walk moves,
+   it moves through a custom property that only an `lg:` utility
+   reads.
+   ============================================================ */
+
+const WALK = renderToStaticMarkup(
+  createElement(CardWalk, { source: CARD, cardRef: "code-builder@1.0.0" }),
+);
+
+describe("the landing's walk lays out for a phone before it lays out for a screen", () => {
+  it("writes no transform into the markup, at any breakpoint", () => {
+    // The property may be set — it is inert until an `lg:` utility reads it. The
+    // declaration may not be.
+    expect(WALK).not.toContain("transform:translateY");
+    expect(WALK).not.toContain("transform: translateY");
+    expect(WALK, "a bare transform declaration is not width-gated").not.toMatch(
+      /style="[^"]*(?<!-)\btransform:/,
+    );
+  });
+
+  it("passes the reel's shift as a custom property instead", () => {
+    expect(WALK).toContain("--walk-reel:0px");
+    expect(WALK).toContain("--walk-window:");
+  });
+
+  it("emits none of the choreography's classes on the server", () => {
+    for (const gated of ["lg:sticky", "lg:h-[170vh]", "lg:overflow-y-hidden", "lg:hidden"]) {
+      expect(WALK, `choreography class leaked: ${gated}`).not.toContain(gated);
+    }
+  });
+
+  it("stands the listing at its full height, with every line in it", () => {
+    const text = unescape(WALK.replace(/<[^>]*>/g, ""));
+    for (const line of CARD.split("\n")) {
+      const trimmed = line.trim();
+      if (trimmed === "") continue;
+      expect(text, `line missing: ${trimmed}`).toContain(trimmed);
+    }
+  });
+
+  /**
+   * The listing scrolls sideways at every width and has no focusable child of its own, so
+   * without a stop of its own the last thirty-odd characters of seventeen rows are
+   * reachable with a mouse and by no other means (WCAG 2.1.1, Level A).
+   */
+  it("gives the sideways scroller a keyboard stop and a name", () => {
+    expect(WALK).toContain('tabindex="0"');
+    expect(WALK).toContain('role="region"');
+    expect(WALK).toContain('aria-label="code-builder@1.0.0, 52 lines"');
   });
 });

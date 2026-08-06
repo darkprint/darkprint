@@ -177,8 +177,19 @@ export function FlowScene({
            enough in current browsers, and the declared ratio is what reserves the box
            before the svg is laid out at all. */
         style={{ aspectRatio: `${width} / ${height}` }}
+        /* The opacity flip SNAPS, and that is deliberate. It used to ramp over 500ms,
+           which protected nothing and cost every figure on the site half a second. The
+           `armed` class and `useLuminousFlow`'s `utils.set(nodes, { opacity: 0 })` land
+           in the same React commit — the class is written during the mutation phase and
+           the layout effect hides the contents immediately after, both before paint —
+           so by the time a ramp began the contents were already at zero. All the ramp
+           did was multiply the node fade and the bloom scale, the "lamp coming on"
+           gesture this register is built on, by a second and slower curve. Worse, it
+           made the `static → armed` hide a 500ms fade-OUT, so a slow layout-effect
+           flush could let a reader watch the finished drawing dissolve. The timeline is
+           the only thing that reveals a scene. */
         className={cx(
-          "block h-auto w-full transition-opacity duration-500 ease-out",
+          "block h-auto w-full",
           phase === "armed" ? "opacity-0" : "opacity-100",
           className,
         )}
@@ -470,7 +481,6 @@ export function FlowEdge({
   tone = "line",
   arrow = true,
   pulse = true,
-  spark = false,
   reveal = "hover",
   id,
 }: {
@@ -496,8 +506,15 @@ export function FlowEdge({
   arrow?: boolean;
   /** The short bright segment travelling the curve. Off for a run that is context. */
   pulse?: boolean;
-  /** Render a dot for `svg.createMotionPath` as well. Off unless a scene asks. */
-  spark?: boolean;
+  /* There is no `spark` prop. There used to be one: an opt-in dot flown along the curve
+     by `svg.createMotionPath`. In the life of the file no scene ever set it, so
+     `[data-viz="spark"]` returned nothing on every route while the hook still queried
+     for it, zeroed it, gave it a timeline step and started a forever-loop on it — and
+     carried a documented double-offset footgun to keep all of that correct. An opt-in
+     nobody opted into is not a feature, it is a second way to draw an edge that no
+     reader has ever seen. The pulse above already says "something moves along here",
+     and it says it with a dasharray on the curve itself rather than a body that has to
+     be kept in step with it. */
   reveal?: FlowReveal;
   id?: string;
 }) {
@@ -554,19 +571,6 @@ export function FlowEdge({
           stroke={color}
           strokeWidth={FLOW.edge.line}
           opacity={FLOW.edge.arrowOpacity}
-          {...INERT}
-        />
-      )}
-      {/* Parked on the start of the curve so the static drawing is finished. The hook
-          zeroes it before handing it to `createMotionPath`, which positions by transform
-          and would otherwise add the curve's offset to this one twice. */}
-      {spark && (
-        <circle
-          data-viz="spark"
-          cx={run.start[0]}
-          cy={run.start[1]}
-          r={FLOW.edge.sparkRadius}
-          fill={color}
           {...INERT}
         />
       )}

@@ -178,6 +178,79 @@ describe("the demonstration switch", () => {
   });
 });
 
+/* --------------------- what the reader has actually read --------------------- */
+
+describe("the steps the reader has seen", () => {
+  it("starts as the step the path opens on, and nothing else", () => {
+    expect([...initialPathState(DEFAULT_CHOICES).seen]).toEqual([0]);
+  });
+
+  it("does not claim a step the reader jumped over", () => {
+    // The impatient move: load the page and go straight to the last step. Everything
+    // between step 1 and the download is unread, whichever side of the cursor it is on.
+    const jumped = movePath(
+      initialPathState(DEFAULT_CHOICES),
+      { kind: "step", index: stepIndexOf("download") },
+      {},
+      STEPS.length,
+    );
+    expect(jumped.seen.has(stepIndexOf("download"))).toBe(true);
+    for (let index = 1; index < stepIndexOf("download"); index += 1) {
+      expect(jumped.seen.has(index), `step ${index + 1} was never opened`).toBe(false);
+    }
+  });
+
+  it("keeps a step once it has been opened, including one behind the cursor", () => {
+    const walked = ["node", "vocabulary", "output"].reduce(
+      (state, id) =>
+        movePath(
+          state,
+          { kind: "step", index: stepIndexOf(id as (typeof STEPS)[number]["id"]) },
+          testerLevels,
+          STEPS.length,
+        ),
+      initialPathState(DEFAULT_CHOICES),
+    );
+    const back = movePath(
+      walked,
+      { kind: "step", index: stepIndexOf("whole") },
+      testerLevels,
+      STEPS.length,
+    );
+    // Walking back does not unread the three steps ahead of the cursor.
+    for (const id of ["whole", "node", "vocabulary", "output"] as const) {
+      expect(back.seen.has(stepIndexOf(id)), id).toBe(true);
+    }
+    expect(back.seen.has(stepIndexOf("download"))).toBe(false);
+  });
+
+  it("records the clamped index, so an out-of-range move cannot add a step that is not there", () => {
+    const first = initialPathState(DEFAULT_CHOICES);
+    expect([...movePath(first, { kind: "step", index: -1 }, {}, STEPS.length).seen]).toEqual([0]);
+    const past = movePath(first, { kind: "step", index: 99 }, {}, STEPS.length);
+    expect([...past.seen].sort((a, b) => a - b)).toEqual([0, STEPS.length - 1]);
+  });
+
+  it("is replaced rather than mutated, so React sees a new value", () => {
+    const first = initialPathState(DEFAULT_CHOICES);
+    const moved = movePath(first, { kind: "step", index: 1 }, {}, STEPS.length);
+    expect(moved.seen).not.toBe(first.seen);
+    expect(first.seen.has(1)).toBe(false);
+  });
+
+  it("is untouched by a choice or by the demonstration switch", () => {
+    const opened = on("approval");
+    for (const move of [
+      { kind: "choices", choices: HUMAN },
+      { kind: "demo", on: true },
+    ] as const) {
+      expect([...movePath(opened, move, testerLevels, STEPS.length).seen]).toEqual([
+        ...opened.seen,
+      ]);
+    }
+  });
+});
+
 /* --------------------- the rest of the transitions --------------------- */
 
 describe("movePath", () => {

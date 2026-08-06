@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import type { ContentKind } from "@/lib/types";
 import {
   CORE_ONTOLOGY,
@@ -12,11 +13,12 @@ import {
   type LoadBundleResult,
   type OntologyTerm,
 } from "@/lib/core";
-import { cx, METRIC_SOURCE_META } from "@/lib/format";
+import { autonomyStatement, cx, METRIC_SOURCE_META } from "@/lib/format";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { KindBadge } from "@/components/ui/Badge";
 import { TagPill } from "@/components/ui/TagPill";
 import { PhaseCoverageBadge } from "@/components/ui/PhaseCoverage";
+import { locationLabel } from "@/components/ui/DiagnosticList";
 import {
   BundleDropzone,
   assembleBundle,
@@ -27,7 +29,7 @@ import {
   type UploadFile,
 } from "./BundleDropzone";
 import { requiredAgents, requiredTools } from "@/lib/graph-seed";
-import { ValidationReport } from "./ValidationReport";
+import { ValidationReport, verdictLine } from "./ValidationReport";
 
 /* ------------------------------------------------------------------ */
 /*  Static config                                                      */
@@ -35,11 +37,24 @@ import { ValidationReport } from "./ValidationReport";
 
 type StepId = 1 | 2 | 3 | 4;
 
-const STEPS: { id: StepId; label: string }[] = [
-  { id: 1, label: "Upload" },
-  { id: 2, label: "Details" },
-  { id: 3, label: "Preview" },
-  { id: 4, label: "Publish" },
+/**
+ * The four steps, each with the word the rail prints and the sentence the step's own
+ * heading uses.
+ *
+ * `heading` is new, and it is doing three jobs at once. Every step of this wizard is
+ * between 1300 and 3000 pixels tall and the advance control is at the bottom of it, so
+ * `setStep` alone swapped everything above the viewport and left the reader mid-form on
+ * content they had never seen, with the rail a thousand pixels over their head. The
+ * heading takes focus on a step change, which puts the scroll position at the top of the
+ * new step, announces the step to a screen reader, and gives the panel body the
+ * level-two heading its outline never had. `components/build/GuidedPath.tsx` solves the
+ * same problem on the sibling wizard the same way.
+ */
+const STEPS: { id: StepId; label: string; heading: string }[] = [
+  { id: 1, label: "Upload", heading: "Upload the bundle" },
+  { id: 2, label: "Details", heading: "Describe it" },
+  { id: 3, label: "Preview", heading: "What the validator found" },
+  { id: 4, label: "Publish", heading: "The registry entry" },
 ];
 
 /**
@@ -88,8 +103,14 @@ const KIND_NOUN: Record<ContentKind, string> = {
 const inputCls =
   "w-full bg-surface-2 border border-line rounded-md px-3 py-2 text-sm text-fg placeholder:text-dim transition-colors focus:border-cyan focus:outline-none";
 
-const fieldLabelCls =
-  "font-mono text-[11px] uppercase tracking-[0.14em] text-dim";
+/* There is no `fieldLabelCls` here any more, and there must not be one again. It held
+   `font-mono text-[11px] uppercase tracking-[0.14em] text-dim` — a fourth mono tier,
+   identical to `.label` in size, weight and colour and differing only in 0.04em of
+   tracking, which is the one difference a reader cannot name but can see when the two
+   sit on the same screen. This wizard renders labels beside `.label` and `.label-lead`
+   from `BundleDropzone`'s file manifest on step 1, so the fourth tier was visible as a
+   wobble rather than as a rank. Every field label below is `.label`; a title that a
+   reader is meant to start at is `.label-lead`. app/globals.css defines both. */
 
 /**
  * One vocabulary view per selection. `isA` memoizes per instance, so keeping the same view
@@ -114,6 +135,146 @@ const EMPTY_DETAILS: BundleDetails = {
   category: "",
   tags: [],
 };
+
+/* ------------------------------------------------------------------ */
+/*  The report, as a file                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One file as something a browser will save, the way `components/build/DownloadStep.tsx`
+ * builds every one of its nine: a `data:` URL over the text, assembled in the tab. There
+ * is no server to write a file on request and nothing here needs one.
+ */
+function dataHref(text: string): string {
+  return `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`;
+}
+
+/**
+ * "planning, testing", or a phrase for the empty side.
+ *
+ * Both empty cases are stated as facts about the graph rather than as a blank, for the
+ * reason `components/ui/PhaseCoverage.tsx` sets out at length: coverage describes what a
+ * factory does, and a phase with no node in it is scope, never a shortfall.
+ */
+function phaseList(ids: readonly string[], none: string): string {
+  return ids.length === 0 ? none : ids.join(", ");
+}
+
+/**
+ * `REPORT.md`: what the engine said about these exact bytes, in a file the reader keeps.
+ *
+ * The route with the highest effort cost used to end with the lowest payload — a
+ * three-line notice and two buttons that both discarded the run. `/build` ends in nine
+ * downloadable files; this ends in one, and the one is the only thing this route
+ * produces that did not exist before the reader arrived.
+ *
+ * Every figure below is quoted from `result`, never recomputed and never rounded into a
+ * claim the validator did not make. A bundle that carried an error has no `analysis`, and
+ * the report says that in as many words rather than leaving the two headings out and
+ * letting the omission read as a pass.
+ */
+function reportMarkdown(args: {
+  result: LoadBundleResult;
+  title: string;
+  slug: string;
+  kindNoun: string;
+}): string {
+  const { result, title, slug, kindNoun } = args;
+  const { blueprint, analysis } = result;
+  const resolved = blueprint !== undefined && analysis !== undefined && !hasErrors(result.diagnostics);
+
+  const out: string[] = [];
+  out.push(`# Validation report: ${title}`);
+  out.push("");
+  out.push(
+    "Produced by DarkPrint inside a browser tab, over the bytes named below. Nothing was uploaded and nothing was saved, so this file is the whole of the record.",
+  );
+  out.push("");
+
+  out.push("## The bundle");
+  out.push("");
+  out.push(`- kind: ${kindNoun}`);
+  out.push(`- slug: ${slug}`);
+  out.push(
+    `- digest: ${blueprint === undefined ? "not computed, the bundle did not resolve" : blueprint.digest}`,
+  );
+  if (blueprint !== undefined) {
+    out.push(`- graph: ${blueprint.nodes.length} nodes, ${blueprint.edges.length} edges`);
+  }
+  out.push(
+    `- verdict: ${resolved ? "bundle resolves" : "bundle rejected"}, ${verdictLine(result)}`,
+  );
+  out.push("");
+
+  if (analysis === undefined) {
+    out.push("## Autonomy and security");
+    out.push("");
+    out.push(
+      "Not computed. DarkPrint will not put a number on a graph whose references it could not check, so the diagnostics below are the whole of what this run produced.",
+    );
+    out.push("");
+  } else {
+    out.push("## Autonomy");
+    out.push("");
+    out.push(
+      `${analysis.autonomy.label}. ${analysis.autonomy.autonomousNodes} of ${analysis.autonomy.totalNodes} nodes run unattended.`,
+    );
+    out.push("");
+    out.push(autonomyStatement(analysis.autonomy.rationale));
+    out.push("");
+
+    out.push("## Security");
+    out.push("");
+    out.push(
+      `Level ${analysis.security.level}, ${analysis.security.raw.toFixed(2)} of 4 points kept.`,
+    );
+    out.push("");
+    out.push(analysis.security.rationale);
+    out.push("");
+
+    out.push("## Phase coverage");
+    out.push("");
+    out.push(
+      "Which of the five lifecycle phases this graph acts in. A description of scope, not a score.",
+    );
+    out.push("");
+    out.push(
+      `- has nodes in: ${phaseList(analysis.phaseCoverage.covered, "none of the five")}`,
+    );
+    out.push(
+      `- no node in: ${phaseList(analysis.phaseCoverage.missing, "none, this graph acts in all five")}`,
+    );
+    out.push("");
+  }
+
+  out.push("## What the validator reported");
+  out.push("");
+  if (result.diagnostics.length === 0) {
+    out.push("Nothing. No error, no warning, no note.");
+    out.push("");
+  } else {
+    for (const diagnostic of result.diagnostics) {
+      const where = locationLabel(diagnostic.location);
+      out.push(`- **${diagnostic.severity}** \`${diagnostic.code}\` ${diagnostic.message}`);
+      if (where !== undefined) out.push(`  - at: ${where}`);
+      if (diagnostic.hint !== undefined) out.push(`  - hint: ${diagnostic.hint}`);
+    }
+    out.push("");
+  }
+
+  out.push("## What is not in here");
+  out.push("");
+  out.push(
+    "Two of the six axes are read off the graph and both are above. Efficacy, reliability and transparency come from weighted community and validator votes; cost and time are reported by whoever runs the graph, and the platform never sees the execution.",
+  );
+  out.push("");
+  out.push(
+    "This bundle was resolved against the curated core vocabulary only. A blueprint in the archive is resolved against the core plus the terms its release adds in its own namespace, so a graph using one of those comes back here with the term unknown and a security reading computed without it.",
+  );
+  out.push("");
+
+  return out.join("\n");
+}
 
 /** A real bundle out of the archive, handed down by the server page (§5 step 1). */
 export interface ExampleBundle {
@@ -156,7 +317,7 @@ function ChipField({
 
   return (
     <div className="flex flex-col gap-2">
-      <label className={fieldLabelCls} htmlFor={id}>
+      <label className="label" htmlFor={id}>
         {label}
       </label>
       <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-line bg-surface-2 px-2 py-2 focus-within:border-cyan">
@@ -175,7 +336,7 @@ function ChipField({
               type="button"
               onClick={() => onRemove(i)}
               aria-label={`Remove ${v}`}
-              className="ml-0.5 text-dim transition-colors hover:text-signal"
+              className="ml-0.5 text-dim transition-colors hoverable:hover:text-signal"
             >
               ×
             </button>
@@ -221,7 +382,7 @@ function DerivedChips({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className={fieldLabelCls}>{label}</span>
+      <span className="label">{label}</span>
       <div className="flex min-h-[2.75rem] flex-wrap items-center gap-1.5 rounded-md border border-dashed border-line bg-surface-2/40 px-2 py-2">
         {values.length === 0 ? (
           <span className="px-1 text-sm text-dim">{empty}</span>
@@ -294,16 +455,32 @@ function StepIndicator({
                   active && "border-cyan bg-cyan/10 text-cyan",
                   done && "border-emerald/50 bg-emerald/10 text-emerald",
                   !active && !done && "border-line bg-surface-2 text-dim",
-                  !active && !done && !locked && "group-hover:border-line-bright",
+                  !active &&
+                    !done &&
+                    !locked &&
+                    "hoverable:group-hover:border-line-bright",
                 )}
               >
                 {done ? "✓" : s.id}
               </span>
+              {/* The ACTIVE step keeps its word at every width; only the other three
+                  drop below `sm`. The label used to be `hidden sm:block` outright, so at
+                  390px the rail was four unlabelled circles: the reader could not read
+                  which step they were on, and the reason steps 2 to 4 were locked lived
+                  only in an `aria-label` nobody sees. It reads `1 ● UPLOAD 2 3 4` now,
+                  which names where you are and still fits the phone.
+
+                  `.label`, not the 12px/0.12em string that was here: a step name in a
+                  rail is a meta label, which is the tier's own job, and the fourth and
+                  fifth mono spellings on this route were both in this file. `.label`
+                  carries `--color-dim`, and `text-fg` still wins on the active step —
+                  the primitives live in `@layer components` and a utility outranks a
+                  layered rule, which is the whole point of wave 1's layering. */}
               <span
                 className={cx(
-                  "hidden font-mono text-xs uppercase tracking-[0.12em] transition-colors sm:block",
-                  active ? "text-fg" : "text-dim",
-                  !active && !locked && "group-hover:text-muted",
+                  "label transition-colors",
+                  active ? "text-fg" : "hidden sm:block",
+                  !active && !locked && "hoverable:group-hover:text-muted",
                 )}
               >
                 {s.label}
@@ -406,12 +583,28 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
     setDetails((d) => ({ ...d, tags: d.tags.filter((_, i) => i !== index) }));
   }
 
+  /** Everything gone: a different project, typed from scratch. */
   function reset() {
     setSubmitted(false);
     setStep(1);
     setKind("blueprint");
     setFiles([]);
     setDetails(EMPTY_DETAILS);
+  }
+
+  /**
+   * The files go, the manifest stays.
+   *
+   * The success screen's only way back used to be `reset`, which wiped the title, the
+   * summary, the description, the category and every tag along with the bundle — so a
+   * second bundle out of the same project meant retyping the manifest that the first one
+   * had already filled in. A dropped `blueprint.yaml` overwrites these fields the moment
+   * it lands (see `takeFiles`), so keeping them costs nothing and is never stale.
+   */
+  function validateAnother() {
+    setSubmitted(false);
+    setStep(1);
+    setFiles([]);
   }
 
   /* ---------- navigation ---------- */
@@ -431,11 +624,57 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
     if (step > 1) setStep((s) => (s - 1) as StepId);
   }
 
+  /* ---------- the step heading takes the reader with it ----------
+     Each step here is between 1300 and 3000 pixels tall and both advance controls sit at
+     the bottom of it, so a bare `setStep` swapped the whole panel above the viewport and
+     left the reader looking at the middle of a form they had never seen, with the rail
+     out of sight overhead. Focus moves to the new step's heading, which announces the
+     step and gives the panel the heading level its outline was missing.
+
+     The scroll is done by hand rather than left to the focus, and that is not belt and
+     braces — measured on this page, `focus()`'s own scroll-into-view lands the heading
+     431px down the viewport on one step and does not move at all on the next two. It has
+     to walk every scrollable ancestor, and `body { overflow-x: hidden }` in
+     `app/globals.css` makes the body one of them, so the amount it scrolls depends on
+     which box it decided to move. One `window.scrollTo` against the heading's own
+     position is exact on every step. `behavior` is deliberately left out so the CSS
+     decides: `html` is `scroll-behavior: smooth`, and the reduced-motion block turns it
+     to `auto` — the reader who asked for less motion is not overruled from script.
+
+     Skipped on the first mount: nobody navigated to arrive. */
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    const heading = headingRef.current;
+    if (heading === null) return;
+    heading.focus({ preventScroll: true });
+    // 80px is the site's one "clear of the sticky header" constant — the same number
+    // every `lg:sticky lg:top-20` on the site uses.
+    const y = heading.getBoundingClientRect().top + window.scrollY - 80;
+    window.scrollTo({ top: y < 0 ? 0 : y });
+  }, [step]);
+
   // The slug the registry would key on. A dropped manifest owns its own — §4 makes it
   // the blueprint's identity — so only a synthesised manifest gets one off the title.
   const slug =
     bundle?.manifest.slug ??
     (details.title.trim() === "" ? "untitled-blueprint" : slugify(details.title));
+
+  /** What the reader is looking at, named the way the report and the card both name it. */
+  const reportTitle =
+    details.title.trim() || bundle?.manifest.title || `Untitled ${KIND_NOUN[kind]}`;
+
+  /** The report the success screen hands over, built only once there is one to hand. */
+  const reportHref = useMemo(() => {
+    if (result === undefined) return undefined;
+    return dataHref(
+      reportMarkdown({ result, title: reportTitle, slug, kindNoun: KIND_NOUN[kind] }),
+    );
+  }, [result, reportTitle, slug, kind]);
 
   return (
     <div className="panel overflow-hidden">
@@ -446,6 +685,28 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
 
       {/* Body */}
       <div className="px-5 py-8 sm:px-8">
+        {/* The step, named. `tabIndex={-1}` so the effect above can move focus here on
+            every step change.
+
+            `w-fit` rather than `outline-none`, and the difference is worth writing down.
+            The focus ring is unlayered in `app/globals.css` on purpose — a keyboard ring
+            a component's own utilities can outrank is not a guarantee — so `outline-none`
+            in the utilities layer does not actually suppress it, it only looks like it
+            does. Which is the right outcome anyway: a reader who arrived here by pressing
+            Next on the keyboard should be shown where focus went. What `w-fit` fixes is
+            the shape of that answer. A block-level heading takes the panel's full width,
+            so the ring drew a 1100px cyan rectangle that read as an input; hugging the
+            words it reads as a position. A pointer never sees it at all, because a
+            programmatic focus after a mouse click does not match `:focus-visible`. */}
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="w-fit font-display text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] text-fg sm:text-[32px]"
+        >
+          {STEPS[step - 1].heading}
+        </h2>
+
+        <div className="mt-10">
         {step === 1 && (
           <div className="flex flex-col gap-8">
             <BundleDropzone
@@ -458,7 +719,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
 
             {/* Content kind selector */}
             <div className="flex flex-col gap-3">
-              <span className={fieldLabelCls} id="content-type-label">
+              <span className="label" id="content-type-label">
                 Content type
               </span>
               <div
@@ -480,12 +741,17 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                           ? `${k.label}: ${k.hint}`
                           : `${k.label}: ${k.hint}. This flow does not accept one yet.`
                       }
+                      /* Both hovers gated: this selector is a tap target on the first
+                         step, and an ungated `hover:` latches on a phone — the pressed
+                         kind keeps the lit state right up to the route change, which on
+                         a three-way selector reads as two things being chosen at once. */
                       className={cx(
                         "flex items-center gap-2 rounded-md px-3.5 py-2 text-sm transition-colors",
                         active
                           ? "bg-surface-3 text-fg shadow-[inset_0_0_0_1px_var(--color-line-bright)]"
-                          : "text-muted hover:text-fg",
-                        !k.ready && "cursor-not-allowed opacity-50 hover:text-muted",
+                          : "text-muted hoverable:hover:text-fg",
+                        !k.ready &&
+                          "cursor-not-allowed opacity-50 hoverable:hover:text-muted",
                       )}
                     >
                       <span
@@ -526,7 +792,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
             </p>
 
             <div className="flex flex-col gap-2">
-              <label className={fieldLabelCls} htmlFor="bp-title">
+              <label className="label" htmlFor="bp-title">
                 Title
               </label>
               <input
@@ -542,7 +808,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className={fieldLabelCls} htmlFor="bp-summary">
+              <label className="label" htmlFor="bp-summary">
                 Summary
               </label>
               <textarea
@@ -556,7 +822,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className={fieldLabelCls} htmlFor="bp-description">
+              <label className="label" htmlFor="bp-description">
                 Description
               </label>
               <textarea
@@ -570,7 +836,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
             </div>
 
             <div className="flex flex-col gap-2 sm:max-w-xs">
-              <label className={fieldLabelCls} htmlFor="bp-category">
+              <label className="label" htmlFor="bp-category">
                 Category
               </label>
               <input
@@ -627,45 +893,120 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
         {step === 3 &&
           (result === undefined ? (
             <div className="rounded-lg border border-line bg-surface-2/40 p-5">
-              <h3 className="font-display text-lg font-semibold text-fg">
+              <h3 className="font-display text-xl font-semibold text-fg">
                 Nothing to validate
               </h3>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+              <p className="prose-lane mt-4 text-sm leading-relaxed text-muted">
                 A bundle without a <span className="font-mono text-cyan">.dot</span> is
                 not an incomplete bundle, it is not one at all. Go back to the first
                 step and add the topology.
               </p>
             </div>
           ) : (
-            <ValidationReport result={result} />
+            /* `dot` is the reader's own bytes, and it is only read when the parse failed
+               outright: `result.blueprint` is absent in exactly that case and it is the
+               only other place the source lives, so without this the one rejection whose
+               whole complaint is a character position had no file to point at. */
+            <ValidationReport
+              result={result}
+              {...(parts.dot === undefined ? {} : { dot: parts.dot.text })}
+            />
           ))}
 
         {step === 4 &&
           (submitted ? (
-            <div className="mx-auto flex max-w-lg flex-col items-center gap-5 py-6 text-center">
-              <span
-                className="flex h-14 w-14 items-center justify-center rounded-full border border-emerald/40 bg-emerald/10 text-2xl text-emerald"
-                aria-hidden
-              >
-                ✓
-              </span>
-              <div className="flex flex-col gap-2">
-                <h3 className="font-display text-2xl font-semibold text-fg">
-                  This is where it would be published
-                </h3>
-                <p className="text-sm leading-relaxed text-muted">
-                  <span className="font-mono text-amber">demo</span>: nothing was sent
-                  and nothing was saved. There is no registry backend yet. In the real
-                  one your {KIND_NOUN[kind]} would now be live with the two
-                  static-analysis scores you just saw attached, awaiting community votes.
-                </p>
+            /* ── The handover ──
+               This screen used to replace the entire step with a three-line notice and
+               two buttons, both of which threw the run away: one left the route and the
+               other called `reset`, which wiped the files, the kind, the manifest and the
+               step. So the route with the highest effort cost on the site ended with the
+               lowest payload, while `/build` — where the reader typed nothing — ends in
+               nine downloadable files.
+
+               What the engine computed stays mounted, and it leaves with the reader as
+               `REPORT.md`. The demo disclosure below is unchanged in fact and changed in
+               framing: nothing was sent and nothing was saved is still the first thing it
+               says, but it is now the sentence that explains why the file matters rather
+               than an apology for the button. */
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col items-start gap-4 sm:flex-row">
+                <span
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-emerald/40 bg-emerald/10 text-2xl text-emerald"
+                  aria-hidden
+                >
+                  ✓
+                </span>
+                <div className="flex min-w-0 flex-col gap-3">
+                  <h3 className="font-display text-xl font-semibold text-fg">
+                    Validated. Take it with you.
+                  </h3>
+                  <p className="prose-lane text-sm leading-relaxed text-muted">
+                    <span className="font-mono text-amber">demo</span>: nothing was sent
+                    and nothing was saved, because there is no registry backend yet. That
+                    is exactly why the report downloads instead: it carries the digest,
+                    both computed readings in the engine&rsquo;s own words and every
+                    diagnostic, so the run survives this tab.
+                  </p>
+                </div>
               </div>
-              <div className="flex flex-wrap justify-center gap-3">
-                <ButtonLink href="/blueprints">Browse the blueprints</ButtonLink>
-                <Button variant="outline" onClick={reset}>
-                  Upload another
+
+              {/* The result, still on the card. It was unmounted here — the digest, the
+                  autonomy class and the security level all vanished the moment the
+                  reader pressed the button that produced them. */}
+              {result?.analysis !== undefined && (
+                <dl className="grid gap-3 rounded-lg border border-line bg-surface-2/40 p-5 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-5">
+                  <dt className="label self-center">Digest</dt>
+                  <dd className="break-all font-mono text-xs text-muted">
+                    {result.blueprint?.digest ?? "not computed"}
+                  </dd>
+                  <dt className="label self-center">Autonomy</dt>
+                  {/* The class, not the band: "A4" is the same ordinal wearing a prefix,
+                      and doc 2 §1.1 keeps it off every surface. */}
+                  <dd className="text-muted">
+                    {result.analysis.autonomy.label}:{" "}
+                    {result.analysis.autonomy.autonomousNodes} of{" "}
+                    {result.analysis.autonomy.totalNodes} nodes unattended
+                  </dd>
+                  <dt className="label self-center">Security</dt>
+                  <dd className="text-muted">
+                    level {result.analysis.security.level} ·{" "}
+                    {result.analysis.security.findings.length} finding
+                    {result.analysis.security.findings.length === 1 ? "" : "s"}
+                  </dd>
+                  <dt className="label self-center">Verdict</dt>
+                  <dd className="font-mono text-xs text-muted">{verdictLine(result)}</dd>
+                </dl>
+              )}
+
+              <div className="flex flex-wrap items-center gap-3">
+                {reportHref !== undefined && (
+                  <ButtonLink href={reportHref} download="REPORT.md" prefetch={false}>
+                    Download the report
+                  </ButtonLink>
+                )}
+                <Button variant="outline" onClick={validateAnother}>
+                  Validate another bundle
                 </Button>
               </div>
+
+              {/* Both ways out that throw something away, demoted to links so neither can
+                  be pressed by reflex. `Validate another bundle` above keeps the manifest
+                  on purpose; this one is the deliberate blank sheet. */}
+              <p className="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[11px] text-dim">
+                <button
+                  type="button"
+                  onClick={reset}
+                  className="underline-offset-4 transition-colors hoverable:hover:text-fg hoverable:hover:underline"
+                >
+                  start over with an empty form
+                </button>
+                <Link
+                  href="/blueprints"
+                  className="underline-offset-4 transition-colors hoverable:hover:text-cyan hoverable:hover:underline"
+                >
+                  browse the blueprints →
+                </Link>
+              </p>
             </div>
           ) : (
             <div className="flex flex-col gap-6">
@@ -778,27 +1119,40 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
               </div>
             </div>
           ))}
+        </div>
       </div>
 
-      {/* Footer nav */}
+      {/* Footer nav.
+          The counter used to exist on step 4 alone, where it told a reader who had
+          already arrived that they had arrived; everywhere else the position was
+          readable only by counting the rail at the top of a panel three viewports up.
+          It prints on every step now, between the two controls, exactly as the sibling
+          wizard prints it (`components/build/GuidedPath.tsx`). `STEPS.length` rather
+          than a typed 4, so the two can never disagree. */}
       {!(step === 4 && submitted) && (
-        <div className="flex items-center justify-between border-t border-line bg-surface-2/40 px-5 py-4 sm:px-8">
+        <div className="flex items-center justify-between gap-3 border-t border-line bg-surface-2/40 px-5 py-4 sm:px-8">
           <Button variant="ghost" onClick={back} disabled={step === 1}>
             ← Back
           </Button>
+          <span className="min-w-0 text-center font-mono text-[11px] leading-relaxed text-dim">
+            step {step} of {STEPS.length}
+            {step === 4 &&
+              ` · ${
+                !blocked
+                  ? "ready to publish"
+                  : result === undefined
+                    ? "no bundle yet"
+                    : `blocked by ${errorCount} error${errorCount === 1 ? "" : "s"}`
+              }`}
+          </span>
           {step < 4 ? (
             <Button variant="outline" onClick={next} disabled={step === 1 && !canAdvance}>
               Next →
             </Button>
           ) : (
-            <span className="font-mono text-[11px] text-dim">
-              Step 4 of 4 ·{" "}
-              {!blocked
-                ? "ready to publish"
-                : result === undefined
-                  ? "no bundle yet"
-                  : `blocked by ${errorCount} error${errorCount === 1 ? "" : "s"}`}
-            </span>
+            /* Nothing to advance to, and no placeholder pretending there is: the span
+               keeps the counter centred between the two ends of the row. */
+            <span aria-hidden />
           )}
         </div>
       )}

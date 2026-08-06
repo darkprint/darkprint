@@ -14,7 +14,14 @@
      1. each letter draws, then instantiates     splitText + svg.createDrawable
      2. a rule is drawn under it                 svg.createDrawable
      3. the name settles                         createSpring
-     4. one pass of light crosses the letters    stagger
+     4. one pass of light brightens the letters  stagger
+
+   Beat 4 used to DIM each letter to 48% opacity on its way past. On a
+   near-black ground that makes a letter recede into the ground — it
+   momentarily disappears, which reads as a flicker, and it was the last
+   thing the hero did before settling. Light crossing a lit object makes
+   it brighter, so the pass is a `filter: brightness()` sweep now and
+   opacity stays pinned at 1 throughout.
 
    Beat 1's own two steps, added when the letter arrival became a
    "wiring-draw" (Task 6 of the visual-polish plan): a `data-mark="trace"`
@@ -56,6 +63,7 @@
    ============================================================ */
 
 import Link from "next/link";
+import { ButtonLink } from "@/components/ui/Button";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import {
   animate,
@@ -69,6 +77,7 @@ import {
 } from "animejs";
 
 import { FLOW, FLOW_SELECTOR, FlowEdge } from "@/components/viz";
+import { EASE_OUT } from "@/components/viz/easing";
 import { useIsomorphicLayoutEffect, useReveal } from "@/components/viz/useReveal";
 
 import { WORDMARK_LETTER_PATHS } from "./wordmark-paths";
@@ -86,6 +95,35 @@ const MARK = "DarkPrint";
  * nodes, and `app/layout.tsx` carries the same string in its own metadata.
  */
 const CLAIM = "Autonomy you can read as a graph.";
+
+/**
+ * The line under the claim, and the only sentence in the first viewport that names a
+ * concrete thing a reader will find.
+ *
+ * The claim is an abstraction — deliberately, it is the site's one line — and an
+ * abstraction alone left the eye ranking the hero brand name → glow → small grey
+ * abstraction → the 11px eyebrow that actually said what the product is. This says what
+ * the graph, the card and the score ARE, in the reader's own words, so the eyebrow no
+ * longer has to carry that job at the bottom of the type scale.
+ */
+const SUPPORT =
+  "DOT graphs of agent pipelines, the YAML card behind every node, and a score for how much autonomy each one takes.";
+
+/**
+ * The three counts the first viewport prints.
+ *
+ * Passed in rather than imported: `PLATFORM_STATS` lives in `@/lib/data`, which reaches
+ * `lib/content/read.ts` and therefore `node:fs`, and this file is `"use client"` — the
+ * import would go into the browser bundle and `read.ts` throws by hand the moment it finds
+ * a `window`. `Hero` is a server component and reads the archive for us; these are plain
+ * numbers by the time they cross the boundary, so they stay countable off `content/` at
+ * build time rather than being written down here where they could go stale.
+ */
+export interface WordmarkCounts {
+  blueprints: number;
+  nodes: number;
+  terms: number;
+}
 
 /** The rule under the name, in scene units. Tall enough for the pulse's stroke. */
 const RULE = { width: 900, height: 6 } as const;
@@ -152,24 +190,44 @@ function handle(id: string): string {
   return `[data-mark="${id}"]`;
 }
 
+/*
+ * `EASE_OUT` is imported from `components/viz/easing.ts` rather than derived here.
+ * It was derived here first, and then the same derivation was needed by
+ * `useLuminousFlow.ts`, which had the identical bug — the whole site's figures were
+ * running linear. One definition, in the file whose docblock explains why the string
+ * form in `MOTION` cannot be handed to anime.js at all.
+ */
+
 /**
  * The timeline's clock, in milliseconds, in one place.
  *
  * Four beats that overlap deliberately: the rule starts drawing while the last letters are
  * still arriving, and the light crosses them while the rule finishes. Written out rather
  * than chained off each other because the overlaps are the composition.
+ *
+ * ── Why the second half moved forward ──
+ * The claim used to land at 1400 and the way-down cue at 1980, which put the last thing a
+ * reader could act on at 2.58s. Everything a reader can act on is now on screen by ~1.6s:
+ * the claim at 900, the two buttons at 1080, the CLI chip 180ms behind them.
+ *
+ * ── Why `settle` moved back ──
+ * `settle` is also when the trace overlay is pulled away (`AT.settle - 200`). At 980 that
+ * fade ran 780→980ms while the outermost pair of letters — D and t, the two that FRAME the
+ * mark — were still cross-fading in: `stagger(58, { from: "center" })` over nine characters
+ * offsets them 232ms, so they run 732→952ms and the outline was taken off them two-thirds
+ * of the way through. 1180 puts the whole fade after the last letter has landed.
  */
 const AT = {
   eyebrow: 120,
   letters: 240,
-  settle: 980,
+  settle: 1180,
   rule: 900,
   light: 1260,
-  claim: 1400,
-  cue: 1980,
+  claim: 900,
+  cta: 1080,
 } as const;
 
-export function Wordmark() {
+export function Wordmark({ stats }: { stats: WordmarkCounts }) {
   const { ref, phase } = useReveal<HTMLDivElement>({ amount: 0.05 });
 
   useIsomorphicLayoutEffect(() => {
@@ -193,8 +251,8 @@ export function Wordmark() {
 
       const eyebrow = root.querySelectorAll<HTMLElement>(handle("eyebrow"));
       const claim = root.querySelectorAll<HTMLElement>(handle("claim"));
+      const cta = root.querySelectorAll<HTMLElement>(handle("cta"));
       const cli = root.querySelectorAll<HTMLElement>(handle("cli"));
-      const cue = root.querySelectorAll<HTMLElement>(handle("cue"));
       const aura = root.querySelectorAll<HTMLElement>(handle("aura"));
       const rule = svg.createDrawable(root.querySelectorAll(FLOW_SELECTOR.line));
       const travelling = root.querySelectorAll<SVGPathElement>(FLOW_SELECTOR.pulse);
@@ -220,9 +278,9 @@ export function Wordmark() {
       utils.set(rule, { draw: "0 0" });
       utils.set(traceDrawable, { draw: "0 0" });
       utils.set(travelling, { opacity: 0 });
-      utils.set([...eyebrow, ...claim, ...cli, ...cue], { opacity: 0, translateY: 10 });
+      utils.set([...eyebrow, ...claim, ...cta, ...cli], { opacity: 0, translateY: 10 });
 
-      createTimeline({ defaults: { ease: "outQuad" } })
+      createTimeline({ defaults: { ease: EASE_OUT } })
         .add(aura, { opacity: 1, scale: 1, duration: 1400, ease: "outCubic" }, 0)
         .add(eyebrow, { opacity: 1, translateY: 0, duration: 520 }, AT.eyebrow)
         /* The wiring-draw entrance (Task 6): the trace overlay fades in, each letter's
@@ -232,16 +290,20 @@ export function Wordmark() {
            real, solid DOM letter fades in underneath it, in place. The overlay fades out
            again once every letter has taken over, just before the settle. */
         .add(traceOverlay, { opacity: 1, duration: 200 }, AT.letters)
+        /* `easeOut` and not `inOutQuad`: `inOutQuad` ease-INs, and a pen stroke drawn with
+           it creeps at exactly the moment the reader's eye is on the origin of the line,
+           waiting for it to begin. A draw takes `easeOut` — the pen is already moving when
+           it lands. Same reason the rule below changed. */
         .add(
           traceDrawable,
-          { draw: "0 1", duration: 260, ease: "inOutQuad" },
+          { draw: "0 1", duration: 260, ease: EASE_OUT },
           stagger(58, { from: "center", start: AT.letters }),
         )
         /* `AT.letters + 260` is the trace's own draw duration, so the cross-fade for the
            centre letters starts exactly as their outline finishes drawing. */
         .add(
           letters,
-          { opacity: 1, duration: 220, ease: "outQuad" },
+          { opacity: 1, duration: 220, ease: EASE_OUT },
           stagger(58, { from: "center", start: AT.letters + 260 }),
         )
         .add(traceOverlay, { opacity: 0, duration: 200 }, AT.settle - 200)
@@ -259,18 +321,34 @@ export function Wordmark() {
           { scale: [1.035, 1], ease: spring({ stiffness: 120, damping: 12 }) },
           AT.settle,
         )
-        .add(rule, { draw: "0 1", duration: 780, ease: "inOutQuad" }, AT.rule)
+        .add(rule, { draw: "0 1", duration: 780, ease: EASE_OUT }, AT.rule)
         /* One pass of light across the letters, and then it is over. A loop here would
-           be a heading that never stops moving; spec §2 asks for a settle. */
+           be a heading that never stops moving; spec §2 asks for a settle.
+
+           `filter: brightness()` and not `opacity: [1, 0.48, 1]`. Dimming a letter on a
+           near-black ground pushes it INTO the ground — it half-disappears and reads as a
+           flicker, which is the wrong last impression for a name that has just finished
+           arriving. Light passing over a lit object makes it brighter, and because the
+           letters carry the cyan `textShadow` by inheritance, brightening the element
+           brightens the glow with it: the pass reads as light travelling across the mark
+           rather than as the mark blinking. Opacity is left pinned at 1 throughout.
+
+           `filter` is one of the CSS values anime.js decomposes as a COMPLEX tween
+           (numbers interpolated inside a matching string shape), so the three keyframes
+           have to share the one function they differ in. */
         .add(
           letters,
-          { opacity: [1, 0.48, 1], duration: 560 },
+          {
+            filter: ["brightness(1)", "brightness(1.45)", "brightness(1)"],
+            duration: 620,
+            ease: EASE_OUT,
+          },
           stagger(42, { start: AT.light }),
         )
         .add(claim, { opacity: 1, translateY: 0, duration: 700 }, AT.claim)
         .add(travelling, { opacity: 1, duration: 420 }, AT.claim)
-        .add(cli, { opacity: 1, translateY: 0, duration: 700 }, AT.claim)
-        .add(cue, { opacity: 1, translateY: 0, duration: 600 }, AT.cue);
+        .add(cta, { opacity: 1, translateY: 0, duration: 700 }, AT.cta)
+        .add(cli, { opacity: 1, translateY: 0, duration: 700 }, AT.cta + 180);
 
       /* The one thing that keeps moving after the entrance, and it is the register's
          signature rather than decoration: `pathLength="1"` on the pulse puts the dash
@@ -330,8 +408,14 @@ export function Wordmark() {
               /* The lower bound is what a 390-pixel phone gets, and it is set from the word
                  rather than from a scale: nine characters of the display face at 15vw fill
                  a phone's text column and stop, so the name never wraps and never shrinks
-                 to a caption. */
-              fontSize: "clamp(3.4rem, 15vw, 9rem)",
+                 to a caption.
+
+                 The upper bound came down from 9rem (144px). At 144px against a 20px muted
+                 claim the first viewport ranked brand name → glow → small grey abstraction
+                 → the 11px eyebrow that was the only thing saying what the product is, a
+                 7.2:1 step that made the sentence the fourth read. 112px against a 30px
+                 claim in `text-fg` is 3.7:1, and the sentence becomes the second. */
+              fontSize: "clamp(3.4rem, 15vw, 7rem)",
               textShadow:
                 "0 0 32px color-mix(in oklab, var(--color-cyan) 32%, transparent), 0 0 120px color-mix(in oklab, var(--color-blueprint-line) 22%, transparent)",
             }}
@@ -387,34 +471,78 @@ export function Wordmark() {
 
         <span
           data-mark="claim"
-          className="block max-w-xl text-balance font-sans text-base leading-relaxed text-muted sm:text-xl"
+          className="block max-w-2xl text-balance font-sans text-xl leading-snug text-fg sm:text-3xl"
         >
           {CLAIM}
         </span>
       </h1>
 
+      {/* The concrete line, outside the `h1` on purpose: the heading's accessible name is
+          the site's name and its claim, and a third sentence inside it would announce the
+          whole paragraph as the page's one level-one heading. It carries `data-mark="claim"`
+          so it arrives on the same beat as the sentence it supports — the timeline selects
+          every element with that mark, not one. */}
+      <p
+        data-mark="claim"
+        className="mt-4 max-w-2xl text-balance font-sans text-base leading-relaxed text-muted"
+      >
+        {SUPPORT}
+      </p>
+
+      {/* The first viewport's two real actions, and the three figures behind them.
+
+          Measured before this: the only interactive things above the fold were a CLI chip
+          wearing a COMING SOON badge and a "what a blueprint is ↓" cue, while the two
+          buttons that open the registry sat at 90% scroll depth. On a phone the header
+          collapses into a hamburger, so viewport 1 carried no visible control at all.
+
+          The labels are `SectionDoors`' two doors, verbatim: the landing opens and closes
+          on the same two choices in the same words, which is the decision architecture the
+          page already ends on rather than a second, differently-worded offer. */}
+      <div data-mark="cta" className="mt-8 flex flex-col items-center">
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <ButtonLink href="/blueprints" variant="primary" size="lg">
+            Browse the blueprints
+          </ButtonLink>
+          <ButtonLink href="/build" variant="outline" size="lg">
+            Build your own
+          </ButtonLink>
+        </div>
+
+        {/* Proof rather than a promise, and the one line in the first viewport a reader
+            could check: `PLATFORM_STATS` counts `content/` at build time, so these three
+            move when the archive does. `.label` is the site's 11px mono tier; the numbers
+            take `tabular-nums` so they do not shift width against each other. */}
+        <p className="label mt-5 text-balance tabular-nums">
+          {/* Each count is atomic: on a 390px phone the line wraps, and without this it
+              wrapped inside a count — "50" on one line and "ONTOLOGY TERMS" on the next,
+              which reads as two different facts. It may break between counts, never
+              inside one. */}
+          <span className="whitespace-nowrap">{stats.blueprints} blueprints &middot;</span>{" "}
+          <span className="whitespace-nowrap">{stats.nodes} node cards &middot;</span>{" "}
+          <span className="whitespace-nowrap">{stats.terms} ontology terms</span>
+        </p>
+      </div>
+
       {/* The CLI mention, moved here 2026-07-29 from the section's top-right corner —
-          directly under the claim once it was actually on screen. It carries its own
-          "coming soon" disclosure (doc 2 §0.4 — an MCP server for the registry does not
-          exist yet) rather than borrowing the claim's own sentence as cover for one. */}
+          directly under the claim once it was actually on screen, and below the two real
+          buttons since. It carries its own "coming soon" disclosure (doc 2 §0.4 — an MCP
+          server for the registry does not exist yet) rather than borrowing the claim's own
+          sentence as cover for one; that honesty stays, it just stops being the only thing
+          on the first screen a reader can click.
+
+          `transition-[…]` is spelled out because bare `transition-colors` in Tailwind v4
+          includes `outline-color`, which fades the keyboard ring in over 150ms — a reader
+          tabbing at 80ms sees a half-strength ring. `scale` is named beside `transform`
+          because Tailwind v4 compiles `scale-[0.97]` to the standalone `scale` property,
+          which a list naming only `transform` does not cover. */}
       <Link
         data-mark="cli"
         href="/install"
-        className="mt-6 inline-flex items-center gap-2 rounded-md border border-line bg-surface-2/80 px-3 py-1.5 font-mono text-xs text-muted transition-colors hover:text-fg"
+        className="mt-6 inline-flex items-center gap-2 rounded-md border border-line bg-surface-2/80 px-3 py-1.5 font-mono text-xs text-dim transition-[transform,scale,color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:text-fg hoverable:active:scale-[0.97]"
       >
         <span>$ npx darkprint setup</span>
         <ComingSoonBadge />
-      </Link>
-
-      {/* The way down. A real link rather than a chevron, so the first thing a keyboard
-          reader reaches says where it goes. */}
-      <Link
-        data-mark="cue"
-        href="#blueprint"
-        className="mt-8 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-dim transition-colors hover:text-fg sm:mt-10"
-      >
-        what a blueprint is
-        <span aria-hidden>&darr;</span>
       </Link>
     </div>
   );

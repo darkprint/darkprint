@@ -112,8 +112,22 @@ export function FavoriteStar({ id, className }: { id: string; className?: string
       aria-label={label}
       title={label}
       className={cx(
-        "inline-flex items-center justify-center rounded-full border border-line bg-surface-2/90 p-1.5 backdrop-blur-sm transition-colors hover:border-line-bright",
-        favorited ? "text-amber" : "text-dim hover:text-fg",
+        // 30px across (16px glyph + 6px padding + 1px border, both sides), so it takes the
+        // deepest of the site's three press bands: ≤40px → 0.94, 40–200px → 0.97,
+        // >200px → 0.99. The property list is written out rather than left as
+        // `transition-colors` because a bare colour list cannot animate the press, and
+        // `transition-all` would put a 40px-blur backdrop filter on the same clock.
+        //
+        // `scale` is named in that list on purpose. Tailwind v4 compiles `scale-[0.94]` to
+        // the standalone `scale:` property, not to `transform: scale(…)`, and CSS treats
+        // the two as different animatable properties — a list carrying only `transform`
+        // leaves the press snapping in and out with no duration at all.
+        //
+        // `hoverable:` is `@media (hover: hover) and (pointer: fine)` (app/globals.css).
+        // Without it a tap on a phone latches the hover border until the next tap
+        // somewhere else — on a card grid, that reads as a star that stayed selected.
+        "inline-flex items-center justify-center rounded-full border border-line bg-surface-2/90 p-1.5 backdrop-blur-sm transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-line-bright hoverable:active:scale-[0.94]",
+        favorited ? "text-amber" : "text-dim hoverable:hover:text-fg",
         className,
       )}
     >

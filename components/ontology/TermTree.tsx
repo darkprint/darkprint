@@ -273,9 +273,13 @@ function BranchList({
 /**
  * Every term of one kind, arranged under the term it specialises.
  *
- * `max-w-4xl` rather than the panel's full width: past that the description column runs
- * beyond a comfortable measure, and a term list nobody can read a line of is not more
- * useful for being wider.
+ * No width of its own, and the reason is worth writing down because it used to have one.
+ * This carried `max-w-4xl` with a comment about reading measure. The measure was real;
+ * the place was not. Capping the *tree* to protect the *description column* left the tree
+ * ending 235px inside its own panel border, so the panel border, the section header rule,
+ * the grid and the prose were four different right edges in one box. The measure now sits
+ * on the description paragraph in `TermRow`, where a measure belongs, and the tree fills
+ * whatever column it is mounted in.
  */
 export function TermTree({
   kind,
@@ -295,7 +299,7 @@ export function TermTree({
   }
 
   return (
-    <div className={cx("max-w-4xl", className)}>
+    <div className={className}>
       <TermColumnHeader showWeight={showWeight} />
       <BranchList branches={branches} depth={0} showWeight={showWeight} />
     </div>

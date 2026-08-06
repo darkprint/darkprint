@@ -1,5 +1,8 @@
 import Link from "next/link";
 
+import { More } from "@/components/ui/More";
+import { SectionHeading } from "@/components/ui/SectionHeading";
+
 /* ============================================================
    Doc 2 §4 — "quali task sono adatti", turned from two bullet
    lists into something a reader can run against their own work.
@@ -90,9 +93,36 @@ import Link from "next/link";
    reader why this check is a veto rather than a caution, and it had
    no home.
 
-   Both sit in the same `<details>` as the probe, so restoring them
-   costs no visible words: the disclosure is one summary line either
-   way.
+   Both sit in the same disclosure as the probe, so restoring them
+   costs no visible words: it is one summary line either way.
+
+   ── One disclosure component, and four summaries that differ ──
+   The disclosure is `components/ui/More.tsx` now. This file used to
+   write its own `<details>`, with the ▸ and a trailing space inside
+   one `inline-block` span, and a trailing space collapses at the box
+   edge — so the built page read "▸SETTLE IT, AND WHAT A NO BREAKS",
+   four times, with the marker welded to the word. `More` renders the
+   marker in a flex row with `gap-2`, which cannot collapse.
+
+   The summary now names the check it opens. Four identical summary
+   lines are four identical scan targets: a reader who has found
+   their question still has to open all four to find out which one
+   answers it.
+
+   ── The scale pass ──
+   The `h2` was a hand-written `font-display text-2xl` — 24px, four
+   below the tier `SectionHeading` draws every other section title on
+   the site at, on a page sitting between two that had already moved.
+   It is that component now; the gap under it is the block tier
+   rather than the card tier, because what follows is a block and not
+   a card's insides; and the grid closes to the 20px card-grid gap
+   the other two sections on this page already use.
+
+   The id `aria-labelledby` names rides a `<span>` inside the title,
+   because `SectionHeading` takes no id prop and the alternative is a
+   second hand-typed copy of its class list — which is the defect
+   this pass exists to remove. The accessible name is the same
+   string either way.
    ============================================================ */
 
 type Check = {
@@ -184,53 +214,56 @@ const CHECKS: Check[] = [
 
 export function WhichTasksChecks() {
   return (
-    <section className="flex flex-col gap-5" aria-labelledby="checks-heading">
-      <h2
-        id="checks-heading"
-        className="font-display text-2xl font-semibold tracking-tight text-fg"
-      >
-        The four questions in full
-      </h2>
+    <section className="flex flex-col gap-10" aria-labelledby="checks-heading">
+      <SectionHeading title={<span id="checks-heading">The four questions in full</span>} />
 
-      <ol className="grid gap-4 lg:grid-cols-2">
+      <ol className="grid gap-5 lg:grid-cols-2">
         {CHECKS.map((c) => (
           <li
             key={c.id}
             className="panel flex flex-col gap-4 p-5"
             style={{ borderTop: `2px solid ${c.color}` }}
           >
+            {/* `.label` twice, one of them recoloured by the check's own hue. Both used
+                to be hand-typed mono runs at two different trackings, which is how a
+                site ends up with a mono tier it cannot name. */}
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span
-                className="font-mono text-[11px] uppercase tracking-[0.18em]"
-                style={{ color: c.color }}
-              >
+              <span className="label" style={{ color: c.color }}>
                 {c.n}
               </span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
-                {c.name}
-              </span>
+              <span className="label">{c.name}</span>
             </div>
 
             <h3 className="font-display text-lg font-semibold leading-snug text-fg">
               {c.question}
             </h3>
 
-            <details className="group border-t border-line pt-3">
-              <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden font-mono text-[11px] uppercase tracking-[0.14em] text-dim transition-colors hover:text-fg">
-                <span aria-hidden className="inline-block transition-transform group-open:rotate-90">
-                  ▸{" "}
-                </span>
-                {c.breaks === undefined ? "Settle it" : "Settle it, and what a no breaks"}
-              </summary>
-              <p className="mt-3 rounded border border-line bg-surface-2 px-4 py-3 text-sm leading-relaxed text-muted">
+            {/* `More`, not a fourth hand-written `<details>`. The ▸ and its trailing
+                space used to live inside one `inline-block` span, where the space
+                collapses at the box edge — all four cards shipped reading "▸SETTLE IT,
+                AND WHAT A NO BREAKS". `More` puts the marker in a flex row with `gap-2`,
+                which cannot collapse, and it is the same native `<details>`, so the text
+                is still in the prerendered HTML for `honesty.test.ts` to read.
+
+                The summary names the check rather than repeating one string four times:
+                a reader scanning four cards can now tell which disclosure answers the
+                question they are stuck on. `bare`, because the card's own border already
+                separates this from the question above it; the rule is the separator
+                inside the card. */}
+            <More
+              bare
+              className="border-t border-line pt-3"
+              summary={`How to settle ${c.name.toLowerCase()}`}
+            >
+              <p className="rounded border border-line bg-surface-2 px-4 py-3 text-sm leading-relaxed text-muted">
                 {c.probe}
               </p>
               {c.breaks !== undefined && (
-                <p className="mt-3 border-l-2 border-line-bright pl-4 text-sm leading-relaxed text-dim">
+                <p className="border-l-2 border-line-bright pl-4 text-sm leading-relaxed text-dim">
                   {c.breaks}
                 </p>
               )}
-            </details>
+            </More>
           </li>
         ))}
       </ol>

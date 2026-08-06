@@ -26,7 +26,10 @@
    3. **Cleanup.** `createScope` owns reverting every animation it
       built, including the looping pulses, which a hand-rolled
       `useEffect` teardown gets wrong the first time a scene is
-      remounted by a route change.
+      remounted by a route change. On an SSG site a route change is
+      the only unmount there is, though, so the loops are also parked
+      by an observer of their own whenever the figure scrolls away —
+      see "Park the loops" below.
 
    `createSeededRandom` rather than `Math.random`, for the pulse
    offsets. These scenes are server-rendered and a value that
@@ -47,7 +50,26 @@ import {
 import { useRef, type RefObject } from "react";
 
 import { FLOW, FLOW_SELECTOR, type FlowReveal } from "./flow";
+import { EASE_OUT } from "./easing";
 import { useIsomorphicLayoutEffect, useReveal, type RevealPhase } from "./useReveal";
+
+/**
+ * The stagger step that fits `n` items inside a fixed `total` window.
+ *
+ * The entrance used to hand every group a fixed per-item delay, which quietly made the
+ * timeline a function of the graph: five nodes at `stagger(90)` finish in 360ms, ten finish
+ * in 810ms, fourteen edges in 1040ms. So the bigger and more argued a figure was, the later
+ * its last beat landed — and the last beat is the absent edge, the one drawing on this site
+ * that carries a claim rather than a fact. Measured before this: the landing's absence
+ * completed at ≈2.28s and /spec/topology's at ≈3.0s, and neither appeared in a capture taken
+ * at 1.5s. A reader had already moved on.
+ *
+ * A window instead of a step inverts that: the group always takes the same time, and more
+ * items simply arrive closer together, which is what a stagger is for. The 90ms cap keeps a
+ * small graph from becoming a slideshow — below about five items the window would otherwise
+ * spread them further apart than the eye reads as one gesture.
+ */
+const spread = (total: number, n: number) => (n > 1 ? Math.min(90, total / (n - 1)) : 0);
 
 /**
  * Everything a scene's own beats would otherwise have to query for itself.
@@ -153,7 +175,6 @@ export function useLuminousFlow<T extends SVGSVGElement = SVGSVGElement>(
       const edges = root.querySelectorAll<SVGGElement>(FLOW_SELECTOR.edge);
       const absent = root.querySelectorAll<SVGGElement>(FLOW_SELECTOR.absentEdge);
       const pulses = root.querySelectorAll<SVGPathElement>(FLOW_SELECTOR.pulse);
-      const sparks = root.querySelectorAll<SVGCircleElement>(FLOW_SELECTOR.spark);
       const labels = root.querySelectorAll<SVGTextElement>(FLOW_SELECTOR.label);
       /* Only the base curves. The pulse is a second path on the same geometry, and
          `createDrawable` works by writing `stroke-dasharray`, which is the whole of what
@@ -161,7 +182,22 @@ export function useLuminousFlow<T extends SVGSVGElement = SVGSVGElement>(
       const lines = svg.createDrawable(root.querySelectorAll(FLOW_SELECTOR.line));
       const random = createSeededRandom(seed);
 
-      const timeline = createTimeline({ defaults: { ease: "outQuad" } });
+      /* `outQuad` was the default here and is retired site-wide: it is near-linear on
+         opacity, so a node arriving read as a slideshow cross-fade rather than as a lamp
+         switching on, and the lamp is the luminous register's whole gesture. `EASE_OUT`
+         is the same curve the stylesheet spends on every hover and press, so the DOM and the
+         SVG move on one clock. See the docblock on `MOTION` in `tokens.ts`.
+
+         It is `EASE_OUT` from `./easing` and NOT `MOTION.easeOut`: anime.js 4.5.0 has
+         removed the `cubicBezier(...)` string form, so the token — which is still exactly
+         right as a CSS value — silently parses to `t => t` here. Every figure on the site
+         was running linear. `easing.ts` derives the function from the same token. */
+      const timeline = createTimeline({ defaults: { ease: EASE_OUT } });
+
+      /* Every looping animation this scope builds, so the observer below can park them.
+         Collected rather than re-queried because `animate` is the only thing that knows
+         which handle belongs to which target. */
+      const loops: ReturnType<typeof animate>[] = [];
 
       if (entrance) {
         /* Set rather than declared as a `from` value: a layout effect runs before paint,
@@ -171,69 +207,99 @@ export function useLuminousFlow<T extends SVGSVGElement = SVGSVGElement>(
         utils.set(blooms, { scale: 0.55 });
         utils.set(lines, { draw: "0 0" });
         utils.set(pulses, { opacity: 0 });
-        utils.set(sparks, { opacity: 0 });
         utils.set(absent, { opacity: 0 });
 
         /* Every step guarded on having a target.
            ------------------------------------------------------------
-           `spark` is an opt-in prop on `FlowEdge` and the landing's graph does not set
-           it, so `sparks` is an empty NodeList. Handing that to `timeline.add` makes
-           anime.js log "No target found" and breaks the chain, and because the six
-           `utils.set` calls above have already run, the whole scene stays at its hidden
-           state. The landing's centrepiece rendered as an empty graticule: 70 circles in
-           the DOM, every one of them at opacity 0, and nothing in the console but a
-           warning.
+           A glyph kind a scene does not use resolves to an empty NodeList, and handing
+           that to `timeline.add` makes anime.js log "No target found" and breaks the
+           chain — and because the `utils.set` calls above have already run, the whole
+           scene then stays at its hidden state. The landing's centrepiece rendered as an
+           empty graticule exactly once this way: 70 circles in the DOM, every one of them
+           at opacity 0, and nothing in the console but a warning.
 
-           A scene omitting a glyph kind is ordinary, not an error. Five of the site's
-           scenes carry no spark at all. So each step is added only if it has something
-           to animate, and a scene that uses three of the six still plays the three. */
+           A scene omitting a glyph kind is ordinary, not an error. So each step is added
+           only if it has something to animate, and a scene that uses three of the five
+           still plays the three.
+
+           ── The ceiling ──
+           Every position below is absolute, from a fixed window rather than a fixed
+           per-item delay, so the whole entrance completes at ≈1.4s on a five-node landing
+           and on a fourteen-edge topology alike. What used to happen: the groups chained,
+           the staggers grew with the graph, and the absent edge — chained last on a
+           relative `"+=180"` — landed at ≈1.64s on the landing and ≈2.5s on
+           /spec/topology, finishing at 2.28s and 3.0s. Under a sheet captioned "one run
+           deliberately missing", nobody saw the missing run. */
         if (nodes.length > 0)
-          timeline.add(nodes, { opacity: 1, duration: 420 }, stagger(90));
+          timeline.add(nodes, { opacity: 1, duration: 360 }, stagger(spread(420, nodes.length)));
         if (blooms.length > 0)
-          timeline.add(blooms, { scale: 1, duration: 560, ease: "outCubic" }, stagger(90));
+          timeline.add(
+            blooms,
+            { scale: 1, duration: 480, ease: EASE_OUT },
+            stagger(spread(420, blooms.length)),
+          );
         if (lines.length > 0)
-          timeline.add(lines, { draw: "0 1", duration: 560 }, stagger(80, { start: 340 }));
+          timeline.add(
+            lines,
+            { draw: "0 1", duration: 520 },
+            stagger(spread(420, lines.length), { start: 260 }),
+          );
         if (pulses.length > 0)
-          timeline.add(pulses, { opacity: 1, duration: 420 }, stagger(80, { start: 720 }));
-        if (sparks.length > 0)
-          timeline.add(sparks, { opacity: 1, duration: 420 }, stagger(80, { start: 720 }));
+          timeline.add(
+            pulses,
+            { opacity: 1, duration: 360 },
+            stagger(spread(360, pulses.length), { start: 560 }),
+          );
         /* Last, and alone. A reader who has just watched five edges land is the reader
-           most likely to notice the sixth one that never connects. */
-        if (absent.length > 0)
-          timeline.add(absent, { opacity: 1, duration: 640 }, "+=180");
+           most likely to notice the sixth one that never connects. The 980 is absolute
+           for that reason: the beat is editorial, so it may not drift with the edge
+           count — a graph that argues harder must not argue later. */
+        if (absent.length > 0) timeline.add(absent, { opacity: 1, duration: 420 }, 980);
       }
 
       if (pulse && pulses.length > 0) {
         /* `pathLength="1"` on the markup puts the dash pattern in a normalised space, so
            one whole unit of offset is one traversal of the curve whatever its length, and
            the loop closes on the value it started from. Nothing measures a path. */
-        animate(pulses, {
-          strokeDashoffset: [FLOW.pulse.rest, FLOW.pulse.rest - 1],
-          duration: pulseDuration,
-          ease: "linear",
-          loop: true,
-          delay: () => random(0, pulseDuration),
-        });
+        loops.push(
+          animate(pulses, {
+            strokeDashoffset: [FLOW.pulse.rest, FLOW.pulse.rest - 1],
+            duration: pulseDuration,
+            ease: "linear",
+            loop: true,
+            delay: () => random(0, pulseDuration),
+          }),
+        );
       }
 
-      /* `svg.createMotionPath` positions by transform, so a spark parked on the start of
-         its curve in the markup would be offset twice. The markup keeps that position
-         because a scene with no script has to be a finished drawing; the correction
-         belongs here, where script is already running. */
-      for (const edge of Array.from(edges)) {
-        const line = edge.querySelector<SVGPathElement>(FLOW_SELECTOR.line);
-        const spark = edge.querySelector<SVGCircleElement>(FLOW_SELECTOR.spark);
-        if (line === null || spark === null) continue;
-        utils.set(spark, { cx: 0, cy: 0 });
-        const along = svg.createMotionPath(line);
-        animate(spark, {
-          translateX: along.translateX,
-          translateY: along.translateY,
-          duration: pulseDuration,
-          ease: "linear",
-          loop: true,
-          delay: random(0, pulseDuration),
-        });
+      /* Park the loops while the figure is off screen.
+         ------------------------------------------------------------
+         `loop: true` never ends, and `createScope` only reverts on unmount — which, on an
+         SSG site, means a route change. So a scene that has played once keeps animating
+         `stroke-dashoffset` for the rest of the session, long after it has scrolled away.
+         That property is not compositable: each of the fourteen pulse paths on
+         /spec/topology forces a main-thread repaint of its own geometry, every frame,
+         forever, on a page the reader is no longer looking at.
+
+         `useReveal`'s own observer cannot do this job — it is deliberately one-way, so the
+         entrance plays once rather than replaying on every scroll past. This is a second,
+         cheaper observer with `threshold: 0`, and it touches nothing but the clock: the
+         entrance is untouched, and a paused loop resumes from the phase it was parked at,
+         so nothing on screen jumps. */
+      let visibility: IntersectionObserver | null = null;
+      if (loops.length > 0 && typeof IntersectionObserver === "function") {
+        visibility = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              for (const loop of loops) {
+                if (entry.isIntersecting) loop.resume();
+                else loop.pause();
+              }
+            }
+          },
+          { threshold: 0 },
+        );
+        visibility.observe(root);
       }
 
       latest.current?.({
@@ -249,6 +315,12 @@ export function useLuminousFlow<T extends SVGSVGElement = SVGSVGElement>(
         labels,
         random,
       });
+
+      /* The scope reverts every animation it built; the observer above is not one of
+         those, so it is handed back here and `scope.revert()` disconnects it. */
+      return () => {
+        visibility?.disconnect();
+      };
     });
 
     return () => {

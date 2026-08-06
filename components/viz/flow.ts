@@ -120,8 +120,6 @@ export const FLOW = {
     pulse: 2.1,
     /** The arrowhead, which says which way a run goes and then gets out of the way. */
     arrowOpacity: 0.7,
-    /** Radius of the optional dot a scene moves with `svg.createMotionPath`. */
-    sparkRadius: 2.4,
     /**
      * The dashed run an absence is drawn as.
      *
@@ -382,7 +380,7 @@ export function pulseDasharray(fraction: number = FLOW.pulse.dash): string {
  * uses, so a scene half converted to this register still selects both families with one
  * query and the five scenes being drawn from this module do not each invent a name.
  *
- * The four that are new name the parts the luminous register added. `line` and `pulse` are
+ * The five that are new name the parts the luminous register added. `line` and `pulse` are
  * two separate paths on the same curve on purpose: `svg.createDrawable` works by writing
  * `stroke-dasharray`, and the pulse's dasharray is the whole of what makes it a short
  * travelling segment, so a drawable that touched it would erase it.
@@ -407,8 +405,6 @@ export const FLOW_SELECTOR = {
    * lamp coming on would slide sideways as it grew. This group's box is the disc.
    */
   bloom: '[data-viz="bloom"]',
-  /** An optional dot for `svg.createMotionPath`, rendered only where a scene asks. */
-  spark: '[data-viz="spark"]',
   /**
    * A group a scene of its own moves with a transform. `FlowLift` renders it.
    *

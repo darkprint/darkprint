@@ -52,8 +52,11 @@ export function SectionNodeIsCard() {
         {/* Left, not centred. A centred heading over a centred drawing was right when the
             drawing was a symmetrical scene; the walk below is a listing beside a list, and
             both start on the left margin. */}
+        {/* No eyebrow. `.eyebrow` is rationed to one per page or per full-bleed band, and
+            "ONE NODE" spent one of them saying what the headline beside it already says
+            in bigger type. What was left was a cyan mono run competing with the cyan keys
+            in the listing below it for the same reader's attention. */}
         <SectionHeading
-          eyebrow="One node"
           title="Every node is a card"
           lead="Open one and it says which model runs it, what arrives, what it hands on, and what must never reach it. Seven parts, on a card the archive really stores."
         />

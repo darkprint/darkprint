@@ -1,5 +1,5 @@
 /* ============================================================
-   The three pieces of furniture the four spec pages share.
+   The two pieces of furniture the four spec pages share.
 
    Redesign spec §4.1 split one page into four, and a split is where
    a page's small habits turn into four slightly different ones: a
@@ -8,14 +8,19 @@
    values. None of that is a decision worth taking four times, so it
    is taken here.
 
+   There used to be a third: `LABEL`, the literal string `font-mono
+   text-[11px] uppercase tracking-[0.18em] text-dim`. Hoisting it to
+   a constant stopped this corner of the site from spelling the label
+   two ways, but it left the site as a whole with two answers — the
+   constant, and the `.label` class in `app/globals.css` that every
+   other page adopted. A label is a typographic tier, not a spec-page
+   part, so the tier now has exactly one definition and it lives in
+   CSS. The two call sites write `className="label"`.
+
    Not a client component. These render markup and nothing else.
    ============================================================ */
 
 import Link from "next/link";
-
-/** The mono eyebrow the layer headers and the panels label themselves with. */
-export const LABEL =
-  "font-mono text-[11px] uppercase tracking-[0.18em] text-dim";
 
 /**
  * A term id or a field name quoted inside prose.

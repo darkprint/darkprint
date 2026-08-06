@@ -45,8 +45,18 @@ export const NC = {
       shift as the copy changes length, and seven heads plus one body then come to exactly
       `window`, so the notes and the listing are the same height at every step. */
   body: 132,
-  /** Width of the column the leader line is drawn in. */
-  gutter: 44,
+  /**
+   * Width of the column the leader line is drawn in.
+   *
+   * 28, not 44. This number is spent twice: once as the elbow's own width, and once as
+   * width taken away from the listing beside it. At 44 the listing had 708px of column
+   * for a file whose longest row measures 784px, so sixteen of the fifty-two rows lost
+   * their last characters, and the runs the annotations are *about* are exactly the long
+   * ones. At 28 the listing has 756px and two rows overflow instead of sixteen. The elbow
+   * still has room to bend: `leaderPath` puts its corner at `gutter / 2` with a 9px
+   * radius, which leaves 5px of straight run at each end.
+   */
+  gutter: 28,
 } as const;
 
 /** Pitch of the rail: what one attached-and-collapsed step costs vertically. */
@@ -108,17 +118,101 @@ export function leaderPath(fromY: number, toY: number, width: number): string {
 /* --------------------- the scroll budget --------------------- */
 
 /**
+ * How far the section stays pinned, in px.
+ *
+ * The stage used to be `420vh`, which makes the pin travel a multiple of the viewport:
+ * `height - viewport` is `3.2 x viewport`, so the same seven steps cost 221px each on a
+ * 768-tall laptop and 341px each on a 1080-tall monitor. That is backwards. A scroll notch
+ * is the same number of pixels on both screens, so the bigger the screen the slower the
+ * argument arrives. Sizing the stage as `calc(100vh + PIN_TRAVEL)` makes
+ * `height - viewport` exactly `PIN_TRAVEL` at every viewport, which is the quantity
+ * `scrollProgress` divides by, so every reader gets the same distance per step.
+ *
+ * 2500 spends itself as 125px of lead-in before the first note attaches
+ * (`STEP_RESERVE.head`), seven steps of 296px, and 300px for the dezoom
+ * (`STEP_RESERVE.tail`). Measured before: 2880px of travel on a 900-tall screen, of which
+ * the dezoom alone took 749px — five sixths of a viewport of scrolling for one shrink —
+ * while each of the seven steps got 284px. So the section is 380px shorter and every step
+ * is slightly *slower* than it was.
+ */
+export const PIN_TRAVEL = 2500;
+
+/**
+ * The stage's height, as CSS.
+ *
+ * Handed to the DOM through a custom property rather than as a Tailwind class, for the
+ * reason `CardWalk` states about its own window: the value has to be gated behind `lg:`,
+ * and an inline `height` has no breakpoint. The property is set at every width and only
+ * the `lg:` utility reads it.
+ */
+export const STAGE_HEIGHT = `calc(100vh + ${PIN_TRAVEL}px)`;
+
+/**
  * What fraction of the pin travel is spent before the first step attaches, and what is
  * left over for the dezoom at the end.
  *
  * Passed to `stagesShown` from `@/components/viz/useScrollProgress`, which is where the
  * `progress -> how many steps` arithmetic lives.
+ *
+ * The tail was 0.26. Whatever the pin is worth, a quarter of it bought one shrink, and the
+ * shrink is the least of what this section has to say: the seven notes are the argument.
+ * At 0.12 the dezoom still gets 300px, which is a third of a screen for a move that is
+ * over in one gesture.
  */
-export const STEP_RESERVE = { head: 0.05, tail: 0.26 } as const;
+export const STEP_RESERVE = { head: 0.05, tail: 0.12 } as const;
 
-/** Where the dezoom starts, as a fraction of the whole scroll, and how long it takes. */
-const DEZOOM_START = 0.76;
-const DEZOOM_SPAN = 0.2;
+/**
+ * The progress value in the middle of step `index`'s band. The inverse of `stagesShown`,
+ * and what a note's own button scrolls to.
+ *
+ * `stagesShown` reveals step n while `(progress - head) / span` is inside
+ * `(n / count, (n + 1) / count]`, so the middle of that band is `(n + 0.5) / count`. The
+ * middle rather than an edge because a click that lands a pixel out of the band opens the
+ * neighbouring note, and the reader has no way to know why.
+ *
+ * Clamped at both ends by construction: the result never leaves `[head, 1 - tail]`, so a
+ * button can neither scroll above the point where the section locks nor past the point
+ * where it lets go, either of which strands the reader outside the thing they clicked in.
+ */
+export function stepProgress(index: number, count: number): number {
+  if (count <= 0) return 0;
+  const span = 1 - STEP_RESERVE.head - STEP_RESERVE.tail;
+  const step = Math.min(Math.max(Math.round(index), 0), count - 1);
+  return clamp01(STEP_RESERVE.head + ((step + 0.5) / count) * span);
+}
+
+/**
+ * Where the page has to stand for step `index` to be the one being read.
+ *
+ * `scrollProgress` reads `-top / (height - viewport)`, so progress `p` is reached when the
+ * section's top sits `p * (height - viewport)` above the top of the viewport. Plain numbers
+ * rather than a `DOMRect`, so both ends can be checked in the node suite.
+ */
+export function stepScrollTop(
+  index: number,
+  count: number,
+  sectionTop: number,
+  sectionHeight: number,
+  viewport: number,
+): number {
+  const travel = Math.max(0, sectionHeight - viewport);
+  return sectionTop + stepProgress(index, count) * travel;
+}
+
+/**
+ * Where the dezoom starts, as a fraction of the whole scroll, and how long it takes.
+ *
+ * Derived from the tail rather than typed next to it. The two have to agree: a dezoom that
+ * begins before the last note has attached shrinks the card out from under a note the
+ * reader has not read yet. The old pair, `tail: 0.26` and a hand-written `0.76`, agreed by
+ * hand; when the tail came down to 0.12 the same 0.76 would have run steps 6 and 7 inside
+ * the shrink. `settle` is the beat of stillness between the seventh note landing and the
+ * card starting to move, and the 0.01 left at the end is the beat the finished graph is
+ * held for before the section lets go.
+ */
+const DEZOOM_SETTLE = 0.01;
+const DEZOOM_START = 1 - STEP_RESERVE.tail + DEZOOM_SETTLE;
+const DEZOOM_SPAN = 0.1;
 
 /** 0 before the dezoom begins, 1 once the card has landed. */
 export function dezoomProgress(progress: number): number {

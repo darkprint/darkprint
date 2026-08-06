@@ -148,6 +148,74 @@ export const SHEET_REGISTER = {
 
 export type SheetRegister = keyof typeof SHEET_REGISTER;
 
+/**
+ * The drawing's clock, on the same footing as its colours and its stroke weights.
+ *
+ * This file is where the repo's own rule — never a literal at a call site — points, and
+ * until now it had nothing to say about time: nineteen distinct hand-typed durations
+ * (120, 150, 180, 200, 220, 260, 420, 480, 500, 520, 560, 600, 640, 700, 780, 1400,
+ * 2400, 2600, 5000) and five easing families were spread across six files with no shared
+ * source, so two scenes could not agree on what "fast" meant even when both authors
+ * wanted the same thing.
+ *
+ * Every value here mirrors a custom property declared in `app/globals.css` — `--ease-out`,
+ * `--ease-in-out`, `--dur-press`, `--dur-fast`, `--dur-base`, `--dur-slow`, `--dur-reveal`
+ * — so a CSS transition on a DOM control and a JS timeline on an SVG figure move on one
+ * clock. Change a number in one place and change it in the other; they are two spellings
+ * of a single decision, not two decisions.
+ *
+ * The easings are strings because a stylesheet needs a string: `easeOut` below is the
+ * exact payload of `--ease-out`, so the four control points are written once and the DOM
+ * and the SVG demonstrably move on one curve.
+ *
+ * ── THEY MAY NOT BE HANDED TO anime.js ──
+ * This docblock used to claim the opposite, and the claim cost the site every curve it
+ * had. anime.js 4.5.0 has REMOVED the `cubicBezier(x1,y1,x2,y2)` string form: `parseEase`
+ * (dist/bundles/anime.esm.js:3578) matches the prefix against a `deprecated` list, warns,
+ * and returns `none`, which is `t => t`. A timeline given `MOTION.easeOut` plays LINEAR
+ * while reading as correct in the source — which is what every luminous figure was doing.
+ * A JS call site imports `EASE_OUT` / `EASE_IN_OUT` from `./easing`, which derives the
+ * anime.js easing function from these same two tokens. That module is not re-exported
+ * from `index.ts` because it pulls in the engine; this file must stay render-safe.
+ *
+ * ── Why `outQuad` is retired as the site default ──
+ * It is very nearly linear on opacity: a quadratic ease-out spends most of its travel at a
+ * near-constant rate, so a node arriving reads as a *dissolve* — a flat cross-fade of the
+ * kind a slideshow does — rather than as a lamp switching on. The lamp is the luminous
+ * register's whole gesture: a lit disc with a halo is supposed to come up fast and settle,
+ * the way a filament does. `easeOut` here (0.23, 1, 0.32, 1) puts almost all of the change
+ * in the first third and then eases into rest, which is that shape.
+ *
+ * ── Why `inOutQuad` is retired on any stroke draw ──
+ * It ease-INs. A pen stroke drawn with it starts slow at exactly the moment the reader is
+ * watching it begin — the eye is already on the origin of the line, waiting, and the line
+ * creeps. Draws take `easeOut`: the pen is already moving when it lands. `easeInOut`
+ * survives here for the one job it is honest at, moving a thing that was already at rest
+ * from one settled position to another settled position.
+ *
+ * `pulse` is a loop period rather than a transition duration — the interval of the slow
+ * travelling pulse on a luminous edge — and is named here so the several scenes that carry
+ * one breathe together.
+ */
+export const MOTION = {
+  /** THE default curve. Every entrance, every hover, every press, every draw. */
+  easeOut: "cubicBezier(0.23,1,0.32,1)",
+  /** Rest-to-rest moves only: a panel that slides, a value that counts. Never a draw. */
+  easeInOut: "cubicBezier(0.77,0,0.175,1)",
+  /** 120ms — `:active` feedback. Below this a press reads as a glitch, above it as lag. */
+  press: 120,
+  /** 160ms — a small thing appearing or swapping: a caret, a dropdown, a tab panel. */
+  fast: 160,
+  /** 180ms — hover and colour changes. The site's ordinary transition. */
+  base: 180,
+  /** 420ms — a figure's own parts arriving: a node fading up, an edge drawing. */
+  slow: 420,
+  /** 520ms — the longest single step a reveal may take. */
+  reveal: 520,
+  /** 2600ms — the loop period of a travelling pulse on a luminous edge. */
+  pulse: 2600,
+} as const;
+
 /*
  * `VIZ_SELECTOR` and `vizId` used to close this file: the anime.js contract for the CAD
  * glyphs. Both are gone with those glyphs (redesign spec §1; `Glyphs.tsx` carries the

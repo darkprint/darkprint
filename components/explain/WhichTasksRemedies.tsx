@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Blueprint } from "@/lib/types";
 import { allBlueprints, getBlueprintBySlug } from "@/lib/content";
 import { contentHref } from "@/lib/href";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
    The filter has to do something for the reader it turns away,
@@ -33,6 +34,18 @@ import { contentHref } from "@/lib/href";
    in full and this now links there, because a page that turns a
    reader away on question 04 is the page where "you settled for
    less" is easiest to read into the answer.
+
+   ── The scale pass ──
+   The `h2` moves off a hand-written `font-display text-2xl` onto
+   `SectionHeading`, and its one-sentence lead becomes the deck it
+   already was. The three card labels were three copies of
+   `font-mono text-[11px] uppercase tracking-[0.18em] text-dim` —
+   the exact string the `.label` tier was written to replace, and
+   the reason this one file had three chances to disagree with
+   itself about what a label is. The id `aria-labelledby` names
+   rides a `<span>` inside the title, because `SectionHeading` takes
+   no id prop and a second copy of its class list is the thing being
+   deleted.
    ============================================================ */
 
 /**
@@ -73,24 +86,15 @@ const INLINE =
 
 export function WhichTasksRemedies() {
   return (
-    <section className="flex flex-col gap-6" aria-labelledby="remedies-heading">
-      <div className="flex flex-col gap-3">
-        <h2
-          id="remedies-heading"
-          className="font-display text-2xl font-semibold tracking-tight text-fg"
-        >
-          What to do with a no
-        </h2>
-        <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
-          A no is about this task in its current shape.
-        </p>
-      </div>
+    <section className="flex flex-col gap-10" aria-labelledby="remedies-heading">
+      <SectionHeading
+        title={<span id="remedies-heading">What to do with a no</span>}
+        lead="A no is about this task in its current shape."
+      />
 
       <ol className="grid gap-5 lg:grid-cols-3">
         <li className="panel flex flex-col gap-3 p-5">
-          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
-            01 / 02 · verdict and harness
-          </span>
+          <span className="label">01 / 02 · verdict and harness</span>
           <h3 className="font-display text-lg font-semibold leading-snug text-fg">
             Build the check, and call that the task
           </h3>
@@ -110,9 +114,7 @@ export function WhichTasksRemedies() {
         </li>
 
         <li className="panel flex flex-col gap-3 p-5">
-          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
-            03 · the edges
-          </span>
+          <span className="label">03 · the edges</span>
           <h3 className="font-display text-lg font-semibold leading-snug text-fg">
             Shrink it until the edges are visible
           </h3>
@@ -131,9 +133,7 @@ export function WhichTasksRemedies() {
         </li>
 
         <li className="panel flex flex-col gap-3 p-5">
-          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
-            04 · cost of being wrong
-          </span>
+          <span className="label">04 · cost of being wrong</span>
           <h3 className="font-display text-lg font-semibold leading-snug text-fg">
             Put a person where being wrong stops being cheap
           </h3>

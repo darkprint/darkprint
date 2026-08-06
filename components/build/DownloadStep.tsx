@@ -11,8 +11,6 @@ import {
 } from "@/lib/content/bundle-export";
 import { cx } from "@/lib/format";
 
-import { AgentHandoff } from "./AgentHandoff";
-
 /* ============================================================
    The end of the path: the factory, as files.
    ------------------------------------------------------------
@@ -117,8 +115,15 @@ export function DownloadStep({
         className="max-w-xl"
       />
 
+      {/* `min-w-0` on both columns. A grid item's automatic minimum size is its
+          min-content, so the digest row — `sha256:` and 64 hex characters — held this
+          column open at 389px inside a 342px track on a 390px phone and the whole
+          document scrolled sideways by 23px. Measured on step 8 at 390×844: body
+          `scrollWidth` 413 against a 390 viewport. The reader never asked for a second
+          axis, and a page that slides under a thumb on the one step whose job is to hand
+          over a folder reads as broken rather than as wide. */}
       <div className="grid gap-5 sm:grid-cols-2">
-        <div className="flex flex-col gap-3">
+        <div className="flex min-w-0 flex-col gap-3">
           {/* What the engine said about these exact bytes, so the claim that the artefact
               works is checkable on the page rather than taken on trust. */}
           <div className="rounded-lg border border-line bg-surface-2/50 px-4 py-3">
@@ -161,7 +166,7 @@ export function DownloadStep({
             happening on the reader's machine. Repeating either of them a screen-width away
             is §5's duplication, so what is left here is the part the panel does not say:
             that nothing was recorded, and how to check the bytes against the page. */}
-        <div className="flex flex-col gap-3">
+        <div className="flex min-w-0 flex-col gap-3">
           {/* "Nothing was uploaded and nothing was recorded" is gone from here. It was
               the fourth telling on this route and the second on this screen:
               `DownloadPanel`, twenty lines above, already says execution happens on the
@@ -183,11 +188,21 @@ export function DownloadStep({
         </div>
       </div>
 
-      {/* The step used to end here, with one artefact: this blueprint, as files. Four
-          choices over one starter cannot reach a goal that is not "build software", and
-          most readers arrive with a different one. `AgentHandoff` is the generalisation,
-          and it is the mirror of the `AGENTS.md` sitting in the folder above. */}
-      <AgentHandoff className="mt-2 border-t border-line pt-6" />
+      {/* `AgentHandoff` used to close this component and now sits one level up, in
+          `GuidedPath`, immediately BELOW the step's exit row.
+          ------------------------------------------------------------
+          It is not cut and not folded: it is the author's own generalisation of the path
+          (2026-08-04) and it is the mirror of the `AGENTS.md` in the folder above. But it
+          is 570px of a second, optional offer, and while it stood here it stood between
+          the artefact and the only control that leaves the step. Measured at 1440px: the
+          first download link at y=690 and "Validate it" at y=2274, so the reader who took
+          the folder had to scroll a further one and three quarter viewports past a brief
+          for a goal they do not have to reach the move the path had trained them to make.
+          What this component returns is now exactly the artefact and the facts that make
+          it checkable, which is what the step promised, and the two optional blocks (the
+          brief, and the look back at the drawing) sit after the exit where a postscript
+          belongs. `AgentHandoff` keeps its own link to `/upload`, so it is not orphaned
+          by being read second. */}
     </div>
   );
 }

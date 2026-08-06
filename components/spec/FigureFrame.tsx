@@ -60,7 +60,18 @@ export function FigureFrame({
           <div className="min-w-[38rem]">{children}</div>
         </div>
       </Sheet>
-      <figcaption className="text-sm leading-relaxed text-muted">
+      {/* `.prose-lane` here rather than at each call site.
+          ------------------------------------------------------------
+          A caption is body prose — it is the only sentence on the plate written to be
+          read straight through — and uncapped it ran the full 1152px container, which
+          put "On the card, ◆ marks a value…" at 183 characters a line on the one
+          sentence that has to teach two marks at once. Three of the four pages that
+          mount a figure had already worked around that with a
+          `[&_figcaption]:max-w-[var(--measure)]` wrapper, which is the same rule stated
+          three times in places that cannot see each other. The frame owns the caption,
+          so the frame owns its measure. The drawing above keeps the full container:
+          a figure is not prose. */}
+      <figcaption className="prose-lane text-sm leading-relaxed text-muted">
         {caption}
       </figcaption>
     </figure>

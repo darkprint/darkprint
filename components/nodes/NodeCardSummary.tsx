@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Author } from "@/lib/types";
-import { HUMAN_PRESENCE_MARK, cx } from "@/lib/format";
+import { HUMAN_PRESENCE_MARK, NODE_KIND_META, cx } from "@/lib/format";
 import { nodeHref } from "@/lib/href";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
@@ -57,6 +57,72 @@ export interface NodeSummary {
 const TOOLS_SHOWN = 3;
 
 /**
+ * The colour of the tile's lit disc, by the ontology `node-type` the card declares.
+ *
+ * `/nodes` is the one route in the site where a node had no graphic mark at all: 53 tiles
+ * of stacked text, arrived at from a landing on which a node is a point of light. The disc
+ * is that mark at tile scale, and its colour is the only thing carrying which of the five
+ * kinds a reader is looking at once the group heading has scrolled away.
+ *
+ * The values come from `NODE_KIND_META` — the schematic's own node-kind palette — so a
+ * disc on a shelf tile and the node it becomes inside a blueprint's drawing are the same
+ * colour rather than two independent inventions. Two departures from a straight
+ * `KIND_BY_TYPE` walk, both deliberate:
+ *
+ * - `human-gate` (and `human-input`) take `HUMAN_PRESENCE_MARK`, violet, not the `gate`
+ *   row's `--color-signal`. Doc 2 §1.1: signal is the alarm colour and is spent on
+ *   defects. The schematic can afford it because it has a legend beside it; this tile
+ *   cannot, because the same tile prints `⏸ human in the loop` in violet three rows
+ *   below, and a pink disc above a violet mark says the human step is the fault.
+ * - `decision` reads its colour off the `planner` row (`--color-cyan`) rather than the
+ *   `router` row, whose violet is now spoken for by the line above. What that buys is
+ *   better than the swap it replaces: the two `evaluative` types — decision and
+ *   validation — end up holding the two cyans, base and bright, so the five discs echo
+ *   the ontology's own tree rather than five unrelated picks. Its two human siblings
+ *   share violet for the same reason.
+ */
+const TYPE_TONE: Readonly<Record<string, string>> = {
+  agent: NODE_KIND_META.executor.color,
+  tool: NODE_KIND_META.tool.color,
+  decision: NODE_KIND_META.planner.color,
+  validation: NODE_KIND_META.verifier.color,
+  "human-gate": HUMAN_PRESENCE_MARK.color,
+  "human-input": HUMAN_PRESENCE_MARK.color,
+};
+
+/**
+ * A type the table does not know — a local type declared under `broader` (doc 3 §7) —
+ * takes the neutral tool grey rather than being guessed into one of the five. Grey is
+ * the one answer that does not claim something the card did not say.
+ */
+const DEFAULT_TONE = NODE_KIND_META.tool.color;
+
+/**
+ * The lit disc: halo, core, thin ring — the same three shells `FlowNode` draws in the
+ * scenes, at the one size a text row can carry.
+ *
+ * `aria-hidden`, and not a decision worth revisiting: the group heading above the run
+ * names the type in words, and the card's own page repeats it. The disc is the visual
+ * echo of a fact already stated, so announcing it would put the type into every tile's
+ * accessible name twice over.
+ */
+function NodeDisc({ tone }: { tone: string }) {
+  return (
+    <svg
+      width={24}
+      height={24}
+      viewBox="-12 -12 24 24"
+      aria-hidden
+      className="shrink-0 self-center"
+    >
+      <circle r={9} fill={tone} fillOpacity={0.18} />
+      <circle r={4.5} fill={tone} />
+      <circle r={6.5} fill="none" stroke={tone} strokeOpacity={0.5} strokeWidth={1} />
+    </svg>
+  );
+}
+
+/**
  * The grid tile. Sibling of `ContentCard`, minus the schematic — a node card has
  * no graph of its own, so its preview is what it declares: type, action, tools,
  * and how far it has travelled.
@@ -104,9 +170,32 @@ export function NodeCardSummary({
 
       <FavoriteStar id={`node:${node.ref}`} className="absolute right-2 top-2 z-20" />
 
-      <div className="flex flex-wrap items-center justify-between gap-2 pr-8">
-        <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          {showType && <Badge color="var(--color-amber)">{node.typeLabel}</Badge>}
+      {/* The head row is a THREE-TRACK GRID, not a wrapping flex row.
+          ------------------------------------------------------------
+          As `flex flex-wrap … justify-between` its height was data-dependent: any tile
+          whose phase list plus ref exceeded the column width dropped the ref onto a
+          second line and pushed its own title down a row. Measured across all 53 tiles
+          in the grouped default, exactly one row disagreed with itself — Diff Triager
+          and Exploratory Solver started their titles at y=46 while Evidence Synthesizer,
+          between them, started at y=70.
+
+          disc | phases | ref, with the middle track the only one allowed to give: the
+          phase is the soft fact, so it is the thing that clips. The ref is the identity
+          — the exact string a blueprint pins — and sits in an `auto` track, so it is
+          never the thing that wraps. Both clip visually only: the text stays whole in
+          the DOM, so a screen reader still reads the full phase list and the full ref.
+          `truncate` on the ref is the floor under the pathological case, a ref wider
+          than the tile, where an `auto` track would otherwise blow the card open; the
+          `title` is what the string falls back to there. One line on every tile,
+          whatever the data — measured, all 53 titles now start at y=53. */}
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-x-2 pr-8">
+        <NodeDisc tone={TYPE_TONE[node.type] ?? DEFAULT_TONE} />
+        <span className="flex min-w-0 items-baseline gap-x-2">
+          {showType && (
+            <Badge color="var(--color-amber)" className="shrink-0">
+              {node.typeLabel}
+            </Badge>
+          )}
           {/* Which stretch of the lifecycle this node works in. Named, not abbreviated
               — a tile has the room the gallery card's strip does not.
 
@@ -123,15 +212,21 @@ export function NodeCardSummary({
               that carry no phase are the answer to the browser's own "not in a named
               phase" filter, and the card page says it in words. */}
           {node.phases.length > 0 && (
-            <span className="font-mono text-[11px] text-muted">
+            <span className="min-w-0 truncate font-mono text-[11px] text-muted">
               {node.phases.map((phase) => phase.label.toLowerCase()).join(" · ")}
             </span>
           )}
         </span>
-        <span className="font-mono text-[11px] text-dim">{node.ref}</span>
+        <span className="truncate font-mono text-[11px] text-dim" title={node.ref}>
+          {node.ref}
+        </span>
       </div>
 
-      <div className="flex-1">
+      {/* No `flex-1` here. It put every tile's spare height directly under the clamped
+          sentence, so the 35 tiles that declare no tools opened a 34px hole between a
+          paragraph that had visibly run out of room and the row below it. The slack
+          belongs at the tag row — see `ContentCard`, which had the same argument. */}
+      <div>
         {/* `h2`: the grid sits directly under the `/nodes` page title, so a tile is a
             level down from it — the outline must not skip a level. */}
         {/* `h3`, under the group heading `NodeBrowser` now prints per node type. It was
@@ -145,21 +240,30 @@ export function NodeCardSummary({
         >
           {node.name}
         </h3>
-        <p className="mt-1 line-clamp-2 text-sm leading-snug text-muted">
+        {/* Three lines, not two: measured across the library, 52 of the 53 actions were
+            cut mid-word at two. The tile's height is set by the footer row below, so the
+            third line is room the card already had. */}
+        <p className="mt-1 line-clamp-3 text-sm leading-snug text-muted">
           {node.action}
         </p>
       </div>
 
-      {node.tools.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          {node.tools.slice(0, TOOLS_SHOWN).map((tool) => (
-            <TagPill key={tool} label={tool} />
-          ))}
-          {overflow > 0 && (
-            <span className="font-mono text-[11px] text-dim">+{overflow} more</span>
-          )}
-        </div>
-      )}
+      {/* Always rendered, always `flex-1` — this is where the grid's spare height goes,
+          so tiles of unequal description length still line their footers up across a
+          row without opening a gap under the sentence. Empty on the 35 tool-less cards,
+          which costs nothing and is the point. */}
+      <div className="flex flex-1 flex-wrap content-start items-start gap-1.5">
+        {node.tools.length > 0 && (
+          <>
+            {node.tools.slice(0, TOOLS_SHOWN).map((tool) => (
+              <TagPill key={tool} label={tool} />
+            ))}
+            {overflow > 0 && (
+              <span className="font-mono text-[11px] text-dim">+{overflow} more</span>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Who published it, linked to their profile (author's request, 2026-07-29). Its
           own row above the counts: the row below is a wrapping mono strip of three
@@ -185,16 +289,25 @@ export function NodeCardSummary({
         <span>
           used in {node.usedIn} blueprint{node.usedIn === 1 ? "" : "s"}
         </span>
-        {/* Dot, count and word together: the colour is the last thing that carries it. */}
-        <span
-          className={cx(
-            "inline-flex items-center gap-1.5",
-            risk > 0 ? "text-amber" : "text-dim",
-          )}
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-          {risk === 0 ? "no risk markers" : `${risk} risk marker${risk === 1 ? "" : "s"}`}
-        </span>
+        {/* Only when there is one.
+            ------------------------------------------------------------
+            This span used to render unconditionally, which printed `● no risk markers`
+            on 45 of the 53 tiles — the one line on the card reserved for signal, spent
+            saying nothing, 45 times down a page, until it read as a decorative rule
+            under every card and the eight tiles that had something to say lost the
+            contrast that made them worth reading. The browser already offers the
+            positive case as a pressable chip (`△ carries a risk marker`), so a tile
+            printing the negative was restating the complement of a filter.
+
+            Absence is the default state and the default state is silent. The exception
+            stays loud, in amber, which is what the colour is for. Dot, count and word
+            together: the colour is the last thing that carries it. */}
+        {risk > 0 && (
+          <span className="inline-flex items-center gap-1.5 text-amber">
+            <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+            {risk} risk marker{risk === 1 ? "" : "s"}
+          </span>
+        )}
         {/* Violet, from `HUMAN_PRESENCE_MARK`. Doc 2 §1.1: the row states where a person
             acts, and the node page it links to says the same thing in the same colour. */}
         {node.requiresHuman && (

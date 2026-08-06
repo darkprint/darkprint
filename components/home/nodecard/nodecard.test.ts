@@ -29,16 +29,22 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { stagesShown } from "@/components/viz/useScrollProgress";
+
 import { NODE_CARD_ANNOTATIONS, resolveAnnotations } from "./annotations";
 import {
   NC,
+  PIN_TRAVEL,
   RAIL_PITCH,
+  STEP_RESERVE,
   bandCentre,
   dezoom,
   dezoomProgress,
   leaderPath,
   railCentre,
   reelShift,
+  stepProgress,
+  stepScrollTop,
 } from "./geometry";
 import { keyBlock, keySpan, tokenizeYaml } from "./yaml";
 
@@ -308,15 +314,75 @@ describe("the dezoom", () => {
    * making is one about scale.
    */
   it("keeps the card visible while it is still shrinking", () => {
-    const early = dezoom(0.8);
+    // 0.91 is a fifth of the way into the shrink. The dezoom no longer starts at 0.76: it
+    // is derived from `STEP_RESERVE.tail`, which came down from 0.26 to 0.12, so it starts
+    // at 0.89 and the whole move is over by 0.99.
+    const early = dezoom(0.91);
     expect(early.scale).toBeLessThan(1);
     expect(early.fade).toBe(1);
+  });
+
+  /**
+   * The one that made the derivation necessary. The seventh note attaches at
+   * `1 - STEP_RESERVE.tail`, and a dezoom that begins before then shrinks the card out from
+   * under a note nobody has read yet. The two numbers used to agree by hand.
+   */
+  it("has not started until the last note has attached", () => {
+    const lastAttached = 1 - STEP_RESERVE.tail;
+    expect(stagesShown(lastAttached, 7, STEP_RESERVE)).toBe(7);
+    expect(dezoomProgress(lastAttached)).toBe(0);
   });
 
   it("never leaves both the card and the graph invisible", () => {
     for (let p = 0; p <= 1.0001; p += 0.02) {
       const state = dezoom(p);
       expect(Math.max(state.fade, state.graph)).toBeGreaterThan(0.35);
+    }
+  });
+});
+
+/* --------------------- any note, on demand --------------------- */
+
+describe("a note's own head knows where its step is", () => {
+  const count = 7;
+
+  /**
+   * The inversion has to round-trip through the map it inverts. A head that lands a pixel
+   * outside its own band opens the neighbouring note, and the reader has no way to know
+   * why the thing they clicked is not the thing that opened.
+   */
+  it.each([0, 1, 2, 3, 4, 5, 6])("puts step %i in the middle of its own band", (index) => {
+    expect(stagesShown(stepProgress(index, count), count, STEP_RESERVE)).toBe(index + 1);
+  });
+
+  it("clamps an index past either end onto a real step", () => {
+    expect(stepProgress(-3, count)).toBe(stepProgress(0, count));
+    expect(stepProgress(99, count)).toBe(stepProgress(count - 1, count));
+  });
+
+  /**
+   * Never above the point where the section locks, never past the point where it lets go.
+   * Either one scrolls the reader out of the figure they clicked inside.
+   */
+  it("stays inside the pin at both ends", () => {
+    const top = 1200;
+    for (const index of [-1, 0, 3, 6, 40]) {
+      const y = stepScrollTop(index, count, top, 900 + PIN_TRAVEL, 900);
+      expect(y).toBeGreaterThanOrEqual(top);
+      expect(y).toBeLessThanOrEqual(top + PIN_TRAVEL);
+    }
+  });
+
+  /**
+   * What the stage is sized for. `PIN_TRAVEL` is stated in pixels rather than in `vh`
+   * precisely so this number is the same on every screen.
+   */
+  it("spends the pin evenly, at the distance the stage is sized for", () => {
+    const at = (index: number) => stepScrollTop(index, count, 0, 900 + PIN_TRAVEL, 900);
+    const travel = at(1) - at(0);
+    expect(Math.round(travel)).toBe(296);
+    for (let i = 1; i < count; i += 1) {
+      expect(at(i) - at(i - 1)).toBeCloseTo(travel, 6);
     }
   });
 });
@@ -343,6 +409,20 @@ describe("the choreography hides the six inactive notes without deleting them", 
 
   it("takes the inactive body out of the layout with sr-only", () => {
     expect(SOURCE).toContain('motion && !isActive && "lg:sr-only"');
+  });
+
+  /**
+   * The rail collapses six of the seven heads at `lg`, so each head is a button that puts
+   * the page back where its own step is the one being read. That button exists only where
+   * there is a pin to scroll: `motion === false` is the server, the reader with no JS and
+   * the reader who asked for stillness, and all three still get the list exactly as it was,
+   * seven notes open and nothing to operate. The way that goes wrong is somebody hoisting
+   * the button out of the ternary to tidy the JSX, which is what this pins.
+   */
+  it("puts the head's button behind the motion gate", () => {
+    const gate = SOURCE.indexOf("{motion ? (");
+    expect(gate).toBeGreaterThan(-1);
+    expect(SOURCE.indexOf("<button")).toBeGreaterThan(gate);
   });
 
   it("puts no display:none on an annotation body", () => {

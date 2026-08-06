@@ -40,9 +40,42 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "votes", label: "Most upvoted · seeded" },
 ];
 
-const controlClass =
-  "rounded-md border border-line bg-surface-2 px-3 py-2 font-mono text-xs text-fg outline-none transition-colors focus:border-line-bright";
+/**
+ * One field shape, for every control in this bar.
+ *
+ * There were two. The search box was `py-2 pl-8 pr-3 text-sm` — 38px tall, 14px Geist —
+ * and the four selects were `px-3 py-2 font-mono text-xs` — 35.5px tall, 12px JetBrains —
+ * sitting in one `sm:items-center` row. Two heights 2.5px apart and two typefaces is not
+ * a distinction a reader can read as intent; at that distance it reads as nobody having
+ * looked. `h-10` fixes the height at the canonical control size rather than deriving it
+ * from padding plus whatever the font happens to be.
+ *
+ * `w-full … sm:w-auto` comes from the twin bar in `components/nodes/NodeBrowser.tsx`,
+ * which grew it and never had it copied across: without it a phone gets four controls at
+ * four ragged widths (measured 147, 219, 198 and 190px) stacked down a panel.
+ *
+ * No `outline-none`. It was dead code — the global `:focus-visible` rule in
+ * `app/globals.css` is unlayered and wins outright — and all it did was state the
+ * opposite of what the page does, which is the worst thing a dead declaration can do.
+ *
+ * ── The two browsers ──
+ * This string and the sticky disclosure below are now near-duplicates of
+ * `NodeBrowser`'s. The right long-term home is a shared `components/ui/RegistryFilterBar`
+ * that both browsers and a future `/ontology` one mount. It is deliberately NOT extracted
+ * here: that refactor has to move both files at once, and this pass owns only one of them.
+ */
+const fieldClass =
+  "h-10 rounded-md border border-line bg-surface-2 px-3 font-mono text-xs text-fg transition-colors focus:border-cyan";
 
+/** The shape plus the responsive width. The search box takes `fieldClass` and stays
+    full-width at every size, because it lives in the row's `flex-1` cell. */
+const controlClass = `${fieldClass} w-full sm:w-auto`;
+
+/**
+ * The blueprint the landing draws, the folder every download link on the site points at,
+ * and tile 1 of 9 with nothing to say so. See the lead cell at the foot of this file.
+ */
+const STARTER_SLUG = "starter-software-factory";
 
 export function GalleryBrowser({
   blueprints,
@@ -94,6 +127,9 @@ export function GalleryBrowser({
      have an active filter they cannot see. `TagFromQuery` sets one from `?tag=`, which is
      exactly that case. */
   const [narrowOpen, setNarrowOpen] = useState(false);
+
+  /** Open on mobile, where the whole panel is behind a disclosure. Ignored from `sm` up. */
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   /*
    * Doc 2 §1.1 — autonomy as a way in, and never as a league table. The list offers only
@@ -209,6 +245,32 @@ export function GalleryBrowser({
     darkFactory && "dark factory",
   ].filter((label): label is string => typeof label === "string");
 
+  /**
+   * The lead cell, or `null` when the shelf is not in the state that earns one.
+   *
+   * A perfectly regular 3×3 of identical tiles says that all nine are equally good ways
+   * in, and that is false: `starter-software-factory` is the graph the landing draws
+   * across five beats, the one `/spec/topology` reads, and the folder every download link
+   * on the site points at. A reader arriving from the landing's argument met it as tile 1
+   * of 9 with nothing distinguishing it from `Nightly Data Janitor`.
+   *
+   * ── Why it is gated so tightly ──
+   * A shelf that reorders itself under a reader's own instruction is worse than a flat
+   * shelf. So the lead cell exists only when nothing has been asked of the grid: no
+   * search, no category, no facet — and, one step stricter than the brief, only under the
+   * default recency sort. Picking `Most downloaded` is an instruction about order, and a
+   * featured cell jumping that queue would contradict the control the reader just used.
+   * Under recency the starter is already first (it is the most recently updated of the
+   * nine), so in the state that shows it, the lead cell reorders nothing at all — it only
+   * widens what was already tile 1.
+   */
+  const leadBlueprint =
+    !hasFilters && sort === "recent"
+      ? (results.find((bp) => bp.slug === STARTER_SLUG) ?? null)
+      : null;
+  const gridBlueprints =
+    leadBlueprint === null ? results : results.filter((bp) => bp !== leadBlueprint);
+
   /* The sort survives a reset: it is how the reader chose to read the shelf, not a
      narrowing of it. One write, so one history entry rather than six. */
   const clearFilters = useCallback(() => {
@@ -217,7 +279,57 @@ export function GalleryBrowser({
   }, [clear]);
 
   return (
-    <div className="flex flex-col gap-6">
+    /* `gap-5`, the canonical card tier. `gap-6` is 24px and 24 is not on the vertical
+       scale at all — it was the one number between the panel, the count row and the grid
+       that nobody had chosen. */
+    <div className="flex flex-col gap-5">
+      {/* The mobile disclosure.
+          ------------------------------------------------------------
+          Ported from the twin bar in `components/nodes/NodeBrowser.tsx`, which grew it
+          and never had it brought across. At 390px this panel is 117px of static form
+          standing between a reader and the shelf they came for, and it is `static`, so
+          changing a filter after scrolling nine tiles meant scrolling all the way back.
+
+          One panel, not two. A second copy behind a media query would duplicate every
+          input, every label and every tab stop, which is worse for a screen reader than
+          the problem it solves. So the panel below is hidden by state under `sm` and
+          forced visible from `sm` up, and this button — which only exists under `sm` —
+          toggles it and carries both counts: how many filters are on, and how much of
+          the shelf is left.
+
+          `z-40` is the page-chrome rung of the site's z ladder (header 50 · page chrome
+          40 · section chrome 30 · card furniture 20 · card hit target 10). */}
+      <div className="sticky top-16 z-40 -mx-1 bg-void/95 px-1 py-2 backdrop-blur-sm sm:hidden">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((v) => !v)}
+          aria-expanded={filtersOpen}
+          aria-controls="blueprint-filters"
+          /* `scale-[0.99]`, the >200px band: this bar runs the full width of the phone,
+             and 0.97 on a 342px element travels 10px sideways, which reads as a wobble
+             rather than as a press. `scale` is named in the property list beside
+             `transform` because Tailwind v4 compiles `scale-[…]` to the standalone
+             `scale` property, and a list naming only `transform` leaves the press
+             untransitioned. */
+          className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-line bg-surface-2 px-3 py-2.5 font-mono text-xs text-fg transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-line-bright hoverable:active:scale-[0.99]"
+        >
+          <span className="flex items-center gap-2">
+            <span aria-hidden className="text-cyan">
+              {filtersOpen ? "▾" : "▸"}
+            </span>
+            Filter
+            {activeFilters.length > 0 && (
+              <span className="rounded-full bg-cyan/15 px-2 py-0.5 tabular-nums text-cyan">
+                {activeFilters.length}
+              </span>
+            )}
+          </span>
+          <span className="tabular-nums text-dim">
+            {results.length}/{blueprints.length}
+          </span>
+        </button>
+      </div>
+
       {/* ---------------- control bar ----------------
 
           It carried **37 interactive controls before the first of 9 blueprints**, 30 of
@@ -230,8 +342,24 @@ export function GalleryBrowser({
           Three controls stay in the open, because they are the three questions somebody
           browsing nine things actually asks: what is it called, what kind is it, what
           order do I want them in. Everything else moves behind one disclosure that says
-          how many filters are active, so nothing is hidden and nothing is lost. */}
-      <div className="panel flex flex-col gap-4 p-4">
+          how many filters are active, so nothing is hidden and nothing is lost.
+
+          `role="search"`, because it is one: without it the landmark list on this page
+          was HEADER / NAV / MAIN / FOOTER, and the thing the page is for had no name in
+          it. The sibling browser already carried this; it was never brought across.
+
+          `px-4 py-3`, not `p-4`: the horizontal padding is the element tier and the
+          vertical is the tight tier, because what sits inside is one row of 40px
+          controls, not a paragraph. */}
+      <div
+        id="blueprint-filters"
+        role="search"
+        aria-label="Filter blueprints"
+        className={cx(
+          "panel flex-col gap-4 px-4 py-3 sm:flex",
+          filtersOpen ? "flex" : "hidden",
+        )}
+      >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative min-w-[14rem] flex-1">
             <span
@@ -249,8 +377,12 @@ export function GalleryBrowser({
               /* `text-dim` (5.43:1), not `text-faint` (1.83:1). The twin control in
                  `components/nodes/NodeBrowser.tsx` already carried this fix and a comment
                  explaining it; it was never applied to this file. A placeholder is the
-                 only hint of what the field accepts. */
-              className="w-full rounded-md border border-line bg-surface-2 py-2 pl-8 pr-3 text-sm text-fg placeholder:text-dim outline-none transition-colors focus:border-line-bright"
+                 only hint of what the field accepts.
+
+                 One shape with the selects beside it — see `controlClass` — plus `pl-8`,
+                 which is the only thing that differs, and only because this field has a
+                 `/` glyph standing in its left gutter. */
+              className={cx(fieldClass, "w-full pl-8 placeholder:text-dim")}
             />
           </div>
 
@@ -296,7 +428,7 @@ export function GalleryBrowser({
           onToggle={(e) => setNarrowOpen(e.currentTarget.open)}
           className="group/narrow border-t border-line pt-3"
         >
-          <summary className="flex cursor-pointer list-none items-center gap-2 font-mono text-xs text-muted transition-colors hover:text-fg">
+          <summary className="flex cursor-pointer list-none items-center gap-2 font-mono text-xs text-muted transition-colors hoverable:hover:text-fg">
             <span aria-hidden className="transition-transform group-open/narrow:rotate-90">
               ▸
             </span>
@@ -345,12 +477,15 @@ export function GalleryBrowser({
                 </select>
               </label>
 
+              {/* Same 40px shell as the selects it stands beside — it is a control in
+                  that row, and a control 6px shorter than its neighbours reads as a
+                  mistake rather than as a different kind of thing. */}
               <label
                 className={cx(
-                  "flex cursor-pointer select-none items-center gap-2 rounded-md border px-3 py-2 font-mono text-xs transition-colors",
+                  "flex h-10 w-full cursor-pointer select-none items-center gap-2 rounded-md border px-3 font-mono text-xs transition-colors sm:w-auto",
                   darkFactory
                     ? "border-line-bright bg-surface-3 text-fg"
-                    : "border-line bg-surface-2 text-muted hover:text-fg",
+                    : "border-line bg-surface-2 text-muted hoverable:hover:text-fg",
                 )}
               >
                 <input
@@ -391,7 +526,7 @@ export function GalleryBrowser({
                   type="button"
                   onClick={() => setParam("tag", null)}
                   aria-label={`Remove the ${tag} tag filter`}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-cyan/60 bg-cyan/10 px-2.5 py-1 font-mono text-[11px] text-cyan transition-colors hover:border-cyan"
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-cyan/60 bg-cyan/10 px-2.5 py-1 font-mono text-[11px] text-cyan transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-cyan hoverable:active:scale-[0.97]"
                 >
                   #{tag}
                   <span aria-hidden>×</span>
@@ -416,7 +551,7 @@ export function GalleryBrowser({
           <button
             type="button"
             onClick={clearFilters}
-            className="cursor-pointer text-muted underline-offset-4 transition-colors hover:text-cyan hover:underline"
+            className="cursor-pointer text-muted underline-offset-4 transition-colors hoverable:hover:text-cyan hoverable:hover:underline"
           >
             Clear filters
           </button>
@@ -426,7 +561,42 @@ export function GalleryBrowser({
       {/* grid / empty state */}
       {results.length > 0 ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {results.map((bp) => (
+          {/* The lead cell.
+              ------------------------------------------------------------
+              Two columns wide, so the row it opens is not nine equal cells claiming nine
+              equal entry points, and a marker in the site's own panel-title tier —
+              `.label-lead`, which `app/globals.css` defines as "the thing a reader starts
+              at". No new colour and no new shape: cyan is already spent on this page's
+              one `.eyebrow`, and amber is under contract for exactly two jobs
+              (`ComingSoonBadge` and `.route-box`), neither of which this is.
+
+              The marker sits above the tile rather than on it. Inside, `ContentCard`
+              stacks a full-bleed `<Link>` at `z-10` and the star at `z-20`, and a badge
+              dropped into that would have to out-rank the card's own hit target to be
+              seen — card furniture is capped at 20 by the z ladder for good reason. A
+              label in normal flow above the card owes nothing to that stack, and a screen
+              reader reaches it immediately before the tile it describes.
+
+              What is NOT here, deliberately: a taller preview frame with node names
+              switched on. `ContentCard` owns its own 112px frame and hard-codes
+              `nodeLabels={false}`, and reaching into another component's internals from a
+              `className` — `[&_.h-28]:h-44` and friends — buys a bigger drawing at the
+              price of a silent break the next time that file is touched. It wants a prop
+              on `ContentCard`, which is not this file.
+
+              The arithmetic, seen and accepted: two slots for the lead plus eight tiles is
+              ten, and ten does not divide by three, so the last row on a wide screen
+              carries one tile and two gaps where nine tiles used to close a perfect 3×3.
+              That squareness was an accident of the archive holding exactly nine — the
+              tenth blueprint breaks it either way — and a shelf that ends unevenly is what
+              every shelf does. It is not worth buying back by leaving all nine equal. */}
+          {leadBlueprint !== null && (
+            <div className="flex flex-col gap-2 sm:col-span-2">
+              <p className="label-lead">Start here</p>
+              <ContentCard item={leadBlueprint} className="flex-1" />
+            </div>
+          )}
+          {gridBlueprints.map((bp) => (
             <ContentCard key={bp.slug} item={bp} />
           ))}
         </div>
@@ -459,7 +629,7 @@ export function GalleryBrowser({
             <button
               type="button"
               onClick={clearFilters}
-              className="mt-1 cursor-pointer font-mono text-xs text-cyan underline-offset-4 hover:underline"
+              className="mt-1 cursor-pointer font-mono text-xs text-cyan underline-offset-4 hoverable:hover:underline"
             >
               Reset all filters
             </button>

@@ -43,8 +43,22 @@ export interface LayoutResult {
   backEdges: readonly LayoutEdge[];
 }
 
-/** Matches the hand-placed spacing the mock graphs shipped with. */
-const DEFAULTS = { layerGap: 200, rowGap: 100, originX: 0, originY: 0 } as const;
+/* Row spacing is set by the TALLEST node a row can hold, not by the ordinary one.
+   ------------------------------------------------------------
+   `rowGap` is the top-to-top distance between two nodes in the same layer, so the clearance
+   between them is `rowGap - nodeHeight`. An ordinary `AgentNode` measures 89px, which the
+   old 100 left 11px of air around — already tight, and it assumed every node is that height.
+
+   One is not. A node the explainability panel is pointing at also carries the "◎ highlighted"
+   badge, which is the *words* half of "never colour alone" and therefore cannot be dropped or
+   shrunk below the 11px mono floor. On its own row under the title it takes the lit node to
+   122px — 22px past the old gap, which put it through the node beneath it on
+   `/blueprints/starter-software-factory` (measured: a 168x10px overlap).
+
+   140 clears the tallest case with 18px to spare and gives the ordinary one 51px, which the
+   dense five-node schematics wanted anyway. Raise this, never lower it, if a node ever grows
+   another row. */
+const DEFAULTS = { layerGap: 200, rowGap: 140, originX: 0, originY: 0 } as const;
 
 /** DFS colours. `grey` means "on the current stack", which is what makes an edge a back-edge. */
 const WHITE = 0;

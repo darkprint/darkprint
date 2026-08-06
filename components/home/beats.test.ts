@@ -302,6 +302,104 @@ describe("beat 4's three marks carry no information a screen reader needs", () =
 });
 
 /**
+ * Beat 4's four panels, and the 342px column they have to survive.
+ *
+ * The bug this guards shipped, and it destroyed text rather than merely moving it. An
+ * `<article>` is a grid item; a grid item's default `min-width: auto` resolves to its
+ * min-content width; and the widest monospace row inside `Artefact` — `$ claude mcp add
+ * darkprint -- npx -y darkprint mcp`, 331px on its own — therefore set a 407px floor under
+ * a panel sitting in a 342px track on a 390px phone. No padding value on the site's own
+ * spacing scale is small enough to close a 65px gap, so the floor is the string and the
+ * only thing that lifts it is the class. Measured in the browser at 390×844:
+ * `document.documentElement.scrollWidth` 431 against `clientWidth` 390, every article
+ * 407.4px wide with its right edge at 431.4, and `window.scrollTo(300, 0)` leaving
+ * `scrollX` at 0 — `app/globals.css` sets `body { overflow-x: hidden }`, which propagates
+ * to the viewport, so the 41px was unreachable, not scrollable. What was inside those 41px
+ * included the ends of both honesty disclosures doc 2 §0.4 requires to be readable in the
+ * open. `min-w-0` on each article is the whole fix; with it the article is 342px, the
+ * `min-w-0 truncate` span already inside `Artefact` finally gets to do the job it was
+ * written for, and exactly the two rows that cannot fit ellipsis.
+ *
+ * This suite has no layout engine — `vitest.config.ts` runs the node environment, and a
+ * DOM without layout reports `scrollWidth` 0 for everything, so a case asserting
+ * `article.scrollWidth <= article.clientWidth` here would pass on the broken markup as
+ * loudly as on the fixed markup. The class is what is asserted instead, because the class
+ * is the entire mechanism: it is not a hint or a tuning value, it is the one declaration
+ * that lets a grid item narrower than its contents exist at all. The measurements above
+ * are the browser evidence, recorded here rather than re-run.
+ */
+describe("beat 4's panels can be narrower than the strings inside them", () => {
+  const html = beat("4 the lifecycle");
+  const ARTICLES = [...html.matchAll(/<article[^>]*>/g)].map((m) => m[0]);
+
+  it("renders the four panels this checks", () => {
+    expect(ARTICLES).toHaveLength(4);
+  });
+
+  it("clears the automatic grid-item min-width on every one of them", () => {
+    for (const [i, tag] of ARTICLES.entries())
+      expect(
+        tag,
+        `panel ${i + 1} has no min-w-0, so its min-content width is the floor of its grid track again`,
+      ).toMatch(/\bmin-w-0\b/);
+  });
+
+  it("leaves the row too long for that column free to ellipsis", () => {
+    // The single string that drove the whole overflow. It stays in the markup in full —
+    // `title` carries it to a tooltip and a screen reader reads the text node, not the
+    // painted box — and the span around it is the one allowed to cut it visually.
+    const at = html.indexOf("claude mcp add darkprint -- npx -y darkprint mcp");
+    expect(at, "the MCP command is not in the markup").toBeGreaterThan(0);
+    const span = html.slice(html.lastIndexOf("<span", at), at);
+    expect(span, "the long command's cell cannot shrink").toContain("min-w-0");
+    expect(span, "the long command's cell has nothing to cut it with").toContain("truncate");
+  });
+});
+
+/**
+ * The order of beat 4, which is a composition decision and not a copy decision.
+ *
+ * The panels used to run Connect · Download · Compose · Upload yours, so the sequence
+ * opened and closed on a capability that does not exist, and the two amber `Coming soon`
+ * pills marking those two were the highest-chroma objects in a viewport that is otherwise
+ * void and cyan — the eye reached "not built yet" before it reached "Download". What ships
+ * leads now, what does not is grouped under one rule and labelled once, and every word of
+ * both disclosures stayed exactly where it was. The last of those three is the one worth a
+ * guard: a reorder is precisely the edit during which a sentence goes missing, which is the
+ * failure `components/site/honesty.test.ts` exists for and has already caught twice.
+ */
+describe("beat 4 leads with what ships and states what does not", () => {
+  const words = readable(beat("4 the lifecycle"));
+  const at = (text: string) => {
+    const i = words.indexOf(text);
+    expect(i, `\`${text}\` is not in beat 4`).toBeGreaterThan(0);
+    return i;
+  };
+
+  it("prints both working capabilities before either unbuilt one", () => {
+    expect(at("Download")).toBeLessThan(at("Connect"));
+    expect(at("Compose")).toBeLessThan(at("Connect"));
+    expect(at("Connect")).toBeLessThan(at("Upload yours"));
+  });
+
+  it("labels the unbuilt pair once, between the two groups", () => {
+    expect(at("Compose")).toBeLessThan(at("Next, and not built yet"));
+    expect(at("Next, and not built yet")).toBeLessThan(at("Connect"));
+  });
+
+  it("keeps both disclosures verbatim, in the open, beside their panels", () => {
+    // Character-for-character, and `/install` carries the first of these two — see the
+    // ledger in `components/site/honesty.test.ts`, which holds it there.
+    expect(words).toContain(
+      "The server is not built yet, so this is what the setup will look like.",
+    );
+    expect(words).toContain(
+      "Nothing leaves the tab, and publishing so other people can find it is not built yet.",
+    );
+  });
+});
+
+/**
  * The three counts, and the sentence that makes them worth printing.
  *
  * `PLATFORM_STATS` counts `content/` at build time, so the figures on beat 5 are the one
@@ -322,5 +420,28 @@ describe("beat 5 says where its numbers come from", () => {
     expect(words).toMatch(/\d+ blueprints/);
     expect(words).toMatch(/\d+ node cards/);
     expect(words).toMatch(/\d+ ontology terms/);
+  });
+
+  /**
+   * The build door's limit statement, verbatim and in the open.
+   *
+   * It was the one disclosure on the landing that nothing held. `honesty.test.ts`'s
+   * ledger does not carry it — that table is keyed to `/blueprints/...` and `/spec/card`
+   * surfaces — and this file checked beat 5's counts but not the sentence that qualifies
+   * what the counted path actually ends at. A grep for the words finds them in exactly
+   * one source file, `SectionDoors.tsx` itself, which is the state that file's own
+   * header describes as how a limit statement leaves the site by accident. It has now
+   * left twice.
+   *
+   * The sentence moved during this pass — it was an orphan under the section, and it is
+   * now the second caption inside the door it qualifies — which is precisely the edit
+   * during which a sentence goes missing. Held verbatim, not by paraphrase, and read out
+   * of `readable()` so it must be text a reader sees rather than a `title` or an
+   * `sr-only`.
+   */
+  it("states, beside the guided path, that the path stops at the download", () => {
+    expect(words).toContain(
+      "The guided path ends at the download. There is nowhere to publish yet.",
+    );
   });
 });

@@ -1,3 +1,5 @@
+import { SectionHeading } from "@/components/ui/SectionHeading";
+
 /* ============================================================
    Doc 2 §4, the concrete half. The four questions are the
    instrument; these are readings taken with it, so every entry
@@ -43,6 +45,28 @@
    pointed at any of these produces confident output that nothing in
    the graph is able to reject", which is the sentence the section
    lead above it ends on.
+
+   ── The scale pass ──
+   The `h2` was a hand-written `font-display text-2xl`: 24px against
+   the 28/32 `SectionHeading` draws every other section title on the
+   site at. It is that component now, and the 78-word paragraph
+   under it splits the way `/the-climb` records splitting its own —
+   the first two sentences become the deck, verbatim, and the rest
+   carries on underneath at body size inside `.prose-lane`. Not one
+   word changed. All 78 in the deck would have run four lines of
+   20px across the full column, which is the opposite of the "get it
+   in a glance" this page was cut for.
+
+   The two mono runs in here were `tracking-[0.12em]` at 11px, a
+   fourth spelling of a tier that has exactly three. Both are
+   `.label`; the pill keeps its column's hue through `style`, which
+   outranks the class either way.
+
+   `aria-labelledby` needs an id on the heading itself and
+   `SectionHeading` has no id prop, so the id rides a `<span>` inside
+   the title. The accessible name is the same string either way, and
+   the alternative — a second hand-typed copy of the h2 class list —
+   is the defect this pass exists to remove.
    ============================================================ */
 
 type Example = {
@@ -127,20 +151,19 @@ const COLUMNS: Column[] = [
 
 export function WhichTasksExamples() {
   return (
-    <section className="flex flex-col gap-6" aria-labelledby="examples-heading">
-      <div className="flex flex-col gap-3">
-        <h2
-          id="examples-heading"
-          className="font-display text-2xl font-semibold tracking-tight text-fg"
-        >
-          Eight real tasks, run through the four questions
-        </h2>
-        <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
-          Find the entry your task most resembles and read the check it turns on. The
-          second column is at full strength on purpose. This page exists to prevent one
-          outcome: a blueprint pointed at a task nothing can verify returns fluent work no
-          node in the graph can reject, and the reader concludes that dark factories do not
-          work. The graph was fine; the task was never a candidate.
+    <section className="flex flex-col gap-10" aria-labelledby="examples-heading">
+      <div>
+        <SectionHeading
+          title={
+            <span id="examples-heading">Eight real tasks, run through the four questions</span>
+          }
+          lead="Find the entry your task most resembles and read the check it turns on. The second column is at full strength on purpose."
+        />
+        <p className="prose-lane mt-5 text-[15px] leading-[1.7] text-muted">
+          This page exists to prevent one outcome: a blueprint pointed at a task nothing
+          can verify returns fluent work no node in the graph can reject, and the reader
+          concludes that dark factories do not work. The graph was fine; the task was
+          never a candidate.
         </p>
       </div>
 
@@ -153,8 +176,11 @@ export function WhichTasksExamples() {
           >
             <div className="flex flex-col gap-2 border-b border-line px-5 py-4">
               <div className="flex flex-wrap items-center gap-2">
+                {/* `.label` in a pill, recoloured by the column's own hue. It was
+                    `tracking-[0.12em]` here and `0.12em` again on the check line below,
+                    neither of which is one of the three mono tiers. */}
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em]"
+                  className="label inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5"
                   style={{ color: col.color }}
                 >
                   <span aria-hidden>{col.glyph}</span>
@@ -186,7 +212,7 @@ export function WhichTasksExamples() {
                         <span className="font-display text-[15px] font-semibold leading-snug text-fg">
                           {item.title}
                         </span>
-                        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-dim transition-colors group-hover:text-muted">
+                        <span className="label transition-colors group-hover:text-muted">
                           {item.check}
                           <span aria-hidden className="ml-2 inline-block transition-transform group-open:rotate-90">
                             ▸

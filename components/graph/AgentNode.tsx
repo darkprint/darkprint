@@ -70,7 +70,7 @@ export function AgentNode({ data }: NodeProps<AgentFlowNode>) {
   const cardId = typeof data.cardId === "string" ? data.cardId : undefined;
   return (
     <div
-      className="group relative min-w-[150px] rounded-md border bg-surface-2/95 px-3 py-2 backdrop-blur-sm"
+      className="group relative min-w-[150px] max-w-[220px] rounded-md border bg-surface-2/95 px-3 py-2 backdrop-blur-sm"
       style={{
         borderColor: lit ? "var(--color-amber)" : "var(--color-line-bright)",
         boxShadow: lit
@@ -89,11 +89,6 @@ export function AgentNode({ data }: NodeProps<AgentFlowNode>) {
         >
           {meta.glyph} {meta.label}
         </span>
-        {lit && (
-          <span className="ml-auto whitespace-nowrap rounded-full border border-amber/60 bg-amber/10 px-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-amber">
-            ◎ highlighted
-          </span>
-        )}
       </div>
       <div className="mt-0.5">
         {cardId === undefined ? (
@@ -104,6 +99,28 @@ export function AgentNode({ data }: NodeProps<AgentFlowNode>) {
       </div>
       {data.sub && (
         <div className="mt-0.5 font-mono text-[11px] text-dim">{data.sub}</div>
+      )}
+      {/* Its own row, and the reason is geometry rather than taste.
+          ------------------------------------------------------------
+          This badge is the *words* half of "never colour alone" — the one thing on a lit
+          node that says in language what the amber ring says in hue — so it stays, and at
+          the site's 11px mono floor rather than the 9px it used to be.
+
+          But at 11px with 0.18em tracking it is ~105px wide, and sitting `ml-auto` on the
+          header row beside the kind label it made the node demand that width *in addition*
+          to the label's. The node had no max width, so it grew to 275px against its
+          siblings' 168px and overlapped its neighbour by 51x35px on
+          `/blueprints/starter-software-factory` — measured, not guessed.
+
+          Below the title it competes with nothing horizontal, so the node keeps its
+          sibling's width and the words keep their size. `max-w-[220px]` on the container
+          holds the same line against a long node title. */}
+      {lit && (
+        <div className="mt-1.5">
+          <span className="inline-block whitespace-nowrap rounded-full border border-amber/60 bg-amber/10 px-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-amber">
+            ◎ highlighted
+          </span>
+        </div>
       )}
       <Handle
         type="target"

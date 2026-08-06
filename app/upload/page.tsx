@@ -5,7 +5,12 @@ import { Eyebrow, SectionHeading } from "@/components/ui/SectionHeading";
 import { UploadFlow, type ExampleBundle } from "@/components/upload/UploadFlow";
 
 export const metadata: Metadata = {
-  title: "Share a blueprint",
+  /* One destination, one name. The header, the phone panel, the footer and both landing
+     doors all say "Validate a bundle"; this page used to answer to "Share a blueprint"
+     in 48px display type under an eyebrow reading CONTRIBUTE — a promise of publishing
+     that the site has no backend for, made on the very surface the header refuses to
+     make it on. What the page does is check your work, and that is what it is called. */
+  title: "Validate a bundle",
   description:
     "Upload the DOT graph of your pipeline. DarkPrint parses it in your browser, names its autonomy class and scores its security by static analysis. Publishing to the registry is not built yet, nothing leaves the tab.",
 };
@@ -70,11 +75,14 @@ export default function UploadPage() {
           page, so they now sit beside what they qualify. `max-w-2xl` came off with them,
           the same full-width rule the other heroes follow. */}
       <header>
-        <Eyebrow>Contribute</Eyebrow>
+        {/* CONTRIBUTE, and the h1 under it, both promised publishing. See the note on
+            `metadata.title`: the chrome sends a reader here calling it "Validate a
+            bundle", so that is what they must land on. */}
+        <Eyebrow>Check your work</Eyebrow>
         <SectionHeading
           as="h1"
           className="mt-3"
-          title="Share a blueprint"
+          title="Validate a bundle"
           lead="Drop the DOT graph of your pipeline. This page parses it in your own tab, names the autonomy class and scores the security, with no form to guess your way through."
         />
         {/* The vocabulary asymmetry, moved here from `/what-it-isnt` when that page was

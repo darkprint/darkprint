@@ -145,9 +145,12 @@ export function CapSlider({
         >
           {readings.map((reading) => (
             <div key={reading.label} className="flex min-w-0 flex-col gap-0.5">
-              <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
-                {reading.kind}
-              </dt>
+              {/* `.label`, not a fourth hand-typed mono spelling: this is exactly the
+                  job that class names — a meta label heading a value. It also lifts the
+                  kind off 10px onto the site's 11px mono floor, which matters more here
+                  than anywhere else on the page, because these three words are the only
+                  thing saying what kind of cost each figure under the slider is. */}
+              <dt className="label">{reading.kind}</dt>
               <dd className="flex flex-col gap-0.5">
                 <span className="font-mono text-sm tabular-nums text-cyan">
                   {reading.value}

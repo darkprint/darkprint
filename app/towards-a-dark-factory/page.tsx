@@ -4,7 +4,7 @@ import Link from "next/link";
 import { SectionLevels } from "@/components/home/SectionLevels";
 import { RoutePager } from "@/components/howto";
 import { CLIMB_ROUTE } from "@/components/howto/route";
-import { SectionHeading } from "@/components/ui/SectionHeading";
+import { PanelHeading, SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
    Redesign spec §4.2, on the author's instruction: "/which-tasks
@@ -17,8 +17,13 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    The overview is deliberately thin. `SectionLevels` is the whole
    argument for this page and it arrives with five drawings, the
    two-scales panel and its own sources; anything written above it
-   competes with the thing a reader came for. Two sentences and a
-   two-item index, then the ladder.
+   competes with the thing a reader came for. Two sentences, then
+   the ladder.
+
+   The page reads hero → ladder → what changes around the pipeline
+   → the two doors. Every exit is in the last block and nowhere
+   else; the note above that block says why that is not a
+   preference.
 
    ── Why the ladder is imported and not rewritten ──
    `components/home/SectionLevels.tsx` is owned elsewhere this pass
@@ -60,8 +65,6 @@ export const metadata: Metadata = {
 };
 
 const HERE = "/towards-a-dark-factory";
-
-const LABEL = "font-mono text-[11px] uppercase tracking-[0.18em] text-dim";
 
 const INLINE =
   "font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan";
@@ -122,56 +125,12 @@ export default function TowardsPage() {
                reader needs before the ladder means anything. */
             lead="A dark factory is a pipeline where all five phases run unattended: planning, implementation, testing, debugging and deployment. Start by finding yourself on the ladder below. Where you land decides which problem you have, and the two pages after this one answer the two questions that follow."
           />
-
         </div>
       </header>
 
       <SectionLevels />
 
-      {/* The two doors, back — but after the ladder, not before it.
-          ------------------------------------------------------------
-          They were deleted because they sat between the lead and `SectionLevels`, so a
-          reader met "Stop 3 of 3" before being offered stop 2 and before seeing anything
-          the stops were about. That complaint was about *placement* and the deletion
-          answered it by removing the index instead of moving it.
-
-          Two things broke. `components/site/SiteHeader.tsx` justifies keeping these two
-          children out of the nav on the grounds that "each sequence carries its own
-          previous/next pager and its parent opens with a door per child" — true of
-          `/spec`, and false here from the moment the cards went. And the nav is the only
-          permanent entrance, so a reader arriving through it met the first link to either
-          child at 83% scroll depth, in a pager, one stop at a time.
-
-          Here they are an index of what is left rather than a menu shown before the
-          argument, and they run in route order, which the one prose link further down
-          did not: it offered stop 3 two hundred pixels above the pager offering stop 2. */}
-      <section
-        aria-labelledby="route-doors"
-        className="border-t border-line bg-void py-12"
-      >
-        <div className="container-page flex flex-col gap-5">
-          <h2 id="route-doors" className={LABEL}>
-            The two questions that follow
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {CLIMB_ROUTE.filter((stop) => stop.href !== HERE).map((stop, i) => (
-              <Link
-                key={stop.href}
-                href={stop.href}
-                className="route-box flex flex-col gap-2 p-5"
-              >
-                <span className="route-label">{`0${i + 2}`}</span>
-                <span className="font-display text-lg font-semibold text-fg">
-                  {stop.label}
-                </span>
-                <span className="text-sm leading-relaxed text-muted">{stop.blurb}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="around" className="scroll-mt-24 border-t border-line bg-void py-14 sm:py-20">
+      <section id="around" className="scroll-mt-24 border-t border-line bg-void py-16 sm:py-20">
         <div className="container-page">
           <SectionHeading
             eyebrow="The half that is not technical"
@@ -179,18 +138,16 @@ export default function TowardsPage() {
             lead="The technology in the account this route ends on is ordinary: an orchestrator script, a GitHub Action, containers on infrastructure the team already ran. What it spends its risk section on is people."
           />
 
-          <ul className="mt-10 grid gap-4 md:grid-cols-2">
+          <ul className="mt-10 grid gap-5 md:grid-cols-2">
             {AROUND.map((item) => (
-              <li key={item.title} className="panel flex flex-col gap-2.5 p-6">
-                <h3 className="font-display text-lg font-semibold leading-snug text-fg">
-                  {item.title}
-                </h3>
+              <li key={item.title} className="panel flex flex-col gap-3 p-5">
+                <PanelHeading>{item.title}</PanelHeading>
                 <p className="text-sm leading-relaxed text-muted">{item.body}</p>
               </li>
             ))}
           </ul>
 
-          <p className="mt-6 max-w-3xl text-[15px] leading-relaxed text-muted">
+          <p className="prose-lane mt-10 text-[15px] leading-[1.7] text-muted">
             Writing code used to be the floor of what it meant to be an engineer. In the
             account&apos;s model the work is deciding what to build and how to know it is
             right, which is closer to product engineering than to what most people were
@@ -205,9 +162,63 @@ export default function TowardsPage() {
         </div>
       </section>
 
-      <section className="border-t border-line bg-surface py-14">
-        <div className="container-page">
-          <RoutePager href={HERE} />
+      {/* The two doors, and the page ends on them.
+          ------------------------------------------------------------
+          They were deleted once, because they sat between the lead and `SectionLevels`:
+          a reader met "Stop 3 of 3" before being offered stop 2 and before seeing
+          anything the stops were about. That complaint was about *placement*, and the
+          deletion answered it by removing the index instead of moving it. Two things
+          broke — `components/site/SiteHeader.tsx` justifies keeping these two children
+          out of the nav on the grounds that "each sequence carries its own previous/next
+          pager and its parent opens with a door per child", which went false the moment
+          the cards went; and the nav is the only permanent entrance, so a reader arriving
+          through it met the first link to either child at 83% scroll depth, in a pager,
+          one stop at a time.
+
+          They came back above "What changes around the pipeline" and that was still
+          wrong, in the other direction. `.route-box` is a promise: amber means this box
+          leaves the page. The page then fired it three times for two destinations — two
+          doors at 60% depth, a full section of substance after them, then a pager whose
+          NEXT card was door 02 again, ~1100px lower. A reader who trusts the amber stops
+          at the doors and never sees the section; a reader who carries on meets the same
+          door twice and cannot tell whether it is new. That is the exact ambiguity the
+          device was invented to remove.
+
+          So the index is here, at the end, where an index of what is left belongs, and
+          `RoutePager` draws its rail without arrows (`arrows={false}`): this page is the
+          parent of the sequence, not a stop inside it, and both of its destinations are
+          in the two cards above. Amber now fires once per destination. */}
+      <section
+        aria-labelledby="route-doors"
+        className="border-t border-line bg-surface py-16 sm:py-20"
+      >
+        <div className="container-page flex flex-col gap-10">
+          <div className="flex flex-col gap-5">
+            <h2 id="route-doors" className="label-lead">
+              The two questions that follow
+            </h2>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {CLIMB_ROUTE.filter((stop) => stop.href !== HERE).map((stop, i) => (
+                <Link
+                  key={stop.href}
+                  href={stop.href}
+                  className="route-box group flex flex-col gap-2 p-5"
+                >
+                  <span className="route-label">{`0${i + 2}`}</span>
+                  {/* `hoverable:` gates the hover on `(hover: hover) and (pointer: fine)`,
+                      the same gate `.route-box:hover` carries in `app/globals.css`: a tap
+                      on a phone has no "leave", so an ungated hover latches the amber on
+                      whichever door was touched last. */}
+                  <span className="font-display text-lg font-semibold text-fg transition-colors hoverable:group-hover:text-amber-bright">
+                    {stop.label}
+                  </span>
+                  <span className="text-sm leading-relaxed text-muted">{stop.blurb}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <RoutePager href={HERE} arrows={false} />
         </div>
       </section>
     </>

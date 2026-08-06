@@ -56,9 +56,35 @@ export interface ReachRowProps {
    * and node placements are untouched.
    */
   note?: React.ReactNode;
+  /**
+   * Make the name cell a link.
+   *
+   * Added for `/ontology`, where this figure was already shaped like the table of
+   * contents that page never had: five named kinds, each one pointing at the section
+   * below that holds it. 50 terms over eight viewports and no lookup of any kind, while
+   * the two sibling shelves both open with a search panel — so the cheap half of a way in
+   * is to let the figure be the index it already looks like.
+   *
+   * Only the name cell takes the link. The gloss carries prose links of its own, and a
+   * row-wide hit target would swallow them.
+   */
+  href?: string;
+  /**
+   * The link's accessible name, when the field name does not say where it goes.
+   *
+   * The cell reads out as its own contents otherwise — "phase 5 terms" — which names the
+   * field, not the destination. Ignored when `href` is unset.
+   */
+  hrefLabel?: string;
   /** Set by `ReachList`; a caller passing it is overridden. */
   index?: number;
 }
+
+/**
+ * The name cell's geometry, shared by the plain and the linked spelling so the two are
+ * the same box and a linked figure does not sit a pixel off an unlinked one.
+ */
+const NAME_CELL = "flex min-w-0 flex-col rounded border border-line bg-surface-2 px-3 py-2 sm:w-auto";
 
 export function ReachRow({
   field,
@@ -66,8 +92,26 @@ export function ReachRow({
   barred = false,
   children,
   note,
+  href,
+  hrefLabel,
   index = 0,
 }: ReachRowProps) {
+  const name = (
+    <>
+      <code className={cx("font-mono text-[12px]", barred ? "text-amber" : "text-cyan")}>
+        {field}
+      </code>
+      {/* `truncate` only once there are columns to protect. Stacked, the row is as
+          wide as the figure and a clipped path helps nobody — `skills/merge-executor.md`
+          was cut with no title and no way to see the rest. */}
+      {value !== undefined && (
+        <code className="min-w-0 break-all font-mono text-[11px] text-dim sm:truncate sm:break-normal">
+          {value}
+        </code>
+      )}
+    </>
+  );
+
   return (
     /* Stacked below `sm`, three columns above it.
        ------------------------------------------------------------
@@ -86,19 +130,32 @@ export function ReachRow({
       className="anim-strip-in grid grid-cols-1 items-start gap-1.5 sm:grid-cols-[minmax(0,10.5rem)_auto_minmax(0,1fr)] sm:gap-3"
       style={{ animationDelay: `${index * STEP}ms` }}
     >
-      <span className="flex min-w-0 flex-col rounded border border-line bg-surface-2 px-3 py-2 sm:w-auto">
-        <code className={cx("font-mono text-[12px]", barred ? "text-amber" : "text-cyan")}>
-          {field}
-        </code>
-        {/* `truncate` only once there are columns to protect. Stacked, the row is as
-            wide as the figure and a clipped path helps nobody — `skills/merge-executor.md`
-            was cut with no title and no way to see the rest. */}
-        {value !== undefined && (
-          <code className="min-w-0 break-all font-mono text-[11px] text-dim sm:truncate sm:break-normal">
-            {value}
-          </code>
-        )}
-      </span>
+      {href === undefined ? (
+        <span className={NAME_CELL}>{name}</span>
+      ) : (
+        /* A plain `<a>`, not `next/link`: this is a fragment on the page already being
+           read, so there is no route to prefetch and nothing to hand the router.
+
+           The press is the 40–200px band's `0.97` — the cell measures 168px — and the
+           property list spells `scale` out. Tailwind v4 emits `scale:` as its own CSS
+           property, so a hand-written `transition-[transform,…]` does not cover it and
+           the press would snap instead of ramping. `hoverable:` gates both the hover and
+           the press behind a fine pointer, the way every other pressable surface in
+           `components/ui` does, so a tap does not latch the hover until the route
+           changes. Focus is deliberately outside the transition: `outline-color` is in
+           Tailwind's `transition-colors` set, and a ring that fades in over 180ms is a
+           ring a reader tabbing at 80ms never sees at full strength. */
+        <a
+          href={href}
+          aria-label={hrefLabel}
+          className={cx(
+            NAME_CELL,
+            "transition-[transform,scale,color,background-color,border-color] duration-[var(--dur-base)] ease-out hoverable:hover:border-line-bright hoverable:hover:bg-surface-3 hoverable:active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan",
+          )}
+        >
+          {name}
+        </a>
+      )}
 
       {/* The pointing. A rule with an arrowhead, or a rule struck through.
           ------------------------------------------------------------

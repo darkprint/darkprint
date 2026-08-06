@@ -31,15 +31,16 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createElement } from "react";
+import { Fragment, createElement } from "react";
 import { describe, expect, it } from "vitest";
 
-import { getNodeCard, getOntologyView } from "@/lib/content";
+import { allBlueprints, getNodeCard, getOntologyView } from "@/lib/content";
 import { WhichTasksGlance } from "@/components/explain/WhichTasksGlance";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionLevels } from "@/components/home/SectionLevels";
 import { SectionRoles } from "@/components/home/SectionRoles";
 import { DezoomGraph } from "@/components/home/nodecard/DezoomGraph";
+import { GraphFigure } from "@/components/learn/PartFigures";
 import { IsolationWall } from "@/components/howto/IsolationWall";
 import { PhaseStrip } from "@/components/howto/PhaseStrip";
 import { EnforcementFigure } from "@/components/spec/EnforcementFigure";
@@ -76,6 +77,29 @@ function latticeProps(): { chain: string[]; kin: string[] } {
           .filter((term) => term.id !== "acceptance-criteria")
           .map((term) => term.id);
   return { chain, kin };
+}
+
+/**
+ * Both placements of part 01 on `/what-a-blueprint-is`, drawn from the archive.
+ *
+ * The page renders the compact frame under `sm` and the wide one above it, so the two are
+ * rendered together here: they are one figure with two solves, and measuring only the wide
+ * one is how a phone-only collision ships. The graph is read off the starter bundle rather
+ * than invented, for the reason the figure's own header gives — "a picture of a graph that
+ * is not one of the graphs would be the one thing this page cannot afford" — and because a
+ * placement laid out from three columns has to be measured against the columns the layout
+ * actually produces.
+ */
+function graphFigures(): React.ReactElement {
+  const starter = allBlueprints().find((bp) => bp.slug === "starter-software-factory");
+  if (starter === undefined) throw new Error("the starter blueprint is not in the archive");
+  const props = { graph: starter.graph, title: starter.title };
+  return createElement(
+    Fragment,
+    null,
+    createElement(GraphFigure, { ...props, compact: true }),
+    createElement(GraphFigure, props),
+  );
 }
 
 /* ==================== the roster ==================== */
@@ -152,6 +176,15 @@ const ROSTER: readonly SceneEntry[] = [
   // says a field is a step in the run, and the author asked for figures outside the
   // blueprint style. What replaced them is boxes and rules with no scene in the file, so
   // the derived roster below stops expecting one.
+  // `components/learn/PartFigures.tsx` drew part 01's graph as rounded rectangles with a
+  // kind stripe, which is why it had no entry here: the roster walks for `<FlowScene` and
+  // that figure was hand-rolled SVG outside the vocabulary entirely. It was the last CAD
+  // register left on the site, and converting it is what put it in front of this guard.
+  {
+    files: ["components/learn/PartFigures.tsx"],
+    frames: 2,
+    render: () => framesOf(graphFigures()),
+  },
   {
     files: ["components/howto/IsolationWall.tsx"],
     frames: 1,

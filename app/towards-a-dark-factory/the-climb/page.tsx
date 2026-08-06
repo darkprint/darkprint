@@ -194,8 +194,6 @@ const SOURCES: {
   },
 ];
 
-const LABEL = "font-mono text-[11px] uppercase tracking-[0.18em] text-dim";
-
 const INLINE =
   "font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan";
 
@@ -214,7 +212,8 @@ const INLINE =
 function Source({ children, name }: { children: string; name: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      <span className={LABEL}>{name}</span>
+      {/* `.label`: this tags a listing, it does not title a block. */}
+      <span className="label">{name}</span>
       <pre className="overflow-x-auto rounded-lg border border-line bg-surface-2 px-4 py-3 font-mono text-[12px] leading-relaxed text-fg">
         <code>{children}</code>
       </pre>
@@ -225,7 +224,7 @@ function Source({ children, name }: { children: string; name: string }) {
 export default function TheClimbPage() {
   return (
     <>
-      <header className="border-b border-line bg-void py-14 sm:py-16">
+      <header className="border-b border-line bg-void py-16 sm:py-20">
         <div className="container-page">
           <SectionHeading
             as="h1"
@@ -240,7 +239,7 @@ export default function TheClimbPage() {
             lead="The gap is the one between a pipeline a person shepherds and a dark factory, where planning, implementation, testing, debugging and deployment all run unattended. This is a quality architecture built from scratch rather than bolted onto the review process they already had."
           />
           {/* Doc 2 §1.1, said once, in one sentence, before anything else on the page. */}
-          <p className="mt-6 max-w-3xl text-sm leading-relaxed text-dim">
+          <p className="prose-lane mt-6 text-sm leading-relaxed text-dim">
             This page is about the ladder, which describes what an organisation is able to
             do. The class printed on a blueprint answers a different question, and{" "}
             <Link href="/towards-a-dark-factory#autonomy" className={INLINE}>
@@ -252,7 +251,7 @@ export default function TheClimbPage() {
       </header>
 
       {/* ---------- the four phases ---------- */}
-      <section id="phases" className="bg-surface py-14 sm:py-20">
+      <section id="phases" className="bg-surface py-16 sm:py-20">
         <div className="container-page">
           <SectionHeading
             eyebrow="The shape of the climb"
@@ -267,7 +266,7 @@ export default function TheClimbPage() {
           {/* Where the organisational half went. The account's risk section is about
               people rather than pipelines, which is the overview's subject and what the
               1-5 ladder measures, so it moved there whole instead of being cut. */}
-          <p className="mt-6 max-w-3xl text-sm leading-relaxed text-muted">
+          <p className="prose-lane mt-10 text-sm leading-relaxed text-muted">
             The account spends its risk section on people, and what{" "}
             <Link href="/towards-a-dark-factory#around" className={INLINE}>
               changes around the pipeline
@@ -288,33 +287,34 @@ export default function TheClimbPage() {
               progressive disclosure from one of its references, is in the OpenAI entry
               under Sources. So the heading became a summary and the block sits under the
               phases it is about. */}
-          <div className="panel mt-2 flex flex-col gap-3 p-6">
-            <span className={LABEL}>A linter message the agent can act on</span>
-            <p className="text-sm leading-relaxed text-muted">
+          {/* `.label-lead` titles the panel; the two sentences inside it are prose and
+              run in `.prose-lane`. They were the widest body copy on the site at 181 and
+              182 characters per line — a full 1102px panel at 14px — on a page whose
+              other paragraphs run at 118. The two mono samples are a figure, not prose,
+              and keep the panel's full width. */}
+          <div className="panel mt-2 flex flex-col gap-4 p-5">
+            <span className="label-lead">A linter message the agent can act on</span>
+            <p className="prose-lane text-sm leading-relaxed text-muted">
               The smallest format here is one line, and the account reports the largest
               difference per character of anything in phase 1. It is written as an
               instruction.
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded border border-line bg-surface-2 px-4 py-3">
-                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-signal">
-                  a description
-                </span>
+                <span className="label text-signal">a description</span>
                 <p className="mt-1.5 font-mono text-[12px] leading-relaxed text-muted">
                   Service layer depends on controller layer.
                 </p>
               </div>
               <div className="rounded border border-line bg-surface-2 px-4 py-3">
-                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-emerald">
-                  an instruction
-                </span>
+                <span className="label text-emerald">an instruction</span>
                 <p className="mt-1.5 font-mono text-[12px] leading-relaxed text-fg">
                   Service class imports from the controller package. Services must not
                   depend on controllers. Move the shared type to the model package.
                 </p>
               </div>
             </div>
-            <p className="text-sm leading-relaxed text-muted">
+            <p className="prose-lane text-sm leading-relaxed text-muted">
               With the first the agent guesses. With the second it fixes the right thing
               first time, most of the time.
             </p>
@@ -322,40 +322,46 @@ export default function TheClimbPage() {
 
           {/* Four shapes rather than one shape four times, so all four stay. The
               disclosure decides what is on screen before a click and nothing else: the
-              text is in the prerendered HTML either way and it opens without JavaScript. */}
-          <details className="panel group mt-5 p-6">
-            <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden font-mono text-[11px] uppercase tracking-[0.14em] text-dim transition-colors hover:text-fg">
-              <span
-                aria-hidden
-                className="inline-block transition-transform group-open:rotate-90"
-              >
-                ▸{" "}
-              </span>
-              Progressive disclosure, and four files that are not code
-            </summary>
-            <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted">
-              Specs and scenarios are markdown with YAML frontmatter. The shapes are the
-              account&apos;s and the contents ours, so these illustrate a form and none of
-              them runs.
-            </p>
-            <div className="mt-5 grid gap-5 lg:grid-cols-2">
-              <Source name="A feature spec">{FEATURE_SPEC}</Source>
-              <Source name="A bug spec">{BUG_SPEC}</Source>
+              text is in the prerendered HTML either way and it opens without JavaScript.
+
+              `More`, not a fourth hand-written `<details>` on this route. This one wrote
+              the ▸ and its trailing space inside an `inline-block` span, and a trailing
+              space collapses at the box edge, so the built page read
+              "▸PROGRESSIVE DISCLOSURE…" with the marker welded to the word — the same
+              defect `PhaseStrip` and `WhichTasksChecks` shipped. `More` puts the marker
+              in a flex row with `gap-2`. One child, so the block sets its own rhythm
+              rather than inheriting the component's. */}
+          <More
+            bare
+            className="panel mt-5 p-5"
+            summary="Progressive disclosure, and four files that are not code"
+          >
+            <div className="flex flex-col gap-5">
+              <p className="prose-lane text-sm leading-relaxed text-muted">
+                Specs and scenarios are markdown with YAML frontmatter. The shapes are the
+                account&apos;s and the contents ours, so these illustrate a form and none
+                of them runs.
+              </p>
+              <div className="grid gap-5 lg:grid-cols-2">
+                <Source name="A feature spec">{FEATURE_SPEC}</Source>
+                <Source name="A bug spec">{BUG_SPEC}</Source>
+              </div>
+              <p className="prose-lane text-sm leading-relaxed text-muted">
+                A bug spec states the symptom and stops, because an agent handed a
+                diagnosis implements it. The line about investigating the codebase is what
+                stops that.
+              </p>
+              <div className="grid gap-5 lg:grid-cols-2">
+                <Source name="A holdout scenario">{HOLDOUT}</Source>
+                <Source name="An AGENTS.md, first hundred lines">{AGENTS_MD}</Source>
+              </div>
             </div>
-            <p className="mt-5 max-w-3xl text-sm leading-relaxed text-muted">
-              A bug spec states the symptom and stops, because an agent handed a diagnosis
-              implements it. The line about investigating the codebase is what stops that.
-            </p>
-            <div className="mt-5 grid gap-5 lg:grid-cols-2">
-              <Source name="A holdout scenario">{HOLDOUT}</Source>
-              <Source name="An AGENTS.md, first hundred lines">{AGENTS_MD}</Source>
-            </div>
-          </details>
+          </More>
         </div>
       </section>
 
       {/* ---------- holdout scenarios ---------- */}
-      <section id="holdouts" className="bg-void py-14 sm:py-20">
+      <section id="holdouts" className="bg-void py-16 sm:py-20">
         <div className="container-page">
           <SectionHeading
             eyebrow="The mechanism"
@@ -367,9 +373,9 @@ export default function TheClimbPage() {
             <IsolationWall />
           </div>
 
-          <div className="mt-8 grid gap-5 lg:grid-cols-2">
-            <div className="panel flex flex-col gap-3 p-6">
-              <span className={LABEL}>How a scenario is judged</span>
+          <div className="mt-10 grid gap-5 lg:grid-cols-2">
+            <div className="panel flex flex-col gap-3 p-5">
+              <span className="label-lead">How a scenario is judged</span>
               <p className="text-sm leading-relaxed text-muted">
                 A model plans the API calls a scenario needs, runs them against the pull
                 request&apos;s ephemeral deployment, and reads whether the responses
@@ -382,10 +388,24 @@ export default function TheClimbPage() {
                 pass before the pull request moves forward.
               </p>
             </div>
-            <div className="panel flex flex-col gap-3 border-t-2 border-t-cyan p-6">
-              <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-cyan">
-                Why the wall is the whole thing
-              </span>
+            {/* `.panel-lead`, which is the documented way to say "this is the panel to
+                start at".
+                ------------------------------------------------------------
+                This carried `border-t-2 border-t-cyan` and rendered a 1px
+                `--color-line` hairline, because `.panel` was unlayered and an unlayered
+                class beats every utility. That is fixed, and the rule now renders as
+                written — verified in the DOM here: `borderTopWidth: 2px`,
+                `borderTopColor: rgb(56,189,248)`. So the question was not whether it
+                works but whether it is the right sentence, and the intent behind it —
+                the section's own lead says "the account puts one section above every
+                other, and this is it" — is exactly what `.panel-lead` exists to say. A
+                lifted ground and a brighter edge, once per page, rather than a fifth
+                colour rule this site does not otherwise use on a panel. The cyan also
+                cost something: cyan means interactive here, and a 2px cyan edge on a
+                block nobody can click spends the one colour the palette reserves for
+                things that respond. */}
+            <div className="panel panel-lead flex flex-col gap-3 p-5">
+              <span className="label-lead">Why the wall is the whole thing</span>
               {/* The DarkPrint paragraph that used to close this panel is now one clause
                   of the closing section, which was making the same claim about the same
                   layer a screen further down. */}
@@ -402,16 +422,27 @@ export default function TheClimbPage() {
       </section>
 
       {/* ---------- where this site fits, honestly ---------- */}
-      <section className="border-t border-line bg-surface py-14">
+      <section className="border-t border-line bg-surface py-16 sm:py-20">
         <div className="container-page flex flex-col gap-5">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-fg">
-            What DarkPrint does with any of this
-          </h2>
-          <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
-            This site holds the layer the account spends the least time on: the graph.
-            Which nodes exist, what flows between them, what each node is forbidden to
-            receive, and which model it runs. The wall above is a rule in that layer here,
-            so{" "}
+          {/* A `SectionHeading`, like the two sections above it.
+              ------------------------------------------------------------
+              This was the page's third section and its only orphan `h2`: 24px against
+              its siblings' 36, no eyebrow, and a hand-written class list rather than the
+              component every other section title on the site is drawn by. Three sections
+              in one scroll, two of them announced and one of them not, reads as a
+              paragraph that grew a title rather than as the place the page lands.
+
+              The lead is the first two sentences of the paragraph that used to open the
+              section, verbatim. Nothing was rewritten to make the block fit: they were
+              already the sentence that says what this site is, which is what a lead is
+              for, and the rest of the paragraph carries on underneath at body size. */}
+          <SectionHeading
+            eyebrow="Where this site fits"
+            title="What DarkPrint does with any of this"
+            lead="This site holds the layer the account spends the least time on: the graph. Which nodes exist, what flows between them, what each node is forbidden to receive, and which model it runs."
+          />
+          <p className="prose-lane mt-5 text-[15px] leading-[1.7] text-muted">
+            The wall above is a rule in that layer here, so{" "}
             <Link href="/spec/topology" className={INLINE}>
               the starter blueprint has an edge it does not have
             </Link>
@@ -425,7 +456,7 @@ export default function TheClimbPage() {
           {/* Constraint 0.4, on the page most likely to read as a pitch. It used to be
               one of two copies; `/what-it-isnt` carried the other and that page is gone,
               so this is now the only place the route states it. Do not fold it. */}
-          <p className="max-w-3xl text-sm leading-relaxed text-dim">
+          <p className="prose-lane text-sm leading-relaxed text-dim">
             Nothing here runs a factory. Execution happens on your own machine, through
             Claude Code or an agent that reads the same cards. Publishing is not built,
             there are no accounts, no votes and no telemetry, and there is no MCP server to
@@ -443,7 +474,7 @@ export default function TheClimbPage() {
       </section>
 
       {/* ---------- sources ---------- */}
-      <section className="border-t border-line bg-void py-12">
+      <section className="border-t border-line bg-void py-16 sm:py-20">
         <div className="container-page flex flex-col gap-10">
           {/* Folded. Three references with a provenance note each is a column and a half
               on a phone, standing between the reader and the pager. The "read in full /
@@ -464,11 +495,9 @@ export default function TheClimbPage() {
                       ↗
                     </span>
                   </a>
-                  <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
-                    {source.where}
-                  </span>
+                  <span className="label">{source.where}</span>
                   <span
-                    className="w-fit rounded-full border border-line px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em]"
+                    className="label w-fit rounded-full border border-line px-2 py-0.5"
                     style={{
                       color: source.read
                         ? "var(--color-emerald)"

@@ -68,18 +68,83 @@ import { tokenizeYaml } from "./yaml";
 /**
  * The window the listing scrolls inside.
  *
- * Eighteen whole rows, and the container's own padding added on top of them. Twelve rows
- * with the padding inside the height left 11.27 rows of room, so the clip fell through the
- * middle of a line of YAML and the figure opened on half a sentence. It is also the height
- * that balances the rail beside it: seven heads and one open body come to roughly 520px,
- * and twelve rows came to 264.
+ * Twenty-four whole rows, and nothing else. The arithmetic, because it has gone wrong
+ * three times in the same place:
+ *
+ *   window   24 × NC.line = 528px of YAML, whole rows only
+ *   chrome   PAD_Y = 2, the 1px border on each side and NOTHING MORE
+ *   declared 528 + 2 = 530px, which `box-sizing: border-box` resolves to a 528px
+ *            padding box — and the padding box is where `overflow: hidden` clips
+ *
+ * The trap, and it is not the obvious one. PAD_Y was 16 and counted `py-2` at both ends;
+ * raising it to 18 to cover the border is still wrong, and measurement says so: with
+ * `padding: 8px 0` the rows start 8px down and the clip is 544px, so 536px of window
+ * holds 24 rows and the top eight pixels of a twenty-fifth. **A scroll container's
+ * bottom padding does not hold a blank strip open at the bottom of the window.** It sits
+ * after the last line of the file, 1160px down, and the space it appeared to reserve at
+ * the visible edge is filled by the next row of content.
+ *
+ * The same argument runs at the top the moment the reel moves. Every shift `shiftFor`
+ * returns is a whole multiple of `NC.line`, so with the padding gone the window shows 24
+ * whole rows in every state it can be in, and with 8px of padding it shows the bottom
+ * 8px of one row, 23 whole ones, and the top 14px of another — in every state except the
+ * first. Hence `lg:py-0`: the padding is right on a phone, where the listing stands at
+ * its own height and has no window to align to, and wrong the instant there is one.
+ *
+ * Twenty-four rows rather than eighteen because the figure is pinned and centred, and at
+ * eighteen it stood 495px tall inside a 900px viewport with void above and below it. At
+ * twenty-four the figure measures 612.5px, a little over two thirds of the screen it
+ * holds. The sticky offset below is half that height and has to move with this number.
  */
-const ROWS = 18;
-const PAD_Y = 16;
+const ROWS = 24;
+const PAD_Y = 2;
 const WINDOW = ROWS * NC.line;
 
 /** Rows kept above the run being read, so a reader sees what comes before it. */
 const PARK = 3;
+
+/**
+ * The landing's wording for the seven parts. Roughly 25 words each, against the 45 that
+ * `annotations.ts` carries.
+ *
+ * The long bodies stay where they are and are not edited: they are `/spec/card`'s, they
+ * are what `NodeCardStage` draws in a 22rem rail with a fixed `NC.body` box under it, and
+ * `nodecard.test.ts` holds three of them to the diagnostic codes the site can be checked
+ * on (`bundle/prohibition-violated`, `bundle/port-mismatch`, `llm_model`). That is
+ * reference material and it belongs on the reference page.
+ *
+ * What the landing needs from the same seven parts is smaller: which part of a card this
+ * is, and why anyone would write it down. Beat 3 carried 670 of the landing's 1090 words
+ * with the reference sentences in it, on the page whose job is to get a reader as far as
+ * the archive. The `L1–4` marks in the listing do the pointing that a sentence naming
+ * line numbers would otherwise have to.
+ *
+ * Keyed by `AnnotationSpec.id`, and anything unkeyed falls back to the long body, so a
+ * new part appears here in full rather than not at all.
+ */
+const WALK_BODY: Record<string, string> = {
+  identity:
+    "The first four lines fix identity. `code-builder` is the id a graph pins by version, " +
+    "`agent` means a model runs this box, and `implementation` places it in the lifecycle.",
+  model:
+    "Which model the agent is instantiated with. The export writes it into `factory.dot`, and " +
+    "a card that names none inherits whatever the run supplies.",
+  skill:
+    "A pointer to where the behaviour is written. The engine reads nothing at the other end, " +
+    "so no skill document travels in the download. You supply it.",
+  reach:
+    "`tools` is empty and `mcp` names one server, so this node touches the filesystem and " +
+    "nothing else. A factory's whole reach reads off its cards before anything runs.",
+  inputs:
+    "One input, and it carries a type. `brief` is a `plan`, an ontology term rather than free " +
+    "text, so the resolver can check an incoming edge against it.",
+  outputs:
+    "One output, typed the same way. `build` is `code`, and it is what the edge to the " +
+    "acceptance tester carries. A downstream mismatch fails the bundle.",
+  cannot:
+    "The prohibition, and the engine holds the graph to it. An edge carrying " +
+    "`acceptance-criteria` into this node fails the bundle rather than warning about it.",
+};
 
 /**
  * How far to slide the listing so the run starting at `from` sits under the head-room.
@@ -132,39 +197,69 @@ export function CardWalk({
 
   const { ref, progress, motion } = useScrollProgress<HTMLDivElement>({ steps: 120 });
 
-  /* Pacing, and why these two numbers are what they are.
+  /* Pacing, worked out rather than guessed, at a 1440 × 900 reference viewport.
      ------------------------------------------------------------
-     `scrollProgress` measures the pin as `height - viewport`, which is exact when the
-     sticky child is a full screen tall. This one is about 530px, so the real pin lasts
-     `height - 530` and the reported progress reaches 1 well before the figure lets go. The
-     first build ran all seven steps inside the opening 45% of the section and then held
-     step 7 pinned for the rest, which is the worst version of this pattern: a reader
-     scrolls and nothing answers.
+     `scrollProgress` measures the pin as `height - viewport`. That is exact only when the
+     sticky child is a full screen tall, and this one measures 612.5px pinned at
+     `50vh - 19.25rem` = 142px, so the two clocks disagree by a fixed amount:
 
-     Two numbers fix it without touching the shared hook, which `NodeCardStage` also
-     drives. The track is sized so the reported progress and the real pin end close
-     together, and the tail reserve is small because there is no dezoom here to spend it
-     on: the last note only needs to be readable, not to hand over to a second figure. */
-  const shown = motion ? stagesShown(progress, notes.length, { head: 0.04, tail: 0.04 }) : notes.length;
+       reported span   R = 1530 - 900               = 630px  (progress 0 → 1)
+       real pin        P = 1530 - 612.5 - 142       = 776px  (lock → release; the page
+                                                              gives up the pin at 760)
+
+     P - R = 146px in which the figure is still pinned and `progress` is already 1. That
+     gap is structural: it is `viewport - figureHeight - stickyTop`, which for a centred
+     figure is `viewport/2 - figureHeight/2`. It shrinks only as the figure grows, which
+     is one more thing C bought.
+
+     Everything after the last step is dead scroll, so the last step is pushed as late as
+     the arithmetic allows. Step 7 attaches at `head + (6/7)(1 - head - tail)`:
+
+       tail 0.04 (before)  → 0.829 → 522px  → 238px frozen
+       tail 0     (now)    → 0.863 → 544px  → 216px frozen, measured by stepping the
+                                              live page 20px at a time
+
+     which is one step's worth of dwell on note 7 plus the structural 146px, and is the
+     floor. THE PLAN SAID `tail: 0.20`; that is the wrong direction and it is recorded
+     here rather than silently followed. A tail reserve moves the last step EARLIER, so
+     0.20 lands step 7 at 0.692 = 436px and leaves 324px frozen — it lengthens the gap
+     the change was written to close. There is still no dezoom here to spend a reserve on.
+
+     The track came down from 240vh to 170vh, which is where the 436px of frozen scroll
+     measured on the old build actually went: at 240vh the figure held for 1479px and the
+     walk finished at 1043. The cost is pace — seven steps now spread over 6/7 × 0.96 ×
+     630 = 518px, about 86px each rather than 165 — and it is the trade the section wants:
+     beat 3 was 39.8% of the landing's height, and a landing is not the reference page. */
+  const shown = motion ? stagesShown(progress, notes.length, { head: 0.04, tail: 0 }) : notes.length;
   const active = motion ? Math.min(notes.length, Math.max(1, shown)) - 1 : -1;
   const open = active >= 0 ? notes[active] : undefined;
 
   return (
-    <div ref={ref} className={cx(motion && "lg:h-[240vh]")}>
+    <div ref={ref} className={cx(motion && "lg:h-[170vh]")}>
       {/* Centred while pinned, not tucked under the header.
           ------------------------------------------------------------
           The author: it "should start scrolling the list of fields when it is in the
           middle of the page and not when it is high". `top-24` pinned the figure 96px
           down, so the walk began with it against the top edge.
 
-          `calc(50vh - 16.5rem)` is half a viewport less half the figure, which centres it
-          at any height and degrades to a small positive offset on a short screen rather
-          than to a negative one. It also buys the settle the author is asking for for
-          free: the figure locks when the track's top reaches that offset, and
-          `scrollProgress` only starts counting once the top passes zero, so the figure
-          sits centred and still for those pixels before step 2 arrives. */}
+          `calc(50vh - 19.25rem)` is half a viewport less half the figure, which centres
+          it at any height. It also buys the settle the author is asking for for free: the
+          figure locks when the track's top reaches that offset, and `scrollProgress` only
+          starts counting once the top passes zero, so the figure sits centred and still
+          for those pixels before step 2 arrives.
+
+          19.25rem, not 16.5: the figure grew with `ROWS` and half of it grew with it. The
+          two numbers have to move together or the walk pins off-centre, high by the
+          difference. 308px is half of the 612.5px the figure measures at `lg` — 530 of
+          window, 24 of `sm:p-6` at each end, 16 of `gap-4` and 18.5 of figcaption.
+
+          `max(4rem, …)` is the floor the old comment claimed for free and no longer got.
+          Half the figure is 308px, so `50vh - 19.25rem` turns negative below a 616px
+          viewport and would pin the figcaption under the 4rem sticky header. A window
+          that short cannot hold the whole figure either way; what the floor decides is
+          which end gets cut, and the top is where the card names itself. */}
       <div
-        className={cx(motion && "lg:sticky lg:top-[calc(50vh-16.5rem)]")}
+        className={cx(motion && "lg:sticky lg:top-[max(4rem,calc(50vh_-_19.25rem))]")}
       >
         {/* Plain ground, one hairline. The author named the graticule as the thing to
             drop, and it is the whole difference between a figure the landing carries and
@@ -172,12 +267,29 @@ export function CardWalk({
         <figure className="flex flex-col gap-4 rounded-xl border border-line bg-void p-4 sm:p-6">
           <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 font-mono text-[11px] text-dim">
             <span className="text-muted">{cardRef}</span>
-            <span>
-              {lines.length} lines, as the archive stores them
+            <span className="flex items-baseline gap-3">
+              <span>{lines.length} lines, as the archive stores them</span>
+              {/* What the fade on the listing's right edge means, said in words.
+                  A card's `spec` runs past any column this figure can be given, macOS
+                  draws no scrollbar at rest, and the cut then reads as a bug rather than
+                  as an edge. `aria-hidden` because the region below announces itself and
+                  its length, and an arrow read aloud is noise. */}
+              <span aria-hidden className="shrink-0 whitespace-nowrap text-dim/70">
+                scroll →
+              </span>
             </span>
           </figcaption>
 
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:items-start">
+          {/* 1.5fr against 1fr, not 1.05.
+              ------------------------------------------------------------
+              Measured at 1440: the listing had 552px of column against 784px of content,
+              so 17 of the 52 rows lost their last ~32 characters and sentences ended
+              mid-word ("...emit the source it describes, addin"). At 1.5fr the listing
+              measures 647px and the notes keep 433px, which still holds the shortened
+              bodies in three lines at 13px. 137px of a folded `spec` still runs past the
+              edge and always will — no column this figure can be given holds it — so what
+              is left over is marked as an edge rather than left to look like a cut. */}
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-start">
             {/* The listing. Clipped to a window and slid, but only while the
                 choreography runs; otherwise it stands at its own height and a reader
                 scrolls the page past it. */}
@@ -189,9 +301,23 @@ export function CardWalk({
                 round. A fixed height plus `overflow-y-hidden` states the clip without
                 asking the two axes to disagree. */}
             <div
+              /* A scroll container with no focusable child cannot be reached from the
+                 keyboard at all (WCAG 2.1.1, Level A): there is nothing to tab to, so the
+                 32 characters past the right edge are available to a mouse and to nobody
+                 else. `role="region"` with a name is what makes the stop worth having —
+                 "code-builder@1.0.0, 52 lines" rather than an unlabelled group. */
+              tabIndex={0}
+              role="region"
+              aria-label={`${cardRef}, ${lines.length} lines`}
               className={cx(
                 "min-w-0 overflow-x-auto rounded-lg border border-line bg-surface-2/40 py-2",
-                motion && "lg:h-[var(--walk-window)] lg:overflow-y-hidden",
+                /* The right edge, faded, so the truncation is a statement and not a
+                   glitch. It has to be on THIS element and not on the reel inside it: the
+                   mask is painted over the scroll container's own box, which is the part
+                   that stays still while the content moves under it. Put on the reel it
+                   would scroll away with the text. */
+                "[mask-image:linear-gradient(to_right,black_calc(100%_-_3rem),transparent)]",
+                motion && "lg:h-[var(--walk-window)] lg:overflow-y-hidden lg:py-0",
               )}
               /* The height goes through a custom property so the `lg:` prefix can gate it.
                  As an inline `height` it applied at every width, and a fixed height beside
@@ -203,11 +329,27 @@ export function CardWalk({
               style={{ "--walk-window": `${WINDOW + PAD_Y}px` } as React.CSSProperties}
             >
               <div
-                className={cx(motion && "lg:transition-transform lg:duration-500 lg:ease-out")}
+                /* The reel's shift goes through a custom property for exactly the reason
+                   the height above does, and it was the half of that fix that got missed.
+                   As an inline `transform` it applied at every width while the window clip
+                   it drives is `lg:`-only, because `motion` tracks
+                   `prefers-reduced-motion` and knows nothing about width. Measured on a
+                   390px phone: the transform reached -638px against a container that
+                   never clips, 28 of the 52 lines were slid above the box's top edge with
+                   no way to get them back, and 647px of empty bordered box opened under
+                   the last line. `NodeCardStage` proves the pattern — the property is set
+                   at every width and only the `lg:` utility reads it. */
+                className={cx(
+                  motion &&
+                    "lg:transition-transform lg:duration-500 lg:ease-out lg:[transform:translateY(var(--walk-reel,0px))]",
+                )}
                 style={
-                  motion && open !== undefined
-                    ? { transform: `translateY(${shiftFor(open.from, lines.length)}px)` }
-                    : undefined
+                  {
+                    "--walk-reel":
+                      motion && open !== undefined
+                        ? `${shiftFor(open.from, lines.length)}px`
+                        : "0px",
+                  } as React.CSSProperties
                 }
               >
                 <YamlListing
@@ -250,10 +392,15 @@ export function CardWalk({
                       >
                         {note.title}
                       </h3>
+                      {/* `text-dim` and not `text-faint`. `--color-faint` is #3b4058 at
+                          1.83:1 and `app/globals.css` reserves it for decorative
+                          separators; this is the only thing telling a reader which lines
+                          each part is about, and six of the seven wear it at any moment,
+                          so the whole column was below the contrast floor. */}
                       <span
                         className={cx(
                           "shrink-0 font-mono text-[11px] tabular-nums transition-colors",
-                          isOpen ? "text-cyan" : "text-faint",
+                          isOpen ? "text-cyan" : "text-dim",
                         )}
                       >
                         {span(note.from, note.to)}
@@ -269,7 +416,7 @@ export function CardWalk({
                         motion && !isOpen && "lg:hidden",
                       )}
                     >
-                      {body(note.body)}
+                      {body(WALK_BODY[note.id] ?? note.body)}
                     </p>
                   </li>
                 );

@@ -112,6 +112,19 @@ export const metadata: Metadata = {
 
 const HERE = "/spec/card";
 
+/**
+ * The canonical h2, spelled the way `components/ui/SectionHeading.tsx` spells it.
+ *
+ * Every band below opens with a `.label-lead` and one of these. The sub-sections used to
+ * draw at `text-2xl` (24px), which is neither of the two display steps the site has, and
+ * carried no mono cue at all — so on a page whose `h1` and whose figure each spend a cyan
+ * `.eyebrow`, the two sections after them were typographically indistinguishable.
+ * `.label-lead` is the answer rather than a third eyebrow: the eyebrow names a page or a
+ * full-bleed band, and this page has spent both.
+ */
+const BAND_H2 =
+  "font-display text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] text-fg sm:text-[32px]";
+
 export default function SpecCardPage() {
   const { page } = specNeighbours(HERE);
   const registry = getRegistry();
@@ -130,8 +143,8 @@ export default function SpecCardPage() {
 
   return (
     <>
-      <header className="border-b border-line bg-void py-12 sm:py-16">
-        <div className="container-page flex flex-col gap-6">
+      <header className="border-b border-line bg-void py-16 sm:py-20">
+        <div className="container-page flex flex-col gap-5">
           <SpecCrumb href={HERE} />
           <SectionHeading
             as="h1"
@@ -146,140 +159,176 @@ export default function SpecCardPage() {
           line by line and read straight out of `content/cards/`. */}
       <SectionNodeCard />
 
-      <div className="container-page flex flex-col gap-14 py-14">
-        {/* ---------- the split one field carries ---------- */}
-        <section
-          className="flex flex-col gap-6"
-          aria-labelledby="enforced-heading"
-        >
-          <h2
-            id="enforced-heading"
-            className="font-display text-2xl font-semibold tracking-tight text-fg"
-          >
-            Checked against the graph, or shown to a reader
-          </h2>
+      {/* ---------- the split one field carries ----------
+          A band, not a row in a flex stack. The two sections of this page used to sit
+          inside one `container-page flex flex-col gap-14 py-14`, so the enforcement
+          argument and the field table were separated by 56px of nothing — while
+          `/towards-a-dark-factory`, in the same nav group, marks every seam with a
+          full-bleed edge and a ground change. Same device here: `border-t` and an
+          alternating ground, no new token and no new colour. */}
+      <section
+        className="border-t border-line bg-surface/40 py-16 sm:py-20"
+        aria-labelledby="enforced-heading"
+      >
+        <div className="container-page flex flex-col gap-10">
+          <div className="flex flex-col gap-3">
+            <span className="label-lead">The split</span>
+            <h2 id="enforced-heading" className={BAND_H2}>
+              Checked against the graph, or shown to a reader
+            </h2>
+          </div>
 
-          {/* PROJECT.md §3.1's length pass deleted the lead this section opened on, on
-              the grounds that the heading and Fig. 2's caption between them say it. They
-              say the split and they say how to tell the two apart by reading. Neither
-              says the other half, which is the page's thesis: an entry nothing checks is
-              not a defect. Panel B below asserts it of the free-text entry alone, so the
-              symmetry had one side. Seventeen words. */}
-          <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
-            Both are legitimate, and a reader has to be able to tell which is which
-            without running anything.
-          </p>
+          {/* The figcaption, held to the reading measure from the call site.
+              ------------------------------------------------------------
+              `components/spec/FigureFrame.tsx` draws its `<figcaption>` at the full
+              container, so Fig. 2's caption ran past 180 characters a line. The class
+              belongs on the figcaption; the figcaption belongs to a shared component
+              this page does not own, so the same rule is applied through the wrapper
+              instead. `var(--measure)` rather than a number: it is the token
+              `.prose-lane` reads, so the caption moves with the column. */}
+          <div className="flex flex-col gap-5 [&_figcaption]:max-w-[var(--measure)]">
+            {/* PROJECT.md §3.1's length pass deleted the lead this section opened on, on
+                the grounds that the heading and Fig. 2's caption between them say it.
+                They say the split and they say how to tell the two apart by reading.
+                Neither says the other half, which is the page's thesis: an entry nothing
+                checks is not a defect. Panel B below asserts it of the free-text entry
+                alone, so the symmetry had one side. Seventeen words. */}
+            <p className="prose-lane text-[15px] leading-relaxed text-muted">
+              Both are legitimate, and a reader has to be able to tell which is
+              which without running anything.
+            </p>
 
-          <EnforcementFigure />
+            <EnforcementFigure />
 
-          <div className="grid gap-5 md:grid-cols-2">
-            <div className="panel flex flex-col gap-3 p-5">
-              <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-emerald">
-                Held against the graph
-              </span>
-              {/* The severity and the code are on the plate above (`error · the bundle
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="panel flex flex-col gap-3 p-5">
+                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-emerald">
+                  Held against the graph
+                </span>
+                {/* The severity and the code are on the plate above (`error · the bundle
                   does not resolve`) and in the quoted diagnostic below, so this says the
                   part neither of them does: what the resolver compares, and that a
                   narrower type is caught as well. */}
-              <p className="text-sm leading-relaxed text-muted">
-                Every edge into this node is held against it, and so is every
-                output the source declares. A type narrower than the one named
-                violates it just the same.
-              </p>
+                <p className="text-sm leading-relaxed text-muted">
+                  Every edge into this node is held against it, and so is every
+                  output the source declares. A type narrower than the one named
+                  violates it just the same.
+                </p>
+              </div>
+              <div className="panel flex flex-col gap-3 p-5">
+                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
+                  <span aria-hidden>◌ </span>Shown, and checked by nothing
+                </span>
+                <p className="text-sm leading-relaxed text-muted">
+                  An entry naming no term is legitimate and it addresses a
+                  reader. The validator stays quiet on it by design, because
+                  reporting an unknown term here would fire on the entry the
+                  field was named for.
+                </p>
+              </div>
             </div>
-            <div className="panel flex flex-col gap-3 p-5">
-              <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
-                <span aria-hidden>◌ </span>Shown, and checked by nothing
-              </span>
-              <p className="text-sm leading-relaxed text-muted">
-                An entry naming no term is legitimate and it addresses a reader.
-                The validator stays quiet on it by design, because reporting an
-                unknown term here would fire on the entry the field was named
-                for.
-              </p>
-            </div>
-          </div>
 
-          {refusal !== undefined && (
-            <div className="flex flex-col gap-3">
-              <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
-                The sentence below comes back from the resolver during the
-                build rather than from this page, run over the starter bundle
-                with <Id>{ADDED_DOT_LINE}</Id> inserted.
-              </p>
-              <div className="rounded-lg border border-line bg-surface-2 p-4">
-                {/* The severity in word form, beside the code, from the same table the
+            {refusal !== undefined && (
+              <div className="flex flex-col gap-3">
+                <p className="prose-lane text-[15px] leading-relaxed text-muted">
+                  The sentence below comes back from the resolver during the
+                  build rather than from this page, run over the starter bundle
+                  with <Id>{ADDED_DOT_LINE}</Id> inserted.
+                </p>
+                <div className="rounded-lg border border-line bg-surface-2 p-4">
+                  {/* The severity in word form, beside the code, from the same table the
                     validator's own lists use. §3.1's pass deleted the sentence that
                     carried "at error severity" and left the word only on Fig. 2's plate,
                     which is inside an `<svg>`; "error" as a severity was then on no page
                     of the site outside the field table below, which is itself folded.
                     Read off the diagnostic rather than typed, so it cannot drift from
                     what the engine actually returned. */}
-                <p className="flex flex-wrap items-baseline gap-x-2 font-mono text-[11px] uppercase tracking-[0.14em]">
-                  <span style={{ color: SEVERITY_META[refusal.severity].color }}>
-                    {SEVERITY_META[refusal.severity].word}
-                  </span>
-                  <span className="text-signal">{refusal.code}</span>
-                </p>
-                <p className="mt-2 font-mono text-[12px] leading-relaxed text-fg">
-                  {refusal.message}
-                </p>
-                {refusal.hint !== undefined && (
-                  <p className="mt-2 font-mono text-[11px] leading-relaxed text-dim">
-                    {refusal.hint}
+                  <p className="flex flex-wrap items-baseline gap-x-2 font-mono text-[11px] uppercase tracking-[0.14em]">
+                    <span
+                      style={{ color: SEVERITY_META[refusal.severity].color }}
+                    >
+                      {SEVERITY_META[refusal.severity].word}
+                    </span>
+                    <span className="text-signal">{refusal.code}</span>
                   </p>
-                )}
-              </div>
-              {/* Pointed at the topology layer when `/what-it-isnt` was removed. The
+                  <p className="mt-2 font-mono text-[12px] leading-relaxed text-fg">
+                    {refusal.message}
+                  </p>
+                  {refusal.hint !== undefined && (
+                    <p className="mt-2 font-mono text-[11px] leading-relaxed text-dim">
+                      {refusal.hint}
+                    </p>
+                  )}
+                </div>
+                {/* Pointed at the topology layer when `/what-it-isnt` was removed. The
                   sentence had to change with the href, not just follow it: the old target
                   drew the clean and leaked graphs side by side and quoted the analyzer on
                   both, and nothing on the site does that now. What survives is the
                   prohibition drawn as an edge the starter graph does not have. */}
-              <p className="text-sm text-dim">
-                <SpecLink href="/spec/topology">The topology layer</SpecLink>{" "}
-                draws the same prohibition as an edge the starter graph does not
-                have, beside the card that declares it.
-              </p>
-            </div>
-          )}
-        </section>
+                {/* `.prose-lane`: uncapped, this sat at 182 characters a line — a sibling
+                  of the capped paragraph five lines above it, in the same block. */}
+                <p className="prose-lane text-sm text-dim">
+                  <SpecLink href="/spec/topology">The topology layer</SpecLink>{" "}
+                  draws the same prohibition as an edge the starter graph does
+                  not have, beside the card that declares it.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
-        {/* ---------- the reference, folded away ----------
-            §4.3's disclosure rather than a cut: fifteen rows naming the diagnostic
-            behind each field is the one place several of these codes appear on the
-            site, and a code is what makes the page's claims greppable. Behind a
-            `<details>` it stays in the prerendered HTML and stays searchable, so a
-            reader who wants the schema loses nothing and a reader who wanted the
-            argument is not reading a table to reach the pager. */}
-        <section
-          className="flex flex-col gap-4 border-t border-line pt-8"
-          aria-labelledby="fields-heading"
-        >
-          <h2
-            id="fields-heading"
-            className="font-display text-2xl font-semibold tracking-tight text-fg"
-          >
-            Every field, and what holds it
-          </h2>
-          <p className="text-sm text-muted">
-            <SpecLink href="/nodes/code-builder">
-              Read this card on its own page
-            </SpecLink>{" "}
-            for the resolved version and the file as it is stored, or{" "}
-            <SpecLink href="/nodes">browse the library</SpecLink> of{" "}
-            {registry.latestCards().length} cards written against this schema.
-          </p>
-          <More summary="Field by field, with the code behind each">
-            <CheckLegend />
-            <CheckTable
-              rows={CARD_ROWS}
-              caption="What the engine checks on a node card, and what it leaves to the author"
-            />
-          </More>
-        </section>
+      {/* ---------- the reference, folded away ----------
+          §4.3's disclosure rather than a cut: fifteen rows naming the diagnostic
+          behind each field is the one place several of these codes appear on the
+          site, and a code is what makes the page's claims greppable. Behind a
+          `<details>` it stays in the prerendered HTML and stays searchable, so a
+          reader who wants the schema loses nothing and a reader who wanted the
+          argument is not reading a table to reach the pager.
 
-        <SpecPager href={HERE} />
-      </div>
+          The `border-t pt-8` this section used to draw inside the container is now the
+          band's own full-bleed edge, which is the same signal at the width the page is
+          actually divided at. */}
+      <section
+        className="border-t border-line bg-void py-16 sm:py-20"
+        aria-labelledby="fields-heading"
+      >
+        <div className="container-page flex flex-col gap-10">
+          <div className="flex flex-col gap-3">
+            <span className="label-lead">The reference</span>
+            <h2 id="fields-heading" className={BAND_H2}>
+              Every field, and what holds it
+            </h2>
+          </div>
+          <div className="flex flex-col gap-4">
+            {/* Uncapped this ran 187 characters a line, the widest prose on the page. */}
+            <p className="prose-lane text-sm text-muted">
+              <SpecLink href="/nodes/code-builder">
+                Read this card on its own page
+              </SpecLink>{" "}
+              for the resolved version and the file as it is stored, or{" "}
+              <SpecLink href="/nodes">browse the library</SpecLink> of{" "}
+              {registry.latestCards().length} cards written against this schema.
+            </p>
+            <More summary="Field by field, with the code behind each">
+              <CheckLegend />
+              <CheckTable
+                rows={CARD_ROWS}
+                caption="What the engine checks on a node card, and what it leaves to the author"
+              />
+            </More>
+          </div>
+        </div>
+      </section>
+
+      {/* The rail closes the page on the opposite ground, and with no `border-t` of its
+          own: `SpecPager` draws one at container width, and a full-bleed rule 64px above
+          an inset rule is two lines saying one thing. The ground change is the seam. */}
+      <section className="bg-surface/40 py-16 sm:py-20">
+        <div className="container-page">
+          <SpecPager href={HERE} />
+        </div>
+      </section>
     </>
   );
 }

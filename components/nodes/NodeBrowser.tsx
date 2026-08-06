@@ -130,6 +130,7 @@ function FilterChip({
   count,
   active,
   onClick,
+  deadReason,
 }: {
   label: string;
   glyph: string;
@@ -137,6 +138,14 @@ function FilterChip({
   count: number;
   active: boolean;
   onClick: () => void;
+  /**
+   * What has already narrowed the grid far enough that this chip can only empty it.
+   *
+   * Only shown when the chip is dead, and it is the whole point of the dead state: a
+   * control that has gone quiet without saying which of the four other filters silenced
+   * it is a dead end the reader has to solve by trial.
+   */
+  deadReason: string;
 }) {
   /* A chip that can only empty the grid is offered as unavailable rather than as a
      trap. Measured before this: `human in the loop` alone matched 2 and `carries a risk
@@ -146,17 +155,34 @@ function FilterChip({
   return (
     <button
       type="button"
-      onClick={onClick}
-      disabled={dead}
+      onClick={dead ? undefined : onClick}
+      /* `aria-disabled`, not `disabled`.
+         ------------------------------------------------------------
+         `disabled` takes the chip out of the tab order and, in every engine, out of
+         pointer events too — which would have made the `title` below dead markup: a
+         browser does not raise a tooltip for a control it is not sending hover to, and
+         a keyboard reader could not reach the explanation at all. `aria-disabled` is
+         still announced as unavailable, keeps the chip reachable, and lets the one
+         sentence that says *why* actually arrive. The click is neutralised above.
+         `app/globals.css` already excludes `[aria-disabled="true"]` from the global
+         `cursor: pointer`, so `cursor-not-allowed` wins here. */
+      aria-disabled={dead || undefined}
+      title={dead ? deadReason : undefined}
       aria-pressed={active}
       /* `py-1`, not `py-0.5`: at 22.5px these were standalone controls under the 24px
          floor of WCAG 2.2 SC 2.5.8, and a chip row is not a block of text, so the
          inline exception does not apply. */
       className={cx(
         "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors",
-        dead
-          ? "cursor-not-allowed border-line text-faint"
-          : "cursor-pointer",
+        /* `text-dim` at 70%, not `text-faint`. `--color-faint` measures 1.91:1 on the
+           page ground and is declared for decorative separators only — and the thing it
+           was greying out here is the chip's `0`, which is the entire reason the chip
+           went dead. A disabled control whose own explanation is illegible is not
+           offering the reader a state, it is hiding one. `text-dim` (5.68:1) at 70%
+           composites to 3.32:1: unmistakably off, still readable.
+           `cursor-pointer` is no longer spelled on the live branch — `app/globals.css`
+           now sets it on every enabled `<button>`. */
+        dead && "cursor-not-allowed border-line text-dim opacity-70",
         active
           ? "border-cyan/60 bg-cyan/10 text-cyan"
           : !dead && "border-line text-muted hover:border-line-bright hover:text-fg",
@@ -314,6 +340,37 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
     [nodes, filters],
   );
 
+  /**
+   * The sentence a dead chip carries: which of the other filters emptied it.
+   *
+   * A chip goes dead because of the *rest* of the control panel, never because of
+   * itself, so its own dimension is left out of the list. When nothing else is on, the
+   * answer is the other one — the library simply holds no card with that property, and
+   * saying so is a different fact from "your filters collided".
+   *
+   * Plain text in a `title` rather than a line of prose under the row: it is an answer
+   * to a question only the reader looking at that one greyed chip is asking.
+   */
+  function deadReason(own: Dimension): string {
+    const parts: string[] = [];
+    const q = search.trim();
+    if (q !== "") parts.push(`the search “${q}”`);
+    if (type !== null) {
+      parts.push(`the node type “${types.find((t) => t.id === type)?.label ?? type}”`);
+    }
+    if (phase !== null) {
+      parts.push(
+        phase === UNPHASED
+          ? "the phase filter “Not in a named phase”"
+          : `the phase “${phases.find((p) => p.id === phase)?.label ?? phase}”`,
+      );
+    }
+    if (own !== "human" && humanOnly) parts.push("“human in the loop”");
+    if (own !== "risk" && riskOnly) parts.push("“carries a risk marker”");
+    if (parts.length === 0) return "No node card in the library carries this.";
+    return `Nothing is left once this is combined with ${parts.join(" and ")}.`;
+  }
+
   const results = useMemo(() => {
     const filtered = nodes.filter((node) => passes(node, filters));
     const sorted = [...filtered];
@@ -388,7 +445,15 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
           the problem it solves. So the body below is hidden by state on small screens
           and forced visible from `sm` up, and this button — which only exists below
           `sm` — toggles it and carries the count of what is currently on. */}
-      <div className="sticky top-16 z-20 -mx-1 bg-void/95 px-1 py-2 backdrop-blur-sm sm:hidden">
+      {/* `z-40` — page chrome on the site's one z ladder (header 50 · page chrome 40 ·
+          section chrome 30 · card furniture 20 · a card's stretched hit target 10).
+          It was `z-20`, which is the tier a card's own furniture sits on, and a card
+          `<article>` is `relative` with `z-index: auto` — so it opens no stacking
+          context and its `z-20` children compete with this bar directly, winning on DOM
+          order because they come later. Measured: a `FavoriteStar` covering the `/53` of
+          the result count, and an author avatar punching through this bar's lower
+          border. The bar a reader steers by cannot be the thing the grid scrolls over. */}
+      <div className="sticky top-16 z-40 -mx-1 bg-void/95 px-1 py-2 backdrop-blur-sm sm:hidden">
         <button
           type="button"
           onClick={() => setFiltersOpen((v) => !v)}
@@ -511,6 +576,7 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
             glyph="⏸"
             count={humanCount}
             active={humanOnly}
+            deadReason={deadReason("human")}
             onClick={() => setParam("human", humanOnly ? null : "1")}
           />
           <FilterChip
@@ -518,6 +584,7 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
             glyph="△"
             count={riskCount}
             active={riskOnly}
+            deadReason={deadReason("risk")}
             onClick={() => setParam("risk", riskOnly ? null : "1")}
           />
         </div>
@@ -578,10 +645,14 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
                     `aria-label` carries the pair a reader sees — the human label and the
                     count — without the raw term id between them, which announced as
                     "Agent agent 18". The id stays visible, because on a page about a
-                    controlled vocabulary the spelling is worth showing. */}
+                    controlled vocabulary the spelling is worth showing.
+
+                    `z-30` — section chrome, one rung under the page's own filter bar and
+                    above the tier a card's furniture may reach. At `z-10` three star
+                    chips floated over this band mid-scroll through the Tool group. */}
                 <h2
                   aria-label={`${group.label}, ${group.nodes.length} card${group.nodes.length === 1 ? "" : "s"}`}
-                  className="sticky top-15 z-10 -mx-1 flex items-baseline gap-2.5 bg-void/95 px-1 py-2 backdrop-blur-sm"
+                  className="sticky top-15 z-30 -mx-1 flex items-baseline gap-2.5 bg-void/95 px-1 py-2 backdrop-blur-sm"
                 >
                   <span className="font-display text-xl font-semibold text-fg">
                     {group.label}
@@ -596,7 +667,18 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
                     {group.nodes.length}
                   </span>
                 </h2>
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Three columns only when there are more than two cards to put in
+                    them. `Decision` holds 2 and `Human gate` holds 2, and at a fixed
+                    `lg:grid-cols-3` each of those groups drew two tiles and a third of a
+                    row of nothing — an empty column that reads as a card that failed to
+                    load. Two tiles across a wide row is a pair; two tiles in a
+                    three-track grid is a gap. */}
+                <div
+                  className={cx(
+                    "grid gap-5 sm:grid-cols-2",
+                    group.nodes.length > 2 && "lg:grid-cols-3",
+                  )}
+                >
                   {group.nodes.map((node) => (
                     /* The type is the heading above this run, so repeating it on all
                        24 tiles spends the loudest chip on the one fact the reader

@@ -271,9 +271,11 @@ export default function WhatABlueprintIsPage() {
               figure={
                 starter === undefined ? null : (
                   <FigureFrame caption={<GraphKey graph={starter.graph} />}>
-                    {/* Two placements, one per width. See `GraphFigure`: the wide boxes
-                        carry each node's display name and go under the legibility floor
-                        at phone width, so the narrow one carries the DOT id instead. */}
+                    {/* Two placements, one per width — the same drawing in a wider and a
+                        squarer frame. See the note on `WIDE`/`COMPACT` in `PartFigures`:
+                        both carry the DOT id rather than the display name, because a
+                        luminous node says one line and "Acceptance Tester" set on that
+                        line runs under the numeral of every curve arriving at it. */}
                     <div className="sm:hidden">
                       <GraphFigure graph={starter.graph} title={starter.title} compact />
                     </div>
@@ -286,7 +288,7 @@ export default function WhatABlueprintIsPage() {
             >
               A directed graph in a subset of DOT, saying which node hands what to which.
               What it leaves out matters as much: an edge nobody drew is a connection
-              somebody decided against, and the crossed one above is a rule the resolver
+              somebody decided against, and the dashed one above is a rule the resolver
               enforces rather than a convention the author remembered.
             </Part>
 

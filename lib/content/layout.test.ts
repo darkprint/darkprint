@@ -14,6 +14,13 @@ function columns(
 
 const edge = (source: string, target: string): LayoutEdge => ({ source, target });
 
+/* The default `rowGap` from `layout.ts`, named once here.
+   It is set by the tallest node a row can hold — a lit node carrying the "◎ highlighted"
+   badge is 122px, so the gap has to clear that — and it has moved once already (100 -> 140).
+   The assertions below are about the SHAPE a layout makes, not about that number, so they
+   are written in terms of it. */
+const ROW_GAP = 140;
+
 describe("layeredLayout", () => {
   it("puts a chain in one row, one layer per step", () => {
     const { positions, layers } = layeredLayout(
@@ -38,9 +45,9 @@ describe("layeredLayout", () => {
     expect(layers[1]).toEqual(["b", "c"]);
     // The two middle nodes sit one row apart, straddling the spine a and d share.
     expect(positions.get("b")?.y).toBe(0);
-    expect(positions.get("c")?.y).toBe(100);
-    expect(positions.get("a")?.y).toBe(50);
-    expect(positions.get("d")?.y).toBe(50);
+    expect(positions.get("c")?.y).toBe(ROW_GAP);
+    expect(positions.get("a")?.y).toBe(ROW_GAP / 2);
+    expect(positions.get("d")?.y).toBe(ROW_GAP / 2);
   });
 
   it("puts a node one layer past its DEEPEST predecessor, not its first", () => {

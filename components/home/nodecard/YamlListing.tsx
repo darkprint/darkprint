@@ -155,12 +155,16 @@ export function YamlListing({
             <span
               aria-hidden
               className={cx(
-                /* 10px, not 9. `components/viz/flow.ts` puts the floor at 10 on the grounds
-                   that "the site's own smallest chrome is 11-pixel mono, and a label inside a
-                   drawing has no business being smaller than the caption under it"; a line
-                   number beside 13px code is the same argument. `w-6` still holds three
-                   digits, and this listing runs to two. */
-                "w-6 shrink-0 self-stretch select-none border-l-2 pl-1 text-[10px] leading-[18px] text-cyan/70",
+                /* 11px, not 10 and certainly not 9. The site's mono floor is 11px with no
+                   exceptions — `app/globals.css` writes it down on all three mono tiers —
+                   and this marker is the static layout's whole answer to the leader line:
+                   the number a reader who never sees the choreography uses to find which
+                   note a run belongs to. It has no business being the smallest text in a
+                   figure whose point is that it is readable. The column is unaffected:
+                   `w-6` less the rule and `pl-1` leaves 18px, and a step number is one
+                   digit. `leading-[18px]` is left alone so the marker keeps sitting on the
+                   same optical line as the code beside it. */
+                "w-6 shrink-0 self-stretch select-none border-l-2 pl-1 text-[11px] leading-[18px] text-cyan/70",
                 marked ? RULE_MARKED : "border-transparent",
                 marked && live && RULE_LIVE[state],
                 marked && live && STEP_LIVE[state],

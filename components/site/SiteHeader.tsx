@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { AUTHORS } from "@/lib/data/users";
-import { Avatar } from "@/components/ui/Avatar";
 import { ButtonLink } from "@/components/ui/Button";
 import { cx } from "@/lib/format";
 
@@ -112,8 +110,6 @@ const REGISTRY = NAV.filter((item) => item.group === "registry");
 /** Flat, after the trigger. */
 const STANDALONE = NAV.filter((item) => "standalone" in item);
 
-const currentUser = AUTHORS.mara;
-
 export function SiteHeader() {
   const pathname = usePathname();
 
@@ -169,6 +165,19 @@ export function SiteHeader() {
     pathname === href || pathname.startsWith(href + "/");
 
   return (
+    /* z-50, and it is the top of a ladder rather than a number picked to win an
+       argument. One rung per kind of thing, so the next sticky element has a number to
+       pick instead of another 50:
+
+         50  the header — the only chrome that outranks a page
+         40  page chrome  (a sticky filter bar)
+         30  section chrome (a sticky group heading inside a list)
+         20  card furniture (a favourite star, an author link)
+         10  a card's stretched hit target
+
+       Nothing inside a card may exceed 20. The Learn panel below carries `z-50` of its
+       own, which is a rank *within this header's* stacking context and not a second
+       claim on the page's. */
     <header className="sticky top-0 z-50 border-b border-line/70 bg-void/80 backdrop-blur-md">
       <div className="container-page flex h-16 items-center justify-between gap-4">
         <Link href="/" className="font-display text-lg font-semibold tracking-tight">
@@ -195,13 +204,19 @@ export function SiteHeader() {
           {/* Home, then the same `border-l` rule that separates the registry from the
               menu. One divider means one thing across the row: what is on either side of
               it is a different kind of destination. */}
+          {/* Every `hover:` in this row is gated behind `hoverable`
+              (`@custom-variant hoverable (@media (hover: hover) and (pointer: fine))`,
+              declared in `app/globals.css`). A phone has no hover and still MATCHES
+              `:hover` on tap, then holds it until the next tap lands somewhere else — so
+              an ungated nav link stays lit all the way to the route change, which reads
+              as "still loading" on the item the reader just chose. */}
           {HOME.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={cx(
                 "rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm",
-                pathname === item.href ? "text-cyan" : "text-muted hover:text-fg",
+                pathname === item.href ? "text-cyan" : "text-muted hoverable:hover:text-fg",
               )}
             >
               {item.label}
@@ -216,7 +231,7 @@ export function SiteHeader() {
               href={item.href}
               className={cx(
                 "rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm",
-                isActive(item.href) ? "text-cyan" : "text-muted hover:text-fg",
+                isActive(item.href) ? "text-cyan" : "text-muted hoverable:hover:text-fg",
               )}
             >
               {item.label}
@@ -231,28 +246,57 @@ export function SiteHeader() {
           >
             <summary
               className={cx(
-                "flex cursor-pointer list-none items-center gap-1.5 rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm [&::-webkit-details-marker]:hidden",
+                "flex cursor-pointer list-none items-center gap-1.5 rounded-md px-2 py-2 text-[13px] transition-[transform,scale,color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97] xl:px-3 xl:text-sm [&::-webkit-details-marker]:hidden",
                 LEARN.some((item) => isActive(item.href))
                   ? "text-cyan"
-                  : "text-muted hover:text-fg",
+                  : "text-muted hoverable:hover:text-fg",
               )}
             >
               Learn
-              <span
+              {/* An SVG chevron and not `▾`. A text glyph sits on the baseline of its own
+                  em square with the box's slack underneath it, so rotating the character
+                  180° pivots it about a centre that is not its own — the caret visibly
+                  drifts downward as it flips. A path drawn in a 12×12 box rotates about
+                  the middle of the mark.
+
+                  The list names `rotate` explicitly, for the reason
+                  `components/ui/Button.tsx` records at length: Tailwind v4 compiles
+                  `rotate-180` to the standalone CSS property `rotate: 180deg`, and an
+                  EXPLICIT `transition-[…]` naming only `transform` does not cover it.
+                  The bare `transition-transform` shorthand is not that trap — measured in
+                  the compiled stylesheet, v4 expands it to
+                  `transform, translate, scale, rotate`, so the span this replaced did
+                  ramp. The trap is only ever a hand-written list. */}
+              <svg
                 aria-hidden
-                className="text-[11px] transition-transform group-open:rotate-180"
+                viewBox="0 0 12 12"
+                width={12}
+                height={12}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="transition-[transform,rotate] duration-[160ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-open:rotate-180"
               >
-                ▾
-              </span>
+                <path d="M3 4.75 6 7.75 9 4.75" />
+              </svg>
             </summary>
-            <div className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-lg border border-line bg-void py-1 shadow-lg">
+            {/* `shadow-lg` computed to rgba(0,0,0,0.1) over `--color-void` #05060d — a
+                shadow the ground cannot show — and `bg-void` is the page's own colour, so
+                the site's only dropdown was separated from what it covers by a single 1px
+                hairline. It now sits on `surface-2` with a shadow dark enough for this
+                ground, and `menu-panel` gives it the `@starting-style` entrance declared
+                in `app/globals.css`: it unfolds from its top-right corner, which is the
+                corner it hangs from. */}
+            <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-lg border border-line-bright bg-surface-2 py-1 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.85)]">
               {LEARN.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cx(
                     "block px-4 py-2 text-sm transition-colors",
-                    isActive(item.href) ? "text-cyan" : "text-muted hover:text-fg",
+                    isActive(item.href) ? "text-cyan" : "text-muted hoverable:hover:text-fg",
                   )}
                 >
                   {item.label}
@@ -270,7 +314,7 @@ export function SiteHeader() {
               href={item.href}
               className={cx(
                 "rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm",
-                isActive(item.href) ? "text-cyan" : "text-muted hover:text-fg",
+                isActive(item.href) ? "text-cyan" : "text-muted hoverable:hover:text-fg",
               )}
             >
               {item.label}
@@ -278,26 +322,46 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        {/* `/upload` validates and scores a bundle in the browser and stops there;
-            publishing has no backend. A "+ Share" label on every page of the site
-            would be the one promise the site cannot keep. */}
-        <div className="hidden items-center gap-3 lg:flex">
-          <ButtonLink href="/upload" variant="outline" size="sm">
-            Validate
-          </ButtonLink>
-          <Link href={`/u/${currentUser.username}`} className="inline-flex">
-            <Avatar author={currentUser} size="md" />
-          </Link>
-        </div>
+        {/* The one action the chrome carries, and it is now the brightest thing in it.
+            ------------------------------------------------------------
+            Two things were wrong here. The 40px of highest contrast in the header was a
+            32px magenta avatar reading MV inside a cyan focus ring — a signed-in
+            identity on a site with no auth at all, wearing the name of `AUTHORS.mara`,
+            a seeded persona in `lib/data/users.ts`. This site's doctrine is strict about
+            exactly that: `ContentCard` marks a seeded download count with ◐ and the
+            footer prints "seeded community". So the header cannot claim a session it
+            does not have. It is gone, with its imports.
 
-        <button
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted lg:hidden"
-          onClick={() => setOpen(!open)}
-          aria-label="Toggle menu"
-          aria-expanded={open}
-        >
-          <span className="text-xl">{open ? "✕" : "☰"}</span>
-        </button>
+            And the one real action lived inside `hidden … lg:flex`, so a phone got a
+            header with no affordance in it whatsoever — a wordmark and a hamburger. It
+            is out of that wrapper and visible at every width, `primary` rather than
+            `outline`, sized `sm` and stepping up to the `md` geometry (h-10 px-4) at
+            `lg` where there is room for it.
+
+            `/upload` validates and scores a bundle in the browser and stops there;
+            publishing has no backend. A "+ Share" label on every page would be the one
+            promise the site cannot keep — and the label is "Validate a bundle", the
+            same words the phone panel, the footer and both landing doors use, so one
+            destination has one name everywhere. `nav.test.ts` holds them together. */}
+        <div className="flex items-center gap-2">
+          <ButtonLink
+            href="/upload"
+            variant="primary"
+            size="sm"
+            className="lg:h-10 lg:gap-2 lg:px-4"
+          >
+            Validate a bundle
+          </ButtonLink>
+
+          <button
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted transition-[transform,scale,color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:text-fg hoverable:active:scale-[0.97] lg:hidden"
+            onClick={() => setOpen(!open)}
+            aria-label="Toggle menu"
+            aria-expanded={open}
+          >
+            <span className="text-xl">{open ? "✕" : "☰"}</span>
+          </button>
+        </div>
       </div>
 
       {open && (
