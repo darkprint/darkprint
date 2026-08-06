@@ -126,9 +126,15 @@ export function ContentCard({
             Measured after `lib/content/layout.ts` took the row gap from 140 to 180, which
             is what moved these numbers: every viewBox grew down, and the ones that were
             already the widest on the shelf did not grow across. Note what that does to the
-            `h-40` → `h-28` story above — on a grid tile the fit is bound by the WIDTH, so
-            the 48px this gave back cost the drawing no scale at all; only the featured
-            tile, which has width to spare, is height-bound. The glyph, the kind colour and
+            `h-40` → `h-28` story above — the eight grid tiles split evenly by which axis
+            binds them, not uniformly by width: `checkpoint-resume-runner`,
+            `frontline-triage`, `guarded-merge-bot` and `incident-commander` are wide enough
+            to overflow the 352.7:94 frame sideways and stay width-bound, so the 48px this
+            gave back cost them no scale at all. `nightly-data-janitor`,
+            `grounded-research-desk`, `adversarial-consensus-line` and `schema-forge-etl`
+            are height-bound instead — among them the 1098×484 widest fan-out — and for
+            those the 48px reduction is a real cost: `grounded-research-desk`'s uniform
+            scale drops from 0.298 to 0.194, a 35% loss. The glyph, the kind colour and
             the topology all survive that scale; the words never did. See the prop's own
             comment. */}
         <GraphThumbnail
