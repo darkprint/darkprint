@@ -42,6 +42,10 @@ import { CARD_ROWS } from "@/components/spec/rows";
 import { ScoringModel } from "@/components/spec/ScoringModel";
 import { WhichTasksChecks } from "@/components/explain/WhichTasksChecks";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
+import { AgentHandoff } from "@/components/build/AgentHandoff";
+import { DownloadStep } from "@/components/build/DownloadStep";
+import { DEFAULT_CHOICES } from "@/components/build/choices";
+import { buildState } from "@/components/build/state";
 import { openText, plainText } from "@/components/ui/visible-text";
 
 /* --------------------- the surfaces --------------------- */
@@ -88,6 +92,24 @@ const WHICH_TASKS = renderToStaticMarkup(createElement(WhichTasksChecks));
  * page says otherwise beside them. That sentence is the claim below.
  */
 const SCORING = renderToStaticMarkup(createElement(ScoringModel));
+
+/**
+ * `/build`'s two exits (task 5), rendered with the same default choices `GuidedPath.tsx`
+ * seeds the path with — real content off `lib/starter/`, not a fixture, exactly like every
+ * other surface in this file. Both carry the same "not built yet" sentence about registry
+ * retrieval over MCP, and both are asserted below rather than one standing in for the
+ * other: a reader who opens only one of the two exits still has to meet the limit.
+ */
+const BUILD = buildState(DEFAULT_CHOICES, false);
+const DOWNLOAD_STEP = renderToStaticMarkup(
+  createElement(DownloadStep, {
+    files: BUILD.files,
+    ...(BUILD.blueprint === undefined ? {} : { digest: BUILD.blueprint.digest }),
+    errors: BUILD.errors.length,
+    summary: "It builds a small web app, releases on the tester's verdict, and caps the debug loop at 2 turns.",
+  }),
+);
+const AGENT_HANDOFF = renderToStaticMarkup(createElement(AgentHandoff));
 
 /**
  * The starter is the one bundle whose criteria walk stops at a judge
@@ -204,6 +226,22 @@ const CLAIMS: Claim[] = [
     where: "open",
     html: INSTALL_METADATA_DESCRIPTION,
   },
+
+  /* ---- /build · the two exits (task 5) ---- */
+  {
+    surface: "/build · download exit (`DownloadStep`)",
+    why: "the download exit hands over a folder that already carries an `AGENTS.md` and, as of task 5, says so out loud. A page that just told a reader their folder is agent-ready is the page likeliest to read as though the registry's own MCP call already exists, so the limit has to sit beside that claim rather than only on `/install`",
+    says: "not built yet: your agent querying the registry over mcp for the blueprint that best fits a goal like this one",
+    where: "open",
+    html: DOWNLOAD_STEP,
+  },
+  {
+    surface: "/build · agent-brief exit (`AgentHandoff`)",
+    why: "the same limit on the exit that already asks an agent to act — the co-equal one, not a postscript to the download — so a reader who opens only this exit still meets it",
+    says: "not built yet: your agent querying the registry over mcp for the blueprint that best fits a goal like this one",
+    where: "open",
+    html: AGENT_HANDOFF,
+  },
 ];
 
 describe("the surfaces the ledger is read off", () => {
@@ -214,6 +252,8 @@ describe("the surfaces the ledger is read off", () => {
       ["/spec scoring panel", SCORING],
       ["which-tasks checks", WHICH_TASKS],
       ["the starter's canvas", STARTER],
+      ["/build · download exit", DOWNLOAD_STEP],
+      ["/build · agent-brief exit", AGENT_HANDOFF],
     ] as const) {
       expect(html.length, name).toBeGreaterThan(2000);
     }

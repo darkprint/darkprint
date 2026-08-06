@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { DownloadPanel, type DownloadCard } from "@/components/blueprint/DownloadPanel";
+import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import {
   BUNDLE_AGENTS,
   BUNDLE_README,
@@ -12,7 +13,7 @@ import {
 import { cx } from "@/lib/format";
 
 /* ============================================================
-   The end of the path: the factory, as files.
+   One of the two exits: the factory, as files.
    ------------------------------------------------------------
    The same `exportBundle` every blueprint in the gallery is
    published through, so what comes down here has the same shape as
@@ -32,6 +33,16 @@ import { cx } from "@/lib/format";
    already carries the two sentences this step has to end on: that
    execution happens on the reader's machine, and that there is
    nowhere to save any of this yet.
+
+   ── Task 5: this is no longer step 8 of 8 ──
+   `AgentHandoff` (`./AgentHandoff.tsx`) is the other exit, and the two are co-equal: take
+   the worked example as files here, or take a brief that gets the reader's own agent to
+   write a blueprint for a different goal there. Neither is the fallback for the other, so
+   this component carries nothing that assumes a step position — no counter, no Back/Next —
+   and says two things that used to go unsaid anywhere on the page: that
+   `lib/content/bundle-export.ts` already writes an `AGENTS.md` into this exact folder, and
+   that the hour a reader is about to spend belongs to wiring the folder into their own
+   agent runner, not to reading this page.
    ============================================================ */
 
 const CARD_PREFIX = "cards/";
@@ -99,10 +110,17 @@ export function DownloadStep({
           lists it: what Attractor runs, what the topology carries, what the README is for.
           Two descriptions of one folder on one screen is the duplication the licence
           names. What the panel does not say, the README's quotation of both computed
-          readings, moved down to the paragraph about checking the digest. */}
+          readings, moved down to the paragraph about checking the digest.
+
+          Task 5: one more sentence added here, and it is not a third description of
+          `AGENTS.md` — the panel below already says what is in that file. This one states
+          the fact the two-exit page turns on: `bundle-export.ts` has written that file into
+          every download since 31cd65f, and nothing on this page said so out loud until now. */}
       <p className="text-[15px] leading-relaxed text-muted">
         This is your blueprint, in the same folder shape as everything else in the gallery.{" "}
-        {summary}
+        {summary} It ships with its own{" "}
+        <code className="font-mono text-fg">{BUNDLE_AGENTS}</code>, so the folder is
+        already something to hand to a coding agent.
       </p>
 
       <DownloadPanel
@@ -188,21 +206,46 @@ export function DownloadStep({
         </div>
       </div>
 
-      {/* `AgentHandoff` used to close this component and now sits one level up, in
-          `GuidedPath`, immediately BELOW the step's exit row.
+      {/* Task 5, step 2: the hour belongs here and nowhere else on `/build`. The lead on
+          `app/build/page.tsx` used to attach "about an hour" to the three choices above —
+          to reading this page — and that was never the true cost: three radio buttons and
+          a download take a few minutes. What takes an hour is everything after this
+          sentence, on the reader's own machine, which is why it is written in the past
+          tense of the download ("you now have the folder") rather than as a promise about
+          what is still ahead on this screen. */}
+      <p className="text-[13px] leading-relaxed text-dim">
+        You now have the folder. Wiring it to your own agent runner and getting a first
+        green run takes about an hour.
+      </p>
+
+      {/* Task 5, step 4: the registry lookup the author has planned — an agent calling
+          DarkPrint's own registry over MCP for the blueprint that best fits a goal,
+          instead of a reader picking a starter by hand. No MCP server exists, so this is
+          stated as coming and never as available; `ComingSoonBadge` carries that the same
+          way it does everywhere else on the site (`/install`, `ForkAction`), and the
+          sentence beside it is pinned in `components/site/honesty.test.ts` alongside its
+          twin in `AgentHandoff` below, because a page that just handed over an agent-ready
+          folder is the page most likely to read as though the call already exists. */}
+      <p className="flex flex-wrap items-center gap-2 text-[13px] leading-relaxed text-dim">
+        <ComingSoonBadge />
+        Not built yet: your agent querying the registry over MCP for the blueprint that
+        best fits a goal like this one.
+      </p>
+
+      {/* `AgentHandoff` does not render inside this component. Today it still sits one
+          level up, in `GuidedPath`, immediately below the step's exit row — the wiring
+          `GuidedPath.tsx` owns and this task does not touch.
           ------------------------------------------------------------
-          It is not cut and not folded: it is the author's own generalisation of the path
-          (2026-08-04) and it is the mirror of the `AGENTS.md` in the folder above. But it
-          is 570px of a second, optional offer, and while it stood here it stood between
-          the artefact and the only control that leaves the step. Measured at 1440px: the
-          first download link at y=690 and "Validate it" at y=2274, so the reader who took
-          the folder had to scroll a further one and three quarter viewports past a brief
-          for a goal they do not have to reach the move the path had trained them to make.
-          What this component returns is now exactly the artefact and the facts that make
-          it checkable, which is what the step promised, and the two optional blocks (the
-          brief, and the look back at the drawing) sit after the exit where a postscript
-          belongs. `AgentHandoff` keeps its own link to `/upload`, so it is not orphaned
-          by being read second. */}
+          It is the author's own generalisation of the path (2026-08-04) and the mirror of
+          the `AGENTS.md` named above. It used to be read as a second, optional offer
+          standing between the artefact and the only control that left the step (measured
+          at 1440px, before it moved: the first download link at y=690, "Validate it" at
+          y=2274, 570px of that offer in between). That measurement explained why it moved
+          out of this component; it is not what it is now. Task 5 promotes it to a co-equal
+          exit from `/build` — take this folder as files, or take the brief instead — so
+          whatever page mounts the two places them side by side, with neither one a
+          postscript to the other and no step position printed around either.
+          `AgentHandoff` keeps its own link to `/upload`. */}
     </div>
   );
 }

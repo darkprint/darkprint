@@ -1,9 +1,9 @@
 import { CORE_PHASE_IDS } from "@/lib/core";
+import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { SourcePanel } from "@/components/ui/SourcePanel";
 
 /* ============================================================
-   The other half of the last step: a brief for the reader's own
-   agent.
+   The second exit: a brief for the reader's own agent.
 
    The author, 2026-08-04: "the build objective is to show to a
    user how to create a blueprint and therefore showing a
@@ -11,12 +11,21 @@ import { SourcePanel } from "@/components/ui/SourcePanel";
    give such indications to its claude code (or gemini or codex)
    and build a blueprint of them."
 
-   The path above teaches the shape on one worked example and
-   hands back that example as files. Four choices over one starter
+   The worked example teaches the shape on one starter and hands
+   back that example as files. Four choices over one starter
    cannot reach a goal that is not "build software", and most
    readers arrive with a different one. This is the generalisation:
    the same vocabulary and the same order of decisions, addressed
    to the agent that will do the writing.
+
+   ── Two exits, not one followed by a footnote (task 5) ──
+   This component used to be introduced, in this very docblock, as "the other half of the
+   last step": read only after the folder, on the far side of the control that left step 8.
+   It is not that any more. Take the worked example as files, or take this brief and get an
+   agent to write the blueprint a different goal needs — neither is the fallback for the
+   other, and nothing below assumes it is being read second, or read at all after
+   `DownloadStep`. `agentBrief()` did not change; what changed is what this file says about
+   its own place on the page.
 
    ── The mirror of a bundle's `AGENTS.md` ──
    `lib/content/bundle-export.ts` writes one of those into every
@@ -94,10 +103,10 @@ export function AgentHandoff({ className }: { className?: string }) {
         Or have your agent write one for your own goal
       </h3>
       <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
-        The blueprint above builds software, because that is the pattern this path walks.
-        For a different goal, hand the brief below to Claude Code, Gemini or Codex. It asks
-        for the same things in the same order you just went through, starting with what each
-        node must never receive.
+        The worked example only ever builds software — that is the one starter it
+        demonstrates. For a different goal, hand the brief below to Claude Code, Gemini or
+        Codex. It asks for the same things in the same order, starting with what each node
+        must never receive.
       </p>
 
       <SourcePanel
@@ -121,6 +130,16 @@ export function AgentHandoff({ className }: { className?: string }) {
         </a>{" "}
         and the real validator runs on it in your own tab, the same one that read every
         blueprint in the gallery.
+      </p>
+
+      {/* Task 5, step 4: the same signpost `DownloadStep` carries, verbatim — the two
+          exits are meant to be read independently, so a reader who only ever opens this
+          one still meets the limit rather than inferring the registry call already exists.
+          Pinned together with its twin in `components/site/honesty.test.ts`. */}
+      <p className="mt-3 flex flex-wrap items-center gap-2 text-[13px] leading-relaxed text-dim">
+        <ComingSoonBadge />
+        Not built yet: your agent querying the registry over MCP for the blueprint that
+        best fits a goal like this one.
       </p>
     </div>
   );
