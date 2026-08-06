@@ -167,7 +167,11 @@ export function WhatACardReaches({
  * follow it through a graph.
  */
 export function EvalHarnessBlueprint() {
-  const nodes = ["plan", "build", "test", "ship"];
+  /* The verbs are the ontology's phases, not a generic pipeline.
+     `CORE_PHASE_IDS` in `lib/core/ontology/core.ts` is planning, implementation, testing,
+     debugging, deployment — so the last box says "deploy" and not "ship". A figure on the
+     page that teaches the vocabulary is the last place to spell a term a second way. */
+  const nodes = ["plan", "build", "test", "deploy"];
 
   return (
     <figure className="flex flex-col gap-4 rounded-xl border border-line bg-surface/70 p-5 sm:p-6">
