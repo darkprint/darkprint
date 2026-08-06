@@ -55,10 +55,19 @@ export interface LayoutResult {
    122px — 22px past the old gap, which put it through the node beneath it on
    `/blueprints/starter-software-factory` (measured: a 168x10px overlap).
 
-   140 clears the tallest case with 18px to spare and gives the ordinary one 51px, which the
-   dense five-node schematics wanted anyway. Raise this, never lower it, if a node ever grows
-   another row. */
-const DEFAULTS = { layerGap: 200, rowGap: 140, originX: 0, originY: 0 } as const;
+   140 cleared that case with 18px to spare. It stopped clearing anything the moment
+   `components/graph/block.ts` gave the block ONE width instead of a range that ran to 220:
+   a name that used to fit on one line of a 220px block now wraps inside a 150px one, and
+   `/build`'s generated names are the longest on the site. Measured at stage width after the
+   change, `Python Script Factory Release Gate` stands 127px, and 157px lit — 17px through
+   the node under it at the old gap. That is precisely the condition the last sentence of
+   this comment named, so the gap moves.
+
+   180 clears the tallest measured case with 23px to spare and gives the ordinary one 77px.
+   `layerGap` stays at 200, which now clears the block's own 150 by 50 — the width an edge
+   and its label are drawn in. Raise this, never lower it, if a node ever grows another
+   row. */
+const DEFAULTS = { layerGap: 200, rowGap: 180, originX: 0, originY: 0 } as const;
 
 /** DFS colours. `grey` means "on the current stack", which is what makes an edge a back-edge. */
 const WHITE = 0;

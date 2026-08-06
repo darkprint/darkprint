@@ -70,7 +70,13 @@ export function AgentNode({ data }: NodeProps<AgentFlowNode>) {
   const cardId = typeof data.cardId === "string" ? data.cardId : undefined;
   return (
     <div
-      className="group relative min-w-[150px] max-w-[220px] rounded-md border bg-surface-2/95 px-3 py-2 backdrop-blur-sm"
+      /* `w-[150px]` is `BLOCK_WIDTH` (`./block.ts`), written as a literal because Tailwind
+         reads classes and not values. One width and not a `min`/`max` range: a block that
+         could grow to 220 reached 20 flow units into the next column, which `layerGap`
+         puts 200 away, and on `/build` — whose names are generated and long — every block
+         sat at that ceiling. See `./block.ts` for the measurement and for what a stated
+         width buys the guard. */
+      className="group relative w-[150px] rounded-md border bg-surface-2/95 px-3 py-2 backdrop-blur-sm"
       style={{
         borderColor: lit ? "var(--color-amber)" : "var(--color-line-bright)",
         boxShadow: lit
@@ -113,8 +119,10 @@ export function AgentNode({ data }: NodeProps<AgentFlowNode>) {
           `/blueprints/starter-software-factory` — measured, not guessed.
 
           Below the title it competes with nothing horizontal, so the node keeps its
-          sibling's width and the words keep their size. `max-w-[220px]` on the container
-          holds the same line against a long node title. */}
+          sibling's width and the words keep their size. The container's single
+          `BLOCK_WIDTH` holds the same line against a long node title, and holds it harder
+          than the `max-w-[220px]` it replaced: 105px of badge fits inside 150 with room,
+          and there is no longer a width for a long name to grow into. */}
       {lit && (
         <div className="mt-1.5">
           <span className="inline-block whitespace-nowrap rounded-full border border-amber/60 bg-amber/10 px-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-amber">

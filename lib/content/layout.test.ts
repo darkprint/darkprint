@@ -15,11 +15,12 @@ function columns(
 const edge = (source: string, target: string): LayoutEdge => ({ source, target });
 
 /* The default `rowGap` from `layout.ts`, named once here.
-   It is set by the tallest node a row can hold — a lit node carrying the "◎ highlighted"
-   badge is 122px, so the gap has to clear that — and it has moved once already (100 -> 140).
-   The assertions below are about the SHAPE a layout makes, not about that number, so they
-   are written in terms of it. */
-const ROW_GAP = 140;
+   It is set by the tallest node a row can hold and has moved twice: 100 -> 140 when a lit
+   node grew the "◎ highlighted" badge and stood 122px, and 140 -> 180 when
+   `components/graph/block.ts` fixed the block at one width and long names started wrapping
+   to a third line (157px lit, measured on `/build`). The assertions below are about the
+   SHAPE a layout makes, not about that number, so they are written in terms of it. */
+const ROW_GAP = 180;
 
 describe("layeredLayout", () => {
   it("puts a chain in one row, one layer per step", () => {

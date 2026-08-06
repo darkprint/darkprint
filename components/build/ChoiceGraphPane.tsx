@@ -181,15 +181,35 @@ export function ChoiceGraphPane({
         </span>
       </div>
 
-      {/* Taller than the archive's version of this pane. There the drawing sits beside a
-          full-page schematic; here it is the only one, and it is what the choices are made
-          in. */}
-      <div onClick={onGraphClick} onKeyDown={onGraphKeyDown} className="p-3">
+      {/* The canvas answers to its container, in both directions.
+          ------------------------------------------------------------
+          Across, it always did: the box is `width: 100%` and React Flow fits to what it
+          measures, so moving this pane out of the old three-column grid and onto the stage
+          took the canvas from 393px to 1126px at 1440 without a number changing here. What
+          did NOT follow was the height. `height={340}` was tuned for the cramped column,
+          and in a 1126px-wide box it made the fit height-bound: the drawing settled at the
+          zoom a 340px box allowed and left a third of the new width empty.
+
+          `clamp()` rather than a second number, because this pane now has two containers
+          worth caring about — the stage at 1440 and a phone at 390 — and picking one to
+          hardcode is what produced the defect above. 22rem is a phone's share of a screen
+          it also has to scroll a node list on; 30rem is where the stage's drawing stops
+          growing, since past that a schematic reads as zoomed rather than large. React
+          Flow re-fits from the measured box either way, so the two ends are framings and
+          not breakpoints. */}
+      {/* `p-2` on a phone and `p-3` from `sm` up, and the eight pixels are load-bearing.
+          `components/graph/frame.ts` will not let a frame edge fall through a block, so a
+          canvas one flow unit too narrow for the second column does not cut it — it drops
+          the column and leaves the surplus blank. At 390 the starter's first two columns
+          span 350 flow units and the floor zoom turns 314 CSS px into 348.9 of them, which
+          misses by 1.1 and costs the reader a whole column of the drawing. `p-2` gives the
+          canvas 322 px, or 357.8 flow units, and both columns are drawn. */}
+      <div onClick={onGraphClick} onKeyDown={onGraphKeyDown} className="p-2 sm:p-3">
         <BlueprintGraph
           graph={drawn}
           id={graphId}
           highlighted={focus.graphNodeId}
-          height={340}
+          height="clamp(22rem, 32vw, 30rem)"
           className="rounded-md"
         />
       </div>

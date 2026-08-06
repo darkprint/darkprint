@@ -11,6 +11,7 @@ import {
   MarkerType,
   Panel,
   getBezierPath,
+  useReactFlow,
   useStore,
   type Edge,
   type EdgeProps,
@@ -20,6 +21,8 @@ import {
 } from "@xyflow/react";
 import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
 import { AgentNode, type AgentFlowNode } from "./AgentNode";
+import { BLOCK_WIDTH } from "./block";
+import { frameAcross } from "./frame";
 
 const nodeTypes: NodeTypes = { agent: AgentNode };
 
@@ -73,6 +76,16 @@ const EDGE_COLOR = {
 const FRAME_MIN_ZOOM = 0.9;
 const PAN_MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.6;
+
+/**
+ * Air left around the drawing by the initial fit, as React Flow reads it.
+ *
+ * Named rather than written twice: `FrameAcross` below has to hand `frameAcross` the same
+ * number `fitViewOptions` hands React Flow, or the guard would be measuring a framing the
+ * page never uses. React Flow resolves a bare number as `(1 - 1/(1 + p)) / 2` of the
+ * canvas per side, so 0.18 is about 7.6% each way.
+ */
+const FIT_PADDING = 0.18;
 
 /**
  * Where an edge label sits in the pane's own stacking context.
@@ -129,6 +142,16 @@ const LABEL_PAD = 14;
 const LABEL_HEIGHT = 20;
 /** Clearance left between a nudged label and the node it stepped off. */
 const LABEL_CLEAR = 6;
+/** How many blocks one walk may step over before it gives up. See `SchematicEdge`. */
+const LABEL_PASSES = 4;
+/**
+ * How far a label may travel from its own curve, in flow units.
+ *
+ * One row gap (`lib/content/layout.ts`), so a chip may clear the block it sits on and its
+ * neighbour above or below, and no further. Past that it is nearer another run than its
+ * own and stops being a label at all.
+ */
+const LABEL_REACH = 180;
 
 /** What an edge of this schematic carries beyond the domain data. */
 type SchematicEdgeData = {
@@ -158,8 +181,6 @@ type SchematicEdge = Edge<SchematicEdgeData, "schematic">;
  * above 1 alone, so zooming in still magnifies the drawing as a whole.
  */
 function SchematicEdge({
-  source,
-  target,
   sourceX,
   sourceY,
   sourcePosition,
@@ -184,18 +205,40 @@ function SchematicEdge({
   const drop = data?.labelDrop ?? 0;
   const scale = zoom < 1 ? 1 / zoom : 1;
 
-  /* Step off a node this edge is only passing behind.
+  /* Step off any node this label would otherwise be written across.
      ------------------------------------------------------------
      A run that reaches over its neighbour puts its label on that neighbour's face: on
      `incident-commander` the router's `simple` branch skips the runbook tool, and its
      label landed dead centre on the tool's name — "Runb[simple]olver" once the label is
-     drawn on top rather than under. That node is not one of this edge's ends, so the
-     label has no business sitting on it and steps clear by the shorter of up and down.
+     drawn on top rather than under. It steps clear by the shorter of up and down.
 
-     A label overlapping its OWN source or target is left where it is. It is between the
-     two blocks it is about, which is the only place it can be read as belonging to them,
-     and on a graph whose columns are 54px apart with a 139px name to place there is no
-     clearance to find — the chip's ground is what makes it legible there instead.
+     An earlier version exempted the edge's OWN source and target, on the reasoning that a
+     label between the two blocks it is about is where it reads as belonging to them, and
+     that a graph whose columns are 54px apart with a 139px name to place has no clearance
+     to find anyway. The first half is right and the second was an argument for the drawing
+     the exemption was written against, not for the drawing this is. `/build` at stage
+     width has room now, and what the exemption actually bought there was `acceptance
+     criteria` printed across the tester's kind row — the reader was shown `RIFIER` — and
+     `failure evidence` across the debugger's `Debugger`. A label written over its own
+     target's name is not reading as belonging to it; it is deleting it.
+
+     So there is no exemption. Stepping keeps the chip on its own curve, a few units above
+     or below the block, which is still between the two ends and is now beside the words
+     rather than on them.
+
+     One step is not always enough, and the version that took one shipped the same defect
+     one node over: clearing `acceptance criteria` off the planner and the tester dropped
+     it straight onto the builder, which a single pass had already stopped looking at. So
+     it steps until it is clear — and it walks the two directions SEPARATELY, all the way,
+     before choosing. Deciding the direction greedily on the first block it meets was the
+     version after that, and it sent `failure evidence` down past three blocks and off the
+     bottom of the canvas when one step up would have cleared it: the shorter first move
+     and the shorter journey are not the same question.
+
+     Neither walk may exceed `LABEL_REACH`. A label that would have to travel further than
+     the gap between two rows is no longer near the run it names, and is left where React
+     Flow put it — over a block, which is the old defect, but a legible chip on a block
+     beats a legible chip somewhere the reader cannot connect to anything.
 
      The selector returns one number, so panning and zooming do not re-render a label
      whose answer has not changed. */
@@ -203,28 +246,44 @@ function SchematicEdge({
     const width = data?.labelWidth ?? 0;
     if (width === 0) return 0;
     const cx = labelX;
-    const cy = labelY + drop;
-    let top = Infinity;
-    let bottom = -Infinity;
-    for (const node of s.nodeLookup.values()) {
-      if (node.id === source || node.id === target) continue;
-      const w = node.measured.width ?? 0;
-      const h = node.measured.height ?? 0;
-      if (w === 0 || h === 0) continue;
-      const { x, y } = node.internals.positionAbsolute;
-      const overlaps =
-        cx + width / 2 > x &&
-        cx - width / 2 < x + w &&
-        cy + LABEL_HEIGHT / 2 > y &&
-        cy - LABEL_HEIGHT / 2 < y + h;
-      if (!overlaps) continue;
-      top = Math.min(top, y);
-      bottom = Math.max(bottom, y + h);
+    const start = labelY + drop;
+
+    /** How far the label has to travel `downward` (or up) to clear every block, or `undefined`. */
+    function walk(downward: boolean): number | undefined {
+      let cy = start;
+      for (let pass = 0; pass <= LABEL_PASSES; pass += 1) {
+        let top = Infinity;
+        let bottom = -Infinity;
+        for (const node of s.nodeLookup.values()) {
+          const w = node.measured.width ?? 0;
+          const h = node.measured.height ?? 0;
+          if (w === 0 || h === 0) continue;
+          const { x, y } = node.internals.positionAbsolute;
+          const overlaps =
+            cx + width / 2 > x &&
+            cx - width / 2 < x + w &&
+            cy + LABEL_HEIGHT / 2 > y &&
+            cy - LABEL_HEIGHT / 2 < y + h;
+          if (!overlaps) continue;
+          top = Math.min(top, y);
+          bottom = Math.max(bottom, y + h);
+        }
+        if (top === Infinity) {
+          const travelled = cy - start;
+          return Math.abs(travelled) > LABEL_REACH ? undefined : travelled;
+        }
+        cy += downward
+          ? bottom - (cy - LABEL_HEIGHT / 2) + LABEL_CLEAR
+          : top - (cy + LABEL_HEIGHT / 2) - LABEL_CLEAR;
+      }
+      return undefined;
     }
-    if (top === Infinity) return 0;
-    const up = cy + LABEL_HEIGHT / 2 - top + LABEL_CLEAR;
-    const down = bottom - (cy - LABEL_HEIGHT / 2) + LABEL_CLEAR;
-    return up <= down ? -up : down;
+
+    const up = walk(false);
+    const down = walk(true);
+    if (up === undefined) return down ?? 0;
+    if (down === undefined) return up;
+    return Math.abs(up) <= Math.abs(down) ? up : down;
   });
 
   return (
@@ -302,6 +361,62 @@ function PanHint() {
 }
 
 /**
+ * The one correction this component makes to React Flow's own fit, applied once.
+ *
+ * `FRAME_MIN_ZOOM` decides that a drawing too wide for its box is cropped rather than
+ * shrunk past legibility. It does not decide WHERE the crop falls, and React Flow's fit
+ * centres the drawing, so the two frame edges landed mid-word: measured on `/build` at a
+ * 390px viewport, four of five node names were cut and the reader was shown `ory`,
+ * `Python Scr` and `Release Ga`. `./frame.ts` holds the rule that replaces that — start at
+ * the drawing's leading edge, reach as far in as the last whole block — and this is the
+ * three lines that apply it.
+ *
+ * ── Why once, and why not on every viewport change ──
+ * This is the framing a reader ARRIVES at, and nothing more. Re-running it on pan or zoom
+ * would fight the reader for the viewport and would undo `Controls`' own buttons the way
+ * an earlier pass's `minZoom` did — the failure this file's `FRAME_MIN_ZOOM` docblock
+ * records at length. `framed` latches on the first frame where the canvas has a width and
+ * the nodes have been measured, and after that the viewport belongs to the reader:
+ * dragging, both zoom buttons and fit-view all behave exactly as they did.
+ *
+ * ── Why the vertical axis is carried rather than recomputed ──
+ * `frameAcross` speaks only across the flow axis and hands back the zoom it was given, so
+ * in practice the two viewports differ in `x` alone. The vertical centre is pinned through
+ * the change anyway — the flow point at the canvas's middle is `(height / 2 - y) / zoom` —
+ * rather than copying `y` across, because a `y` copied under a zoom that had moved would
+ * silently slide the drawing, and this is the one place where nothing about the vertical
+ * axis is being decided.
+ */
+function FrameAcross({ blocks }: { blocks: readonly { x: number; width: number }[] }) {
+  const width = useStore((s) => s.width);
+  const height = useStore((s) => s.height);
+  const measured = useStore((s) => {
+    for (const node of s.nodeLookup.values()) {
+      if ((node.measured.width ?? 0) === 0) return false;
+    }
+    return s.nodeLookup.size > 0;
+  });
+  const flow = useReactFlow();
+  const framed = useRef(false);
+
+  useEffect(() => {
+    if (framed.current || !measured || width === 0 || height === 0) return;
+    framed.current = true;
+    const frame = frameAcross(blocks, width, {
+      minZoom: FRAME_MIN_ZOOM,
+      maxZoom: MAX_ZOOM,
+      padding: FIT_PADDING,
+    });
+    if (frame === undefined) return;
+    const current = flow.getViewport();
+    const middle = (height / 2 - current.y) / current.zoom;
+    void flow.setViewport({ x: frame.x, y: height / 2 - middle * frame.zoom, zoom: frame.zoom });
+  }, [blocks, flow, height, measured, width]);
+
+  return null;
+}
+
+/**
  * Interactive schematic for detail pages and the upload preview.
  *
  * Pan/drag enabled; scroll-zoom disabled so the page still scrolls. Panning is not a
@@ -351,7 +466,16 @@ export function BlueprintGraph({
    */
   id?: string;
   className?: string;
-  height?: number;
+  /**
+   * The canvas box's height: a pixel count, or any CSS length.
+   *
+   * A string is what lets a caller hand this a height that answers to its own container
+   * instead of to one viewport — `ChoiceGraphPane` passes a `clamp()` for exactly that
+   * reason. The width was never a number here and never needed to be: the box is
+   * `width: 100%` and React Flow measures it, so the fit already adapts across. Only the
+   * height was ever hardcoded, which is why only the height has a prop.
+   */
+  height?: number | string;
 }) {
   const nodes: AgentFlowNode[] = useMemo(
     () =>
@@ -456,6 +580,15 @@ export function BlueprintGraph({
     });
   }, [graph, nodeIndex]);
 
+  /* The drawn blocks, across the flow axis only. Read off the seed rather than off the
+     rendered DOM, which is what `BLOCK_WIDTH` is for: every node is exactly that wide, so
+     where a block starts and ends is known before anything is measured — and a guard with
+     no browser can know it too. */
+  const blocks = useMemo(
+    () => graph.nodes.map((n) => ({ x: n.position.x, width: BLOCK_WIDTH })),
+    [graph],
+  );
+
   const instance = useRef<ReactFlowInstance<AgentFlowNode, SchematicEdge> | null>(null);
 
   useEffect(() => {
@@ -489,7 +622,7 @@ export function BlueprintGraph({
           instance.current = flow;
         }}
         fitView
-        fitViewOptions={{ padding: 0.18, minZoom: FRAME_MIN_ZOOM }}
+        fitViewOptions={{ padding: FIT_PADDING, minZoom: FRAME_MIN_ZOOM }}
         minZoom={PAN_MIN_ZOOM}
         maxZoom={MAX_ZOOM}
         zoomOnScroll={false}
@@ -520,6 +653,7 @@ export function BlueprintGraph({
           className="!border !border-line !bg-surface-2 !shadow-none [&_button]:!border-line [&_button]:!bg-surface-2 [&_button]:!fill-muted hover:[&_button]:!bg-surface-3"
         />
         <PanHint />
+        <FrameAcross blocks={blocks} />
       </ReactFlow>
     </div>
   );
