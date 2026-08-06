@@ -41,14 +41,47 @@ describe("WorkspaceStage", () => {
     }
   });
 
+  it("mounts exactly one React Flow graph on the whole stage", () => {
+    // Critical review finding: an earlier version mounted `BuildPanes` for the DOT and
+    // Cards tabs, and `BuildPanes` draws its own `ChoiceGraphPane` internally — three React
+    // Flow canvases in one document for a stage that wants one. `WorkspaceStage.tsx` now
+    // mounts `ChoiceGraphPane` once (the `Graph` tab) and reaches for `SourcePane` directly
+    // for `DOT` and `Cards`. `.rf-blueprint` is `BlueprintGraph.tsx`'s own wrapper class,
+    // present once per mounted canvas regardless of `hidden`.
+    const html = renderToStaticMarkup(
+      createElement(WorkspaceStage, { state: buildState(base), marks: [], onTabOpen: () => {} }),
+    );
+    const canvases = html.match(/rf-blueprint/g) ?? [];
+    expect(canvases).toHaveLength(1);
+  });
+
+  it("gives every tab label a body that actually matches it — DOT shows DOT, Cards shows YAML", () => {
+    // Critical review finding: `BuildPanes` carries its own internal four-reading tablist,
+    // so a tab labelled `DOT` could privately be showing card YAML if a reader had clicked
+    // inside that nested tablist — "what the label says is what the body shows" was not
+    // actually true. `SourcePane` has no tablist of its own, so each of the two panels can
+    // only ever be the one document it was given.
+    const html = renderToStaticMarkup(
+      createElement(WorkspaceStage, { state: buildState(base), marks: [], onTabOpen: () => {} }),
+    );
+    // The DOT tabpanel's own `SourcePane` heading is "The DOT"; the Cards tabpanel's is
+    // "The card". Both are real text (not gated behind any further click), which is what
+    // "no nested tablist able to contradict the label" means in practice.
+    const text = plainText(html);
+    expect(text).toContain("The DOT");
+    expect(text).toContain("The card");
+    // No nested `role="tablist"` anywhere: five tabs, one tablist, full stop.
+    const tablists = html.match(/role="tablist"/g) ?? [];
+    expect(tablists).toHaveLength(1);
+  });
+
   it("gives exactly one of the five top-level tabs a tab stop, on the open one", () => {
     // The same contract `InstallTabs.test.ts` checks for its own tablist: roving tabindex,
-    // exactly one stop in the group. A bare `tabindex="0"` count across the whole document
-    // would also see the DOT and Cards tab bodies' own `BuildPanes` mounts, each of which
-    // carries a second, independent roving tablist over its own three readings — so the
-    // count is taken over the slice between the outer tablist's own `aria-label` and the
-    // first tabpanel, which is exactly the five top-level tab buttons (plus the header's
-    // `ScoreStrip`, which carries no `tabindex` at all) and nothing BuildPanes renders.
+    // exactly one stop in the group. Now that there is only one tablist on the whole stage
+    // (see the previous test), an unscoped `tabindex` count would also see `ChoiceGraphPane`'s
+    // own roving listbox and `SourcePane`'s own roving listbox — real, but not this tablist's
+    // — so the count is still taken over the slice between the outer tablist's own
+    // `aria-label` and the first tabpanel.
     const html = renderToStaticMarkup(
       createElement(WorkspaceStage, { state: buildState(base), marks: [], onTabOpen: () => {} }),
     );
@@ -65,12 +98,22 @@ describe("WorkspaceStage", () => {
     expect(stops[0]?.[1]).toBe("0");
   });
 
-  it("marks the Graph and DOT tabs together, since both draw the dot surface", () => {
+  /**
+   * Critical review finding: `Graph`'s drawing is `graphForBlueprint(blueprint)` off the
+   * resolved blueprint (`state.ts`), never `bundle.dot` — so marking `Graph` whenever `dot`
+   * changed was wrong, and worse, opening `Graph` used to call `onTabOpen("dot")` and clear
+   * the one tab (`DOT`) where the change is actually visible. `Graph` now has no entry in
+   * `SURFACE_OF` at all, which is the same table both the marker and `onTabOpen` read from —
+   * so this one assertion on the marker also stands in for `onTabOpen`'s behaviour, which a
+   * static-markup test cannot observe directly (no jsdom to dispatch a click; see
+   * `InstallTabs.test.ts`'s own note on the same limitation).
+   */
+  it("marks only the DOT tab for a dot-only change — never Graph", () => {
     const html = renderToStaticMarkup(
       createElement(WorkspaceStage, { state: buildState(base), marks: ["dot"], onTabOpen: () => {} }),
     );
     const marked = html.match(/aria-label="changed"/g) ?? [];
-    expect(marked).toHaveLength(2);
+    expect(marked).toHaveLength(1);
   });
 
   it("marks nothing when nothing changed", () => {
@@ -104,14 +147,65 @@ describe("WorkspaceStage", () => {
     expect(html).toContain(`${state.budget.modelCallsAtMost} model calls at most`);
   });
 
-  it("gives every element on the stage a unique id, with three graphs mounted at once", () => {
-    // `Graph`'s standalone `ChoiceGraphPane` and the `DOT`/`Cards` tabs' own embedded ones
-    // (inside their `BuildPanes` mounts) all render simultaneously (see the "every tab body
-    // renders, every time" note in `WorkspaceStage.tsx`'s header docblock), and all three
-    // draw pane 1. Without a distinct `paneNumber` per instance every one would answer to
-    // `id="pane-1-heading"` — a real, unconditional duplicate this test pins against
-    // regressing. `graphId` is checked the same way for the same reason
-    // (`BlueprintGraph.tsx`'s own docblock on why an unnamed instance is a bug).
+  /**
+   * Critical review finding: `ScoreStrip` is `aria-hidden` by its own design
+   * (`ScorePanel.tsx`), and `ScorePanel`'s own accessible live region used to sit inside the
+   * `Score` tab's `hidden` tabpanel — reachable only while a reader happened to already be on
+   * that tab. `GuidedPath.tsx`'s own invariant is "one live region per width, never two";
+   * this is the same invariant held across tabs instead of widths.
+   */
+  it("puts an accessible summary of the score in a live region reachable on arrival", () => {
+    const state = buildState(base);
+    const analysis = state.analysis;
+    if (analysis === undefined) throw new Error("the base combination must resolve");
+    const html = renderToStaticMarkup(
+      createElement(WorkspaceStage, { state, marks: [], onTabOpen: () => {} }),
+    );
+    const match = html.match(/role="status"[^>]*>([^<]*)</);
+    expect(match).not.toBeNull();
+    const announced = match?.[1] ?? "";
+    expect(announced).toContain(analysis.autonomy.label);
+    expect(announced).toContain(`level ${analysis.security.level} of 4`);
+  });
+
+  it("keeps exactly one live region reachable by default — the header's, not ScorePanel's own", () => {
+    // The stage opens on `Graph`, so the `Score` tabpanel — and `ScorePanel`'s own internal
+    // `role="status"` live region inside it — must carry `hidden`. Two `role="status"`
+    // elements exist in the raw markup (the header's own, always rendered; `ScorePanel`'s,
+    // always rendered too, since only its WRAPPER carries `hidden` and not the element
+    // itself), but only one is actually reachable while the other sits behind `hidden`.
+    const html = renderToStaticMarkup(
+      createElement(WorkspaceStage, { state: buildState(base), marks: [], onTabOpen: () => {} }),
+    );
+    // `-panel-score"` appears twice: once in the score tab BUTTON's `aria-controls`, and
+    // once in the score TABPANEL's own `id`, which is the later of the two in document
+    // order (the tablist's five buttons all render before any tabpanel does) — `lastIndexOf`
+    // is what lands on the tabpanel itself rather than the button that points at it.
+    const scoreTabpanelStart = html.lastIndexOf('-panel-score"');
+    expect(scoreTabpanelStart).toBeGreaterThan(-1);
+    const scoreTabpanelTagStart = html.lastIndexOf("<div", scoreTabpanelStart);
+    const scoreTabpanelTagEnd = html.indexOf(">", scoreTabpanelStart);
+    const scoreTabpanelOpenTag = html.slice(scoreTabpanelTagStart, scoreTabpanelTagEnd);
+    expect(scoreTabpanelOpenTag).toContain("hidden");
+
+    const statusRegions = html.match(/role="status"/g) ?? [];
+    expect(statusRegions).toHaveLength(2);
+
+    // The header's own copy renders before any tabpanel — including the Score one — so it
+    // sits outside every `hidden` wrapper on the stage.
+    const headerStatus = html.indexOf('role="status"');
+    const firstTabpanel = html.indexOf('role="tabpanel"');
+    expect(headerStatus).toBeGreaterThan(-1);
+    expect(headerStatus).toBeLessThan(firstTabpanel);
+  });
+
+  it("gives every element on the stage a unique id", () => {
+    // The one `ChoiceGraphPane` and the two `SourcePane`s each build `id="pane-N-heading"`
+    // from an explicit `paneNumber` (1, 2, 3) that this file assigns directly — regression
+    // guard against that drifting back into a collision, the way an earlier version's
+    // `BuildPanes`-based design genuinely did (three simultaneous `ChoiceGraphPane`s all
+    // defaulting to `paneNumber={1}`; caught by this exact style of test before the
+    // composition was rewritten to mount one graph instead of three).
     const html = renderToStaticMarkup(
       createElement(WorkspaceStage, { state: buildState(base), marks: [], onTabOpen: () => {} }),
     );

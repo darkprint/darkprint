@@ -133,7 +133,6 @@ export function BuildPanes({
   graphId,
   stepId,
   reading = "dot",
-  paneNumber = 1,
   className,
 }: {
   model: PaneModel;
@@ -149,20 +148,6 @@ export function BuildPanes({
   /** Which step is open, so a step change can reopen the frame on that step's reading. */
   stepId: StepId;
   reading?: StepReading;
-  /**
-   * The ordinal pane 1's `id="pane-N-heading"` is built from.
-   *
-   * Defaults to `1`, which was a hardcoded literal here until `WorkspaceStage.tsx` needed
-   * it to vary: `GuidedPath.tsx` never mounts more than one `BuildPanes` at a time, so one
-   * fixed number never collided with anything. `WorkspaceStage.tsx` mounts two —
-   * `reading="dot"` and `reading="card"` — in the same document at once (both tab bodies
-   * render at SSR; see its own header docblock), plus a third, standalone
-   * `ChoiceGraphPane` for its `Graph` tab. All three draw pane 1, so without a way to tell
-   * them apart every one would emit the same `id="pane-1-heading"` — three duplicate ids
-   * in one document, unconditionally, on every render. Existing callers that never pass
-   * this keep today's literal `1` and are unaffected.
-   */
-  paneNumber?: number;
   className?: string;
 }) {
   const focus = resolveFocus(model, selection);
@@ -338,7 +323,7 @@ export function BuildPanes({
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)] lg:items-start">
         <ChoiceGraphPane
-          paneNumber={paneNumber}
+          paneNumber={1}
           showNumber={false}
           graph={graph}
           model={model}

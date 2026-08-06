@@ -46,7 +46,10 @@ export type TabOrientation = "horizontal" | "vertical" | "both";
  * four inputs always answer the same index. Wrapping at both ends —
  * `(at + 1) % length` forward, `(at - 1 + length) % length` back — means a tablist of one
  * tab answers every arrow key with its own single index rather than cycling through a
- * negative or an out-of-range one.
+ * negative or an out-of-range one. `length <= 0` is the one input a modulus cannot make
+ * total on its own (`x % 0` is `NaN` for every `x`), so it is guarded explicitly rather
+ * than left to fall out of the arithmetic below — a tablist with no tabs has no index to
+ * move to, on any key.
  */
 export function nextTabIndex(
   key: string,
@@ -54,6 +57,8 @@ export function nextTabIndex(
   length: number,
   orientation: TabOrientation,
 ): number | undefined {
+  if (length <= 0) return undefined;
+
   const forwardKeys: readonly string[] =
     orientation === "vertical"
       ? ["ArrowDown"]

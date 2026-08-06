@@ -1,10 +1,16 @@
 "use client";
 
-import { useId, useRef, useState, type KeyboardEvent } from "react";
+import { useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { CORE_ONTOLOGY, ontologyView } from "@/lib/core";
 import { cx } from "@/lib/format";
-import { resolveFocus, type PaneSelection } from "@/components/panes/model";
-import { BuildPanes } from "./BuildPanes";
+import {
+  fieldForCardLine,
+  lineMeaning,
+  resolveFocus,
+  selectionForDotLine,
+  type PaneSelection,
+} from "@/components/panes/model";
+import { SourcePane } from "@/components/panes/SourcePane";
 import { ChoiceGraphPane } from "./ChoiceGraphPane";
 import { ScorePanel, ScoreStrip } from "./ScorePanel";
 import type { BuildState } from "./state";
@@ -23,71 +29,88 @@ import { VocabularyPane } from "./VocabularyPane";
    made is why `ScoreStrip` sits in the header rather than behind its own tab: it is the one
    reading that has to survive every tab switch.
 
-   This component only composes what already exists — `ChoiceGraphPane`, `BuildPanes`,
-   `VocabularyPane`, `ScorePanel` — and owns the one thing none of them did before: which tab
-   is open, and which tabs carry the reader's own `•` change marker. The three controls that
-   move the reader's choices, and the wiring that turns `changedSurfaces` into this
-   component's `marks` prop, are a later task's job; this one takes `state` and `marks` as
-   given.
+   This component composes `ChoiceGraphPane`, `SourcePane` (the same pane `BuildPanes.tsx`
+   uses internally for its own DOT and card readings), `VocabularyPane` and `ScorePanel`, and
+   owns the one thing none of them did before: which tab is open, and which tabs carry the
+   reader's own `•` change marker. The three controls that move the reader's choices, and the
+   wiring that turns `changedSurfaces` into this component's `marks` prop, are a later task's
+   job; this one takes `state` and `marks` as given.
 
-   ── The vocabulary this file did not invent ──
-   `Surface` (`./surfaces.ts`) has four members — `dot`, `cards`, `vocabulary`, `score` — and
-   this stage has five tabs. `surfaces.ts`'s own docblock resolves the mismatch on its own
-   terms: it defines `dot` as "the DOT source **the graph pane draws**", not as the text of a
-   DOT tab, because `surfaces.ts` was written before this stage split "the graph" into a
-   drawing and a listing. Both the `Graph` tab and the `DOT` tab draw exactly that one
-   surface — the same `bundle.dot` bytes, once as a schematic and once as source — so both
-   carry the mark when `dot` is in `marks`, and opening either one reports `onTabOpen("dot")`.
-   A reader who reads the change in the drawing has read the same fact `surfaces.ts` diffed,
-   and should not have to also open the DOT tab to clear its marker.
+   ── Why `SourcePane` directly, and not `BuildPanes` ──
+   A first version of this file rendered `DOT` and `Cards` as two full `BuildPanes` mounts,
+   because `BuildPanes` already draws exactly those two readings. That was wrong on
+   inspection: `BuildPanes` also draws its own `ChoiceGraphPane` (three React Flow instances
+   in one document, for a stage that wants one) and its own complete four-reading tablist
+   (so a click inside the tab labelled `DOT` could switch that mount to card YAML, silently
+   contradicting the outer tab's own label — "what the label says is what the body shows"
+   is the actual requirement, and a tablist nested inside a tablist cannot honour it). It also
+   re-drew the cramped two-column apparatus this whole restructure exists to delete, at
+   roughly 122KB of SSR markup for two panes.
+
+   So `Graph` mounts the ONE `ChoiceGraphPane` this stage has, and `DOT`/`Cards` mount
+   `SourcePane` (`@/components/panes/SourcePane`) directly — the same component
+   `BuildPanes.tsx` reaches for internally, with the same `dotMeanings`/`cardMeanings`
+   derivations and the same `selectDotLine`/`selectCardLine` handlers, copied here rather
+   than imported because they close over this component's own `model`/`focus`/`selection`
+   rather than `BuildPanes`' props. One consequence: this file and `BuildPanes.tsx` now both
+   carry a copy of that small amount of glue. Folding both into one shared hook is a real
+   simplification worth making later; it was not done here because it touches
+   `BuildPanes.tsx`'s own internals for the sake of a component this task does not otherwise
+   need to change, which is a larger diff than the duplication it would remove.
+
+   ── `Graph` is not a `Surface`, and marks nothing ──
+   `Surface` (`./surfaces.ts`) has four members — `dot`, `cards`, `vocabulary`, `score` — one
+   per byte-diffable artefact `changedSurfaces` actually compares. `Graph`'s drawing is NOT
+   one of those four bytes: `state.ts` builds it as `graphForBlueprint(blueprint)` off the
+   RESOLVED blueprint, and `ChoiceGraphPane.tsx` strips card links from it further — neither
+   step reads `bundle.dot`. So a choice that rewrites the DOT's prose without moving the
+   topology (a card's version bump inside `card="id@version"`, e.g.) marks `dot` in
+   `surfaces.ts`'s diff while leaving the drawing byte-identical, and `Graph` has no
+   principled way to know which happened without re-deriving `changedSurfaces`' own diff a
+   second time, on a different artefact, which is exactly the "lookup table pretending to be
+   a check" `surfaces.ts`'s own docblock argues against. So `Graph` carries no `•` marker and
+   calls no `onTabOpen`. The things that DO redraw the graph — the approval choice, which
+   adds or removes the `approver` node and its edges (`lib/starter/cards.ts`'s `approver`),
+   and doc 2 §5.4's demonstration switch, which adds the leak edge straight into the bundle
+   `graphForBlueprint` resolves — need no marker to be seen: the reader watches the drawing
+   itself change the moment either one fires. The output choice and the cap move neither the
+   node set nor the edge set, so neither would ever light `Graph` in the first place even if
+   it could carry a marker.
 
    ── Every tab body renders, every time ──
    The stage is mounted once and the reader flips between tabs with no navigation, so every
    body has to already be in the document the server sent: a tab whose content only appeared
-   once JavaScript ran would flash blank on a slow connection and would be invisible to
-   find-in-page and to a reader without JS at all. So all five bodies render unconditionally,
-   and only the closed ones carry the native `hidden` attribute — present in the markup,
-   inert to layout, assistive tech and the tab order, exactly the ARIA authoring practices'
-   own tabpanel technique. What this is NOT is `opacity-0`: a reveal-on-mount fade (the kind
-   `InstallTabs.tsx` uses for the one snippet it shows at a time) still occupies full layout
-   space and stays in the tab order while "hidden", which is fine for one small panel and
-   wrong for four panels' worth of graphs and documents sitting stacked and half-invisible
-   under the open one. `WorkspaceStage.test.ts` pins both halves of this: the DOT body's text
-   is in the markup, and no class name spells `opacity-0` anywhere in it.
+   once JavaScript ran would flash blank on a slow connection. So all five bodies render
+   unconditionally, and only the closed ones carry the native `hidden` attribute — present in
+   the markup, inert to layout and to the tab order, exactly the ARIA authoring practices' own
+   tabpanel technique. (`hidden` is `display:none`; ordinary find-in-page does not search it —
+   `hidden="until-found"` is the attribute value that would. The reason this is still the
+   right call is narrower than "stays findable": it is that the content is real DOM the server
+   sent rather than something a client-side effect has to paint in later, which is what makes
+   a slow-connection flash and a no-JS blank impossible regardless of find-in-page.) What this
+   is NOT is `opacity-0`: a reveal-on-mount fade (the kind `InstallTabs.tsx` uses for the one
+   snippet it shows at a time) still occupies full layout space and stays in the tab order
+   while "hidden", which is fine for one small panel and wrong for four panels' worth of
+   graphs and documents sitting stacked and half-invisible under the open one.
+   `WorkspaceStage.test.ts` pins both halves of this: the DOT body's text is in the markup,
+   and no class name spells `opacity-0` anywhere in it.
 
-   One consequence worth naming rather than hiding: `DOT` and `Cards` each render a whole
-   `BuildPanes`, and `BuildPanes` draws its own `ChoiceGraphPane` as pane 1. So three
-   `ChoiceGraphPane`s — one standalone for `Graph`, one each inside the `DOT` and `Cards`
-   `BuildPanes` — are mounted at once, each drawing the same graph. That is what "`DOT` and
-   `Cards` render `BuildPanes` with the matching `reading`" means literally, and each needs
-   its own `graphId` (`BlueprintGraph`'s own docblock: two unnamed instances on one page ship
-   duplicated DOM ids) AND its own `paneNumber` (`BuildPanes.tsx`'s own docblock at that
-   prop: pane 1's `id="pane-N-heading"` is built from it, and all three would otherwise
-   answer to the same `N`, unconditionally, since pane 1 is not behind either instance's own
-   internal reading tablist). Collapsing the three into one shared drawing is a real
-   simplification worth making, but it changes what `BuildPanes` is for mid-restructuring,
-   so it is left for whoever next revisits this file rather than folded silently into this
-   task.
+   ── One live region, always reachable ──
+   `ScoreStrip` is `aria-hidden` by its own design (`ScorePanel.tsx`: it is a second printing
+   of the panel's figures, meant to sit beside an accessible copy rather than stand in for
+   one). Putting only `ScoreStrip` in the header and leaving `ScorePanel`'s own
+   `role="status" aria-live="polite"` paragraph inside the `Score` tab's `hidden` tabpanel —
+   which is what a first version of this file did — leaves a screen reader with NO accessible
+   score at all on arrival, and NO announcement of a later change, unless the reader happens
+   to already be on the `Score` tab when it happens. `GuidedPath.tsx` documents the invariant
+   this breaks: "one live region per width, never two."
 
-   A narrower, disclosed residual of the same shape: `BuildPanes.tsx` also hardcodes
-   `pane-2-heading` through `pane-5-heading` for its skeleton/dot/card/vocabulary readings,
-   each gated behind that instance's OWN internal tablist (`open === "skeleton"`, and so
-   on) rather than always rendered like pane 1 is. The `DOT` and `Cards` mounts below seed
-   different readings (`"dot"` and `"card"`), so at SSR — and in the default, unclicked
-   state — none of those four ids can collide between the two instances. They could still
-   collide if a reader manually drove both instances' own internal tablists to the same
-   reading (e.g. both to "the terms") after hydration; fixing that would mean threading an
-   offset through every one of `BuildPanes`' internal pane numbers, which is a larger,
-   `BuildPanes`-wide change this task's brief did not ask for. Flagged here rather than
-   fixed quietly or left undocumented.
-
-   The three `paneNumber`s below are chosen at `1`, `6` and `7` rather than `1`, `2`, `3`
-   for exactly this reason: `2` through `5` are the range `BuildPanes.tsx` already spends
-   internally on the OTHER readings (`WorkspaceStage.test.ts`'s "gives every element on the
-   stage a unique id" caught `1`/`2`/`3` colliding with the DOT tab's own open-by-default
-   `pane-3-heading` the first time this was written). `6` and `7` are outside that range on
-   both instances, for every reading either one could be switched to, not only the ones
-   open by default.
+   The fix is a second, purpose-built `sr-only` live region in the header, mirroring
+   `ScorePanel`'s own sentence, and it is rendered ONLY while the `Score` tab is closed —
+   `ScorePanel`'s own internal live region takes over the instant that tab opens, since its
+   wrapping `hidden` attribute clears in the same render that closes this one. That keeps
+   "never two" true across tabs, not only across widths: exactly one live region is reachable
+   whichever of the five tabs is open, on every width.
    ============================================================ */
 
 /** The vocabulary every resolved bundle on `/build` is checked against. Same instance
@@ -95,8 +118,13 @@ import { VocabularyPane } from "./VocabularyPane";
     actually resolved the bundle with. */
 const ONTOLOGY = ontologyView(CORE_ONTOLOGY);
 
-/** One tab of the stage. A superset of `Surface`: `graph` has no reading of its own — see
-    `SURFACE_OF` below for how it borrows `dot`'s. */
+/** No card reading ever lights a secondary DOT-style range — `BuildPanes.tsx`'s own `NO_LINES`
+    constant, copied for the same reason: an empty array shared across renders rather than a
+    fresh one allocated on every `SourcePane` call. */
+const NO_LINES: readonly number[] = [];
+
+/** One tab of the stage. Not a superset of `Surface` any more: `graph` maps to no surface at
+    all — see the header docblock's "`Graph` is not a `Surface`". */
 type TabId = "graph" | "dot" | "cards" | "vocabulary" | "score";
 
 const TABS: readonly { id: TabId; label: string }[] = [
@@ -107,10 +135,10 @@ const TABS: readonly { id: TabId; label: string }[] = [
   { id: "score", label: "Score" },
 ];
 
-/** Which `Surface` each tab reads from, for the change marker and for `onTabOpen`. `graph`
-    maps to `dot` for the reason the header docblock gives: it draws the same bytes. */
-const SURFACE_OF: Readonly<Record<TabId, Surface>> = {
-  graph: "dot",
+/** Which `Surface` a tab reads from, for the change marker and for `onTabOpen`. `graph` has
+    no entry on purpose: it is not keyed by a byte-diffable surface, so it is never marked and
+    never reported. */
+const SURFACE_OF: Readonly<Partial<Record<TabId, Surface>>> = {
   dot: "dot",
   cards: "cards",
   vocabulary: "vocabulary",
@@ -135,14 +163,15 @@ export function WorkspaceStage({
   state: BuildState;
   /** Surfaces whose bytes moved since the reader's last choice. Drives the `•` marker. */
   marks: readonly Surface[];
-  /** Called with the surface a tab reads from whenever the reader opens that tab. */
+  /** Called with the surface a tab reads from whenever the reader opens that tab. Never
+      called for `Graph`: see the header docblock. */
   onTabOpen: (surface: Surface) => void;
 }) {
   // The graph is the stage (see header docblock), so it is what a reader meets on arrival.
   const [open, setOpen] = useState<TabId>("graph");
 
   /**
-   * One selection, shared by the graph tab and both `BuildPanes` mounts, exactly as
+   * One selection, shared by the graph, the DOT reading and the card reading, exactly as
    * `GuidedPath.tsx` shares one across the whole path. Seeded off the first node this
    * bundle resolved to rather than a starter node id: a workspace stage has no fixed step
    * to assume `builder` or `planner` exists, only the graph in front of it.
@@ -152,12 +181,13 @@ export function WorkspaceStage({
   }));
 
   const tabsId = useId();
-  const graphIdBase = useId();
+  const graphId = useId();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   function openTab(id: TabId) {
     setOpen(id);
-    onTabOpen(SURFACE_OF[id]);
+    const surface = SURFACE_OF[id];
+    if (surface !== undefined) onTabOpen(surface);
   }
 
   /** The house tablist pattern (`./tablist.ts`, factored out of `BuildPanes.tsx`), bound
@@ -172,7 +202,6 @@ export function WorkspaceStage({
   }
 
   const model = state.paneModel;
-  const graph = state.graph;
   const cards = state.blueprint?.nodes ?? [];
   const focus = model === undefined ? undefined : resolveFocus(model, selection);
 
@@ -180,18 +209,75 @@ export function WorkspaceStage({
     setSelection({ nodeId });
   }
 
-  /** Mirrors `BuildPanes.tsx`'s own `selectAbsence`: the standalone `ChoiceGraphPane` below
-      needs the same resolution `BuildPanes` does internally for its own pane 1. */
+  /** Mirrors `BuildPanes.tsx`'s own `selectAbsence`: every reading below shares this one
+      selection, so an absence picked from the graph, the DOT or the card resolves the same
+      way regardless of which tab it was picked from. */
   function selectAbsence(absenceId: string) {
     const absence = model?.absences.find((entry) => entry.id === absenceId);
     setSelection({ nodeId: absence?.nodeId ?? selection.nodeId, absence: absenceId });
   }
 
+  /** What each line of the DOT is, for `SourcePane`'s accessible per-line text. Mirrors
+      `BuildPanes.tsx`'s own `dotMeanings`. */
+  const dotMeanings = useMemo(
+    () => (model === undefined ? [] : model.dot.split("\n").map((_, i) => lineMeaning(model, i + 1))),
+    [model],
+  );
+
+  /** What each line of the selected card's YAML is. Mirrors `BuildPanes.tsx`'s own
+      `cardMeanings`. */
+  const cardMeanings = useMemo(() => {
+    const card = focus?.card;
+    if (card === undefined) return [];
+    return card.yaml.split("\n").map((_, i) => {
+      const key = fieldForCardLine(card, i + 1);
+      return key === undefined ? undefined : `field ${key} of card ${card.ref}`;
+    });
+  }, [focus?.card]);
+
+  function selectDotLine(line: number) {
+    if (model === undefined) return;
+    const next = selectionForDotLine(model, line);
+    if (next !== undefined) setSelection({ ...next, dotLine: line });
+  }
+
+  function selectCardLine(line: number) {
+    const card = focus?.card;
+    if (card === undefined) return;
+    const key = fieldForCardLine(card, line);
+    if (key !== undefined) setSelection({ nodeId: selection.nodeId, field: key, cardLine: line });
+  }
+
   const autonomy = state.analysis?.autonomy;
   const security = state.analysis?.security;
 
+  /**
+   * The one sentence a screen reader hears for the score, always reachable except while the
+   * `Score` tab is open — see the header docblock's "one live region, always reachable".
+   * Mirrors `ScorePanel.tsx`'s own live-region sentence and `ScoreStrip`'s visible content,
+   * so what gets announced is what the header already shows, said as a sentence.
+   */
+  const announcement =
+    autonomy === undefined && security === undefined
+      ? "No readings yet."
+      : [
+          autonomy === undefined ? null : `Autonomy: ${autonomy.label}.`,
+          security === undefined ? null : `Security: level ${security.level} of 4.`,
+          state.errors.length === 0 ? null : "This graph does not resolve.",
+          `${state.budget.modelCallsAtMost} model calls at most.`,
+          state.demo ? "Demonstration on." : null,
+        ]
+          .filter(Boolean)
+          .join(" ");
+
   return (
     <div className="flex flex-col gap-4">
+      {open !== "score" && (
+        <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+          {announcement}
+        </p>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div
           role="tablist"
@@ -201,7 +287,8 @@ export function WorkspaceStage({
         >
           {TABS.map((tab, index) => {
             const active = tab.id === open;
-            const changed = marks.includes(SURFACE_OF[tab.id]);
+            const surface = SURFACE_OF[tab.id];
+            const changed = surface !== undefined && marks.includes(surface);
             return (
               <button
                 key={tab.id}
@@ -241,7 +328,9 @@ export function WorkspaceStage({
 
         {/* Doc 2 §5.7's panel that never leaves the screen. In the header rather than
             behind the `Score` tab, so the three figures survive every tab switch instead
-            of only the one tab a reader happens to have open. */}
+            of only the one tab a reader happens to have open. `aria-hidden` by its own
+            design (`ScorePanel.tsx`) — the live region above carries the accessible
+            reading of the same figures. */}
         <ScoreStrip
           {...(autonomy === undefined ? {} : { autonomy })}
           {...(security === undefined ? {} : { security })}
@@ -259,18 +348,14 @@ export function WorkspaceStage({
         aria-labelledby={`${tabsId}-tab-graph`}
         hidden={open !== "graph"}
       >
-        {model !== undefined && graph !== undefined && focus !== undefined ? (
+        {model !== undefined && state.graph !== undefined && focus !== undefined ? (
           <ChoiceGraphPane
-            // 1, 6 and 7 across this file's three graphs — see the header docblock's note
-            // on `pane-N-heading` — so this standalone instance, `dot`'s embedded one and
-            // `cards`' embedded one never answer to the same id as each other or as any
-            // reading `BuildPanes.tsx` hardcodes internally (`2` through `5`).
             paneNumber={1}
             showNumber={false}
-            graph={graph}
+            graph={state.graph}
             model={model}
             focus={focus}
-            graphId={`${graphIdBase}-graph`}
+            graphId={graphId}
             onSelectNode={selectNode}
             onSelectAbsence={selectAbsence}
           />
@@ -285,23 +370,23 @@ export function WorkspaceStage({
         aria-labelledby={`${tabsId}-tab-dot`}
         hidden={open !== "dot"}
       >
-        {model !== undefined && graph !== undefined ? (
-          <BuildPanes
-            model={model}
-            graph={graph}
-            cards={cards}
-            ontology={ONTOLOGY}
-            ontologyVersion={CORE_ONTOLOGY.version}
-            selection={selection}
-            onSelect={setSelection}
-            graphId={`${graphIdBase}-dot`}
-            paneNumber={6}
-            // No steps left to track, so a constant that never changes between renders is
-            // the correct value: `BuildPanes` only resets its own open reading when this
-            // id changes, and this tab's reading should stay exactly where the reader left
-            // it, `reading="dot"` only seeding where it starts.
-            stepId="whole"
-            reading="dot"
+        {model !== undefined && focus !== undefined ? (
+          <SourcePane
+            paneNumber={2}
+            showNumber={false}
+            title="The DOT"
+            language="DOT"
+            meta={model.dotFile}
+            source={model.dot}
+            meanings={dotMeanings}
+            primary={focus.dotPrimary}
+            secondary={focus.dotSecondary}
+            {...(focus.dotActiveLine === undefined ? {} : { activeLine: focus.dotActiveLine })}
+            ghosts={focus.dotGhosts}
+            {...(focus.absence === undefined ? {} : { selectedAbsence: focus.absence.id })}
+            listLabel={`Lines of ${model.dotFile}`}
+            onSelectLine={selectDotLine}
+            onSelectGhost={selectAbsence}
           />
         ) : (
           UNRESOLVED
@@ -314,19 +399,26 @@ export function WorkspaceStage({
         aria-labelledby={`${tabsId}-tab-cards`}
         hidden={open !== "cards"}
       >
-        {model !== undefined && graph !== undefined ? (
-          <BuildPanes
-            model={model}
-            graph={graph}
-            cards={cards}
-            ontology={ONTOLOGY}
-            ontologyVersion={CORE_ONTOLOGY.version}
-            selection={selection}
-            onSelect={setSelection}
-            graphId={`${graphIdBase}-cards`}
-            paneNumber={7}
-            stepId="whole"
-            reading="card"
+        {model !== undefined && focus !== undefined ? (
+          <SourcePane
+            paneNumber={3}
+            showNumber={false}
+            title="The card"
+            language="YAML"
+            meta={focus.card === undefined ? undefined : `${focus.card.ref}.yaml`}
+            source={focus.card?.yaml ?? ""}
+            meanings={cardMeanings}
+            primary={focus.yamlPrimary}
+            secondary={NO_LINES}
+            {...(focus.cardActiveLine === undefined ? {} : { activeLine: focus.cardActiveLine })}
+            ghosts={focus.yamlGhosts}
+            {...(focus.absence === undefined ? {} : { selectedAbsence: focus.absence.id })}
+            listLabel={
+              focus.card === undefined ? "No card document" : `Lines of ${focus.card.ref}.yaml`
+            }
+            emptyNote={`The archive holds the resolved card for ${focus.node.nodeId}. It does not hold the document behind it, so there is nothing to show verbatim here.`}
+            onSelectLine={selectCardLine}
+            onSelectGhost={selectAbsence}
           />
         ) : (
           UNRESOLVED
