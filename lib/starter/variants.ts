@@ -148,7 +148,7 @@ function countWord(n: number): string {
 function manifestFor(choices: StarterVariant, nodeCount: number): BundleManifest {
   const p = STARTER_PROFILES[choices.output];
   const human = choices.approval === "human";
-  const tags = ["guided-path", "starter", "isolation", choices.output];
+  const tags = ["workspace", "starter", "isolation", choices.output];
   if (human) tags.push("human-in-the-loop");
   const summary = `A ${countWord(nodeCount)}-node blueprint that ${p.summaryTail}`;
   return {
