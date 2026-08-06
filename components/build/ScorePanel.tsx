@@ -77,9 +77,13 @@ function Rationale({ text }: { text: string }) {
  * Doc 2 §5.7 asks for the score panel to stay visible *while the choices are made*, and the
  * panel itself cannot do that on its own here: it is the body of one of the stage's five
  * tabs, so it is off screen on the four tabs a reader spends most of their time on. This
- * strip is the same figures in one line, mounted in the stage header above the graph, where
- * no tab can close it and the controls below stay in the same viewport as the numbers they
- * move.
+ * strip is the same figures in one line, mounted in the stage header above the graph, so the
+ * controls below stay in the same viewport as the numbers they move.
+ *
+ * `WorkspaceStage.tsx` hides this strip for exactly one tab, `Score` itself — the one tab
+ * where "off screen" stops being true, and where this strip's own eyebrow would otherwise sit
+ * 60px above `ScorePanel`'s own heading printing the same three words. That file's own
+ * docblock, at the `ScoreStrip` render, carries the finding and the reasoning.
  *
  * `aria-hidden`, because it is the panel's figures a second time. The panel carries the
  * headings, the rationales and the findings, and a screen reader should hear that one rather

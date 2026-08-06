@@ -145,15 +145,7 @@ export const ALL_COMBINATIONS: readonly StarterChoices[] = STARTER_VARIANTS.flat
     })),
 );
 
-export function outputLabel(id: StarterOutput): string {
-  return OUTPUT_OPTIONS.find((option) => option.id === id)?.label ?? id;
-}
-
 /** "a Python script" — the artefact with its article, for mid-sentence use. */
 export function outputSubject(id: StarterOutput): string {
   return STARTER_PROFILES[id].subject;
-}
-
-export function approvalLabel(id: StarterApproval): string {
-  return APPROVAL_OPTIONS.find((option) => option.id === id)?.label ?? id;
 }

@@ -96,7 +96,8 @@ describe("BuildWorkspace — SSR markup", () => {
 
   it("names the workspace section without repeating ScoreStrip's own eyebrow", () => {
     // Fix round 1, FIX 2: this heading used to read "Your blueprint", the same three words
-    // `ScoreStrip` prints as its own eyebrow 44px below it on every one of the five tabs.
+    // `ScoreStrip` prints as its own eyebrow 44px below it, on four of the five tabs —
+    // `WorkspaceStage.tsx` hides the strip on the fifth, `Score`, per fix round 2.
     const match = html.match(/<h2 id="workspace-heading"[^>]*>([^<]*)<\/h2>/);
     expect(match).not.toBeNull();
     expect(match?.[1]).toBe("Your workspace");

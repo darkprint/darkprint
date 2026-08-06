@@ -98,20 +98,6 @@ function spendersByTerm(
   return out;
 }
 
-/** How many terms this bundle spends, against how many the vocabulary holds. */
-export function termTally(
-  nodes: readonly { nodeId: string; card: NodeCard }[],
-  view: OntologyView,
-): { spent: number; total: number } {
-  let spent = 0;
-  let total = 0;
-  for (const { kind } of KINDS) {
-    spent += spendersByTerm(nodes, kind, view).size;
-    total += view.byKind(kind).length;
-  }
-  return { spent, total };
-}
-
 export function VocabularyPane({
   nodes,
   view,

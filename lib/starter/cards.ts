@@ -1,5 +1,5 @@
 /* ============================================================
-   The guided path — card content, one set per output type
+   The workspace — card content, one set per output type
    Doc 2 §5.2 fixes the five nodes and §5.3 fixes what the first
    choice may move: "Non muove metriche, non cambia la topologia,
    cambia il contenuto delle card." So everything that varies with
@@ -350,7 +350,7 @@ const NO_CRITERIA = "acceptance-criteria";
  * The debugger's version carries the iteration cap.
  *
  * The cap is written into `params.max_iterations` and into the sentence of the `spec` that
- * tells the agent when to stop, so two runs of the guided path with different slider
+ * tells the agent when to stop, so two runs of the workspace with different slider
  * positions produce two different documents. Doc 1 §4 makes the ref the key to the
  * content: shipping both under `…-debugger@1.0.0` would put two contents behind one pin,
  * which is the failure the version exists to prevent.

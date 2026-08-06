@@ -12,7 +12,7 @@ import { SourcePanel } from "@/components/ui/SourcePanel";
    and build a blueprint of them."
 
    The worked example teaches the shape on one starter and hands
-   back that example as files. Four choices over one starter
+   back that example as files. Three choices over one starter
    cannot reach a goal that is not "build software", and most
    readers arrive with a different one. This is the generalisation:
    the same vocabulary and the same order of decisions, addressed

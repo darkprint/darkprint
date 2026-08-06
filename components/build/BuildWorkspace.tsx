@@ -75,15 +75,28 @@ import { WorkspaceStage } from "./WorkspaceStage";
 
    Fix round 1, FIX 2: that heading used to read "Your blueprint", which is also
    `ScoreStrip`'s own eyebrow (`ScorePanel.tsx`) — rendered 44px below it, inside
-   `WorkspaceStage`, on every one of the five tabs. Two prints of the same three words that
-   close together read as a mistake rather than as agreement, and a third copy sits behind
-   the Score tab (`ScorePanel.tsx`'s own heading there, unaffected by this change — it heads
-   its own tabpanel and is never on screen at the same time as this one). The fix is this
-   heading's OWN wording, not suppressing `ScoreStrip`'s: the strip's eyebrow answers "whose
-   blueprint are these figures about", which is the right label for a row of figures and the
-   wrong one for the section around it. "Your workspace" names the same section this docblock
-   already describes — the graph, the tabs, the score strip and the three controls, one
-   section — without echoing the strip's own label.
+   `WorkspaceStage`. Two prints of the same three words that close together read as a
+   mistake rather than as agreement. The fix is this heading's OWN wording, not suppressing
+   `ScoreStrip`'s: the strip's eyebrow answers "whose blueprint are these figures about",
+   which is the right label for a row of figures and the wrong one for the section around
+   it. "Your workspace" names the same section this docblock already describes — the graph,
+   the tabs, the score strip and the three controls, one section — without echoing the
+   strip's own label.
+
+   Fix round 2: this docblock used to add a third copy to the count, `ScorePanel.tsx`'s own
+   heading behind the Score tab, and claimed it "is never on screen at the same time as this
+   one" — checked against the live page and found false. `ScoreStrip` rendered
+   unconditionally at the time, including on the Score tab itself, so its eyebrow and
+   `ScorePanel`'s heading — both still "Your blueprint"; FIX 2 above only ever touched this
+   file's OWN heading — were on screen together there: measured at y=641 and y=701, 60px
+   apart, same mono register, the exact "two prints... read as a mistake" defect this
+   docblock already names one paragraph up, just a pair the first pass missed.
+   `WorkspaceStage.tsx` now hides `ScoreStrip` while `open === "score"` (see that file's own
+   docblock at the `ScoreStrip` render), so the strip prints on four of the five tabs and the
+   two "Your blueprint" copies are never simultaneous. This file's OWN "Your workspace"
+   heading is untouched by any of this — different words from either of the other two, and
+   unconditionally on screen throughout, because it names the section rather than the
+   figures in it.
 
    ── The route-box replaces four deleted teaching steps, not the two exits ──
    Spec §1.2: three of the deleted path's eight steps re-taught `/what-a-blueprint-is`'s

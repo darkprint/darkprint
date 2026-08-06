@@ -41,7 +41,7 @@ TypeScript strict.
 
 | route | what it is |
 |---|---|
-| `/build` | a 7-step guided path over 80 pre-resolved combinations, ending in a download |
+| `/build` | a workspace: one graph as the stage, three simultaneous choices, five tabs, two co-equal exits over 80 pre-resolved combinations |
 | `/upload` | validates and scores a bundle **in the tab**, and stops there |
 | `/install` | previews per-client MCP setup behind tabs (`InstallTabs`); coming soon, no server exists yet |
 
@@ -167,7 +167,9 @@ on the server).
 | `components/home/graph.test.ts` | labels render ≥10 CSS px on the narrowest phone frame |
 | `components/home/roles-labels.test.ts` | **renders the figure and compares label boxes** — no overlap, nothing clipped |
 | `components/ui/autonomy-surfaces.test.ts` | no alarm colour near the human-presence glyph; `contributions` passed at every call site |
-| `components/build/path.test.ts` | doc 2 §2.5 copy rules across 93 files |
+| `components/build/workspace.test.ts` | doc 2 §2.5 copy rules, walked over `components/` trees, `app/**/page.tsx` and two named `lib/` files rather than a fixed count that would go stale; also every one of the 80 combinations resolving, exporting and passing `lintAttractor` |
+| `components/build/stage-labels.test.ts` | **renders `/build`'s stage and compares label boxes**, at six widths — no node or edge name half-drawn |
+| `components/panes/archive-labels.test.ts` | the same technique over all nine archive schematics — no block stranded in empty canvas |
 | `components/site/nav.test.ts` | header and footer agree; every top-level route is in the nav |
 
 `roles-labels.test.ts` **covers the roles figure only.** Generalising it is

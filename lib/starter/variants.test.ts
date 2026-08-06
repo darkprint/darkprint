@@ -1,5 +1,5 @@
 /* ============================================================
-   The guided path — the variant engine, checked against the
+   The workspace — the variant engine, checked against the
    engine that scores it.
 
    Doc 2 §5.7 is the reason this file walks `STARTER_VARIANTS`
@@ -103,7 +103,7 @@ const AT_THREE = (variant: StarterVariant): StarterChoices => ({
 /**
  * The same bundle with the `max_iterations` line deleted from whichever card declares it.
  *
- * A control rather than a variant: nothing the guided path can produce looks like this, and
+ * A control rather than a variant: nothing the workspace can produce looks like this, and
  * that is the point. It is what makes "the cap is load-bearing" a checked statement.
  */
 function stripIterationCap(bundle: Bundle): Bundle {
@@ -836,7 +836,7 @@ describe("doc 2 §5.6: what the slider actually moves", () => {
    6. The surfaces a page will read
    ============================================================ */
 
-describe("the surfaces the guided path reads", () => {
+describe("the surfaces the workspace reads", () => {
   it("lists eight variants, four outputs by two approval modes", () => {
     expect(STARTER_VARIANTS).toHaveLength(8);
     expect(new Set(STARTER_VARIANTS.map((v) => v.output)).size).toBe(STARTER_OUTPUTS.length);

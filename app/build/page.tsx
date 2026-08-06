@@ -138,9 +138,9 @@ export default function BuildPage() {
           lead="Start from the five-node starter and change it with three choices. Every choice rewrites the graph, the cards and the vocabulary together."
         />
         <p className="mt-4 text-[15px] leading-relaxed text-muted">
-          Each of the three sits in the panel under the graph, and every score on the page
-          is computed in this tab, by the analysis the gallery runs, on the exact bytes you
-          download. Nothing is uploaded.
+          Each of the three choices sits in the panel under the graph, and every score on
+          the page is computed in your browser, by the analysis the gallery runs, on the
+          exact bytes you download. Nothing is uploaded.
         </p>
         {/* Doc 2 §5.7's count, stated rather than claimed: the number is the length of the
             enumeration the build just walked through the engine. */}

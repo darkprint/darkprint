@@ -122,8 +122,9 @@ that directory.
 - **The registry, read-only.** Browse blueprints and nodes, open any card, read the ontology.
 - **Download.** Nine bundles regenerate from source at build time and are served as folders.
 - **`/upload`.** Validates and scores a bundle **in the browser tab** and stops there.
-- **`/build`.** A seven-step guided path over 80 pre-resolved combinations, ending in a
-  download, with a switch that demonstrates the criteria leak live.
+- **`/build`.** A workspace over 80 pre-resolved combinations: one graph as the stage,
+  three simultaneous choices below it, five tabs behind it (Graph, DOT, Cards, Vocabulary,
+  Score), and two co-equal exits — a download, or a brief for the reader's own agent.
 
 ### What is NOT built — and the site says so
 

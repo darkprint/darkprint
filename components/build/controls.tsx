@@ -17,7 +17,7 @@ import { MAX_ITERATIONS, MIN_ITERATIONS, type RadioOption } from "./choices";
    A fourth control used to live here, `DemoSwitch`: doc 2 §5.4's
    demonstration, mounted on the step that taught the absent edge.
    It went out with the steps (restructure spec §2.1). The
-   demonstration itself did not go anywhere — `/what-it-isnt`
+   demonstration itself did not go anywhere — `/spec/card`
    builds the leaked graph and reads the same figures off the
    engine (`components/explain/starter-isolation.ts`) — but it is
    no longer a control sitting beside the three that do persist,

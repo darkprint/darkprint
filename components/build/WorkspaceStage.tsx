@@ -403,13 +403,26 @@ export function WorkspaceStage({
             behind the `Score` tab, so the three figures survive every tab switch instead
             of only the one tab a reader happens to have open. `aria-hidden` by its own
             design (`ScorePanel.tsx`) — the live region above carries the accessible
-            reading of the same figures. */}
-        <ScoreStrip
-          {...(autonomy === undefined ? {} : { autonomy })}
-          {...(security === undefined ? {} : { security })}
-          budget={state.budget}
-          errors={state.errors}
-        />
+            reading of the same figures.
+
+            Final review finding: hidden here specifically while `open === "score"`. This
+            strip's own eyebrow and `ScorePanel`'s own heading, four lines below in the
+            Score tabpanel, are both the same three words, "Your blueprint"
+            (`ScorePanel.tsx`) — and with this strip rendering unconditionally, a reader who
+            opened the Score tab was shown both at once, measured at y=641 and y=701, 60px
+            apart in the same mono register. `ScorePanel`'s heading is the accessible one
+            (this strip is `aria-hidden`) and it already sits at the top of the tabpanel the
+            reader just opened, so it is this decorative copy that steps aside — the same
+            call already made for `scoreAnnouncement` immediately above, which is reachable
+            everywhere except this same tab for this same reason. */}
+        {open !== "score" && (
+          <ScoreStrip
+            {...(autonomy === undefined ? {} : { autonomy })}
+            {...(security === undefined ? {} : { security })}
+            budget={state.budget}
+            errors={state.errors}
+          />
+        )}
       </div>
 
       {/* Five bodies, always rendered — see the header docblock's "every tab body renders,

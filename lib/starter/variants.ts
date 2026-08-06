@@ -1,5 +1,5 @@
 /* ============================================================
-   The guided path — the variant engine
+   The workspace — the variant engine
    Doc 2 §5.3, §5.4, §5.5 and §5.7: three choices in, one complete
    `Bundle` out. Pure, total and deterministic — no clock, no
    randomness, no filesystem — so the same choices always produce

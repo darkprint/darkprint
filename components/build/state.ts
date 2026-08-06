@@ -29,7 +29,7 @@
    so there is now exactly one bundle per set of choices and the
    reader is looking at the bytes they are about to take away.
    `lib/starter/variants.ts` still knows how to write the leaked
-   graph; the surface that asks it to is `/what-it-isnt`, through
+   graph; the surface that asks it to is `/spec/card`, through
    `components/explain/starter-isolation.ts`.
    ============================================================ */
 
