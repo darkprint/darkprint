@@ -109,20 +109,27 @@ export default function McpPage() {
         </p>
       </div>
 
-      {/* Held to the same `--measure` the prose above and below it uses, which is a change
-          the split forced. `InstallTabs` reserves 189px of panel height whichever tab is
-          open, so that switching from Claude Code's one-line command to Claude Desktop's
-          eight-line JSON does not shove everything below it down the page mid-read. That
-          reservation was invisible on `/install`, where the panel sat in a 342px grid
-          column beside another panel and the tallest snippet nearly filled it.
+      {/* Held to the same `--measure` the prose above and below it uses, and centred in the
+          column on the author's instruction 2026-08-07.
 
-          Full-width it is not invisible at all: the one-line tab leaves a void the width of
-          the page under three words, which reads as content that failed to load rather than
-          as space held for a taller sibling. The measure does not remove the reservation —
-          it is doing real work and stays — it just stops the empty part being the largest
-          thing on the route. The widest snippet line is about 40 monospace characters,
-          comfortably inside 36rem, so nothing is being squeezed to buy this. */}
-      <InstallTabs className="mt-10 max-w-[var(--measure)]" />
+          `InstallTabs` reserves 189px of panel height whichever tab is open, so switching
+          from Claude Code's one-line command to Claude Desktop's eight-line JSON does not
+          shove everything below it down the page mid-read. That reservation was invisible
+          on `/install`, where the panel sat in a 342px grid column beside another panel and
+          the tallest snippet nearly filled it. Full width it was not invisible at all: a
+          void the width of the page under three words reads as content that failed to load
+          rather than as space held for a taller sibling. The measure does not remove the
+          reservation — it is doing real work and stays — it stops the empty part being the
+          largest thing on the route. The widest snippet line is about 40 monospace
+          characters, comfortably inside 36rem, so nothing is squeezed to buy it.
+
+          `mx-auto` is what the measure was missing. A 576px box hard against the left edge
+          of a 1200px column reads as a block that failed to reach its width, because every
+          other element on the route does reach it; the same box centred reads as a panel
+          sized to its contents. Measured before and after: 576 in 1200, left edge 64 → 344.
+          The tab row and the snippet stay left-aligned inside it, because centred code is
+          unreadable and a tablist that recentres as labels change is a moving target. */}
+      <InstallTabs className="mx-auto mt-10 max-w-[var(--measure)]" />
 
       <div className="mt-10">
         <p className="text-[15px] leading-relaxed text-muted">
