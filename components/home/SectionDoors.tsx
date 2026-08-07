@@ -68,39 +68,24 @@ const COUNTS: { value: number; label: string }[] = [
   { value: PLATFORM_STATS.terms, label: "ontology terms" },
 ];
 
-/**
- * What `/build` is, in three figures — the build door's answer to `COUNTS`.
- *
- * Written here rather than imported, and each one says where it is read from. The choice
- * groups and the enumeration live in `components/build/`, which is `"use client"` and pulls
- * `lib/core` and `lib/starter` behind it; importing them for three integers would put the
- * whole authoring surface in the landing's bundle and in `beats.test.ts`'s render. The
- * comments are the check: all three are one grep away.
- *
- * The first figure used to be "8 steps", read off a `STEPS` table that no longer exists:
- * `/build` is one workspace now and the eight-step path was deleted with it. What replaced
- * it is the figure that survived the restructure unchanged, because it is a property of the
- * generator rather than of the page drawn over it.
- */
-const PATH: { value: number; label: string }[] = [
-  /* components/build/choices.ts, the three controls under the stage: the output kind, the
-     approval mode, the iteration cap. */
-  { value: 3, label: "choices" },
-  /* `ALL_COMBINATIONS` in components/build/choices.ts: 4 output kinds × 2 approval modes ×
-     10 caps, every one of which app/build/page.tsx resolves through the engine at build
-     time. */
-  { value: 80, label: "combinations" },
-  /* `exportBundle` writes one folder, whatever the eighty combinations resolve to. */
-  { value: 1, label: "bundle" },
-];
+/* `PATH` stood here: `{3, choices}`, `{80, combinations}`, `{1, bundle}`, the build
+   door's answer to `COUNTS`. Deleted with its mount on 2026-08-07.
+
+   Its docblock argued each figure was written out rather than imported, because the
+   choice groups live in `components/build/`, which is `"use client"` and pulls
+   `lib/core` and `lib/starter` behind it — three integers were not worth putting the
+   whole authoring surface in the landing's bundle. That reasoning still holds for
+   anything that wants those numbers on this page later, which is why it is kept here
+   rather than deleted with them. `components/build/choices.ts` is where they live. */
 
 /**
- * The figures row, as one component rather than as two copies of it.
+ * The figures row.
  *
- * The whole point of this pass is that the two doors present evidence in the same
- * register; two hand-typed rows drift the first time one of them is touched, and the
- * drift is invisible until somebody puts the cards side by side, which is the state this
- * replaced. One component means "same register" is a property of the code.
+ * It was written as one component rather than two copies because the two doors presented
+ * evidence in the same register, and two hand-typed rows drift the first time one of them
+ * is touched. Only the gallery door carries figures since 2026-08-07, so the drift it was
+ * guarding against has no second row to happen between — the component stays a component
+ * because the rendering is worth naming, not because it is shared.
  */
 function Figures({ items }: { items: readonly { value: number; label: string }[] }) {
   return (
@@ -210,7 +195,15 @@ export function SectionDoors() {
             href="/build"
             cta="Open the workspace"
           >
-            <Figures items={PATH} />
+            {/* `<Figures items={PATH} />` — 3 choices, 80 combinations, 1 bundle — stood
+                here until 2026-08-07, when the author asked it out.
+
+                It was evidence of the wrong kind for this door. The gallery's figures count
+                things a reader can go and look at, and its caption says they are exact; this
+                door's counted the SHAPE OF A GENERATOR, and "80 combinations" is a fact
+                about the code behind the workspace rather than about anything a reader
+                receives. The caption below already answers the question this door is
+                actually asked — what do I end up holding — and it answers it in nouns. */}
             {/* What the three choices hand over. The gallery door's caption says its figures
                 are exact; this one says what its figures produce, which is the equivalent
                 question for a workspace rather than an archive. */}
