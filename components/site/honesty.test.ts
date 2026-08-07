@@ -36,7 +36,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import SpecCardPage from "@/app/spec/card/page";
-import TheClimbPage from "@/app/towards-a-dark-factory/the-climb/page";
 import SkillPage, { metadata as skillMetadata } from "@/app/skill/page";
 import McpPage, { metadata as mcpMetadata } from "@/app/mcp/page";
 import UploadPage from "@/app/upload/page";
@@ -125,23 +124,20 @@ const MCP_METADATA_DESCRIPTION = mcpMetadata.description ?? "";
  */
 const UPLOAD_PAGE = renderToStaticMarkup(createElement(UploadPage as never));
 const WHICH_TASKS = renderToStaticMarkup(createElement(WhichTasksChecks));
-/**
- * The last page of the climb route, whole, for the one paragraph that says what this site
- * is not.
- *
- * It was guarded by a source comment reading "Do not fold it" and by nothing else. That
- * comment is the only reason it survived two length passes: `/what-it-isnt` carried the
- * other copy of the same statement and was deleted with the route, so this is now the sole
- * place the route says there are no accounts, nothing publishes and there is no MCP server
- * — on the page of the two most likely to read as a pitch, since it is the one that
- * narrates a working pipeline for four sections before it gets there. A comment is not a
- * guard. This is.
- *
- * The whole page rather than a component, because the paragraph is written in the page and
- * extracting it into a component to make it testable would move the sentence for the
- * test's convenience, which is how a claim ends up somewhere nobody reads it.
- */
-const THE_CLIMB = renderToStaticMarkup(createElement(TheClimbPage as never));
+/* `THE_CLIMB` stood here, rendering `/towards-a-dark-factory/the-climb` whole for the one
+   paragraph that said what this site is not: no accounts, nothing publishes, no MCP server.
+   The author deleted that page on 2026-08-07 and the row went with it.
+
+   This file's own header says a deliberate removal takes its entry out in the same commit
+   with the reason in the message, so this is that reason. The paragraph was never a general
+   statement the site owed a reader from anywhere — it was that page's own qualifier, and
+   the ledger row said as much: it existed because the page "narrates a working autonomous
+   pipeline for four sections" and an account of somebody else's factory read as a
+   description of this one is the misreading doc 2 §0.4 exists to stop. No such narration
+   survives. What DOES survive is checked and always was: `/skill` refuses the account, the
+   private draft, publishing and the live push; `/mcp` refuses the server in three
+   registers; `/upload` refuses all of it again beside the dropzone. Nothing moved to cover
+   a gap, because the deletion did not open one. */
 /**
  * The scoring panel `/reading-the-radar` mounts (PROJECT.md §3.4; moved off `/spec` onto
  * `/spec/scoring` by the lifecycle-scoring pass, spec §4, and moved again when the IA
@@ -357,15 +353,6 @@ const CLAIMS: Claim[] = [
      to guard. If the composite-node idea is ever described again anywhere, this entry
      comes back with it. */
 
-  /* ---- /towards-a-dark-factory/the-climb ---- */
-  {
-    surface: "/towards-a-dark-factory/the-climb · the closing section",
-    why: "the only place the climb route states its limits. `/what-it-isnt` carried the other copy and was deleted with the route, and this paragraph closes the one page on the site that narrates a working autonomous pipeline for four sections — an account of somebody else's factory read as a description of this one is the exact misreading doc 2 §0.4 exists to stop. It sits in the open under two buttons, so it qualifies something printed in the open and has to be printed in the open with it",
-    says: "publishing is not built, there are no accounts, no votes and no telemetry, and there is no mcp server to point a client at yet",
-    where: "open",
-    html: THE_CLIMB,
-  },
-
   /* ---- /mcp ----
      `/install` split in two on 2026-08-07 and this is the unbuilt half, now a route of its
      own with an `h1`, a tab strip of client configs and a command a reader could copy. It
@@ -395,6 +382,13 @@ const CLAIMS: Claim[] = [
     surface: "/mcp · beside the tab strip",
     why: "the sentence above is prose a reader can scroll past; this is the marker on the snippet itself. A reader who arrives from the landing's hero chip has already seen one badge on that chip and is looking for the command, not the paragraph, and the command is the thing that would be copied into a terminal. `InstallTabs` prints its own `ComingSoonBadge` inside the tab panel for exactly this reason",
     says: "coming soon",
+    where: "open",
+    html: MCP_PAGE,
+  },
+  {
+    surface: "/mcp · the retrieval paragraph",
+    why: "added 2026-08-07 when the author gave the server a scope: a Claude Code session searching an embedded index of published blueprints and cards by the task in front of it. That paragraph is the most detailed description of unbuilt machinery anywhere on this site — detailed enough to read like a changelog entry for something shipped — and detail is exactly what makes a future capability read as a present one. The lead above it already says the server is not built; this closing clause is the same refusal attached to the specific new claim, because a reader who skimmed to this paragraph for the interesting part never read the lead",
+    says: "neither the index nor the search exists yet",
     where: "open",
     html: MCP_PAGE,
   },
@@ -516,7 +510,6 @@ describe("the surfaces the ledger is read off", () => {
       ["/spec/card", SPEC_CARD],
       ["the scoring panel", SCORING],
       ["the four checks", WHICH_TASKS],
-      ["/towards-a-dark-factory/the-climb", THE_CLIMB],
       ["the starter's canvas", STARTER],
       ["/build · download exit", DOWNLOAD_STEP],
       ["/build · agent-brief exit", AGENT_HANDOFF],

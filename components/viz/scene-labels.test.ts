@@ -39,8 +39,6 @@ import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionLevels } from "@/components/home/SectionLevels";
 import { SectionRoles } from "@/components/home/SectionRoles";
 import { GraphFigure } from "@/components/learn/PartFigures";
-import { IsolationWall } from "@/components/howto/IsolationWall";
-import { PhaseStrip } from "@/components/howto/PhaseStrip";
 import { EnforcementFigure } from "@/components/spec/EnforcementFigure";
 import { LatticeFigure } from "@/components/spec/LatticeFigure";
 
@@ -187,16 +185,12 @@ const ROSTER: readonly SceneEntry[] = [
     frames: 2,
     render: () => framesOf(graphFigures()),
   },
-  {
-    files: ["components/howto/IsolationWall.tsx"],
-    frames: 1,
-    render: () => framesOf(createElement(IsolationWall)),
-  },
-  {
-    files: ["components/howto/PhaseStrip.tsx"],
-    frames: 4,
-    render: () => framesOf(createElement(PhaseStrip)),
-  },
+  /* `components/howto/IsolationWall.tsx` (1 frame) and `components/howto/PhaseStrip.tsx`
+     (4 frames) sat here until 2026-08-07. Both were mounted only on
+     `/towards-a-dark-factory/the-climb`, the author deleted that page, and both files went
+     with it — so the entries came out rather than being left pointing at modules nothing
+     renders. Exactly the precedent the note below records. `components/howto/` is gone
+     entirely; `RoutePager` and `route.ts` went the same way, for the same reason. */
   /* `components/spec/SpecLayers.tsx` (DRW-101, the three stacked lanes) used to sit here.
      It was mounted only on `/spec`, the IA pass deleted that route, and the author asked
      for that figure and its caption off the site in the same instruction, so the entry
@@ -256,7 +250,15 @@ describe("the guard covers every scene the site draws", () => {
     // discs on a rail ("it has wrong concepts assigned to nodes") and was rebuilt as a
     // braced ledger of DOM text. The walk still finds every file that draws a scene; there
     // is one fewer file that draws one.
-    expect(DRAWERS.length).toBeGreaterThan(7);
+    //
+    // 6 later the same day, and these two are the clearest case the comment above
+    // describes: `IsolationWall.tsx` and `PhaseStrip.tsx` were not rebuilt or refactored,
+    // they were DELETED, because the author deleted the only page that mounted them
+    // (`/towards-a-dark-factory/the-climb`). A floor of 7 held against 6 files would be
+    // the case failing for the one reason it is allowed to — a scene stopped being drawn —
+    // so it comes down to 5 with the deletion named, which is the difference between
+    // lowering a floor and lowering it to make a case pass.
+    expect(DRAWERS.length).toBeGreaterThan(5);
     expect(DRAWERS).toContain("components/home/SectionRoles.tsx");
     expect(DRAWERS).toContain("components/spec/LatticeFigure.tsx");
   });

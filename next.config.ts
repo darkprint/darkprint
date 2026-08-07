@@ -71,9 +71,17 @@ const nextConfig: NextConfig = {
       { source: "/parts/:slug", destination: "/nodes", permanent: true },
       { source: "/ontologies", destination: "/ontology", permanent: true },
       { source: "/ontologies/:slug", destination: "/ontology", permanent: true },
+      /* Repointed 2026-08-07: this landed on `/towards-a-dark-factory/the-climb` until the
+         author deleted that page, and a 308 to a 308 costs every link written before §4.2
+         two hops. Both of these now land on the parent, which is the whole route. */
       {
         source: "/how-to-build-a-dark-factory",
-        destination: "/towards-a-dark-factory/the-climb",
+        destination: "/towards-a-dark-factory",
+        permanent: true,
+      },
+      {
+        source: "/towards-a-dark-factory/the-climb",
+        destination: "/towards-a-dark-factory",
         permanent: true,
       },
       {

@@ -42,7 +42,6 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import nextConfig from "../../next.config";
-import { CLIMB_ROUTE } from "@/components/howto/route";
 import { SPEC_SEQUENCE } from "@/components/spec/sequence";
 
 import { NAV } from "./SiteHeader";
@@ -364,12 +363,12 @@ describe("the nav is a complete map of the routes", () => {
 
   /**
    * Spec §4 gave the spec sequence three child routes and `/towards-a-dark-factory` two,
-   * and put one item per sequence in the header. The climb route has one child now —
-   * `/which-tasks` was merged into its parent on 2026-08-07 — so this covers four routes
-   * rather than five, and it is the same claim: a sub-route reachable from one pager and
-   * nothing else disappears the moment somebody edits that pager, so the footer has to
-   * carry it. `/towards-a-dark-factory/the-climb` moved into the Learn column when the
-   * "The route" column was deleted, which is where this now finds it.
+   * and put one item per sequence in the header. The climb route has NO children now:
+   * `/which-tasks` was merged into its parent on 2026-08-07 and `/the-climb` was deleted
+   * later the same day, so this covers the three spec children and nothing else. The claim
+   * is unchanged for them — a sub-route reachable from one pager and nothing else
+   * disappears the moment somebody edits that pager, so the footer has to carry it — and
+   * the climb route simply no longer has a sub-route to make it about.
    *
    * Two segments or fewer is not required here, which is why stop 00 of the spec
    * sequence is not in this check after the IA pass moved it to `/what-a-blueprint-is`.
@@ -377,7 +376,7 @@ describe("the nav is a complete map of the routes", () => {
    */
   it("carries every sub-route of the two sequences in the footer", () => {
     const linked = new Set(FOOTER.map((link) => split(link.href).path));
-    const children = [...SPEC_SEQUENCE, ...CLIMB_ROUTE]
+    const children = [...SPEC_SEQUENCE]
       .map((stop) => stop.href)
       .filter((href) => href.split("/").length > 2);
     expect(children.filter((href) => !linked.has(href))).toEqual([]);
@@ -467,7 +466,9 @@ describe("the collapsed menu stays usable", () => {
  */
 describe("the routes that were retired still answer", () => {
   const RENAMED: [string, string][] = [
-    ["/how-to-build-a-dark-factory", "/towards-a-dark-factory/the-climb"],
+    ["/how-to-build-a-dark-factory", "/towards-a-dark-factory"],
+    /* Deleted 2026-08-07 on the author's instruction; the route is one page again. */
+    ["/towards-a-dark-factory/the-climb", "/towards-a-dark-factory"],
     /* Both of these land on the parent, and the first one does NOT chain through the
        second. `/which-tasks` was 308'd to `/towards-a-dark-factory/which-tasks` by §4.2;
        that child was merged into its own parent on 2026-08-07, and pointing the older

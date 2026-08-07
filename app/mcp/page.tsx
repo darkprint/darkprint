@@ -58,7 +58,9 @@ export default function McpPage() {
         lead="Not built yet: this is what setup will look like once the registry has an MCP server to point a client at."
       />
 
-      <div className="mt-10 max-w-[var(--measure)]">
+      {/* Full width rather than `--measure`, on the author's instruction 2026-08-07. Both
+          paragraphs on this route run the whole column. */}
+      <div className="mt-10 flex flex-col gap-4">
         <p className="text-[15px] leading-relaxed text-muted">
           An MCP server here will expose every published blueprint and node card as a
           resource an agent can read directly, from the same registry{" "}
@@ -70,6 +72,40 @@ export default function McpPage() {
           </Link>{" "}
           already browses by hand. Nothing on this page reaches a server today, because
           there is no server and no package behind the command.
+        </p>
+
+        {/* ── What the server is actually for ──
+            The author, 2026-08-07: "I want to clear the scope of the MCP that is that a
+            claude code session can look in the RAG that I'll implement that embededs
+            blueprints and node, and claude code, can access and leverage published
+            blueprint and nodes that can be helpful for the task the user asked to solve
+            to claude code."
+
+            That is a materially different claim from the one this page made before, and
+            the difference is worth stating rather than smoothing over. "Expose every
+            blueprint as a resource" describes a directory a client can list and read by
+            name — useful only to somebody who already knows which blueprint they want.
+            What the author is describing is retrieval: the session starts from the task,
+            not from a blueprint name, and the registry answers with the graphs and cards
+            that bear on it. The reader arriving here is holding a task, not a slug, so
+            the second is the sentence that tells them what this is for.
+
+            Tense is the whole discipline in this paragraph. The RAG does not exist and
+            the author said so in the same breath ("the RAG that I'll implement"), so every
+            verb here is future or conditional and the page's lead has already said the
+            server is not built. This is the one place on the site where a description of
+            unbuilt machinery is detailed enough to read like a changelog entry, which is
+            exactly why it sits under that lead and above a badge rather than on its own. */}
+        <p className="text-[15px] leading-relaxed text-muted">
+          The point is retrieval, not a file listing. The registry will be embedded: every
+          published blueprint and every node card, indexed so that a Claude Code session
+          can search it by the work in front of it rather than by name. You describe the
+          task; the server returns the graphs and cards that bear on it, and the session
+          reads them as context and reuses what fits: a topology someone has already
+          argued for, a card whose{" "}
+          <code className="font-mono text-[13px] text-copper-line">cannot</code> already
+          names the thing you were about to get wrong. Neither the index nor the search
+          exists yet.
         </p>
       </div>
 
@@ -88,7 +124,7 @@ export default function McpPage() {
           comfortably inside 36rem, so nothing is being squeezed to buy this. */}
       <InstallTabs className="mt-10 max-w-[var(--measure)]" />
 
-      <div className="mt-10 max-w-[var(--measure)]">
+      <div className="mt-10">
         <p className="text-[15px] leading-relaxed text-muted">
           The half of setup that does run is{" "}
           <Link

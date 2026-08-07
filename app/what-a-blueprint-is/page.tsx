@@ -590,7 +590,11 @@ export default function WhatABlueprintIsPage() {
               sentence off twice. */}
           <div className="flex flex-col gap-3">
             <PanelHeading>A guardrail is a shape, not a sentence</PanelHeading>
-            <p className={`prose-lane ${PROSE}`}>
+            {/* No `.prose-lane` here, on the author's instruction 2026-08-07: this
+                paragraph and "Why the rubric is kept away" below both run the full width of
+                the column. The measure still governs the rest of the page's body prose —
+                this is two named exceptions, not a repeal. */}
+            <p className={PROSE}>
               &ldquo;Be careful with the database&rdquo; in a prompt is a wish. A guardrail
               is a constraint with a place: on what arrives, on what a node may reach for,
               or on what leaves. A blueprint is a file, so it writes constraints down
@@ -641,7 +645,10 @@ export default function WhatABlueprintIsPage() {
               node being judged. */}
           <div className="flex flex-col gap-3">
             <PanelHeading>Why the rubric is kept away</PanelHeading>
-            <p className={`prose-lane ${PROSE}`}>
+            {/* Full width, on the author's instruction 2026-08-07 — the other of the two
+                named exceptions to `.prose-lane` on this page. See the guardrail paragraph
+                above. */}
+            <p className={PROSE}>
               A verdict is worth something because the node doing the work never saw what
               it would be judged against. That is a property of the topology, so it is
               checkable, and the check holds whoever wrote the graph: no path may carry{" "}

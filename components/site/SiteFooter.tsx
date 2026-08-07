@@ -89,9 +89,9 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
       { href: "/reading-the-radar", label: "How a blueprint is graded" },
       { href: "/build", label: "Design a blueprint" },
       { href: "/towards-a-dark-factory", label: "Towards a Dark Factory" },
-      // The route's second and last page, promoted out of a column of its own. See the
-      // note on the deleted "The route" column below.
-      { href: "/towards-a-dark-factory/the-climb", label: "The climb" },
+      // "The climb" stood here — the route's second and last page, promoted out of a
+      // column of its own. The author deleted that page on 2026-08-07, so the route is one
+      // page again and the row above is all of it.
       // Renamed with the header's row on 2026-08-07, and split with it later the same day
       // when the author asked for "two pages, one for the skill and one for the mcp".
       // Both moves had to happen in the same commit as the header's: `nav.test.ts` holds

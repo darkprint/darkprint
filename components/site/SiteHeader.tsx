@@ -261,26 +261,28 @@ export function SiteHeader() {
             </Link>
           ))}
 
-          <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-line xl:mx-2" />
+          {/* ── Learn sits beside Home, and the rule moved with it (2026-08-07) ──
+              The author: "The 'Learn' should be on the right of 'Home' in the Navbar, then
+              there is the separator '|'."
 
-          {REGISTRY.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cx(
-                "rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm",
-                isActive(item.href) ? "text-cyan" : "text-muted hoverable:hover:text-fg",
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
+              So the row now reads Home · Learn │ Blueprints · Nodes · Ontology · the two
+              setup routes, and the single divider has changed what it separates. It used to
+              split "where you are" from "what the registry holds"; it now splits the two
+              ways IN — the landing and the reading path — from the destinations themselves.
+              That is a defensible cut and arguably the better one: Learn is a menu of pages
+              about the site, and it never had much to do with the three registry indexes it
+              used to sit after.
 
+              The `<details>` lost `border-l border-line pl-3`, which was a second divider
+              doing the same job as the `<span>` below. Two rules in a nine-item row, one of
+              them implicit in a padding, was already one too many; with Learn adjacent to
+              Home it would have drawn a separator exactly where the author asked for none.
+              `relative` stays — the panel is positioned against it. */}
           <details
             ref={learnRef}
             open={learnOpen}
             onToggle={(e) => setLearnOpen(e.currentTarget.open)}
-            className="group relative ml-2 border-l border-line pl-3 xl:pl-4"
+            className="group relative"
           >
             <summary
               className={cx(
@@ -343,9 +345,25 @@ export function SiteHeader() {
             </div>
           </details>
 
-          {/* To the right of the trigger, on the author's instruction. A setup action is
-              not something to read, so it does not belong inside a menu called Learn, and
-              it is one item rather than the seven that made the row too wide. */}
+          {/* The row's one divider. It follows Learn now rather than Home — see the block
+              above the `<details>` for what it separates and why that changed. */}
+          <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-line xl:mx-2" />
+
+          {REGISTRY.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cx(
+                "rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm",
+                isActive(item.href) ? "text-cyan" : "text-muted hoverable:hover:text-fg",
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+
+          {/* After the registry, on the author's instruction. A setup action is not
+              something to read, so it does not belong inside a menu called Learn. */}
           {STANDALONE.map((item) => (
             <Link
               key={item.href}

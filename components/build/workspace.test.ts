@@ -358,7 +358,8 @@ const COPY_TREES = [
   "components/home",
   "components/hero",
   "components/spec",
-  "components/howto",
+  // `components/howto` stood here. The directory is gone: every file in it existed for
+  // `/towards-a-dark-factory/the-climb`, which the author deleted on 2026-08-07.
   "components/viz",
   "components/explain",
   "components/site",

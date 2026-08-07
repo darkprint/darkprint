@@ -6,12 +6,28 @@ import { WhichTasksChecks } from "@/components/explain/WhichTasksChecks";
 import { WhichTasksExamples } from "@/components/explain/WhichTasksExamples";
 import { WhichTasksGlance } from "@/components/explain/WhichTasksGlance";
 import { WhichTasksRemedies } from "@/components/explain/WhichTasksRemedies";
-import { RoutePager } from "@/components/howto";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
-   Stop 1 of 2. One question, asked in two halves: where are you,
-   and is the work in front of you a candidate at all?
+   The whole route, as of 2026-08-07. One question, asked in two
+   halves: where are you, and is the work in front of you a
+   candidate at all?
+
+   ── It was "stop 1 of 2" until the author deleted stop 2 ──
+   `/towards-a-dark-factory/the-climb` is gone, and with it the four
+   sections narrating somebody else's working autonomous pipeline.
+   What that page cost is worth writing down, because the honesty
+   ledger lost a row to it: its closing section was the only place
+   the route stated its own limits, and the reason it needed to was
+   that it spent four sections narrating a factory that runs. This
+   page makes no such narration, so the row went out with the
+   argument for it rather than being relocated. `/skill`, `/mcp` and
+   `/upload` each carry their own refusals and always did.
+
+   Deleted with it, because nothing else mounted them: `RoutePager`,
+   `route.ts` and `CLIMB_ROUTE` (a pager needs two stops),
+   `PhaseStrip` and `IsolationWall` (its two figures). The same
+   pattern `SpecLayers.tsx` set when `/spec` went.
 
    ── The merge (2026-08-07), and what it reverses ──
    Redesign spec §4.2 made this route three pages on the author's
@@ -26,8 +42,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    So `/towards-a-dark-factory/which-tasks` is folded in whole —
    the glance figure, the eight worked tasks, the four questions and
    what to do with a no — and `#around` goes back to the account it
-   was always the risk section of. `components/howto/route.ts`
-   records the reasoning; `next.config.ts` carries the 308.
+   was always the risk section of. `next.config.ts` carries the 308.
 
    Two documented earlier decisions are reversed here and both are
    named rather than quietly overwritten:
@@ -56,8 +71,8 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    and a 14px `text-dim` line under the climb's `h1`. Three
    disclaimers do not fix a layout.
 
-   The rail is deleted (`RoutePager`), the climb's dim line is
-   folded into its own lead, and the sentence itself is now in the
+   The rail is deleted (`RoutePager`), the climb's dim line went
+   with the climb, and the sentence itself is now in the
    deck of this page, above everything: a dark factory is one shape
    a blueprint can take, and a graph with a person standing in it is
    a first-class blueprint shelved beside the rest. `SectionLevels`
@@ -78,7 +93,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    ── The running order ──
    hero → the ladder → the figure that asks the four questions →
    eight worked tasks → the four questions in full → what to do with
-   a no → the two exits and the pager. Every band is a `border-t`
+   a no → the two exits. Every band is a `border-t`
    and a change of ground, which is the device the other page of
    this route already uses at every seam.
    ============================================================ */
@@ -89,7 +104,6 @@ export const metadata: Metadata = {
     "Five levels of working with agents, where most teams actually sit, and the four questions that decide whether a task belongs in a pipeline nobody is watching. The gap between level 2 and level 5 is architectural and organisational, which makes it a design problem.",
 };
 
-const HERE = "/towards-a-dark-factory";
 
 const INLINE =
   "font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan";
@@ -196,12 +210,14 @@ export default function TowardsPage() {
       <section className="border-t border-line bg-void py-16 sm:py-20">
         <div className="container-page flex flex-col gap-10">
           {/* Kept, against the proposal that folded this route to two pages, which listed
-              it as a duplicate of the two buttons at the foot of `/the-climb`. They are on
-              a different page and this is the one a reader reaches first: a filter whose
-              only exit is "now read the account" leaves the reader who just answered yes
-              four times with nowhere to go. It is also the move that keeps this route a
-              feeder into the registry rather than a destination of its own, which is what
-              stops a special case reading as the headline. */}
+              it as a duplicate of the two buttons at the foot of `/the-climb`. That
+              argument has since won outright rather than been overruled: the author
+              deleted `/the-climb` on 2026-08-07, so these are no longer a duplicate of
+              anything — they are the route's only exit. A filter whose reader has just
+              answered yes four times has to have somewhere to go, and this is it. It is
+              also what keeps this route a feeder into the registry rather than a
+              destination of its own, which is what stops a special case reading as the
+              headline. */}
           <p className="prose-lane text-sm leading-relaxed text-muted">
             Four yeses and the task is a candidate. A yes has somewhere to go: the{" "}
             <Link href="/build" className={INLINE}>
@@ -213,7 +229,11 @@ export default function TowardsPage() {
             </Link>
             , whose authors settled the same four answers before drawing a node.
           </p>
-          <RoutePager href={HERE} />
+          {/* `RoutePager` stood here and is gone with the page it paged to. A two-stop
+              sequence minus one stop is not a one-stop sequence, it is no sequence, and an
+              arrow row reading "1 of 1" with both arrows dead is worse than no arrow row.
+              The component, `route.ts` and `CLIMB_ROUTE` were deleted with it; nothing else
+              mounted them. */}
         </div>
       </section>
     </>
