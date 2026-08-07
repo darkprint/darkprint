@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "app/globals.css"
+        ],
+        "createdAt": "2026-08-07T06:37:51.403Z",
+        "reason": "Author-confirmed: .bp-grid is the cyanotype graticule for blueprint sheets, the rule's own carve-out for blueprint/measurement surfaces. Load-bearing per architecture/website.md."
+      }
+    ]
+  }
+}

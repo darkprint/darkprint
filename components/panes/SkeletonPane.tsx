@@ -65,23 +65,42 @@ import { CARD_BLOCKS, type PaneAbsence, type PaneFocus, type PaneModel } from ".
    a field of the card and opens onto nothing.
    ============================================================ */
 
-/* ── Why this pane is amber and not cyan ──
+/* ── Why this pane is copper and not cyan, and no longer amber ──
    The author's call, 2026-08-04: "I want also identity, behaviour and the subfield all in
    orange like Open card."
 
    It started with `Open card →` alone, on the rule `app/globals.css` records: amber marks
-   the things that leave the page. I stopped there and said so, because on the rest of the
-   site amber also means "not built yet" and I did not want the field marks reading as
-   warnings. The author looked at the result and wanted the block whole.
+   the things that leave the page. The first version stopped there and said so, because on
+   the rest of the site amber also means "not built yet" and the field marks should not
+   read as warnings. The author looked at the result and wanted the block whole — so the
+   whole block became amber, with a note conceding the tension rather than resolving it.
 
-   That is a defensible line and worth stating so nobody quietly re-blues it: this pane is
-   *about* a node, and everything in it points at one. The section labels name the card's
-   blocks, the `▪`/`◌` marks say which fields that card writes, and the link opens the
-   card's own page. One warm block reads as one subject, where a warm link inside a cool
-   panel read as an exception.
+   It is resolved now. `--color-copper-line` exists (globals.css), introduced for the node
+   card figure precisely so a warm register could exist that is NOT the "not built yet"
+   colour: oklch hue 46 against amber's 75, close enough to read as the same family and far
+   enough that nothing here can be mistaken for a `ComingSoonBadge`. The author asked for
+   orange; copper is the orange, and it costs none of amber's meaning.
 
-   The collision globals.css warns about does not arise here. `ComingSoonBadge` is a pill
-   and never renders in these panes, and nothing in this component states a limit. */
+   The reason the block is warm at all is unchanged and worth stating so nobody quietly
+   re-blues it: this pane is *about* a node, and everything in it points at one. The section
+   labels name the card's blocks, the `▪`/`◌` marks say which fields that card writes, and
+   the link opens the card's own page. One warm block reads as one subject, where a warm
+   link inside a cool panel read as an exception.
+
+   `/nodes/[...id]` paints its field names from the same token, so a reader moving between
+   the pane and the card's own page meets one colour for one idea. Changing either without
+   the other reopens a split that took two passes to close.
+
+   ── The one thing still amber, and why ──
+   `Open card →` keeps `text-amber`. It is the single control in this block that LEAVES the
+   page, and amber-with-an-arrow is the site's signal for exactly that — `.route-box`'s rule
+   at inline scale, which is one of amber's two sanctioned jobs. The author's instruction was
+   about identity, behaviour and the subfields; a departure link is none of those.
+
+   So the block now says two things with two colours instead of one colour with a footnote:
+   copper is *this describes the node*, amber is *this takes you somewhere*. The select above
+   it stays cool for the same reason it always did — it says "Jump to a node" but jumps
+   within these panes, so a departure colour on it would promise a trip that never happens. */
 export function SkeletonPane({
   paneNumber,
   showNumber = true,
@@ -181,7 +200,7 @@ export function SkeletonPane({
           id={`pane-${paneNumber}-heading`}
           className="flex items-center gap-2 font-mono text-xs text-muted"
         >
-          <span className="text-amber" aria-hidden>
+          <span className="text-copper-line" aria-hidden>
             ▦
           </span>
           {showNumber && <span className="text-dim">{paneNumber}</span>} The card skeleton
@@ -238,7 +257,7 @@ export function SkeletonPane({
                     blockIndex === 0 ? "border-b" : "border-y",
                   )}
                 >
-                  <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-amber">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-copper-line">
                     {block.label}
                   </span>
                   <span className="font-mono text-[11px] text-dim">{block.ref}</span>
@@ -259,7 +278,7 @@ export function SkeletonPane({
                         onToggle={(event) => onToggleRow(key, event.currentTarget.open)}
                         className={cx(
                           "border-l-2",
-                          chosen ? "border-amber bg-amber/10" : "border-transparent",
+                          chosen ? "border-copper-line bg-copper-line/10" : "border-transparent",
                         )}
                         summaryClassName={cx(
                           "flex flex-wrap items-baseline gap-2 py-1.5 pl-[1.35rem] pr-3 transition-colors",
@@ -270,7 +289,7 @@ export function SkeletonPane({
                         // block the author asked to be warm throughout.
                         markerClassName={cx(
                           "left-2 top-[0.45rem]",
-                          chosen ? "text-amber" : "text-dim",
+                          chosen ? "text-copper-line" : "text-dim",
                         )}
                         bodyClassName="flex flex-col gap-2 pb-2.5 pl-[1.35rem] pr-3"
                         summary={
@@ -278,7 +297,7 @@ export function SkeletonPane({
                             <span
                               className={cx(
                                 "font-mono text-[11px]",
-                                field.filled ? "text-amber" : "text-dim",
+                                field.filled ? "text-copper-line" : "text-dim",
                               )}
                               aria-hidden
                             >
@@ -287,7 +306,7 @@ export function SkeletonPane({
                             <code
                               className={cx(
                                 "shrink-0 font-mono text-[12px]",
-                                chosen ? "text-amber" : "text-fg",
+                                chosen ? "text-copper-line" : "text-fg",
                               )}
                             >
                               {field.key}
@@ -313,7 +332,7 @@ export function SkeletonPane({
                             which is the whole reason this is a `<details>`: a reader
                             without script, a printer and find-in-page all reach it. */}
                         {note !== undefined && (
-                          <p className="border-l-2 border-amber/40 pl-3 text-[12px] leading-relaxed text-muted">
+                          <p className="border-l-2 border-copper-line/40 pl-3 text-[12px] leading-relaxed text-muted">
                             <Ticked text={note} />
                           </p>
                         )}
@@ -380,7 +399,7 @@ export function SkeletonPane({
           </div>
 
           <p className="border-t border-line px-3 py-2 text-[11px] leading-relaxed text-dim">
-            <span className="font-mono text-amber" aria-hidden>
+            <span className="font-mono text-copper-line" aria-hidden>
               ▪
             </span>{" "}
             the card writes a value.{" "}
