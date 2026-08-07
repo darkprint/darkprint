@@ -556,51 +556,23 @@ describe("beat 4 frames the feedback as what upload is for, not as a feature", (
   });
 });
 
-/**
- * The three counts, and the sentence that makes them worth printing.
- *
- * `PLATFORM_STATS` counts `content/` at build time, so the figures on beat 5 are the one
- * thing on the landing a reader can check. The line saying so — "Counted off the archive
- * on the last deploy, and nothing here is rounded up" — went out with four paragraphs of
- * prose the beat was right to lose, and it was not one of them: it existed nowhere else on
- * the site afterwards, which leaves three numbers beside a call to action with nothing
- * behind them.
- */
-describe("beat 5 says where its numbers come from", () => {
-  const words = readable(beat("5 the doors"));
+/* A whole describe stood here — "beat 5 says where its numbers come from" — with three
+   cases: that the counts are exact, that a count is printed to stand behind, and that the
+   build door states `/build` stops at the download. The author asked all three lines off
+   beat 5 on 2026-08-07 and the cases come out with them.
 
-  it("states that the counts are exact", () => {
-    expect(words).toContain("nothing here is rounded up");
-  });
+   The third is the one worth recording. Its own docblock said the sentence had left this
+   site by accident TWICE — once as an orphan under the section, once when `/build`'s
+   eight-step path became a workspace and the noun changed while the limit did not — which
+   is exactly why deleting it now needs a reason rather than a diff.
 
-  it("prints a count to stand behind", () => {
-    expect(words).toMatch(/\d+ blueprints/);
-    expect(words).toMatch(/\d+ node cards/);
-    expect(words).toMatch(/\d+ ontology terms/);
-  });
+   The reason: the claim it qualified went out in the same edit. The build door printed
+   "Three choices, and a blueprint that downloads to your machine"; it prints a title and a
+   control now and promises nothing, so there is nothing left to refuse. The refusal itself
+   is unchanged where a reader can act on it — `DownloadPanel` on `/build` ends on "there is
+   nowhere to save this yet", and that route's `metadata.description` carries it for anyone
+   who never opens the page.
 
-  /**
-   * The build door's limit statement, verbatim and in the open.
-   *
-   * It was the one disclosure on the landing that nothing held. `honesty.test.ts`'s
-   * ledger does not carry it — that table is keyed to `/blueprints/...` and `/spec/card`
-   * surfaces — and this file checked beat 5's counts but not the sentence that qualifies
-   * what the counted route actually ends at. A grep for the words finds them in exactly
-   * one source file, `SectionDoors.tsx` itself, which is the state that file's own
-   * header describes as how a limit statement leaves the site by accident. It has now
-   * left twice.
-   *
-   * The sentence moved once — it was an orphan under the section, and it is now the second
-   * caption inside the door it qualifies — which is precisely the edit during which a
-   * sentence goes missing. Its subject moved a second time, when `/build`'s eight-step
-   * guided path became one workspace: the noun changed and the limit did not, which is the
-   * other way this kind of sentence disappears. Held verbatim, not by paraphrase, and read
-   * out of `readable()` so it must be text a reader sees rather than a `title` or an
-   * `sr-only`.
-   */
-  it("states, inside the build door, that /build stops at the download", () => {
-    expect(words).toContain(
-      "The workspace ends at the download. There is nowhere to publish yet.",
-    );
-  });
-});
+   The counts went the same way: `PLATFORM_STATS` still counts `content/` at build time and
+   nothing on the landing reads it, so "nothing here is rounded up" was vouching for figures
+   that are no longer printed. If either returns to beat 5, its case returns with it. */

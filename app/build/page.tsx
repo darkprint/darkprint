@@ -171,12 +171,10 @@ export default function BuildPage() {
       <OnwardRoutes
         className="mt-12"
         routes={[
-          {
-            href: "/upload",
-            // The label the header, the footer and the phone panel all use for this
-            // destination, and the `h1` it lands on. One route, one name.
-            label: "Upload blueprint",
-          },
+          // An "Upload blueprint" box pointed at `/upload` here and the author asked it out
+          // on 2026-08-07. The destination is still the one control the header carries at
+          // every width, and `DownloadStep` already hands a reader the folder that route
+          // reads — an exit repeating the header's own button is the third copy of it.
           {
             // `/skill` and not `/mcp`, now that "Install" is two routes. This page is the
             // workspace where a reader designs a blueprint by hand, and the skill is the

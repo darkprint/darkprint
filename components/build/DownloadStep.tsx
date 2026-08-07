@@ -145,7 +145,6 @@ export function DownloadStep({
         readmeHref={hrefs.get(BUNDLE_README) ?? ""}
         agentsHref={hrefs.get(BUNDLE_AGENTS) ?? ""}
         cards={cards}
-        className="max-w-xl"
       />
 
       {/* `min-w-0` on both columns. A grid item's automatic minimum size is its

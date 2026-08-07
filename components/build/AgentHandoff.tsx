@@ -171,7 +171,7 @@ export function AgentHandoff({ className }: { className?: string }) {
           it is not, and it changed: it used to name the brief as the only way through,
           which stopped being true the day the skill shipped. It now says what both ways
           have in common, so neither is introduced as the other's alternative. */}
-      <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
+      <p className="mt-2 text-[15px] leading-relaxed text-muted">
         The worked example only ever builds software, which is the one starter it
         demonstrates. Any other goal gets written by an agent, and there are two ways to
         hand one the same decisions in the same order, both of them starting with what each
@@ -245,7 +245,6 @@ export function AgentHandoff({ className }: { className?: string }) {
           language="text"
           title="Brief for your agent"
           downloadName="darkprint-brief.txt"
-          className="max-w-3xl"
         />
       </div>
 
@@ -258,7 +257,7 @@ export function AgentHandoff({ className }: { className?: string }) {
           brief. Two things on this screen now produce a blueprint written by a model, so
           the subject is the agent rather than either route to it, and the sentence stays
           last, where it is read against both. */}
-      <p className="mt-4 max-w-2xl text-[13px] leading-relaxed text-dim">
+      <p className="mt-4 text-[13px] leading-relaxed text-dim">
         Nothing here validates what an agent writes back, whichever of the two you take.
         Drop the result on{" "}
         <Link href="/upload" className={linkCls}>

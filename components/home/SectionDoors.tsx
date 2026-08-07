@@ -59,59 +59,16 @@
    door's own qualifier. Verbatim; spec §0.4 is why it exists.
    ============================================================ */
 
-import { PLATFORM_STATS } from "@/lib/data";
 import { ButtonLink } from "@/components/ui/Button";
 
-const COUNTS: { value: number; label: string }[] = [
-  { value: PLATFORM_STATS.blueprints, label: "blueprints" },
-  { value: PLATFORM_STATS.nodes, label: "node cards" },
-  { value: PLATFORM_STATS.terms, label: "ontology terms" },
-];
+/* `COUNTS`, the `PLATFORM_STATS` import it read, and the `Figures` component that
+   rendered it all stood here. The author asked both doors' figure rows out on 2026-08-07,
+   so there is nothing left to render and no second caller to keep the component honest
+   against.
 
-/* `PATH` stood here: `{3, choices}`, `{80, combinations}`, `{1, bundle}`, the build
-   door's answer to `COUNTS`. Deleted with its mount on 2026-08-07.
-
-   Its docblock argued each figure was written out rather than imported, because the
-   choice groups live in `components/build/`, which is `"use client"` and pulls
-   `lib/core` and `lib/starter` behind it — three integers were not worth putting the
-   whole authoring surface in the landing's bundle. That reasoning still holds for
-   anything that wants those numbers on this page later, which is why it is kept here
-   rather than deleted with them. `components/build/choices.ts` is where they live. */
-
-/**
- * The figures row.
- *
- * It was written as one component rather than two copies because the two doors presented
- * evidence in the same register, and two hand-typed rows drift the first time one of them
- * is touched. Only the gallery door carries figures since 2026-08-07, so the drift it was
- * guarding against has no second row to happen between — the component stays a component
- * because the rendering is worth naming, not because it is shared.
- */
-function Figures({ items }: { items: readonly { value: number; label: string }[] }) {
-  return (
-    <dl className="flex flex-wrap gap-x-6 gap-y-2 border-t border-blueprint-line/25 pt-4">
-      {items.map((item) => (
-        <div key={item.label}>
-          {/* The visible label is `aria-hidden` and the `dt` carries it instead,
-              so the pair is announced once as "blueprints, 9" rather than twice. */}
-          <dt className="sr-only">{item.label}</dt>
-          <dd className="flex items-baseline gap-1.5">
-            <span className="font-mono text-lg tabular-nums text-blueprint-ink">
-              {item.value}
-            </span>
-            <span
-              aria-hidden
-              className="font-mono text-[11px] uppercase tracking-[0.14em]"
-              style={{ color: "var(--color-blueprint-line)" }}
-            >
-              {item.label}
-            </span>
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
+   `lib/data` still exports `PLATFORM_STATS` and it still counts `content/` at build time.
+   Nothing on the landing reads it now. That is the piece to reach for if figures ever come
+   back — it is the reason they were checkable rather than decorative. */
 
 /** What the figures above it are worth. One line, under the row it qualifies. */
 function Caption({ children }: { children: React.ReactNode }) {
@@ -126,7 +83,8 @@ function Door({
   children,
 }: {
   title: string;
-  line: string;
+  /** The door's one sentence. Optional since 2026-08-07: the build door has none. */
+  line?: string;
   href: string;
   cta: string;
   children?: React.ReactNode;
@@ -134,7 +92,9 @@ function Door({
   return (
     <article className="flex flex-col gap-4 rounded-lg border border-blueprint-line/40 bg-blueprint/20 p-6 sm:p-8">
       <h3 className="font-display text-2xl font-semibold text-blueprint-ink">{title}</h3>
-      <p className="text-sm leading-relaxed text-blueprint-ink/85">{line}</p>
+      {line !== undefined && (
+        <p className="text-sm leading-relaxed text-blueprint-ink/85">{line}</p>
+      )}
       {children}
       <div className="mt-auto pt-2">
         <ButtonLink href={href} variant="primary" size="lg">
@@ -181,20 +141,17 @@ export function SectionDoors() {
             href="/blueprints"
             cta="Open the gallery"
           >
-            <Figures items={COUNTS} />
-            {/* What the three figures are worth, in one line. `PLATFORM_STATS` counts
-                `content/` at build time, so this is checkable rather than decorative. */}
-            <Caption>
-              Counted off the archive on the last deploy, and nothing here is rounded up.
-            </Caption>
+            {/* The three counts and their caption — "Counted off the archive on the last
+                deploy, and nothing here is rounded up" — stood here until 2026-08-07.
+
+                The caption goes WITH the numbers rather than outliving them: it existed to
+                vouch for figures that are no longer printed, and a sentence promising the
+                counts are exact on a card showing no counts is a claim about nothing. */}
           </Door>
 
-          <Door
-            title="Build your own"
-            line="Three choices, and a blueprint that downloads to your machine."
-            href="/build"
-            cta="Open the workspace"
-          >
+          {/* `line="Three choices, and a blueprint that downloads to your machine."` stood
+              here and came out with the two captions below, on the author's instruction. */}
+          <Door title="Build your own" href="/build" cta="Open the workspace">
             {/* `<Figures items={PATH} />` — 3 choices, 80 combinations, 1 bundle — stood
                 here until 2026-08-07, when the author asked it out.
 
@@ -208,11 +165,22 @@ export function SectionDoors() {
                 are exact; this one says what its figures produce, which is the equivalent
                 question for a workspace rather than an archive. */}
             <Caption>A .dot topology, the cards it pins, and a README you can run.</Caption>
-            {/* Spec §0.4, moved here from under the grid. It qualifies this door and only
-                this one, and a sentence centred under two columns attaches to neither. */}
-            <Caption>
-              The workspace ends at the download. There is nowhere to publish yet.
-            </Caption>
+            {/* "The workspace ends at the download. There is nowhere to publish yet."
+                stood here, and it is the one removal in this pass worth reading twice.
+
+                `beats.test.ts` guarded it with a docblock recording that it had left the
+                site by accident TWICE — once as an orphan under the section, and once when
+                `/build`'s eight-step path became a workspace and the noun changed while the
+                limit did not. It comes out only because the claim it qualified went with it
+                in the same edit: this door no longer promises a download, or three choices,
+                or anything beyond its own title and a control. A door that promises nothing
+                has nothing to refuse.
+
+                Where the refusal still lives, unchanged: `DownloadPanel` on `/build` ends
+                on "there is nowhere to save this yet", at the step where a reader is
+                actually holding the folder, and `/build`'s `metadata.description` carries
+                it for anyone who never opens the page. If a promise returns to this door,
+                this sentence returns with it. */}
           </Door>
         </div>
       </div>
