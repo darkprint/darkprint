@@ -138,9 +138,21 @@ export function OnwardRoutes({
           <RouteBoxLink
             key={route.href}
             href={route.href}
+            /* A word, not the path.
+               ------------------------------------------------------------
+               The author, of the version that printed `route.href` here: "remove the text
+               reporting the path in the button". `SpecPager` and `RoutePager` were already
+               right — they say `Next →` and `← Previous` — and this was the odd one out,
+               spending the box's brightest line on `/WHAT-A-BLUEPRINT-IS` in uppercase mono.
+
+               A path is an address, and an address is not what a reader is deciding between.
+               The title underneath already names the destination in words; the label's job is
+               only to say what the box DOES. These are parallel destinations rather than a
+               sequence, so "Read" and not "Next" — next would promise an order that the two
+               or three boxes in this row do not have. */
             label={
               <>
-                {route.href} <span aria-hidden>→</span>
+                Read <span aria-hidden>→</span>
               </>
             }
             title={route.label}

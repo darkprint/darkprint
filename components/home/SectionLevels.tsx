@@ -187,7 +187,24 @@ const SOURCES: Source[] = [
  * where the wider labels needed it: level 5's five words are the binding constraint, and
  * "debug" beside "release" is the tightest pair on the page.
  */
-const SCENE = { width: 420, height: 148 } as const;
+/* 126 and not 148: the drawings were floating in a band of empty graticule.
+   ------------------------------------------------------------
+   Measured before changing it — every mark in all five frames sits between y=24 (level 4's
+   upstream human node) and roughly y=110 (the node labels, one line under the path at 88).
+   At 148 that left ~38 units of nothing under the lowest word, about a quarter of the
+   frame, and the author's note was that these read as less finished than the site's other
+   drawings. They were: a drawing pinned to the top of a tall box looks unplaced, where the
+   blueprint sheets it sits beside fill theirs.
+
+   126 keeps 16 units under the lowest label — more than the 12 the corner ticks need to
+   stay clear of a word, and enough that the caption in the bottom rail is not crowded.
+
+   WIDTH IS NOT AVAILABLE as a lever and the docblock above says why: 420 was chosen so a
+   label clears `FLOW.frame.legible` on a 328px phone, and widening the scene shrinks every
+   word below that floor. So the crowding on level 5's five words is solved by giving them
+   vertical air, not horizontal — the pair the note calls tightest, "debug" beside
+   "release", is unchanged and still the binding constraint on this page. */
+const SCENE = { width: 420, height: 126 } as const;
 /** The path from the request to the shipped change. Identical in all five drawings. */
 const PATH = { y: 88, from: 79, to: 341 } as const;
 

@@ -92,7 +92,20 @@ export function Sheet({
 
       {(title !== undefined || note !== undefined) && (
         <div
-          className="relative flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t px-4 py-2.5"
+          /* `px-5` and not `px-4`, and the single pixel is the whole reason.
+             ------------------------------------------------------------
+             `.tick-frame` sits at `inset-2` and hangs its ticks a pixel outside itself, so a
+             corner tick occupies 7px to 19px in from the sheet's edge. At `px-4` this rail's
+             text ended at 16px — inside that span — and every sheet on the site drew its
+             bottom-right note through the corner tick. It is visible on the blueprint pages
+             and on the ladder, and it is the kind of defect that reads as "unfinished" long
+             before a reader can say why.
+
+             20px clears 19 by one pixel. That is thin, but it is measured rather than
+             guessed, and 20 is the canonical spacing tier — 24 is not one, and the next tier
+             up (40) would put the note a quarter of the way into the sheet. If a tick ever
+             grows past 12px, this has to move with it. */
+          className="relative flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t px-5 py-2.5"
           style={rule}
         >
           <span className="font-mono text-[11px] tracking-[0.06em]">{title}</span>

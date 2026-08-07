@@ -18,7 +18,6 @@ import {
 } from "@/components/learn/PartFigures";
 import { SPEC_LAYERS, SPEC_OVERVIEW } from "@/components/spec/sequence";
 import { SpecPager } from "@/components/spec/SpecPager";
-import { ButtonLink } from "@/components/ui/Button";
 import { PanelHeading, SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
@@ -339,7 +338,6 @@ function Step({
 
 export default function WhatABlueprintIsPage() {
   const all = allBlueprints();
-  const blueprints = all.length;
   const cards = allNodeCards().length;
 
   /* The three figures, all read off the archive at build time.
@@ -739,25 +737,14 @@ export default function WhatABlueprintIsPage() {
         </div>
       </section>
 
-      <section className="border-t border-line bg-surface py-16">
-        <div className="container-page flex flex-col gap-5">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-fg">
-            Read one, or take the parts
-          </h2>
-          <p className="max-w-2xl text-[15px] leading-relaxed text-muted">
-            {blueprints} blueprints are published here, and every node they pin is a card
-            you can lift on its own.
-          </p>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <ButtonLink href="/blueprints" variant="primary">
-              Browse the blueprints
-            </ButtonLink>
-            <ButtonLink href="/nodes" variant="outline">
-              Browse the nodes
-            </ButtonLink>
-          </div>
-        </div>
-      </section>
+      {/* "Read one, or take the parts" stood here — a heading, a count, and two buttons to
+          `/blueprints` and `/nodes`. Removed at the author's request.
+
+          What it was doing is not lost: both destinations are the first two items of the
+          header's registry group on every page of the site, and the pager below carries the
+          reader onward through the sequence this page opens. A section whose whole content
+          is two links already in the chrome is a third copy of the nav, and it sat between
+          the page's argument and the rail that closes it. */}
 
       {/* The rail closes the page, on the opposite ground and with no `border-t` of its
           own: `SpecPager` draws one at container width, and a full-bleed rule above an

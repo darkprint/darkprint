@@ -205,11 +205,14 @@ export function BuildWorkspace() {
           tellable apart on a screen that shows both. `flex-wrap` because two cards capped
           at 19rem each still need somewhere to go on a narrow tablet. */}
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap">
+        {/* "Read", not the path — the same correction `OnwardRoutes` carries. The author:
+            "remove the text reporting the path in the button". The title below each one
+            already names where it goes; the label only has to say what the box does. */}
         <RouteBoxLink
           href="/what-a-blueprint-is"
           label={
             <>
-              /what-a-blueprint-is <span aria-hidden>→</span>
+              Read <span aria-hidden>→</span>
             </>
           }
           title="What a blueprint is"
@@ -218,7 +221,7 @@ export function BuildWorkspace() {
           href="/spec/topology"
           label={
             <>
-              /spec/topology <span aria-hidden>→</span>
+              Read <span aria-hidden>→</span>
             </>
           }
           title="The topology, in DOT"
