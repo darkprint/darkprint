@@ -138,8 +138,11 @@ const WALK_BODY: Record<string, string> = {
   spec:
     "The brief an agent is handed when the graph is instantiated on your own machine. It has " +
     "to stand alone: whatever reads it never sees the rest of the graph.",
+  // "the compiled export", not `factory.dot`: the author asked for that name off the
+  // landing, and this walk renders there. Still true — the model line lands in the
+  // compiled file and not in `blueprint.dot`, which carries no `model` line at all.
   model:
-    "Which model the agent is instantiated with. The export writes it into `factory.dot`, and " +
+    "Which model the agent is instantiated with. The compiled export carries it, and " +
     "a card that names none inherits whatever the run supplies.",
   skill:
     "A pointer to where the behaviour is written. The engine reads nothing at the other end, " +

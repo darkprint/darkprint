@@ -435,13 +435,19 @@ describe("beat 4 lists the folder a reader actually downloads", () => {
       expect(words, `${file} is not in the download panel`).toContain(file);
   });
 
-  it("does not open the listing on the compiled file", () => {
-    // `factory.dot` is still in the bundle and still named in the prose — it is the file
-    // that runs, and dropping it would trade one inaccuracy for another. It may not be the
-    // first thing the panel shows: `blueprint.dot` is what the registry stores, what the
-    // cards are pinned in and what the digest is taken over.
-    expect(words).toContain("factory.dot");
-    expect(words.indexOf("blueprint.dot")).toBeLessThan(words.indexOf("factory.dot"));
+  it("does not name the compiled file at all", () => {
+    // This assertion is the inverse of the one it replaces, and the reversal is the
+    // author's: "in home avoid the use of factory.dot use instead blueprint.dot".
+    //
+    // The previous pass had kept `factory.dot` named once in the prose on the reasoning
+    // that it is genuinely in the folder and is the file that runs. Both facts still hold
+    // — they are just no longer this page's job to carry. `/blueprints/[slug]`'s download
+    // panel names it, which is where a reader is actually taking the folder away.
+    //
+    // What the landing shows instead is what the registry STORES: `blueprint.dot`, the
+    // graph with its card pins, which is what the digest is taken over.
+    expect(words).not.toContain("factory.dot");
+    expect(words).toContain("blueprint.dot");
   });
 });
 

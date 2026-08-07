@@ -374,19 +374,20 @@ export function SectionLifecycle() {
                     open, so the limit does not leave the section with this paragraph. Both
                     of those went.
 
-                    The middle sentence stayed because `components/home/beats.test.ts`
-                    pins it: "does not open the listing on the compiled file" asserts that
-                    `factory.dot` is somewhere in this beat's readable text and that
-                    `blueprint.dot` reads before it. This is the only place in the section
-                    that names `factory.dot` — the `Artefact` listing above deliberately
-                    does not, per this file's header and the author's own composition of
-                    that folder — so deleting the sentence would have deleted a pinned
-                    claim, not just prose. "beside it" lost its antecedent when the first
-                    sentence went; "beside them" points at the files listed alongside. */}
-                <p className="text-sm leading-relaxed text-muted">
-                  A <Mono>factory.dot</Mono> compiled from the same graph ships beside them
-                  and is the file that runs.
-                </p>
+                    The middle sentence stayed one pass longer because
+                    `components/home/beats.test.ts` pinned it. The author has since asked
+                    for the name off this page entirely — "in home avoid the use of
+                    factory.dot use instead blueprint.dot" — so the sentence went and the
+                    pin was inverted: that test now asserts `factory.dot` is ABSENT here.
+
+                    The file is still in every bundle and is still what runs; this beat
+                    simply stops being where a reader meets that. `/blueprints/[slug]`'s
+                    download panel names it, which is the surface where a reader is
+                    actually taking the folder away. Nothing untrue was removed, and
+                    nothing was renamed — `blueprint.dot` does NOT carry the model line
+                    (0 occurrences against `factory.dot`'s 4, measured on the starter),
+                    so swapping the name in a sentence about what runs would have been a
+                    lie rather than a simplification. */}
 
                 <ComposeHint />
 
