@@ -42,6 +42,7 @@ import { allBlueprints } from "@/lib/content";
 import { CARD_ROWS } from "@/components/spec/rows";
 import { ScoringModel } from "@/components/spec/ScoringModel";
 import { WhichTasksChecks } from "@/components/explain/WhichTasksChecks";
+import { GuardrailShape } from "@/components/explain/ConceptFigures";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
 import { CloneMenu } from "@/components/blueprint/CloneMenu";
 import { AgentHandoff } from "@/components/build/AgentHandoff";
@@ -114,6 +115,23 @@ const THE_CLIMB = renderToStaticMarkup(createElement(TheClimbPage as never));
  * page says otherwise beside them. That sentence is the claim below.
  */
 const SCORING = renderToStaticMarkup(createElement(ScoringModel));
+
+/**
+ * The guardrail figure on `/what-a-blueprint-is#the-words`, added 2026-08-07.
+ *
+ * Its right-hand column names capabilities that do not exist here and never will —
+ * retrying a failed call, capping a budget, blocking or diverting a call in flight. Every
+ * one of them is a live-path action, and the engine on this site reads files and analyses
+ * them standing still. The only thing separating "what a harness does" from "what
+ * DarkPrint does" in that column is its head, so the head is the claim.
+ *
+ * It is deliberately not a sentence and deliberately not a `ComingSoonBadge`: the author
+ * has twice asked the site to stop repeating that it runs nothing, and amber would promise
+ * a harness this site is not going to ship. An affirmative, possessive attribution in the
+ * column head is the form that survived both constraints, which is exactly the kind of
+ * quiet load-bearing string this file's header describes going missing in a wording pass.
+ */
+const GUARDRAILS = renderToStaticMarkup(createElement(GuardrailShape));
 
 /**
  * `/build`'s two exits (task 5), rendered with the same `DEFAULT_CHOICES` the workspace
@@ -252,6 +270,15 @@ const CLAIMS: Claim[] = [
     html: SCORING,
   },
 
+  /* ---- /what-a-blueprint-is · the guardrail figure ---- */
+  {
+    surface: "/what-a-blueprint-is#the-words · the guardrail figure's right-hand column",
+    why: "the column lists retry, budget caps and blocking a call in flight. None of that happens here — this engine reads files standing still — and the possessive is the only thing that says so. Drop it and the figure claims a live path, on the page whose whole subject is what a bundle can and cannot promise",
+    says: "done by your harness, at run time",
+    where: "open",
+    html: GUARDRAILS,
+  },
+
   /* ---- /towards-a-dark-factory · the four checks ----
      The surfaces are named `/towards-a-dark-factory` rather than `/…/which-tasks` as of
      2026-08-07: that route was merged into its parent and `WhichTasksChecks` is mounted
@@ -385,6 +412,10 @@ describe("the surfaces the ledger is read off", () => {
     ] as const) {
       expect(html.length, name).toBeGreaterThan(2000);
     }
+    // The guardrail figure is three rows of two cells, not a page. Its own floor, for the
+    // same reason the two menus below have theirs: a threshold it could never meet is the
+    // same as no threshold at all.
+    expect(GUARDRAILS.length, "the guardrail figure").toBeGreaterThan(900);
     // The two menus are dropdown panels rather than pages, so they get their own floor.
     // 2000 is a threshold neither could ever meet, and a floor nothing can fail is the
     // same as no floor at all.

@@ -1,6 +1,6 @@
-import Link from "next/link";
-
 import { cx } from "@/lib/format";
+
+import { RouteBoxLink } from "./RouteBoxLink";
 
 /* ============================================================
    Where a page that is not in a sequence sends its reader next.
@@ -81,30 +81,23 @@ import { cx } from "@/lib/format";
    title underneath is the destination's name as the nav and its own
    `h1` spell it — one route, one name.
 
-   ── One card, three files ──
-   The class string below is byte-identical to `CARD` in
-   `components/howto/RoutePager.tsx` and to the inline string in
-   `components/spec/SpecPager.tsx`. The right end state is one
-   exported `RouteBoxLink` primitive consumed by all three, with each
-   pager keeping its own neighbour lookup (their docblocks refuse to
-   share a SEQUENCE, which is a different argument from sharing a
-   card). That extraction is not made here because this pass owns
-   this file and the two call sites below it and not the pagers;
-   whoever opens a pager next should pull the string out to one
-   place rather than write it a fourth time.
+   ── One card, one file, at last ──
+   The class string used to be written out here, byte-identical to
+   `CARD` in `components/howto/RoutePager.tsx` and to the inline
+   string in `components/spec/SpecPager.tsx`, above a paragraph
+   saying the right end state was one exported `RouteBoxLink`
+   primitive and that "whoever opens a pager next should pull the
+   string out to one place rather than write it a fourth time."
+   `components/build/BuildWorkspace.tsx` was about to be the fourth,
+   so it is pulled out: `components/ui/RouteBoxLink.tsx` now owns the
+   shape and all four call sites consume it. Each pager keeps its own
+   neighbour lookup — their docblocks refuse to share a SEQUENCE,
+   which is an argument about the ORDER and not about the card.
 
    Server component, no state, no props beyond the pair. Two
    destinations, not five: a page that ends by offering everything
    has not ended.
    ============================================================ */
-
-/* Shared with both pagers. `max-w-[19rem]` is the cap they were sized at; the longest
-   title this component carries ("What a blueprint is", "Browse the blueprints") fits on
-   one line well inside it. `inline-flex` rather than a grid cell so the box hugs its
-   content — a `sm:grid-cols-2` would stretch it straight back to half the measure, which
-   is the panel geometry the author objected to. */
-const CARD =
-  "route-box group inline-flex max-w-full flex-col gap-1.5 px-4 py-3 sm:max-w-[19rem]";
 
 export interface OnwardRoute {
   href: string;
@@ -142,17 +135,16 @@ export function OnwardRoutes({
           `flex-wrap` because three of these would otherwise run off a narrow tablet. */}
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap">
         {routes.map((route) => (
-          <Link key={route.href} href={route.href} className={CARD}>
-            <span className="route-label">
-              {route.href} <span aria-hidden>→</span>
-            </span>
-            {/* `hoverable:` gates the hover on `(hover: hover) and (pointer: fine)`: a tap
-                on a phone has no "leave", so an ungated `group-hover` latches the amber on
-                whichever exit was last touched. Same construction as both pagers. */}
-            <span className="font-display text-base font-semibold leading-snug text-fg transition-colors hoverable:group-hover:text-amber-bright">
-              {route.label}
-            </span>
-          </Link>
+          <RouteBoxLink
+            key={route.href}
+            href={route.href}
+            label={
+              <>
+                {route.href} <span aria-hidden>→</span>
+              </>
+            }
+            title={route.label}
+          />
         ))}
       </div>
     </nav>

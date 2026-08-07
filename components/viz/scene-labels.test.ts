@@ -35,7 +35,6 @@ import { Fragment, createElement } from "react";
 import { describe, expect, it } from "vitest";
 
 import { allBlueprints, getNodeCard, getOntologyView } from "@/lib/content";
-import { WhichTasksGlance } from "@/components/explain/WhichTasksGlance";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionLevels } from "@/components/home/SectionLevels";
 import { SectionRoles } from "@/components/home/SectionRoles";
@@ -162,19 +161,18 @@ const ROSTER: readonly SceneEntry[] = [
   // blueprint clean and leaked, two frames, rendered through `SectionAbsentEdge` so the
   // numbers came from the engine rather than from this file. Both were deleted with
   // `/what-it-isnt`, which was their only mount.
-  /* Two frames since 2026-08-07, and the second one is why the figure is measured at all.
-     The glance shipped as a single 660-unit landscape frame in an `overflow-x-auto` box,
-     which hid 42% of itself on a 390-pixel phone — including both branch labels and the
-     outcome — while passing every case in this file, because a scene that is scrolled out
-     of view is not a scene whose labels collide. It draws a portrait placement below `sm`
-     now, the way `SectionRoles` and `GraphFigure` already do, and both placements are
-     rendered together here: measuring only the wide one is how a phone-only collision
-     ships. */
-  {
-    files: ["components/explain/WhichTasksGlance.tsx"],
-    frames: 2,
-    render: () => framesOf(createElement(WhichTasksGlance)),
-  },
+  /* `components/explain/WhichTasksGlance.tsx` had an entry here, for two placements of the
+     four-questions figure, and the file draws no scene now. It drew the four QUESTIONS as
+     lit discs on a cyan rail — which in this register says a question is a step in a run —
+     and the author's verdict was "it has wrong concepts assigned to nodes". That is the
+     same category error `ConceptFigures.tsx` was rebuilt out of two comments down, and the
+     answer is the same one: rows, a brace and real DOM text, no `<FlowScene` in the file.
+     Its own guard is `components/explain/which-tasks-glance.test.ts`, which holds the
+     property this file cannot — that every word in it is HTML rather than viewBox units.
+     Note what none of the cases below could see while the entry was here: the figure's four
+     `no` edge labels were hidden on every desktop by the `hover` reveal gate, because this
+     file renders static markup under `environment: "node"` where that media query never
+     applies. */
   // `components/explain/ConceptFigures.tsx` had an entry here, for two `FlowScene`
   // drawings. Both are gone: they drew card fields as lit nodes, which in this register
   // says a field is a step in the run, and the author asked for figures outside the
@@ -252,7 +250,13 @@ describe("the guard covers every scene the site draws", () => {
     // contains a `<FlowScene`, and `lifecycle/ForkScene.tsx` was deleted when the drawing
     // was asked out of `ForkAction`, its only caller. The floor guards the walk, not the
     // count: lower it when a scene is genuinely deleted, never to make a case pass.
-    expect(DRAWERS.length).toBeGreaterThan(8);
+    //
+    // 8 since 2026-08-07, and this is the third scene to go on the author's word rather
+    // than through refactoring: `WhichTasksGlance.tsx` drew four questions as five lit
+    // discs on a rail ("it has wrong concepts assigned to nodes") and was rebuilt as a
+    // braced ledger of DOM text. The walk still finds every file that draws a scene; there
+    // is one fewer file that draws one.
+    expect(DRAWERS.length).toBeGreaterThan(7);
     expect(DRAWERS).toContain("components/home/SectionRoles.tsx");
     expect(DRAWERS).toContain("components/spec/LatticeFigure.tsx");
   });

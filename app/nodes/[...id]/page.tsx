@@ -164,6 +164,29 @@ export async function generateMetadata({ params }: PageProps<"/nodes/[...id]">) 
    Every field has a note, so every row opens. A row whose key has
    neither a note nor a detail is still a plain `div`: a summary
    that opens onto nothing is worse than no affordance at all.
+
+   ── The resting row is the value, and the clamp is the cut ──
+   Three rows answered with a measurement of themselves — `action`,
+   `spec` and `notes` each printed "N words" — and `params` printed
+   its keys with every value dropped. The author: "I expected the
+   content of the spec there and if this does not fit within the
+   available space, on click it shows the details. This behaviour
+   has to be applied to every subfield."
+
+   So the value is what the row prints, and what does not fit is
+   folded by `line-clamp-3`, undone by `group-open:line-clamp-none`
+   when the row is opened. The clamp decides nothing and hides
+   nothing from anything but the eye: no measurement runs, no
+   second copy of the text exists, and the value is in the
+   prerendered HTML, in the accessible tree and findable by
+   find-in-page whether the row is open or shut. Lines rather than
+   characters, because this `dd` is 534px wide on a desktop and
+   290px on a phone.
+
+   The word counts are real figures this page prints in two other
+   places, so they moved into a meta slot under the field's name
+   rather than being deleted with the sentences they replaced: under
+   a clamp, the count is the only thing that says how much is folded.
    ============================================================ */
 interface FieldValue {
   text: string;
@@ -194,6 +217,15 @@ interface FieldRow {
    */
   wire?: string;
   read: (card: NodeCard, view: FieldView) => FieldValue;
+  /**
+   * How big a long value is, drawn under the field's name where the clamp cannot reach it.
+   *
+   * The three prose fields answered with this figure and nothing else until the author
+   * asked for the content ("I expected the content of the spec there"). The figure is
+   * real and the site prints it in two other places on this page, so it moved into a meta
+   * slot rather than being deleted: under a clamp it is what says how much is folded away.
+   */
+  measure?: (card: NodeCard) => string | undefined;
   /** Everything this page used to say in prose, behind the disclosure. */
   detail?: (card: NodeCard, view: FieldView) => React.ReactNode | undefined;
   /** Where the field is drawn in full, when a panel on this page already does it. */
@@ -208,12 +240,31 @@ function list(values: readonly string[], empty = "none"): FieldValue {
     : { text: values.join(", "), empty: false };
 }
 
-/** A long prose field, measured rather than reprinted in the resting row. */
-function words(value: string | undefined): FieldValue {
+/**
+ * How long a prose field is, for the meta slot under its name.
+ *
+ * This used to *be* the row: `read: (c) => words(c.spec)` printed "123 words" where the
+ * value belonged, on all three of `action`, `spec` and `notes`. The rows print the prose
+ * now and clamp it; the figure is what a reader would otherwise lose, so it moved rather
+ * than went. `undefined` for a field the card left empty, where "0 words" would be noise
+ * beside a row already saying `none`.
+ */
+function wordCount(value: string | undefined): string | undefined {
   const text = value?.trim() ?? "";
-  return text === ""
-    ? { text: "none", empty: true }
-    : { text: `${text.split(/\s+/).length} words`, empty: false };
+  if (text === "") return undefined;
+  return `${text.split(/\s+/).length} words`;
+}
+
+/**
+ * A folded scalar as one run of text.
+ *
+ * A card's long fields are written as YAML folded scalars, so the newlines in the file are
+ * the author's right margin and not the author's paragraphs. Flattening means the clamp
+ * below counts the lines the reader sees rather than the lines the file wrapped at.
+ */
+function prose(value: string | undefined, empty = "none"): FieldValue {
+  const text = value?.replace(/\s+/g, " ").trim() ?? "";
+  return text === "" ? { text: empty, empty: true } : { text, empty: false };
 }
 
 function one(value: string | undefined, empty = "not named"): FieldValue {
@@ -283,19 +334,35 @@ const FIELD_ROWS: readonly FieldRow[] = [
       ),
   },
 
-  /* A word count, not the sentence. `action` is this page's opening lead verbatim, and
-     printing it again 600px below is the duplication `docs/content-reorg` already caught
-     here once. It is behind the click instead, where a reader has asked for it. */
+  /* The sentence, not a word count.
+     ------------------------------------------------------------
+     These two rows and `notes` below said "23 words" / "123 words" / "129 words" where the
+     value belongs, and the author asked for the other thing: "I expected the content of the
+     spec there and if this does not fit within the available space, on click it shows the
+     details." So the value is on the row, clamped to three lines, and the row unclamps
+     itself when it is opened.
+
+     `action` was held back on a duplication argument — it is this page's opening lead
+     verbatim, and `docs/content-reorg` cut exactly that repeat once before. The argument
+     does not survive the request. A table titled "every field on this card" that answers
+     one of its rows with an integer is not a table of the card, and a clamped line at 12px
+     three panels down is not the same object as the lead paragraph; the repeat
+     `content-reorg` cut was two full-size paragraphs of prose.
+
+     `spec` keeps its pointer at the panel that prints it whole, because the panel is a
+     better place to read 665 characters than a mono `dd` is. It is a second way in now
+     rather than the only one. */
   {
     block: "behaviour",
     name: "action",
-    read: (c) => words(c.action),
-    detail: (c) => (c.action === undefined ? undefined : <Detail>{c.action}</Detail>),
+    read: (c) => prose(c.action),
+    measure: (c) => wordCount(c.action),
   },
   {
     block: "behaviour",
     name: "spec",
-    read: (c) => words(c.spec),
+    read: (c) => prose(c.spec),
+    measure: (c) => wordCount(c.spec),
     seeHref: "#specification",
     seeLabel: "in full above",
   },
@@ -340,7 +407,18 @@ const FIELD_ROWS: readonly FieldRow[] = [
   {
     block: "behaviour",
     name: "params",
-    read: (_c, v) => list(v.params_.map(([key]) => key)),
+    /* Keys and values. The keys alone were the same omission the blueprint page's skeleton
+       had: a row that names the settings and withholds every setting. The `<dl>` below
+       stays, because it is not a repeat of this line — it prints a nested value across
+       several indented lines, which a joined line cannot do, and it is the shape a reader
+       copies out of. */
+    read: (_c, v) =>
+      list(
+        v.params_.map(
+          ([key, value]) =>
+            `${key}: ${typeof value === "string" ? value : JSON.stringify(value)}`,
+        ),
+      ),
     detail: (_c, v) =>
       v.params_.length === 0 ? undefined : (
         <dl className="divide-y divide-line rounded-md border border-line bg-void/40">
@@ -422,7 +500,18 @@ const FIELD_ROWS: readonly FieldRow[] = [
   {
     block: "evaluation",
     name: "requires_human",
-    read: (c) => ({ text: String(c.requiresHuman), empty: !c.requiresHuman }),
+    /* Doc 2 §1.1, and both sentences weigh the same. This row printed `false` and drew it
+       dim, in the same grey the page uses for a field the card left blank — so a card that
+       had answered the question read as a card that had not, and `false` read as the
+       lesser of the two answers. `empty` is false either way: a declared `false` is a
+       design decision, and it is also what `${declared} declared` counts. The wording is
+       the skeleton pane's, so the two surfaces say one thing once. */
+    read: (c) => ({
+      text: c.requiresHuman
+        ? "true. The run holds here until a person acts."
+        : "false. A run passes through without stopping.",
+      empty: false,
+    }),
   },
   {
     block: "evaluation",
@@ -453,13 +542,12 @@ const FIELD_ROWS: readonly FieldRow[] = [
   {
     block: "evaluation",
     name: "notes",
-    read: (c) => words(c.notes),
-    detail: (c) =>
-      c.notes === undefined ? undefined : (
-        <p className="border-l-2 border-line-bright pl-4 text-[13px] leading-relaxed text-muted">
-          <Ticked text={c.notes} />
-        </p>
-      ),
+    /* The commentary, clamped. No `detail`: it used to reprint the notes inside the open
+       row, and the same paragraph is already set at 15px under "Notes from the author" at
+       the foot of this very panel. Three copies of one paragraph in one panel is one more
+       than the two the clamp already justifies. */
+    read: (c) => prose(c.notes),
+    measure: (c) => wordCount(c.notes),
   },
 
   { block: "service", name: "version", read: (c) => one(c.version) },
@@ -1382,6 +1470,13 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                         const value = row.read(card, fieldView);
                         const note = FIELD_NOTE[row.wire ?? row.name];
                         const detail = row.detail?.(card, fieldView);
+                        const measure = row.measure?.(card);
+                        /* Whether this row is a `<details>` at all, which is what decides
+                           whether a clamp on it can ever be undone. Every key of doc 1 §3
+                           has a note, so in practice it is always true; a row that somehow
+                           opened onto nothing must not also be a row that hides half its
+                           value behind a fold nobody can lift. */
+                        const opens = detail !== undefined || note !== undefined;
                         const head = (
                           <>
                             {/* `text-copper-line`, the same token as the block title
@@ -1394,6 +1489,15 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                                 the register marks, not the whole row. */}
                             <dt className="font-mono text-[12px] text-copper-line">
                               {row.name}
+                              {/* The meta slot: how long a prose field is, under its name
+                                  where the clamp cannot reach it. Beside the name on a
+                                  phone, where the grid is one column and the `dt` is its
+                                  own row. */}
+                              {measure !== undefined && (
+                                <span className="label ml-2 sm:ml-0 sm:mt-1 sm:block">
+                                  {measure}
+                                </span>
+                              )}
                             </dt>
                             <dd
                               className={cx(
@@ -1401,19 +1505,46 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                                 value.empty ? "text-dim" : "text-fg",
                               )}
                             >
-                              {value.text}
+                              {/* The value, clamped to three lines and unclamped by the
+                                  row's own open state. `group` is on the `<details>`
+                                  inside `FieldDisclosure`, so this is CSS and nothing
+                                  else: the whole value is in the prerendered HTML, in the
+                                  accessible tree, and findable by find-in-page whether the
+                                  row is open or shut.
+
+                                  Three rather than the skeleton pane's two, because this
+                                  panel has no height cap and 23 rows do not share a
+                                  `max-h-[26rem]` box here. Lines rather than characters
+                                  because this column measures 534px on a desktop and 290px
+                                  on a phone, and one character budget cannot be right at
+                                  both widths.
+
+                                  `Ticked` because a card's `spec` and `notes` are written
+                                  with `backticked` port and parameter names, and the note
+                                  this row opens onto renders its own ticks as chips. */}
+                              {/* `line-clamp-3` alone, never beside a `block`: the clamp
+                                  works by setting `display:-webkit-box`, and Tailwind
+                                  emits the two display declarations in an order that let
+                                  `block` win. Measured, not assumed — the first version of
+                                  this row carried both and rendered a `spec` at its full
+                                  196px with the clamp inert. */}
+                              <span
+                                className={
+                                  opens ? "line-clamp-3 group-open:line-clamp-none" : "block"
+                                }
+                              >
+                                <Ticked text={value.text} />
+                              </span>
                               {/* Where a field has a panel of its own, the row points at
-                                  it rather than reprinting it. */}
+                                  it as well. Outside the clamp, so the pointer is never
+                                  the thing that gets folded away. */}
                               {row.seeHref !== undefined && !value.empty && (
-                                <>
-                                  {"  "}
-                                  <a
-                                    href={row.seeHref}
-                                    className="text-[11px] text-dim underline decoration-line underline-offset-4 transition-colors hoverable:hover:text-cyan"
-                                  >
-                                    {row.seeLabel}
-                                  </a>
-                                </>
+                                <a
+                                  href={row.seeHref}
+                                  className="mt-1 inline-block text-[11px] text-dim underline decoration-line underline-offset-4 transition-colors hoverable:hover:text-cyan"
+                                >
+                                  {row.seeLabel}
+                                </a>
                               )}
                             </dd>
                           </>
@@ -1424,7 +1555,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                            which is the same rule the vocabulary chips follow. Every key
                            of doc 1 §3 has a note, so in practice this branch is the
                            guard for a row added here before its note was written. */
-                        if (detail === undefined && note === undefined) {
+                        if (!opens) {
                           return (
                             <div
                               key={row.name}

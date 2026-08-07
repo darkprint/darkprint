@@ -63,6 +63,30 @@ import { CARD_BLOCKS, type PaneAbsence, type PaneFocus, type PaneModel } from ".
    already made, and it buys the property the author asked for.
    Absences keep a control of their own, because an absence is not
    a field of the card and opens onto nothing.
+
+   ── The row shows the value, and the clamp is the only cut ──
+   The author again, at the `spec` row: "I expected the content of
+   the spec there and if this does not fit within the available
+   space, on click it shows the details." Three rows used to answer
+   with a description of themselves instead, and `params` printed
+   its keys and dropped every value. They print what the card wrote
+   now; `./build.ts` says what changed and why per field.
+
+   The cut that is left is a CSS `line-clamp-2`, undone by
+   `group-open:line-clamp-none` when the row is opened. It costs
+   nothing at build time, it needs no measurement in the browser,
+   and it does not decide anything: the whole value is in the
+   prerendered HTML, in the accessible tree, and findable by
+   find-in-page whether the row is open or closed. The line count
+   is deliberately not a character count, because the value column
+   is 720px wide here on a desktop and 304px on a phone, and one
+   budget cannot be honest at both.
+
+   The consequence to know about is that a `<summary>` is a button
+   and its whole content is its accessible name, so the `spec` row
+   names itself with the spec. That is why `PaneField.measure`
+   exists and why `announce` reads it instead of the value: the
+   live region stays one sentence while the row stays whole.
    ============================================================ */
 
 /* ── Why this pane is copper and not cyan, and no longer amber ──
@@ -311,15 +335,40 @@ export function SkeletonPane({
                             >
                               {field.key}
                             </code>
-                            <span className="min-w-0 text-[12px] leading-snug text-muted">
-                              {field.value}
+                            {/* What the card wrote, clamped to two lines and unclamped by
+                                the row's own open state. `group` is on the `<details>`
+                                inside `FieldDisclosure`, so this is pure CSS: no measure
+                                pass, no second copy of the text in the body, and the
+                                whole value is in the prerendered HTML either way.
+
+                                Two lines rather than a character budget, because a
+                                character budget cannot be right twice: this column is
+                                720px on a desktop and 304px on a phone, so the 88
+                                characters the `action` slot used to be cut at were one
+                                line on one and two on the other. A line count is the same
+                                promise at both widths. Two rather than three because 23
+                                rows share a `max-h-[26rem]` box.
+
+                                `Ticked` for the same reason the note below it gets one:
+                                specs and notes are written with `backticked` port and
+                                parameter names, and rendering the note's ticks as chips
+                                while the card's own prose kept literal backticks put both
+                                spellings in one open row. */}
+                            <span className="line-clamp-2 min-w-0 text-[12px] leading-snug text-muted group-open:line-clamp-none">
+                              <Ticked text={field.value} />
                             </span>
-                            <span className="ml-auto shrink-0 font-mono text-[11px] text-dim">
-                              {field.lines === undefined
-                                ? "not written"
-                                : field.lines.start === field.lines.end
-                                  ? `line ${field.lines.start}`
-                                  : `lines ${field.lines.start}–${field.lines.end}`}
+                            {/* The meta slot, and the word count lives here now rather
+                                than standing in for the spec. Under a clamp it is the one
+                                thing that says how much is behind the fold. */}
+                            <span className="ml-auto flex shrink-0 items-baseline gap-2 font-mono text-[11px] text-dim">
+                              {field.measure !== undefined && <span>{field.measure}</span>}
+                              <span>
+                                {field.lines === undefined
+                                  ? "not written"
+                                  : field.lines.start === field.lines.end
+                                    ? `line ${field.lines.start}`
+                                    : `lines ${field.lines.start}–${field.lines.end}`}
+                              </span>
                             </span>
                             <span className="sr-only">
                               {field.filled ? "Filled." : "Left empty by this card."}
@@ -336,9 +385,11 @@ export function SkeletonPane({
                             <Ticked text={note} />
                           </p>
                         )}
-                        {/* And what this card in particular wrote, where the one line
-                            above had to summarise it. Second, because the reader has
-                            just been told what they are looking at. */}
+                        {/* And the part of this card's value that the row itself cannot
+                            hold: `inputs` and `outputs` only, where the line shows
+                            `name: type` and each port's description is a sentence of its
+                            own. Every other field's value is on the row above, clamped,
+                            and this row unclamps it rather than reprinting it. */}
                         {field.detail !== undefined && (
                           <p className="whitespace-pre-wrap border-l-2 border-line-bright pl-3 text-[12px] leading-relaxed text-muted">
                             {field.detail}
@@ -407,7 +458,8 @@ export function SkeletonPane({
               ◌
             </span>{" "}
             it does not, which is an answer as much as the other. Every row opens onto
-            what its field is for. Pinned by <Pins model={model} ref_={card.ref} />.
+            what its field is for, and a value cut off at two lines finishes there. Pinned
+            by <Pins model={model} ref_={card.ref} />.
           </p>
         </>
       )}

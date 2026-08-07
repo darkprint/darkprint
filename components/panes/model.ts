@@ -129,16 +129,33 @@ export interface PaneField {
   group: FieldGroupId;
   /** True when the card carries a value for the key. */
   filled: boolean;
-  /** The value in one line when filled; what the card says instead when it is not. */
+  /**
+   * What the card wrote, whole; what the card says instead when it wrote nothing.
+   *
+   * Whole, including the 979-character `spec` on the longest card in the archive. Nothing
+   * is cut here and nothing is replaced by a description of itself — the renderer clamps
+   * the row to two lines and unclamps it when the reader opens it, which is a rule about
+   * the space on screen rather than a rule about the value, and which leaves the text in
+   * the prerendered HTML for find-in-page, a printer and a reader without script.
+   */
   value: string;
   /**
-   * What the one-line value left out, shown when the row is open.
+   * How big a long value is, in a few characters. Absent when the value is short.
    *
-   * **This card's value, not the field's meaning.** Only the fields that summarise carry
-   * one: `action` is cut at 88 characters, `spec` and `notes` are reduced to a word
-   * count, and a port's description never fit on the line at all. A field whose one line
-   * is already the whole value has none, because a row that opened onto a repeat of
-   * itself would teach a reader that clicking does nothing.
+   * The row draws it in the meta slot beside the line range, where it survives the clamp
+   * and says how much is behind the fold. `announce` reads it in place of `value`, which
+   * is the load-bearing use: without it, opening the `spec` row would read a whole
+   * paragraph into the live region.
+   */
+  measure?: string;
+  /**
+   * What the row's own line cannot hold at all, shown when the row is open.
+   *
+   * **This card's value, not the field's meaning.** Only `inputs` and `outputs` carry one
+   * now: the line shows `name: type`, the half a reader can check against the DOT, and
+   * what each port is *for* is a sentence per port with nowhere on that line to go. Every
+   * other field's value is on the row itself, clamped, because a row that opened onto a
+   * repeat of what it just showed would teach a reader that clicking does nothing.
    *
    * What the field is *for* is not here and is not per card: it is one paragraph in
    * `./field-notes.ts`, which the renderer looks up by `key`. Carrying it through this
@@ -458,7 +475,15 @@ export function announce(model: PaneModel, focus: PaneFocus): string {
       focus.field.lines === undefined
         ? "the document does not write it"
         : `card lines ${focus.field.lines.start} to ${focus.field.lines.end}`;
-    return `Field ${focus.field.key} of ${card}, ${focus.field.value}. Selected on node ${focus.node.nodeId}, ${where}, ${lines}.`;
+    /* `measure` before `value`, and this is the reason `measure` exists at all. The rows
+       print what the card wrote rather than a word count, so `focus.field.value` on the
+       `spec` row is now up to 979 characters of prose. Announcing that would read a whole
+       paragraph into the live region every time the selection moved — and the reader is
+       about to meet the same paragraph in the row itself, which is in the accessible tree
+       whether the row is open or not. The size is the part a one-sentence announcement can
+       usefully carry. */
+    const said = focus.field.measure ?? focus.field.value;
+    return `Field ${focus.field.key} of ${card}, ${said}. Selected on node ${focus.node.nodeId}, ${where}, ${lines}.`;
   }
   return `Node ${focus.node.nodeId}, ${focus.node.label}. ${where}, ${card}. ${model.nodes.length} nodes in the graph.`;
 }

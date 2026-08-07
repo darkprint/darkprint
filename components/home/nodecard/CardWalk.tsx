@@ -1,9 +1,10 @@
 "use client";
 
 /* ============================================================
-   The card, walked one part at a time. Both mounts of it.
+   The card, walked one part at a time. THE LANDING'S MOUNT, and
+   the only one.
 
-   ── What the author asked for, twice ──
+   ── What the author asked for, three times ──
    First for the landing: "I'd like you reprohose in the home in the
    current Every node is a card the idea reported in spec/card,
    where you scroll down and you can show all the component of a
@@ -12,15 +13,37 @@
 
    Then, of the reference page the lightweight version was derived
    from: "make /spec/card's scrollable node panel the same as the
-   home's", and "it should scroll in the middle of the screen". So
-   this file is now what BOTH `/` and `/spec/card` draw, and the
-   fork it was written as a copy of — `NodeCardStage`, 534 lines, a
-   `calc(100vh + 2500px)` track, a leader line and a dezoom — is
-   deleted rather than kept as a second answer to one question.
+   home's", and "it should scroll in the middle of the screen". For
+   one release this file was therefore what BOTH `/` and
+   `/spec/card` drew, and the fork it was written as a copy of —
+   `NodeCardStage`, 534 lines, a `calc(100vh + 2500px)` track, a
+   leader line and a dezoom — was deleted rather than kept as a
+   second answer to one question.
+
+   Then, of that same page: "in /spec/card avoid the effect on
+   scrolling of the card panel (**keep it for the other pages**). I
+   prefer here the approach adopted in /spec/topology for the panel
+   starter-software-factory/blueprint.dot." So `/spec/card` mounts
+   `./CardBreakdown.tsx` now — the same nine parts, picked with a
+   click instead of walked with a scroll — and this component is the
+   landing's again.
+
+   THE PARENTHESIS IS THE INSTRUCTION. The scroll walk was not
+   replaced; it was narrowed to the surface that asked for it. Do
+   not "finish the migration" by deleting this file or by folding it
+   into the breakdown: the landing is where a reader is shown a card
+   without having decided to study one, and a figure that does
+   nothing until it is clicked says nothing to a reader who is
+   scrolling past.
+
+   What did NOT fork: `annotations.ts` resolves the same nine runs
+   against the same bytes, `yaml.ts` tokenises them, `YamlListing`
+   draws the listing for both, and `prose.tsx` spells the step number
+   and the line span for both. Only the interaction is two things.
 
    ── What "lightweight" cost, item by item ──
-   Recorded because these are deletions from the reference page as
-   well now, and none of them is free:
+   Recorded because these were deletions from the reference page as
+   well when it drew this figure, and none of them is free:
 
      the Sheet          the blue graticule ground, which is the one
                         thing the author named. This sits on plain
@@ -45,16 +68,20 @@
                         clickable: the reader's gesture is the only
                         control, which is what makes the pin honest.
 
-   What survives is the part the author asked for both times: nine
+   What survives is the part the author asked for every time: nine
    parts of a real card, arriving one at a time, each marking its
    own lines.
 
-   ── The one thing that differs between the two mounts ──
-   `bodies`. The landing gets 25-word wording written for it; the
-   reference page gets `annotations.ts`'s 45-word bodies, which are
-   the ones `nodecard.test.ts` holds to the diagnostic codes the
-   site can be grepped for. Everything else — the window, the
-   pacing, the sticky offset, the ground — is the same figure.
+   ── `bodies`, and why it is still a prop ──
+   The landing gets the 25-word wording below; `annotations.ts`
+   carries 45-word bodies, which are the ones `nodecard.test.ts`
+   holds to the diagnostic codes the site can be grepped for. Those
+   belong to `/spec/card`, and `CardBreakdown` reads them straight
+   off `annotations.ts` with no override at all — so the empty
+   `bodies={{}}` this component used to be passed from there is
+   gone with the mount. The prop stays because the fallback is still
+   what makes a NEW part appear in full rather than not at all:
+   anything unkeyed in `WALK_BODY` falls through to `note.body`.
 
    ── Why one DOM and not two ──
    The choreography classes all carry `lg:` and are emitted only
@@ -72,6 +99,7 @@ import { cx } from "@/lib/format";
 
 import { resolveAnnotations } from "./annotations";
 import { NC, reelShift } from "./geometry";
+import { body, lineSpan, ordinal } from "./prose";
 import { YamlListing } from "./YamlListing";
 import { tokenizeYaml } from "./yaml";
 
@@ -110,8 +138,8 @@ const PAD_Y = 2;
  * The long bodies stay where they are and are not edited: they are `/spec/card`'s, and
  * `nodecard.test.ts` holds three of them to the diagnostic codes the site can be checked
  * on (`bundle/prohibition-violated`, `bundle/port-mismatch`, `llm_model`). That is
- * reference material and it belongs on the reference page, which reaches it by passing
- * `bodies={{}}` — an empty override, so every note falls through to `note.body`.
+ * reference material and it belongs on the reference page, which now draws it with
+ * `CardBreakdown` and reads `note.body` directly rather than overriding anything.
  *
  * What the landing needs from the same nine parts is smaller: which part of a card this
  * is, and why anyone would write it down. Beat 3 carried 670 of the landing's 1090 words
@@ -122,11 +150,11 @@ const PAD_Y = 2;
  * Keyed by `AnnotationSpec.id`, and anything unkeyed falls back to the long body, so a
  * new part appears here in full rather than not at all.
  *
- * Measured before the reference bodies were let into this layout: the notes column is
- * 433px at `lg`, one body is open at a time, and the nine heads plus the longest of the
- * long bodies come to 470px against the listing's 530px window beside them. So the
- * figure's height — and therefore the sticky half-height below — is the listing's in
- * both mounts, and the two wordings do not need two constants.
+ * Measured while the reference bodies were still rendered in this layout: the notes column
+ * is 433px at `lg`, one body is open at a time, and the nine heads plus the longest of the
+ * long bodies came to 470px against the listing's 530px window beside them. So the
+ * figure's height — and therefore the sticky half-height below — is the listing's, and the
+ * short wording has margin to spare rather than a budget of its own.
  */
 const WALK_BODY: Record<string, string> = {
   identity:
@@ -161,28 +189,10 @@ const WALK_BODY: Record<string, string> = {
     "`acceptance-criteria` into this node fails the bundle rather than warning about it.",
 };
 
-/** Two digits, so the numbers form a column rather than a ragged edge. */
-function ordinal(step: number): string {
-  return String(step).padStart(2, "0");
-}
-
-/** `L17` for one line, `L24-27` for a run. */
-function span(from: number, to: number): string {
-  return from === to ? `L${from}` : `L${from}–${to}`;
-}
-
-/** Backticked identifiers in an annotation body render as inline code. */
-function body(text: string): React.ReactNode[] {
-  return text.split(/(`[^`]+`)/).map((part, i) =>
-    part.startsWith("`") && part.endsWith("`") ? (
-      <code key={i} className="rounded bg-surface-3 px-1 py-0.5 font-mono text-[12px] text-fg">
-        {part.slice(1, -1)}
-      </code>
-    ) : (
-      part
-    ),
-  );
-}
+/* `ordinal`, `lineSpan` and `body` used to be declared here. They moved to `./prose.tsx`
+   when `/spec/card` stopped mounting this component: `CardBreakdown` draws the same nine
+   heads with the same step numbers and the same line spans, and a run spelled `L24-27` in
+   one mount and `L24–27` in the other would be two figures rather than one seen twice. */
 
 export function CardWalk({
   source,
@@ -195,9 +205,11 @@ export function CardWalk({
   /**
    * Per-step wording, keyed by `AnnotationSpec.id`, overriding `annotations.ts`.
    *
-   * Defaults to the landing's short set. `/spec/card` passes `{}`, which is not the same
-   * as passing nothing: an empty record overrides no step, so every note falls through to
-   * its long reference body. The two mounts differ here and nowhere else.
+   * Defaults to the landing's short set, which is the only set any caller wants today:
+   * `SectionNodeIsCard` is the one mount left, and `/spec/card` reads the long reference
+   * bodies through `CardBreakdown` rather than through an empty override here. What the
+   * fallback still buys is a part that nobody has written short wording for yet — it
+   * renders in full rather than blank.
    */
   bodies?: Record<string, string>;
 }) {
@@ -414,7 +426,7 @@ export function CardWalk({
                           isOpen ? "text-copper-line" : "text-dim",
                         )}
                       >
-                        {span(note.from, note.to)}
+                        {lineSpan(note.from, note.to)}
                       </span>
                     </div>
 

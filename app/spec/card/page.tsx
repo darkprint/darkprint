@@ -42,32 +42,59 @@ import {
    and §3 says so directly: "it reads the real card through
    `cardSource` and that must survive the move."
 
-   ── This pass: the figure is the landing's, and it is centred ──
-   The author, of this page: "make /spec/card's scrollable node
-   panel the same as the home's", and "it should scroll in the
-   middle of the screen". So `SectionNodeCard` mounts `CardWalk`,
-   the component the landing draws, rather than `NodeCardStage`,
-   which is deleted. That is a net deletion of three things —
-   the copper graticule plate, the drawn leader line and the dezoom
-   at the end — and `CardWalk`'s own header lists them so the price
-   is on the record rather than discovered later. The one thing
-   this page keeps of its own is the wording: it passes an empty
-   `bodies` override, so every note falls through to
-   `annotations.ts`'s 45-word reference bodies and the three
-   diagnostic codes in them stay on the page.
+   ── This pass: the figure stops scrolling and starts listening ──
+   The author, of this page: "in /spec/card avoid the effect on
+   scrolling of the card panel (keep it for the other pages). I
+   prefer here the approach adopted in /spec/topology for the panel
+   starter-software-factory/blueprint.dot."
 
-   The centring is `CardWalk`'s and needs nothing from here:
-   `lg:sticky lg:top-[max(4rem,calc(50vh_-_19.25rem))]` against a
-   612.5px figure. **On a 390px phone it costs nothing, because
-   there is nothing to pay**: every sticky, height and clip class in
-   that component carries `lg:`, so a phone gets the whole 52-line
-   listing at its natural height with all nine notes open under it
-   and scrolls the page past it. Nobody should try to satisfy
-   "middle of the screen" below `lg` — the two ways of doing it are
-   an inline height beside `overflow-x: auto`, which traps the file
-   in a nested scroller, and an inline transform, which slides half
-   of it out of a container that never clips. Both have shipped
-   here before and both are written up in `CardWalk`.
+   So `SectionNodeCard` mounts `CardBreakdown`, which is the node
+   card under the interaction `/spec/topology`'s DOT figure already
+   uses: nine real buttons in the rail, `useRovingListbox` from
+   `components/panes/listbox.ts` so the whole rail is one tab stop
+   with the arrow keys walking it, `aria-pressed` for the state and
+   a polite live region for the consequence. A click lights the
+   lines that part is about. Nothing on this page reads a scroll
+   position any more.
+
+   **"keep it for the other pages" is the load-bearing clause.**
+   `CardWalk` — the scroll walk this page used to mount — still
+   renders on the landing through
+   `components/home/SectionNodeIsCard.tsx`, and it is still guarded
+   there by the case in `nodecard.test.ts` that asserts its source
+   contains no `<button` and no `onClick`. That is why this is a
+   second component rather than a `mode` prop: a prop would have put
+   the buttons inside the walk's file and forced the guard that
+   keeps nine controls off the landing's beat to be loosened.
+   `CardBreakdown`'s header argues the whole split.
+
+   What went with the walk, on this page only: the 190vh track, the
+   sticky pin at `calc(50vh - 19.25rem)`, the 24-row window and the
+   reel that slid the card through it. What replaces the window is
+   nothing at all — the 52-line card is drawn WHOLE at every width,
+   1162px of listing the page scrolls past, which is what the phone
+   layout and the reduced-motion layout already showed. The two
+   traps written up in `CardWalk` are therefore not merely avoided
+   here, they are unreachable: there is no height to state beside
+   `overflow-x: auto` and no transform to write.
+
+   One thing the pick changed that the swap did not have to: the
+   listing no longer bands all nine runs at once. It brackets them,
+   with a rule down the margin and a two-digit step number at each
+   head, both unconditional and both in the prerendered HTML, and
+   spends the ground on the run a reader picked. That is
+   `DotBreakdown`'s rule, and it transfers because its premise does:
+   the nine annotations nearly tile this card, so nine bands is a lit
+   listing and a lit listing is the same as an unlit one.
+   `YamlListing`'s `Grounding` carries the argument and the
+   measurement. The landing still bands all nine, because a figure
+   nobody can pick has nothing else to point with.
+
+   Both columns end up about the same height by construction rather
+   than by luck: 1162px of listing against nine heads and nine open
+   reference bodies, which `nodecard.test.ts` caps at 300 characters
+   each. The page is shorter than it was, because 190vh of pinned
+   track is gone.
 
    ── What this page carried and no longer does ──
    The band titled "The split" is gone on the author's instruction.
@@ -308,7 +335,8 @@ export default function SpecCardPage() {
       </header>
 
       {/* The figure this page opens with: the card the whole page is about, annotated
-          line by line and read straight out of `content/cards/`. */}
+          line by line, read straight out of `content/cards/`, and broken into nine parts
+          a reader picks rather than scrolls through. */}
       <SectionNodeCard />
 
       {/* ---------- the reference, in the open ----------

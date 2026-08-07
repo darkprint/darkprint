@@ -370,6 +370,16 @@ describe("the choreography hides the eight closed notes without deleting them", 
    * figure instead of reading it, and the author asked for the landing's version, which
    * has none. Pinned because the obvious way to "improve" this list is to make the heads
    * clickable again, and `stepScrollTop` no longer exists to make it work.
+   *
+   * ── This case is now load-bearing in a second way ──
+   * A rail of nine buttons over these nine annotations EXISTS: `./CardBreakdown.tsx`, which
+   * `/spec/card` mounts, on the author's instruction that the scroll effect come off that
+   * page and stay everywhere else ("keep it for the other pages"). This scan is what makes
+   * the parenthesis enforceable. The tempting shape is one component with a `mode` prop,
+   * and that shape puts the buttons in THIS file and obliges whoever writes it to loosen
+   * this case — at which point nothing is left saying the landing's beat has no controls.
+   * If the two ever do merge, the replacement has to assert the landing's mount renders no
+   * button, not merely that some mount might not.
    */
   it("gives the reader nothing to click inside the walk", () => {
     expect(SOURCE).not.toContain("<button");

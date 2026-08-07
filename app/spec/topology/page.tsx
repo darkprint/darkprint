@@ -160,8 +160,20 @@ export default function SpecTopologyPage() {
               the prose stops being a column and becomes what it always should have been —
               body prose at `.prose-lane`'s measure — and the figure takes the width.
 
-              `gap-10` between them, unchanged from the grid this replaces. */}
-          <div className="prose-lane flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
+              `gap-10` between them, unchanged from the grid this replaces.
+
+              ── No `.prose-lane` here, deliberately ──
+              Every other body block on the site is capped at the 36rem measure, and that
+              is still the default: long lines hurt reading. The author asked, for THIS
+              section only, that the text use the container's full horizontal length so the
+              three paragraphs sit on the same 1152px column as the `DotBreakdown` figure
+              directly beneath them — prose and figure reading as one band rather than a
+              narrow lane floating above a full-width drawing. The lane is dropped, not
+              widened, so nothing else inherits the exception. This is scoped and
+              intentional: do not "restore" `.prose-lane` here. The band below (`The
+              checks`) and every other route are untouched, and `DotBreakdown` itself is
+              not involved — it already took the full width. */}
+          <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
             <p>
               DOT attribute values are flat strings, which is the reason the
               format splits in two: the graph carries the wiring, and every

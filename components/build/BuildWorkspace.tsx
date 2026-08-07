@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import { RouteBoxLink } from "@/components/ui/RouteBoxLink";
 import { AgentHandoff } from "./AgentHandoff";
 import {
   APPROVAL_OPTIONS,
@@ -98,16 +98,66 @@ import { WorkspaceStage } from "./WorkspaceStage";
    unconditionally on screen throughout, because it names the section rather than the
    figures in it.
 
-   ── The route-box replaces four deleted teaching steps, not the two exits ──
+   ── The wayfinding boxes replace four deleted teaching steps, not the two exits ──
    Spec §1.2: three of the deleted path's eight steps re-taught `/what-a-blueprint-is`'s
    three parts in the same words and the same order, and a fourth re-taught
    `/spec/topology`'s absent edge. Neither page benefits from a third copy on this one, so
-   what is here instead is a single `.route-box` — the site's one "this box leaves the page"
-   primitive (`app/globals.css`) — holding both destinations before the reader starts
-   choosing. One box, two links, read once by whoever wants the theory and scrolled past
-   once by everyone else, exactly as spec §2.2 asks. This is a different box from the one lower down that
-   introduces the two exits: that heading names what a reader leaves WITH, this one names
-   where they can read more before they choose anything.
+   what is here instead are two links wearing the site's one "this box leaves the page"
+   primitive (`app/globals.css`), holding both destinations before the reader starts
+   choosing. Read once by whoever wants the theory and scrolled past once by everyone else,
+   exactly as spec §2.2 asks. These are different from the section lower down that
+   introduces the two exits: that heading names what a reader leaves WITH, these name where
+   a reader can read more before they choose anything.
+
+   ── They are controls now, not a slab ──
+   The author, 2026-08-07, at a screenshot of this box: "fix as they are buttons but adopt
+   a bad style that already I flagged to you." The style he had already flagged, and the
+   one that answered it, both exist. What stood here before this pass: ONE `.route-box`
+   spanning the whole 1152px measure at 1440, `p-5`, holding two `flex-1` halves split by a
+   hairline, each with a mono label, a title and two lines of blurb — a panel containing
+   two links, which is the geometry he rejected on the pagers the same day ("Make the box
+   smaller, avoid the subtitle and make the title more clear. As they look, they do not
+   seem even buttons."). `SpecPager`, `RoutePager` and `OnwardRoutes` were shrunk to a
+   content-hugging card that day; this box was missed, so it was the last full-measure
+   `.route-box` left on the site — and it sat below a header whose cyan pills are the
+   page's other controls, which made the amber slab read as a callout beside them.
+
+   It now renders two `RouteBoxLink`s — the same card, from one file (see
+   `components/ui/RouteBoxLink.tsx`, which this pass extracted rather than let this be the
+   fourth hand-written copy of its class string). Each hugs its content and caps at 19rem,
+   so the pair sit side by side as two controls, 227px and 195px wide at 1440, with the
+   page's ground either side of them instead of one 1152px rectangle. The blurbs are gone: a sentence is what turns a control back
+   into a callout, and both sentences were describing the destination page rather than
+   naming it.
+
+   ── The labels say where, the titles say what it is called ──
+   "The three parts" over "What a blueprint is made of", and "The absent edge" over "Why
+   one edge stays undrawn": four phrases, and not one of them was the name of the page it
+   opened. A reader could not tell from either card which route they were about to be on.
+   The eyebrow now carries the destination's own path plus an arrow, and the title is the
+   name that route's nav entry and its own `h1` already spell — `/what-a-blueprint-is` is
+   "What a blueprint is", `/spec/topology` is "The topology, in DOT" (`SPEC_LAYERS` in
+   `components/spec/sequence.ts`). One route, one name, which is `OnwardRoutes`' rule and
+   `components/site/nav.test.ts`'s.
+
+   ── How these stay tellable apart from the COMING SOON pill on this screen ──
+   `app/globals.css` argues that `.route-box` and `ComingSoonBadge` — amber's only two
+   spends sitewide — are told apart by SHAPE and not hue, and it names the shape as "a wide
+   rectangle with a leading rule" against "a small uppercase pill". `/build` renders two of
+   those badges — `DownloadStep` and `AgentHandoff` each carry one — so this page is
+   exactly where the distinction has to survive a shrink. Measured at 1440 after this pass:
+   `AgentHandoff`'s badge is 114 x 28px, fully round, one line; these two cards are
+   227 x 71 and 195 x 71, and the pair `OnwardRoutes` draws in this page's own footer —
+   189px under that badge, the closest the two ever sit — is 164 x 71 and 127 x 71, so the
+   smallest `.route-box` on the route is still two and a half times the badge's box. Every
+   part of the shape argument survives, and one part is new: these are still
+   12px-radius RECTANGLES, never `rounded-full`; they still carry the 2px amber rule down
+   the leading edge, which the badge has nowhere; they are still TWO stacked lines, a mono
+   label over a 16px display title, where the badge is one uppercase line of 11px mono; and
+   they now carry an ARROW, which the badge never does and which this box never did either.
+   The only thing that changed is that the rectangle stopped being 1136px wide — and width
+   was never what separated them, since a 19rem card is still four times the badge's
+   footprint and still built from four features the badge has none of.
    ============================================================ */
 
 /** `choose()`'s own diff, pulled out for `BuildWorkspace.test.ts` — see the header
@@ -149,32 +199,30 @@ export function BuildWorkspace() {
 
   return (
     <div className="flex flex-col gap-10">
-      {/* Spec §2.2: one route-box, both outbound links, above the workspace. `.route-box`
-          and `.route-label` are the only legal amber here besides `ComingSoonBadge`. */}
-      <div className="route-box flex flex-col gap-5 p-5 sm:flex-row">
-        <Link href="/what-a-blueprint-is" className="group flex flex-1 flex-col gap-1.5">
-          <span className="route-label">The three parts</span>
-          <span className="font-display text-base font-semibold leading-snug text-fg transition-colors hoverable:group-hover:text-amber-bright">
-            What a blueprint is made of
-          </span>
-          <span className="text-[13px] leading-relaxed text-muted">
-            The graph, a card for every node, and the vocabulary both are written against.
-            The tabs below draw the same three readings.
-          </span>
-        </Link>
-        <Link
+      {/* Spec §2.2: both outbound links, above the workspace — now as two signposts
+          rather than one slab. `RouteBoxLink` and `.route-label` are the only legal amber
+          here besides `ComingSoonBadge`; see this file's docblock for how the two stay
+          tellable apart on a screen that shows both. `flex-wrap` because two cards capped
+          at 19rem each still need somewhere to go on a narrow tablet. */}
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap">
+        <RouteBoxLink
+          href="/what-a-blueprint-is"
+          label={
+            <>
+              /what-a-blueprint-is <span aria-hidden>→</span>
+            </>
+          }
+          title="What a blueprint is"
+        />
+        <RouteBoxLink
           href="/spec/topology"
-          className="group flex flex-1 flex-col gap-1.5 sm:border-l sm:border-line sm:pl-5"
-        >
-          <span className="route-label">The absent edge</span>
-          <span className="font-display text-base font-semibold leading-snug text-fg transition-colors hoverable:group-hover:text-amber-bright">
-            Why one edge stays undrawn
-          </span>
-          <span className="text-[13px] leading-relaxed text-muted">
-            The five roles, and the wire that never runs from the planner straight to the
-            builder.
-          </span>
-        </Link>
+          label={
+            <>
+              /spec/topology <span aria-hidden>→</span>
+            </>
+          }
+          title="The topology, in DOT"
+        />
       </div>
 
       <section aria-labelledby="workspace-heading" className="flex flex-col gap-5">

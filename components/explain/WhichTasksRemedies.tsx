@@ -142,7 +142,8 @@ export function WhichTasksRemedies() {
             Put a person where being wrong stops being cheap
           </h3>
           <p className="text-sm leading-relaxed text-muted">
-            A critical task is still buildable, in the shape the figure above draws. The
+            A critical task is still buildable, in the shape the figure at the top of this
+            page names. The
             agents keep the toil, and the irreversible call stays with whoever is
             accountable for it.
           </p>

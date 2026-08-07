@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { RouteBoxLink } from "@/components/ui/RouteBoxLink";
 
 import { neighbours } from "./route";
 
@@ -48,23 +48,18 @@ import { neighbours } from "./route";
    the merge — and the cards hug their content.
    ============================================================ */
 
-/* `route-box`, not `panel`: these leave the page, and the author asked for the boxes that
-   do to be visually distinct from the ones carrying a concept. `app/globals.css` records
-   why the distinction is shape as well as hue — and the shrink keeps every part of that
-   shape: a 12px-radius rectangle, the 2px rule down the leading edge, and two stacked
-   lines. `ComingSoonBadge` is a full-round pill of one line with no rule, so the two stay
-   tellable apart by silhouette. A one-line version of this box would not be.
+/* `RouteBoxLink`, not `panel`: these leave the page, and the author asked for the boxes
+   that do to be visually distinct from the ones carrying a concept. The card used to be a
+   class string spelled out right here, byte-identical to two other copies; `/build` was
+   about to write a fourth, so it moved to `components/ui/RouteBoxLink.tsx`, whose docblock
+   carries the shape argument in full — a 12px-radius rectangle, the 2px rule down the
+   leading edge, two stacked lines and an arrow, against `ComingSoonBadge`'s one-line
+   full-round pill.
 
    These two cards are now the only amber on the whole route. `WhichTasksGlance` spent it
    on three arcs, a disc and a caption callout, and `WhichTasksChecks` on a top rule; both
    are recoloured, so the site's rule — amber means `ComingSoonBadge` or "this box leaves
-   the page", and nothing else — holds here without exception.
-
-   `max-w-[19rem]` is sized off the longest label in `CLIMB_ROUTE` ("Towards a Dark
-   Factory"), which fits on one line inside it; the cap is shared with `SpecPager`, whose
-   titles are longer and wrap to two. */
-const CARD =
-  "route-box group inline-flex max-w-full flex-col gap-1.5 px-4 py-3 sm:max-w-[19rem]";
+   the page", and nothing else — holds here without exception. */
 
 export function RoutePager({ href }: { href: string }) {
   /* `neighbours` throws on a path the route does not carry, so a typo stops the build
@@ -78,27 +73,29 @@ export function RoutePager({ href }: { href: string }) {
       className="flex flex-col items-start gap-4 border-t border-line pt-8 sm:flex-row"
     >
       {previous !== undefined && (
-        <Link href={previous.href} rel="prev" className={CARD}>
-          <span className="route-label">
-            <span aria-hidden>← </span>previous
-          </span>
-          {/* `hoverable:` gates the hover on `(hover: hover) and (pointer: fine)`: a tap
-              on a phone has no "leave", so an ungated `group-hover` latches the amber on
-              whichever exit was last touched. */}
-          <span className="font-display text-base font-semibold leading-snug text-fg transition-colors hoverable:group-hover:text-amber-bright">
-            {previous.label}
-          </span>
-        </Link>
+        <RouteBoxLink
+          href={previous.href}
+          rel="prev"
+          label={
+            <>
+              <span aria-hidden>← </span>previous
+            </>
+          }
+          title={previous.label}
+        />
       )}
       {next !== undefined && (
-        <Link href={next.href} rel="next" className={`${CARD} sm:ms-auto sm:text-right`}>
-          <span className="route-label">
-            next<span aria-hidden> →</span>
-          </span>
-          <span className="font-display text-base font-semibold leading-snug text-fg transition-colors hoverable:group-hover:text-amber-bright">
-            {next.label}
-          </span>
-        </Link>
+        <RouteBoxLink
+          href={next.href}
+          rel="next"
+          className="sm:ms-auto sm:text-right"
+          label={
+            <>
+              next<span aria-hidden> →</span>
+            </>
+          }
+          title={next.label}
+        />
       )}
     </nav>
   );

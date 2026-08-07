@@ -116,13 +116,22 @@ function words(text: string): number {
   return text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
 }
 
-/** One line of prose, cut at a word boundary so a slot never wraps into a paragraph. */
-function oneLine(text: string, limit = 88): string {
-  const flat = text.replace(/\s+/g, " ").trim();
-  if (flat.length <= limit) return flat;
-  const cut = flat.slice(0, limit);
-  const space = cut.lastIndexOf(" ");
-  return `${(space > limit * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`;
+/**
+ * The prose as one run of text, with the document's folding taken out.
+ *
+ * Every long field in the archive is a YAML folded scalar, so the line breaks in the file
+ * are the author's right margin rather than the author's paragraphs. Flattening here means
+ * the renderer's line clamp counts the lines a reader actually sees instead of the lines
+ * the file happened to wrap at.
+ *
+ * This replaced `oneLine`, which cut `action` at 88 characters. Measured over the 53 cards
+ * the archive publishes, all 53 were cut: the resting row never once showed a whole action.
+ * A character budget also cannot be right on two viewports at the same time, the value
+ * column being 720px wide on a desktop and 304px on a phone. Cutting is now the renderer's
+ * job and it cuts in lines, which is the unit the reader is looking at.
+ */
+function flatten(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
 }
 
 /**
@@ -166,11 +175,25 @@ function optional(value: string | undefined, empty: string): { filled: boolean; 
  * about autonomy, but the habit it is defending against is general: a slot rendered as
  * a gap to be filled turns a complete card into a checklist with items outstanding, and
  * a card that declares no tools and no risk markers has answered both questions.
+ *
+ * ── `value` is the value, and a word count is not one ──
+ * The author, looking at the `spec` row: "I expected the content of the spec there and if
+ * this does not fit within the available space, on click it shows the details." Three
+ * fields used to answer with a description of themselves instead — `spec` and `notes` with
+ * a word count, `action` with the first 88 characters — and `params` answered with its keys
+ * and dropped every value. So every one of the 23 keys below now returns what the card
+ * wrote, and the renderer clamps it to two lines and unclamps it when the row is opened.
+ * Nothing is cut at build time and nothing is behind a measurement.
+ *
+ * What the reader loses by that is the size of a long field at a glance, so `measure`
+ * carries it: a short figure that sits in the row's right-hand meta slot beside the line
+ * range, and is what `announce` reads into the live region in place of a 700-character
+ * paragraph. Only the fields whose value runs past a couple of lines set one.
  */
 function fieldValue(
   key: string,
   card: NodeCard,
-): { filled: boolean; value: string; detail?: string } {
+): { filled: boolean; value: string; measure?: string; detail?: string } {
   switch (key) {
     case "id":
       return { filled: true, value: card.id };
@@ -183,21 +206,26 @@ function fieldValue(
       // it. An intake or a retrieval step stands in none of them and says so.
       return list(card.phases, "outside the five");
     case "action":
-      return {
-        filled: true,
-        value: oneLine(card.action),
-        ...(oneLine(card.action) === card.action.replace(/\s+/g, " ").trim()
-          ? {}
-          : { detail: card.action }),
-      };
+      // One sentence, 105 to 248 characters across the archive. It fits the clamp on a
+      // desktop and takes two lines on a phone, so it carries no `measure`: there is
+      // nothing left over for a figure to stand for.
+      return { filled: true, value: flatten(card.action) };
     case "spec":
-      // The prose itself is in pane 4, on the lines this slot points at. What belongs in
-      // a slot is its size and its purpose, which is what doc 1 §0.1.2 makes it: the
-      // payload handed to Claude Code, or an equivalent agent, when the graph is run.
+      // The whole payload, which is what doc 1 §0.1.2 makes it: the prose handed to Claude
+      // Code, or an equivalent agent, when somebody instantiates the graph on their own
+      // machine. This slot used to say only how long it was, on the argument that "the
+      // prose itself is in pane 4, on the lines this slot points at" — and that argument
+      // stopped being true when `SynchronisedPanes` dropped panes 3 and 4 from the
+      // blueprint page, which is the only surface that mounts this pane. There is no
+      // second representation of the spec on that page. This slot is it.
+      //
+      // `card/spec-too-thin`, and that it only measures length, is not lost with the
+      // sentence that used to sit here: it is in `FIELD_NOTE.spec`, which every open row
+      // prints above the value, in a stronger form than this line ever carried.
       return {
         filled: true,
-        value: `${words(card.spec)} words, handed to the agent when the graph is instantiated`,
-        detail: card.spec,
+        value: flatten(card.spec),
+        measure: `${words(card.spec)} words`,
       };
     case "model":
       return optional(card.model, "not named");
@@ -212,7 +240,18 @@ function fieldValue(
     case "mcp":
       return list(card.mcp, "no server is named");
     case "params":
-      return list(Object.keys(card.params), "none set");
+      // Keys **and** values. The keys alone were the one field on this pane whose content
+      // a reader could not reach at all: no detail behind the row, and the blueprint page
+      // draws no YAML pane to fall back on, so `max_iterations: 3` existed on that page
+      // only inside the flight payload. A value that is not a string is JSON so a nested
+      // one still says what it is rather than collapsing to its type.
+      return list(
+        Object.entries(card.params).map(
+          ([name, value]) =>
+            `${name}: ${typeof value === "string" ? value : JSON.stringify(value)}`,
+        ),
+        "none set",
+      );
     case "inputs":
       return {
         ...list(
@@ -245,12 +284,15 @@ function fieldValue(
     case "risk_markers":
       return list(card.riskMarkers, "none declared");
     case "notes":
+      // The commentary itself. Whose voice it is was the job of the words "of author's
+      // notes", and that is `FIELD_NOTE.notes`, which also carries the claim the count
+      // could never make: nothing in the engine reads this and no check is made against it.
       return card.notes === undefined || card.notes.trim() === ""
         ? { filled: false, value: "none" }
         : {
             filled: true,
-            value: `${words(card.notes)} words of author's notes`,
-            detail: card.notes,
+            value: flatten(card.notes),
+            measure: `${words(card.notes)} words`,
           };
     case "version":
       return { filled: true, value: card.version };
@@ -276,8 +318,9 @@ function buildCard(
   const fields: PaneField[] = [];
   for (const block of CARD_BLOCKS) {
     for (const key of block.keys) {
-      const { filled, value, detail } = fieldValue(key, card);
+      const { filled, value, measure, detail } = fieldValue(key, card);
       const field: PaneField = { key, group: block.id, filled, value };
+      if (measure !== undefined) field.measure = measure;
       if (detail !== undefined && detail.trim() !== "") field.detail = detail;
       const lines = blocks.get(key);
       if (lines !== undefined) field.lines = lines;

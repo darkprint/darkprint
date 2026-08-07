@@ -5,9 +5,10 @@ import { partitionTerms } from "@/lib/core";
 import { allBlueprints, allNodeCards, getNodeCard, getOntologyView } from "@/lib/content";
 import {
   EvalHarnessBlueprint,
+  GuardrailShape,
+  HandoverAxis,
   WhatACardReaches,
 } from "@/components/explain/ConceptFigures";
-import { SectionExample } from "@/components/home/SectionExample";
 import {
   CardStackFigure,
   FigureFrame,
@@ -79,7 +80,10 @@ import { PanelHeading, SectionHeading } from "@/components/ui/SectionHeading";
    3. the paragraph saying a bundle is a folder holding all three.
       It was the only sentence on the site that said so;
    4. `SectionExample`, the analyzer run on a real bundle, which
-      `/spec` was the only mount of.
+      `/spec` was the only mount of. That band was removed on the
+      author's instruction later the same day, and the component
+      is an orphan now — the note at its old position, below,
+      records why the file is still in the tree.
 
    What did NOT come across: the doors' own heading ("Three
    layers, three questions") and their `<ol>`. This page already
@@ -350,7 +354,9 @@ export default function WhatABlueprintIsPage() {
      it flags the two blueprints the note highlights (`lib/data/community.ts`), and
      `find((bp) => bp.seed)` drew Adversarial Consensus Line here. The starter is what
      every other worked example on the site opens with, so a reader who met it on the
-     landing meets it again, and `SectionExample` further down names the same bundle.
+     landing meets it again. (`SectionExample` further down used to name the same bundle,
+     and was removed on the author's instruction; nothing on this page links to the
+     starter's own detail page any more, which is recorded at its old position.)
      The fallback keeps the panel drawn rather than blank if it is ever renamed. */
   const starter = all.find((bp) => bp.slug === STARTER_SLUG) ?? all[0];
   const builder = getNodeCard("code-builder");
@@ -410,9 +416,19 @@ export default function WhatABlueprintIsPage() {
 
           {/* The sentence the deleted `/spec` index carried above its three doors, and the
               only place on the site that says what a bundle is as an object on disk.
-              `.prose-lane` rather than the container: this is body prose under a lead that
-              takes the full column, which is the standing ruling. */}
-          <p className={`prose-lane ${PROSE}`}>
+
+              Full width, on the author's instruction: "this paragraph must occupy the full
+              horizontal space". It wore `.prose-lane` (36rem) until 2026-08-07 and the note
+              that put it there argued the standing ruling, that body prose under a
+              full-width lead takes the reading measure. The instruction overrides it, and
+              the layout argues for it too: the three bands under this paragraph run the
+              full twelve columns and their prose ends where the opposite band's figure
+              does, so a 576px paragraph sitting above 1152px of aligned bands was the one
+              ragged left edge left on the section. At `container-page`'s 1200px cap this
+              line is about 152 characters, which is past `--measure` by a long way and is
+              the deliberate cost of the alignment — the same trade the bands' own note
+              records, made once more and for the same reason. */}
+          <p className={PROSE}>
             A bundle is a folder holding all three: the graph, the cards it pins, and the
             local vocabulary when its cards reach for a term the curated core does not
             have. Every example on these pages is read out of that folder during the
@@ -503,22 +519,26 @@ export default function WhatABlueprintIsPage() {
           it belongs after a reader knows a card has fields. That prerequisite is met, and
           it was never `SectionExample` that met it: the band above draws `CardStackFigure`
           with `type / phase / model / in / out / cannot` on it, which is where a reader
-          learns a card has fields at all. `SectionExample` opens no card — it draws the
-          absent edge and the scorecard. So the dependency the old note named survives the
-          move intact, and the page now reads abstract then concrete once instead of twice:
-          the three parts, the words for them, then one real bundle with both applied to it.
+          learns a card has fields at all. That dependency survives, and it survives the
+          removal of `SectionExample` too, which happened later the same day.
 
-          ── The two same-ground seams this creates, deliberately ──
-          The run is void (header) / surface / surface / void (`SectionExample`) / void /
-          surface / void. Two seams therefore fall between sections on the same ground, and
-          both are ruled by a full-bleed `border-t border-line`: three-parts → the-words,
-          which is the point of the move (they are one teaching region, and the rule inside
-          it marks a change of subject rather than a change of chapter), and
-          `SectionExample` → "what you do with one", which is where the moved section used
-          to do the alternating. `/reading-the-radar` already ships two such seams, so this
-          is the site's existing practice rather than a new licence. The one relationship
-          that did NOT change is the one the note below depends on: `SectionExample` still
-          follows a `bg-surface` band, so its own seam is still a change of ground.
+          ── What this section holds now ──
+          Five blocks, in one order: what one card reaches (`WhatACardReaches`), what a
+          constraint on that reach is and where it can sit (`GuardrailShape`), when this
+          site stops being able to see it (`HandoverAxis`), the three nested things a run
+          is made of (`EvalHarnessBlueprint`), and why one edge is missing from all of
+          them. It starts inside one card and zooms out, which is what its own lead
+          promises, and the two figures added on 2026-08-07 sit at the point in that zoom
+          where a single node is still the subject.
+
+          ── The one same-ground seam this creates, deliberately ──
+          The run is void (header) / surface / surface / void / surface / void, and one
+          seam falls between sections on the same ground: three-parts → the-words, ruled by
+          a full-bleed `border-t border-line`. That is the point of the move — they are one
+          teaching region, and the rule inside it marks a change of subject rather than a
+          change of chapter. `/reading-the-radar` already ships two such seams, so this is
+          the site's existing practice rather than a new licence. The second one this note
+          used to describe is gone with the band that made it.
 
           One paragraph did not travel: the observability correction ("Observability is not
           modelled here at all …"). The author asked for it deleted in the same instruction
@@ -552,6 +572,40 @@ export default function WhatABlueprintIsPage() {
             />
           )}
 
+          {/* ---------- the guardrail, and the axis it sits on ----------
+              New on 2026-08-07, from the podcast document's one genuine contribution: the
+              word "guardrail" appeared nowhere on this site, in any register, and it is
+              the name for the thing `cannot` already is.
+
+              It sits directly under `WhatACardReaches` because it grows out of the row a
+              reader has just finished — `cannot`, "what must never arrive" — and turns a
+              field into a category. Before "Many nodes", because it is still about one
+              node: the section's lead promises a walk that starts inside one card and
+              zooms out, and a constraint on what reaches a single node is the last thing
+              said at that scale.
+
+              The two figures ship together or not at all. "Guardrail" carries a runtime
+              connotation everywhere else it is written, so the word alone would let a
+              reader assume something here acts during a run; `HandoverAxis` is what
+              answers that, and it answers it with a picture of *when* rather than with a
+              third sentence about what DarkPrint does not do. The author has asked that
+              sentence off twice. */}
+          <div className="flex flex-col gap-3">
+            <PanelHeading>A guardrail is a shape, not a sentence</PanelHeading>
+            <p className={`prose-lane ${PROSE}`}>
+              &ldquo;Be careful with the database&rdquo; in a prompt is a wish. A guardrail
+              is a constraint with a place: on what arrives, on what a node may reach for,
+              or on what leaves. A blueprint is a file, so it writes constraints down
+              rather than applying them, and one of them is already enforced here.{" "}
+              <code className="font-mono text-[13px] text-copper-line">cannot</code> naming
+              a data type is a rule the resolver holds every incoming edge to, at error
+              severity, whichever node draws the edge.
+            </p>
+          </div>
+
+          <GuardrailShape />
+          <HandoverAxis />
+
           {/* Two sub-blocks, each a `PanelHeading` over one paragraph. On `/concepts`
               both were `SectionHeading` bands of their own, one per full-bleed section;
               folded into a section that already has a heading, a second and third `h2` at
@@ -559,10 +613,19 @@ export default function WhatABlueprintIsPage() {
               and the outline stays h1 → h2 → h3. */}
           <div className="flex flex-col gap-3">
             <PanelHeading>Many nodes, and the thing that runs them</PanelHeading>
+            {/* The second half is the podcast document's `Agente = Modello + Harness`,
+                spent as prose because the equation itself is drawn one element down, in
+                `EvalHarnessBlueprint`'s figcaption. Saying it twice in two registers is
+                what the figure is for; saying it here in words is what makes the third
+                term — the blueprint, which is on neither side of the equals sign — land. */}
             <p className={`prose-lane ${PROSE}`}>
               Wire the nodes together and you have a blueprint: who hands what to whom,
               and which edges were deliberately left out. Give that blueprint a harness
               and it runs; grade what comes back against a rubric and you have an eval.
+              The card names the model, which is the brain. The harness is the body and
+              the building around it: it routes the work, holds the shared state, hands
+              each node its tools and retries what fails. A blueprint is neither, and it
+              is the only one of the three you download here.
             </p>
           </div>
 
@@ -595,23 +658,54 @@ export default function WhatABlueprintIsPage() {
                 The edge that is not there <span aria-hidden>&rarr;</span>
               </Link>
             </p>
+            {/* The multi-agent half of the guardrail block above, said where it is
+                demonstrated rather than where it is defined. In a graph a guardrail stops
+                being a wall around the system and becomes a rule on a handoff, and this
+                prohibition is one: it is checked on every path, not at an edge somebody
+                remembered to annotate. It replaces the argument `SectionExample` used to
+                draw one band down with its check/cross pair, which is gone. */}
+            <p className={`prose-lane ${PROSE}`}>
+              That is what a guardrail looks like once there is more than one agent. It
+              stops being a wall around the system and becomes a rule on a handoff, and
+              this one is checked on every path through the graph rather than on the edges
+              somebody remembered to annotate.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* ---------- the three parts and the words, on one real bundle ----------
-          `SectionExample` was mounted only on the deleted `/spec`, and it is the site's
-          only worked analyzer run outside a blueprint detail page: the starter's graph,
-          the edge that is not there, and the scorecard the engine computes from both.
-          It reads the same `starter-software-factory` the three figures above read, so a
-          reader meets the parts, then the words for them, then both assembled on one
-          bundle. It is the page's single hinge from drawing to file.
+      {/* ---------- "One factory, drawn" was here, and is gone ----------
+          The author asked for the section removed entirely (2026-08-07). It was
+          `components/home/SectionExample`: the starter's graph on a cyanotype plate, the
+          absent `planner -> builder` edge with its check/cross pair, and the six-axis
+          scorecard.
 
-          It owns its own full-bleed `bg-void py-20 sm:py-28` band and its own eyebrow.
-          The band above it is `bg-surface`, so the seam is a change of ground, which is
-          how the landing marks one. That was true when the band above was the three parts
-          and it is still true now that it is the words. */}
-      <SectionExample />
+          **The component now has no consumer anywhere on the site.** This page was its
+          only mount — it came here when `/spec` was deleted, and `/spec` had been its only
+          mount before that. The file is deliberately left in the tree rather than deleted
+          with the band, for two reasons worth stating so a later pass does not undo the
+          judgement by accident:
+
+          1. `components/ui/scorecard-glance.test.ts` reads its source and asserts that it
+             mounts `MetricBars` with no `audit=` prop. That is a real rule about how the
+             scorecard is drawn when nothing sits beside it, and deleting the file would
+             delete the case rather than satisfy it;
+          2. it is the site's only worked analyzer run outside a blueprint detail page, and
+             the argument it drew — that the isolation rule lives in the wiring and is
+             checkable because the wiring is a file — is now made on this page only in
+             prose, under "Why the rubric is kept away".
+
+          So: an orphan on purpose, reported rather than swept. Deleting it is a one-line
+          change plus that test case whenever the author wants it. Nothing else in the tree
+          references it except comments and PROJECT.md's page-weight table.
+
+          ── What the removal does to the page's ground rhythm ──
+          The run was void (header) / surface / surface / void (`SectionExample`) / void /
+          surface / void, and it carried two seams between sections on the same ground. One
+          of those two is gone with the band: the words section is now followed directly by
+          "What you do with one" on `bg-void`, so that seam is a change of ground, which is
+          how the landing marks one. The remaining same-ground seam is three-parts → the
+          words, which is deliberate and is documented above it. */}
 
       <section className="border-t border-line bg-void py-16">
         <div className="container-page flex flex-col gap-8">

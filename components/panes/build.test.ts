@@ -228,9 +228,68 @@ describe("buildPaneModel — the card skeleton", () => {
     const fields = model().nodes.find((n) => n.nodeId === "builder")?.card?.fields ?? [];
     const spec = fields.find((f) => f.key === "spec");
     expect(spec?.lines).toEqual({ start: 8, end: 9 });
+  });
+
+  /* This assertion used to pin "15 words, handed to the agent when the graph is
+     instantiated" — the slot answering with a description of itself. The author asked for
+     the content instead, so it pins the content, and the two claims that sentence carried
+     are checked where they went rather than dropped: the size is `measure`, and "handed to
+     the agent" is `FIELD_NOTE.spec`, which says it in the honest form doc 1 §0.1.3 wants,
+     naming whose machine the graph is instantiated on. */
+  it("puts what the card wrote on the slot, and its size beside it", () => {
+    const fields = model().nodes.find((n) => n.nodeId === "builder")?.card?.fields ?? [];
+    const spec = fields.find((f) => f.key === "spec");
     expect(spec?.value).toBe(
-      "15 words, handed to the agent when the graph is instantiated",
+      "A build brief arrives with the run. Write the source it describes and nothing else.",
     );
+    expect(spec?.measure).toBe("15 words");
+    // Nothing behind the row: it opens by unclamping itself, so a `detail` here would be
+    // the row repeating what it had just shown.
+    expect(spec?.detail).toBeUndefined();
+
+    const action = fields.find((f) => f.key === "action");
+    expect(action?.value).toBe("Work through the build brief.");
+    expect(action?.measure).toBeUndefined();
+  });
+
+  it("flattens a folded scalar so the clamp counts the reader's lines, not the file's", () => {
+    const folded = buildPaneModel({
+      slug: "s",
+      title: "S",
+      dot: DOT,
+      nodes: [
+        {
+          nodeId: "builder",
+          label: "B",
+          ref: "code-builder@1.0.0",
+          card: card({ notes: "One line,\nwrapped by the\n  document's margin." }),
+          yaml: CARD_YAML,
+        },
+      ],
+    });
+    const notes = folded.nodes[0].card?.fields.find((f) => f.key === "notes");
+    expect(notes?.value).toBe("One line, wrapped by the document's margin.");
+    expect(notes?.measure).toBe("7 words");
+  });
+
+  it("carries the values of `params` and not only its keys", () => {
+    const configured = buildPaneModel({
+      slug: "s",
+      title: "S",
+      dot: DOT,
+      nodes: [
+        {
+          nodeId: "builder",
+          label: "B",
+          ref: "code-builder@1.0.0",
+          card: card({ params: { max_retries: 3, restore_scope: "last-valid-stage" } }),
+          yaml: CARD_YAML,
+        },
+      ],
+    });
+    const params = configured.nodes[0].card?.fields.find((f) => f.key === "params");
+    expect(params?.value).toBe("max_retries: 3, restore_scope: last-valid-stage");
+    expect(params?.filled).toBe(true);
   });
 
   it("leaves a slot the document never writes without a line range", () => {

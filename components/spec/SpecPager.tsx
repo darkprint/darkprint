@@ -39,6 +39,7 @@
 import Link from "next/link";
 
 import { cx } from "@/lib/format";
+import { RouteBoxLink } from "@/components/ui/RouteBoxLink";
 
 import { SPEC_OVERVIEW, SPEC_SEQUENCE, specNeighbours, type SpecPage } from "./sequence";
 
@@ -93,28 +94,28 @@ export function SpecCrumb({ href }: { href: string }) {
  * 2px rule down its leading edge, and two stacked lines (mono label over a display
  * title). The badge is a fully-rounded pill of one uppercase line and no rule. Do not
  * take this down to a single line — that is where the two would start to converge.
+ *
+ * ── The card itself lives in `components/ui/RouteBoxLink.tsx` ──
+ * It used to be a class string spelled out here, byte-identical to two other copies in
+ * `OnwardRoutes` and `RoutePager`; `/build` was about to write a fourth, so the shape was
+ * extracted. Everything above still holds — that file's docblock repeats the shape
+ * argument, because that is where the shape now is. What stays here is what only this
+ * pager knows: which page is adjacent, which side it sits on, and that `next` is pushed
+ * to the end of the row.
  */
 function PagerLink({ page, side }: { page: SpecPage; side: "previous" | "next" }) {
   const isNext = side === "next";
   return (
-    <Link
+    <RouteBoxLink
       href={page.href}
       rel={isNext ? "next" : "prev"}
-      /* `route-box`, not `panel`: this leaves the page, and the author asked for the
-         boxes that do to be told apart from the ones that carry a concept. See
-         `app/globals.css`. */
-      className={cx(
-        "route-box group inline-flex max-w-full flex-col gap-1.5 px-4 py-3 sm:max-w-[19rem]",
-        /* `sm:ms-auto` rather than the old `sm:col-start-2`: on `/spec` and
-           `/spec/scoring` only one arrow exists, and the grid pinned that singleton to
-           the second column, leaving a hole beside it. Pushed to the end of a flex row
-           instead, a lone NEXT sits right and a lone PREVIOUS sits left with nothing
-           reserved for the arrow that is not there. */
-        isNext && "sm:ms-auto sm:text-right",
-      )}
-    >
-      <span className="route-label">
-        {isNext ? (
+      /* `sm:ms-auto` rather than the old `sm:col-start-2`: on a route with only one
+         arrow, the grid pinned that singleton to the second column, leaving a hole
+         beside it. Pushed to the end of a flex row instead, a lone NEXT sits right and a
+         lone PREVIOUS sits left with nothing reserved for the arrow that is not there. */
+      className={cx(isNext && "sm:ms-auto sm:text-right")}
+      label={
+        isNext ? (
           <>
             Next <span aria-hidden>→</span>
           </>
@@ -122,12 +123,10 @@ function PagerLink({ page, side }: { page: SpecPage; side: "previous" | "next" }
           <>
             <span aria-hidden>←</span> Previous
           </>
-        )}
-      </span>
-      <span className="font-display text-base font-semibold leading-snug text-fg transition-colors group-hover:text-amber-bright">
-        {page.title}
-      </span>
-    </Link>
+        )
+      }
+      title={page.title}
+    />
   );
 }
 

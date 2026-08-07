@@ -349,27 +349,38 @@ interface LevelDrawing {
 const DRAWINGS: Record<Level["n"], LevelDrawing> = {
   1: {
     label:
-      "The path from request to merge, held by one person, with a completion model above it offering the next few tokens.",
+      "The path from request to merge, drawn in one unbroken violet run, held by one person from end to end with nobody and nothing else standing on it.",
     note: "the person holds the path end to end",
+    /* ── Why this frame is a bare run, 2026-08-07 ──
+       It carried three marks that the rest of the site's vocabulary refuses, and the author
+       asked for the figure redrawn rather than annotated:
+
+         · a `completion model` FlowNode. A lit disc on these frames means "a step in a
+           run", and a model is not one — it is a tool a card DECLARES, the way `model:`
+           sits in a node card beside `tools:`. `ConceptFigures.tsx` was rebuilt out of the
+           identical error with the identical noun, and the author's verdict on it there is
+           recorded as "very wrong". The level's own sentence beside the frame already says
+           the model finishes the line you are typing, which is the honest place for it: a
+           sentence, not a station on the path.
+         · the `the next few tokens` edge into that disc, which had nothing left to point at
+           once the disc went, and which drew a model's output as though it were a handoff
+           between steps.
+         · a HumanFlowNode at x=210, the midpoint. The note on this frame claims a SPAN —
+           "the person holds the path end to end" — and a disc says it at a POINT. Level 2
+           spends that same violet disc on genuine crossings, so a reader scanning 1 then 2
+           read "one touchpoint, then two", which is the inverse of the truth: level 1 is
+           the person holding everything and level 2 is the first place they let go.
+
+       What carries the claim now is `WorkPath`'s own `human: true`, which strokes the whole
+       run in the human tone from the request tick to the merge tick. That is the span the
+       note describes, drawn as a span. With this frame and level 5 (`nobody stands on the
+       path`, no violet at all) the ladder now has two clean poles, and every violet disc
+       between them marks a real crossing.
+
+       Do not restore a disc here to "balance" the frame against its neighbours. An empty
+       run is the drawing. */
     body: (
-      <>
-        <WorkPath runs={[{ from: PATH.from, to: PATH.to, human: true }]} start="request" end="merged" />
-        {/* Named rather than labelled. A vertical run this short puts its label within nine
-            units of the disc's own label, and the two words overlapped on the drawing. The
-            level's own sentence beside it says what the run carries — "the model finishes
-            the line you are typing" — and the accessible name says it inside the figure. */}
-        <FlowEdge
-          from={[210, 34]}
-          to={[210, 78]}
-          fromRadius={R}
-          toRadius={0}
-          tone="dim"
-          name="the next few tokens"
-          pulse={false}
-        />
-        <FlowNode x={210} y={30} r={R} tone="dim" label="completion model" />
-        <HumanFlowNode x={210} y={PATH.y} r={8} label="writes the code" />
-      </>
+      <WorkPath runs={[{ from: PATH.from, to: PATH.to, human: true }]} start="request" end="merged" />
     ),
   },
   2: {
@@ -493,22 +504,23 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
             directly under its own glyph, so the run out of the mark leaves sideways: an
             edge dropping away would be drawn straight through the words. */}
         <HumanFlowNode x={88} y={24} r={8} label="wrote the constraints" />
-        {/* Lands on the box's top edge, which moved down two units with the box. x=189 is
-            the one column free: sixteen units right of where "wrote the constraints" ends
-            and well clear of the caption, which is now at the other end of the same edge. */}
-        <FlowEdge
-          from={[189, 24]}
-          to={[189, 74]}
-          fromRadius={R}
-          toRadius={0}
-          tone="dim"
-          pulse={false}
-        />
-        {/* Named rather than labelled, on `SectionNodeIsCard`'s reasoning: the violet mark
-            100 units to the left already reads "wrote the constraints", so the word on this
-            disc was a second copy of it, and the two copies overlapped by 24 units.
-            `scene-labels.test.ts` found that one as well. */}
-        <FlowNode x={189} y={24} r={R} tone="dim" name="the constraints the harness runs inside" />
+        {/* ── The constraints are no longer a disc, 2026-08-07 ──
+            An anonymous `dim` FlowNode sat at [189, 24] carrying the accessible name "the
+            constraints the harness runs inside", with a vertical edge dropping from it onto
+            the box's top edge. It is the same category error the author had `ConceptFigures`
+            and level 1 redrawn for: a lit disc on these frames means a STEP IN A RUN, and a
+            set of constraints is a document — the thing a person writes and hands over, not
+            a station the work passes through. It was also the one mark on this frame with no
+            label at all, which is what a drawing looks like when a noun has nowhere to go.
+
+            Both the disc and its edge are gone rather than recoloured. What said "the person
+            wrote the constraints the harness runs inside" is now said by the two marks that
+            were already saying it: the violet `wrote the constraints` upstream of the box,
+            and the `harness` Boundary the constraints are the boundary OF. The person is
+            deliberately off the path here — that is this level's whole point, and it is why
+            the mark sits above the run rather than on it.
+
+            Nothing dangles: the edge deleted with the disc was the only run into it. */}
         {/* "reads at a checkpoint" was 21 characters on a row that had room for 16. The
             level's own sentence says people read the output at named checkpoints and the
             title block under the drawing says at a checkpoint, so the word the glyph itself

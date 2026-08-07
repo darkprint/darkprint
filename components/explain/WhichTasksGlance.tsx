@@ -1,375 +1,372 @@
-"use client";
-
-import {
-  FLOW,
-  FlowEdge,
-  FlowNode,
-  FlowScene,
-  HumanFlowNode,
-  Sheet,
-} from "@/components/viz";
-import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
+import { cx } from "@/lib/format";
 
 /* ============================================================
    Spec §4.3, and the author's sentence behind it: "you need to
    make people get in a glance the concepts."
 
-   The section under this figure is right and it was long. So it
-   opens with the whole argument as one drawing, and the drawing
-   has to carry four things:
+   ── The drawing this replaces, and why it had to go (2026-08-07) ──
+   The author: "it has wrong concepts assigned to nodes". He is
+   right, and `components/explain/ConceptFigures.tsx` records the
+   site making the identical mistake once before and being told so
+   in the same words ("very wrong"). The rule that file states is
+   the rule broken here: **in the luminous-flow register a lit
+   circle joined by an edge means one thing on this site — a node,
+   a step in a run — and an edge is data handed from one step to
+   the next.** `components/viz/FlowGlyphs.tsx` defines the register
+   that way and `components/viz/flow.ts` makes `human`
+   unrepresentable as a plain tone, so a violet disc can only ever
+   mean "a node where a person waits".
 
-     1. there are four questions and they are asked in series;
-     2. a no on 01, 02 or 03 names something missing that you can
-        go and supply, so it is a state of the task rather than a
-        verdict on it;
-     3. a no on 04 is answered by a person standing at the step
-        where a mistake gets expensive, which is a design and not
-        a consolation (doc 2 §1.1, and `HumanFlowNode` is violet by
-        construction so this branch cannot be drawn as a defect);
-     4. four yeses mean the task is a candidate.
+   This figure drew the four QUESTIONS as five lit discs on one
+   cyan rail. Everything that follows from that was wrong:
 
-   Every reading below restates a sentence the sections underneath
-   state in full, and the numbering is the numbering
-   `WhichTasksChecks` uses, so a reader who scans the figure and
-   then reads the page meets the same four things twice under the
-   same names.
+     · A question is not a step. `01 verdict`, `02 harness`,
+       `03 edges` and `04 cost` read as four components of the
+       machine rather than as four things to ask about your own
+       work — and the section lead directly above says the
+       opposite, that all four are "about the task rather than
+       about the graph you would draw for it". The lead and the
+       drawing could not both be right.
+     · Two of the four labels collided with the site's own graph
+       vocabulary. `edges` is this site's word for what runs
+       BETWEEN nodes, and it was a disc; `harness` is drawn as a
+       `Boundary` rectangle enclosing two nodes by
+       `components/home/SectionLevels.tsx` a couple of thousand
+       pixels up the same page, and it was a disc here. One word,
+       two object kinds, one scroll apart.
+     · Three arcs converged on one point, `supply what is missing`.
+       `WhichTasksRemedies` three bands lower groups the remedies
+       01/02 together, 03 on its own, and 03's is "shrink it until
+       the edges are visible" — reduce the task, fetch nothing. The
+       figure asserted a 3-into-1 merge the page does not hold.
+     · The terminal `a good fit` was emerald and lit. Emerald on
+       this site is a figure read off the engine. Nothing computes
+       this one; it is the reader's own answer.
+     · A left-to-right chain ending on one lit green disc is a
+       scoring rail, which is why the caption had to spend its last
+       line denying it ("So do not add these up"). When a caption
+       must contradict its own figure, the figure is wrong.
+       `SectionLevels` forbids exactly that shape on doc 2 §1.1
+       grounds — "no arrows between the levels, no progress track"
+       — on this same route.
+     · And it did not even render what it claimed. The four `no`
+       edge labels were in the SSR markup and invisible on every
+       desktop: `useLuminousFlow` hands edges `hover` when the
+       scene animates and `FLOW_CSS` hides those above `48rem` with
+       a fine pointer. The nodes passed `reveal="always"`; the five
+       edges passed nothing. The old header's own rule — "a figure
+       whose meaning waits for a pointer is a broken figure" — was
+       applied to the discs and missed on the arcs, so the branch
+       semantics were gone on the widest screens and nothing in
+       `components/viz/scene-labels.test.ts` could see it, because
+       that guard renders static markup where the media query never
+       applies.
 
-   ── Redesign spec §1 ──
-   The boxed register the author rejected carried a second line
-   under each gate. This one does not, so each gate says its number
-   and its handle and the question itself is the card underneath.
-   Labels stay `always` here: the four words are the argument, and
-   a figure whose meaning waits for a pointer is a broken figure.
+   ── What the figure has to say ──
+   The section under it is a checklist with one asymmetry, and the
+   asymmetry is the whole argument:
 
-   ── Two placements, because one of them was 42% off the screen ──
-   The figure used to be one 660-unit frame in an `overflow-x-auto`
-   box with `min-w-[34rem]`. Measured at 390: clientWidth 316
-   against scrollWidth 544, so 42% of the drawing was off the right
-   edge of a phone — including "04 cost", "a good fit" and "before
-   the expensive step", which are the two branches and the outcome.
-   It photographed as a crop, and this is the opening argument of
-   the page a reader is meant to take in at a glance.
+     1. four questions, asked about the task, in order;
+     2. a no on 01, 02 or 03 names something the task has not got
+        yet, so the TASK changes and you ask again;
+     3. a no on 04 names nothing missing, so the GRAPH changes: a
+        person stands where a mistake stops being cheap (doc 2
+        §1.1 — that is a design decision and never a shortfall);
+     4. four yeses mean a candidate, and there is nothing to add up.
 
-   The narrowest viewport this site lays out for renders 278 CSS px
-   of `<svg>` (`FLOW.frame.phone - FLOW.frame.chrome`), so a frame
-   has to be about 360 units wide or narrower for a 13-unit label to
-   clear `FLOW.frame.legible`. 660 cannot be squeezed to that. So
-   the wide frame stays for `sm` and up — where the sheet is at
-   least 544 px and its labels land at 10.7 — and a portrait frame
-   of the same drawing takes over below it, turned through ninety
-   degrees: the four questions run DOWN a thread and the two
-   branches go out to the right. That is `PhaseStrip`'s standing
-   proof applied here, and its labels land at 11.8 CSS px on a
-   390-pixel phone against the 6.2 a squeezed 660 would have given.
+   A left-to-right chain actively hides (2) against (3): it has to
+   spend three converging arrows on the thing a single brace says.
+   So this is a brace, and it is the one mark that can carry the
+   3-and-1 split at a glance.
 
-   `components/viz/scene-labels.test.ts` measures both frames, which
-   is why its roster entry says two. Neither placement is a
-   simplification of the other: every node, every branch and every
-   word is in both.
+   ── The register, and why nothing here is a scene ──
+   "adopt graphics and animations that are not necessarly drawn
+   from a 'blueprint' style". Same instruction, same answer as
+   `ConceptFigures`: rows and rules, real DOM text, and not one
+   svg element in the file. (Spelled out in words rather than as
+   the tag, because `which-tasks-glance.test.ts` greps this source
+   for it and `scene-labels.test.ts` greps every source on the site
+   for the scene's opening tag — naming either the short way round
+   would make both guards read their own documentation.) Three
+   things follow for free.
 
-   ── Amber left this figure (2026-08-07) ──
-   The three "supply what is missing" arcs and the disc they land on
-   were amber, and this comment used to argue for it: amber as "the
-   colour of something missing you can go and get", with the fourth
-   branch dim so that a person standing where a mistake gets
-   expensive could not be read as a shortfall.
+     · Every word is HTML, so it obeys the browser's own type floor
+       rather than viewBox units times rendered-width over frame-
+       width — the arithmetic that put five figures under the
+       legibility floor at once (see `scene-labels.test.ts`).
+     · The figure cannot ship 42% off the right edge of a phone,
+       which is what the old one did in an `overflow-x-auto` box
+       and what forced it to carry two whole placements. Text
+       wraps. One drawing now, not two.
+     · Nothing waits for a pointer, because there is no reveal gate
+       to forget.
 
-   The distinction is right and it is preserved. The colour was not
-   available. Amber has exactly two jobs on this site — `ComingSoonBadge`
-   ("not built yet") and `.route-box` ("this box leaves the page") —
-   and a third meaning for it, however well argued locally, is what
-   makes the other two stop working. It fired five ways on this
-   material alone: three arcs, a disc, a caption callout, plus the
-   two pager cards.
+   `components/ui/ReachList.tsx` is the site's row/connector/gloss
+   figure and it is deliberately NOT used here. Its own header
+   scopes it: "the left cell is the name as it is written in a
+   file". These left cells are not names in a file, they are the
+   numbers of four questions, and its rows point one-to-one while
+   the whole point of this drawing is that three of them point at
+   the same place. Its connector glyph is quoted, because that is
+   the mark this site already uses for "this reaches that".
 
-   Cyan carries them now, which is what cyan already means
-   everywhere else here: the run that carries work. A no on 01 to 03
-   sends you to fetch something and then back onto the same
-   pipeline, so the loop is drawn in the pipeline's own colour. The
-   fourth branch stays `dim` and still lands on a violet mark, so
-   the one distinction that comment was protecting is exactly as
-   visible as it was. Amber now fires twice on this whole route: the
-   pager's two cards.
+   ── Colour ──
+   One accent, and it is the asymmetry itself. Violet is where a
+   person acts, and the answer to a no on 04 is literally a person
+   standing at a step; `WhichTasksChecks` puts the same violet on
+   card 04 and `WhichTasksRemedies` on the third remedy, so the
+   three marks are one mark. Everything else is `--color-line` and
+   `--color-dim`. Amber is not spent here at all: it has exactly
+   two jobs sitewide and this route already spends both on the
+   pager's cards.
+
+   ── The words this absorbed ──
+   The caption used to carry four paragraphs, two of which were the
+   figure's own branches written out in prose because the drawing
+   could not say them. It carries one now. Nothing was lost: (2)
+   and (3) are the two outcome cells, and the "do not add these up"
+   line is the footnote under the rows.
+
+   The four questions are the SHORT forms. `WhichTasksChecks` asks
+   them in full three bands lower under the same numbers and the
+   same handles, which is the glance-then-read pairing this route
+   is built on; shortening them here is what stops the figure being
+   a fourth copy of that section. `WhichTasksGlance`,
+   `WhichTasksChecks` and `WhichTasksRemedies` have each recorded a
+   de-duplication pass against the other two, so the division has to
+   be stated rather than left to the next author's judgement: the
+   figure asks, the checks section asks in full and says how to
+   settle each one, the remedies section says what to do with a no.
+   Question 04's handle is the one shortened word — "the cost" here,
+   "the cost of being wrong" in the two sections below — because
+   twenty-three characters of 11px mono do not fit a 9rem column and
+   the question printed beside it carries the rest.
+
+   Server component: no hooks, no client bundle. Motion is
+   `anim-strip-in` from `globals.css`, whose resting style is the
+   finished one and which only plays under `prefers-reduced-motion:
+   no-preference`. Guarded by `which-tasks-glance.test.ts`.
    ============================================================ */
 
-/**
- * The wide frame. Read left to right, four questions on one line.
- *
- * `sm` and up only. See the header for the measurement.
- */
-const WIDE = {
-  width: 660,
-  height: 300,
-  /** The four questions and the outcome, on one line. */
-  row: 92,
-  /** Where a no lands. */
-  branch: 232,
-  /** The four, in the order and under the names `WhichTasksChecks` gives them. */
-  gates: [78, 208, 338, 468],
-  fits: { x: 600, y: 92 },
-  supply: { x: 248, y: 232 },
-  person: { x: 470, y: 232 },
-} as const;
+/** Milliseconds between one row drawing in and the next. Matches `ReachList`. */
+const STEP = 90;
 
-/**
- * The portrait frame, for everything below `sm`.
- *
- * 340 units wide, which renders at 11.8 CSS px per label on a 390-pixel phone and 10.6 on
- * the 360 `FLOW.frame` calls the floor — both clear of `FLOW.frame.legible`.
- *
- * Every number here is pinned by a word. The thread sits at x=66 because the widest gate
- * label ("01 verdict", "02 harness") is ten characters of 13-unit type, 81 units wide,
- * centred: any further left and it starts off the sheet. The two branch points sit at
- * x≈230 because "before the expensive step" is 24 characters, 193 units, and centred there
- * it ends 15 units short of the right edge. The rows are 88 units apart, which is what
- * keeps an edge's own "no" — written 8 units above the midpoint of its curve — off the
- * baseline of the gate label it passes.
- */
-const TALL = {
-  width: 340,
-  height: 470,
-  /** The thread the four questions hang on. */
-  x: 66,
-  gates: [40, 128, 216, 304],
-  fits: { x: 66, y: 428 },
-  supply: { x: 232, y: 268 },
-  person: { x: 228, y: 392 },
-} as const;
-
-/** The four, in the order and under the names `WhichTasksChecks` gives them. */
-const GATES = [
-  { id: "verdict", label: "01 verdict" },
-  { id: "harness", label: "02 harness" },
-  { id: "edges", label: "03 edges" },
-  { id: "blast", label: "04 cost" },
-] as const;
-
-const FITS_LABEL = "a good fit";
-const SUPPLY_LABEL = "supply what is missing";
-const PERSON_LABEL = "before the expensive step";
-
-/** The accessible description. One string, because the drawing is one drawing. */
-const DESCRIPTION =
-  "A task enters four questions in order: the verdict, the harness, the edges, and the cost of being wrong. A no on the first three branches to supplying what is missing. A no on the fourth branches to a person standing at that step. Four yeses reach a point reading that the task is a good fit.";
-
-/**
- * One placement, as the centre of every point in it.
- *
- * The two frames differ in geometry and in nothing else: same points, same runs, same
- * words, same tones. Writing the scene once against a table of centres is what keeps them
- * from drifting into two drawings that say different things.
- */
-interface Place {
-  width: number;
-  height: number;
-  /** Centre of gate `i`. */
-  gate: (i: number) => [number, number];
-  fits: [number, number];
-  supply: [number, number];
-  person: [number, number];
-  className?: string;
+interface Ask {
+  id: string;
+  /** The numeral, and the handle `WhichTasksChecks` files the same question under. */
+  n: string;
+  name: string;
+  /** The question in glance form. The asked form is in `WhichTasksChecks`. */
+  asks: string;
 }
 
-const WIDE_PLACE: Place = {
-  width: WIDE.width,
-  height: WIDE.height,
-  gate: (i) => [WIDE.gates[i], WIDE.row],
-  fits: [WIDE.fits.x, WIDE.fits.y],
-  supply: [WIDE.supply.x, WIDE.supply.y],
-  person: [WIDE.person.x, WIDE.person.y],
-  /* The sheet may not squeeze this frame below the width its labels were sized for. Under
-     `sm` the portrait placement is the one on screen, so this cap is never the reason a
-     page scrolls sideways. */
-  className: "min-w-[34rem]",
-};
+interface Group {
+  id: string;
+  rows: readonly Ask[];
+  /** Which numbers this brace gathers, written out so the relation survives without it. */
+  reads: string;
+  /** What a no on those rows moves. The four words the figure exists to separate. */
+  moves: string;
+  what: string;
+  /** Violet, and only on the group whose answer is a person. See the header. */
+  accent?: boolean;
+}
 
-const TALL_PLACE: Place = {
-  width: TALL.width,
-  height: TALL.height,
-  gate: (i) => [TALL.x, TALL.gates[i]],
-  fits: [TALL.fits.x, TALL.fits.y],
-  supply: [TALL.supply.x, TALL.supply.y],
-  person: [TALL.person.x, TALL.person.y],
-};
+const GROUPS: readonly Group[] = [
+  {
+    id: "task",
+    reads: "01 to 03",
+    moves: "The task changes",
+    what:
+      "A no names something the work has not got yet: a check nobody wrote, a target nobody decided. Supply it, or make the task small enough to have edges, and ask the question again.",
+    rows: [
+      {
+        id: "verdict",
+        n: "01",
+        name: "the verdict",
+        asks: "Can anything but you say the output is correct?",
+      },
+      {
+        id: "harness",
+        n: "02",
+        name: "the harness",
+        asks: "Does that check exist, or can you write it first?",
+      },
+      {
+        id: "edges",
+        n: "03",
+        name: "the edges",
+        asks: "Is the target written down, and does it stop?",
+      },
+    ],
+  },
+  {
+    id: "graph",
+    reads: "04",
+    moves: "The graph changes",
+    accent: true,
+    what:
+      "A no names nothing missing. The task stays as it is and the drawing moves instead: a person stands at the step where a mistake stops being cheap, with everything upstream of them running unattended.",
+    rows: [
+      {
+        id: "blast",
+        n: "04",
+        name: "the cost",
+        asks: "If this lands wrong, who finds out?",
+      },
+    ],
+  },
+];
 
-function GlanceScene({ place }: { place: Place }) {
-  const flow = useLuminousFlow({ amount: 0.25 });
-
+/**
+ * One question on one line: its number, its handle, and what it asks.
+ *
+ * The number and the handle share a fixed column above `lg` so the four questions read as
+ * one instrument asked four times rather than as four ragged entries. Below `lg` they sit
+ * on their own line above the question: the two-column ledger needs a 9rem handle column
+ * AND a question beside it, and at 768 that left the question 162px — every one of the four
+ * wrapped to three lines and the rows stopped reading as rows.
+ */
+function Row({ row, delay, accent = false }: { row: Ask; delay: number; accent?: boolean }) {
   return (
-    <FlowScene
-      {...flow.scene}
-      width={place.width}
-      height={place.height}
-      className={place.className}
-      label="Four questions, asked in order"
-      description={DESCRIPTION}
+    <li
+      className="anim-strip-in flex flex-col gap-0.5 lg:flex-row lg:items-baseline lg:gap-4"
+      style={{ animationDelay: `${delay}ms` }}
     >
-      {/* ---------- the spine, one gate to the next ---------- */}
-      {GATES.slice(0, -1).map((gate, index) => (
-        <FlowEdge
-          key={gate.id}
-          from={place.gate(index)}
-          to={place.gate(index + 1)}
-          tone="cyan"
-          id={`${gate.id}-next`}
-        />
-      ))}
-      <FlowEdge from={place.gate(3)} to={place.fits} tone="emerald" id="to-fits" />
-
-      {/* ---------- what a no leads to ---------- */}
-      {/* Cyan, not amber. See the header: a no here names something you can go and fetch,
-          after which the task rejoins the same pipeline, and the pipeline is cyan
-          everywhere on this site. */}
-      {GATES.slice(0, 3).map((gate, index) => (
-        <FlowEdge
-          key={`${gate.id}-no`}
-          from={place.gate(index)}
-          to={place.supply}
-          bend={FLOW.edge.bend.gentle}
-          tone="cyan"
-          label="no"
-          name={`no on ${gate.label}, supply what is missing`}
-          id={`${gate.id}-no`}
-        />
-      ))}
-      <FlowEdge
-        from={place.gate(3)}
-        to={place.person}
-        toRadius={9}
-        tone="dim"
-        label="no"
-        name="no on 04, a person stands at that step"
-        id="blast-no"
-      />
-
-      {/* ---------- the points ---------- */}
-      <FlowNode
-        x={place.supply[0]}
-        y={place.supply[1]}
-        label={SUPPLY_LABEL}
-        tone="cyan"
-        reveal="always"
-        id="supply"
-      />
-      {/* Doc 2 §1.1: the answer to a task whose failure lands in production is a graph
-          with somebody standing in it, and that is a design decision. The mark is violet
-          because `HumanFlowNode` cannot be painted any other colour. It is the only mark
-          in the drawing that is neither the pipeline nor the verdict, which is what the
-          recolour above buys back: the person is now the one thing on the sheet with a
-          colour of their own. */}
-      <HumanFlowNode
-        x={place.person[0]}
-        y={place.person[1]}
-        label={PERSON_LABEL}
-        reveal="always"
-        id="person"
-      />
-      {GATES.map((gate, index) => (
-        <FlowNode
-          key={gate.id}
-          x={place.gate(index)[0]}
-          y={place.gate(index)[1]}
-          label={gate.label}
-          tone="cyan"
-          reveal="always"
-          id={gate.id}
-        />
-      ))}
-      <FlowNode
-        x={place.fits[0]}
-        y={place.fits[1]}
-        label={FITS_LABEL}
-        tone="emerald"
-        lit
-        reveal="always"
-        id="fits"
-      />
-    </FlowScene>
+      <span className="flex shrink-0 items-baseline gap-2 lg:w-[9rem]">
+        {/* The numeral takes the group's accent where it has one, the way
+            `WhichTasksChecks` gives 04's card its numeral and its rule as one mark. */}
+        <span className={cx("label", accent && "text-violet")}>{row.n}</span>
+        <span className="label">{row.name}</span>
+      </span>
+      <span className="text-[13px] leading-snug text-muted">{row.asks}</span>
+    </li>
   );
 }
 
+/**
+ * A set of questions, the brace that gathers them, and the one thing a no on any of them
+ * moves.
+ *
+ * Three columns above `lg`; stacked below it, where the brace is hidden and the outcome
+ * keeps a left edge instead — an arrow pointing right at a block that now sits underneath
+ * it draws a relation the layout no longer has. `ReachList` stacks by the same rule, at
+ * `sm`; this figure needs the extra tier because it puts a handle column and a question in
+ * the left cell where `ReachList` puts one name.
+ *
+ * The brace is `aria-hidden` and carries no words, so the outcome names its own rows
+ * ("a no on 01 to 03") rather than relying on a mark assistive technology cannot see. That
+ * is also what keeps the drawing readable when the two columns stack.
+ */
+function GroupRows({ group, offset }: { group: Group; offset: number }) {
+  const accent = group.accent === true;
+
+  return (
+    /* Two equal columns above `lg`, not a wide one and a narrow one.
+       ------------------------------------------------------------
+       The questions are short and the outcomes are two sentences each, so a `1fr` question
+       column beside a fixed 16rem outcome put about 500px of nothing between the last word
+       of a question and the brace that follows it, and stretched each outcome to six lines
+       — which made the rule taller than the rows it gathers, so the brace read as bracketing
+       empty space. Equal columns put the brace a short reach from the questions and let the
+       outcomes wrap at three lines, which is the height of the three rows opposite them. */
+    /* 12 between rows, 16 from the rows to their outcome, 20 between the two groups. Three
+       canonical tiers in ascending order, so the stacked layout carries the same grouping
+       the brace carries above `lg` — where all three are the same 12, an outcome sits as
+       far from the rows it gathers as the rows sit from each other. */
+    <li className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+      <ol className="flex flex-col gap-3">
+        {group.rows.map((row, index) => (
+          <Row key={row.id} row={row} delay={(offset + index) * STEP} accent={accent} />
+        ))}
+      </ol>
+
+      {/* The pointing: a rule down the rows, a stub, and the connector glyph `ReachList`
+          already uses for "this reaches that". `--color-dim` rather than
+          `--color-line-bright`, which measures 1.74:1 on this ground — the defect that
+          file records having made the relation invisible while its refusals shouted. */}
+      <span aria-hidden className="hidden lg:flex lg:items-center">
+        <span className={cx("w-px self-stretch", accent ? "bg-violet/50" : "bg-line-bright")} />
+        <span className={cx("h-px w-3", accent ? "bg-violet/60" : "bg-dim")} />
+        <span
+          className={cx(
+            "-ml-px inline-block w-3.5 text-center font-mono text-[12px]",
+            accent ? "text-violet" : "text-dim",
+          )}
+        >
+          &rarr;
+        </span>
+      </span>
+
+      <div
+        className={cx(
+          /* Capped at the measure `ReachList` caps its gloss at: the column is `1fr` and
+             on a 1440 that is about 85 characters a line, which is prose width inside a
+             figure cell. */
+          "flex max-w-[74ch] flex-col gap-1.5 border-l pl-3 lg:border-l-0 lg:pl-0",
+          accent ? "border-violet/50" : "border-line",
+        )}
+      >
+        <span className={cx("label", accent && "text-violet")}>A no on {group.reads}</span>
+        <p className="text-sm font-medium leading-snug text-fg">{group.moves}</p>
+        <p className="text-[13px] leading-snug text-muted">{group.what}</p>
+      </div>
+    </li>
+  );
+}
+
+/**
+ * Where each group's first row sits in the stagger, so the four rows draw in one sequence
+ * rather than two groups each starting from zero.
+ *
+ * Derived at module scope off a module constant, not accumulated during render: the
+ * stagger is a property of the table and a counter mutated inside `map` is a render that
+ * depends on how many times it has run.
+ */
+const OFFSETS: readonly number[] = GROUPS.reduce<number[]>((acc, group, index) => {
+  acc.push(index === 0 ? 0 : acc[index - 1] + GROUPS[index - 1].rows.length);
+  return acc;
+}, []);
+
 export function WhichTasksGlance() {
   return (
-    /* One column at every width. The drawing and its 117-word caption sat side by side
-       from `lg` up, which put the whole of the route's opening argument on one screen
-       beside the figure it explains and asked a reader to take both at once. The author:
-       "too information condensed in a 16:9 page. Think a user like it is a child where
-       you need to point the attention to a concept at time."
+    <div className="flex flex-col gap-5">
+      <figure className="flex flex-col gap-5 rounded-xl border border-line bg-surface/70 p-5 sm:p-6">
+        <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <span className="label">Four questions, asked about the task</span>
+          <span className="text-[13px] text-muted">
+            Three of them are answered by changing the work. One is not.
+          </span>
+        </figcaption>
 
-       `lg:w-[30rem] lg:shrink-0` goes with the `lg:flex-row` it was sized for. Left
-       behind, the drawing keeps a desktop column width under a now full-width caption,
-       which is the same figure in a worse place. */
-    <figure className="flex flex-col gap-4">
-      {/* The portrait sheet is first in the document, the way `SectionRoles` orders its
-          two placements, so the markup a phone reads is the markup a phone shows. Only one
-          of the two is ever laid out; both are the same drawing. */}
-      <Sheet
-        label="Read this first"
-        title="Four questions, asked in order"
-        bodyClassName="p-3 sm:p-4"
-        className="sm:hidden"
-      >
-        <GlanceScene place={TALL_PLACE} />
-      </Sheet>
-      <Sheet
-        label="Read this first"
-        title="Four questions, asked in order"
-        bodyClassName="p-3 sm:p-4"
-        className="hidden sm:block"
-      >
-        {/* Still a scroll container above `sm`, and it now has nothing to scroll on the
-            widths that used to hide 42% of the drawing: between `sm` and the width at
-            which the sheet exceeds 34rem the frame is at its floor rather than squeezed,
-            and below `sm` the portrait placement is what is on screen. */}
-        <div className="overflow-x-auto">
-          <GlanceScene place={WIDE_PLACE} />
-        </div>
-      </Sheet>
+        <ol className="flex flex-col gap-5">
+          {GROUPS.map((group, index) => (
+            <GroupRows key={group.id} group={group} offset={OFFSETS[index]} />
+          ))}
+        </ol>
 
-      {/* The length pass (PROJECT.md §3.1). Two sentences left this caption and both were
-          second copies: "that property belongs to the task, and it is fixed before you
-          draw a single node", which is the section's own lead one paragraph up, and the
-          tally reading's restatement of what a no on 04 does, which the paragraph directly
-          above it now carries alone. `WhichTasksRemedies` used to open its third card with
-          this caption's 04 sentence word for word; that copy is the one that went, and this
-          is the one that stayed, because it stands beside the branch it describes. */}
-      {/* The scale pass put `.prose-lane` on it. This caption is body prose and it had no
-          measure at all, so on a 1440 it ran the full 1152px container — roughly 180
-          characters a line at 14px, the widest paragraph on the route, sitting directly
-          under a figure whose whole job is to be taken in at a glance. The drawing keeps
-          the container; the reading of it does not, which is the rule `FigureFrame`
-          already carries wherever a spec figure is drawn.
+        {/* The tally reading, denied where the four are first counted, and no longer
+            denying the drawing above it: a braced ledger has no rail to run along and no
+            terminal to reach. Doc 2 §1.1 is about the autonomy class rather than this
+            page, and the failure mode is the same shape — turn four questions into a score
+            and people optimise the score. */}
+        <p className="border-t border-line pt-3 text-xs leading-relaxed text-dim">
+          All four yes and the task is a candidate. They are not points: three out of four
+          is not a score, and a no is the next thing to do rather than a verdict on the
+          work.
+        </p>
+      </figure>
 
-          The two callouts are `.label`. They were `tracking-[0.14em]` at 11px, which is
-          the 14px tier's tracking on the 11px tier's size — the exact collision the three
-          mono tiers were separated to make impossible. Their colours still quote the
-          figure's own two branches, which is why the first one moved from amber to cyan
-          when the arcs above it did: the callout and the branch have to be the same
-          colour or the caption is reading a drawing that is not there. */}
-      <figcaption className="prose-lane flex flex-col gap-4 text-sm leading-relaxed text-muted lg:pt-2">
-        <p>
-          A dark factory runs with nobody watching it, so the design rests on one property
-          of the work: whether something other than your judgement can tell the
-          graph it is finished.
-        </p>
-        <p>
-          <span className="label text-cyan">01 to 03</span>{" "}
-          name something missing you can supply: a harness nobody has written, a target
-          nobody has decided. Answer them and ask again.
-        </p>
-        <p>
-          <span className="label text-violet">04</span>{" "}
-          works differently. No amount of coverage makes a wrong answer cheap once it is in
-          production, so the graph changes instead of the task: a person at the step where a
-          mistake becomes expensive, everything upstream running unattended.
-        </p>
-        {/* The tally reading, denied where the four are first counted. Doc 2 §1.1 is about
-            the autonomy class rather than this page, and the failure mode is the same
-            shape: turn four questions into a score and people optimise the score. */}
-        <p className="border-l-2 border-cyan/50 pl-4 text-dim">
-          So do not add these up. Four yeses mean the task is a good fit.
-        </p>
-      </figcaption>
-    </figure>
+      {/* One paragraph, where there were four. The other three were the figure's own two
+          branches written out because the drawing could not say them, plus a line denying
+          the rail the drawing drew. This one is not in the figure and is not below it
+          either: it says why question 01 is first, which is the only thing on this beat
+          the ledger cannot carry. */}
+      <p className="prose-lane text-sm leading-relaxed text-muted">
+        A dark factory runs with nobody watching it, so the design rests on one property of
+        the work: whether something other than your judgement can tell the graph it is
+        finished.
+      </p>
+    </div>
   );
 }
