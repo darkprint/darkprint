@@ -104,12 +104,14 @@ import { PanelHeading, SectionHeading } from "@/components/ui/SectionHeading";
    stale the moment content lands. Every figure below comes off the
    archive at build time.
 
-   ── The one honesty risk on this page ──
-   It says a reader can share what they build. Publishing is not
-   built, and doc 2 §0.4 governs the sentence that says so: it is
-   in the open, beside the claim it qualifies, not folded and not
-   deferred to `/upload`. A page that describes the loop and omits
-   the missing third of it is the failure PROJECT.md §3.1 records.
+   ── The honesty risk this page used to carry, and no longer does ──
+   It said a reader could share what they build, in step 03 of "What
+   you do with one", and carried the qualifier beside it in the open:
+   publishing is not built. The author asked that whole section out
+   on 2026-08-07, so the claim and its qualifier left together — see
+   the note where the section stood. Nothing here promises publishing
+   now, which is why nothing here has to refuse it. `/upload` and
+   `/skill` still do, beside their own claims.
 
    Static: no `generateStaticParams`, no `dynamicParams`, server
    component, no props (Next 16, `docs/01-app/03-api-reference/
@@ -301,40 +303,10 @@ function Part({
   );
 }
 
-/**
- * A step of "what you do with one": no figure, three across, as before.
- *
- * The three parts above became bands because each has a drawing that needed room. These
- * three are a sequence of actions with nothing to draw, and three short panels in a row is
- * the right shape for that. Same numeral and same heading size as a band, so the page
- * reads as one page.
- */
-function Step({
-  index,
-  title,
-  href,
-  hrefLabel,
-  children,
-}: {
-  index: string;
-  title: string;
-  href: string;
-  hrefLabel: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <article className="panel flex flex-col gap-3 p-6">
-      <div className="flex items-baseline gap-3">
-        <span className="font-mono text-[13px] tabular-nums text-dim">{index}</span>
-        <h3 className="font-display text-lg font-semibold text-fg">{title}</h3>
-      </div>
-      <p className="text-sm leading-relaxed text-muted">{children}</p>
-      <Link href={href} className={`${LINK} mt-auto`}>
-        {hrefLabel}
-      </Link>
-    </article>
-  );
-}
+/* `Step` stood here — the three-across card "what you do with one" used, with a numeral,
+   a heading, a body and a route link. Deleted 2026-08-07 with the only section that
+   called it. The three bands above are `Part`, which is a different shape for a
+   different job: a band has a figure and needs the width, a step had neither. */
 
 export default function WhatABlueprintIsPage() {
   const all = allBlueprints();
@@ -715,37 +687,25 @@ export default function WhatABlueprintIsPage() {
           how the landing marks one. The remaining same-ground seam is three-parts → the
           words, which is deliberate and is documented above it. */}
 
-      <section className="border-t border-line bg-void py-16">
-        <div className="container-page flex flex-col gap-8">
-          <SectionHeading
-            eyebrow="What you do with one"
-            title="Hand it to an agent, on your machine"
-            lead="DarkPrint gives you the files and reads them back. It runs nothing, and it holds none of your provider keys."
-          />
+      {/* "What you do with one" stood here — a heading, a lead, and three `Step` cards
+          (Download / Adapt it / Share the result). The author asked it out on 2026-08-07.
 
-          <div className="grid gap-5 lg:grid-cols-3">
-            <Step index="01" title="Download" href="/blueprints" hrefLabel="Browse the shelf">
-              A folder of text: the graph, the cards it pins, and a README carrying the
-              digest so you can confirm the files are the ones the site read.
-            </Step>
-            <Step index="02" title="Adapt it" href="/mcp" hrefLabel="Point a client at it">
-              Give it to Claude Code, Gemini, Codex or any agent that reads the same
-              cards. It fits the pattern to the code you already have, and it can combine
-              one blueprint with another. That happens on your machine, not here.
-            </Step>
-            <Step index="03" title="Share the result" href="/upload" hrefLabel="Upload blueprint">
-              What you end up with is a blueprint too. {/* Doc 2 §0.4: the qualifier sits
-                  beside the claim it qualifies, in the open. `/upload` really does parse
-                  and score in the tab; the publishing half really is absent. */}
-              <span className="text-fg">
-                {" "}
-                Today the validator runs in your browser tab and stops there: publishing to
-                the registry is not built yet.
-              </span>
-            </Step>
-          </div>
-        </div>
-      </section>
+          It carried one honesty sentence, in the open, inside step 03: "Today the validator
+          runs in your browser tab and stops there: publishing to the registry is not built
+          yet." That sentence is NOT relocated, and the reason is that it goes out with the
+          claim it qualified rather than ahead of it. This file's header named the one
+          honesty risk on this page as "It says a reader can share what they build" — the
+          saying is gone, so the qualifier has nothing left to qualify. `/upload` refuses
+          all three of publishing, accounts and the live push beside its own dropzone, and
+          `/skill` refuses them beside the folder it hands over; both are pinned in
+          `components/site/honesty.test.ts` and neither depended on this section.
+
+          The three destinations are not orphaned either: `/blueprints` and `/nodes` are the
+          first two items of the header's registry group on every page, `/mcp` and `/upload`
+          are both in the header too, and the pager below carries a reader onward through
+          the sequence this page opens.
+
+          `Step` went with it. This section was its only caller. */}
 
       {/* "Read one, or take the parts" stood here — a heading, a count, and two buttons to
           `/blueprints` and `/nodes`. Removed at the author's request.

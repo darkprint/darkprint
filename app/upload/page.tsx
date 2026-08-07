@@ -133,7 +133,9 @@ export default function UploadPage() {
             vocabulary — and dim is this site's register for a qualification. This one is
             wayfinding, the first thing a reader arriving from the skill needs to read, and
             at dim it sat in the same tier as the fine print and was skimmed with it. */}
-        <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted">
+        {/* Full width, on the author's instruction 2026-08-07: `max-w-2xl` off this one.
+            The paragraphs around it keep their measure; this is a named exception. */}
+        <p className="mt-5 text-sm leading-relaxed text-muted">
           A folder written by the{" "}
           <Link href={SKILL_ROUTE} className={PROSE_LINK}>
             DarkPrint skill

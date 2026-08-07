@@ -595,6 +595,14 @@ export function Wordmark() {
           characters at 12px do not fit on one line, and the lifecycle beat already shipped
           41px of unreachable horizontal overflow from exactly this class of string
           (`SectionLifecycle.tsx`, on `min-w-0`). `max-w-full` caps the chip at its
+          ── The gap above, 40 to 64 (2026-08-07) ──
+          The author asked for more air between the two real buttons and this pair. `mt-10`
+          was the block tier and it was chosen when there was ONE chip: a single line under
+          two buttons reads as a footnote to them at 40px. Two stacked chips are a group of
+          their own, and a group needs the tier that separates groups. 64 is the next rung
+          on the canonical ladder (8/12/16/20/40/64/80) — 48 and 56 are not on it, and the
+          one above would open a gap the eye reads as the end of the hero.
+
           column, `flex-wrap` lets the row break, and the command is ONE text node so the
           break falls at a space in the command rather than mid-token. `gap-x-2 gap-y-1`
           because a wrapped second line needs a gap the single-line `gap-2` does not
@@ -656,7 +664,7 @@ export function Wordmark() {
           two boxes that nearly line up read as a mistake in a way two obviously different
           ones do not. `max-w-full` keeps the 384 from forcing a scrollbar at 390, where the
           column is 358 and both commands wrap instead. */}
-      <div className="mx-auto mt-10 flex w-fit max-w-full flex-col gap-3">
+      <div className="mx-auto mt-16 flex w-fit max-w-full flex-col gap-3">
         {[
           {
             key: "skill",
