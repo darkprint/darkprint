@@ -80,29 +80,23 @@ describe("the tutorial covers what a reader is in for", () => {
     }
   });
 
-  /**
-   * `/build`'s download exit leads on `factory.dot` and prints `attractor run
-   * factory.dot`. The skill deliberately does not emit that file, so a reader who compares
-   * the two folders finds one missing from theirs. One sentence reconciles them, and
-   * without it the skill reads as broken.
-   */
-  it("says why there is no factory.dot in what it wrote", () => {
-    expect(text).toContain("does not write");
-    expect(text).toContain("factory.dot");
-    expect(text).toContain("exporter compiles that");
-  });
+  /* Two cases stood here and the author removed the copy they held, 2026-08-07.
+     ------------------------------------------------------------------------
+     "says why there is no factory.dot in what it wrote" held the sentence reconciling this
+     folder with `/build`'s download exit, which leads on `factory.dot` and prints
+     `attractor run factory.dot`. "tells the two meanings of the word apart" held the one
+     separating this skill from a card's `skill:` field, which `/what-a-blueprint-is`
+     describes in the open as a document the engine never reads.
 
-  /**
-   * `lib/core/card/schema.ts` defines `skill?: string` as a per-node behaviour document,
-   * and `/what-a-blueprint-is#the-words` prints "no skill document travels in the
-   * download" in the open. This page installs a skill that WRITES the graph, which is the
-   * opposite level of the same word.
-   */
-  it("tells the two meanings of the word apart", () => {
-    expect(text).toContain("not the");
-    expect(text).toContain("skill:");
-    expect(text).toContain("field on a node card");
-  });
+     Both are deletions of copy, so both cases come out with the reason rather than being
+     softened into something that still passes. What each was guarding is unchanged and
+     unguarded now: a reader comparing the two folders finds `factory.dot` in one and not
+     the other with no explanation on this page, and the homonym is kept apart only by the
+     qualifier "the DarkPrint skill", which the case below still enforces.
+
+     That last case is the one that matters most now and it is untouched: this page may
+     never say "the skill" unqualified. It was the weakest of the three when all three
+     existed and it is the only one left. */
 
   it("sends the reader to /upload to see the result, and says nothing leaves the tab", () => {
     expect(SETUP).toContain('href="/upload"');

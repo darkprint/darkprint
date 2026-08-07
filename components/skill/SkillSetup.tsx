@@ -7,7 +7,6 @@ import {
   BUNDLE_AGENTS,
   BUNDLE_CARDS_DIR,
   BUNDLE_README,
-  FACTORY_DOT,
   TOPOLOGY_DOT,
 } from "@/lib/content/bundle-export";
 
@@ -273,11 +272,6 @@ export function SkillSetup({ className }: { className?: string }) {
                 through. `SKILL.md` phase 0: "If they cannot name it, stop here and say so.
                 Do not draw a graph." A tutorial that promises a folder at the end of every
                 interview would be describing a different skill from the one that installs. */}
-            <p className="text-[13px] leading-relaxed text-dim">
-              It can also stop. Answer the second of those with nothing and it says so and
-              declines to draw the graph, because a pipeline nobody can fail is a pipeline
-              the engine has nothing to read.
-            </p>
           </div>
 
           <div className="flex min-w-0 flex-col gap-3">
@@ -295,28 +289,29 @@ export function SkillSetup({ className }: { className?: string }) {
               />
             </div>
 
-            {/* The two sentences without which this page contradicts two others on the
-                same site. Both are argued in this file's header. */}
-            <p className="text-[13px] leading-relaxed text-dim">
-              That is the shape the registry stores. The DarkPrint skill does not write{" "}
-              <code className="font-mono text-muted">{FACTORY_DOT}</code>: darkprint&rsquo;s
-              own exporter compiles that from a blueprint when you download one, and two
-              writers of one file is two files that drift.
-            </p>
-            <p className="text-[13px] leading-relaxed text-dim">
-              This is a skill in the sense the{" "}
-              <code className="font-mono text-muted">skills</code>{" "}
-              CLI uses the word. It is not the{" "}
-              <code className="font-mono text-copper-line">skill:</code> field on a node
-              card, which points at a document for one agent{" "}
-              <Link
-                href="/what-a-blueprint-is#the-words"
-                className="underline decoration-line-bright underline-offset-4 transition-colors hover:text-fg"
-              >
-                inside
-              </Link>{" "}
-              a blueprint.
-            </p>
+            {/* Three paragraphs stood here and under "What it asks", and the author took
+                all three out on 2026-08-07: the one saying the interview can decline to
+                draw a graph, the one reconciling this folder with `/build`'s `factory.dot`
+                download, and the one telling the two senses of the word "skill" apart.
+
+                Each was doing real work and the loss is worth naming rather than leaving
+                for somebody to rediscover:
+
+                  · `/build`'s download exit leads on `factory.dot` and prints
+                    `attractor run factory.dot`. A reader who compares the two folders now
+                    finds a file in one and not the other with nothing on this page saying
+                    why. `lib/skill.ts`'s header still carries the reasoning.
+                  · `lib/core/card/schema.ts` defines `skill?: string` as a per-node
+                    document, and `/what-a-blueprint-is#the-words` prints in the open that
+                    the engine reads nothing at the other end of that path. This page
+                    installs a thing that WRITES the graph, which is the opposite level of
+                    the same word. The qualifier "the DarkPrint skill" is still used
+                    everywhere on this page, which is what keeps the two apart now.
+
+                The author's framing is the reason: this page is about guiding an author to
+                a blueprint that satisfies the DOT semantics, the card vocabulary and the
+                ontology. Reconciling footnotes about a file the skill does not write, and
+                about a homonym, are notes to a maintainer rather than to that author. */}
           </div>
         </div>
       </article>

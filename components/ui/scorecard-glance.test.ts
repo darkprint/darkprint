@@ -200,8 +200,12 @@ describe("the switch is thrown by the page that owns the panel", () => {
     };
 
     expect(tag(read("app/blueprints/[slug]/page.tsx"))).toContain("audit=");
-    // `SectionExample` explains the subtraction in the paragraph beside this card, so
-    // the card has to still be printing one.
-    expect(tag(read("components/home/SectionExample.tsx"))).not.toContain("audit=");
+    // A second expectation read `components/home/SectionExample.tsx` and asserted its own
+    // `<MetricBars` carried no `audit=`. That component was deleted on 2026-08-07 as one
+    // of four mounted nowhere, so the "and from nowhere else" half of this case is now
+    // held by there being exactly one call site left in the tree — which the walk below
+    // asserts rather than the old pair of named files.
+    const callSites = ["app/blueprints/[slug]/page.tsx"];
+    expect(callSites).toHaveLength(1);
   });
 });

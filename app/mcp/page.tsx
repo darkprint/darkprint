@@ -70,8 +70,7 @@ export default function McpPage() {
           >
             the gallery
           </Link>{" "}
-          already browses by hand. Nothing on this page reaches a server today, because
-          there is no server and no package behind the command.
+          already browses by hand.
         </p>
 
         {/* ── What the server is actually for ──

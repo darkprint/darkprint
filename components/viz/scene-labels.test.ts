@@ -37,10 +37,7 @@ import { describe, expect, it } from "vitest";
 import { allBlueprints, getNodeCard, getOntologyView } from "@/lib/content";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionLevels } from "@/components/home/SectionLevels";
-import { SectionRoles } from "@/components/home/SectionRoles";
 import { GraphFigure } from "@/components/learn/PartFigures";
-import { EnforcementFigure } from "@/components/spec/EnforcementFigure";
-import { LatticeFigure } from "@/components/spec/LatticeFigure";
 
 import {
   clippedLabels,
@@ -120,11 +117,12 @@ interface SceneEntry {
 }
 
 const ROSTER: readonly SceneEntry[] = [
-  {
-    files: ["components/home/SectionRoles.tsx"],
-    frames: 2,
-    render: () => framesOf(createElement(SectionRoles)),
-  },
+  /* `components/home/SectionRoles.tsx` (2 frames) sat here. It had no mount anywhere on
+     the site — `/spec/topology` was its last one — and the author asked the four orphaned
+     components deleted on 2026-08-07. The same precedent as `SpecLayers.tsx` below.
+     `components/home/roles.ts`, the DATA that component read, is NOT deleted: `graph.ts`
+     places the landing's blueprint from it and `roles.test.ts` still holds it to the
+     starter bundle. */
   {
     files: ["components/home/SectionBlueprint.tsx"],
     frames: 2,
@@ -197,16 +195,10 @@ const ROSTER: readonly SceneEntry[] = [
      came out with the file rather than being left pointing at a module nothing renders.
      Its two glyph constants moved to `components/spec/marks.ts`, which `EnforcementFigure`
      below still spells its own distinction with. */
-  {
-    files: ["components/spec/EnforcementFigure.tsx"],
-    frames: 1,
-    render: () => framesOf(createElement(EnforcementFigure)),
-  },
-  {
-    files: ["components/spec/LatticeFigure.tsx"],
-    frames: 1,
-    render: () => framesOf(createElement(LatticeFigure, latticeProps())),
-  },
+  /* `components/spec/EnforcementFigure.tsx` and `components/spec/LatticeFigure.tsx` (1
+     frame each) sat here, and went the same way on the same instruction. `marks.ts` and
+     `furniture.tsx` went with them: those two files existed for these two figures and had
+     no other consumer, so leaving them would have left a helper module nothing helps. */
 ];
 
 /** Every file the roster claims to measure. */
@@ -258,9 +250,19 @@ describe("the guard covers every scene the site draws", () => {
     // the case failing for the one reason it is allowed to — a scene stopped being drawn —
     // so it comes down to 5 with the deletion named, which is the difference between
     // lowering a floor and lowering it to make a case pass.
-    expect(DRAWERS.length).toBeGreaterThan(5);
-    expect(DRAWERS).toContain("components/home/SectionRoles.tsx");
-    expect(DRAWERS).toContain("components/spec/LatticeFigure.tsx");
+    //
+    // 3 later the same day, and this is the largest single drop the floor has taken:
+    // the author asked the four orphaned components deleted, and `SectionRoles`,
+    // `LatticeFigure` and `EnforcementFigure` were three of the four. All three drew
+    // scenes and none of them was mounted on any route, so the site's drawn output is
+    // unchanged and only the tree is smaller.
+    //
+    // The two named assertions went with them. Both pinned a file that no longer exists,
+    // and a floor of 2 against a population of 3 is thin — so the named check is now for
+    // the one drawing that is definitely still on the site, which is the landing's
+    // blueprint. A walk that stops matching returns nothing and fails by name.
+    expect(DRAWERS.length).toBeGreaterThan(2);
+    expect(DRAWERS).toContain("components/home/SectionBlueprint.tsx");
   });
 
   it("measures each of them", () => {
@@ -270,19 +272,19 @@ describe("the guard covers every scene the site draws", () => {
   });
 
   it("collects the furniture the box case compares against", () => {
-    // Two stroked rectangles are drawn across every frame the roster measures: level 4's
-    // harness, and the prohibition block in `EnforcementFigure`. Three until the IA pass,
-    // when `SpecLayers` went with the `/spec` route that was its only mount and took its
-    // card frame with it. If the walker stopped recognising a `<rect>` — a change of
-    // attribute order, a stroke moved into a class — "draws no box edge through a word"
-    // would pass on every scene by having nothing to compare, which is the shape of guard
-    // this file exists to refuse. A floor, not a count: it is here to fail when the walk
-    // stops matching, not to pin how many boxes the site draws.
+    // One stroked rectangle is drawn across every frame the roster measures: level 4's
+    // harness. Three until the IA pass, when `SpecLayers` went with the `/spec` route that
+    // was its only mount; two until 2026-08-07, when `EnforcementFigure` was deleted as an
+    // orphan and took the prohibition block with it. If the walker stopped recognising a
+    // `<rect>` — a change of attribute order, a stroke moved into a class — "draws no box
+    // edge through a word" would pass on every scene by having nothing to compare, which
+    // is the shape of guard this file exists to refuse. A floor, not a count: it is here
+    // to fail when the walk stops matching, not to pin how many boxes the site draws.
     const boxes = MEASURED.reduce(
       (sum, entry) => sum + entry.measured.reduce((n, frame) => n + frame.boxes.length, 0),
       0,
     );
-    expect(boxes).toBeGreaterThanOrEqual(2);
+    expect(boxes).toBeGreaterThanOrEqual(1);
   });
 
   it("names no scene that has stopped existing", () => {

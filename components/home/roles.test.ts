@@ -155,39 +155,18 @@ describe("the props the drawing is built from", () => {
   });
 });
 
-/* --------------------- the copy this section puts on screen --------------------- */
+/* A fourth describe stood here: "the section says nothing about a blueprint that is not
+   true of it". Both its cases read `components/home/SectionRoles.tsx`, which the author
+   asked deleted on 2026-08-07 as one of four components mounted nowhere.
 
-/**
- * Comments out, so what is left is roughly what a reader sees. Same method and same
- * reason as `components/build/workspace.test.ts`.
- */
-function visibleCopy(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .split("\n")
-    .map((line) => line.replace(/(^|[^:"])\/\/.*$/, "$1"))
-    .join("\n");
-}
+   They guarded a closing paragraph that claimed Guarded Merge Bot "uses the same five
+   roles" — it has six nodes, no debugger, and no absent edge, so only the human gate ever
+   survived the comparison. The paragraph is gone with the component and there is nothing
+   on the site making that claim. Its sibling case asserted the DOT still writes
+   `gate -> merge [label="human approve"]`; that is true and now says nothing, because no
+   page reads it.
 
-describe("the section says nothing about a blueprint that is not true of it", () => {
-  /**
-   * The closing paragraph used to say Guarded Merge Bot "uses the same five roles". It
-   * has six nodes and no debugger, so its own page renders "□ Debugging  No node in this
-   * graph."; its red re-entry `tests -> draft` goes back to `review-drafter`, whose
-   * `phase: implementation` makes it the builder the panel above says the loop never
-   * returns to; and `pr -> triage -> draft` wires planning straight into implementation,
-   * so it has no absent edge either. Only the human gate survived.
-   */
-  it("does not claim another blueprint shares the five roles", () => {
-    const copy = visibleCopy(read("components/home/SectionRoles.tsx")).toLowerCase();
-    for (const phrase of ["same five roles", "same five nodes", "the same division of labour"]) {
-      expect(copy, `SectionRoles claims "${phrase}"`).not.toContain(phrase);
-    }
-  });
-
-  it("keeps the one thing it says about that blueprint true", () => {
-    // `gate -> merge [label="human approve"]`, which is the only claim the paragraph needs.
-    const merge = read("content/blueprints/guarded-merge-bot/blueprint.dot");
-    expect(merge).toMatch(/gate\s*->\s*merge\s*\[label="human approve"\]/);
-  });
-});
+   What this file still holds is the part that matters: `ROLE_BOXES` and `ROLE_WIRES` are
+   the DATA the landing's blueprint is placed from, and every case above checks them against
+   `content/blueprints/starter-software-factory/`. That survives the component by design —
+   `graph.ts` reads the data, not the section. */
