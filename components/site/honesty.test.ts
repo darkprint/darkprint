@@ -42,7 +42,6 @@ import UploadPage from "@/app/upload/page";
 import { allBlueprints } from "@/lib/content";
 import { CARD_ROWS } from "@/components/spec/rows";
 import { ScoringModel } from "@/components/spec/ScoringModel";
-import { WhichTasksChecks } from "@/components/explain/WhichTasksChecks";
 import { GuardrailShape } from "@/components/explain/ConceptFigures";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
 import { CloneMenu } from "@/components/blueprint/CloneMenu";
@@ -123,7 +122,6 @@ const MCP_METADATA_DESCRIPTION = mcpMetadata.description ?? "";
  * into a component to make it testable would move a sentence for a test's convenience.
  */
 const UPLOAD_PAGE = renderToStaticMarkup(createElement(UploadPage as never));
-const WHICH_TASKS = renderToStaticMarkup(createElement(WhichTasksChecks));
 /* `THE_CLIMB` stood here, rendering `/towards-a-dark-factory/the-climb` whole for the one
    paragraph that said what this site is not: no accounts, nothing publishes, no MCP server.
    The author deleted that page on 2026-08-07 and the row went with it.
@@ -315,31 +313,19 @@ const CLAIMS: Claim[] = [
     html: GUARDRAILS,
   },
 
-  /* ---- /towards-a-dark-factory · the four checks ----
-     The surfaces are named `/towards-a-dark-factory` rather than `/…/which-tasks` as of
-     2026-08-07: that route was merged into its parent and `WhichTasksChecks` is mounted
-     there now. The component is unchanged and so are the three sentences. */
-  {
-    surface: "/towards-a-dark-factory · check 01",
-    why: "the tester's structural position, which is why a task with no verdict is a veto rather than a caution. A grep for \"release gate\" over the built site returns one hit, and it describes the starter's wiring rather than the tester",
-    says: "the tester is the one node standing between generated code and the release gate",
-    where: "present",
-    html: WHICH_TASKS,
-  },
-  {
-    surface: "/towards-a-dark-factory · check 01",
-    why: "what a rubber-stamping tester costs. The examples above say the tester passes whatever it is given; nothing else says what that makes the graph",
-    says: "an expensive way to run one prompt",
-    where: "present",
-    html: WHICH_TASKS,
-  },
-  {
-    surface: "/towards-a-dark-factory · check 03",
-    why: "why ambiguity is not caught by the graph. The examples say every node downstream builds on a guess; this says the run ends before anyone can act on it",
-    says: "the run is over before anyone finds out",
-    where: "present",
-    html: WHICH_TASKS,
-  },
+  /* ---- /towards-a-dark-factory · the four checks — removed with the section ----
+     Three rows stood here, all `where: "present"`, over `WhichTasksChecks`: "the tester is
+     the one node standing between generated code and the release gate", "an expensive way
+     to run one prompt", and "the run is over before anyone finds out". The author asked
+     that section off the route on 2026-08-07 and the component is deleted.
+
+     This file's header asks that a deliberate removal take its entry out in the same commit
+     with the reason in the message, so: all three were completions of an argument
+     `WhichTasksExamples` made, and two said so in their own `why` — "the examples above say
+     the tester passes whatever it is given; nothing else says what that makes the graph".
+     The examples were deleted earlier the same day. The rows were qualifying a claim that
+     had already left the site, and there is nothing left on the route for them to attach
+     to: the four questions are asked once now, in `WhichTasksGlance`, in glance form. */
 
   /* ---- /what-it-isnt — removed with the route ----
      The entry held "reference another as a composite node, and nothing on the site does
@@ -509,7 +495,6 @@ describe("the surfaces the ledger is read off", () => {
     for (const [name, html] of [
       ["/spec/card", SPEC_CARD],
       ["the scoring panel", SCORING],
-      ["the four checks", WHICH_TASKS],
       ["the starter's canvas", STARTER],
       ["/build · download exit", DOWNLOAD_STEP],
       ["/build · agent-brief exit", AGENT_HANDOFF],

@@ -620,7 +620,9 @@ export default function WhatABlueprintIsPage() {
                 `EvalHarnessBlueprint`'s figcaption. Saying it twice in two registers is
                 what the figure is for; saying it here in words is what makes the third
                 term — the blueprint, which is on neither side of the equals sign — land. */}
-            <p className={`prose-lane ${PROSE}`}>
+            {/* Full width, on the author's instruction 2026-08-07 — the third and fourth
+                named exceptions to `.prose-lane` on this page. */}
+            <p className={PROSE}>
               Wire the nodes together and you have a blueprint: who hands what to whom,
               and which edges were deliberately left out. Give that blueprint a harness
               and it runs; grade what comes back against a rubric and you have an eval.
@@ -669,7 +671,8 @@ export default function WhatABlueprintIsPage() {
                 prohibition is one: it is checked on every path, not at an edge somebody
                 remembered to annotate. It replaces the argument `SectionExample` used to
                 draw one band down with its check/cross pair, which is gone. */}
-            <p className={`prose-lane ${PROSE}`}>
+            {/* Full width, on the same instruction. */}
+            <p className={PROSE}>
               That is what a guardrail looks like once there is more than one agent. It
               stops being a wall around the system and becomes a rule on a handoff, and
               this one is checked on every path through the graph rather than on the edges

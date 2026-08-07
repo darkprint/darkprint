@@ -127,7 +127,14 @@ import { cx } from "@/lib/format";
    and (3) are the two outcome cells, and the "do not add these up"
    line is the footnote under the rows.
 
-   The four questions are the SHORT forms. `WhichTasksChecks` asks
+   The four questions are the SHORT forms, and as of 2026-08-07 they
+   are the ONLY forms: the author asked "The instrument / The four
+   questions in full" off the route, and `WhichTasksChecks` is
+   deleted. What this figure says is what the site says. The
+   paragraphs below used to describe the division of labour between
+   the two; they are kept because they record what the long form
+   carried, and because restoring it means restoring that division.
+   `WhichTasksChecks` asked
    them in full three bands lower under the same numbers and the
    same handles, which is the glance-then-read pairing this route
    is built on; shortening them here is what stops the figure being

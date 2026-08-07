@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SectionLevels } from "@/components/home/SectionLevels";
-import { WhichTasksChecks } from "@/components/explain/WhichTasksChecks";
 import { WhichTasksGlance } from "@/components/explain/WhichTasksGlance";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
@@ -89,11 +88,12 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    index cannot break this route.
 
    ── The running order ──
-   hero → the ladder → the figure that asks the four questions →
-   eight worked tasks → the four questions in full → what to do with
-   a no → the two exits. Every band is a `border-t`
-   and a change of ground, which is the device the other page of
-   this route already uses at every seam.
+   hero → the ladder → the figure that asks the four questions. That
+   is the whole page as of 2026-08-07. It read "… → eight worked
+   tasks → the four questions in full → what to do with a no → the
+   two exits", and the author asked every one of those out over two
+   instructions. Every band is still a `border-t` and a change of
+   ground; there are two bands left rather than six.
    ============================================================ */
 
 export const metadata: Metadata = {
@@ -167,9 +167,14 @@ export default function TowardsPage() {
           the pattern is vapour, and that reader is lost for good. Which is why the
           unsuitable side is written at full strength.
 
-          Figure, then the eight tasks, then the four questions in full, then what to do
-          with a no. A reader settles a comparison faster than a definition, so the
-          examples sit above the definitions. */}
+          The figure, and nothing after it. This read "Figure, then the eight tasks, then
+          the four questions in full, then what to do with a no. A reader settles a
+          comparison faster than a definition, so the examples sit above the definitions."
+          All three of those sections are gone on the author's instruction, so there is no
+          ordering argument left to make: the glance asks the four questions and the page
+          ends. The sentence about the unsuitable side being "written at full strength"
+          above is now carried by the two `A NO ON …` columns inside the figure itself,
+          which is the only place on the route that still says what to do with a no. */}
       <section
         id="which-tasks"
         className="scroll-mt-24 border-t border-line bg-void py-16 sm:py-20"
@@ -188,22 +193,26 @@ export default function TowardsPage() {
         </div>
       </section>
 
-      {/* `WhichTasksExamples` — "The worked half / Eight real tasks, run through the four
-          questions" — stood here until 2026-08-07, when the author asked it out. The
-          running order's own note above still says a reader settles a comparison faster
-          than a definition; with the eight worked tasks gone there is no comparison left
-          on the route, and `WhichTasksChecks` below is the definitions on their own. */}
+      {/* Three sections stood between the figure above and the end of the page, and the
+          author asked all three out on 2026-08-07, in two instructions:
 
-      <section className="border-t border-line bg-void py-16 sm:py-20">
-        <div className="container-page">
-          <WhichTasksChecks />
-        </div>
-      </section>
+            `WhichTasksExamples`  "The worked half / Eight real tasks, run through the four
+                                  questions"
+            `WhichTasksChecks`    "The instrument / The four questions in full"
+            `WhichTasksRemedies`  "The other half of the filter / What to do with a no"
 
-      {/* `WhichTasksRemedies` — "The other half of the filter / What to do with a no" —
-          stood here until 2026-08-07, when the author asked it out. It was the only place
-          the route answered the reader it turns away, and it held the last link to
-          `#autonomy`, which was deleted the same day. */}
+          What is left asks the four questions once, in `WhichTasksGlance`, in their glance
+          form. That is worth naming because the component's own header calls those the
+          SHORT forms and points at `WhichTasksChecks` for the asked form — there is no
+          asked form on the site any more, and the glance is the whole of it.
+
+          `WhichTasksChecks` took three honesty-ledger rows with it. All three were
+          `where: "present"` and all three completed an argument the examples made: the
+          `why` on two of them reads "the examples above say the tester passes whatever it
+          is given; nothing else says what that makes the graph". The examples went first,
+          so the rows were qualifying a claim that had already left. They are removed with
+          the reason stated, which is what `honesty.test.ts`'s header asks of a deliberate
+          removal — not relocated, because there is nothing left for them to qualify. */}
 
       {/* The route's last section stood here and is gone with its only contents. It held
           one paragraph — "Four yeses and the task is a candidate", with links to `/build`
@@ -211,7 +220,7 @@ export default function TowardsPage() {
           `RoutePager` that went with `/the-climb`.
 
           Worth stating plainly rather than leaving as an absence somebody rediscovers: the
-          route now ends on `WhichTasksChecks`, and it offers a reader no onward link of its
+          route now ends on `WhichTasksGlance`, and it offers a reader no onward link of its
           own. The comment that used to sit here argued the opposite case at length — "a
           filter whose reader has just answered yes four times has to have somewhere to go"
           — and it was overruled directly. The header and the footer still reach `/build`

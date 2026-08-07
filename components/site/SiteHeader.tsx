@@ -253,23 +253,41 @@ export function SiteHeader() {
               an ungated nav link stays lit all the way to the route change, which reads
               as "still loading" on the item the reader just chose. */}
 
-          {/* ── Learn leads the row (2026-08-07) ──
-              The author: "The 'Learn' should be on the right of 'Home' in the Navbar, then
-              there is the separator '|'."
+          {REGISTRY.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cx(
+                "rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm",
+                isActive(item.href) ? "text-cyan" : "text-muted hoverable:hover:text-fg",
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
 
-              So the row now reads Home · Learn │ Blueprints · Nodes · Ontology · the two
-              setup routes, and the single divider has changed what it separates. It used to
-              split "where you are" from "what the registry holds"; it now splits the two
-              ways IN — the landing and the reading path — from the destinations themselves.
-              That is a defensible cut and arguably the better one: Learn is a menu of pages
-              about the site, and it never had much to do with the three registry indexes it
-              used to sit after.
+          {/* First of the row's two rules: what the registry holds, then the pages about it. */}
+          <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-line xl:mx-2" />
 
-              The `<details>` lost `border-l border-line pl-3`, which was a second divider
-              doing the same job as the `<span>` below. Two rules in a nine-item row, one of
-              them implicit in a padding, was already one too many; with Learn adjacent to
-              Home it would have drawn a separator exactly where the author asked for none.
-              `relative` stays — the panel is positioned against it. */}
+          {/* ── The menu sits between the registry and the setup routes ──
+              The author gave the order outright on 2026-08-07: "Blueprints, Nodes, Ontology
+              | Learn | The DarkPrint Skill, Connect via MCP."
+
+              That is the third arrangement in a day and the last one is the one that reads:
+              three things the registry holds, then the pages about them, then the two things
+              you install. Each rule separates a kind from a kind, and the menu — the only
+              item in the row that opens rather than navigates — is in the middle where its
+              panel hangs clear of both edges.
+
+              What this replaced, so the reasoning is not lost: Learn led the row for one
+              revision, beside a Home link that came out in the same instruction, and the
+              note here argued the single divider then split "the ways in" from "the
+              destinations". Two dividers make that reading unnecessary.
+
+              The `<details>` lost `border-l border-line pl-3` when it moved, and stays
+              without it: that padding was a second divider doing the same job as a `<span>`,
+              and the row now draws both of its rules the same way. `relative` stays — the
+              panel is positioned against it. */}
           <details
             ref={learnRef}
             open={learnOpen}
@@ -336,23 +354,6 @@ export function SiteHeader() {
               ))}
             </div>
           </details>
-
-          {/* The row's one divider. It follows Learn now rather than Home — see the block
-              above the `<details>` for what it separates and why that changed. */}
-          <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-line xl:mx-2" />
-
-          {REGISTRY.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cx(
-                "rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm",
-                isActive(item.href) ? "text-cyan" : "text-muted hoverable:hover:text-fg",
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
 
           {/* The row's second divider, on the author's instruction 2026-08-07: "add a
               separator between 'ontology' and 'The DarkPrint skill'". Two rules in the row
