@@ -88,6 +88,8 @@ import {
   VIZ,
   toneColor,
 } from "@/components/viz";
+import { arrowHeadPath } from "@/components/viz/Glyphs";
+import { returnLanePath } from "@/components/graph/return-lane";
 import { useReveal } from "@/components/viz/useReveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { cx } from "@/lib/format";
@@ -361,6 +363,43 @@ function Boundary({
   );
 }
 
+/**
+ * A run that goes backwards, drawn the way the gallery draws one.
+ *
+ * The author, 2026-08-07: "adopt the style to write the graph as the one present in the
+ * blueprints gallery." That style's one distinctive move is this — a forward edge is a
+ * curve between two ports and a RETURN edge is an orthogonal detour through a corridor
+ * above the drawing. `components/graph/return-lane.ts` holds the geometry and the gallery
+ * imports the same function, so the two are the same shape rather than two that resemble
+ * each other.
+ *
+ * The arrowhead is drawn here rather than by `FlowEdge`, because the lane arrives
+ * horizontally out of a `H` command and `FlowEdge` only knows how to point along its own
+ * bezier. `arrowHeadPath` is the vocabulary's own head, so it matches every other arrow on
+ * the frame.
+ */
+function ReturnLane({ from, to, laneY }: { from: number; to: number; laneY: number }) {
+  const a = { x: from + R + FLOW.edge.gap, y: ROW };
+  const b = { x: to - R - FLOW.edge.gap, y: ROW };
+  return (
+    <g data-viz="return-lane">
+      <path
+        d={returnLanePath(a, b, laneY)}
+        fill="none"
+        stroke={toneColor("dim")}
+        strokeWidth={VIZ.stroke.thin}
+        strokeOpacity={FLOW.edge.lineOpacity}
+      />
+      {/* Arriving from the left, so the head points right into the target's rim. */}
+      <path
+        d={arrowHeadPath([b.x, b.y], [b.x - 10, b.y])}
+        fill={toneColor("dim")}
+        fillOpacity={FLOW.edge.arrowOpacity}
+      />
+    </g>
+  );
+}
+
 interface LevelDrawing {
   /** The accessible name. A drawing is an image, and `role="img"` with no name says nothing. */
   label: string;
@@ -485,33 +524,28 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
   },
   5: {
     label:
-      "A specification runs into plan, build and test, and out through release. Test and debug are wired to each other in both directions, which is the loop, and no person is anywhere in the graph.",
+      "A specification runs into plan, build, test, debug and release in a line, with a return edge from debug back to test routed through a lane above the graph, and no person anywhere in it.",
     note: "nobody stands on the path",
     body: (
       <>
         <Ends start="specification" end="released" />
-        <Wire from={[IN, ROW]} to={[110, ROW]} fromR={0} />
-        <Wire from={[110, ROW]} to={[186, ROW]} />
-        <Wire from={[186, ROW]} to={[262, ROW]} />
-        <Wire from={[262, ROW]} to={[330, ROW]} />
-        <Wire from={[330, ROW]} to={[OUT, ROW]} toR={0} />
-        {/* The loop, as two directed edges rather than one arc, because it IS two runs:
-            the tester hands failure evidence down to the debugger and the debugger hands a
-            patch back up. Anti-parallel bends keep them apart, and this is the topology the
-            starter blueprint actually writes — `tester -> debugger -> tester`, never back
-            to the builder.
-
-            Debug sits directly ABOVE test rather than off to one side, and that is the
-            whole of why the pair reads as a loop: two anti-parallel arcs between two nodes
-            on the same vertical make a lens, and the eye takes a lens for a cycle. Placed
-            over `build` it read as a branch out of the wrong node. */}
-        <Wire from={[262, ROW]} to={[262, 44]} bend={FLOW.edge.bend.wide} tone="dim" />
-        <Wire from={[262, 44]} to={[262, ROW]} bend={FLOW.edge.bend.wide} tone="dim" />
-        <FlowNode x={110} y={ROW} r={R} tone="cyan" mark="schematic" label="plan" />
-        <FlowNode x={186} y={ROW} r={R} tone="cyan" mark="schematic" label="build" />
-        <FlowNode x={262} y={ROW} r={R} tone="cyan" mark="schematic" label="test" />
-        <FlowNode x={262} y={44} r={R} tone="cyan" mark="schematic" label="debug" />
-        <FlowNode x={330} y={ROW} r={R} tone="cyan" mark="schematic" label="release" />
+        <Wire from={[IN, ROW]} to={[95, ROW]} fromR={0} />
+        <Wire from={[95, ROW]} to={[150, ROW]} />
+        <Wire from={[150, ROW]} to={[205, ROW]} />
+        <Wire from={[205, ROW]} to={[262, ROW]} />
+        <Wire from={[262, ROW]} to={[325, ROW]} />
+        <Wire from={[325, ROW]} to={[OUT, ROW]} toR={0} />
+        {/* The loop, and the one edge on this page that runs backwards. Debug hands a patch
+            back to test and the run continues from there — the starter blueprint's own
+            `tester -> debugger -> tester`, which never returns to the builder. Drawn as the
+            gallery draws every return edge: out of the source, up into a corridor, back
+            along it, down into the target. */}
+        <ReturnLane from={262} to={205} laneY={44} />
+        <FlowNode x={95} y={ROW} r={R} tone="cyan" mark="schematic" label="plan" />
+        <FlowNode x={150} y={ROW} r={R} tone="cyan" mark="schematic" label="build" />
+        <FlowNode x={205} y={ROW} r={R} tone="cyan" mark="schematic" label="test" />
+        <FlowNode x={262} y={ROW} r={R} tone="cyan" mark="schematic" label="debug" />
+        <FlowNode x={325} y={ROW} r={R} tone="cyan" mark="schematic" label="release" />
       </>
     ),
   },

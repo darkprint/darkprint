@@ -2,6 +2,7 @@ import type { BlueprintGraph, FlowEdgeSeed, FlowNodeSeed } from "@/lib/types";
 import { NODE_KIND_META } from "@/lib/format";
 import { VIZ } from "@/components/viz/tokens";
 import { FLOW } from "@/components/viz/flow";
+import { returnLanePath, returnLaneMid } from "./return-lane";
 
 /* The cell the layered layout reserves for one node. `lib/content/layout.ts` places
    layers 200 apart across and rows 180 apart down, and these two numbers are the box
@@ -70,10 +71,6 @@ const ARROW_HALF = 3.6;
    on a real schematic. */
 const LANE_GAP = 22;
 const LANE_STEP = 14;
-/** How far past the port the vertical leg of a return edge stands, which puts it clear
-    of the halo as well. */
-const LANE_STUB = 18;
-const LANE_R = 9;
 
 type Pt = { x: number; y: number };
 
@@ -117,24 +114,9 @@ function forwardMid(a: Pt, b: Pt): Pt {
   };
 }
 
-/** Out of the source, up into the lane, back along it, down into the target. */
-function returnPath(a: Pt, b: Pt, laneY: number): string {
-  const outX = a.x + LANE_STUB;
-  const inX = b.x - LANE_STUB;
-  const r = LANE_R;
-  return [
-    `M ${a.x} ${a.y}`,
-    `H ${outX - r}`,
-    `Q ${outX} ${a.y} ${outX} ${a.y - r}`,
-    `V ${laneY + r}`,
-    `Q ${outX} ${laneY} ${outX - r} ${laneY}`,
-    `H ${inX + r}`,
-    `Q ${inX} ${laneY} ${inX} ${laneY + r}`,
-    `V ${b.y - r}`,
-    `Q ${inX} ${b.y} ${inX + r} ${b.y}`,
-    `H ${b.x}`,
-  ].join(" ");
-}
+/* `returnPath` moved to `./return-lane.ts` on 2026-08-07 so that
+   `components/home/SectionLevels.tsx` draws the identical shape rather than one that
+   resembles it. The reasoning that produced it is in that file's header. */
 
 /**
  * Fast, deterministic, non-interactive schematic preview drawn as pure SVG.
@@ -226,9 +208,9 @@ export function GraphThumbnail({
       {
         edge: e,
         b,
-        d: isReturn ? returnPath(a, b, laneY) : forwardPath(a, b),
+        d: isReturn ? returnLanePath(a, b, laneY) : forwardPath(a, b),
         mid: isReturn
-          ? { x: (a.x + LANE_STUB + b.x - LANE_STUB) / 2, y: laneY - 5 }
+          ? { ...returnLaneMid(a, b, laneY), y: laneY - 5 }
           : forwardMid(a, b),
         style: EDGE_STYLE[e.variant ?? "flow"],
       },

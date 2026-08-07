@@ -217,15 +217,12 @@ export function BuildWorkspace() {
           }
           title="What a blueprint is"
         />
-        <RouteBoxLink
-          href="/spec/topology"
-          label={
-            <>
-              Read <span aria-hidden>→</span>
-            </>
-          }
-          title="The topology, in DOT"
-        />
+        {/* A second exit to `/spec/topology` ("The topology, in DOT") stood here and the
+            author asked it out on 2026-08-07. The route is still one click away in the
+            footer's spec column on every page, and the DOT tab of the stage below is where
+            a reader of THIS page meets the notation — in their own graph rather than in a
+            reference. Two exits from a workspace, one of them to a spec page, was the
+            workspace pointing away from itself. */}
       </div>
 
       <section aria-labelledby="workspace-heading" className="flex flex-col gap-5">

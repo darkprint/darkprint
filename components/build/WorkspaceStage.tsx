@@ -382,7 +382,24 @@ export function WorkspaceStage({
                   // below) would silently drop the press. `InstallTabs.tsx` documents the
                   // same trap at its own tab button.
                   "flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs uppercase tracking-[0.1em] transition-[transform,scale,color,background-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97]",
-                  active ? "bg-surface text-fg" : "text-dim hoverable:hover:text-fg",
+                  // ── Violet for the tab you are on (2026-08-07, the author) ──
+                  // `bg-surface text-fg` said "selected" with a slightly lighter plate and
+                  // no colour at all, which at this type size is a difference a reader has
+                  // to hunt for. Violet is the site's most reserved accent and it is worth
+                  // saying why spending it here is not a breach: doc 2 §1.1 binds violet to
+                  // "a person acts here" INSIDE A DRAWING, which is why `FlowTone` has no
+                  // `human` member and `HumanFlowNode` takes no colour prop. A tablist is
+                  // chrome, not a figure; nothing here is a node, and no drawing on this
+                  // page borrows the colour. The same distinction `lib/format.ts` already
+                  // takes for the schematic's node-kind palette.
+                  //
+                  // Cyan was the obvious alternative and is the one thing this control may
+                  // NOT be: cyan means "you can click this" sitewide, and every tab in the
+                  // row is clickable. Painting the one you cannot usefully click in the
+                  // colour of clickability inverts the site's own key.
+                  active
+                    ? "bg-violet/15 text-violet"
+                    : "text-dim hoverable:hover:text-fg",
                 )}
               >
                 {changed && (
