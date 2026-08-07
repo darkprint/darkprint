@@ -43,7 +43,7 @@ TypeScript strict.
 |---|---|
 | `/build` | "Design a blueprint": a workspace with one graph as the stage, three simultaneous choices, five tabs, two co-equal exits over 80 pre-resolved combinations |
 | `/upload` | "Upload blueprint": validates and scores a bundle **in the tab**, and stops there |
-| `/install` | previews per-client MCP setup behind tabs (`InstallTabs`); coming soon, no server exists yet |
+| `/install` | "Install": the DarkPrint skill tutorial (`SkillSetup`) above a rule, `npx skills@latest add Brotherhood94/darkprint` and what the interview writes; under the rule, publishing/accounts/live push and the per-client MCP preview (`InstallTabs`), both badged, no server exists yet |
 
 ### Redirects — `next.config.ts`
 

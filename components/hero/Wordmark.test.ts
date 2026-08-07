@@ -13,6 +13,7 @@ import { describe, expect, it } from "vitest";
 
 import { Wordmark } from "@/components/hero/Wordmark";
 import { plainText } from "@/components/ui/visible-text";
+import { SKILL_INSTALL_COMMAND } from "@/lib/skill";
 
 const render = () => renderToStaticMarkup(createElement(Wordmark));
 
@@ -67,10 +68,22 @@ describe("Wordmark", () => {
     expect(text).not.toMatch(/\d+\s+ontology terms/);
   });
 
-  it("still says the CLI setup is not live yet", () => {
+  /**
+   * The twin of `beats.test.ts`'s case over the whole landing, at the element that carries
+   * it. Both were inverted in the commit that replaced the chip's string: it printed
+   * `npx darkprint setup` under a `ComingSoonBadge`, which spent the highest-attention
+   * position on the site on a command nobody could run. It prints the skill install now,
+   * and the badge left with the sentence it qualified.
+   *
+   * `plainText` collapses whitespace, so the command has to survive as one text node for
+   * this to match — which is also what makes it wrap at a space rather than mid-token on a
+   * phone (see the chip's own comment in `Wordmark.tsx`).
+   */
+  it("prints the install command, with nothing marking it unbuilt", () => {
     const text = plainText(render()).toLowerCase();
-    expect(text).toContain("npx darkprint setup");
-    expect(text).toContain("coming soon");
+    expect(text).toContain(SKILL_INSTALL_COMMAND.toLowerCase());
+    expect(text).not.toContain("npx darkprint setup");
+    expect(text).not.toContain("coming soon");
   });
 
   it("renders every affordance at full opacity with no script", () => {

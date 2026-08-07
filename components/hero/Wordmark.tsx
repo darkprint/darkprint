@@ -64,7 +64,6 @@
 
 import Link from "next/link";
 import { ButtonLink } from "@/components/ui/Button";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import {
   animate,
   createScope,
@@ -79,6 +78,7 @@ import {
 import { FLOW, FLOW_SELECTOR, FlowEdge } from "@/components/viz";
 import { EASE_OUT } from "@/components/viz/easing";
 import { useIsomorphicLayoutEffect, useReveal } from "@/components/viz/useReveal";
+import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
 
 import { WORDMARK_LETTER_PATHS } from "./wordmark-paths";
 
@@ -509,12 +509,28 @@ export function Wordmark() {
         </ButtonLink>
       </div>
 
-      {/* The CLI mention, moved here 2026-07-29 from the section's top-right corner —
+      {/* The command, moved here 2026-07-29 from the section's top-right corner —
           directly under the claim once it was actually on screen, and below the two real
-          buttons since. It carries its own "coming soon" disclosure (doc 2 §0.4 — an MCP
-          server for the registry does not exist yet) rather than borrowing the claim's own
-          sentence as cover for one; that honesty stays, it just stops being the only thing
-          on the first screen a reader can click.
+          buttons since.
+
+          ── It is a different command now, and it runs ──
+          It read `$ npx darkprint setup` and wore a `ComingSoonBadge`, because no such
+          binary exists and doc 2 §0.4 does not let an invented command stand unmarked.
+          That put the landing's ONLY command, in the highest-attention position on the
+          site, on a thing a reader could not do. It now prints `SKILL_INSTALL_COMMAND`
+          (`lib/skill.ts`): the blueprint-writing skill installs today, out of this
+          repository, over git, and the honesty direction is the good one for once — a
+          claim getting truer rather than looser.
+
+          The badge came off with the old string, and it came off because the sentence it
+          qualified is gone, not because a chip looked tidier without it. Amber still has
+          exactly two sanctioned jobs sitewide; this chip has simply stopped needing one of
+          them. The MCP server the old command implied is still unbuilt and still says so,
+          in the two places that describe it — beat 4's Connect panel and `/install` — both
+          of which this chip links into rather than duplicating.
+
+          The link target did not move. `/install` is where the skill is explained, which
+          is the same route this chip has always opened.
 
           `transition-[…]` is spelled out because bare `transition-colors` in Tailwind v4
           includes `outline-color`, which fades the keyboard ring in over 150ms — a reader
@@ -522,7 +538,7 @@ export function Wordmark() {
           because Tailwind v4 compiles `scale-[0.97]` to the standalone `scale` property,
           which a list naming only `transform` does not cover.
 
-          ── Why the command is green, and the badge still is not ──
+          ── Why the command is green ──
           The author asked for "a shade of green" on the chip. It is `--color-emerald`,
           the palette's only green, and no new token: a fourth accent invented for one
           chip would be a fourth meaning to keep straight. `app/globals.css` records
@@ -531,15 +547,19 @@ export function Wordmark() {
           that emerald marks something the machine produces or accepts, an engine's own
           register, as against cyan's "you can click this" and violet's "a person acts
           here". The chip is still a link and still gets cyan's affordances by shape
-          (border, hover, press), not by colour.
+          (border, hover, press), not by colour. The argument is unchanged by the new
+          string, and stronger with it: the whole reason emerald was arguable here is that
+          this is the engine's own register, and the command now genuinely reaches it.
 
-          What must NOT go green is `ComingSoonBadge`. Amber has exactly two sanctioned
-          jobs sitewide and "not built yet" is one of them; `npx darkprint setup` genuinely
-          does not exist, so the badge keeps its own `text-amber` (it sets it itself, and
-          the `text-emerald` here does not reach it). The chip's fill stays the neutral
-          `bg-surface-2/80` for the same reason — an emerald-tinted ground under an amber
-          pill would put the two accents in contact and make the badge read as part of a
-          green object rather than as a marker on it.
+          What used to sit beside the command, and what its removal did NOT license: the
+          paragraph here read "What must NOT go green is `ComingSoonBadge`", because amber
+          has exactly two sanctioned jobs sitewide and an emerald-tinted pill would have
+          spent one of them wrongly. That is still true everywhere the badge is still
+          printed. What changed is that this chip no longer prints one — see the head of
+          this comment — so there is no amber on this element to keep apart from the green.
+          The chip's fill stays the neutral `bg-surface-2/80` regardless: it was never
+          chosen to sit under a pill, it was chosen so the green is a frame and a text
+          colour rather than a filled button competing with the two real ones above it.
 
           Contrast, measured (sRGB, WCAG 2.x), against the chip's real composite ground —
           `bg-surface-2/80` (#0f121e at 80%) over the hero's void (#05060d) resolves to
@@ -559,14 +579,25 @@ export function Wordmark() {
           smallest rung that separates the chip from the two buttons above without opening
           a gap the eye reads as a section break. The timeline is unaffected — `cli` is a
           mark on this element itself, not on a wrapper, so the extra margin cannot strand
-          a target; the beat still animates exactly the element a reader can click. */}
+          a target; the beat still animates exactly the element a reader can click.
+
+          ── The new string is twice as long, so the chip has to be able to wrap ──
+          `npx skills@latest add Brotherhood94/darkprint` is 44 characters against the old
+          command's 19, and at 390 the hero's column is 358px wide: 46 monospace
+          characters at 12px do not fit on one line, and the lifecycle beat already shipped
+          41px of unreachable horizontal overflow from exactly this class of string
+          (`SectionLifecycle.tsx`, on `min-w-0`). `max-w-full` caps the chip at its
+          column, `flex-wrap` lets the row break, and the command is ONE text node so the
+          break falls at a space in the command rather than mid-token. `gap-x-2 gap-y-1`
+          because a wrapped second line needs a gap the single-line `gap-2` does not
+          describe, and `text-left` because a wrapped command reads as a command only when
+          its lines start at the same column, inside a hero that is otherwise centred. */}
       <Link
         data-mark="cli"
-        href="/install"
-        className="mt-10 inline-flex items-center gap-2 rounded-md border border-emerald/50 bg-surface-2/80 px-3 py-1.5 font-mono text-xs text-emerald transition-[transform,scale,color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-emerald/75 hoverable:hover:text-fg hoverable:active:scale-[0.97]"
+        href={SKILL_ROUTE}
+        className="mt-10 inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-emerald/50 bg-surface-2/80 px-3 py-1.5 text-left font-mono text-xs text-emerald transition-[transform,scale,color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-emerald/75 hoverable:hover:text-fg hoverable:active:scale-[0.97]"
       >
-        <span>$ npx darkprint setup</span>
-        <ComingSoonBadge />
+        <span>{`$ ${SKILL_INSTALL_COMMAND}`}</span>
       </Link>
     </div>
   );

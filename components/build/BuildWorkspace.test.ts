@@ -24,6 +24,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { plainText } from "@/components/ui/visible-text";
+import { SKILL_INSTALL_COMMAND } from "@/lib/skill";
 import { BuildWorkspace, nextMarks } from "./BuildWorkspace";
 import { DEFAULT_ITERATIONS } from "./choices";
 import { buildState } from "./state";
@@ -115,5 +116,61 @@ describe("BuildWorkspace — SSR markup", () => {
     expect(text).toContain("This starter, as files");
     expect(text).toContain("Have your agent write one for your own goal");
     expect(text).not.toContain("Or have your agent");
+  });
+
+  /**
+   * The skill announcement, held to the placement the investigation chose over two others.
+   *
+   * `AgentHandoff.tsx`'s docblock argues it at length; this is the part of the argument a
+   * later pass can break without noticing. The install command has to be on the route at
+   * all (otherwise the landing's hero chip is the only place it is ever printed, and a
+   * reader who arrived at `/build` first never meets it), and it has to be inside the
+   * second exit rather than beside the two — which is what the `h3` count asserts. Two exit
+   * titles, and no third.
+   */
+  it("announces the skill inside the second exit, not as a third one", () => {
+    const text = plainText(html);
+    expect(text).toContain(SKILL_INSTALL_COMMAND);
+    expect(text).toContain("The DarkPrint skill");
+
+    // Both exits still title themselves with a `font-display` `h3` and nothing else on this
+    // route does; a third would mean the skill had been promoted out of `AgentHandoff`.
+    const exitTitles = [...html.matchAll(/<h3 class="font-display[^"]*">([^<]*)<\/h3>/g)].map(
+      (match) => match[1],
+    );
+    expect(exitTitles).toEqual(["This starter, as files", "Have your agent write one for your own goal"]);
+  });
+
+  /**
+   * The naming hazard, as an assertion rather than as a note in a docblock.
+   *
+   * `lib/core/card/schema.ts` defines `skill?: string` as a node card's behaviour document,
+   * and `/what-a-blueprint-is#the-words` prints that definition in the open. A surface that
+   * says "the skill" unqualified is contradicting a definition the site publishes two nav
+   * entries away, so every mention on this route carries the qualifier.
+   */
+  it("never says \"the skill\" unqualified", () => {
+    const text = plainText(html);
+    expect(text).not.toMatch(/\bthe skill\b(?! document)/i);
+    expect(text).toMatch(/\bthe DarkPrint skill\b/i);
+  });
+
+  /**
+   * The sentence that keeps a working skill from reading as a broken one.
+   *
+   * `DownloadStep` leads on `factory.dot` and `DownloadPanel` prints `attractor run
+   * factory.dot` inside it. The skill deliberately emits the registry shape and no
+   * `factory.dot` (`lib/skill.ts` records why). Both folders are described on this one
+   * screen, so the difference has to be stated on this one screen.
+   */
+  it("reconciles the two folder shapes it now describes at once", () => {
+    const text = plainText(html);
+    // What it writes, then the one file it deliberately does not, then why that is not a
+    // fault. Three separate matches rather than one long string: `plainText` puts a space
+    // either side of every `<code>` tag in this sentence, and a single regex over the whole
+    // of it would be pinning the markup as much as the words.
+    expect(text).toMatch(/it writes what the registry stores: blueprint\.dot/i);
+    expect(text).toMatch(/\bNot\s+factory\.dot\b/i);
+    expect(text).toMatch(/exporter compiles from those two on the way out/i);
   });
 });

@@ -49,7 +49,12 @@ export { cardRef, parseCardRef } from "./card/schema";
 export type { CardFormat, ParseResult } from "./card/parse";
 export { formatForFilename, parseDocument } from "./card/parse";
 export type { CardValidation, ValidateCardOptions } from "./card/validate";
-export { validateCard, loadCard, checkVersionChain } from "./card/validate";
+/**
+ * `CARD_KNOWN_KEYS` is the wire vocabulary itself, published so the authoring skill's
+ * reference can be generated from the validator rather than transcribed beside it — a
+ * hand-copied key list is a lie with a shelf life. See `scripts/skill-refs.ts`.
+ */
+export { validateCard, loadCard, checkVersionChain, CARD_KNOWN_KEYS } from "./card/validate";
 /**
  * The single reader of a card's iteration cap. `analysis/security.ts` asks whether the
  * cycle is capped and `attractor/emit.ts` writes the number into the runnable DOT, and

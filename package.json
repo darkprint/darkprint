@@ -9,6 +9,7 @@
     "dev": "next dev",
     "prebuild": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-bundles.ts",
     "generate:wordmark": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-wordmark-paths.ts",
+    "generate:skill-refs": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-skill-refs.ts",
     "measure:prose": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/measure-prose.ts",
     "build": "next build",
     "start": "next start",

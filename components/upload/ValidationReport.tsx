@@ -14,6 +14,7 @@ import { drawnExtent, graphPaneHeightCss } from "@/components/graph/framing";
 import { GraphPane } from "@/components/panes/GraphPane";
 import { buildPaneModel, type PaneNodeInput } from "@/components/panes/build";
 import { announce, resolveFocus } from "@/components/panes/model";
+import { bundleProgress } from "./progress";
 
 /* --------------------- presentation --------------------- */
 
@@ -95,6 +96,15 @@ export function ValidationReport({
   const failed = hasErrors(result.diagnostics);
   const usable = blueprint !== undefined && analysis !== undefined && !failed;
 
+  /* Which of three states this bundle is in, and how far the graph got. `components/
+     upload/progress.ts` says at length why "rejected" is the wrong word for a folder the
+     DarkPrint skill is still filling in: the ordinary visitor now has the whole topology
+     and some of the cards, and every error against it is the same fact said once per
+     node. The engine's severities are printed unchanged either way — the diagnostic list
+     below is untouched — and what changes is only what this page CALLS that state. */
+  const progress = useMemo(() => bundleProgress(result), [result]);
+  const unfinished = progress.state === "unfinished";
+
   const graph = useMemo(
     () => (usable && blueprint !== undefined ? graphForBlueprint(blueprint) : undefined),
     [usable, blueprint],
@@ -159,22 +169,45 @@ export function ValidationReport({
   return (
     <div className={cx("flex flex-col gap-5", className)}>
       {/* ---------- verdict strip ---------- */}
+      {/* Three states, not two. `✕ BUNDLE REJECTED` in signal red was the first thing an
+          author with three of eight cards written saw, and signal means a defect on every
+          other surface of this site — so the strip said "you broke it" to somebody who
+          had simply not finished. The half-filled disc in `--color-warn` is the register
+          `BundleDropzone` already uses for "something here needs your attention and none
+          of it is wrong", and it is deliberately not `--color-amber`: amber has two
+          sanctioned jobs sitewide and neither of them is this.
+
+          The count beside it is still `verdictLine`, unedited. The engine raised those
+          errors and the list below prints every one; what the token does is name what
+          they add up to. */}
       <div className="panel flex flex-wrap items-center gap-x-4 gap-y-2 bg-surface-2/40 px-4 py-3">
         <span
           className="font-mono text-sm"
-          style={{ color: usable ? "var(--color-emerald)" : "var(--color-signal)" }}
+          style={{
+            color: usable
+              ? "var(--color-emerald)"
+              : unfinished
+                ? "var(--color-warn)"
+                : "var(--color-signal)",
+          }}
           aria-hidden
         >
-          {usable ? "✓" : "✕"}
+          {usable ? "✓" : unfinished ? "◐" : "✕"}
         </span>
         <span className="font-mono text-xs uppercase tracking-[0.14em] text-fg">
-          {usable ? "bundle resolves" : "bundle rejected"}
+          {usable ? "bundle resolves" : unfinished ? "bundle unfinished" : "bundle rejected"}
         </span>
         <span className="font-mono text-xs text-dim">{verdictLine(result)}</span>
         {blueprint !== undefined && (
           <span className="ml-auto font-mono text-[11px] text-dim" title={blueprint.digest}>
-            {blueprint.nodes.length} nodes · {blueprint.edges.length} edges ·{" "}
-            {shortDigest(blueprint.digest)}
+            {/* `blueprint.nodes` holds the nodes that RESOLVED, so on a half-written
+                bundle the old line quietly under-reported the graph: eight nodes in the
+                DOT, "3 nodes" in the strip. The progress reading carries both numbers,
+                off `graph.ids` and `nodes`, and prints them as the fraction they are. */}
+            {unfinished
+              ? `${progress.placed} of ${progress.total} nodes carded`
+              : `${blueprint.nodes.length} nodes`}{" "}
+            · {blueprint.edges.length} edges · {shortDigest(blueprint.digest)}
           </span>
         )}
       </div>
@@ -215,21 +248,40 @@ export function ValidationReport({
         </>
       )}
 
-      {/* ---------- every complaint, errors first ---------- */}
-      <DiagnosticList diagnostics={result.diagnostics} title="Validator report" />
+      {/* ---------- what the verdict means, before the list that produced it ----------
+          The same withholding, said three ways. What the engine does is identical in all
+          three — no schematic, no autonomy fraction, no security ledger, because a reading
+          taken over nodes it could not open is a number with nothing behind it — but "you
+          have not finished" and "something you wrote contradicts something else you wrote"
+          are different facts about the author, and one heading for both told the commonest
+          visitor the wrong one.
 
-      {!usable ? (
+          It sat UNDER `DiagnosticList` and moved above it in the same pass. Five rows
+          headed `✕ ERROR` in signal red are the whole screen on a half-written bundle, and
+          an explanation reached after scrolling past them is an explanation the reader has
+          already talked themselves out of. The list is unchanged and every severity in it
+          is still the engine's; this is the sentence that says what they add up to, and it
+          now arrives first. Nothing moves for the `usable` case — the panel is not rendered
+          at all there, and the scores still follow the list. */}
+      {!usable && (
         <div className="rounded-lg border border-line bg-surface-2/40 p-5">
           <h3 className="font-display text-xl font-semibold text-fg">
-            No schematic and no scores
+            {unfinished ? "Not finished, and nothing wrong" : "No schematic and no scores"}
           </h3>
           <p className="prose-lane mt-4 text-sm leading-relaxed text-muted">
             {blueprint === undefined
               ? "The DOT could not be parsed into a directed graph, so there is no topology to draw and nothing to analyse. The source is open below, with the lines the validator named."
-              : "The bundle resolved far enough to report on, but it still carries errors. DarkPrint will not put a number on a graph whose references it could not check, fix the errors above and the schematic, the autonomy fraction and the security ledger appear here."}
+              : unfinished
+                ? `Your topology parsed and ${progress.placed} of its ${progress.total} nodes have their card. The rest are named below, one line each, and none of it is a defect: a blueprint is written a card at a time and this is what the middle of that looks like. The schematic and the two computed readings wait for the last card, because a number taken over nodes the engine could not open would have nothing behind it. Drop the folder again whenever you like.`
+                : "The bundle resolved far enough to report on, but it still carries errors. DarkPrint will not put a number on a graph whose references it could not check, fix the errors below and the schematic, the autonomy fraction and the security ledger appear here."}
           </p>
         </div>
-      ) : (
+      )}
+
+      {/* ---------- every complaint, errors first ---------- */}
+      <DiagnosticList diagnostics={result.diagnostics} title="Validator report" />
+
+      {usable && (
         <>
           <div className="flex flex-col gap-4">
             <div>

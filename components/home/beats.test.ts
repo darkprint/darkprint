@@ -31,6 +31,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { Hero } from "@/components/hero/Hero";
+import { SKILL_INSTALL_COMMAND } from "@/lib/skill";
 
 import { LANDING_NARROW, LANDING_WIDE } from "./graph";
 import { ROLE_ABSENCE, ROLE_BOXES } from "./roles";
@@ -87,10 +88,25 @@ describe("beat 1 is the wordmark, and the claim survives it", () => {
     expect(html).toContain("Autonomy you can read as a graph.");
   });
 
-  it("says the CLI setup is not live yet", () => {
+  /**
+   * This case used to read "says the CLI setup is not live yet", and asserted the chip
+   * printed `npx darkprint setup` AND "coming soon". Both halves are inverted here, in the
+   * same commit as the chip, and the reason is the good one: the landing's only command
+   * used to be a command that does not exist, wearing the badge doc 2 §0.4 requires of an
+   * invented one. It is now the one that installs the blueprint-writing skill, which runs
+   * today, so the badge came off with the string it qualified rather than off a claim.
+   *
+   * The two `not` assertions are the load-bearing half. The old string reappearing, or a
+   * `ComingSoonBadge` drifting back onto a chip whose command is real, would both be a
+   * regression in the direction this site keeps having to guard: the first re-invents a
+   * binary, the second marks a working command as unbuilt, and neither would fail on the
+   * positive assertion alone.
+   */
+  it("prints one command, and it is one a reader can actually run", () => {
     const words = readable(html).toLowerCase();
-    expect(words).toContain("npx darkprint setup");
-    expect(words).toContain("coming soon");
+    expect(words).toContain(SKILL_INSTALL_COMMAND.toLowerCase());
+    expect(words).not.toContain("npx darkprint setup");
+    expect(words).not.toContain("coming soon");
   });
 });
 

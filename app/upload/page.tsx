@@ -1,9 +1,22 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { stringify as stringifyYaml } from "yaml";
 import { allBlueprints, bundleSource, bundleVocabulary, getRegistry } from "@/lib/content";
+import { SKILL_ROUTE } from "@/lib/skill";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { Eyebrow, SectionHeading } from "@/components/ui/SectionHeading";
 import { UploadFlow, type ExampleBundle } from "@/components/upload/UploadFlow";
+
+/**
+ * The house style for a link written inside a sentence, copied rather than imported.
+ *
+ * Four components already spell these exact utilities inline
+ * (`components/home/SectionRoles.tsx`, `SectionLevels.tsx`,
+ * `components/explain/WhichTasksRemedies.tsx`); there is no shared primitive to reach
+ * for, and inventing one here would put a site-wide decision in a route file.
+ */
+const PROSE_LINK =
+  "text-fg underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan";
 
 export const metadata: Metadata = {
   /* One destination, one name. Every door into this route — the header, the phone panel,
@@ -99,6 +112,38 @@ export default function UploadPage() {
           title="Upload blueprint"
           lead="Upload the DOT graph of your pipeline. It is parsed in your own tab, nothing is sent anywhere, and it comes back with its autonomy class named and its security scored, with no form to guess your way through."
         />
+        {/* ── Where the folder in front of the reader came from ──
+            The population arriving here changed. Until now the only person with a bundle
+            in hand had downloaded one from `/blueprints` or exported one from `/build`,
+            and both of those hand over something finished. The DarkPrint skill writes the
+            registry shape into a working directory a card at a time, and it points at
+            this route, so the ordinary visitor is now an author halfway through — which
+            is what the second sentence is for and what `components/upload/progress.ts`
+            re-frames the wizard around.
+
+            Named, not merely accommodated: a reader who has never heard of the skill
+            learns from this paragraph that it exists, which is the only mention of it on
+            the route. "The DarkPrint skill" and never "the skill" — `lib/skill.ts` sets
+            that rule out, and the reason is that `skill:` is already a field on a node
+            card meaning something one level down. The link goes to `SKILL_ROUTE` rather
+            than to a path written here, so this sentence follows the page that explains
+            the skill wherever it lives. */}
+        {/* `text-muted`, not the `text-dim` the two paragraphs under it wear. Both of
+            those qualify something — a promise about later, and an asymmetry in the
+            vocabulary — and dim is this site's register for a qualification. This one is
+            wayfinding, the first thing a reader arriving from the skill needs to read, and
+            at dim it sat in the same tier as the fine print and was skimmed with it. */}
+        <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted">
+          A folder written by the{" "}
+          <Link href={SKILL_ROUTE} className={PROSE_LINK}>
+            DarkPrint skill
+          </Link>{" "}
+          drops straight in. It runs in your own editor and writes the two things this page
+          reads, a <span className="font-mono text-cyan">blueprint.dot</span> and the{" "}
+          <span className="font-mono text-cyan">cards/</span> it pins, so there is nothing
+          to export and nothing to convert. Bring it before it is finished: a graph whose
+          cards are half written resolves as far as it goes, and the report says how far.
+        </p>
         {/* The word "upload" carries an implication the old title did not: that the file
             goes somewhere and is kept. It does not, and the author's own sketch of where
             this is heading — "like a github repository … when uploading you are asked
@@ -117,6 +162,16 @@ export default function UploadPage() {
           Not built yet: an account to upload into, with each blueprint public or private
           the way a repository is. There are no accounts and no backend: what you upload is
           read in this tab and stays in it.
+          {/* The third unbuilt thing, added when the skill did. A reader who has just been
+              told that a tool running inside their editor writes a folder for this page
+              will ask whether the editor sends it, and a page that answers by saying
+              nothing is answering yes. It sits under the badge already here rather than
+              taking a second one: it is the same absence — no account, no backend, so
+              nothing to push to — and one paragraph of unbuilt registry beats two amber
+              marks on one screen. `components/site/honesty.test.ts` holds all three
+              sentences over the rendered route. */}{" "}
+          Nor is there a live push from the editor the skill runs in: it writes the folder
+          to your disk, and you bring it here.
         </p>
         {/* The vocabulary asymmetry, moved here from `/what-it-isnt` when that page was
             removed. It is a statement about this page, and it was the only unconditional

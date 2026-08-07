@@ -54,8 +54,16 @@ const CARD_ID = /^(?:[a-z0-9]+(?:-[a-z0-9]+)*\/)?[a-z0-9]+(?:-[a-z0-9]+)*$/;
  * Every key the validator understands, including the camelCase spellings it
  * accepts silently. Anything else is reported as `info` — a card written against
  * a later schema must still load here (§6.2's "adding is safe").
+ *
+ * Exported, and deliberately so: `scripts/skill-refs.ts` renders it into
+ * `skills/darkprint/references/card-schema.md`, the wire vocabulary the authoring skill
+ * hands to whoever is writing a card by hand. That reference is the *enforced* key set
+ * rather than a transcription of it, and `scripts/generate-skill-refs.test.ts` fails the
+ * suite when the committed file stops matching this constant. Narrowing this back to a
+ * module-private `const` would take the skill's reference with it, so it stays public
+ * even though nothing inside `lib/core` reads it from outside this file.
  */
-const KNOWN_KEYS: ReadonlySet<string> = new Set([
+export const CARD_KNOWN_KEYS: ReadonlySet<string> = new Set([
   "id",
   "name",
   "type",
@@ -237,7 +245,7 @@ export function validateCard(value: unknown, opts: ValidateCardOptions): CardVal
   );
 
   for (const key of Object.keys(value)) {
-    if (KNOWN_KEYS.has(key)) continue;
+    if (CARD_KNOWN_KEYS.has(key)) continue;
     ds.push(
       info("card/bad-type", `Field \`${key}\` is not part of the card schema and is ignored.`, {
         hint: "Unknown fields are kept for forward compatibility; check the spelling if you expected it to apply.",

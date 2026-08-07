@@ -1,0 +1,71 @@
+# cards/<card-id>@<version>.yaml
+#
+# The wire format is snake_case. Every key the validator accepts is listed in
+# references/card-schema.md; anything outside that set is silently ignored, so a typo in
+# `risk_markers` does nothing rather than failing loudly.
+#
+# NEVER name a card file `blueprint.yaml` or `extensions.yaml`. Those names are claimed by
+# the manifest and the local vocabulary, and a card called either disappears from the bundle.
+#
+# YAML trap, hit every time: a plain scalar containing ": " is parsed as a nested mapping and
+# the whole card fails with card/parse-error. Quote it, or use a `>-` folded block.
+#   description: Where it failed: the line and the text     <- BREAKS the card
+#   description: "Where it failed: the line and the text"   <- fine
+
+# ---- identity ----
+id: card-id                 # ^(?:namespace/)?[a-z0-9]+(-[a-z0-9]+)*$ — lowercase, hyphens, no underscores
+name: Human Readable Name
+type: agent                 # exactly one node-type term. Never an abstract category.
+phase: implementation       # optional and repeatable; omit it entirely when the node sits in none of the five
+
+# ---- behaviour ----
+action: >-
+  One imperative sentence naming the operation and the artefact.
+spec: >-
+  150-400 words. This is compiled into the node's `prompt` and handed verbatim to an agent
+  that does not see the rest of the graph, so it must be self-sufficient: what arrives, what
+  to do in order, what to emit on which port and in what form, and what not to do. If this
+  node's work is judged, it must name no criterion, quote no threshold and paraphrase nothing
+  the criteria producer wrote — the engine measures the overlap and warns above 0.35.
+model: claude-sonnet-5      # optional. A default the runner can override, not a binding.
+agent: Role Name            # optional
+tools: []                   # tool terms. web-search / http-fetch / sql / ci infer a risk marker.
+mcp: []                     # installed server names. Free text, checked against nothing.
+skill: skills/card-id.md    # optional pointer; nothing in the engine reads what it points at
+params:
+  # The iteration cap, when this node sits in a cycle. TOP LEVEL only — nested it is not read,
+  # and the whole cycle takes -1.5 with no obvious cause. Also accepted: maxIterations, max_retries.
+  max_iterations: 3
+
+# ---- interfaces ----
+inputs:                     # must be PRESENT. Write [] when the node needs nothing.
+  - name: brief
+    type: plan              # a data-type term. Do not reach for `any`.
+    description: What is in it and who it came from.
+outputs:                    # must be PRESENT. [] is how a sink is declared.
+  - name: build
+    type: code
+    description: What is handed over.
+dependencies:               # the card ids or DOT node ids of the suppliers, derived from the edges
+  - upstream-card-id
+cannot:
+  # An entry naming a data-type is ENFORCED: the resolver refuses any incoming edge whose
+  # carrier is that type or anything narrower, with bundle/prohibition-violated. On an
+  # unpinned edge the carriers are EVERY output of the source card; with `out=` only that port.
+  - acceptance-criteria
+  # An entry naming anything else is PROSE. A reader reads it; nothing checks it.
+  - read the checks the work will be run against
+
+# ---- evaluation metadata ----
+requires_human: false       # MUST be true when `type` is human-gate or human-input
+risk_markers: []            # risk-marker terms. unbounded-loop, unvalidated-external-access and
+                            # criteria-leak are inferred from the graph whether declared or not.
+notes: >-
+  Optional. The place to record the thing a reader would otherwise misread as an oversight:
+  the edge that is deliberately absent, the marker deliberately not declared and what it would
+  cost if the judgement went the other way.
+
+# ---- service fields ----
+version: 1.0.0              # full semver. A published version is never edited in place.
+author: your-handle         # optional
+ontology_version: 0.1.0     # the vocabulary this card is written against

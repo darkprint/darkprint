@@ -38,6 +38,7 @@ import { describe, expect, it } from "vitest";
 import SpecCardPage from "@/app/spec/card/page";
 import TheClimbPage from "@/app/towards-a-dark-factory/the-climb/page";
 import InstallPage, { metadata as installMetadata } from "@/app/install/page";
+import UploadPage from "@/app/upload/page";
 import { allBlueprints } from "@/lib/content";
 import { CARD_ROWS } from "@/components/spec/rows";
 import { ScoringModel } from "@/components/spec/ScoringModel";
@@ -67,11 +68,15 @@ function canvas(slug: string): string {
 
 const SPEC_CARD = renderToStaticMarkup(createElement(SpecCardPage as never));
 /**
- * The one page whose whole subject is a capability that does not exist yet — an MCP
- * server. `InstallTabs`'s own `ComingSoonBadge` says so beside the config it previews,
- * but a badge is not a sentence; this is the page's lead, asserted so the disclaimer
- * cannot go missing from `/install` the way it went missing from other pages before
- * (see the file header).
+ * The route that used to be the one page whose whole subject was a capability that does
+ * not exist yet.
+ *
+ * It is half that now. `components/install/SkillSetup.tsx` sits at the top of it and
+ * describes a command that genuinely runs, and the MCP preview it always carried sits
+ * under a rule reading "Not built yet" with `InstallTabs`'s own `ComingSoonBadge` on it.
+ * A badge is not a sentence, which is why two sentences on this page are asserted below
+ * rather than one: the MCP limit, and the publishing limit the working half provokes by
+ * leaving a reader holding a blueprint with nowhere to put it.
  */
 const INSTALL_PAGE = renderToStaticMarkup(createElement(InstallPage as never));
 /**
@@ -84,6 +89,27 @@ const INSTALL_PAGE = renderToStaticMarkup(createElement(InstallPage as never));
  * is no tag to strip), so the same ledger mechanism covers it with no new machinery.
  */
 const INSTALL_METADATA_DESCRIPTION = installMetadata.description ?? "";
+/**
+ * `/upload`, whole — the one route where a reader hands the site a file.
+ *
+ * It was not in this ledger at all, which is remarkable given its history: the page's own
+ * `metadata` docblock records that it shipped as "Share a blueprint" under an eyebrow
+ * reading CONTRIBUTE, a promise of publishing there is no backend for, and that TWO HIGH
+ * findings against this project were limit sentences deleted from it during a pass cutting
+ * for length. Both times the sentence came back because a person read two builds side by
+ * side. That is precisely the thing this file exists to stop needing.
+ *
+ * It matters more now than it did. The DarkPrint skill points here, so the route is the
+ * first place many readers will see the word "upload" attached to something they made,
+ * and the verb carries the whole implication the three claims below refuse: that the file
+ * goes somewhere, that there is an account for it to land in, and that the tool which
+ * wrote it can send it. The page states all three refusals in one paragraph under a single
+ * `ComingSoonBadge`, in the open, above the wizard.
+ *
+ * The whole page and not the paragraph: it is written in the route file, and lifting it
+ * into a component to make it testable would move a sentence for a test's convenience.
+ */
+const UPLOAD_PAGE = renderToStaticMarkup(createElement(UploadPage as never));
 const WHICH_TASKS = renderToStaticMarkup(createElement(WhichTasksChecks));
 /**
  * The last page of the climb route, whole, for the one paragraph that says what this site
@@ -326,20 +352,68 @@ const CLAIMS: Claim[] = [
     html: THE_CLIMB,
   },
 
-  /* ---- /install ---- */
+  /* ---- /install ----
+     This route stopped being a page where nothing is built. The DarkPrint skill installs
+     in one command and works, so the three entries below are what the page owes a reader
+     now: the MCP sentence where it belongs, the publishing sentence the skill's own output
+     provokes, and a `metadata.description` that qualifies the right half.
+
+     The MCP sentence is UNCHANGED, character for character, and it MOVED: it was the
+     page's `lead`, directly under the `h1`, when the whole page was the MCP preview, and
+     it now sits inside the MCP panel under the "Not built yet" rule. This assertion cannot
+     see that. It renders the whole page and passes with the sentence anywhere on it, which
+     is exactly why `app/install/page.tsx`'s header argues the placement in prose: above a
+     working install command the same words would read as a qualification of the install.
+     If a later pass moves it back up, this test will not be what catches it. */
   {
-    surface: "/install · the page's own lead sentence",
-    why: "doc 2 §0.4's disclaimer on the page a reader lands on specifically to set up MCP access. A tab strip previewing a client config reads as something to run unless the page says, in the open and beside it, that nothing here is live yet",
+    surface: "/install · the MCP panel, under the page's own rule",
+    why: "doc 2 §0.4's disclaimer beside the tab strip previewing a client config, which reads as something to run unless the page says otherwise next to it. It is no longer the page's lead: the top half of the route installs a skill that genuinely works, and a limit statement standing above a working command qualifies the wrong thing",
     says: "not built yet: this is what setup will look like once the registry has an mcp server to point a client at",
     where: "open",
     html: INSTALL_PAGE,
   },
   {
+    surface: "/install · the publishing panel, under the page's own rule",
+    why: "the route now ends with a reader holding a blueprint their own agent wrote, and the next question anybody holding one asks is where to put it. The answer is nowhere: there is no backend, no account, no private draft and no push from a client, and all four have to be refused on the page that just handed over the folder rather than only on `/towards-a-dark-factory/the-climb`",
+    says: "not built yet: an account of your own, a blueprint kept private while it is under construction, publishing one to the registry, and pushing a change to it straight from claude code",
+    where: "open",
+    html: INSTALL_PAGE,
+  },
+  {
     surface: "/install · metadata.description",
-    why: "the same disclaimer where a reader who never opens the page reads it — a search result, a shared link's preview card, a browser history entry. Doc 2 §0.4 does not stop at the rendered body; the finding this guards was that the description could drop the qualifier and nothing would fail",
-    says: "not built yet: nothing here runs",
+    why: "the same kind of disclaimer where a reader who never opens the page reads it — a search result, a shared link's preview card, a browser history entry. It said \"not built yet: nothing here runs\" until 2026-08-07, and that entry came out because it became false in the OTHER direction: `npx skills@latest add Brotherhood94/darkprint` runs, so a description claiming the route is inert would have been the site understating itself into a different kind of lie. What replaces it names the three capabilities that genuinely are not there, which is what a preview card has to carry when the page behind it is half working",
+    says: "not built yet: accounts, publishing, and an mcp server to point a client at",
     where: "open",
     html: INSTALL_METADATA_DESCRIPTION,
+  },
+
+  /* ---- /upload ----
+     One paragraph, three sentences, one badge. They are asserted separately because they
+     refuse three different things and a length pass takes sentences, not paragraphs: the
+     first two have been on the page since the route was renamed off "Share a blueprint",
+     and the third arrived with the skill. Every one of them is `open` — the paragraph sits
+     above the wizard with nothing folded over it, and each qualifies a control printed in
+     the open below it. */
+  {
+    surface: "/upload · the account the verb implies",
+    why: "the route is called \"Upload blueprint\" and the word means the file goes somewhere and is kept. The author's own sketch of where this is heading — a repository you own, public or private — needs accounts, storage and a backend, and none of the three exists. Stating the direction is what earns the verb; leaving a reader to infer it from the verb is the failure",
+    says: "not built yet: an account to upload into, with each blueprint public or private the way a repository is",
+    where: "open",
+    html: UPLOAD_PAGE,
+  },
+  {
+    surface: "/upload · where the file actually goes",
+    why: "the direction above is a promise about later, and on its own it leaves today unstated. This is the sentence about today, and it is the one that has twice been deleted from this route by a pass cutting for length (see the file header). `loadBundle` runs in the tab, so it is also simply true, and it has to be printed rather than demonstrated: a reader cannot see the absence of a network call",
+    says: "there are no accounts and no backend: what you upload is read in this tab and stays in it",
+    where: "open",
+    html: UPLOAD_PAGE,
+  },
+  {
+    surface: "/upload · no push from the editor the skill runs in",
+    why: "added with the DarkPrint skill, and the reason it is a third sentence rather than a paraphrase of the second. The paragraph above it now tells a reader that a tool inside their own editor writes a folder for this page; the very next question anybody asks is whether the editor sends it, and a page that answers by saying nothing is answering yes. `/install` refuses the same thing at the other end of the same story",
+    says: "nor is there a live push from the editor the skill runs in",
+    where: "open",
+    html: UPLOAD_PAGE,
   },
 
   /* ---- the download menus ---- */
@@ -409,6 +483,7 @@ describe("the surfaces the ledger is read off", () => {
       ["/build · download exit", DOWNLOAD_STEP],
       ["/build · agent-brief exit", AGENT_HANDOFF],
       ["/ · the lifecycle beat", LIFECYCLE],
+      ["/upload", UPLOAD_PAGE],
     ] as const) {
       expect(html.length, name).toBeGreaterThan(2000);
     }

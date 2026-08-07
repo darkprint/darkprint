@@ -96,12 +96,21 @@ export const NAV = [
   // character, which is what `nav.test.ts` holds it to. The label a reader clicks is the
   // heading they land on, so there is nothing to re-resolve on arrival.
   { href: "/towards-a-dark-factory", label: "Towards a Dark Factory", group: "learn" },
-  // Out of the menu and to the right of it, renamed, on the author's instruction. It is
-  // a setup action rather than something to read, and "Install" alone said nothing about
-  // what is being installed — the page is about pointing an MCP client at the registry.
-  // `standalone` keeps it in the `learn` group for the phone panel, where a section of
-  // one item would read as a mistake, while the wide row draws it beside the trigger.
-  { href: "/install", label: "Install MCP", group: "learn", standalone: true },
+  // Out of the menu and to the right of it. It is a setup action rather than something to
+  // read, and `standalone` keeps it in the `learn` group for the phone panel, where a
+  // section of one item would read as a mistake, while the wide row draws it beside the
+  // trigger.
+  //
+  // "Install MCP" until 2026-08-07, on the author's instruction, and this comment used to
+  // record the reason: "Install" alone said nothing about what is being installed, because
+  // the page was about pointing an MCP client at the registry and about nothing else. That
+  // premise is gone. `/install` now leads on the DarkPrint skill, which installs in one
+  // command and works, and carries the MCP preview under a rule reading "Not built yet".
+  // Naming the route after the unbuilt half would put the site's own nav on the wrong side
+  // of doc 2 §0.4, and naming it after the skill would make a nav row the fourth place the
+  // word "skill" appears on a site that already uses it for a node card's `skill:` field.
+  // The bare verb is what both halves have in common, and it is the page's `h1`.
+  { href: "/install", label: "Install", group: "learn", standalone: true },
 ] as const;
 
 /**

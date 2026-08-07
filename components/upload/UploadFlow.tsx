@@ -29,6 +29,7 @@ import {
   type UploadFile,
 } from "./BundleDropzone";
 import { requiredAgents, requiredTools } from "@/lib/graph-seed";
+import { bundleProgress } from "./progress";
 import { ValidationReport, verdictLine } from "./ValidationReport";
 
 /* ------------------------------------------------------------------ */
@@ -171,9 +172,22 @@ function phaseList(ids: readonly string[], none: string): string {
  * produces that did not exist before the reader arrived.
  *
  * Every figure below is quoted from `result`, never recomputed and never rounded into a
- * claim the validator did not make. A bundle that carried an error has no `analysis`, and
- * the report says that in as many words rather than leaving the two headings out and
- * letting the omission read as a pass.
+ * claim the validator did not make. A bundle that did not resolve has no reading to
+ * report, and the report says that in as many words rather than leaving the two headings
+ * out and letting the omission read as a pass.
+ *
+ * ── The gate is `resolved`, and it used to be `analysis === undefined` ──
+ * `resolveBundle` degrades: a bundle whose DOT parsed comes back WITH an `analysis`
+ * whatever else went wrong with it, computed over the nodes that resolved. So a folder
+ * three cards into eight built a file headed "## Autonomy" carrying a fraction over
+ * two-fifths of the graph — the number this very page refuses to put on screen, written
+ * into the one artefact a reader keeps and quotes.
+ *
+ * Nobody has read that file: the only control that offers it sits behind a Publish button
+ * `blocked` keeps disabled, so an unresolved bundle never reaches the screen the download
+ * is on. A gate in another component is not a reason for this one to compute the wrong
+ * thing — that is exactly the arrangement that ships the moment either side moves. Both
+ * now withhold on the same condition, the one `ValidationReport` calls `usable`.
  */
 function reportMarkdown(args: {
   result: LoadBundleResult;
@@ -184,6 +198,7 @@ function reportMarkdown(args: {
   const { result, title, slug, kindNoun } = args;
   const { blueprint, analysis } = result;
   const resolved = blueprint !== undefined && analysis !== undefined && !hasErrors(result.diagnostics);
+  const progress = bundleProgress(result);
 
   const out: string[] = [];
   out.push(`# Validation report: ${title}`);
@@ -203,16 +218,27 @@ function reportMarkdown(args: {
   if (blueprint !== undefined) {
     out.push(`- graph: ${blueprint.nodes.length} nodes, ${blueprint.edges.length} edges`);
   }
+  if (progress.state === "unfinished") {
+    out.push(`- nodes carded: ${progress.placed} of ${progress.total}`);
+  }
   out.push(
-    `- verdict: ${resolved ? "bundle resolves" : "bundle rejected"}, ${verdictLine(result)}`,
+    `- verdict: ${
+      progress.state === "resolves"
+        ? "bundle resolves"
+        : progress.state === "unfinished"
+          ? "bundle unfinished, still being written"
+          : "bundle rejected"
+    }, ${verdictLine(result)}`,
   );
   out.push("");
 
-  if (analysis === undefined) {
+  if (!resolved || analysis === undefined) {
     out.push("## Autonomy and security");
     out.push("");
     out.push(
-      "Not computed. DarkPrint will not put a number on a graph whose references it could not check, so the diagnostics below are the whole of what this run produced.",
+      progress.state === "unfinished"
+        ? `Not computed yet. ${progress.waiting} of the graph's ${progress.total} nodes have no card in the folder, and a reading taken over nodes the engine could not open would have nothing behind it. Write the rest and run this again.`
+        : "Not computed. DarkPrint will not put a number on a graph whose references it could not check, so the diagnostics below are the whole of what this run produced.",
     );
     out.push("");
   } else {
@@ -545,6 +571,16 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
   const errorCount = result === undefined ? 0 : summarize(result.diagnostics).error;
   const blocked = result === undefined || hasErrors(result.diagnostics);
   const canAdvance = parts.dot !== undefined;
+
+  /* The same three-state reading `ValidationReport` prints on the Preview step, so the
+     Publish step and the footer counter cannot describe the bundle differently from the
+     panel two clicks back. `components/upload/progress.ts` holds the predicate; both
+     files were writing "blocked by 5 errors" at authors who were mid-draft. */
+  const progress = useMemo(
+    () => (result === undefined ? undefined : bundleProgress(result)),
+    [result],
+  );
+  const unfinished = progress?.state === "unfinished";
 
   // Resolution degrades rather than stopping (§8), so these are readable even while the
   // bundle still carries errors — they just describe the part that did resolve.
@@ -1100,15 +1136,30 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                   id="publish-note"
                   className="mt-2 max-w-xl text-xs leading-relaxed text-muted"
                 >
+                  {/* Three sentences behind one disabled button. A blueprint still being
+                      written cannot be published either, but "blocked by 5 errors" in
+                      signal red is the wrong reason to give somebody who has three cards
+                      of eight down — it names a fault where there is only a middle. The
+                      button stays disabled; what changes is what the page says it is
+                      waiting for. */}
                   {blocked ? (
-                    <>
-                      <span className="font-mono text-signal">blocked</span>:{" "}
-                      {result === undefined
-                        ? "there is no bundle to publish yet."
-                        : `the validator reported ${errorCount} error${
-                            errorCount === 1 ? "" : "s"
-                          }. The registry does not accept a bundle it cannot resolve; fix them on the Preview step.`}
-                    </>
+                    unfinished && progress !== undefined ? (
+                      <>
+                        <span className="font-mono text-warn">still being written</span>:{" "}
+                        {progress.placed} of {progress.total} nodes have their card. There
+                        is nothing to fix — write the rest and drop the folder again. The
+                        Preview step names the ones still waiting.
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-mono text-signal">blocked</span>:{" "}
+                        {result === undefined
+                          ? "there is no bundle to publish yet."
+                          : `the validator reported ${errorCount} error${
+                              errorCount === 1 ? "" : "s"
+                            }. The registry does not accept a bundle it cannot resolve; fix them on the Preview step.`}
+                      </>
+                    )
                   ) : (
                     <>
                       <span className="font-mono text-amber">not wired up</span>:
@@ -1145,7 +1196,9 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                   ? "ready to publish"
                   : result === undefined
                     ? "no bundle yet"
-                    : `blocked by ${errorCount} error${errorCount === 1 ? "" : "s"}`
+                    : unfinished && progress !== undefined
+                      ? `${progress.waiting} node${progress.waiting === 1 ? "" : "s"} still to card`
+                      : `blocked by ${errorCount} error${errorCount === 1 ? "" : "s"}`
               }`}
           </span>
           {step < 4 ? (

@@ -177,8 +177,10 @@ export default function BuildPage() {
             href: "/install",
             // The name the header and the footer both give this route. "Point a client
             // at it" was a third name for one destination, and it read as a sentence in
-            // a slot that is now a button's face.
-            label: "Install MCP",
+            // a slot that is now a button's face. It was "Install MCP" until that route
+            // stopped being only about MCP; the two tables moved in the same commit and
+            // this is the third place the label is written.
+            label: "Install",
           },
         ]}
       />

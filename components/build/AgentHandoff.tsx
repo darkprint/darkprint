@@ -1,5 +1,9 @@
+import Link from "next/link";
+
 import { CORE_PHASE_IDS } from "@/lib/core";
+import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
+import { CopyButton } from "@/components/ui/CopyButton";
 import { SourcePanel } from "@/components/ui/SourcePanel";
 
 /* ============================================================
@@ -62,6 +66,52 @@ import { SourcePanel } from "@/components/ui/SourcePanel";
    is decoration: a page that emits instructions and implies the
    output is blessed would be making the one promise the site has
    no way to keep.
+
+   ── The DarkPrint skill lives INSIDE this exit ──
+   `lib/skill.ts` ships a skill that writes a blueprint, installed with one command out of
+   this repository over git. Three placements were possible on this route and two of them
+   are wrong.
+
+   NOT a third exit. "You leave with one of two things" is pinned character-for-character
+   in `BuildWorkspace.test.ts`, spec §2.3 named two co-equal exits, and both of the
+   existing ones hand over BYTES: a folder, or a brief. A skill is a tool you install so
+   that you never need the starter again. It is not a thing a reader leaves this page
+   carrying, and making it a third column would have ranked it above the two the page is
+   built on while saying, in the heading directly above it, that there are two.
+
+   NOT a replacement for the brief either, which was the tempting move. `agent-brief.test.ts`
+   holds `agentBrief()` against `CORE_PHASE_IDS`, so the brief cannot drift from the
+   vocabulary the validator checks; nothing equivalent can hold a skill an external CLI
+   reads over git (`lib/skill.ts` records that cost in full). The brief also needs no
+   install and works in any client that takes an instruction, where the skills CLI is one
+   ecosystem. Deleting it would remove both the client-agnostic path and the only
+   vocabulary-pinned one, to gain nothing the block below does not already give.
+
+   So: one heading, two ways under it. The skill leads because it needs no copy-paste and
+   survives the tab closing; the brief follows because it is the one that always works.
+   Neither gets a box, a border or a heading level of its own — a `.label` tags a claim and
+   does not open a level of the document outline (`app/globals.css`), which is precisely
+   what keeps this from reading as two more exits. The whole block sits in the ~660px of
+   empty column this exit has carried under the brief since `lg:items-stretch` made the
+   short box match `DownloadStep`'s 1322px, so it fills a hole rather than lengthening the
+   page. Measured after: `/build` is 4268px at 1440, which is the number the investigation
+   measured before any of this existed. The block cost the route no height at all, because
+   every pixel of it landed in space that was already there.
+
+   ── Two sentences here are doing honesty work, not description ──
+   1. The skill emits the registry shape and deliberately no `factory.dot`, while
+      `DownloadStep`, in the other half of the same grid row, leads on `factory.dot` and on
+      `attractor run factory.dot`. A reader who installs it, gets a folder with no
+      `factory.dot` and compares that to the download on this same page concludes the thing
+      is broken. The reconciling sentence is on this surface, and not only on `/install`,
+      because this is the one surface where both folder shapes are visible at once.
+   2. The `/upload` paragraph's subject widened from the brief to both ways. It qualifies
+      whatever an agent wrote, and after this pass two things on this screen produce that.
+      It stays last, immediately before the badge line, so it is read against both.
+
+   The `ComingSoonBadge` line at the foot did not move and did not change a word: it is
+   pinned in `components/site/honesty.test.ts` under the surface "/build · agent-brief
+   exit", `open`, and the registry-over-MCP call it describes is as unbuilt as it was.
    ============================================================ */
 
 /**
@@ -106,38 +156,114 @@ export function agentBrief(): string {
   ].join("\n");
 }
 
+/** Cyan is "you can click this" (`app/globals.css`), spelled once for the two links this
+    exit now carries rather than twice down the file. */
+const linkCls =
+  "text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan";
+
 export function AgentHandoff({ className }: { className?: string }) {
   return (
     <div className={className}>
       <h3 className="font-display text-lg font-semibold text-fg">
         Have your agent write one for your own goal
       </h3>
+      {/* The heading is verbatim and pinned (`BuildWorkspace.test.ts`). The paragraph under
+          it is not, and it changed: it used to name the brief as the only way through,
+          which stopped being true the day the skill shipped. It now says what both ways
+          have in common, so neither is introduced as the other's alternative. */}
       <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
         The worked example only ever builds software, which is the one starter it
-        demonstrates. For a different goal, hand the brief below to Claude Code, Gemini or
-        Codex. It asks for the same things in the same order, starting with what each node
-        must never receive.
+        demonstrates. Any other goal gets written by an agent, and there are two ways to
+        hand one the same decisions in the same order, both of them starting with what each
+        node must never receive.
       </p>
 
-      <SourcePanel
-        source={agentBrief()}
-        language="text"
-        title="Brief for your agent"
-        downloadName="darkprint-brief.txt"
-        className="mt-4 max-w-3xl"
-      />
+      {/* ---------- way 1: the skill ---------- */}
+      <div className="mt-5 flex flex-col gap-2">
+        {/* Never "the skill" on its own. `lib/core/card/schema.ts` already spends that word
+            on a node card's `skill:` field, a behaviour document that sits one level BELOW
+            the graph, and `/what-a-blueprint-is#the-words` prints that definition in the
+            open. This one writes the graph. `/install` spends a sentence on the collision;
+            here the qualified name carries it, and `BuildWorkspace.test.ts` fails the build
+            if any copy on this route says "the skill" on its own. */}
+        <p className="label">The DarkPrint skill · installs today</p>
 
-      {/* Doc 2 §0.4. The brief is prose handed to a model, and the site cannot check what
-          a model does with it. Saying where the check is belongs beside the thing that
-          needs checking, not on the page it links to. */}
-      <p className="mt-3 max-w-2xl text-[13px] leading-relaxed text-dim">
-        Nothing here validates what your agent writes back. Drop the result on{" "}
-        <a
-          href="/upload"
-          className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
-        >
+        {/* The same code-plus-copy row `DownloadPanel` uses for `attractor run
+            factory.dot`, because this is the other string on `/build` a reader retypes into
+            a terminal and getting it subtly wrong fails in their shell, not here.
+
+            One deliberate difference from that row: it wraps where the other truncates.
+            `attractor run factory.dot` is 25 characters and fits a phone; this is 44, so
+            `truncate` there is an edge case and here it would be the normal rendering,
+            hiding the exact thing the row exists to show from every reader on a phone.
+            `break-words` only breaks a word that cannot fit on its own, and the longest
+            here is `Brotherhood94/darkprint` at roughly 150px against a ~250px box, so in
+            practice the break falls at a space. */}
+        <div className="flex items-center gap-2">
+          <code className="min-w-0 flex-1 break-words rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg">
+            {SKILL_INSTALL_COMMAND}
+          </code>
+          <CopyButton
+            text={SKILL_INSTALL_COMMAND}
+            ariaLabel="Copy the DarkPrint skill install command"
+          />
+        </div>
+
+        {/* Sixty words before the link, and each of the three sentences is here for a
+            different reason: the
+            first says what the command reaches (a repository, not a server), the second is
+            the output a reader will compare against the folder on the other half of this
+            row, and the third is the one that stops that comparison reading as a fault.
+            Everything else is `/install`'s, one link away. */}
+        <p className="text-[13px] leading-relaxed text-muted">
+          The skills CLI reads it out of DarkPrint&rsquo;s own repository, over git. Tell it
+          what you want built and it writes what the registry stores:{" "}
+          <code className="font-mono text-fg">blueprint.dot</code>, one YAML card per node,
+          a <code className="font-mono text-fg">README.md</code> and an{" "}
+          <code className="font-mono text-fg">AGENTS.md</code>. Not{" "}
+          <code className="font-mono text-fg">factory.dot</code>, which DarkPrint&rsquo;s
+          exporter compiles from those two on the way out, so a folder it writes will not
+          carry one.{" "}
+          <Link href={SKILL_ROUTE} className={linkCls}>
+            What it writes, and what to say to it
+          </Link>
+          .
+        </p>
+      </div>
+
+      {/* ---------- way 2: the brief ---------- */}
+      <div className="mt-5 flex flex-col gap-2">
+        <p className="label">The brief · any agent, no install</p>
+        <p className="text-[13px] leading-relaxed text-muted">
+          The same order of decisions as prose you paste in, for Claude Code, Gemini, Codex
+          or anything else that takes an instruction. Nothing to install, and no particular
+          CLI to be inside.
+        </p>
+
+        <SourcePanel
+          source={agentBrief()}
+          language="text"
+          title="Brief for your agent"
+          downloadName="darkprint-brief.txt"
+          className="max-w-3xl"
+        />
+      </div>
+
+      {/* Doc 2 §0.4. Both ways above hand prose to a model, and the site cannot check what
+          a model does with either. Saying where the check is belongs beside the things that
+          need checking, not on the page it links to.
+
+          The subject widened with this pass: it read "what your agent writes back" under a
+          single `SourcePanel`, where "your agent" could only mean the one holding the
+          brief. Two things on this screen now produce a blueprint written by a model, so
+          the subject is the agent rather than either route to it, and the sentence stays
+          last, where it is read against both. */}
+      <p className="mt-4 max-w-2xl text-[13px] leading-relaxed text-dim">
+        Nothing here validates what an agent writes back, whichever of the two you take.
+        Drop the result on{" "}
+        <Link href="/upload" className={linkCls}>
           /upload
-        </a>{" "}
+        </Link>{" "}
         and the real validator runs on it in your own tab, the same one that read every
         blueprint in the gallery.
       </p>

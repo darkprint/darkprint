@@ -547,8 +547,15 @@ export function BundleDropzone({
             <p className="text-xs text-dim">
               or click to browse, the files are read in this tab and nothing is uploaded
             </p>
+            {/* Both folders a reader can arrive with, named at the target itself rather
+                than only in the page header three paragraphs up: this is where somebody
+                stands with a directory open in the other window, deciding whether to drag
+                it. The skill's output is the registry shape — the same `blueprint.dot`
+                and `cards/` the download carries — so "as it stands" is true of both, and
+                a half-written one is expected here (`components/upload/progress.ts`). */}
             <p className="text-xs text-dim">
-              A folder downloaded from a blueprint page works as it stands. Bring{" "}
+              A folder downloaded from a blueprint page works as it stands, and so does one
+              the DarkPrint skill wrote, finished or not. Bring{" "}
               <span className="font-mono">extensions.yaml</span> along with it when it has
               one: it defines the local terms its cards declare.
             </p>

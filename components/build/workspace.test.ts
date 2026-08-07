@@ -363,6 +363,13 @@ const COPY_TREES = [
   "components/explain",
   "components/site",
   "components/gallery",
+  // Added 2026-08-07 with `components/install/SkillSetup.tsx`, the tutorial that turned
+  // `/install` from a preview of an unbuilt server into a route with a working command at
+  // the top of it. Two files were already in this directory and neither carries a pause
+  // dash in visible copy, so the tree goes in whole rather than the one new file being
+  // named the way `ForkAction.tsx` is below: there is no legacy punctuation here to
+  // grandfather, and a tree covers whatever the next pass writes into it.
+  "components/install",
 ];
 
 /**
