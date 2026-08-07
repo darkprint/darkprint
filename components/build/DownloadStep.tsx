@@ -237,7 +237,7 @@ export function DownloadStep({
           DarkPrint's own registry over MCP for the blueprint that best fits a goal,
           instead of a reader picking a starter by hand. No MCP server exists, so this is
           stated as coming and never as available; `ComingSoonBadge` carries that the same
-          way it does everywhere else on the site (`/install`, `ForkAction`), and the
+          way it does everywhere else on the site (`/skill`, `ForkAction`), and the
           sentence beside it is pinned in `components/site/honesty.test.ts` alongside its
           twin in `AgentHandoff` below, because a page that just handed over an agent-ready
           folder is the page most likely to read as though the call already exists. */}

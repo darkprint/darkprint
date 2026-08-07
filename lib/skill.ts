@@ -4,10 +4,10 @@
    The skill lives in this repository and the skills CLI reads it over git, so there is
    nothing hosted, nothing to zip and no version to keep in step with a download. What a
    reader needs from the site is therefore one line of text, and that line is printed on
-   three routes: the landing's hero chip (`components/hero/Wordmark.tsx`, the only command
-   on the landing), `/build`'s second exit (`components/build/AgentHandoff.tsx`, beside the
-   brief it is the durable form of) and `/install`, which is the only one of the three that
-   explains anything.
+   three routes: the landing's hero chip (`components/hero/Wordmark.tsx`, where it is one
+   of two commands and the only one that runs), `/build`'s second exit
+   (`components/build/AgentHandoff.tsx`, beside the brief it is the durable form of) and
+   `/skill`, which is the only one of the three that explains anything.
 
    Three hand-typed copies of a command a reader retypes into a terminal is the shape that
    drifts the day the repository moves, and the failure is silent: a wrong command produces
@@ -22,7 +22,7 @@
 
    Never print "the skill" unqualified on any surface. "The DarkPrint skill" or "the
    blueprint-writing skill", both of which a reader can tell from a card's `skill:` field
-   at a glance, and `/install` spends one sentence saying so outright.
+   at a glance, and `/skill` spends one sentence saying so outright.
 
    ── What it emits, and the one thing it deliberately does not ──
    The registry shape: `blueprint.dot`, one YAML card per node, `README.md` and
@@ -53,9 +53,16 @@ export const SKILL_INSTALL_COMMAND = "npx skills@latest add Brotherhood94/darkpr
 /**
  * Where the command is explained.
  *
- * `/install` and not a route of its own: it is already the site's "set your agent up"
- * destination, it is already linked from both surfaces that print the command, and
- * `components/site/nav.test.ts` walks `app/` for top-level pages, so a fourth route would
- * cost a tenth header row one week after the IA pass took the header down to nine.
+ * This read `/install`, and the comment here argued for it: one "set your agent up"
+ * destination, already linked from both surfaces printing the command, and a route of its
+ * own would cost a tenth header row a week after the IA pass took the header down to nine.
+ *
+ * The author overruled it on 2026-08-07 — "I prefer two pages, one for the skill and one
+ * for the mcp" — and the header row is the price, knowingly paid. What the old argument
+ * missed is that the landing now names the two halves separately and sends a reader at
+ * one of them by name: the hero prints "Design your blueprint" over this command and
+ * "Connect via MCP" over the other. A chip that promises one half and opens a page that is
+ * half something else spends the reader's click on navigation they did not ask for. Two
+ * destinations, two chips, and neither page has to hedge about the other.
  */
-export const SKILL_ROUTE = "/install";
+export const SKILL_ROUTE = "/skill";

@@ -5,7 +5,7 @@ import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { cx } from "@/lib/format";
 import { MCP_CLIENTS } from "./clients";
 
-export function InstallTabs() {
+export function InstallTabs({ className }: { className?: string } = {}) {
   const [active, setActive] = useState<string>(MCP_CLIENTS[0].id);
   const current = MCP_CLIENTS.find((c) => c.id === active) ?? MCP_CLIENTS[0];
   // Ties each tab to the one panel it discloses, the same `id`/`aria-controls`/
@@ -38,7 +38,7 @@ export function InstallTabs() {
   }
 
   return (
-    <div className="panel p-4 sm:p-6">
+    <div className={cx("panel p-4 sm:p-6", className)}>
       <div
         className="flex flex-wrap gap-2 border-b border-line pb-3"
         role="tablist"

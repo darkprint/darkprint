@@ -31,6 +31,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { Hero } from "@/components/hero/Hero";
+import { MCP_CONNECT_COMMAND } from "@/lib/mcp";
 import { SKILL_INSTALL_COMMAND } from "@/lib/skill";
 
 import { LANDING_NARROW, LANDING_WIDE } from "./graph";
@@ -90,23 +91,32 @@ describe("beat 1 is the wordmark, and the claim survives it", () => {
 
   /**
    * This case used to read "says the CLI setup is not live yet", and asserted the chip
-   * printed `npx darkprint setup` AND "coming soon". Both halves are inverted here, in the
-   * same commit as the chip, and the reason is the good one: the landing's only command
-   * used to be a command that does not exist, wearing the badge doc 2 §0.4 requires of an
-   * invented one. It is now the one that installs the blueprint-writing skill, which runs
-   * today, so the badge came off with the string it qualified rather than off a claim.
+   * printed `npx darkprint setup` AND "coming soon". Both halves were inverted when the
+   * chip's string changed: the landing's only command used to be a command that does not
+   * exist, wearing the badge doc 2 §0.4 requires of an invented one, and it became the one
+   * that installs the blueprint-writing skill, which runs today.
    *
-   * The two `not` assertions are the load-bearing half. The old string reappearing, or a
-   * `ComingSoonBadge` drifting back onto a chip whose command is real, would both be a
-   * regression in the direction this site keeps having to guard: the first re-invents a
-   * binary, the second marks a working command as unbuilt, and neither would fail on the
-   * positive assertion alone.
+   * The beat prints TWO commands as of 2026-08-07 — one per half of setup, after the
+   * author split `/install` — and exactly one of them runs. So "prints one command" is no
+   * longer the invariant, and the hero-wide `not.toContain("coming soon")` that guarded it
+   * is now false by design.
+   *
+   * What replaces it is deliberately NOT a weaker version of the same check. Per-chip
+   * placement is held at the element, in `components/hero/Wordmark.test.ts`, which slices
+   * each anchor out of the markup and holds each to its own rule. This file keeps the two
+   * things that are genuinely properties of the whole landing: both commands are readable
+   * text here, and the invented binary never comes back. Duplicating the placement check
+   * over flat landing text would only assert that a badge exists SOMEWHERE, which is the
+   * assertion that would pass on the day the badge lands on the wrong chip.
    */
-  it("prints one command, and it is one a reader can actually run", () => {
+  it("prints both setup commands as readable text", () => {
     const words = readable(html).toLowerCase();
     expect(words).toContain(SKILL_INSTALL_COMMAND.toLowerCase());
-    expect(words).not.toContain("npx darkprint setup");
-    expect(words).not.toContain("coming soon");
+    expect(words).toContain(MCP_CONNECT_COMMAND.toLowerCase());
+  });
+
+  it("never re-invents the binary that does not exist", () => {
+    expect(readable(html).toLowerCase()).not.toContain("npx darkprint setup");
   });
 });
 
@@ -412,7 +422,7 @@ describe("beat 4 leads with what ships and states what does not", () => {
   });
 
   it("keeps both disclosures verbatim, in the open, beside their panels", () => {
-    // Character-for-character, and `/install` carries the first of these two — see the
+    // Character-for-character, and `/mcp` carries the first of these two as its lead — see the
     // ledger in `components/site/honesty.test.ts`, which holds it there.
     expect(words).toContain(
       "The server is not built yet, so this is what the setup will look like.",

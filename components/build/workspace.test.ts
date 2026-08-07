@@ -363,13 +363,19 @@ const COPY_TREES = [
   "components/explain",
   "components/site",
   "components/gallery",
-  // Added 2026-08-07 with `components/install/SkillSetup.tsx`, the tutorial that turned
+  // Added 2026-08-07 with `components/skill/SkillSetup.tsx`, the tutorial that turned
   // `/install` from a preview of an unbuilt server into a route with a working command at
-  // the top of it. Two files were already in this directory and neither carries a pause
-  // dash in visible copy, so the tree goes in whole rather than the one new file being
-  // named the way `ForkAction.tsx` is below: there is no legacy punctuation here to
+  // the top of it. Two files were already in that directory and neither carried a pause
+  // dash in visible copy, so the tree went in whole rather than the one new file being
+  // named the way `ForkAction.tsx` is below: there was no legacy punctuation to
   // grandfather, and a tree covers whatever the next pass writes into it.
-  "components/install",
+  //
+  // `components/install` became these two on 2026-08-07, when the author split the route
+  // in two: "I prefer two pages, one for the skill and one for the mcp." Both halves keep
+  // the coverage the single tree had — the split moved files, and moving a file out of a
+  // guarded tree into an unguarded one is how a rule quietly stops applying.
+  "components/skill",
+  "components/mcp",
 ];
 
 /**

@@ -12,7 +12,7 @@ import {
 } from "@/lib/content/bundle-export";
 
 /* ============================================================
-   The one thing on `/install` that works.
+   The one thing on `/skill` that works.
 
    Everything else this route has ever carried is a preview of a
    server nobody has written. This is the half a reader can run

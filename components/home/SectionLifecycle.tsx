@@ -151,7 +151,7 @@
    carrying the fact, so the pill would be saying it twice in the loudest colour on the
    page. Not one word of either disclosure moved: both sentences are verbatim where they
    were, in the open beside the thing they qualify, which is what doc 2 §0.4 asks for and
-   what `honesty.test.ts` holds `/install`'s copy of to character-for-character.
+   what `honesty.test.ts` holds `/mcp`'s copy of to character-for-character.
 
    Do not revert this to capability order. The honesty was never the problem; the
    composition was.
@@ -161,6 +161,7 @@ import Link from "next/link";
 
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { MCP_ROUTE } from "@/lib/mcp";
 
 const STARTER = "/blueprints/starter-software-factory";
 
@@ -426,7 +427,7 @@ export function SectionLifecycle() {
             />
 
             {/* Doc 2 §0.4: the panel that describes an unbuilt thing says so beside the
-                thing, not in a footnote. `/install` carries the same sentence and
+                thing, not in a footnote. `/mcp` carries the same sentence as its lead and
                 `honesty.test.ts` holds it there. Verbatim, and it stays verbatim through
                 any reordering of these panels. */}
             <p className="text-sm leading-relaxed text-muted">
@@ -435,7 +436,7 @@ export function SectionLifecycle() {
               server is not built yet, so this is what the setup will look like.
             </p>
 
-            <Link href="/install" className={linkCls}>
+            <Link href={MCP_ROUTE} className={linkCls}>
               See the setup
             </Link>
           </article>

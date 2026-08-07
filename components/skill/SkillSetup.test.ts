@@ -7,7 +7,7 @@
    produces, a diagnostic the resolver raises. The DarkPrint skill
    is read over git by an external CLI, so nothing in `npx tsc
    --noEmit` and nothing in the rest of the suite can fail on the
-   day its behaviour stops matching what `/install` says about it.
+   day its behaviour stops matching what `/skill` says about it.
 
    That is an argument for asserting MORE here, not less. What this
    file can hold is the half of the promise that is a property of
@@ -29,12 +29,12 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import InstallPage from "@/app/install/page";
-import { SKILL_INSTALL_COMMAND, SkillSetup } from "@/components/install/SkillSetup";
+import SkillPage from "@/app/skill/page";
+import { SKILL_INSTALL_COMMAND, SkillSetup } from "@/components/skill/SkillSetup";
 import { openText, plainText } from "@/components/ui/visible-text";
 
 const SETUP = renderToStaticMarkup(createElement(SkillSetup));
-const PAGE = renderToStaticMarkup(createElement(InstallPage as never));
+const PAGE = renderToStaticMarkup(createElement(SkillPage as never));
 
 describe("the install command", () => {
   /**
@@ -147,15 +147,20 @@ describe("the route keeps what ships apart from what does not", () => {
 
   /**
    * One amber pill on the working half would say the install is coming rather than here.
-   * Both sanctioned uses of the colour sit under the rule: the publishing panel's own
-   * badge, and `InstallTabs`'s.
+   *
+   * The count was 2 until 2026-08-07 — the publishing panel's badge and `InstallTabs`'s —
+   * and it is 1 now because the author split the route and `InstallTabs` went to `/mcp`
+   * with the rest of the MCP preview. The exact number is asserted rather than a floor:
+   * "at least one badge below the rule" would pass on the day a second, unrelated amber
+   * pill appears somewhere on this page, and amber has exactly two sanctioned jobs
+   * sitewide. `app/mcp/page.tsx`'s own ledger rows now hold the badge that left.
    */
-  it("puts every coming-soon marker below the rule", () => {
+  it("puts its one coming-soon marker below the rule", () => {
     const rule = page.indexOf("Not built yet");
     const first = page.indexOf("Coming soon");
     expect(first, "no coming-soon marker on the page at all").toBeGreaterThan(-1);
     expect(first).toBeGreaterThan(rule);
-    expect(plainText(PAGE).match(/Coming soon/g) ?? []).toHaveLength(2);
+    expect(plainText(PAGE).match(/Coming soon/g) ?? []).toHaveLength(1);
   });
 
   /** The four unbuilt capabilities, in the open, in one sentence rather than four claims. */

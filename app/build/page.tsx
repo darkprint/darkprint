@@ -174,13 +174,18 @@ export default function BuildPage() {
             label: "Upload blueprint",
           },
           {
-            href: "/install",
+            // `/skill` and not `/mcp`, now that "Install" is two routes. This page is the
+            // workspace where a reader designs a blueprint by hand, and the skill is the
+            // same job done by an agent instead — the one exit of the two that continues
+            // what they were already doing. `/mcp` is about reading the registry from
+            // inside a client, which is a different errand and not built.
+            href: "/skill",
             // The name the header and the footer both give this route. "Point a client
             // at it" was a third name for one destination, and it read as a sentence in
-            // a slot that is now a button's face. It was "Install MCP" until that route
-            // stopped being only about MCP; the two tables moved in the same commit and
-            // this is the third place the label is written.
-            label: "Install",
+            // a slot that is now a button's face. It was "Install MCP", then "Install",
+            // and the three tables move in one commit every time: `nav.test.ts` holds
+            // them to one label per route.
+            label: "The DarkPrint skill",
           },
         ]}
       />

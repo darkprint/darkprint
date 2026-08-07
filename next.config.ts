@@ -93,6 +93,15 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       { source: "/concepts", destination: "/what-a-blueprint-is", permanent: true },
+      /* `/install` split in two on 2026-08-07 — the author: "I prefer two pages, one for
+         the skill and one for the mcp." It went to `/skill` and not `/mcp` because a
+         redirect has to pick the destination that answers the question the old URL was
+         answering, and `/install` had a working install command at the top of it and an
+         unbuilt preview below. Anyone arriving on a saved `/install` link came for the
+         command. `/skill` links to `/mcp` in its last sentence, so the other half is one
+         click away; landing an install attempt on a page where nothing installs would not
+         be. */
+      { source: "/install", destination: "/skill", permanent: true },
     ];
   },
 };

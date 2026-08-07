@@ -75,9 +75,12 @@ import {
   utils,
 } from "animejs";
 
+import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { FLOW, FLOW_SELECTOR, FlowEdge } from "@/components/viz";
 import { EASE_OUT } from "@/components/viz/easing";
 import { useIsomorphicLayoutEffect, useReveal } from "@/components/viz/useReveal";
+import { cx } from "@/lib/format";
+import { MCP_CONNECT_COMMAND, MCP_ROUTE } from "@/lib/mcp";
 import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
 
 import { WORDMARK_LETTER_PATHS } from "./wordmark-paths";
@@ -524,13 +527,18 @@ export function Wordmark() {
 
           The badge came off with the old string, and it came off because the sentence it
           qualified is gone, not because a chip looked tidier without it. Amber still has
-          exactly two sanctioned jobs sitewide; this chip has simply stopped needing one of
-          them. The MCP server the old command implied is still unbuilt and still says so,
-          in the two places that describe it — beat 4's Connect panel and `/install` — both
-          of which this chip links into rather than duplicating.
+          exactly two sanctioned jobs sitewide; the SKILL chip has simply stopped needing
+          one of them.
 
-          The link target did not move. `/install` is where the skill is explained, which
-          is the same route this chip has always opened.
+          What that paragraph could not anticipate is that the badge would come back on
+          2026-08-07 — on a second chip, beside a second command, for the MCP server this
+          one's old string used to imply. That is not the old mistake returning. The old
+          mistake was the landing's ONLY command being one nobody could run; there are two
+          now, the badge is on the one that cannot, and the one that can carries no badge
+          at all. See the two-chip block below for the placement rules.
+
+          The link target moved once, on the same day: `/install` split into `/skill` and
+          `/mcp`, and each chip opens the page for its own half.
 
           `transition-[…]` is spelled out because bare `transition-colors` in Tailwind v4
           includes `outline-color`, which fades the keyboard ring in over 150ms — a reader
@@ -592,13 +600,107 @@ export function Wordmark() {
           because a wrapped second line needs a gap the single-line `gap-2` does not
           describe, and `text-left` because a wrapped command reads as a command only when
           its lines start at the same column, inside a hero that is otherwise centred. */}
-      <Link
-        data-mark="cli"
-        href={SKILL_ROUTE}
-        className="mt-10 inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-emerald/50 bg-surface-2/80 px-3 py-1.5 text-left font-mono text-xs text-emerald transition-[transform,scale,color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-emerald/75 hoverable:hover:text-fg hoverable:active:scale-[0.97]"
-      >
-        <span>{`$ ${SKILL_INSTALL_COMMAND}`}</span>
-      </Link>
+      {/* ── Two chips as of 2026-08-07, one per half of setup ──
+          The author: "On the home page, I want something like 'Connect via MCP: ' and
+          insert what to pass to claude code and on click browse to the MCP page. And
+          'Design your blueprint: ' with the command to install the skill and on click,
+          navigate to the page that provide what to expect from the skill."
+
+          So each chip now carries a label saying what the command is FOR, and the two
+          point at the two routes `/install` split into. The label is the reason the chips
+          can sit together at all: two bare commands stacked would read as one procedure
+          with a first and a second step, and these are alternatives — you would run either
+          without running the other.
+
+          ── Order: the one that runs is first, and this is a deliberate departure ──
+          The author listed MCP first. The landing's own beat 4 states the rule that
+          overrides it — what ships leads, what does not is grouped after it — and this is
+          the highest-attention position on the site. It held `$ npx darkprint setup` under
+          a `ComingSoonBadge` until the skill shipped, and the whole argument for replacing
+          that string was that the landing's lead command should be one a reader can
+          actually run. Putting an unrunnable command back above it would undo that on the
+          same element. One `.map()` order flip if the author wants it their way; the code
+          is written so the flip is exactly that and nothing else.
+
+          ── Only one of the two is emerald ──
+          `app/globals.css` gives emerald to "a figure read off the engine", extended by
+          the chip that used to be alone here to mean a command that genuinely reaches the
+          engine. That meaning is doing real work now that there are two chips: the green
+          frame is the difference between the command that installs and the command that
+          cannot, visible before either is read. The MCP chip takes `border-line` and
+          `text-muted` — the neutral it would have had anyway — plus the badge, which is
+          amber's first sanctioned job (`ComingSoonBadge`, "not built yet") and not a third
+          meaning invented here.
+
+          A badge and not a caveat sentence, because doc 2 §0.4 asks for the marker beside
+          the thing it qualifies and a reader copying a command out of a hero does not read
+          a paragraph first. `/mcp` carries the sentence, three times over.
+
+          ── Both keep `data-mark="cli"` ──
+          `Wordmark.tsx`'s timeline reads this mark with `querySelectorAll` (line 247), not
+          `querySelector`, so a second element joins the beat rather than stealing it. The
+          beat still animates exactly the elements a reader can click.
+
+          ── Wrapping, unchanged in principle and worse in fact ──
+          The skill command is 44 characters and the MCP command is 48, against the hero's
+          358px column at 390. Each command stays ONE text node so a break falls at a space
+          rather than mid-token, `max-w-full` caps each chip at the column, and the label
+          sits on its own line above the command rather than sharing the first one: a
+          two-part chip that wraps between label and command reads as two chips, and at
+          390px it would wrap on every load. `items-start` because a wrapped command must
+          start at the same column as its own first line. */}
+      {/* `w-fit` on a flex column plus the default `align-items: stretch` is what makes the
+          two chips the same width: the column takes the width of its widest child, and both
+          children then fill it. Measured before it was written — the skill chip's natural
+          width is 362px and the MCP chip's is 384px, so a centred pair sat 22px ragged, and
+          two boxes that nearly line up read as a mistake in a way two obviously different
+          ones do not. `max-w-full` keeps the 384 from forcing a scrollbar at 390, where the
+          column is 358 and both commands wrap instead. */}
+      <div className="mx-auto mt-10 flex w-fit max-w-full flex-col gap-3">
+        {[
+          {
+            key: "skill",
+            label: "Design your blueprint",
+            command: SKILL_INSTALL_COMMAND,
+            href: SKILL_ROUTE,
+            built: true,
+          },
+          {
+            key: "mcp",
+            label: "Connect via MCP",
+            command: MCP_CONNECT_COMMAND,
+            href: MCP_ROUTE,
+            built: false,
+          },
+        ].map((chip) => (
+          <Link
+            key={chip.key}
+            data-mark="cli"
+            href={chip.href}
+            className={cx(
+              "group flex max-w-full flex-col items-start gap-1 rounded-md border bg-surface-2/80 px-3 py-2 text-left transition-[transform,scale,color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97]",
+              chip.built
+                ? "border-emerald/50 hoverable:hover:border-emerald/75"
+                : "border-line hoverable:hover:border-line-bright",
+            )}
+          >
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="label">{chip.label}</span>
+              {!chip.built && <ComingSoonBadge />}
+            </span>
+            <span
+              className={cx(
+                "max-w-full font-mono text-xs transition-colors",
+                chip.built
+                  ? "text-emerald hoverable:group-hover:text-fg"
+                  : "text-muted",
+              )}
+            >
+              {`$ ${chip.command}`}
+            </span>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

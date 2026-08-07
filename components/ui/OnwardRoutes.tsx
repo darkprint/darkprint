@@ -20,11 +20,11 @@ import { RouteBoxLink } from "./RouteBoxLink";
    language existed and was unspent exactly where it was needed
    most.
 
-   `/install` is no longer one of them. The author, 2026-08-07,
+   The setup route is no longer one of them. The author, 2026-08-07,
    naming this component's tail on `/build` and then this: "We found
    such buttons also in the install mcp page. in this page you can
    just delete them." So that premise above holds for `/build` and
-   `/reading-the-radar` and no longer for `/install`, which now ends
+   `/reading-the-radar` and no longer for `/skill` (then `/install`), which now ends
    on its own paragraph with one inline link to `/blueprints` in it.
    That is a deliberate reversal of the case this file was written
    on, recorded here rather than left standing as a claim the site

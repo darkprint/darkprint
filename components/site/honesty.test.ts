@@ -37,7 +37,8 @@ import { describe, expect, it } from "vitest";
 
 import SpecCardPage from "@/app/spec/card/page";
 import TheClimbPage from "@/app/towards-a-dark-factory/the-climb/page";
-import InstallPage, { metadata as installMetadata } from "@/app/install/page";
+import SkillPage, { metadata as skillMetadata } from "@/app/skill/page";
+import McpPage, { metadata as mcpMetadata } from "@/app/mcp/page";
 import UploadPage from "@/app/upload/page";
 import { allBlueprints } from "@/lib/content";
 import { CARD_ROWS } from "@/components/spec/rows";
@@ -68,27 +69,40 @@ function canvas(slug: string): string {
 
 const SPEC_CARD = renderToStaticMarkup(createElement(SpecCardPage as never));
 /**
- * The route that used to be the one page whose whole subject was a capability that does
- * not exist yet.
+ * `/skill` and `/mcp` — the two halves `/install` split into on 2026-08-07.
  *
- * It is half that now. `components/install/SkillSetup.tsx` sits at the top of it and
- * describes a command that genuinely runs, and the MCP preview it always carried sits
- * under a rule reading "Not built yet" with `InstallTabs`'s own `ComingSoonBadge` on it.
- * A badge is not a sentence, which is why two sentences on this page are asserted below
- * rather than one: the MCP limit, and the publishing limit the working half provokes by
- * leaving a reader holding a blueprint with nowhere to put it.
+ * `/install` was once the one page whose whole subject was a capability that does not
+ * exist yet, then became half that when the DarkPrint skill shipped a command that
+ * genuinely runs. The author then split it: "I prefer two pages, one for the skill and one
+ * for the mcp."
+ *
+ * The split MULTIPLIES this ledger's work rather than dividing it, which is the thing to
+ * understand before touching these rows. On one page the MCP limit and the publishing
+ * limit sat under a shared "Not built yet" rule, and a reader who read the rule was
+ * covered for both. There is no shared rule now. `/mcp` is a whole route about an unbuilt
+ * thing, reachable from the header and from the landing's hero, and a page like that looks
+ * exactly like a page for a built thing unless it says otherwise in its own voice. So its
+ * limit is asserted in all three registers a reader actually meets it in — the `<head>`
+ * description, the lead under the `h1`, and `InstallTabs`'s `ComingSoonBadge` beside the
+ * snippet — and `/skill` keeps the publishing limit its own output provokes.
  */
-const INSTALL_PAGE = renderToStaticMarkup(createElement(InstallPage as never));
+const SKILL_PAGE = renderToStaticMarkup(createElement(SkillPage as never));
+const MCP_PAGE = renderToStaticMarkup(createElement(McpPage as never));
 /**
- * `/install`'s `<head>` description, not its rendered body.
+ * The two `<head>` descriptions, not the rendered bodies.
  *
- * A search result or a shared link quotes this string, never the JSX `INSTALL_PAGE`
- * renders — `renderToStaticMarkup` walks the component tree, not the sibling `Metadata`
- * export, so a claim held only over `INSTALL_PAGE` can go missing here without a single
- * assertion noticing. `openText`/`plainText` pass a plain string through unchanged (there
- * is no tag to strip), so the same ledger mechanism covers it with no new machinery.
+ * A search result or a shared link quotes these strings, never the JSX the pages render —
+ * `renderToStaticMarkup` walks the component tree, not the sibling `Metadata` export, so a
+ * claim held only over the body can go missing here without a single assertion noticing.
+ * `openText`/`plainText` pass a plain string through unchanged (there is no tag to strip),
+ * so the same ledger mechanism covers them with no new machinery.
+ *
+ * `/mcp`'s matters more than any other description on the site: it is the one route where
+ * the shared-link preview is the only thing standing between a reader and a command that
+ * looks runnable and is not.
  */
-const INSTALL_METADATA_DESCRIPTION = installMetadata.description ?? "";
+const SKILL_METADATA_DESCRIPTION = skillMetadata.description ?? "";
+const MCP_METADATA_DESCRIPTION = mcpMetadata.description ?? "";
 /**
  * `/upload`, whole — the one route where a reader hands the site a file.
  *
@@ -352,39 +366,63 @@ const CLAIMS: Claim[] = [
     html: THE_CLIMB,
   },
 
-  /* ---- /install ----
-     This route stopped being a page where nothing is built. The DarkPrint skill installs
-     in one command and works, so the three entries below are what the page owes a reader
-     now: the MCP sentence where it belongs, the publishing sentence the skill's own output
-     provokes, and a `metadata.description` that qualifies the right half.
+  /* ---- /mcp ----
+     `/install` split in two on 2026-08-07 and this is the unbuilt half, now a route of its
+     own with an `h1`, a tab strip of client configs and a command a reader could copy. It
+     is reachable from the header and from the landing's hero. Nothing about its shape says
+     "preview" — that is what a dedicated route costs, and the three entries below are what
+     buys it back.
 
-     The MCP sentence is UNCHANGED, character for character, and it MOVED: it was the
-     page's `lead`, directly under the `h1`, when the whole page was the MCP preview, and
-     it now sits inside the MCP panel under the "Not built yet" rule. This assertion cannot
-     see that. It renders the whole page and passes with the sentence anywhere on it, which
-     is exactly why `app/install/page.tsx`'s header argues the placement in prose: above a
-     working install command the same words would read as a qualification of the install.
-     If a later pass moves it back up, this test will not be what catches it. */
+     The sentence is UNCHANGED, character for character, from the one `/install` carried,
+     and it has now moved twice: page lead, then into the MCP panel when the skill took the
+     top of the page, then back to being a lead here. It has never been reworded. A limit
+     that gets rephrased on every relocation is a limit being negotiated down, and the
+     wording is the part these assertions can actually hold.
+
+     What they cannot hold is placement — `MCP_PAGE` renders the whole route and passes
+     with the sentence anywhere on it. On `/install` that mattered enormously, because the
+     same words above a working install command qualified the wrong thing. Here it matters
+     less than it ever has: there is no working command on this page for a stray disclaimer
+     to attach itself to. The page is about one thing and the one thing is not built. */
   {
-    surface: "/install · the MCP panel, under the page's own rule",
-    why: "doc 2 §0.4's disclaimer beside the tab strip previewing a client config, which reads as something to run unless the page says otherwise next to it. It is no longer the page's lead: the top half of the route installs a skill that genuinely works, and a limit statement standing above a working command qualifies the wrong thing",
+    surface: "/mcp · the lead, directly under the h1",
+    why: "doc 2 §0.4's disclaimer, back where it started. The route previews a client config that reads as something to run unless the page says otherwise, and it no longer shares a page with anything that does run — so the limit is the lead again rather than a note beside a panel, which is the strongest position the sentence has ever had",
     says: "not built yet: this is what setup will look like once the registry has an mcp server to point a client at",
     where: "open",
-    html: INSTALL_PAGE,
+    html: MCP_PAGE,
   },
   {
-    surface: "/install · the publishing panel, under the page's own rule",
-    why: "the route now ends with a reader holding a blueprint their own agent wrote, and the next question anybody holding one asks is where to put it. The answer is nowhere: there is no backend, no account, no private draft and no push from a client, and all four have to be refused on the page that just handed over the folder rather than only on `/towards-a-dark-factory/the-climb`",
+    surface: "/mcp · beside the tab strip",
+    why: "the sentence above is prose a reader can scroll past; this is the marker on the snippet itself. A reader who arrives from the landing's hero chip has already seen one badge on that chip and is looking for the command, not the paragraph, and the command is the thing that would be copied into a terminal. `InstallTabs` prints its own `ComingSoonBadge` inside the tab panel for exactly this reason",
+    says: "coming soon",
+    where: "open",
+    html: MCP_PAGE,
+  },
+  {
+    surface: "/mcp · metadata.description",
+    why: "the one description on the site doing genuine load-bearing work. Every other route's preview card describes a page a reader can judge on arrival; this one describes a page that looks built and is not, and the card is what a reader sees in a search result or a shared link before deciding whether to trust it. It carries the limit first and names the half that does run second, so the string is useful rather than only cautious",
+    says: "not built yet: this is what setup will look like once the registry has an mcp server to point a client at",
+    where: "open",
+    html: MCP_METADATA_DESCRIPTION,
+  },
+
+  /* ---- /skill ----
+     The half that runs. Its one limit is not inherited from the old shared rule — it is
+     the question this page's own output provokes, which is why it stayed here when the MCP
+     preview left. A reader who has just been handed a folder asks where to put it. */
+  {
+    surface: "/skill · the publishing panel, under the page's own rule",
+    why: "the route ends with a reader holding a blueprint their own agent wrote, and the next question anybody holding one asks is where to put it. The answer is nowhere: there is no backend, no account, no private draft and no push from a client, and all four have to be refused on the page that just handed over the folder rather than only on `/towards-a-dark-factory/the-climb`",
     says: "not built yet: an account of your own, a blueprint kept private while it is under construction, publishing one to the registry, and pushing a change to it straight from claude code",
     where: "open",
-    html: INSTALL_PAGE,
+    html: SKILL_PAGE,
   },
   {
-    surface: "/install · metadata.description",
-    why: "the same kind of disclaimer where a reader who never opens the page reads it — a search result, a shared link's preview card, a browser history entry. It said \"not built yet: nothing here runs\" until 2026-08-07, and that entry came out because it became false in the OTHER direction: `npx skills@latest add Brotherhood94/darkprint` runs, so a description claiming the route is inert would have been the site understating itself into a different kind of lie. What replaces it names the three capabilities that genuinely are not there, which is what a preview card has to carry when the page behind it is half working",
-    says: "not built yet: accounts, publishing, and an mcp server to point a client at",
+    surface: "/skill · metadata.description",
+    why: "the same kind of disclaimer where a reader who never opens the page reads it — a search result, a shared link's preview card, a browser history entry. `/install`'s said \"not built yet: nothing here runs\" until 2026-08-07, and that came out because it became false in the OTHER direction: `npx skills@latest add Brotherhood94/darkprint` runs. This route inherits the working half, so its description names what the command actually leaves on disk and then the two capabilities that are genuinely absent. The MCP limit is NOT in this string any more, and its absence is correct rather than an omission: it moved to `/mcp`, which is now a route with a description of its own",
+    says: "not built yet: accounts and publishing",
     where: "open",
-    html: INSTALL_METADATA_DESCRIPTION,
+    html: SKILL_METADATA_DESCRIPTION,
   },
 
   /* ---- /upload ----

@@ -1,7 +1,7 @@
 /* ============================================================
    What each MCP client's config will look like, once the registry
    has a server to point at. Coming-soon content: see doc 2 §0.4 —
-   `InstallTabs.tsx` and `app/install/page.tsx` both say plainly
+   `InstallTabs.tsx` and `app/mcp/page.tsx` both say plainly
    this isn't live, everywhere the capability is suggested.
    ============================================================ */
 

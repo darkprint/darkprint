@@ -718,7 +718,7 @@ export default function WhatABlueprintIsPage() {
               A folder of text: the graph, the cards it pins, and a README carrying the
               digest so you can confirm the files are the ones the site read.
             </Step>
-            <Step index="02" title="Adapt it" href="/install" hrefLabel="Point a client at it">
+            <Step index="02" title="Adapt it" href="/mcp" hrefLabel="Point a client at it">
               Give it to Claude Code, Gemini, Codex or any agent that reads the same
               cards. It fits the pattern to the code you already have, and it can combine
               one blueprint with another. That happens on your machine, not here.

@@ -1,10 +1,10 @@
-// components/install/InstallTabs.test.ts
+// components/mcp/InstallTabs.test.ts
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { InstallTabs } from "@/components/install/InstallTabs";
-import { MCP_CLIENTS } from "@/components/install/clients";
+import { InstallTabs } from "@/components/mcp/InstallTabs";
+import { MCP_CLIENTS } from "@/components/mcp/clients";
 import { plainText } from "@/components/ui/visible-text";
 
 describe("InstallTabs", () => {

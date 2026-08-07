@@ -13,7 +13,8 @@ import { describe, expect, it } from "vitest";
 
 import { Wordmark } from "@/components/hero/Wordmark";
 import { plainText } from "@/components/ui/visible-text";
-import { SKILL_INSTALL_COMMAND } from "@/lib/skill";
+import { MCP_CONNECT_COMMAND, MCP_ROUTE } from "@/lib/mcp";
+import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
 
 const render = () => renderToStaticMarkup(createElement(Wordmark));
 
@@ -70,20 +71,51 @@ describe("Wordmark", () => {
 
   /**
    * The twin of `beats.test.ts`'s case over the whole landing, at the element that carries
-   * it. Both were inverted in the commit that replaced the chip's string: it printed
-   * `npx darkprint setup` under a `ComingSoonBadge`, which spent the highest-attention
-   * position on the site on a command nobody could run. It prints the skill install now,
-   * and the badge left with the sentence it qualified.
+   * it — and it had to get STRICTER on 2026-08-07 rather than merely change.
    *
-   * `plainText` collapses whitespace, so the command has to survive as one text node for
-   * this to match — which is also what makes it wrap at a space rather than mid-token on a
-   * phone (see the chip's own comment in `Wordmark.tsx`).
+   * It used to read `expect(text).not.toContain("coming soon")` over the whole hero, which
+   * was the right assertion while there was one chip: the chip had printed
+   * `npx darkprint setup` under a `ComingSoonBadge`, spending the highest-attention
+   * position on the site on a command nobody could run, and the badge left with the string
+   * it qualified.
+   *
+   * The hero prints two commands now, one per half of setup, and exactly one of them runs.
+   * A hero-wide "no badge anywhere" would now be false, and the lazy repair — deleting the
+   * clause — would leave nothing checking that the badge is on the RIGHT chip. A badge on
+   * the skill chip would be as wrong as no badge on the MCP chip, in opposite directions,
+   * and the flat text of the hero cannot tell them apart.
+   *
+   * So this reads each chip's own markup and holds it to its own rule. `chip()` slices one
+   * anchor out of the rendered HTML; anchors do not nest, so the non-greedy match ends at
+   * that chip's own `</a>`.
    */
-  it("prints the install command, with nothing marking it unbuilt", () => {
-    const text = plainText(render()).toLowerCase();
-    expect(text).toContain(SKILL_INSTALL_COMMAND.toLowerCase());
-    expect(text).not.toContain("npx darkprint setup");
-    expect(text).not.toContain("coming soon");
+  const chip = (html: string, href: string) => {
+    const match = html.match(new RegExp(`<a[^>]*href="${href}"[\\s\\S]*?</a>`));
+    if (match === null) throw new Error(`the hero draws no chip pointing at ${href}`);
+    return match[0];
+  };
+
+  it("prints the command that runs with nothing marking it unbuilt", () => {
+    const skill = chip(render(), SKILL_ROUTE);
+    expect(plainText(skill).toLowerCase()).toContain(SKILL_INSTALL_COMMAND.toLowerCase());
+    expect(plainText(skill).toLowerCase()).not.toContain("coming soon");
+  });
+
+  /**
+   * The other direction, and the one that matters more. There is no MCP server and no
+   * `darkprint` package, so this chip prints a command that cannot work, in the hero, one
+   * click from a terminal. Doc 2 §0.4 wants the marker beside the thing it qualifies, and
+   * a reader copying a command out of a hero does not read a paragraph first.
+   */
+  it("marks the command that does not run, on the chip itself", () => {
+    const mcp = chip(render(), MCP_ROUTE);
+    expect(plainText(mcp).toLowerCase()).toContain(MCP_CONNECT_COMMAND.toLowerCase());
+    expect(plainText(mcp).toLowerCase()).toContain("coming soon");
+  });
+
+  /** The string the whole exercise was to be rid of. It stays gone. */
+  it("never prints the invented setup command again", () => {
+    expect(plainText(render()).toLowerCase()).not.toContain("npx darkprint setup");
   });
 
   it("renders every affordance at full opacity with no script", () => {

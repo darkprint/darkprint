@@ -59,7 +59,10 @@ import { cx } from "@/lib/format";
  * `/upload` control is "Upload blueprint", the label the footer and the phone panel use
  * as well — one destination, one name, and that test reads all three out of this source.
  *
- * Nine, then: home, three registry surfaces, four in the menu, and `/install` beside it.
+ * Ten, then: home, three registry surfaces, four in the menu, and the two setup routes
+ * beside it. It was nine with one `/install` row until 2026-08-07; the split is what
+ * added the tenth, and the row still fits at every breakpoint (measured at 1024, 1120,
+ * 1280, 1440 and 1600: no overflow at any of them).
  */
 export const NAV = [
   // The three registry surfaces, flat. `/ontology` sat in the menu for one pass and the
@@ -96,30 +99,40 @@ export const NAV = [
   // character, which is what `nav.test.ts` holds it to. The label a reader clicks is the
   // heading they land on, so there is nothing to re-resolve on arrival.
   { href: "/towards-a-dark-factory", label: "Towards a Dark Factory", group: "learn" },
-  // Out of the menu and to the right of it. It is a setup action rather than something to
-  // read, and `standalone` keeps it in the `learn` group for the phone panel, where a
-  // section of one item would read as a mistake, while the wide row draws it beside the
+  // Out of the menu and to the right of it. These are setup actions rather than things to
+  // read, and `standalone` keeps them in the `learn` group for the phone panel, where a
+  // section of one item would read as a mistake, while the wide row draws them beside the
   // trigger.
   //
-  // "Install MCP" until 2026-08-07, on the author's instruction, and this comment used to
-  // record the reason: "Install" alone said nothing about what is being installed, because
-  // the page was about pointing an MCP client at the registry and about nothing else. That
-  // premise is gone. `/install` now leads on the DarkPrint skill, which installs in one
-  // command and works, and carries the MCP preview under a rule reading "Not built yet".
-  // Naming the route after the unbuilt half would put the site's own nav on the wrong side
-  // of doc 2 §0.4, and naming it after the skill would make a nav row the fourth place the
-  // word "skill" appears on a site that already uses it for a node card's `skill:` field.
-  // The bare verb is what both halves have in common, and it is the page's `h1`.
-  { href: "/install", label: "Install", group: "learn", standalone: true },
+  // ── One row until 2026-08-07, and why it is two now ──
+  // This was `{ href: "/install", label: "Install" }`, and the comment argued the label
+  // hard: "Install MCP" was wrong once the route stopped being only about MCP, naming it
+  // after the skill would put the word "skill" in a fourth place on a site that already
+  // uses it for a node card's `skill:` field, and the bare verb was what both halves had
+  // in common.
+  //
+  // The author split the route — "I prefer two pages, one for the skill and one for the
+  // mcp" — and the argument for the bare verb went with it: there is no longer a single
+  // page for a single word to cover. The cost is the tenth header row the old comment in
+  // `lib/skill.ts` was written to avoid, and it is paid on purpose. The benefit is that
+  // the nav now says which half is which, and a reader looking for the thing that works
+  // no longer has to open a page to find out whether it is on it.
+  //
+  // "The DarkPrint skill" and not "Skill": the qualifier is what `lib/skill.ts` requires
+  // on every surface, precisely because a card's `skill:` field means something else and
+  // one level down. Both labels are their pages' `h1` character for character, which is
+  // what `nav.test.ts` holds every row to.
+  { href: "/skill", label: "The DarkPrint skill", group: "learn", standalone: true },
+  { href: "/mcp", label: "Connect via MCP", group: "learn", standalone: true },
 ] as const;
 
 /**
  * The phone panel's sections. `home` is deliberately absent.
  *
  * A section headed "Home" holding one link called "Home" says the word twice and reads as
- * a mistake, which is the same reason `/install` carries `standalone` rather than a group
- * of its own. On the panel it is rendered above these, unheaded, where a first item does
- * not need a category to be understood.
+ * a mistake, which is the same reason the two setup routes carry `standalone` rather than
+ * a group of their own. On the panel it is rendered above these, unheaded, where a first
+ * item does not need a category to be understood.
  */
 const GROUPS = [
   { id: "registry", title: "Registry" },

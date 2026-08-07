@@ -92,9 +92,13 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
       // The route's second and last page, promoted out of a column of its own. See the
       // note on the deleted "The route" column below.
       { href: "/towards-a-dark-factory/the-climb", label: "The climb" },
-      // Renamed with the header's row on 2026-08-07, and it has to move in the same
-      // commit: `nav.test.ts` holds this table and `NAV` to one label per route.
-      { href: "/install", label: "Install" },
+      // Renamed with the header's row on 2026-08-07, and split with it later the same day
+      // when the author asked for "two pages, one for the skill and one for the mcp".
+      // Both moves had to happen in the same commit as the header's: `nav.test.ts` holds
+      // this table and `NAV` to one label per route, so a footer still saying "Install"
+      // beside a header saying something else is a failing test, which is the point.
+      { href: "/skill", label: "The DarkPrint skill" },
+      { href: "/mcp", label: "Connect via MCP" },
       // "What it isn't" and "What a dark factory is" both pointed at `/what-it-isnt`,
       // which is gone. Neither is repointed: `SectionWhatItIs` held the definition and
       // was deleted with the route, so there is no id left for the second link and no

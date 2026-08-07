@@ -103,7 +103,7 @@ import { SourcePanel } from "@/components/ui/SourcePanel";
       `DownloadStep`, in the other half of the same grid row, leads on `factory.dot` and on
       `attractor run factory.dot`. A reader who installs it, gets a folder with no
       `factory.dot` and compares that to the download on this same page concludes the thing
-      is broken. The reconciling sentence is on this surface, and not only on `/install`,
+      is broken. The reconciling sentence is on this surface, and not only on `/skill`,
       because this is the one surface where both folder shapes are visible at once.
    2. The `/upload` paragraph's subject widened from the brief to both ways. It qualifies
       whatever an agent wrote, and after this pass two things on this screen produce that.
@@ -183,7 +183,7 @@ export function AgentHandoff({ className }: { className?: string }) {
         {/* Never "the skill" on its own. `lib/core/card/schema.ts` already spends that word
             on a node card's `skill:` field, a behaviour document that sits one level BELOW
             the graph, and `/what-a-blueprint-is#the-words` prints that definition in the
-            open. This one writes the graph. `/install` spends a sentence on the collision;
+            open. This one writes the graph. `/skill` spends a sentence on the collision;
             here the qualified name carries it, and `BuildWorkspace.test.ts` fails the build
             if any copy on this route says "the skill" on its own. */}
         <p className="label">The DarkPrint skill · installs today</p>
@@ -214,7 +214,7 @@ export function AgentHandoff({ className }: { className?: string }) {
             first says what the command reaches (a repository, not a server), the second is
             the output a reader will compare against the folder on the other half of this
             row, and the third is the one that stops that comparison reading as a fault.
-            Everything else is `/install`'s, one link away. */}
+            Everything else is `/skill`'s, one link away. */}
         <p className="text-[13px] leading-relaxed text-muted">
           The skills CLI reads it out of DarkPrint&rsquo;s own repository, over git. Tell it
           what you want built and it writes what the registry stores:{" "}
