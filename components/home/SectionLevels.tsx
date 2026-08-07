@@ -186,120 +186,35 @@ const SOURCES: Source[] = [
  * where the wider labels needed it: level 5's five words are the binding constraint, and
  * "debug" beside "release" is the tightest pair on the page.
  */
-/* ── The run is an S, and that is the drawing's subject (2026-08-07) ──
-   The author: "The 'S'. I meant to redesign the graphics", and the scope behind it — "the
-   scope is to indicate the user what is the structure of a dark factory (i.e., it is fully
-   autonomous in the part described) then the user will find a way to build its own dark
-   factory by defining the blueprint".
+/* ── These are graphs now, not marks standing on a rule (2026-08-07) ──
+   The author: "revisit the graph graphics, making more clear and clean, showing loops as
+   edges and also the rest that connect nodes as directed edges."
 
-   These five frames used to draw a single horizontal rule with marks standing on it. That
-   said who was on the path and nothing about what the path IS, which is the half the scope
-   above is asking for: a dark factory is a graph where planning, implementation, testing,
-   debugging and deployment all run unattended, and the page's own deck says exactly that
-   three screens up. A straight line cannot hold five named stations at this width without
-   the words touching — the note below records the pair that was already the binding
-   constraint at 420 units — so the run turns instead of stretching.
+   What was wrong is worth stating exactly, because it was wrong in the same way twice. The
+   drawing was ONE continuous line from a start tick to an end tick, with discs sitting on
+   top of it. That is a timeline, not a graph: nothing pointed anywhere, the direction of
+   the work was carried by nothing but left-to-right convention, and the one real loop on
+   the page — a debugger handing a patch back to a tester — had to be drawn as an arc
+   floating over a line it was not connected to.
 
-   A serpentine is the shape that buys the room: three lanes, two turns, reading left to
-   right then right to left then left to right, ending bottom-right where the eye rests.
-   The five phases sit two, two and one. What a reader sees at level 5 is the whole S with
-   nothing standing on it, which is the structure the scope asks the page to show; the four
-   levels above it are the same S with a person still on some stretch of it.
+   Every mark below is now a node and every connection is a `FlowEdge`, which trims itself
+   to both rims and draws an arrowhead. The loop is two anti-parallel edges between the two
+   nodes that actually have one. This is the vocabulary the rest of the site already draws
+   its blueprints in — `components/home/SectionBlueprint.tsx` and the gallery's
+   `GraphThumbnail` both wire nodes this way — so the ladder and the registry finally speak
+   one language.
 
-   ── The frame grew, and only downwards ──
-   420 wide is unchanged and unavailable as a lever: `FLOW.frame` measures this sheet at
-   328 CSS px on a phone, and the width is what decides whether a label clears
-   `FLOW.frame.legible`. Height is free, and three lanes need it — 190 against the 126 a
-   single lane took. The section is taller for it, and the two-column row it sits in is
-   better balanced than it was: the text column always overran a 3.3:1 drawing. */
-const SCENE = { width: 420, height: 190 } as const;
+   ── The serpentine, and why it is gone ──
+   These five frames spent one commit drawn on an S-shaped track. That was a misreading:
+   the author's "S" described how the five ROWS are positioned down the page, alternating
+   left and right, which is `LevelRow`'s `flip` and was never in question. The track is a
+   straight run again. */
+const SCENE = { width: 420, height: 140 } as const;
 
-/* ==================== the track ====================
-
-   The serpentine, sampled once as a polyline so that everything else on these frames can
-   be placed by ARC LENGTH rather than by hand-solving a point on an arc.
-
-   Sampled and not emitted as `A` commands, and the reason is the sub-path. Four of the
-   five frames paint part of the run violet — "somebody acts along here" — and a stretch
-   that begins or ends inside a corner has to be drawn as a partial arc, which means
-   splitting an `A` by angle. A polyline splits by slicing, and eight samples to the
-   quarter-circle is smooth at a radius of 22 units in a frame this size.
-
-   Geometry: lanes at y = 30, 92, 154; the run spans x = 62 to 358; corners are r = 22.
-   Total length is 974 units, and the three straight lanes are t = 0–274, 361–613 and
-   700–974. Those three ranges are the only numbers a scene below needs. */
-const TRACK: readonly (readonly [number, number])[] = [
-  [62, 30], [336, 30], [340.29, 30.42], [344.42, 31.67], [348.22, 33.71], [351.56, 36.44],
-  [354.29, 39.78], [356.33, 43.58], [357.58, 47.71], [358, 52], [358, 70], [357.58, 74.29],
-  [356.33, 78.42], [354.29, 82.22], [351.56, 85.56], [348.22, 88.29], [344.42, 90.33],
-  [340.29, 91.58], [336, 92], [84, 92], [79.71, 92.42], [75.58, 93.67], [71.78, 95.71],
-  [68.44, 98.44], [65.71, 101.78], [63.67, 105.58], [62.42, 109.71], [62, 114], [62, 132],
-  [62.42, 136.29], [63.67, 140.42], [65.71, 144.22], [68.44, 147.56], [71.78, 150.29],
-  [75.58, 152.33], [79.71, 153.58], [84, 154], [358, 154],
-];
-
-/** Cumulative arc length at each sample, so a `t` can be resolved by binary-free scan. */
-const TRACK_AT: readonly number[] = TRACK.reduce<number[]>((acc, point, i) => {
-  if (i === 0) return [0];
-  const [px, py] = TRACK[i - 1];
-  acc.push(acc[i - 1] + Math.hypot(point[0] - px, point[1] - py));
-  return acc;
-}, []);
-
-/** The whole run, end to end. Every `t` below is a distance along it. */
-const TRACK_LEN = TRACK_AT[TRACK_AT.length - 1];
-
-/** Where a station sits, by name, so a scene never repeats a number. */
-const AT = {
-  plan: 68,
-  build: 218,
-  test: 397,
-  debug: 547,
-  release: 866,
-} as const;
-
-/** The point at distance `t`, linear between samples. */
-function pointAt(t: number): [number, number] {
-  const d = Math.min(Math.max(t, 0), TRACK_LEN);
-  let i = 1;
-  while (i < TRACK_AT.length - 1 && TRACK_AT[i] < d) i += 1;
-  const span = TRACK_AT[i] - TRACK_AT[i - 1];
-  const f = span === 0 ? 0 : (d - TRACK_AT[i - 1]) / span;
-  const [ax, ay] = TRACK[i - 1];
-  const [bx, by] = TRACK[i];
-  return [ax + (bx - ax) * f, ay + (by - ay) * f];
-}
-
-/** The stretch of the run between two distances, as an SVG path. */
-function subPath(from: number, to: number): string {
-  const [sx, sy] = pointAt(from);
-  const parts = [`M ${r1(sx)} ${r1(sy)}`];
-  for (let i = 0; i < TRACK.length; i += 1) {
-    if (TRACK_AT[i] <= from || TRACK_AT[i] >= to) continue;
-    parts.push(`L ${TRACK[i][0]} ${TRACK[i][1]}`);
-  }
-  const [ex, ey] = pointAt(to);
-  parts.push(`L ${r1(ex)} ${r1(ey)}`);
-  return parts.join(" ");
-}
-
-/** One decimal is plenty in a 420-unit frame, and keeps the markup readable. */
-function r1(value: number): number {
-  return Math.round(value * 10) / 10;
-}
-
-/**
- * A station's centre, as the `x`/`y` a glyph takes.
- *
- * Spread rather than passed as a point, because `FlowNode` and `HumanFlowNode` both take
- * two numbers and neither should learn about the track. It also keeps a scene reading as a
- * distance along the run — `xy(487)` is "just past halfway" — which is the only coordinate
- * that means anything once the path turns twice.
- */
-function xy(t: number): { x: number; y: number } {
-  const [x, y] = pointAt(t);
-  return { x: r1(x), y: r1(y) };
-}
+/** The row every graph is wired along, and the two ticks the work enters and leaves by. */
+const ROW = 96;
+const IN = 62;
+const OUT = 358;
 
 /**
  * Radius of every disc in these five frames.
@@ -311,74 +226,75 @@ function xy(t: number): { x: number; y: number } {
  * printed words and kept them as what a screen reader is told.
  */
 const R = 7;
-
-/** Level 5's run, as a table, so five near-identical lines do not have to be read. */
-const RUN_5: readonly { at: number; label: string }[] = [
-  { at: AT.plan, label: "plan" },
-  { at: AT.build, label: "build" },
-  { at: AT.test, label: "test" },
-  { at: AT.debug, label: "debug" },
-  { at: AT.release, label: "release" },
-];
+/** A `HumanFlowNode` is drawn larger than a `FlowNode` so its pause glyph fits inside. */
+const HR = 8;
 
 /**
- * One stretch of the run, in arc length.
+ * One directed run between two marks.
  *
- * `human` paints it in `HUMAN_PRESENCE_MARK` violet, because that is what "somebody acts
- * along here" looks like on every other surface of the site (doc 2 §1.1, and the reason
- * `lib/format.ts` holds the colour rather than each component choosing one). The mark
- * that stands on the run carries the same meaning in a glyph, so the colour is never
- * alone in saying it.
+ * Every edge on these frames goes through here so that not one of them can be drawn
+ * without an arrowhead. `FlowEdge` defaults `arrow` to true and `pulse` to true; the pulse
+ * is off because these five are diagrams of a shape rather than of a run in progress, and
+ * five frames each travelling a light is the register spent on the wrong thing.
  */
-interface PathRun {
-  from: number;
-  to: number;
-  human?: boolean;
+function Wire({
+  from,
+  to,
+  fromR = R,
+  toR = R,
+  bend,
+  label,
+  tone,
+}: {
+  from: [number, number];
+  to: [number, number];
+  fromR?: number;
+  toR?: number;
+  bend?: number;
+  label?: string;
+  tone?: "line" | "dim";
+}) {
+  return (
+    <FlowEdge
+      from={from}
+      to={to}
+      fromRadius={fromR}
+      toRadius={toR}
+      bend={bend}
+      label={label}
+      tone={tone}
+      pulse={false}
+    />
+  );
 }
 
-function WorkPath({
-  runs,
-  start,
-  end,
-}: {
-  runs: readonly PathRun[];
-  /** What enters at the top left. */
-  start: string;
-  /** What leaves at the bottom right. */
-  end: string;
-}) {
-  const [fx, fy] = pointAt(0);
-  const [tx, ty] = pointAt(TRACK_LEN);
+/**
+ * The two ends of the work: what goes in on the left, what comes out on the right.
+ *
+ * A tick and a word rather than a disc, and the distinction is the one this whole rewrite
+ * is about. A lit disc on this site means a node — a step something runs at — and neither
+ * "request" nor "merged" is a step. They are the boundary of the drawing, so they are
+ * drawn as the drawing's own furniture and the first and last EDGE runs from and to them.
+ */
+function Ends({ start, end }: { start: string; end: string }) {
   return (
-    <g data-viz="path">
-      {runs.map((run) => (
-        <path
-          key={`${run.from}-${run.to}`}
-          d={subPath(run.from, run.to)}
-          fill="none"
-          stroke={run.human === true ? toneColor("human") : toneColor("dim")}
-          strokeWidth={VIZ.stroke.base}
-        />
-      ))}
+    <g data-viz="ends">
       <path
-        d={`M ${fx} ${fy - 7} L ${fx} ${fy + 7}`}
+        d={`M ${IN} ${ROW - 7} L ${IN} ${ROW + 7}`}
         stroke={toneColor("dim")}
         strokeWidth={VIZ.stroke.hair}
       />
       <path
-        d={`M ${tx} ${ty - 7} L ${tx} ${ty + 7}`}
+        d={`M ${OUT} ${ROW - 7} L ${OUT} ${ROW + 7}`}
         stroke={toneColor("dim")}
         strokeWidth={VIZ.stroke.hair}
       />
-      {/* Above each tick rather than beside it. Beside the run, "specification" at
-          `FLOW.label.size` runs off the left edge of a 420-unit frame; centred over its own
-          tick it fits, and the two ends read as a pair. The end label clears the last lane
-          because it sits in the band between lane B and lane C, which no run occupies at
-          that x. */}
+      {/* Above the ticks rather than beside them: "specification" at `FLOW.label.size` runs
+          off the left edge of a 420-unit frame if it sits beside its own tick. */}
       <text
         data-viz="label"
-        x={fx}
-        y={fy - 14}
+        x={IN}
+        y={ROW - 14}
         textAnchor="middle"
         fontSize={FLOW.label.size}
         fill={toneColor("dim")}
@@ -387,8 +303,8 @@ function WorkPath({
       </text>
       <text
         data-viz="label"
-        x={tx}
-        y={ty - 14}
+        x={OUT}
+        y={ROW - 14}
         textAnchor="middle"
         fontSize={FLOW.label.size}
         fill={toneColor("dim")}
@@ -444,6 +360,7 @@ function Boundary({
     </g>
   );
 }
+
 interface LevelDrawing {
   /** The accessible name. A drawing is an image, and `role="img"` with no name says nothing. */
   label: string;
@@ -459,217 +376,142 @@ interface LevelDrawing {
 const DRAWINGS: Record<Level["n"], LevelDrawing> = {
   1: {
     label:
-      "The path from request to merge, drawn in one unbroken violet run, held by one person from end to end with nobody and nothing else standing on it.",
+      "A request runs into one person, who writes the code, and out to a merge. The person is the only node in the graph.",
     note: "the person holds the path end to end",
-    /* ── Why this frame is a bare run, 2026-08-07 ──
-       It carried three marks that the rest of the site's vocabulary refuses, and the author
-       asked for the figure redrawn rather than annotated:
-
-         · a `completion model` FlowNode. A lit disc on these frames means "a step in a
-           run", and a model is not one — it is a tool a card DECLARES, the way `model:`
-           sits in a node card beside `tools:`. `ConceptFigures.tsx` was rebuilt out of the
-           identical error with the identical noun, and the author's verdict on it there is
-           recorded as "very wrong". The level's own sentence beside the frame already says
-           the model finishes the line you are typing, which is the honest place for it: a
-           sentence, not a station on the path.
-         · the `the next few tokens` edge into that disc, which had nothing left to point at
-           once the disc went, and which drew a model's output as though it were a handoff
-           between steps.
-         · a HumanFlowNode at x=210, the midpoint. The note on this frame claims a SPAN —
-           "the person holds the path end to end" — and a disc says it at a POINT. Level 2
-           spends that same violet disc on genuine crossings, so a reader scanning 1 then 2
-           read "one touchpoint, then two", which is the inverse of the truth: level 1 is
-           the person holding everything and level 2 is the first place they let go.
-
-       What carries the claim now is `WorkPath`'s own `human: true`, which strokes the whole
-       run in the human tone from the request tick to the merge tick. That is the span the
-       note describes, drawn as a span. With this frame and level 5 (`nobody stands on the
-       path`, no violet at all) the ladder now has two clean poles, and every violet disc
-       between them marks a real crossing.
-
-       Do not restore a disc here to "balance" the frame against its neighbours. An empty
-       run is the drawing. */
     body: (
-      <WorkPath runs={[{ from: 0, to: TRACK_LEN, human: true }]} start="request" end="merged" />
+      <>
+        <Ends start="request" end="merged" />
+        <Wire from={[IN, ROW]} to={[210, ROW]} fromR={0} toR={HR} />
+        <Wire from={[210, ROW]} to={[OUT, ROW]} fromR={HR} toR={0} />
+        {/* One node, and it is a person. The level's sentence is that the model finishes
+            your line and you are still the one writing the code, so there is no agent in
+            this graph to draw — the whole of the work happens at the mark. */}
+        <HumanFlowNode
+          x={210}
+          y={ROW}
+          r={HR}
+          label="writes the code"
+          mark="schematic"
+        />
+      </>
     ),
   },
   2: {
     label:
-      "The path from request to merge, crossing a person at the prompt and again at the review, with an agent writing the change between them.",
+      "A request runs into a person who prompts, on to an agent that does the typing, on to a person who reviews and merges, and out.",
     note: "the path crosses the person twice",
     body: (
       <>
-        <WorkPath
-          runs={[
-            { from: 0, to: 272, human: true },
-            { from: 272, to: 703, human: false },
-            { from: 703, to: TRACK_LEN, human: true },
-          ]}
-          start="request"
-          end="merged"
-        />
-        {/* The agent is on lane B, in the middle of the dim stretch; the two people are on
-            lanes A and C, inside the violet ones. The run crosses the person twice and the
-            title block says so, which is unchanged from the straight version — what the S
-            adds is that the two crossings are now visibly at opposite ends of the work. */}
+        <Ends start="request" end="merged" />
+        <Wire from={[IN, ROW]} to={[120, ROW]} fromR={0} toR={HR} />
+        <Wire from={[120, ROW]} to={[195, ROW]} fromR={HR} />
+        <Wire from={[195, ROW]} to={[310, ROW]} toR={HR} />
+        <Wire from={[310, ROW]} to={[OUT, ROW]} fromR={HR} toR={0} />
+        <HumanFlowNode x={120} y={ROW} r={HR} label="prompts" mark="schematic" />
         <FlowNode
           mark="schematic"
-          {...xy(487)}
+          x={195}
+          y={ROW}
           r={R}
           tone="cyan"
           label="the agent"
           name="the agent, which does the typing"
         />
-        <HumanFlowNode {...xy(120)} r={8} label="prompts" mark="schematic" />
-        <HumanFlowNode {...xy(850)} r={8} label="reviews, merges" mark="schematic" />
+        <HumanFlowNode x={310} y={ROW} r={HR} label="reviews, merges" mark="schematic" />
       </>
     ),
   },
   3: {
     label:
-      "The path from task to landing, with one agent that writes and runs its own work and reads its own output, and a person at the end.",
+      "A task runs into an agent that writes the work and runs it, with an edge from the agent back to itself for the output it reads, then on to a person who decides whether it lands.",
     note: "the person reads the result",
     body: (
       <>
-        <WorkPath
-          runs={[
-            { from: 0, to: 703, human: false },
-            { from: 703, to: TRACK_LEN, human: true },
-          ]}
-          start="task"
-          end="lands"
-        />
-        {/* Bowed over the disc rather than under it, and the sign is the whole of the fix.
-            A `FlowEdge` writes its label above its own curve, so an arc bowing down put
-            "reads its own output" 11 units above "the agent" in a band that holds one line
-            of 13-unit type, and the two words were printed over each other on every screen.
-            `scene-labels.test.ts` found it. Bowing up moves the label into the empty half
-            of the frame, where levels 1 and 4 already put a glyph, and `labelT` was no help
-            because this arc is 31 units long and sliding a 156-unit label along it moves it
-            by five. The magnitude is the vocabulary's own `wide`, which is what level 5's
-            return arc takes, so the two loops on this page are mirror images. */}
-        <FlowEdge
-          from={[180, 92]}
-          to={[314, 92]}
+        <Ends start="task" end="lands" />
+        <Wire from={[IN, ROW]} to={[150, ROW]} fromR={0} />
+        <Wire from={[150, ROW]} to={[300, ROW]} toR={HR} />
+        <Wire from={[300, ROW]} to={[OUT, ROW]} fromR={HR} toR={0} />
+        {/* The loop, as an edge. It leaves the agent and arrives back at the agent, which
+            is what "reads its own output" IS — the one thing the old drawing could not
+            say, because an arc over a rule connects nothing. Drawn as a wide bow up into
+            the empty half of the frame so its label clears the node's own. */}
+        <Wire
+          from={[134, ROW]}
+          to={[166, ROW]}
+          fromR={0}
+          toR={0}
           bend={-FLOW.edge.bend.wide}
-          fromRadius={R}
-          toRadius={R}
-          tone="dim"
           label="reads its own output"
-          pulse={false}
+          tone="dim"
         />
         <FlowNode
           mark="schematic"
-          {...xy(450)}
+          x={150}
+          y={ROW}
           r={R}
           tone="cyan"
           label="the agent"
           name="the agent, which writes it and runs it"
         />
-        <HumanFlowNode {...xy(866)} r={8} label="decides whether it lands" mark="schematic" />
+        <HumanFlowNode x={300} y={ROW} r={HR} label="decides whether it lands" mark="schematic" />
       </>
     ),
   },
   4: {
     label:
-      "The path from task to shipped, running through a harness of an orchestrator and an evaluator, inside constraints a person wrote, with a person reading the output at a checkpoint.",
+      "A task runs into a harness of an orchestrator and an evaluator, wired to each other, then out to a person who reads the output at a checkpoint. A second person, off the graph, wrote the constraints the harness runs inside.",
     note: "the person reads at a checkpoint",
     body: (
       <>
-        <WorkPath
-          runs={[
-            { from: 0, to: 790, human: false },
-            { from: 790, to: TRACK_LEN, human: true },
-          ]}
-          start="task"
-          end="shipped"
-        />
-        {/* Every number on this row is pinned by a word, and the box is pinned by the two
-            it must not touch.
-
-            `scene-labels.test.ts` first measured "evaluator" and the checkpoint mark's
-            label as 49 units of the same line, printed on top of each other. Sliding the
-            harness left cleared that and drew a second defect nothing was looking for: at
-            `x={82}` the rectangle's top-left corner was stroked across the last letters of
-            "task", and its left edge ran three units from the path's own start tick, which
-            at this frame's phone scale is two hairlines two pixels apart.
-            `labelsOverBoxEdges` is the case that now sees it.
-
-            The box cannot cross that word by moving up or down instead: "task" sits on a
-            baseline seven units above the discs and the node labels hang thirteen below
-            them, so a rectangle enclosing both discs has no vertical room to dodge either
-            band. It has to be horizontally clear of "task", and everything else follows.
-            The box starts at 103, eight units past where "task" ends; that puts the
-            orchestrator at 123, the evaluator at 216 to keep twelve and nine characters of
-            13-unit type apart, and the checkpoint mark at 325 — as far right as it can go
-            before its ring meets the end tick at 341. The margins around the two discs are
-            20 units, down from 32, which is what that chain leaves. */}
-        <Boundary x={185} y={78} width={130} height={28} label="harness" />
-        <FlowEdge from={[300, 92]} to={[200, 92]} fromRadius={R} toRadius={R} pulse={false} />
-        <FlowNode {...xy(397)} r={R} tone="cyan" mark="schematic" label="orchestrator" />
-        <FlowNode {...xy(497)} r={R} tone="cyan" mark="schematic" label="evaluator" />
-        {/* The person is upstream of the harness rather than on the path. A label hangs
-            directly under its own glyph, so the run out of the mark leaves sideways: an
-            edge dropping away would be drawn straight through the words. */}
-        {/* Off the run, in the band between lane A and lane B, and to the left of the
-            harness box it is the boundary OF. That band is the largest empty region on the
-            serpentine, which is what makes an off-path mark drawable at all here — on the
-            straight version it had to go above the line, and there was no above. */}
-        <HumanFlowNode x={95} y={52} r={8} label="wrote the constraints" mark="schematic" />
-        {/* ── The constraints are no longer a disc, 2026-08-07 ──
-            An anonymous `dim` FlowNode sat at [189, 24] carrying the accessible name "the
-            constraints the harness runs inside", with a vertical edge dropping from it onto
-            the box's top edge. It is the same category error the author had `ConceptFigures`
-            and level 1 redrawn for: a lit disc on these frames means a STEP IN A RUN, and a
-            set of constraints is a document — the thing a person writes and hands over, not
-            a station the work passes through. It was also the one mark on this frame with no
-            label at all, which is what a drawing looks like when a noun has nowhere to go.
-
-            Both the disc and its edge are gone rather than recoloured. What said "the person
-            wrote the constraints the harness runs inside" is now said by the two marks that
-            were already saying it: the violet `wrote the constraints` upstream of the box,
-            and the `harness` Boundary the constraints are the boundary OF. The person is
-            deliberately off the path here — that is this level's whole point, and it is why
-            the mark sits above the run rather than on it.
-
-            Nothing dangles: the edge deleted with the disc was the only run into it. */}
-        {/* "reads at a checkpoint" was 21 characters on a row that had room for 16. The
-            level's own sentence says people read the output at named checkpoints and the
-            title block under the drawing says at a checkpoint, so the word the glyph itself
-            has to carry is what the person does there. */}
-        <HumanFlowNode {...xy(880)} r={8} label="reads the output" mark="schematic" />
+        <Ends start="task" end="shipped" />
+        <Wire from={[IN, ROW]} to={[115, ROW]} fromR={0} />
+        <Wire from={[115, ROW]} to={[215, ROW]} />
+        <Wire from={[215, ROW]} to={[330, ROW]} toR={HR} />
+        <Wire from={[330, ROW]} to={[OUT, ROW]} fromR={HR} toR={0} />
+        {/* The box encloses the two nodes it is the harness OF and nothing else. Its left
+            edge stands clear of "task", which sits on the terminal's own baseline, and its
+            right edge clear of the checkpoint mark's rim. */}
+        <Boundary x={100} y={82} width={130} height={28} label="harness" />
+        <FlowNode x={115} y={ROW} r={R} tone="cyan" mark="schematic" label="orchestrator" />
+        <FlowNode x={215} y={ROW} r={R} tone="cyan" mark="schematic" label="evaluator" />
+        {/* Off the graph, with no edge into it, and that is the level's whole point: the
+            person wrote the constraints the harness runs inside and does not stand in the
+            run. A disc for "the constraints" was deleted from this frame once already —
+            a lit circle here means a step something runs at, and a document is not one. */}
+        <HumanFlowNode x={300} y={30} r={HR} label="wrote the constraints" mark="schematic" />
+        <HumanFlowNode x={330} y={ROW} r={HR} label="reads the output" mark="schematic" />
       </>
     ),
   },
   5: {
     label:
-      "The path from specification to release, running through five agents that plan, build, test, debug and release, with a return arc from debug to test and no person anywhere on it.",
+      "A specification runs into plan, build and test, and out through release. Test and debug are wired to each other in both directions, which is the loop, and no person is anywhere in the graph.",
     note: "nobody stands on the path",
     body: (
       <>
-        <WorkPath runs={[{ from: 0, to: TRACK_LEN }]} start="specification" end="released" />
-        {/* The loop, on lane B where debug and test both sit. It bows UP, into the band
-            between the lanes: the two node labels hang below their discs at about y=112,
-            and an arc bowing down would be drawn straight through both of them. */}
-        <FlowEdge
-          from={[150, 92]}
-          to={[300, 92]}
-          bend={-FLOW.edge.bend.wide}
-          fromRadius={R}
-          toRadius={R}
-          tone="dim"
-          pulse={false}
-        />
-        {RUN_5.map((step) => (
-          <FlowNode
-            key={step.label}
-            {...xy(step.at)}
-            r={R}
-            tone="cyan"
-            mark="schematic"
-            label={step.label}
-          />
-        ))}
+        <Ends start="specification" end="released" />
+        <Wire from={[IN, ROW]} to={[110, ROW]} fromR={0} />
+        <Wire from={[110, ROW]} to={[186, ROW]} />
+        <Wire from={[186, ROW]} to={[262, ROW]} />
+        <Wire from={[262, ROW]} to={[330, ROW]} />
+        <Wire from={[330, ROW]} to={[OUT, ROW]} toR={0} />
+        {/* The loop, as two directed edges rather than one arc, because it IS two runs:
+            the tester hands failure evidence down to the debugger and the debugger hands a
+            patch back up. Anti-parallel bends keep them apart, and this is the topology the
+            starter blueprint actually writes — `tester -> debugger -> tester`, never back
+            to the builder.
+
+            Debug sits directly ABOVE test rather than off to one side, and that is the
+            whole of why the pair reads as a loop: two anti-parallel arcs between two nodes
+            on the same vertical make a lens, and the eye takes a lens for a cycle. Placed
+            over `build` it read as a branch out of the wrong node. */}
+        <Wire from={[262, ROW]} to={[262, 44]} bend={FLOW.edge.bend.wide} tone="dim" />
+        <Wire from={[262, 44]} to={[262, ROW]} bend={FLOW.edge.bend.wide} tone="dim" />
+        <FlowNode x={110} y={ROW} r={R} tone="cyan" mark="schematic" label="plan" />
+        <FlowNode x={186} y={ROW} r={R} tone="cyan" mark="schematic" label="build" />
+        <FlowNode x={262} y={ROW} r={R} tone="cyan" mark="schematic" label="test" />
+        <FlowNode x={262} y={44} r={R} tone="cyan" mark="schematic" label="debug" />
+        <FlowNode x={330} y={ROW} r={R} tone="cyan" mark="schematic" label="release" />
       </>
     ),
   },
