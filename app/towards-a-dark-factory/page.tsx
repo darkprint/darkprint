@@ -140,7 +140,11 @@ export default function TowardsPage() {
           {/* The two scales, named apart before the five-rung list rather than after it.
               `text-fg` on the clause that does the work: this used to be the dimmest text
               on the route carrying its most load-bearing constraint. */}
-          <p className="prose-lane mt-6 text-[15px] leading-[1.7] text-muted">
+          {/* Full width, on the author's instruction 2026-08-07. This is the deck that
+              carries doc 2 §1.1 — the paragraph the deleted two-scales panel handed its
+              claim to — so it is the one piece of prose on the route a reader must not
+              skim past, and it now runs the width of the band the ladder below it fills. */}
+          <p className="mt-6 text-[15px] leading-[1.7] text-muted">
             <span className="text-fg">
               Two different things get called autonomy here, and only one of them is a
               number.
