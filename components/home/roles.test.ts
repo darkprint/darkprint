@@ -65,6 +65,28 @@ describe("the roles figure draws the starter blueprint", () => {
     );
   });
 
+  /**
+   * The kind each disc is coloured by, held to the kind the registry resolves.
+   *
+   * `roles.ts` mirrors this rather than deriving it, so that the file stays plain data the
+   * node suite can import. The mirror is only safe because of this case: `agentNodeKind`
+   * reads a card's `type` through the ontology, so a card that changes type, or an ontology
+   * edit that re-parents one, silently recolours the same node on `/blueprints` and would
+   * leave the landing painting the old colour with nothing complaining.
+   *
+   * Resolved through `allBlueprints()` — the reader the gallery itself uses — rather than
+   * by calling `agentNodeKind` here with hand-built arguments, because the position clause
+   * that makes `deployer` a `ship` rather than a `tool` depends on the whole graph.
+   */
+  it("colours each disc by the kind the registry resolves for it", async () => {
+    const { allBlueprints } = await import("@/lib/content");
+    const starter = allBlueprints().find((bp) => bp.slug === "starter-software-factory");
+    expect(starter, "the starter blueprint is not in the archive").toBeDefined();
+    expect(ROLE_BOXES.map((box) => `${box.id}:${box.kind}`)).toEqual(
+      starter?.graph.nodes.map((n) => `${n.id}:${n.kind}`),
+    );
+  });
+
   it("draws the DOT's edges, in its order", () => {
     expect(ROLE_WIRES.map((w) => `${w.source} -> ${w.target}`)).toEqual(
       parsed.graph?.edges.map((e) => `${e.source} -> ${e.target}`),

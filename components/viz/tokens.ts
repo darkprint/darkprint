@@ -58,8 +58,12 @@ export const VIZ_TONE = {
   /** A line that stands for something absent. */
   faint: "var(--color-faint)",
   cyan: "var(--color-cyan)",
+  /** The brighter cyan `NODE_KIND_META` gives a trigger and a verifier. */
+  cyanBright: "var(--color-cyan-bright)",
   emerald: "var(--color-emerald)",
   amber: "var(--color-amber)",
+  /** A node whose kind carries no accent: a tool, a memory. Grey on purpose. */
+  muted: "var(--color-muted)",
   /** Where a person acts. `lib/format.ts` owns the value; §1.1 owns the reason. */
   human: HUMAN_PRESENCE_MARK.color,
   /** A defect, and nothing else. */

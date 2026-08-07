@@ -29,6 +29,21 @@ export interface RoleBox {
   label: string;
   /** The pinned reference, `id@version`, as the DOT writes it. */
   card: string;
+  /**
+   * The node's `AgentNodeKind`, which is what the gallery colours its disc by.
+   *
+   * Mirrored here rather than derived, exactly like `label` and `card` above and for the
+   * same reason: this file is plain data the node suite can import, and reaching into
+   * `lib/content` would drag the whole reader in. `roles.test.ts` resolves the real
+   * blueprint and fails if any of the five disagrees, so the mirror cannot rot.
+   *
+   * It is here at all because the author asked the landing's blueprint to "follow the look
+   * adopted in the blueprint gallery" (2026-08-07), and the gallery's most visible move is
+   * that a disc is coloured by what the node is. Four of these five are `executor` and one
+   * is `verifier`, which is not a decorative choice — it is what the starter blueprint's
+   * cards actually declare, and it is what the same graph looks like on `/blueprints`.
+   */
+  kind: string;
 }
 
 /**
@@ -40,11 +55,11 @@ export interface RoleBox {
  * doc 2 §1.1 warns about.
  */
 export const ROLE_BOXES: readonly RoleBox[] = [
-  { id: "planner", label: "Planner", card: "spec-planner@1.0.0" },
-  { id: "builder", label: "Builder", card: "code-builder@1.0.0" },
-  { id: "tester", label: "Tester", card: "acceptance-tester@1.0.0" },
-  { id: "debugger", label: "Debugger", card: "targeted-debugger@1.0.0" },
-  { id: "deployer", label: "Deployer", card: "release-gate@1.0.0" },
+  { id: "planner", label: "Planner", card: "spec-planner@1.0.0", kind: "executor" },
+  { id: "builder", label: "Builder", card: "code-builder@1.0.0", kind: "executor" },
+  { id: "tester", label: "Tester", card: "acceptance-tester@1.0.0", kind: "verifier" },
+  { id: "debugger", label: "Debugger", card: "targeted-debugger@1.0.0", kind: "executor" },
+  { id: "deployer", label: "Deployer", card: "release-gate@1.0.0", kind: "ship" },
 ];
 
 /** One wire, joined to the edge the starter blueprint writes and to what it says it carries. */

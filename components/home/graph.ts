@@ -51,6 +51,9 @@ export interface LandingNode {
   name: string;
   x: number;
   y: number;
+  /** The node's `AgentNodeKind`, carried through from `roles.ts` so the disc can be
+      coloured the way the gallery colours the same node. */
+  kind: string;
 }
 
 /** One curve, already resolved to the two centres it runs between. */
@@ -126,6 +129,7 @@ function place(spec: {
       name: `${box.label}, running ${box.card}`,
       x: at[0],
       y: at[1],
+      kind: box.kind,
     };
   });
 

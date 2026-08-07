@@ -35,6 +35,7 @@
 
 
 import { FlowAbsence, FlowEdge, FlowNode, FlowScene, Sheet } from "@/components/viz";
+import { kindTone, type FlowTone } from "@/components/viz/flow";
 import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
@@ -48,13 +49,41 @@ import {
 
 
 /**
- * One tone across all five discs.
+ * The disc is coloured by what the node IS, the way the gallery colours it.
  *
- * The graph is uniform here on purpose. Beat 3 takes one node out of it and lights it, and
- * a resting graph already painted five colours has nowhere left to go when one of them is
- * supposed to come on.
+ * The author, 2026-08-07: "Improve the look of the blueprint in the home page; instead
+ * follow the look adopted in the blueprint gallery."
+ *
+ * ── What this replaces, and why the old reason had already expired ──
+ * `const NODE_TONE = "cyan"` stood here, one tone across all five discs, and the comment
+ * defending it said: "Beat 3 takes one node out of it and lights it, and a resting graph
+ * already painted five colours has nowhere left to go when one of them is supposed to come
+ * on."
+ *
+ * That beat is gone. Beat 3 is `CardWalk` now — an annotated listing, DOM text, no `<svg>`
+ * at all — and `scene-labels.test.ts` records the swap. Nothing anywhere on the site passes
+ * `lit` to a `FlowNode` today, so the state the uniform palette was being held in reserve
+ * for has no caller. The instruction and the expiry are independent, and the argument would
+ * have been worth re-opening on its own.
+ *
+ * ── Four greens and a cyan is the truth, not a decision ──
+ * `roles.ts` mirrors each node's `AgentNodeKind` and `roles.test.ts` holds all five to what
+ * `allBlueprints()` resolves. Planner, Builder and Debugger are `executor`, Tester is
+ * `verifier`, Deployer is `ship`. That is what the same graph looks like on `/blueprints`,
+ * which is the whole point of the change: the landing and the registry stopped drawing one
+ * blueprint in two colour languages one click apart.
+ *
+ * `kindTone` and not `NODE_KIND_META` directly, because `FlowNode` takes a tone rather than
+ * a colour — `flow.ts` argues that at length, and `flow.test.ts` pins the two palettes to
+ * each other so they cannot drift.
  */
-const NODE_TONE = "cyan" as const;
+function nodeTone(kind: string): FlowTone {
+  /* `line`, the sheet's own drawing colour, for a kind this register reserves a colour for
+     (a router, a human gate). None of the starter's five is one, so the fallback is
+     unreachable today; it exists because `LandingNode.kind` is a `string` and a graph
+     swapped in here later should draw a neutral disc rather than throw. */
+  return kindTone(kind) ?? "line";
+}
 
 function Drawing({ graph, className }: { graph: LandingGraph; className: string }) {
   /* One hook per placement, and both are in the DOM at once with one of them
@@ -123,7 +152,10 @@ function Drawing({ graph, className }: { graph: LandingGraph; className: string 
           r={graph.nodeRadius}
           label={node.label}
           name={node.name}
-          tone={NODE_TONE}
+          tone={nodeTone(node.kind)}
+          /* The gallery's mark: one halo shell instead of three. Five lamps at 4.4× on one
+             sheet is more glow than drawing, and this beat is about the topology. */
+          mark="schematic"
         />
       ))}
     </FlowScene>

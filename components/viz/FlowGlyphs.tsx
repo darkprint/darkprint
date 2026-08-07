@@ -49,6 +49,7 @@ import {
   labelOffset,
   pulseDasharray,
   ringRadius,
+  schematicHaloRadius,
   type FlowReveal,
   type FlowRunOptions,
   type FlowTone,
@@ -286,6 +287,7 @@ export function FlowNode({
   r = FLOW.node.r,
   lit = false,
   reveal = "hover",
+  mark = "lamp",
   id,
 }: {
   /** Centre of the node. */
@@ -303,12 +305,35 @@ export function FlowNode({
   lit?: boolean;
   /** `"always"` for a label that carries the figure's argument. */
   reveal?: FlowReveal;
+  /**
+   * How much light the mark spends.
+   *
+   * `"lamp"`, the default, is the glyph this register was written for: three halo shells
+   * out to 4.4× the core, a node the reader is standing in front of.
+   *
+   * `"schematic"` is the gallery's mark — one shell at 1.77×, the proportions
+   * `components/graph/GraphThumbnail.tsx` measured and states its reasons for. Its
+   * argument was about scale: at a third of size the three outer shells "land as a
+   * twenty-pixel wash at five per cent over a graticule, which reads as fog rather than as
+   * light". The author asked for it at 1:1 as well, on the landing's own blueprint
+   * (2026-08-07), and the argument holds there for a different reason — five lamps at 4.4×
+   * on one sheet is more glow than drawing, and the topology is what the beat is about.
+   *
+   * Opt-in rather than a new default. Every other luminous figure on the site is composed
+   * against the lamp, `scene-labels.test.ts` measures label boxes against the radii it
+   * produces, and a global change would move every one of them at once.
+   */
+  mark?: "lamp" | "schematic";
   /** Written as `data-viz-id`, so a timeline can name this node. */
   id?: string;
 }) {
   const color = flowToneColor(tone);
+  /* One shell or three. The schematic's single shell is `FLOW.halo.schematic` — a radius
+     multiple and an opacity, both taken from `GraphThumbnail`'s constants so the landing
+     and the gallery draw the same mark rather than two that resemble each other. */
   const [outer, middle, inner] = haloRadii(r);
   const [dimmest, mid, brightest] = FLOW.halo.opacity;
+  const schematic = mark === "schematic";
   const boost = lit ? FLOW.node.litBoost : 1;
   const accessibleName = name ?? label;
 
@@ -323,15 +348,39 @@ export function FlowNode({
         {/* The disc on its own, so a scene can scale it about its own centre without
             dragging the label below it sideways. `FLOW_SELECTOR.bloom` has the reason. */}
         <g data-viz="bloom">
-          <circle data-viz="glow" r={outer} fill={color} opacity={r3(dimmest * boost)} {...INERT} />
-          <circle data-viz="glow" r={middle} fill={color} opacity={r3(mid * boost)} {...INERT} />
-          <circle
-            data-viz="glow"
-            r={inner}
-            fill={color}
-            opacity={r3(brightest * boost)}
-            {...INERT}
-          />
+          {schematic ? (
+            <circle
+              data-viz="glow"
+              r={schematicHaloRadius(r)}
+              fill={color}
+              opacity={r3(FLOW.halo.schematic.opacity * boost)}
+              {...INERT}
+            />
+          ) : (
+            <>
+              <circle
+                data-viz="glow"
+                r={outer}
+                fill={color}
+                opacity={r3(dimmest * boost)}
+                {...INERT}
+              />
+              <circle
+                data-viz="glow"
+                r={middle}
+                fill={color}
+                opacity={r3(mid * boost)}
+                {...INERT}
+              />
+              <circle
+                data-viz="glow"
+                r={inner}
+                fill={color}
+                opacity={r3(brightest * boost)}
+                {...INERT}
+              />
+            </>
+          )}
           <circle r={r} fill={color} opacity={FLOW.node.core} {...INERT} />
           <circle
             r={ringRadius(r)}
@@ -396,6 +445,7 @@ export function HumanFlowNode({
   label,
   r = 9,
   reveal = "hover",
+  mark = "lamp",
   id,
 }: {
   /** Centre of the mark. */
@@ -406,9 +456,24 @@ export function HumanFlowNode({
   /** Radius of the ringed core. Larger than a `FlowNode` so the glyph fits inside it. */
   r?: number;
   reveal?: FlowReveal;
+  /**
+   * How much light the mark spends. Same contract as `FlowNode`'s, and safe here.
+   *
+   * This component's prop list is deliberately tiny and `flow.test.ts` pins it exactly, so
+   * that a caller cannot repaint the one glyph on the site that means "a person acts here".
+   * `mark` selects between two shell counts and touches no colour: violet still comes from
+   * `HUMAN_PRESENCE_MARK` and from nowhere else, and the banned-prop case is unchanged.
+   *
+   * It exists because a scene that asks its `FlowNode`s for the schematic mark and cannot
+   * ask this one draws tight discs beside a heavy violet bloom — which reads as the person
+   * being the brightest thing in a figure about what the machine does. Both marks change
+   * together or the figure is inconsistent.
+   */
+  mark?: "lamp" | "schematic";
   id?: string;
 }) {
   const color = HUMAN_PRESENCE_MARK.color;
+  const schematic = mark === "schematic";
   const [outer, middle, inner] = haloRadii(r);
   const [dimmest, mid, brightest] = FLOW.halo.opacity;
   const core = ringRadius(r);
@@ -419,9 +484,21 @@ export function HumanFlowNode({
     <g data-viz="node-anchor" transform={`translate(${x} ${y})`}>
       <g data-viz="human" data-viz-id={id} {...focusProps(accessibleName, reveal)}>
         <g data-viz="bloom">
-          <circle data-viz="glow" r={outer} fill={color} opacity={dimmest} {...INERT} />
-          <circle data-viz="glow" r={middle} fill={color} opacity={mid} {...INERT} />
-          <circle data-viz="glow" r={inner} fill={color} opacity={brightest} {...INERT} />
+          {schematic ? (
+            <circle
+              data-viz="glow"
+              r={schematicHaloRadius(r)}
+              fill={color}
+              opacity={FLOW.halo.schematic.opacity}
+              {...INERT}
+            />
+          ) : (
+            <>
+              <circle data-viz="glow" r={outer} fill={color} opacity={dimmest} {...INERT} />
+              <circle data-viz="glow" r={middle} fill={color} opacity={mid} {...INERT} />
+              <circle data-viz="glow" r={inner} fill={color} opacity={brightest} {...INERT} />
+            </>
+          )}
           <circle
             r={core}
             fill={VIZ_KNOCKOUT}

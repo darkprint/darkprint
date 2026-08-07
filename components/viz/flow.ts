@@ -70,6 +70,72 @@ export function flowToneColor(tone: FlowTone): string {
 export const FLOW_ABSENT_TONE: FlowTone = "dim";
 
 /**
+ * A node's kind, as a tone the luminous register can spend.
+ *
+ * The author, 2026-08-07, on the landing's blueprint: "instead follow the look adopted in
+ * the blueprint gallery." The gallery colours a disc by what the node IS —
+ * `NODE_KIND_META` in `lib/format.ts`, which `GraphThumbnail` reads directly — and the
+ * landing drew the identical graph in one tone, so the same five nodes were five shades of
+ * cyan here and four greens and a bright cyan one click away.
+ *
+ * This is the second half of a unification that was already half done. `GraphThumbnail`'s
+ * own header records the first half: the gallery used to draw these as CAD boxes and was
+ * moved onto the landing's lit disc. The mark is now shared in both directions.
+ *
+ * ── Why a map and not `NODE_KIND_META[kind].color` passed straight in ──
+ * `FlowNode` takes a `FlowTone` and not a colour, and that is deliberate: `flow.test.ts`
+ * fails on a colour-bearing prop, because a scene that can be handed an arbitrary fill is
+ * a scene that can paint a plain disc violet and mean "a person acts here" without being
+ * `HumanFlowNode`. An escape hatch for the landing would be an escape hatch for
+ * everything.
+ *
+ * So the kind is resolved to a tone, and `flow.test.ts` asserts for EVERY kind that this
+ * map and `NODE_KIND_META` resolve to the same CSS value. The two cannot drift: adding a
+ * kind, or repainting one in the gallery, fails here until this map agrees.
+ *
+ * ── Four kinds are deliberately absent, and the gap is the interesting part ──
+ * `router` and `negotiator` are violet in `NODE_KIND_META`, and `gate` and `human-input`
+ * are the alarm pink. This register may spend neither on a plain disc. `FlowTone` is
+ * `Exclude<VizTone, "human">` precisely so a scene cannot draw a violet circle and mean
+ * "a person acts here" without being `HumanFlowNode`, and `tokens.ts` reserves `signal`
+ * for a defect and nothing else. The gallery takes a documented exemption for both —
+ * `lib/format.ts` argues it: a colour key on one schematic is a legend, not a status spent
+ * on the page around it — and that exemption does not travel to a register whose whole
+ * violet vocabulary is about people.
+ *
+ * So a luminous scene cannot render an arbitrary graph by kind, and this map does not
+ * pretend otherwise. It covers the eight kinds whose gallery colour this register can say
+ * honestly, `kindTone` returns `undefined` for the other four, and `flow.test.ts` pins both
+ * halves: every kind present resolves to the same CSS value `NODE_KIND_META` gives it, and
+ * the absent set is exactly those four. A caller handed one of them has to decide what it
+ * means rather than being given a colour that lies.
+ */
+const KIND_TONE = {
+  start: "cyanBright",
+  planner: "cyan",
+  executor: "emerald",
+  verifier: "cyanBright",
+  retry: "amber",
+  memory: "muted",
+  tool: "muted",
+  ship: "emerald",
+} as const satisfies Record<string, FlowTone>;
+
+/** The kinds this register has no honest colour for. See `KIND_TONE`. */
+export const KIND_TONE_RESERVED = ["router", "negotiator", "gate", "human-input"] as const;
+
+/**
+ * The tone for a node kind, or `undefined` where this register may not say it.
+ *
+ * Widened to `string` on the way in so a caller holding an `AgentNodeKind` — a type this
+ * module deliberately does not import, to keep `components/viz` free of `lib/types` — can
+ * ask without a cast.
+ */
+export function kindTone(kind: string): FlowTone | undefined {
+  return (KIND_TONE as Record<string, FlowTone | undefined>)[kind];
+}
+
+/**
  * Whether a label waits for a pointer or a focus ring before it shows.
  *
  * `"always"` is not a fallback, it is a choice a scene makes for the one or two labels
@@ -110,7 +176,20 @@ export const FLOW = {
   /** The three halo shells, outermost first. Stacked rather than blurred: a filter is a
       per-frame cost on every node of every scene, and three graded circles read as a glow
       at a fraction of it. */
-  halo: { opacity: [0.05, 0.09, 0.17] },
+  halo: {
+    opacity: [0.05, 0.09, 0.17],
+    /**
+     * The single shell `mark="schematic"` draws instead of those three.
+     *
+     * Both numbers are `components/graph/GraphThumbnail.tsx`'s, converted from its absolute
+     * constants to multiples of the core so they follow `r` the way every other radius in
+     * this glyph does: `HALO_R / CORE_R` is 23/13 = 1.769, and the opacity is its
+     * `HALO_OPACITY` unchanged. Reproducing the gallery's mark means reproducing its
+     * proportions, so these are derived rather than chosen — if that file's disc changes,
+     * this is the number that has to move with it.
+     */
+    schematic: { r: 1.769, opacity: 0.12 },
+  },
   edge: {
     /** The dim base curve every present edge is drawn as. */
     line: 1.1,
@@ -236,6 +315,18 @@ export function haloRadii(r: number): [number, number, number] {
 /** The thin ring around the core. */
 export function ringRadius(r: number): number {
   return r2(r * 1.7);
+}
+
+/**
+ * The one shell `mark="schematic"` draws in place of `haloRadii`'s three.
+ *
+ * A function beside the other two rather than arithmetic at the call site, for the reason
+ * `FLOW`'s own header gives: every circle in the glyph is a multiple of the core resolved
+ * in one place, so a scene that wants a larger node changes one prop and the whole mark
+ * follows.
+ */
+export function schematicHaloRadius(r: number): number {
+  return r2(r * FLOW.halo.schematic.r);
 }
 
 /**

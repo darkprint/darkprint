@@ -415,6 +415,7 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
           end="merged"
         />
         <FlowNode
+          mark="schematic"
           x={205}
           y={PATH.y}
           r={R}
@@ -422,8 +423,8 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
           label="the agent"
           name="the agent, which does the typing"
         />
-        <HumanFlowNode x={112} y={PATH.y} r={8} label="prompts" />
-        <HumanFlowNode x={312} y={PATH.y} r={8} label="reviews, merges" />
+        <HumanFlowNode x={112} y={PATH.y} r={8} label="prompts" mark="schematic" />
+        <HumanFlowNode x={312} y={PATH.y} r={8} label="reviews, merges" mark="schematic" />
       </>
     ),
   },
@@ -461,6 +462,7 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
           pulse={false}
         />
         <FlowNode
+          mark="schematic"
           x={170}
           y={PATH.y}
           r={R}
@@ -468,7 +470,7 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
           label="the agent"
           name="the agent, which writes it and runs it"
         />
-        <HumanFlowNode x={305} y={PATH.y} r={8} label="decides whether it lands" />
+        <HumanFlowNode x={305} y={PATH.y} r={8} label="decides whether it lands" mark="schematic" />
       </>
     ),
   },
@@ -514,12 +516,12 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
           toRadius={R}
           pulse={false}
         />
-        <FlowNode x={123} y={PATH.y} r={R} tone="cyan" label="orchestrator" />
-        <FlowNode x={216} y={PATH.y} r={R} tone="cyan" label="evaluator" />
+        <FlowNode x={123} y={PATH.y} r={R} tone="cyan" mark="schematic" label="orchestrator" />
+        <FlowNode x={216} y={PATH.y} r={R} tone="cyan" mark="schematic" label="evaluator" />
         {/* The person is upstream of the harness rather than on the path. A label hangs
             directly under its own glyph, so the run out of the mark leaves sideways: an
             edge dropping away would be drawn straight through the words. */}
-        <HumanFlowNode x={88} y={24} r={8} label="wrote the constraints" />
+        <HumanFlowNode x={88} y={24} r={8} label="wrote the constraints" mark="schematic" />
         {/* ── The constraints are no longer a disc, 2026-08-07 ──
             An anonymous `dim` FlowNode sat at [189, 24] carrying the accessible name "the
             constraints the harness runs inside", with a vertical edge dropping from it onto
@@ -541,7 +543,7 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
             level's own sentence says people read the output at named checkpoints and the
             title block under the drawing says at a checkpoint, so the word the glyph itself
             has to carry is what the person does there. */}
-        <HumanFlowNode x={325} y={PATH.y} r={8} label="reads the output" />
+        <HumanFlowNode x={325} y={PATH.y} r={8} label="reads the output" mark="schematic" />
       </>
     ),
   },
@@ -562,7 +564,15 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
           pulse={false}
         />
         {RUN_5.map((step) => (
-          <FlowNode key={step.label} x={step.x} y={PATH.y} r={R} tone="cyan" label={step.label} />
+          <FlowNode
+            key={step.label}
+            x={step.x}
+            y={PATH.y}
+            r={R}
+            tone="cyan"
+            mark="schematic"
+            label={step.label}
+          />
         ))}
       </>
     ),

@@ -36,7 +36,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { HUMAN_PRESENCE_MARK } from "@/lib/format";
+import { HUMAN_PRESENCE_MARK, NODE_KIND_META } from "@/lib/format";
 
 import { LANDING_NARROW } from "@/components/home/graph";
 
@@ -53,8 +53,11 @@ import {
   haloRadii,
   hitRadius,
   labelOffset,
+  KIND_TONE_RESERVED,
+  kindTone,
   pulseDasharray,
   ringRadius,
+  schematicHaloRadius,
 } from "./flow";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
@@ -303,9 +306,15 @@ function humanFlowNodePropKeys(): string[] {
 }
 
 describe("HumanFlowNode is violet by construction", () => {
-  it("declares only geometry, a label, a reveal mode and an id", () => {
+  /**
+   * `mark` joined this set on 2026-08-07 and the addition was deliberate, which is what
+   * this case is for: it selects between the lamp's three halo shells and the schematic's
+   * one, and carries no colour. The banned-prop case below is the one that guards the
+   * violet, and it is unchanged.
+   */
+  it("declares only geometry, a label, a reveal mode, a mark and an id", () => {
     expect(new Set(humanFlowNodePropKeys())).toEqual(
-      new Set(["x", "y", "label", "r", "reveal", "id"]),
+      new Set(["x", "y", "label", "r", "reveal", "mark", "id"]),
     );
   });
 
@@ -854,5 +863,59 @@ describe("no scene draws a node as a rectangle", () => {
       );
     });
     expect(offenders).toEqual([]);
+  });
+});
+
+/* ==================== the kind palette, shared with the gallery ==================== */
+
+describe("a node kind is the same colour in both registers", () => {
+  /**
+   * The author, 2026-08-07: the landing's blueprint should "follow the look adopted in the
+   * blueprint gallery". The gallery reads `NODE_KIND_META` directly; the luminous register
+   * cannot, because `FlowNode` takes a tone and not a colour. `kindTone` is the bridge, and
+   * two colours that merely resemble each other is the failure this exists to stop.
+   */
+  it("resolves every mapped kind to the value the gallery paints", () => {
+    const disagreements: string[] = [];
+    for (const [kind, meta] of Object.entries(NODE_KIND_META)) {
+      const tone = kindTone(kind);
+      if (tone === undefined) continue;
+      const mine = VIZ_TONE[tone];
+      if (mine !== meta.color) disagreements.push(`${kind}: viz "${mine}", gallery "${meta.color}"`);
+    }
+    expect(disagreements).toEqual([]);
+  });
+
+  /**
+   * And the gap is exactly the reserved four, stated rather than left as an absence.
+   *
+   * `router` and `negotiator` are violet in the gallery and `gate` and `human-input` are
+   * the alarm pink. This register spends violet only on `HumanFlowNode` — `FlowTone` is
+   * `Exclude<VizTone, "human">` for that reason — and `signal` only on a defect. A kind
+   * added to `NODE_KIND_META` in one of those two colours has to be thought about here
+   * rather than silently acquiring a tone, and one added in any other colour has to be
+   * mapped or this fails.
+   */
+  it("leaves out only the kinds whose colour this register reserves", () => {
+    const unmapped = Object.keys(NODE_KIND_META).filter((k) => kindTone(k) === undefined);
+    expect(unmapped.sort()).toEqual([...KIND_TONE_RESERVED].sort());
+  });
+
+  /** The schematic shell is the gallery's disc, in proportion rather than by eye. */
+  it("draws the schematic halo at the gallery's own ratio", () => {
+    // `GraphThumbnail`'s HALO_R / CORE_R, read off that file: 23 / 13.
+    expect(schematicHaloRadius(13)).toBeCloseTo(23, 1);
+    // And it is smaller than the lamp's outermost shell, which is the point of it.
+    expect(schematicHaloRadius(7)).toBeLessThan(haloRadii(7)[0]);
+  });
+
+  /** One shell where the lamp draws three, so a scene can ask for less light. */
+  it("paints one halo circle in schematic and three in lamp", () => {
+    const count = (mark: "lamp" | "schematic") =>
+      (renderToStaticMarkup(
+        createElement(FlowNode, { x: 0, y: 0, r: 10, tone: "emerald", mark }),
+      ).match(/data-viz="glow"/g) ?? []).length;
+    expect(count("lamp")).toBe(3);
+    expect(count("schematic")).toBe(1);
   });
 });

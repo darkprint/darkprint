@@ -168,9 +168,12 @@ export function SiteFooter() {
             <span className="text-fg">Dark</span>
             <span className="text-cyan">Print</span>
           </Link>
+          {/* The second sentence, "This is where the graphs in between are kept.", came
+              out on the author's instruction 2026-08-07. The claim is unchanged and one
+              sentence shorter: the site's own tagline, which `app/layout.tsx` carries as
+              metadata and the hero prints under the wordmark, said the whole thing. */}
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-dim">
-            Autonomy you can read as a graph. This is where the graphs in
-            between are kept.
+            Autonomy you can read as a graph.
           </p>
         </div>
         {COLS.map((col) => (
