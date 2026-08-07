@@ -186,26 +186,120 @@ const SOURCES: Source[] = [
  * where the wider labels needed it: level 5's five words are the binding constraint, and
  * "debug" beside "release" is the tightest pair on the page.
  */
-/* 126 and not 148: the drawings were floating in a band of empty graticule.
-   ------------------------------------------------------------
-   Measured before changing it — every mark in all five frames sits between y=24 (level 4's
-   upstream human node) and roughly y=110 (the node labels, one line under the path at 88).
-   At 148 that left ~38 units of nothing under the lowest word, about a quarter of the
-   frame, and the author's note was that these read as less finished than the site's other
-   drawings. They were: a drawing pinned to the top of a tall box looks unplaced, where the
-   blueprint sheets it sits beside fill theirs.
+/* ── The run is an S, and that is the drawing's subject (2026-08-07) ──
+   The author: "The 'S'. I meant to redesign the graphics", and the scope behind it — "the
+   scope is to indicate the user what is the structure of a dark factory (i.e., it is fully
+   autonomous in the part described) then the user will find a way to build its own dark
+   factory by defining the blueprint".
 
-   126 keeps 16 units under the lowest label — more than the 12 the corner ticks need to
-   stay clear of a word, and enough that the caption in the bottom rail is not crowded.
+   These five frames used to draw a single horizontal rule with marks standing on it. That
+   said who was on the path and nothing about what the path IS, which is the half the scope
+   above is asking for: a dark factory is a graph where planning, implementation, testing,
+   debugging and deployment all run unattended, and the page's own deck says exactly that
+   three screens up. A straight line cannot hold five named stations at this width without
+   the words touching — the note below records the pair that was already the binding
+   constraint at 420 units — so the run turns instead of stretching.
 
-   WIDTH IS NOT AVAILABLE as a lever and the docblock above says why: 420 was chosen so a
-   label clears `FLOW.frame.legible` on a 328px phone, and widening the scene shrinks every
-   word below that floor. So the crowding on level 5's five words is solved by giving them
-   vertical air, not horizontal — the pair the note calls tightest, "debug" beside
-   "release", is unchanged and still the binding constraint on this page. */
-const SCENE = { width: 420, height: 126 } as const;
-/** The path from the request to the shipped change. Identical in all five drawings. */
-const PATH = { y: 88, from: 79, to: 341 } as const;
+   A serpentine is the shape that buys the room: three lanes, two turns, reading left to
+   right then right to left then left to right, ending bottom-right where the eye rests.
+   The five phases sit two, two and one. What a reader sees at level 5 is the whole S with
+   nothing standing on it, which is the structure the scope asks the page to show; the four
+   levels above it are the same S with a person still on some stretch of it.
+
+   ── The frame grew, and only downwards ──
+   420 wide is unchanged and unavailable as a lever: `FLOW.frame` measures this sheet at
+   328 CSS px on a phone, and the width is what decides whether a label clears
+   `FLOW.frame.legible`. Height is free, and three lanes need it — 190 against the 126 a
+   single lane took. The section is taller for it, and the two-column row it sits in is
+   better balanced than it was: the text column always overran a 3.3:1 drawing. */
+const SCENE = { width: 420, height: 190 } as const;
+
+/* ==================== the track ====================
+
+   The serpentine, sampled once as a polyline so that everything else on these frames can
+   be placed by ARC LENGTH rather than by hand-solving a point on an arc.
+
+   Sampled and not emitted as `A` commands, and the reason is the sub-path. Four of the
+   five frames paint part of the run violet — "somebody acts along here" — and a stretch
+   that begins or ends inside a corner has to be drawn as a partial arc, which means
+   splitting an `A` by angle. A polyline splits by slicing, and eight samples to the
+   quarter-circle is smooth at a radius of 22 units in a frame this size.
+
+   Geometry: lanes at y = 30, 92, 154; the run spans x = 62 to 358; corners are r = 22.
+   Total length is 974 units, and the three straight lanes are t = 0–274, 361–613 and
+   700–974. Those three ranges are the only numbers a scene below needs. */
+const TRACK: readonly (readonly [number, number])[] = [
+  [62, 30], [336, 30], [340.29, 30.42], [344.42, 31.67], [348.22, 33.71], [351.56, 36.44],
+  [354.29, 39.78], [356.33, 43.58], [357.58, 47.71], [358, 52], [358, 70], [357.58, 74.29],
+  [356.33, 78.42], [354.29, 82.22], [351.56, 85.56], [348.22, 88.29], [344.42, 90.33],
+  [340.29, 91.58], [336, 92], [84, 92], [79.71, 92.42], [75.58, 93.67], [71.78, 95.71],
+  [68.44, 98.44], [65.71, 101.78], [63.67, 105.58], [62.42, 109.71], [62, 114], [62, 132],
+  [62.42, 136.29], [63.67, 140.42], [65.71, 144.22], [68.44, 147.56], [71.78, 150.29],
+  [75.58, 152.33], [79.71, 153.58], [84, 154], [358, 154],
+];
+
+/** Cumulative arc length at each sample, so a `t` can be resolved by binary-free scan. */
+const TRACK_AT: readonly number[] = TRACK.reduce<number[]>((acc, point, i) => {
+  if (i === 0) return [0];
+  const [px, py] = TRACK[i - 1];
+  acc.push(acc[i - 1] + Math.hypot(point[0] - px, point[1] - py));
+  return acc;
+}, []);
+
+/** The whole run, end to end. Every `t` below is a distance along it. */
+const TRACK_LEN = TRACK_AT[TRACK_AT.length - 1];
+
+/** Where a station sits, by name, so a scene never repeats a number. */
+const AT = {
+  plan: 68,
+  build: 218,
+  test: 397,
+  debug: 547,
+  release: 866,
+} as const;
+
+/** The point at distance `t`, linear between samples. */
+function pointAt(t: number): [number, number] {
+  const d = Math.min(Math.max(t, 0), TRACK_LEN);
+  let i = 1;
+  while (i < TRACK_AT.length - 1 && TRACK_AT[i] < d) i += 1;
+  const span = TRACK_AT[i] - TRACK_AT[i - 1];
+  const f = span === 0 ? 0 : (d - TRACK_AT[i - 1]) / span;
+  const [ax, ay] = TRACK[i - 1];
+  const [bx, by] = TRACK[i];
+  return [ax + (bx - ax) * f, ay + (by - ay) * f];
+}
+
+/** The stretch of the run between two distances, as an SVG path. */
+function subPath(from: number, to: number): string {
+  const [sx, sy] = pointAt(from);
+  const parts = [`M ${r1(sx)} ${r1(sy)}`];
+  for (let i = 0; i < TRACK.length; i += 1) {
+    if (TRACK_AT[i] <= from || TRACK_AT[i] >= to) continue;
+    parts.push(`L ${TRACK[i][0]} ${TRACK[i][1]}`);
+  }
+  const [ex, ey] = pointAt(to);
+  parts.push(`L ${r1(ex)} ${r1(ey)}`);
+  return parts.join(" ");
+}
+
+/** One decimal is plenty in a 420-unit frame, and keeps the markup readable. */
+function r1(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+/**
+ * A station's centre, as the `x`/`y` a glyph takes.
+ *
+ * Spread rather than passed as a point, because `FlowNode` and `HumanFlowNode` both take
+ * two numbers and neither should learn about the track. It also keeps a scene reading as a
+ * distance along the run — `xy(487)` is "just past halfway" — which is the only coordinate
+ * that means anything once the path turns twice.
+ */
+function xy(t: number): { x: number; y: number } {
+  const [x, y] = pointAt(t);
+  return { x: r1(x), y: r1(y) };
+}
 
 /**
  * Radius of every disc in these five frames.
@@ -219,16 +313,16 @@ const PATH = { y: 88, from: 79, to: 341 } as const;
 const R = 7;
 
 /** Level 5's run, as a table, so five near-identical lines do not have to be read. */
-const RUN_5: readonly { x: number; label: string }[] = [
-  { x: 96, label: "plan" },
-  { x: 148, label: "build" },
-  { x: 200, label: "test" },
-  { x: 252, label: "debug" },
-  { x: 310, label: "release" },
+const RUN_5: readonly { at: number; label: string }[] = [
+  { at: AT.plan, label: "plan" },
+  { at: AT.build, label: "build" },
+  { at: AT.test, label: "test" },
+  { at: AT.debug, label: "debug" },
+  { at: AT.release, label: "release" },
 ];
 
 /**
- * One stretch of the path.
+ * One stretch of the run, in arc length.
  *
  * `human` paints it in `HUMAN_PRESENCE_MARK` violet, because that is what "somebody acts
  * along here" looks like on every other surface of the site (doc 2 §1.1, and the reason
@@ -248,38 +342,43 @@ function WorkPath({
   end,
 }: {
   runs: readonly PathRun[];
-  /** What enters at the left. */
+  /** What enters at the top left. */
   start: string;
-  /** What leaves at the right. */
+  /** What leaves at the bottom right. */
   end: string;
 }) {
+  const [fx, fy] = pointAt(0);
+  const [tx, ty] = pointAt(TRACK_LEN);
   return (
     <g data-viz="path">
       {runs.map((run) => (
         <path
           key={`${run.from}-${run.to}`}
-          d={`M ${run.from} ${PATH.y} L ${run.to} ${PATH.y}`}
+          d={subPath(run.from, run.to)}
+          fill="none"
           stroke={run.human === true ? toneColor("human") : toneColor("dim")}
           strokeWidth={VIZ.stroke.base}
         />
       ))}
       <path
-        d={`M ${PATH.from} ${PATH.y - 7} L ${PATH.from} ${PATH.y + 7}`}
+        d={`M ${fx} ${fy - 7} L ${fx} ${fy + 7}`}
         stroke={toneColor("dim")}
         strokeWidth={VIZ.stroke.hair}
       />
       <path
-        d={`M ${PATH.to} ${PATH.y - 7} L ${PATH.to} ${PATH.y + 7}`}
+        d={`M ${tx} ${ty - 7} L ${tx} ${ty + 7}`}
         stroke={toneColor("dim")}
         strokeWidth={VIZ.stroke.hair}
       />
-      {/* Above the ticks rather than outside them. Beside the path, "specification" at
+      {/* Above each tick rather than beside it. Beside the run, "specification" at
           `FLOW.label.size` runs off the left edge of a 420-unit frame; centred over its own
-          tick it fits, and the two ends read as a pair. */}
+          tick it fits, and the two ends read as a pair. The end label clears the last lane
+          because it sits in the band between lane B and lane C, which no run occupies at
+          that x. */}
       <text
         data-viz="label"
-        x={PATH.from}
-        y={PATH.y - 14}
+        x={fx}
+        y={fy - 14}
         textAnchor="middle"
         fontSize={FLOW.label.size}
         fill={toneColor("dim")}
@@ -288,8 +387,8 @@ function WorkPath({
       </text>
       <text
         data-viz="label"
-        x={PATH.to}
-        y={PATH.y - 14}
+        x={tx}
+        y={ty - 14}
         textAnchor="middle"
         fontSize={FLOW.label.size}
         fill={toneColor("dim")}
@@ -306,11 +405,7 @@ function WorkPath({
  * A hairline rather than a dash: `VIZ.dash.absent` already means "this is not here", and
  * a harness is present.
  *
- * The caption sits at the top *left*, which is the opposite of what it used to say and of
- * why. The one leader that arrives at this box comes down from the constraints node and
- * lands two thirds of the way along the top edge, so the right end is where an incoming
- * arrowhead is: with the caption there, the arrow's tip was drawn inside the first letter
- * of the word `harness`. The left end of the top edge has nothing arriving at it.
+ * The caption sits at the top left, which is the end of the top edge nothing arrives at.
  */
 function Boundary({
   x,
@@ -332,7 +427,7 @@ function Boundary({
         y={y}
         width={width}
         height={height}
-        rx={6}
+        rx={4}
         fill="none"
         stroke={toneColor("dim")}
         strokeWidth={VIZ.stroke.hair}
@@ -349,7 +444,6 @@ function Boundary({
     </g>
   );
 }
-
 interface LevelDrawing {
   /** The accessible name. A drawing is an image, and `role="img"` with no name says nothing. */
   label: string;
@@ -396,7 +490,7 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
        Do not restore a disc here to "balance" the frame against its neighbours. An empty
        run is the drawing. */
     body: (
-      <WorkPath runs={[{ from: PATH.from, to: PATH.to, human: true }]} start="request" end="merged" />
+      <WorkPath runs={[{ from: 0, to: TRACK_LEN, human: true }]} start="request" end="merged" />
     ),
   },
   2: {
@@ -407,24 +501,27 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
       <>
         <WorkPath
           runs={[
-            { from: PATH.from, to: 152, human: true },
-            { from: 152, to: 268, human: false },
-            { from: 268, to: PATH.to, human: true },
+            { from: 0, to: 272, human: true },
+            { from: 272, to: 703, human: false },
+            { from: 703, to: TRACK_LEN, human: true },
           ]}
           start="request"
           end="merged"
         />
+        {/* The agent is on lane B, in the middle of the dim stretch; the two people are on
+            lanes A and C, inside the violet ones. The run crosses the person twice and the
+            title block says so, which is unchanged from the straight version — what the S
+            adds is that the two crossings are now visibly at opposite ends of the work. */}
         <FlowNode
           mark="schematic"
-          x={205}
-          y={PATH.y}
+          {...xy(487)}
           r={R}
           tone="cyan"
           label="the agent"
           name="the agent, which does the typing"
         />
-        <HumanFlowNode x={112} y={PATH.y} r={8} label="prompts" mark="schematic" />
-        <HumanFlowNode x={312} y={PATH.y} r={8} label="reviews, merges" mark="schematic" />
+        <HumanFlowNode {...xy(120)} r={8} label="prompts" mark="schematic" />
+        <HumanFlowNode {...xy(850)} r={8} label="reviews, merges" mark="schematic" />
       </>
     ),
   },
@@ -436,8 +533,8 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
       <>
         <WorkPath
           runs={[
-            { from: PATH.from, to: 268, human: false },
-            { from: 268, to: PATH.to, human: true },
+            { from: 0, to: 703, human: false },
+            { from: 703, to: TRACK_LEN, human: true },
           ]}
           start="task"
           end="lands"
@@ -452,9 +549,9 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
             by five. The magnitude is the vocabulary's own `wide`, which is what level 5's
             return arc takes, so the two loops on this page are mirror images. */}
         <FlowEdge
-          from={[196, PATH.y]}
-          to={[144, PATH.y]}
-          bend={FLOW.edge.bend.wide}
+          from={[180, 92]}
+          to={[314, 92]}
+          bend={-FLOW.edge.bend.wide}
           fromRadius={R}
           toRadius={R}
           tone="dim"
@@ -463,14 +560,13 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
         />
         <FlowNode
           mark="schematic"
-          x={170}
-          y={PATH.y}
+          {...xy(450)}
           r={R}
           tone="cyan"
           label="the agent"
           name="the agent, which writes it and runs it"
         />
-        <HumanFlowNode x={305} y={PATH.y} r={8} label="decides whether it lands" mark="schematic" />
+        <HumanFlowNode {...xy(866)} r={8} label="decides whether it lands" mark="schematic" />
       </>
     ),
   },
@@ -482,8 +578,8 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
       <>
         <WorkPath
           runs={[
-            { from: PATH.from, to: 296, human: false },
-            { from: 296, to: PATH.to, human: true },
+            { from: 0, to: 790, human: false },
+            { from: 790, to: TRACK_LEN, human: true },
           ]}
           start="task"
           end="shipped"
@@ -508,20 +604,18 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
             13-unit type apart, and the checkpoint mark at 325 — as far right as it can go
             before its ring meets the end tick at 341. The margins around the two discs are
             20 units, down from 32, which is what that chain leaves. */}
-        <Boundary x={103} y={74} width={133} height={28} label="harness" />
-        <FlowEdge
-          from={[123, PATH.y]}
-          to={[216, PATH.y]}
-          fromRadius={R}
-          toRadius={R}
-          pulse={false}
-        />
-        <FlowNode x={123} y={PATH.y} r={R} tone="cyan" mark="schematic" label="orchestrator" />
-        <FlowNode x={216} y={PATH.y} r={R} tone="cyan" mark="schematic" label="evaluator" />
+        <Boundary x={185} y={78} width={130} height={28} label="harness" />
+        <FlowEdge from={[300, 92]} to={[200, 92]} fromRadius={R} toRadius={R} pulse={false} />
+        <FlowNode {...xy(397)} r={R} tone="cyan" mark="schematic" label="orchestrator" />
+        <FlowNode {...xy(497)} r={R} tone="cyan" mark="schematic" label="evaluator" />
         {/* The person is upstream of the harness rather than on the path. A label hangs
             directly under its own glyph, so the run out of the mark leaves sideways: an
             edge dropping away would be drawn straight through the words. */}
-        <HumanFlowNode x={88} y={24} r={8} label="wrote the constraints" mark="schematic" />
+        {/* Off the run, in the band between lane A and lane B, and to the left of the
+            harness box it is the boundary OF. That band is the largest empty region on the
+            serpentine, which is what makes an off-path mark drawable at all here — on the
+            straight version it had to go above the line, and there was no above. */}
+        <HumanFlowNode x={95} y={52} r={8} label="wrote the constraints" mark="schematic" />
         {/* ── The constraints are no longer a disc, 2026-08-07 ──
             An anonymous `dim` FlowNode sat at [189, 24] carrying the accessible name "the
             constraints the harness runs inside", with a vertical edge dropping from it onto
@@ -543,7 +637,7 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
             level's own sentence says people read the output at named checkpoints and the
             title block under the drawing says at a checkpoint, so the word the glyph itself
             has to carry is what the person does there. */}
-        <HumanFlowNode x={325} y={PATH.y} r={8} label="reads the output" mark="schematic" />
+        <HumanFlowNode {...xy(880)} r={8} label="reads the output" mark="schematic" />
       </>
     ),
   },
@@ -553,10 +647,13 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
     note: "nobody stands on the path",
     body: (
       <>
-        <WorkPath runs={[{ from: PATH.from, to: PATH.to }]} start="specification" end="released" />
+        <WorkPath runs={[{ from: 0, to: TRACK_LEN }]} start="specification" end="released" />
+        {/* The loop, on lane B where debug and test both sit. It bows UP, into the band
+            between the lanes: the two node labels hang below their discs at about y=112,
+            and an arc bowing down would be drawn straight through both of them. */}
         <FlowEdge
-          from={[252, PATH.y]}
-          to={[200, PATH.y]}
+          from={[150, 92]}
+          to={[300, 92]}
           bend={-FLOW.edge.bend.wide}
           fromRadius={R}
           toRadius={R}
@@ -566,8 +663,7 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
         {RUN_5.map((step) => (
           <FlowNode
             key={step.label}
-            x={step.x}
-            y={PATH.y}
+            {...xy(step.at)}
             r={R}
             tone="cyan"
             mark="schematic"
