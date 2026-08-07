@@ -116,7 +116,18 @@ function CommandLine({ command, ariaLabel }: { command: string; ariaLabel: strin
           rest of the repository name behind a scroll nobody looks for, on the one string
           this page exists to hand over. `break-words` and not `break-all`: the longest
           token here is 23 characters and fits, so the break lands between words. */}
-      <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-words rounded-md border border-line bg-void px-3 py-2 font-mono text-xs leading-relaxed text-fg">
+      {/* `border-emerald/50` rather than `border-line`, on the author's instruction
+          2026-08-07, and the colour is already argued: the landing's hero paints this exact
+          string in emerald and `components/hero/Wordmark.tsx` records why — emerald is the
+          engine's own register, "something the machine produces or accepts", extended there
+          to mean a command that genuinely reaches it. This is the same command on the page
+          that explains it, so the two surfaces now frame it the same way.
+
+          50% is the rung, measured rather than picked: over `bg-void` it lands at 3.22:1,
+          past the 3:1 floor WCAG 1.4.11 sets for a graphical object, where 40% would be
+          2.43:1. The ink inside stays `text-fg` — the frame carries the register and the
+          command stays maximally legible. */}
+      <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-words rounded-md border border-emerald/50 bg-void px-3 py-2 font-mono text-xs leading-relaxed text-fg">
         <code>
           <span className="select-none text-dim">$ </span>
           {command}

@@ -320,7 +320,24 @@ export function BuildWorkspace() {
             reader actually DOES see, the peer `h3` each now has, which is what makes the top
             of this section — the first thing scrolled to — read as two equal starts rather
             than one heading and one wall of prose. */}
-        <div className="grid gap-5 lg:grid-cols-2 lg:items-stretch">
+        {/* Stacked, not split, on the author's instruction 2026-08-07: "I'd place the
+            section 'Have your agent write one for your own goal' below the 'This starter,
+            as files' such to avoid to use the same space splitted but they can be one below
+            the other and occupy the full horizontal space."
+
+            The `lg:grid-cols-2` this replaces was argued at length — two peer `h3`s reading
+            left to right as "two equal starts rather than one heading and one wall of
+            prose". That argument was about the two headings and it survives the change:
+            they are still peers, still the same size, and now read top to bottom instead.
+            What it cost was width, and both panels wanted it — `DownloadStep` draws a file
+            listing and `AgentHandoff` prints a command 44 characters long, and at half a
+            container each they were the two narrowest things on a page whose workspace
+            runs full width.
+
+            `min-w-0` stays on both. A flex item's automatic minimum size is its
+            min-content, not zero, and `DownloadStep` nests a `max-w-xl` panel; without it
+            that cap becomes a floor the day either child holds something unbreakable. */}
+        <div className="flex flex-col gap-5">
           <DownloadStep
             files={state.files}
             {...(state.blueprint === undefined ? {} : { digest: state.blueprint.digest })}

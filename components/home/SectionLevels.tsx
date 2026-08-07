@@ -211,7 +211,26 @@ const SOURCES: Source[] = [
    the author's "S" described how the five ROWS are positioned down the page, alternating
    left and right, which is `LevelRow`'s `flip` and was never in question. The track is a
    straight run again. */
-const SCENE = { width: 420, height: 140 } as const;
+/* 124 and not 140, measured rather than guessed.
+   ------------------------------------------------------------
+   The author asked whether these five are clear enough. They are — every mark is a node,
+   every connection is an arrow, and the only thing that changes across the five is where
+   the person stands. What was wrong was the frame: the lowest ink in the tallest of them
+   (level 4's node labels) sits at y=110, and at 140 that left 30 units of empty sheet under
+   the drawing, about a fifth of the box. A drawing pinned to the top of a tall frame reads
+   as unplaced, which is the same defect and the same measurement that took these from 148
+   to 126 once before.
+
+   124 was the first try and `scene-labels.test.ts` refused it: every HUMAN node label sat
+   "1 units below the sheet". A `HumanFlowNode` is drawn at r=8 rather than the r=7 of a
+   `FlowNode` so its pause glyph fits, and `labelOffset` scales off the radius, so the
+   violet marks hang their names two units lower than the cyan ones. The measurement that
+   matters is the lowest label in the set, not the lowest in the tallest frame. 126 clears
+   it, and it is the same number these frames held before the last two rewrites.
+
+   WIDTH IS NOT AVAILABLE as a lever: 420 was chosen so a label clears `FLOW.frame.legible`
+   on a 328px phone, and widening the scene shrinks every word below that floor. */
+const SCENE = { width: 420, height: 126 } as const;
 
 /** The row every graph is wired along, and the two ticks the work enters and leaves by. */
 const ROW = 96;

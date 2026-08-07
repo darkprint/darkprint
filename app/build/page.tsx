@@ -113,7 +113,11 @@ export default function BuildPage() {
 
   return (
     <div className="container-page py-12">
-      <header className="max-w-3xl">
+      {/* Full width, on the author's instruction 2026-08-07. `max-w-3xl` capped the lead,
+          the two paragraphs and the route-box that follows them at 48rem; the workspace
+          below has always run the container's whole width, so the page opened on a column
+          two thirds as wide as the thing it introduces. */}
+      <header>
         <Eyebrow>Workspace</Eyebrow>
         {/* Redesign spec §4.3: the header is the first thing a reader skips, so it holds
             one sentence of orientation and one of honesty. What left it is the promise

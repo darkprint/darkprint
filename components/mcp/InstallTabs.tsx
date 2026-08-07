@@ -38,7 +38,19 @@ export function InstallTabs({ className }: { className?: string } = {}) {
   }
 
   return (
-    <div className={cx("panel p-4 sm:p-6", className)}>
+    /* `border-emerald/50` over `.panel`'s own border, on the author's instruction
+       2026-08-07. Emerald is the engine's register on this site — `app/globals.css` calls
+       it "a figure read off the engine" and the hero extends it to a command that reaches
+       one — and this panel holds four client configurations, which is machine-facing text
+       if anything on the site is.
+
+       The tension is worth naming rather than leaving for someone to spot: green normally
+       reads as "this works", and nothing in this panel does. What keeps that from being a
+       lie is that the `ComingSoonBadge` sits INSIDE the frame, beside the snippet, and the
+       page's lead and its `<head>` description both say the server is not built. The frame
+       says what register the text is in; the badge says whether it runs. Those are
+       different claims and the panel makes both. */
+    <div className={cx("panel border-emerald/50 p-4 sm:p-6", className)}>
       <div
         className="flex flex-wrap gap-2 border-b border-line pb-3"
         role="tablist"
