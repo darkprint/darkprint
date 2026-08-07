@@ -46,6 +46,105 @@ import { ReachList, ReachRow } from "@/components/ui/ReachList";
 /** Stagger between the two frames of the second figure, ms. Matches `ReachList`. */
 const STEP = 90;
 
+/* ==================== the shape inside the blueprint frame ====================
+   The innermost frame of `EvalHarnessBlueprint` used to hold four mono chips —
+   `plan → build → test → deploy` — and the author's objection is that a row of boxes
+   joined by arrows is a pipeline, while the thing the frame is labelled with is a graph.
+   He is right, and the chips were saying the one thing this page cannot afford to say
+   about a blueprint: that it runs in a line.
+
+   ── Why a disc here, when this file's own header rules the luminous register out ──
+   That header rules it out for a stated reason: "in the luminous-flow register a lit
+   circle joined by an edge means one thing on this site: a node, a step in a run", and
+   the first draft drew `model`, `skill` and `tool` as such circles, which asserted they
+   were steps. They are not. The things in THIS frame are nodes and are steps — that is
+   what a blueprint is — so the objection does not reach them, and drawing them as
+   anything but a disc would be the site saying a node is a box on the one page whose
+   band 01 draws a node as a disc. `components/learn/PartFigures.tsx` records that exact
+   defect being fixed two sections up.
+
+   What still binds is the rest of it: no `FlowScene`, no graticule, no halo, no hover
+   labels. This is a 200-unit schematic inside a nested-frame diagram, not a scene, and
+   `components/viz/scene-labels.test.ts` derives its roster by walking every source in
+   `components/` and `app/` for the opening tag of that component — so mounting one here
+   would owe the roster an entry and take on the whole register's machinery for a drawing
+   that needs none of it. (Naming the tag in prose is enough to trip that walk, which is
+   why this paragraph spells it the long way round.)
+
+   ── Not one of the nine ──
+   A bare diamond: one node fans out to two, both merge into a fourth. It is the smallest
+   shape that cannot be read as a line, because it contains a branch and a merge, which
+   is the whole difference between a graph and a queue. It is also not any of the nine
+   published bundles, and cannot become one by accident: the smallest of them draws six
+   nodes (`starter-software-factory`) and the rest run to ten, and the two that fan out
+   at all — `grounded-research-desk` and `frontline-triage` — carry stages after the
+   merge. So the figure illustrates the idea without impersonating a file a reader can
+   download, which is the rule `/what-a-blueprint-is` states for itself in its own header
+   ("a picture of a graph that is not one of the graphs"). Four unlabelled discs assert
+   no bundle at all; four named ones would have.
+
+   ── Not a word inside the viewBox ──
+   `components/learn/figures.test.ts` exists because a number inside an `<svg>` is in
+   viewBox units and lands at that number times rendered-width ÷ viewBox-width; three
+   figures shipped under the 10px floor that way. This frame's inner width is 198px on a
+   390px phone, the tightest box on the page. So the drawing carries no `<text>` at all:
+   the discs are unlabelled, the shape is described to a screen reader by the svg's own
+   `aria-label`, and the words live in the sentence under it as real 13px DOM text. Sub-
+   floor type is impossible here by construction rather than by measurement.
+
+   ── What this deletes, on the record ──
+   The chips carried four of `CORE_PHASE_IDS`, and the note under them justified them as
+   the ontology's phase verbs. That justification was already half-false: `debugging`
+   never appeared, and "build" is not `implementation`, so the figure was already
+   spelling a term a second way — the exact failure the note claimed to prevent. The
+   phases are taught on the landing and counted, off the ontology, by `VocabularyFigure`
+   two sections up. They are not taught here any more. */
+
+/** The little graph's sheet, in viewBox units. */
+const SHEET = { w: 200, h: 84 } as const;
+
+/** A disc's radius, and the clearance a run keeps from the discs it joins. */
+const DISC = { r: 5, gap: 3, stroke: 1.1 } as const;
+
+/** Where the four discs sit. A diamond: one out to two, two back into one. */
+const SPOTS: Record<string, readonly [number, number]> = {
+  source: [16, 42],
+  upper: [88, 15],
+  lower: [88, 69],
+  sink: [180, 42],
+};
+
+/** Which discs answer which. Four runs, one branch, one merge. */
+const RUNS: readonly (readonly [string, string])[] = [
+  ["source", "upper"],
+  ["source", "lower"],
+  ["upper", "sink"],
+  ["lower", "sink"],
+];
+
+/** The arrowhead, defined once. Namespaced because an SVG id is document-wide. */
+const HEAD = "dp-eval-blueprint-head";
+
+/**
+ * One run, trimmed off both discs so a curve never touches what it joins.
+ *
+ * The same rule `components/viz/flow.ts` applies to every luminous edge, done here by
+ * hand because this drawing is four straight lines and importing the register to get one
+ * subtraction would drag the whole scene apparatus in with it.
+ */
+function trimmed(from: readonly [number, number], to: readonly [number, number]) {
+  const dx = to[0] - from[0];
+  const dy = to[1] - from[1];
+  const len = Math.hypot(dx, dy) || 1;
+  const t = (DISC.r + DISC.gap) / len;
+  return {
+    x1: from[0] + dx * t,
+    y1: from[1] + dy * t,
+    x2: to[0] - dx * t,
+    y2: to[1] - dy * t,
+  };
+}
+
 /**
  * A card drawn as what it is: a document. Its rows point outward, at things that are
  * not nodes and are not in the graph.
@@ -169,12 +268,6 @@ export function WhatACardReaches({
  * follow it through a graph.
  */
 export function EvalHarnessBlueprint() {
-  /* The verbs are the ontology's phases, not a generic pipeline.
-     `CORE_PHASE_IDS` in `lib/core/ontology/core.ts` is planning, implementation, testing,
-     debugging, deployment — so the last box says "deploy" and not "ship". A figure on the
-     page that teaches the vocabulary is the last place to spell a term a second way. */
-  const nodes = ["plan", "build", "test", "deploy"];
-
   return (
     <figure className="flex flex-col gap-4 rounded-xl border border-line bg-surface/70 p-5 sm:p-6">
       <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -188,17 +281,51 @@ export function EvalHarnessBlueprint() {
 
       {/* eval */}
       <div className="anim-strip-in flex flex-col gap-3 rounded-lg border border-violet/40 p-4 sm:p-5">
-        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-violet">
+        <p className="label text-violet">
           eval
         </p>
 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
-          {/* harness */}
+          {/* harness
+              ────────────────────────────────────────────────
+              Neutral, and it is the only frame here that is. It wore
+              `border-amber/45` + `text-amber` until 2026-08-07, which was a
+              standing breach of the rule `app/globals.css` states over
+              `.route-box`: amber has exactly two jobs sitewide,
+              `ComingSoonBadge` ("not built yet") and a box that leaves the
+              page, and a nested category frame is neither. Worse than
+              spending the colour, it made a claim — amber reads "not built
+              yet", so an amber harness said DarkPrint intends to ship one.
+              It does not. The figcaption two elements up says the opposite in
+              words: "A blueprint is what you download from here. Give it a
+              harness and it runs."
+
+              So neutral is not a fallback, it is the accurate register. Of
+              the four boxes, three are things this site hands you or reads
+              off the engine — the eval is where a person decides to grade
+              (violet), the blueprint is the thing you download (cyan), the
+              rubric is a real card type, `acceptance-criteria`, the analyzer
+              can follow (emerald). The harness is the one box you bring
+              yourself, and it is now the one box with no accent.
+
+              Nothing is lost by it: the docblock above records that
+              containment carries every relation in this drawing, so no
+              frame's hue is load-bearing, and the svg's `aria-label` gives
+              the shape to a screen reader independently.
+
+              Measured against the figure's real ground (`bg-surface/70` over
+              void resolves to #080a13): the label at `text-muted` #9aa1ba is
+              7.87:1, past AAA and brighter than the 11px accent labels it
+              sits beside. `border-line-bright` #333a54 computes 1.76:1
+              against that ground, against 2.05:1 for the `border-violet/40`
+              directly outside it — the same order as its siblings, so the
+              frame does not read as weaker than the boxes it holds and is
+              held by. */}
           <div
-            className="anim-strip-in flex flex-1 flex-col gap-3 rounded-lg border border-amber/45 p-4"
+            className="anim-strip-in flex flex-1 flex-col gap-3 rounded-lg border border-line-bright p-4"
             style={{ animationDelay: `${STEP}ms` }}
           >
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-amber">
+            <p className="label text-muted">
               harness
             </p>
 
@@ -207,28 +334,58 @@ export function EvalHarnessBlueprint() {
               className="anim-strip-in flex flex-col gap-3 rounded-lg border border-cyan/40 bg-void/50 p-4"
               style={{ animationDelay: `${STEP * 2}ms` }}
             >
-              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-cyan">
+              <p className="label text-cyan">
                 blueprint
               </p>
-              <ol className="flex flex-wrap items-center gap-1.5">
-                {nodes.map((n, i) => (
-                  <li key={n} className="flex items-center gap-1.5">
-                    {i > 0 && (
-                      <span aria-hidden className="font-mono text-[12px] text-line-bright">
-                        &rarr;
-                      </span>
-                    )}
-                    <span
-                      className="anim-strip-in rounded border border-line bg-surface-2 px-3 py-1.5 font-mono text-[12px] text-fg"
-                      style={{ animationDelay: `${(i + 3) * STEP}ms` }}
+              {/* The stagger stays on the wrapper rather than moving inside the svg:
+                  `anim-strip-in` is a DOM keyframe and the drawing arrives as one thing,
+                  which is also what it is — a shape, not four events. */}
+              <div
+                className="anim-strip-in"
+                style={{ animationDelay: `${STEP * 3}ms` }}
+              >
+                <svg
+                  viewBox={`0 0 ${SHEET.w} ${SHEET.h}`}
+                  className="h-auto w-full max-w-[18rem]"
+                  role="img"
+                  aria-label="The shape of a blueprint: one node hands its work to two others, and both of those hand theirs to a fourth."
+                >
+                  <defs>
+                    <marker
+                      id={HEAD}
+                      viewBox="0 0 8 8"
+                      refX={8}
+                      refY={4}
+                      markerWidth={4}
+                      markerHeight={4}
+                      orient="auto"
                     >
-                      {n}
-                    </span>
-                  </li>
-                ))}
-              </ol>
+                      <path d="M 0 0 L 8 4 L 0 8 Z" fill="var(--color-line-bright)" />
+                    </marker>
+                  </defs>
+                  {RUNS.map(([from, to]) => {
+                    const a = SPOTS[from];
+                    const b = SPOTS[to];
+                    if (a === undefined || b === undefined) return null;
+                    return (
+                      <line
+                        key={`${from}-${to}`}
+                        {...trimmed(a, b)}
+                        stroke="var(--color-line-bright)"
+                        strokeWidth={DISC.stroke}
+                        markerEnd={`url(#${HEAD})`}
+                      />
+                    );
+                  })}
+                  {Object.entries(SPOTS).map(([id, [x, y]]) => (
+                    <circle key={id} cx={x} cy={y} r={DISC.r} fill="var(--color-cyan)" />
+                  ))}
+                </svg>
+              </div>
               <p className="text-[13px] leading-snug text-muted">
-                The graph and the cards it pins. Text, versioned, checkable.
+                The graph and the cards it pins. Text, versioned, checkable. It branches
+                and comes back together, which is the difference between a blueprint and a
+                list of steps.
               </p>
             </div>
 
@@ -243,7 +400,7 @@ export function EvalHarnessBlueprint() {
             className="anim-strip-in flex flex-col gap-3 rounded-lg border border-emerald/40 p-4 lg:w-[16rem]"
             style={{ animationDelay: `${STEP * 2}ms` }}
           >
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-emerald">
+            <p className="label text-emerald">
               rubric
             </p>
             <p className="text-[13px] leading-snug text-muted">

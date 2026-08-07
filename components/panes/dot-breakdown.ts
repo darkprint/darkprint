@@ -1,9 +1,9 @@
 /* ============================================================
-   `blueprint.dot`, tokenised and cut into steps.
+   `blueprint.dot`, tokenised and cut into blocks.
 
-   The pure half of `./DotWalk.tsx`: no React, no DOM, so the node
-   suite can hold every claim in here to the nine files the archive
-   actually stores.
+   The pure half of `./DotBreakdown.tsx`: no React, no DOM, so the
+   node suite can hold every claim in here to the nine files the
+   archive actually stores.
 
    ── Why the steps are DERIVED and never typed ──
    `components/home/nodecard/annotations.ts` records the bug this
@@ -11,7 +11,7 @@
    document order, and the highlight climbed the file while the
    reader scrolled down it. Its fix was to resolve every range from
    the file itself, and the same fix applies here twice over,
-   because this walk runs over NINE different files — one per
+   because this figure runs over NINE different files — one per
    blueprint — and a typed table would have to be right nine times
    and stay right whenever any of them is edited.
 
@@ -30,8 +30,9 @@
 
    — and three steps for the six blueprints whose edges are one
    unbroken run. Blocks are emitted in document order by
-   construction, which is the property `dot-walk.test.ts` asserts:
-   there is no ordering decision left for an author to get wrong.
+   construction, which is the property `dot-breakdown.test.ts`
+   asserts: there is no ordering decision left for an author to get
+   wrong.
 
    ── What "the important tag" is ──
    `card="id@version"`. It is the one attribute DarkPrint adds to
@@ -458,12 +459,13 @@ function nodeTitle(nodes: readonly { id: string; card: boolean }[], first: boole
 }
 
 /**
- * The walk, resolved from the file.
+ * The breakdown, resolved from the file.
  *
  * Returned in document order with `step` numbered from 1, and `from`/`to` strictly
- * increasing across the list — asserted in `dot-walk.test.ts` against all nine blueprints,
- * because a highlight that moves up while a reader scrolls down is the one defect this
- * whole derivation exists to make impossible.
+ * increasing across the list — asserted in `dot-breakdown.test.ts` against all nine
+ * blueprints, because a block whose range overlaps its neighbour's is a rail row that
+ * lights lines belonging to another row, which is the one defect this whole derivation
+ * exists to make impossible.
  */
 export function resolveDotSteps(source: string): DotStep[] {
   const lines = source.replace(/\r\n?/g, "\n").split("\n");

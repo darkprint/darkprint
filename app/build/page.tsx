@@ -172,12 +172,13 @@ export default function BuildPage() {
             // The label the header, the footer and the phone panel all use for this
             // destination, and the `h1` it lands on. One route, one name.
             label: "Upload blueprint",
-            blurb: "Run the same checks against a folder you already have.",
           },
           {
             href: "/install",
-            label: "Point a client at it",
-            blurb: "What setup will look like once the registry serves MCP.",
+            // The name the header and the footer both give this route. "Point a client
+            // at it" was a third name for one destination, and it read as a sentence in
+            // a slot that is now a button's face.
+            label: "Install MCP",
           },
         ]}
       />

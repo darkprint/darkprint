@@ -364,10 +364,12 @@ describe("the nav is a complete map of the routes", () => {
 
   /**
    * Spec §4 gave the spec sequence three child routes and `/towards-a-dark-factory` two,
-   * and put one item per sequence in the header. That is the right header and it leaves
-   * five routes whose only permanent entrance is the footer, so the footer has to carry
-   * them: a sub-route reachable from one pager and nothing else disappears the moment
-   * somebody edits that pager.
+   * and put one item per sequence in the header. The climb route has one child now —
+   * `/which-tasks` was merged into its parent on 2026-08-07 — so this covers four routes
+   * rather than five, and it is the same claim: a sub-route reachable from one pager and
+   * nothing else disappears the moment somebody edits that pager, so the footer has to
+   * carry it. `/towards-a-dark-factory/the-climb` moved into the Learn column when the
+   * "The route" column was deleted, which is where this now finds it.
    *
    * Two segments or fewer is not required here, which is why stop 00 of the spec
    * sequence is not in this check after the IA pass moved it to `/what-a-blueprint-is`.
@@ -443,11 +445,12 @@ describe("the collapsed menu stays usable", () => {
  * Every route this site has retired, held to the promise §4.2 made for the first two:
  * "old URLs must not 404".
  *
- * All five were in the header and the footer of every page this site served while they
- * existed, so a build that drops one of these redirects breaks links that are already
- * written down elsewhere. The destinations are resolved against the filesystem for the
- * same reason the header's are: a redirect onto a route that no longer exists is a 404
- * with an extra hop.
+ * Every one of them was in the chrome of every page this site served while it existed —
+ * `/towards-a-dark-factory/which-tasks` in the footer's own "The route" column rather than
+ * in the header, and that column is gone with it — so a build that drops one of these
+ * redirects breaks links that are already written down elsewhere. The destinations are
+ * resolved against the filesystem for the same reason the header's are: a redirect onto a
+ * route that no longer exists is a 404 with an extra hop.
  *
  * The last three are the IA pass of 2026-08-07, and they are content moves rather than
  * renames, so each lands on the page that now holds what the old one held rather than on
@@ -465,7 +468,14 @@ describe("the collapsed menu stays usable", () => {
 describe("the routes that were retired still answer", () => {
   const RENAMED: [string, string][] = [
     ["/how-to-build-a-dark-factory", "/towards-a-dark-factory/the-climb"],
-    ["/which-tasks", "/towards-a-dark-factory/which-tasks"],
+    /* Both of these land on the parent, and the first one does NOT chain through the
+       second. `/which-tasks` was 308'd to `/towards-a-dark-factory/which-tasks` by §4.2;
+       that child was merged into its own parent on 2026-08-07, and pointing the older
+       redirect at the newer redirect would cost every link written before §4.2 two hops
+       for no gain. The child path keeps an entry of its own because it was live long
+       enough to be linked. */
+    ["/which-tasks", "/towards-a-dark-factory"],
+    ["/towards-a-dark-factory/which-tasks", "/towards-a-dark-factory"],
     ["/spec", "/what-a-blueprint-is"],
     ["/spec/scoring", "/reading-the-radar"],
     ["/concepts", "/what-a-blueprint-is"],

@@ -165,8 +165,22 @@ export function IsolationWall() {
       >
         {/* The scene is wider than a phone. Rather than a second layout, the drawing
             keeps its size and the reader scrolls it, which loses nothing: every claim in
-            it is also in the prose underneath. */}
-        <div className="overflow-x-auto">
+            it is also in the prose underneath. `WhichTasksGlance` took the other route and
+            was redrawn portrait, and the difference is what each figure is FOR: that one
+            is its section's argument and has to be readable whole, this one is a reference
+            beside a paragraph that states every claim in it.
+
+            What the scroll needed was an affordance. Measured at 390: clientWidth 316
+            against scrollWidth 640, so 51% of the drawing sits off the right edge with
+            nothing saying so — it photographs as a crop, not as something that moves. The
+            mask fades the last 12% of the box so the cut edge reads as "more this way".
+
+            It lifts at `md`, where the container is ~672px against the scene's 640 floor
+            and there is nothing left to scroll; a permanent mask would fade the right edge
+            of a drawing that ends there. `black`/`transparent` are mask keywords rather
+            than palette colours — a mask reads only alpha, so this fades to whatever
+            ground the sheet is on and cannot disagree with a token. */}
+        <div className="overflow-x-auto [mask-image:linear-gradient(to_right,black_88%,transparent)] md:[mask-image:none]">
           <WallScene />
         </div>
       </Sheet>

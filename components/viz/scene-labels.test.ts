@@ -162,9 +162,17 @@ const ROSTER: readonly SceneEntry[] = [
   // blueprint clean and leaked, two frames, rendered through `SectionAbsentEdge` so the
   // numbers came from the engine rather than from this file. Both were deleted with
   // `/what-it-isnt`, which was their only mount.
+  /* Two frames since 2026-08-07, and the second one is why the figure is measured at all.
+     The glance shipped as a single 660-unit landscape frame in an `overflow-x-auto` box,
+     which hid 42% of itself on a 390-pixel phone — including both branch labels and the
+     outcome — while passing every case in this file, because a scene that is scrolled out
+     of view is not a scene whose labels collide. It draws a portrait placement below `sm`
+     now, the way `SectionRoles` and `GraphFigure` already do, and both placements are
+     rendered together here: measuring only the wide one is how a phone-only collision
+     ships. */
   {
     files: ["components/explain/WhichTasksGlance.tsx"],
-    frames: 1,
+    frames: 2,
     render: () => framesOf(createElement(WhichTasksGlance)),
   },
   // `components/explain/ConceptFigures.tsx` had an entry here, for two `FlowScene`

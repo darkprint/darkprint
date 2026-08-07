@@ -67,6 +67,26 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    the title. The accessible name is the same string either way, and
    the alternative — a second hand-typed copy of the h2 class list —
    is the defect this pass exists to remove.
+
+   ── The second column left `--color-signal` (2026-08-07) ──
+   The does-not-fit column was painted in the alarm colour: the pill,
+   the ✕ on all four rows, and the word beside it. Signal red means a
+   DEFECT on this site — it is what a bundle refused with
+   `bundle/prohibition-violated` is drawn in — and this section's own
+   copy says the opposite about these four. "Make the onboarding less
+   confusing" is not a fault. Its lead says the judgement is the work
+   and it belongs to a person, which is doc 2 §1.1's subject, and
+   `WhichTasksRemedies` exists to say what to do about each one. A
+   reader who considered one of these made no error, and red told
+   them they had.
+
+   The column keeps its full strength through copy, which is where
+   this file's own header says the strength belongs, and through the
+   glyph: ✕ against ✓ is the distinction, drawn rather than coloured.
+   `dim` is the tone, the same one the site spends on a run that is
+   present but not the subject. Emerald stays on the fits column,
+   because a task that answers four checks is a figure read off an
+   instrument, and that is exactly emerald's job here.
    ============================================================ */
 
 type Example = {
@@ -121,7 +141,7 @@ const COLUMNS: Column[] = [
     id: "doesnt",
     glyph: "✕",
     word: "does not fit",
-    color: "var(--color-signal)",
+    color: "var(--color-dim)",
     heading: "Tasks it cannot take",
     lead: "Each fails for a reason no prompt fixes.",
     items: [
@@ -154,13 +174,17 @@ export function WhichTasksExamples() {
     <section className="flex flex-col gap-10" aria-labelledby="examples-heading">
       <div>
         <SectionHeading
+          eyebrow="The worked half"
           title={
             <span id="examples-heading">Eight real tasks, run through the four questions</span>
           }
           lead="Find the entry your task most resembles and read the check it turns on. The second column is at full strength on purpose."
         />
+        {/* "This page" until the merge of 2026-08-07. The four sections this belongs to are
+            the second half of a page whose first half is the ladder, and a reader who has
+            just read that half would take "this page" to include it. */}
         <p className="prose-lane mt-5 text-[15px] leading-[1.7] text-muted">
-          This page exists to prevent one outcome: a blueprint pointed at a task nothing
+          This filter exists to prevent one outcome: a blueprint pointed at a task nothing
           can verify returns fluent work no node in the graph can reject, and the reader
           concludes that dark factories do not work. The graph was fine; the task was
           never a candidate.

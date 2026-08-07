@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { InstallTabs } from "@/components/install/InstallTabs";
-import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
 
 export const metadata: Metadata = {
   title: "Install",
@@ -46,23 +45,19 @@ export default function InstallPage() {
         already browses by hand.
       </p>
 
-      <OnwardRoutes
-        className="mt-10"
-        routes={[
-          {
-            href: "/blueprints",
-            label: "Browse the blueprints",
-            blurb: "What an MCP client would be pointed at, readable today.",
-          },
-          {
-            href: "/build",
-            // The nav's own label for this route since the author renamed it, and the
-            // page's `h1`. "Build one yourself" was a third name for one destination.
-            label: "Design a blueprint",
-            blurb: "About an hour, ending in files on your machine.",
-          },
-        ]}
-      />
+      {/* No tail navigation here, and that is the instruction. The author, 2026-08-07,
+          after asking for the onward boxes on `/build` to read as controls: "We found
+          such buttons also in the install mcp page. in this page you can just delete
+          them."
+
+          What goes with them: this page's only link to `/build`, and one of its two
+          links to `/blueprints`. The inline "the gallery" link in the paragraph above
+          survives, so the page is not a dead end — it ends on a sentence that offers the
+          one destination worth offering from a page about a server that does not exist
+          yet. `components/ui/OnwardRoutes.tsx` was written on the premise that `/install`
+          carried no `.route-box`; its docblock now records that this is deliberate rather
+          than the defect it used to be. The lead sentence and `metadata.description`,
+          both pinned in `components/site/honesty.test.ts`, are untouched. */}
     </div>
   );
 }

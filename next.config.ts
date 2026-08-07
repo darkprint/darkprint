@@ -19,10 +19,21 @@ const nextConfig: NextConfig = {
    * string through a redirect, so the `/gallery?tag=…` deep links the blueprint pages
    * used to emit still arrive at the same filtered index.
    *
-   * The last two are the redesign's §4.2 rename. `/how-to-build-a-dark-factory` became
+   * The next two are the redesign's §4.2 rename. `/how-to-build-a-dark-factory` became
    * `/towards-a-dark-factory` on the author's instruction and `/which-tasks` folded into
    * it as a child, and both old paths were in the header and the footer of every page
    * this site has ever served. Neither may 404.
+   *
+   * `/which-tasks` then moved a second time and its entry below points at the second
+   * destination rather than at the first: the child route it was 308'd to was merged into
+   * its own parent on 2026-08-07 (`components/howto/route.ts` records why), so chaining
+   * would cost every one of those old links two hops for no gain. The child path gets an
+   * entry of its own directly under it, because it was live long enough to be linked and a
+   * merged page is exactly the case a redirect is for.
+   *
+   * Neither carries the `#which-tasks` fragment the merged material now sits under. A
+   * redirect that appends a fragment overrides the one a reader arrived with, and the
+   * precedent on this route is already recorded above for `/concepts`.
    *
    * Each one lands on the page that holds its content rather than on the new parent.
    * `/how-to-build-a-dark-factory` was the four phases, the holdout scenarios and the
@@ -67,7 +78,12 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/which-tasks",
-        destination: "/towards-a-dark-factory/which-tasks",
+        destination: "/towards-a-dark-factory",
+        permanent: true,
+      },
+      {
+        source: "/towards-a-dark-factory/which-tasks",
+        destination: "/towards-a-dark-factory",
         permanent: true,
       },
       { source: "/spec", destination: "/what-a-blueprint-is", permanent: true },

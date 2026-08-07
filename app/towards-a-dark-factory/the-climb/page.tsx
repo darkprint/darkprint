@@ -4,9 +4,13 @@ import Link from "next/link";
 import { IsolationWall, PhaseStrip, RoutePager } from "@/components/howto";
 import { More } from "@/components/ui/More";
 import { ButtonLink } from "@/components/ui/Button";
-import { SectionHeading } from "@/components/ui/SectionHeading";
+import { PanelHeading, SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
+   Stop 2 of 2, and the whole of it is one question: what did it
+   actually take? Evidence, read once, by somebody the page before
+   this one has already convinced.
+
    Redesign spec §4.2. `/how-to-build-a-dark-factory` renamed and
    moved under `/towards-a-dark-factory`, and cut to the three
    things the spec names for it: the four phases, the holdout
@@ -26,54 +30,64 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    than no source, so it is not cited, not paraphrased and not
    linked.
 
-   ── Doc 2 §1.1, which binds harder here than anywhere ──
+   ── Doc 2 §1.1, and where it moved to (2026-08-07) ──
    A page about building a dark factory is one sentence away from
-   teaching a reader to strip people out of graphs. It is about the
-   ladder, which is a fact about an organisation and does have a
-   top. It is not about a blueprint's class, which records where
-   the author of that graph decided somebody should stand. The two
-   scales are named apart in one line under the title, which links
-   to the panel on this route's overview that states the difference
-   in full, and `PhaseStrip` carries the rule visually: what moves
-   across the four phases is where the person is, drawn in violet
-   by construction, in a strip whose last panel puts them at the
-   front of the line rather than out of the picture.
+   teaching a reader to strip people out of graphs. This page
+   carried the rule three ways: a 14px `text-dim` paragraph under
+   the `h1`, a link to the panel that states it in full, and
+   `PhaseStrip`'s violet mark.
+
+   The dim paragraph is gone and its claim is in the lead, at deck
+   weight. It was the dimmest text on the page carrying the route's
+   most load-bearing constraint, and the sentence it linked to now
+   sits in the DECK of `/towards-a-dark-factory`, above the ladder
+   rather than 2,586px below it — which is where a reader meets it
+   before anything can install the wrong reading. Stating it a
+   fourth time here, smaller than everything around it, was three
+   disclaimers pretending to be a layout.
+
+   What stays is the structural half, which is the half that works:
+   `HumanFlowNode` is violet by construction, `FlowTone` has no
+   `human` member, and the strip's last panel puts the person at the
+   FRONT of the line rather than out of the picture.
 
    ── The length pass (PROJECT.md §3.1): 2,024 prose words to
       under 1,200, with nothing true stopping being said ──
    The author's complaint was that the page is long enough to be
-   skipped. One page rather than two: a split needs a fourth stop
-   in `components/howto/route.ts`, and `nav.test.ts` then requires
-   that stop in `components/site/SiteFooter.tsx`, which is another
-   pass's file; and the account reads as one narrative, so the seam
-   would fall where a reader is deciding whether to carry on. What
-   the page lost is the same thing said twice.
+   skipped. What the page lost is the same thing said twice.
 
      1. the four phase panels folded into `PhaseStrip`. Each phase
         was a card in the strip and a panel below it, and the
         panel's `goal` restated the caption beside the drawing.
-        `PhaseStrip`'s header comment records the two clauses that
-        survived the fold and the words that were only ever the
-        caption again.
-     2. the organisational half, "What changes around the pipeline",
-        moved whole to `/towards-a-dark-factory#around`. Its subject
-        is an organisation, which is the overview's subject and the
-        thing the 1-5 ladder measures. It is linked from the strip.
-     3. the isolation panel's DarkPrint paragraph folded into the
+     2. the isolation panel's DarkPrint paragraph folded into the
         closing section, which was already claiming the same layer
         one screen further down.
-     4. the section leads that described the figure under them, the
+     3. the section leads that described the figure under them, the
         progressive-disclosure analogy about a new hire and a
-        five-hundred-page wiki (the paragraph above it makes the
-        point once), and the figcaption sentence recorded in
-        `IsolationWall`.
+        five-hundred-page wiki, and the figcaption sentence
+        recorded in `IsolationWall`.
+
+   ── `#around` came back (2026-08-07) ──
+   That same pass moved "What changes around the pipeline" to the
+   parent, on the argument that its subject is an organisation and
+   the parent is where the 1-5 ladder is. The block's own lead
+   opened "the technology in the account this route ends on", which
+   is a sentence only readable on the page that IS the account — and
+   the parent then forward-linked past the stop between them, so the
+   reader's path through one account ran 1 → 3 → 2 → 3. It is the
+   account's risk section and it is on the account.
+
+   The two sentences it lost when it moved are still gone: the
+   eighteen-months gloss on "every phase pays for itself" (the
+   phase strip's four captions state it one phase at a time) and the
+   opening of the closing paragraph, which said what the first card
+   says. The eight-people-to-thirty projection stayed, with the
+   hedge it arrived with — a number quoted with its own caveat is
+   not a length problem.
 
    The four file formats are all still here, behind one disclosure,
    because they illustrate four different shapes rather than one
-   shape four times. Nothing true and unrepeated stopped being said:
-   the maintenance-agent rationale and the three-layer sentence were
-   both cut in an earlier draft of this file and both are back,
-   because neither is stated anywhere else.
+   shape four times.
    ============================================================ */
 
 export const metadata: Metadata = {
@@ -162,6 +176,36 @@ frontend, validates and transforms it, runs it, returns results.
 - src/main/java/.../controller/ : REST endpoints
 - src/main/java/.../service/ : business logic`;
 
+/* --------------------- the risk section --------------------- */
+
+/**
+ * The account's own risk section, back on the account.
+ *
+ * Four risks, each named in the article and each given its own paragraph there. The
+ * wording is the wording that shipped, less the sentences that repeated something said
+ * elsewhere on this page: the eighteen-months gloss on "every phase pays for itself" (the
+ * phase strip's four captions state it one phase at a time) and the opening of the closing
+ * paragraph, which said what the first card says.
+ */
+const AROUND: { title: string; body: string }[] = [
+  {
+    title: "People do not want to stop writing code",
+    body: "Engineers have identity wrapped up in authorship, and being told the job is now writing specs lands differently than the person saying it expects. The account names this as a real risk and gives it its own paragraph. The phased shape helps, because phase 1 asks nobody to change anything and by phase 2 the results are visible.",
+  },
+  {
+    title: "The saving can be spent badly",
+    body: "Automating the coding and then raising the number of specs per sprint produces a different grind and the same exhaustion. The account says the promise about doing more of the interesting work has to be meant.",
+  },
+  {
+    title: "Buy-in was load-bearing",
+    body: "The team had already watched agents do useful work unattended and were not frightened of them. That is listed alongside the CI pipeline and the test coverage as a starting condition, which is a claim about where this is easy and where it is not.",
+  },
+  {
+    title: "There is a bill, and it has a cap",
+    body: "Retries are capped at three attempts per spec, with token monitoring and alerts. For scale, the account cites its own reference reporting roughly a thousand dollars a day per engineer-equivalent, and observes that this is still cheaper than a salary.",
+  },
+];
+
 /* --------------------- further reading --------------------- */
 
 const SOURCES: {
@@ -198,6 +242,28 @@ const INLINE =
   "font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan";
 
 /**
+ * The right edge of a box that scrolls sideways, faded rather than cut.
+ *
+ * Measured at 390: each of the four samples below hides between 24% and 42% of itself, and
+ * `overflow-x-auto` alone gives a reader no way to know that. In a screenshot — and to
+ * anybody who does not think to drag a code block — it photographs as a crop, which is a
+ * different and worse claim than "there is more this way". A mask over the last 12% of the
+ * box means the last visible characters trail off instead of ending on a hard rule.
+ *
+ * It lifts at `md`, and the breakpoint is measured rather than picked. The samples sit in
+ * a `lg:grid-cols-2` grid: at `md` that is one column of ~632px, which holds the longest
+ * line here (66 characters of 12px mono, ~475px), and at `lg` each column is ~514px, which
+ * still holds it. Below `md` nothing does. A permanent mask would fade the end of a line
+ * that has nothing after it, which is the one thing worse than the cut.
+ *
+ * `black` and `transparent` are mask keywords rather than palette colours: a mask reads
+ * only alpha, so this fades to whatever ground the box is already on and cannot disagree
+ * with a token.
+ */
+const CUT_EDGE =
+  "[mask-image:linear-gradient(to_right,black_88%,transparent)] md:[mask-image:none]";
+
+/**
  * One named source file, as a scrollable code block.
  *
  * `min-w-0` on the wrapper is load-bearing. This sits in a `lg:grid-cols-2` grid, and a
@@ -214,7 +280,9 @@ function Source({ children, name }: { children: string; name: string }) {
     <div className="flex min-w-0 flex-col gap-2">
       {/* `.label`: this tags a listing, it does not title a block. */}
       <span className="label">{name}</span>
-      <pre className="overflow-x-auto rounded-lg border border-line bg-surface-2 px-4 py-3 font-mono text-[12px] leading-relaxed text-fg">
+      <pre
+        className={`overflow-x-auto rounded-lg border border-line bg-surface-2 px-4 py-3 font-mono text-[12px] leading-relaxed text-fg ${CUT_EDGE}`}
+      >
         <code>{children}</code>
       </pre>
     </div>
@@ -235,18 +303,18 @@ export default function TheClimbPage() {
                appeared here only in a source title and the pager eyebrow. A reader
                landing on `/towards-a-dark-factory/the-climb` from a link or a search
                result met "the ladder" in the next paragraph as a second undefined term
-               and had nothing to attach either to. */
-            lead="The gap is the one between a pipeline a person shepherds and a dark factory, where planning, implementation, testing, debugging and deployment all run unattended. This is a quality architecture built from scratch rather than bolted onto the review process they already had."
+               and had nothing to attach either to.
+
+               What it no longer does is retype the five lifecycle phases. That list was
+               word-for-word the lead of the page one click back, which is where a reader
+               arriving in order has just read it; here it names the shape and points at
+               the definition rather than printing a second copy of the closed set.
+
+               The last clause is doc 2 §1.1, at deck weight. It was a 14px `text-dim`
+               paragraph under this heading — the dimmest text on the page carrying the
+               route's most load-bearing constraint. */
+            lead="The gap is the one between a pipeline a person shepherds and a dark factory, where every phase of the work runs unattended. This is a quality architecture built from scratch rather than bolted onto the review process they already had, and nothing below is advice to take a person out of a graph."
           />
-          {/* Doc 2 §1.1, said once, in one sentence, before anything else on the page. */}
-          <p className="prose-lane mt-6 text-sm leading-relaxed text-dim">
-            This page is about the ladder, which describes what an organisation is able to
-            do. The class printed on a blueprint answers a different question, and{" "}
-            <Link href="/towards-a-dark-factory#autonomy" className={INLINE}>
-              the two scales are named apart on the overview
-            </Link>
-            . Nothing below is advice to take a person out of a graph.
-          </p>
         </div>
       </header>
 
@@ -262,17 +330,6 @@ export default function TheClimbPage() {
           <div className="mt-10">
             <PhaseStrip />
           </div>
-
-          {/* Where the organisational half went. The account's risk section is about
-              people rather than pipelines, which is the overview's subject and what the
-              1-5 ladder measures, so it moved there whole instead of being cut. */}
-          <p className="prose-lane mt-10 text-sm leading-relaxed text-muted">
-            The account spends its risk section on people, and what{" "}
-            <Link href="/towards-a-dark-factory#around" className={INLINE}>
-              changes around the pipeline
-            </Link>{" "}
-            sits beside the ladder.
-          </p>
 
           {/* `#formats` is the id the same material carried on
               `/how-to-build-a-dark-factory`, which 308s here. A fragment never reaches
@@ -361,7 +418,11 @@ export default function TheClimbPage() {
       </section>
 
       {/* ---------- holdout scenarios ---------- */}
-      <section id="holdouts" className="bg-void py-16 sm:py-20">
+      {/* `border-t` on every seam now, not on three of five. The other page of this route
+          marks each band with a rule and a change of ground, and two of the seams here
+          changed ground alone — which reads as one long section on a phone, where the
+          ground change is the only thing left of the boundary. */}
+      <section id="holdouts" className="border-t border-line bg-void py-16 sm:py-20">
         <div className="container-page">
           <SectionHeading
             eyebrow="The mechanism"
@@ -421,16 +482,51 @@ export default function TheClimbPage() {
         </div>
       </section>
 
+      {/* ---------- what changes around the pipeline ---------- */}
+      {/* Back from `/towards-a-dark-factory`, where an earlier pass had moved it. Its lead
+          opens on "the technology in this account", which is a sentence that can only be
+          read on the page that is the account; on the parent it named a referent the
+          reader would not meet for two more pages. It is the risk section of a narrative
+          and it belongs at the end of that narrative, after the mechanism and before the
+          page says what DarkPrint has to do with any of it. */}
+      <section id="around" className="scroll-mt-24 border-t border-line bg-surface py-16 sm:py-20">
+        <div className="container-page">
+          <SectionHeading
+            eyebrow="The half that is not technical"
+            title="What changes around the pipeline"
+            lead="The technology in this account is ordinary: an orchestrator script, a GitHub Action, containers on infrastructure the team already ran. What it spends its risk section on is people."
+          />
+
+          <ul className="mt-10 grid gap-5 md:grid-cols-2">
+            {AROUND.map((item) => (
+              <li key={item.title} className="panel flex flex-col gap-3 p-5">
+                <PanelHeading>{item.title}</PanelHeading>
+                <p className="text-sm leading-relaxed text-muted">{item.body}</p>
+              </li>
+            ))}
+          </ul>
+
+          <p className="prose-lane mt-10 text-[15px] leading-[1.7] text-muted">
+            Writing code used to be the floor of what it meant to be an engineer. In the
+            account&apos;s model the work is deciding what to build and how to know it is
+            right, which is closer to product engineering than to what most people were
+            trained for. The team in question is eight people, and the projection it offers
+            is the sustained output of twenty-five or thirty. That is a projection from a
+            team partway up its own ladder, and it is quoted here as one.
+          </p>
+        </div>
+      </section>
+
       {/* ---------- where this site fits, honestly ---------- */}
-      <section className="border-t border-line bg-surface py-16 sm:py-20">
+      <section className="border-t border-line bg-void py-16 sm:py-20">
         <div className="container-page flex flex-col gap-5">
-          {/* A `SectionHeading`, like the two sections above it.
+          {/* A `SectionHeading`, like the sections above it.
               ------------------------------------------------------------
-              This was the page's third section and its only orphan `h2`: 24px against
-              its siblings' 36, no eyebrow, and a hand-written class list rather than the
-              component every other section title on the site is drawn by. Three sections
-              in one scroll, two of them announced and one of them not, reads as a
-              paragraph that grew a title rather than as the place the page lands.
+              This was the page's only orphan `h2`: 24px against its siblings' 36, no
+              eyebrow, and a hand-written class list rather than the component every other
+              section title on the site is drawn by. Sections in one scroll, some announced
+              and one of them not, reads as a paragraph that grew a title rather than as
+              the place the page lands.
 
               The lead is the first two sentences of the paragraph that used to open the
               section, verbatim. Nothing was rewritten to make the block fit: they were
@@ -455,7 +551,10 @@ export default function TheClimbPage() {
           </p>
           {/* Constraint 0.4, on the page most likely to read as a pitch. It used to be
               one of two copies; `/what-it-isnt` carried the other and that page is gone,
-              so this is now the only place the route states it. Do not fold it. */}
+              so this is now the only place the route states it. Do not fold it.
+              `components/site/honesty.test.ts` holds it verbatim and in the open as of
+              2026-08-07 — a source comment saying "do not fold it" is what guarded it
+              through the two passes that nearly did. */}
           <p className="prose-lane text-sm leading-relaxed text-dim">
             Nothing here runs a factory. Execution happens on your own machine, through
             Claude Code or an agent that reads the same cards. Publishing is not built,
@@ -474,12 +573,17 @@ export default function TheClimbPage() {
       </section>
 
       {/* ---------- sources ---------- */}
-      <section className="border-t border-line bg-void py-16 sm:py-20">
+      <section className="border-t border-line bg-surface py-16 sm:py-20">
         <div className="container-page flex flex-col gap-10">
           {/* Folded. Three references with a provenance note each is a column and a half
               on a phone, standing between the reader and the pager. The "read in full /
               not read by us" marks are why the list exists and why it is not deleted: they
-              stay in the prerendered HTML and one click away. */}
+              stay in the prerendered HTML and one click away.
+
+              This is the route's only citation block now. The parent page cites the same
+              article through `SectionLevels`, for the ladder's framing rather than for the
+              account, and `levels.test.ts` holds that note to what the article actually
+              supports. */}
           <More summary="Sources, and which of them we read in full">
             <ul className="grid gap-5 md:grid-cols-3">
               {SOURCES.map((source) => (

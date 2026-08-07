@@ -2,100 +2,97 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SectionLevels } from "@/components/home/SectionLevels";
+import { WhichTasksChecks } from "@/components/explain/WhichTasksChecks";
+import { WhichTasksExamples } from "@/components/explain/WhichTasksExamples";
+import { WhichTasksGlance } from "@/components/explain/WhichTasksGlance";
+import { WhichTasksRemedies } from "@/components/explain/WhichTasksRemedies";
 import { RoutePager } from "@/components/howto";
-import { CLIMB_ROUTE } from "@/components/howto/route";
-import { PanelHeading, SectionHeading } from "@/components/ui/SectionHeading";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
-   Redesign spec §4.2, on the author's instruction: "/which-tasks
-   should be placed in The climb part which I'd rename Towards a
-   Dark Factory". So the section is three pages and this is its
-   first, and §3 sends the 1-5 ladder here from the landing, which
-   was carrying it as one of eight sections nobody reached the
-   bottom of.
+   Stop 1 of 2. One question, asked in two halves: where are you,
+   and is the work in front of you a candidate at all?
 
-   The overview is deliberately thin. `SectionLevels` is the whole
-   argument for this page and it arrives with five drawings, the
-   two-scales panel and its own sources; anything written above it
-   competes with the thing a reader came for. Two sentences, then
-   the ladder.
+   ── The merge (2026-08-07), and what it reverses ──
+   Redesign spec §4.2 made this route three pages on the author's
+   instruction ("/which-tasks should be placed in The climb part
+   which I'd rename Towards a Dark Factory"). Three was one too
+   many, and this file was the surplus one: strip `SectionLevels`,
+   which `components/home` owns, and `#around`, which an earlier
+   pass had moved here off `/the-climb`, and what remained was a
+   three-sentence lead and an index of two links. A table of
+   contents wearing a stop's clothes.
 
-   The page reads hero → ladder → what changes around the pipeline
-   → the two doors. Every exit is in the last block and nowhere
-   else; the note above that block says why that is not a
-   preference.
+   So `/towards-a-dark-factory/which-tasks` is folded in whole —
+   the glance figure, the eight worked tasks, the four questions and
+   what to do with a no — and `#around` goes back to the account it
+   was always the risk section of. `components/howto/route.ts`
+   records the reasoning; `next.config.ts` carries the 308.
+
+   Two documented earlier decisions are reversed here and both are
+   named rather than quietly overwritten:
+
+     1. `#around` was moved here on the argument that "its subject
+        is an organisation, which is the subject of this page and
+        the thing the 1-5 ladder measures". The block's own lead
+        opens "the technology in the account this route ends on",
+        which is a sentence only readable on the page that IS the
+        account, and it forward-linked past the stop between them.
+        It goes back.
+     2. The two-door index at the foot of this page was deleted
+        once and restored once and carried ~26 lines of comment
+        about where it belonged. With one other page in the
+        sequence an index of "the one other page" is the pager, and
+        the deletion also takes the last of the three amber firings
+        that comment was agonising over.
+
+   ── Doc 2 §1.1, said once, before the picture ──
+   This is the change the whole pass is for. Every framing device on
+   this route said "journey with a destination" — the name, the
+   eyebrow, a numbered progress rail, an ascending list of five
+   ending on the rung the page is named after — and the correction
+   was always downstream of the picture and always drawn smaller: it
+   was the last paragraph of the `#autonomy` panel at 51% depth,
+   and a 14px `text-dim` line under the climb's `h1`. Three
+   disclaimers do not fix a layout.
+
+   The rail is deleted (`RoutePager`), the climb's dim line is
+   folded into its own lead, and the sentence itself is now in the
+   deck of this page, above everything: a dark factory is one shape
+   a blueprint can take, and a graph with a person standing in it is
+   a first-class blueprint shelved beside the rest. `SectionLevels`
+   still states the two scales apart in full under `#autonomy`, and
+   the paragraph under the deck links there rather than restating
+   it a third time.
 
    ── Why the ladder is imported and not rewritten ──
-   `components/home/SectionLevels.tsx` is owned elsewhere this pass
-   and `levels.test.ts` holds two claims on its copy: that the site
-   does not credit its five rung names to the HackerNoon piece,
-   which numbers its own ladder 1, 2, 3, 3.5, 4 and names none of
-   them, and that the two-scales panel keeps the sentence doc 2
-   §1.1 is actually about. Imported by path rather than through the
+   `components/home/SectionLevels.tsx` is owned elsewhere and
+   `levels.test.ts` holds two claims on its copy: that the site does
+   not credit its five rung names to the HackerNoon piece, which
+   numbers its own ladder 1, 2, 3, 3.5, 4 and names none of them,
+   and that the two-scales panel keeps the sentence doc 2 §1.1 is
+   actually about. Imported by path rather than through the
    `components/home` barrel, so that moving it off the landing's
    index cannot break this route.
 
-   ── Doc 2 §1.1 ──
-   The ladder describes an organisation and has a top. A
-   blueprint's autonomy class describes one graph and records where
-   its author decided a person should stand. `SectionLevels` names
-   the two apart under `#autonomy`, and the other two pages of this
-   route link there rather than restating it.
-
-   ── `#around`, and why it arrived here (PROJECT.md §3.1) ──
-   `/towards-a-dark-factory/the-climb` was 2,024 prose words and
-   readers were skipping it. Its closing section, "What changes
-   around the pipeline", was the account's risk section: identity,
-   buy-in, the bill, and what an engineer's job becomes. None of
-   that is about a pipeline. It is about an organisation, which is
-   the subject of this page and the thing the 1-5 ladder measures,
-   so the block moved here whole rather than being cut, and the
-   climb links to it.
-
-   It sits below `SectionLevels` on purpose. The note above about
-   keeping the overview thin is about what stands between the
-   reader and the ladder; this reads after the ladder has put them
-   somewhere, and it answers the question the ladder raises.
+   ── The running order ──
+   hero → the ladder → the figure that asks the four questions →
+   eight worked tasks → the four questions in full → what to do with
+   a no → the two exits and the pager. Every band is a `border-t`
+   and a change of ground, which is the device the other page of
+   this route already uses at every seam.
    ============================================================ */
 
 export const metadata: Metadata = {
   title: "Towards a Dark Factory",
   description:
-    "Five levels of working with agents, and where most teams actually sit. The gap between level 2 and level 5 is architectural and organisational, which makes it a design problem.",
+    "Five levels of working with agents, where most teams actually sit, and the four questions that decide whether a task belongs in a pipeline nobody is watching. The gap between level 2 and level 5 is architectural and organisational, which makes it a design problem.",
 };
 
 const HERE = "/towards-a-dark-factory";
 
 const INLINE =
   "font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan";
-
-/**
- * The account's risk section, moved off the climb.
- *
- * Four risks, each named in the article and each given its own paragraph there. The
- * wording is the wording that shipped on the climb, less the sentences that repeated
- * something the climb said elsewhere: the eighteen-months gloss on "every phase pays for
- * itself" (the phase strip's four captions state it one phase at a time) and the opening
- * of the closing paragraph, which said what the first card says.
- */
-const AROUND: { title: string; body: string }[] = [
-  {
-    title: "People do not want to stop writing code",
-    body: "Engineers have identity wrapped up in authorship, and being told the job is now writing specs lands differently than the person saying it expects. The account names this as a real risk and gives it its own paragraph. The phased shape helps, because phase 1 asks nobody to change anything and by phase 2 the results are visible.",
-  },
-  {
-    title: "The saving can be spent badly",
-    body: "Automating the coding and then raising the number of specs per sprint produces a different grind and the same exhaustion. The account says the promise about doing more of the interesting work has to be meant.",
-  },
-  {
-    title: "Buy-in was load-bearing",
-    body: "The team had already watched agents do useful work unattended and were not frightened of them. That is listed alongside the CI pipeline and the test coverage as a starting condition, which is a claim about where this is easy and where it is not.",
-  },
-  {
-    title: "There is a bill, and it has a cap",
-    body: "Retries are capped at three attempts per spec, with token monitoring and alerts. For scale, the account cites its own reference reporting roughly a thousand dollars a day per engineer-equivalent, and observes that this is still cheaper than a salary.",
-  },
-];
 
 export default function TowardsPage() {
   return (
@@ -106,119 +103,117 @@ export default function TowardsPage() {
             as="h1"
             eyebrow="The route"
             title="Towards a Dark Factory"
-            /* The phrase is defined before it is used again, which it was not.
+            /* The phrase is defined before it is used, and it is defined as a SPECIAL
+               CASE.
                ------------------------------------------------------------
-               The term appeared first in the `h1`, and the nearest thing to a definition
-               sat 1858px below it — 1.6 desktop viewports, 2.6 phone screens, and behind
-               four other level descriptions that arrive first. A reader coming in from
-               the nav, which is the only permanent entrance, read the whole ladder before
-               learning what the ladder climbs towards. The project's own memory records
-               that the phrase misleads everyone who meets it cold; this is that, on the
-               page named after it.
+               The term used to appear first in the `h1` with the nearest thing to a
+               definition 1858px below it, behind four other level descriptions. That was
+               fixed by putting the five phases in this lead. What the fix did not do was
+               say what kind of thing a dark factory is, and the project's own memory
+               records the consequence: the phrase misleads everybody who meets it cold,
+               and every agent that reads the docs takes it for the headline concept. It
+               is not. The site's spine is blueprints and nodes; this names one class of
+               blueprint.
 
-               The definition is the five lifecycle phases the rest of the site is built
-               on, so it costs no new vocabulary: `planning`, `implementation`, `testing`,
-               `debugging` and `deployment` are the closed set doc 3 §2 draws, the same
-               five a node card declares a `phase` from and the same five the coverage
-               strip counts. A dark factory is the case where all five run unattended.
-               Level 5 keeps its own fuller account; this is the one-sentence version a
-               reader needs before the ladder means anything. */
-            lead="A dark factory is a pipeline where all five phases run unattended: planning, implementation, testing, debugging and deployment. Start by finding yourself on the ladder below. Where you land decides which problem you have, and the two pages after this one answer the two questions that follow."
+               The definition costs no new vocabulary: `planning`, `implementation`,
+               `testing`, `debugging` and `deployment` are the closed set doc 3 §2 draws,
+               the same five a node card declares a `phase` from and the same five the
+               coverage strip counts.
+
+               The second sentence is doc 2 §1.1, in the deck, ahead of the ladder rather
+               than 2,586px below it. It is the constraint a deleted landing beat used to
+               guard and it belongs upstream of the picture that puts it at risk. */
+            lead="A dark factory is one shape a blueprint can take: a graph where planning, implementation, testing, debugging and deployment all run unattended. It is a special case and not a summit. A graph with a person standing in it is a first-class blueprint here, and is shelved beside the rest."
           />
+          {/* The two scales, named apart before the five-rung list rather than after it.
+              `text-fg` on the clause that does the work: this used to be the dimmest text
+              on the route carrying its most load-bearing constraint. */}
+          <p className="prose-lane mt-6 text-[15px] leading-[1.7] text-muted">
+            <span className="text-fg">
+              Two different things get called autonomy here, and only one of them is a
+              number.
+            </span>{" "}
+            The ladder below counts what an organisation is able to do at all. The class
+            printed on a blueprint records where the author of that one graph decided a
+            person should stand, and it ranks nothing. The two are{" "}
+            <Link href="/towards-a-dark-factory#autonomy" className={INLINE}>
+              named apart in full
+            </Link>{" "}
+            under the ladder. Find yourself on it first; the four questions after it decide
+            whether the work in front of you is a candidate at all.
+          </p>
         </div>
       </header>
 
       <SectionLevels />
 
-      <section id="around" className="scroll-mt-24 border-t border-line bg-void py-16 sm:py-20">
+      {/* ---------- the filter, folded in from /which-tasks ---------- */}
+      {/* The page's second half has two jobs at once. The first is the one the tester
+          asked for and nobody answers. The second is to work as a filter: somebody who
+          takes an unverifiable task to a factory gets confident garbage back and concludes
+          the pattern is vapour, and that reader is lost for good. Which is why the
+          unsuitable side is written at full strength.
+
+          Figure, then the eight tasks, then the four questions in full, then what to do
+          with a no. A reader settles a comparison faster than a definition, so the
+          examples sit above the definitions. */}
+      <section
+        id="which-tasks"
+        className="scroll-mt-24 border-t border-line bg-void py-16 sm:py-20"
+      >
         <div className="container-page">
           <SectionHeading
-            eyebrow="The half that is not technical"
-            title="What changes around the pipeline"
-            lead="The technology in the account this route ends on is ordinary: an orchestrator script, a GitHub Action, containers on infrastructure the team already ran. What it spends its risk section on is people."
+            eyebrow="Before you build one"
+            title="Which tasks a dark factory can take"
+            lead="Four questions settle it, and all four are about the task rather than about the graph you would draw for it."
           />
-
-          <ul className="mt-10 grid gap-5 md:grid-cols-2">
-            {AROUND.map((item) => (
-              <li key={item.title} className="panel flex flex-col gap-3 p-5">
-                <PanelHeading>{item.title}</PanelHeading>
-                <p className="text-sm leading-relaxed text-muted">{item.body}</p>
-              </li>
-            ))}
-          </ul>
-
-          <p className="prose-lane mt-10 text-[15px] leading-[1.7] text-muted">
-            Writing code used to be the floor of what it meant to be an engineer. In the
-            account&apos;s model the work is deciding what to build and how to know it is
-            right, which is closer to product engineering than to what most people were
-            trained for. The team in question is eight people, and the projection it offers
-            is the sustained output of twenty-five or thirty. That is a projection from a
-            team partway up its own ladder, and it is quoted here as one.{" "}
-            <Link href="/towards-a-dark-factory/the-climb" className={INLINE}>
-              The climb is the rest of that account
-            </Link>
-            .
-          </p>
+          {/* The block tier. `SectionHeading` → content is 40px everywhere the scale
+              reached, and the figure is what the lead hands the reader to. */}
+          <div className="mt-10">
+            <WhichTasksGlance />
+          </div>
         </div>
       </section>
 
-      {/* The two doors, and the page ends on them.
-          ------------------------------------------------------------
-          They were deleted once, because they sat between the lead and `SectionLevels`:
-          a reader met "Stop 3 of 3" before being offered stop 2 and before seeing
-          anything the stops were about. That complaint was about *placement*, and the
-          deletion answered it by removing the index instead of moving it. Two things
-          broke — `components/site/SiteHeader.tsx` justifies keeping these two children
-          out of the nav on the grounds that "each sequence carries its own previous/next
-          pager and its parent opens with a door per child", which went false the moment
-          the cards went; and the nav is the only permanent entrance, so a reader arriving
-          through it met the first link to either child at 83% scroll depth, in a pager,
-          one stop at a time.
+      <section className="border-t border-line bg-surface py-16 sm:py-20">
+        <div className="container-page">
+          <WhichTasksExamples />
+        </div>
+      </section>
 
-          They came back above "What changes around the pipeline" and that was still
-          wrong, in the other direction. `.route-box` is a promise: amber means this box
-          leaves the page. The page then fired it three times for two destinations — two
-          doors at 60% depth, a full section of substance after them, then a pager whose
-          NEXT card was door 02 again, ~1100px lower. A reader who trusts the amber stops
-          at the doors and never sees the section; a reader who carries on meets the same
-          door twice and cannot tell whether it is new. That is the exact ambiguity the
-          device was invented to remove.
+      <section className="border-t border-line bg-void py-16 sm:py-20">
+        <div className="container-page">
+          <WhichTasksChecks />
+        </div>
+      </section>
 
-          So the index is here, at the end, where an index of what is left belongs, and
-          `RoutePager` draws its rail without arrows (`arrows={false}`): this page is the
-          parent of the sequence, not a stop inside it, and both of its destinations are
-          in the two cards above. Amber now fires once per destination. */}
-      <section
-        aria-labelledby="route-doors"
-        className="border-t border-line bg-surface py-16 sm:py-20"
-      >
+      <section className="border-t border-line bg-surface py-16 sm:py-20">
+        <div className="container-page">
+          <WhichTasksRemedies />
+        </div>
+      </section>
+
+      <section className="border-t border-line bg-void py-16 sm:py-20">
         <div className="container-page flex flex-col gap-10">
-          <div className="flex flex-col gap-5">
-            <h2 id="route-doors" className="label-lead">
-              The two questions that follow
-            </h2>
-            <div className="grid gap-5 sm:grid-cols-2">
-              {CLIMB_ROUTE.filter((stop) => stop.href !== HERE).map((stop, i) => (
-                <Link
-                  key={stop.href}
-                  href={stop.href}
-                  className="route-box group flex flex-col gap-2 p-5"
-                >
-                  <span className="route-label">{`0${i + 2}`}</span>
-                  {/* `hoverable:` gates the hover on `(hover: hover) and (pointer: fine)`,
-                      the same gate `.route-box:hover` carries in `app/globals.css`: a tap
-                      on a phone has no "leave", so an ungated hover latches the amber on
-                      whichever door was touched last. */}
-                  <span className="font-display text-lg font-semibold text-fg transition-colors hoverable:group-hover:text-amber-bright">
-                    {stop.label}
-                  </span>
-                  <span className="text-sm leading-relaxed text-muted">{stop.blurb}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <RoutePager href={HERE} arrows={false} />
+          {/* Kept, against the proposal that folded this route to two pages, which listed
+              it as a duplicate of the two buttons at the foot of `/the-climb`. They are on
+              a different page and this is the one a reader reaches first: a filter whose
+              only exit is "now read the account" leaves the reader who just answered yes
+              four times with nowhere to go. It is also the move that keeps this route a
+              feeder into the registry rather than a destination of its own, which is what
+              stops a special case reading as the headline. */}
+          <p className="prose-lane text-sm leading-relaxed text-muted">
+            Four yeses and the task is a candidate. A yes has somewhere to go: the{" "}
+            <Link href="/build" className={INLINE}>
+              build workspace
+            </Link>
+            , and the{" "}
+            <Link href="/blueprints" className={INLINE}>
+              published graphs
+            </Link>
+            , whose authors settled the same four answers before drawing a node.
+          </p>
+          <RoutePager href={HERE} />
         </div>
       </section>
     </>

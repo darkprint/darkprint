@@ -89,6 +89,9 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
       { href: "/reading-the-radar", label: "How a blueprint is graded" },
       { href: "/build", label: "Design a blueprint" },
       { href: "/towards-a-dark-factory", label: "Towards a Dark Factory" },
+      // The route's second and last page, promoted out of a column of its own. See the
+      // note on the deleted "The route" column below.
+      { href: "/towards-a-dark-factory/the-climb", label: "The climb" },
       { href: "/install", label: "Install MCP" },
       // "What it isn't" and "What a dark factory is" both pointed at `/what-it-isnt`,
       // which is gone. Neither is repointed: `SectionWhatItIs` held the definition and
@@ -110,24 +113,34 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
       { href: "/spec/ontology", label: "The vocabulary" },
     ],
   },
-  {
-    title: "The route",
-    links: [
-      { href: "/towards-a-dark-factory#autonomy", label: "Autonomy, and the levels" },
-      { href: "/towards-a-dark-factory/which-tasks", label: "Which tasks it can take" },
-      { href: "/towards-a-dark-factory/the-climb", label: "The climb" },
-    ],
-  },
+  /* A fourth column, "The route", stood here until 2026-08-07 and held three links:
+     `/towards-a-dark-factory#autonomy` under the label "Autonomy, and the levels",
+     `/towards-a-dark-factory/which-tasks`, and `/towards-a-dark-factory/the-climb`.
+
+     Two things were wrong with it and one of them was invisible to `nav.test.ts`. The
+     first row was the SAME PAGE as the Learn column's "Towards a Dark Factory", under a
+     different name, in a different column — one route with two labels on one screen, which
+     is the exact defect the first block of that test file exists to prevent. It was not
+     caught because the fragment makes the two hrefs differ. Counting the header, the `h1`
+     and the pager, that page answered to four names.
+
+     The second is a matter of rank. "Dark factory" is one class of blueprint — the case
+     where all five lifecycle phases run unattended — and blueprints and nodes are the
+     site's spine. A column of its own, ranked beside "Registry" and "The spec language",
+     gave one special case the footprint of a subject. It is two Learn rows now, and
+     `/which-tasks` is not among them because it is not a route any more. */
 ];
 
 export function SiteFooter() {
   return (
     <footer className="border-t border-line bg-surface/40">
-      {/* Five tracks at `lg`, where the wordmark sits in the row with the four columns.
-          At `sm` the wordmark takes a row of its own and the four columns take the next,
-          which is what keeps a column from being orphaned under three of its siblings. */}
-      <div className="container-page grid grid-cols-2 gap-8 py-12 sm:grid-cols-4 lg:grid-cols-5">
-        <div className="col-span-2 sm:col-span-4 lg:col-span-1">
+      {/* Four tracks at `lg`, where the wordmark sits in the row with the three columns.
+          At `sm` the wordmark takes a row of its own and the three columns take the next,
+          which is what keeps a column from being orphaned under its siblings. Both counts
+          follow `COLS`, which lost a column on 2026-08-07; a grid tuned to four with three
+          in it leaves a track of air where a reader reads a missing column. */}
+      <div className="container-page grid grid-cols-2 gap-8 py-12 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="col-span-2 sm:col-span-3 lg:col-span-1">
           <Link href="/" className="font-display text-lg font-semibold tracking-tight">
             <span className="text-fg">Dark</span>
             <span className="text-cyan">Print</span>

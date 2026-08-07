@@ -520,11 +520,50 @@ export function Wordmark() {
           includes `outline-color`, which fades the keyboard ring in over 150ms — a reader
           tabbing at 80ms sees a half-strength ring. `scale` is named beside `transform`
           because Tailwind v4 compiles `scale-[0.97]` to the standalone `scale` property,
-          which a list naming only `transform` does not cover. */}
+          which a list naming only `transform` does not cover.
+
+          ── Why the command is green, and the badge still is not ──
+          The author asked for "a shade of green" on the chip. It is `--color-emerald`,
+          the palette's only green, and no new token: a fourth accent invented for one
+          chip would be a fourth meaning to keep straight. `app/globals.css` records
+          emerald as "a figure read off the engine", which is a reading and not a command,
+          so this **extends** that meaning rather than reusing it — the common thread is
+          that emerald marks something the machine produces or accepts, an engine's own
+          register, as against cyan's "you can click this" and violet's "a person acts
+          here". The chip is still a link and still gets cyan's affordances by shape
+          (border, hover, press), not by colour.
+
+          What must NOT go green is `ComingSoonBadge`. Amber has exactly two sanctioned
+          jobs sitewide and "not built yet" is one of them; `npx darkprint setup` genuinely
+          does not exist, so the badge keeps its own `text-amber` (it sets it itself, and
+          the `text-emerald` here does not reach it). The chip's fill stays the neutral
+          `bg-surface-2/80` for the same reason — an emerald-tinted ground under an amber
+          pill would put the two accents in contact and make the badge read as part of a
+          green object rather than as a marker on it.
+
+          Contrast, measured (sRGB, WCAG 2.x), against the chip's real composite ground —
+          `bg-surface-2/80` (#0f121e at 80%) over the hero's void (#05060d) resolves to
+          #0d101b:
+            · `text-emerald` #34d399 on #0d101b … 9.89:1 — past AA 4.5:1 and AAA 7:1.
+            · `border-emerald/50` over the void … 3.22:1, and 3.03:1 against the chip's
+              own fill: both clear the 3:1 non-text floor, which the `border-line` this
+              replaced never did (1.37:1). 40% would have been 2.43:1, so 50 is the rung,
+              not a taste call.
+            · hover `border-emerald/75` … 5.4:1, comfortably above.
+          Hover still lands the text on `text-fg`, unchanged: brightening is the affordance
+          this chip already had, and the green frame keeps the register while it happens.
+
+          ── Spacing ──
+          `mt-6` (24px) was both off the canonical ladder and too tight under the CTA row:
+          the chip read as a third button. `mt-10` is 40px, the block tier, and it is the
+          smallest rung that separates the chip from the two buttons above without opening
+          a gap the eye reads as a section break. The timeline is unaffected — `cli` is a
+          mark on this element itself, not on a wrapper, so the extra margin cannot strand
+          a target; the beat still animates exactly the element a reader can click. */}
       <Link
         data-mark="cli"
         href="/install"
-        className="mt-6 inline-flex items-center gap-2 rounded-md border border-line bg-surface-2/80 px-3 py-1.5 font-mono text-xs text-dim transition-[transform,scale,color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:text-fg hoverable:active:scale-[0.97]"
+        className="mt-10 inline-flex items-center gap-2 rounded-md border border-emerald/50 bg-surface-2/80 px-3 py-1.5 font-mono text-xs text-emerald transition-[transform,scale,color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-emerald/75 hoverable:hover:text-fg hoverable:active:scale-[0.97]"
       >
         <span>$ npx darkprint setup</span>
         <ComingSoonBadge />

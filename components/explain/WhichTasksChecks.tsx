@@ -123,6 +123,30 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    second hand-typed copy of its class list — which is the defect
    this pass exists to remove. The accessible name is the same
    string either way.
+
+   ── The four colours came off (2026-08-07) ──
+   The cards carried a 2px top rule each in cyan, emerald, violet and
+   amber, spent as pure categories. Every one of the four is a
+   reserved word on this site and not one of the four meanings
+   applied to "question 01/02/03/04":
+
+     cyan     means interactive, on a card nobody can click;
+     emerald  means a figure read off the engine, on a question;
+     violet   means where a person acts, on the card about whether
+              the target is written down;
+     amber    means `ComingSoonBadge` or "this box leaves the page",
+              on a box that goes nowhere.
+
+   Four colours also make a claim the section denies: that these are
+   four kinds of thing. They are one instrument asked four times in
+   series, and four identical panels is what that looks like.
+
+   One colour is back, on 04, and it is the one that means something.
+   The answer to "if this lands wrong, who finds out?" is literally
+   to put a person at that step — `WhichTasksRemedies`'s third card
+   and `WhichTasksGlance`'s fourth branch both say so, and both draw
+   it in violet, which is the site's colour for where somebody acts.
+   The rule on this card is the same mark as the mark on that branch.
    ============================================================ */
 
 type Check = {
@@ -130,7 +154,13 @@ type Check = {
   n: string;
   /** Short handle, so the examples below can name the check they turn on. */
   name: string;
-  color: string;
+  /**
+   * A top rule, where the check's answer has a colour on this site already.
+   *
+   * Absent on three of the four. See the header: a hue per question said these were four
+   * kinds of thing and spent four reserved tokens saying it.
+   */
+  accent?: string;
   /** The question, asked about the reader's own task. */
   question: string;
   /** Something they can do in under a minute that settles it. */
@@ -144,7 +174,6 @@ const CHECKS: Check[] = [
     id: "verdict",
     n: "01",
     name: "The verdict",
-    color: "var(--color-cyan)",
     question: "Can something other than you decide whether the output is correct?",
     probe:
       "Name the command that exits non-zero when the work is wrong. If you cannot name it, stop here.",
@@ -160,7 +189,6 @@ const CHECKS: Check[] = [
     id: "harness",
     n: "02",
     name: "The harness",
-    color: "var(--color-emerald)",
     question: "Does the check already exist, or can you write it before the work starts?",
     probe:
       "Write the failing test now, or diff every output against the old implementation still in the tree. If that is slower than doing the task, so is the blueprint.",
@@ -183,7 +211,6 @@ const CHECKS: Check[] = [
     id: "edges",
     n: "03",
     name: "The edges",
-    color: "var(--color-violet)",
     question: "Is the target written down, and does it stop somewhere?",
     probe:
       "Name three files you do not want touched. If you cannot, the requirements are still being invented.",
@@ -199,7 +226,7 @@ const CHECKS: Check[] = [
     id: "blast",
     n: "04",
     name: "The cost of being wrong",
-    color: "var(--color-amber)",
+    accent: "var(--color-violet)",
     question: "If this lands wrong, who finds out, and how long do you have?",
     probe:
       "Describe the rollback in one sentence. If the sentence contains the word incident, the answer is no.",
@@ -215,20 +242,33 @@ const CHECKS: Check[] = [
 export function WhichTasksChecks() {
   return (
     <section className="flex flex-col gap-10" aria-labelledby="checks-heading">
-      <SectionHeading title={<span id="checks-heading">The four questions in full</span>} />
+      {/* An eyebrow, like the other three bands of this page's second half. Three of the
+          six section headings across this route carried one and three did not, which on a
+          scroll reads as two different conventions rather than as one page. */}
+      <SectionHeading
+        eyebrow="The instrument"
+        title={<span id="checks-heading">The four questions in full</span>}
+      />
 
       <ol className="grid gap-5 lg:grid-cols-2">
         {CHECKS.map((c) => (
           <li
             key={c.id}
             className="panel flex flex-col gap-4 p-5"
-            style={{ borderTop: `2px solid ${c.color}` }}
+            /* No rule at all on three of the four, and `.panel`'s own border is what the
+               cards share. See the header for what the other three rules used to be and
+               why each of them was a reserved colour spent on nothing. */
+            style={c.accent === undefined ? undefined : { borderTop: `2px solid ${c.accent}` }}
           >
-            {/* `.label` twice, one of them recoloured by the check's own hue. Both used
-                to be hand-typed mono runs at two different trackings, which is how a
-                site ends up with a mono tier it cannot name. */}
+            {/* `.label` twice. Both used to be hand-typed mono runs at two different
+                trackings, which is how a site ends up with a mono tier it cannot name.
+                The numeral takes the card's accent where it has one, so 04's rule and its
+                number are one mark rather than two. */}
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="label" style={{ color: c.color }}>
+              <span
+                className="label"
+                style={c.accent === undefined ? undefined : { color: c.accent }}
+              >
                 {c.n}
               </span>
               <span className="label">{c.name}</span>

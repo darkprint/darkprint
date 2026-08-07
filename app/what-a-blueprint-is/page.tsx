@@ -128,18 +128,18 @@ const LINK =
 const PROSE = "text-[15px] leading-relaxed text-muted";
 
 /**
- * One of the three parts, as a band that occupies two thirds of the page and alternates
- * which two thirds.
+ * One of the three parts, as a full-width band whose figure alternates sides.
  *
- * The author's layout, in his words: the graphic on the left with the description and its
- * link on the right, then the graphic on the right with the text on the left, then the
- * graphic on the left again, "an 'S' structure where an entry occupy 2/3 of the space
- * (left) and 2/3 the space when on the right".
+ * The author's first layout, in his words: the graphic on the left with the description
+ * and its link on the right, then the graphic on the right with the text on the left,
+ * then the graphic on the left again, "an 'S' structure where an entry occupy 2/3 of the
+ * space (left) and 2/3 the space when on the right". That was `col-span-9` starting at
+ * column 1, then 4, then 1.
  *
- * So the band is `col-span-9` of a twelve-column grid, starting at column 1, then column
- * 4, then column 1. The third that is empty alternates sides, which is what draws the S,
- * and the figure alternates within the band, which is what keeps a reader's eye crossing
- * rather than running down a gutter.
+ * His second, on seeing it: extend the text to where the opposite band's figure reaches.
+ * So the band is all twelve columns now and the empty quarter is gone; the figure
+ * alternating sides is what keeps a reader's eye crossing rather than running down a
+ * gutter, and the arithmetic is in the note on the `className` below.
  *
  * ── Why this replaced three cards in a row ──
  * The three parts were `lg:grid-cols-3` panels, each with its figure crushed into a 112px
@@ -162,7 +162,7 @@ const PROSE = "text-[15px] leading-relaxed text-muted";
  *
  * It is NOT dressed as a `.route-box`. `app/globals.css` licences that shape for a box
  * whose job is to leave the page, and three of them would be right by the letter of the
- * rule and wrong on this page: the S is drawn by the empty quarter alternating sides, and
+ * rule and wrong on this page: the alternation is drawn by the figure changing sides, and
  * three amber slabs down the prose column would draw a second, louder rhythm across it.
  * The link that leaves is a link, in cyan, which is the site's interactive semantic. The
  * chip is a label and takes the layer's own hue instead — see `SpecLayerPage.color` in
@@ -205,22 +205,56 @@ function Part({
          has none, so those bookmarks arrive here and look for the id. `scroll-mt-24`
          clears the sticky header; `components/site/anchors.test.ts` holds that pairing. */
       id={layer.anchor}
-      /* Nine columns of twelve, and the figure capped rather than a fraction.
+      /* All twelve columns, the figure capped, the prose taking the rest.
          ------------------------------------------------------------
-         The author: "mantieni a S ma estendi la lunghezza orizzontale possibile per il
-         testo (questo ha come effetto di riempire di più e ridurre il numero di righe)".
+         The author, twice. First "mantieni a S ma estendi la lunghezza orizzontale
+         possibile per il testo (questo ha come effetto di riempire di più e ridurre il
+         numero di righe)", which took the band from eight columns to nine. Then, on
+         seeing nine: "the text can be extended up to the rightmost part where the
+         graphics below reaches, and viceversa when the figure is on the right and the
+         text is on the left".
 
-         The band was eight columns split `1.15fr 1fr`, which left the prose 342px, about
-         40 characters a line. Widening the band alone would have widened the figure with
-         it, so the figure takes a fixed 26rem, which is the width
-         `components/learn/figures.test.ts` measures its type against, and the prose takes
-         everything else: 416px, about 49 characters.
+         That is a precise instruction and it is about alignment, not about length. At
+         nine columns every band stopped a quarter short — band 01's prose ended at
+         x=1008 while band 02's figure reached x=1296, and band 02's prose ended at
+         x=848 while bands 01 and 03 started their figures at x=144. Three ragged edges
+         on one screen. At twelve the prose ends exactly where the opposite band's figure
+         does, so the two vertical edges the eye can see are the two the figures make.
 
-         Nine rather than ten because the S has to survive. The empty quarter still
-         alternates sides and still reads as a step; at ten columns it is a sixth and the
-         alternation stops being visible. */
-      className={`scroll-mt-24 grid items-center gap-6 lg:col-span-9 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:gap-8 ${
-        side === "left" ? "lg:col-start-1" : "lg:col-start-4"
+         The figure keeps its fixed 26rem — that is the width
+         `components/learn/figures.test.ts` measures its type against, and a fractional
+         split would hand the extra 288px to the drawing instead of the sentence. The
+         prose takes 1152 − 416 − 32 = 704px.
+
+         ── What this costs, on the record ──
+         704px is about 93 characters at the 15px tier, and `--measure` (36rem, 576px)
+         is the site's stated reading measure. This is the widest body prose on the site
+         and it is 10% past that number. It is a deliberate trade for the alignment the
+         author asked for, it is bounded by `container-page`'s own 1200px cap rather than
+         growing on a wider monitor, and it applies to these three paragraphs only —
+         `.prose-lane` still governs every other paragraph on the page, including the
+         bundle sentence directly above this grid, which is why that one is visibly
+         narrower than the three under it.
+
+         ── And what it costs the S ──
+         The band used to be `col-span-9` starting at column 1, then 4, then 1, and the
+         empty quarter alternating sides was the S. There is no empty quarter now, so the
+         alternation is carried by which side the figure sits on and by nothing else.
+         That is still a legible alternating-feature layout; it is not the outline the
+         earlier note described, and that note is gone rather than left contradicting the
+         code.
+
+         ── The template flips with the side, and must ──
+         The side is flipped by `lg:order-2` on the figure wrapper. While both tracks
+         computed to exactly 416px that was enough, and it hid a bug: the template was
+         fixed at `[26rem, 1fr]`, so on a right-hand band the FIGURE lands in the `1fr`
+         track. At nine columns nothing showed. At twelve it would give the figure 704px
+         and pin the prose at 416 — the exact opposite of the instruction. So the
+         template flips too. */
+      className={`scroll-mt-24 grid items-center gap-6 lg:col-span-12 lg:col-start-1 lg:gap-8 ${
+        side === "left"
+          ? "lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]"
+          : "lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]"
       }`}
     >
       <div className={side === "right" ? "lg:order-2" : undefined}>{figure}</div>
@@ -385,10 +419,14 @@ export default function WhatABlueprintIsPage() {
             build, so a reader copying from here is copying a file that loads.
           </p>
 
-          {/* Twelve columns so a band can take nine of them and start at 1 or at 4.
-              `gap-y-14` rather than a rule between bands: the alternation already
-              separates them, and a full-width rule under a two-thirds band draws a line
-              across the third that band deliberately left empty. */}
+          {/* The twelve-column frame each band spans in full. It stays a grid rather
+              than becoming a plain stack because the band's own template is written in
+              `lg:` and column terms, and because a later part that wants less than the
+              full width has somewhere to say so.
+
+              `gap-y-14` rather than a rule between bands: the figure changing sides
+              already separates them, and a hairline every 270px down a column of three
+              drawings would read as a table of contents. */}
           <div className="grid gap-y-14 lg:grid-cols-12 lg:gap-y-20">
             <Part
               layer={topology}
@@ -456,23 +494,31 @@ export default function WhatABlueprintIsPage() {
         </div>
       </section>
 
-      {/* ---------- the three parts, on one real bundle ----------
-          `SectionExample` was mounted only on the deleted `/spec`, and it is the site's
-          only worked analyzer run outside a blueprint detail page: the starter's graph,
-          the edge that is not there, and the scorecard the engine computes from both.
-          It reads the same `starter-software-factory` the three figures above read, so a
-          reader meets the parts and then meets them assembled.
-
-          It owns its own full-bleed `bg-void py-20 sm:py-28` band and its own eyebrow.
-          The band above it is `bg-surface`, so the seam is a change of ground, which is
-          how the landing marks one. */}
-      <SectionExample />
-
       {/* ---------- the words that travel with this subject ----------
-          The whole of the deleted `/concepts`, placed above "What you do with one" on the
-          author's instruction. It is here rather than earlier because it explains what a
-          card's fields ARE, which only lands once a reader knows a card has fields — the
-          band above and the three parts above that are where they learn it.
+          The whole of the deleted `/concepts`, moved to sit directly under the three
+          parts on the author's instruction ("place the words section right below the
+          three parts section").
+
+          It used to sit under `SectionExample`, and the note defending that position said
+          it belongs after a reader knows a card has fields. That prerequisite is met, and
+          it was never `SectionExample` that met it: the band above draws `CardStackFigure`
+          with `type / phase / model / in / out / cannot` on it, which is where a reader
+          learns a card has fields at all. `SectionExample` opens no card — it draws the
+          absent edge and the scorecard. So the dependency the old note named survives the
+          move intact, and the page now reads abstract then concrete once instead of twice:
+          the three parts, the words for them, then one real bundle with both applied to it.
+
+          ── The two same-ground seams this creates, deliberately ──
+          The run is void (header) / surface / surface / void (`SectionExample`) / void /
+          surface / void. Two seams therefore fall between sections on the same ground, and
+          both are ruled by a full-bleed `border-t border-line`: three-parts → the-words,
+          which is the point of the move (they are one teaching region, and the rule inside
+          it marks a change of subject rather than a change of chapter), and
+          `SectionExample` → "what you do with one", which is where the moved section used
+          to do the alternating. `/reading-the-radar` already ships two such seams, so this
+          is the site's existing practice rather than a new licence. The one relationship
+          that did NOT change is the one the note below depends on: `SectionExample` still
+          follows a `bg-surface` band, so its own seam is still a change of ground.
 
           One paragraph did not travel: the observability correction ("Observability is not
           modelled here at all …"). The author asked for it deleted in the same instruction
@@ -552,6 +598,20 @@ export default function WhatABlueprintIsPage() {
           </div>
         </div>
       </section>
+
+      {/* ---------- the three parts and the words, on one real bundle ----------
+          `SectionExample` was mounted only on the deleted `/spec`, and it is the site's
+          only worked analyzer run outside a blueprint detail page: the starter's graph,
+          the edge that is not there, and the scorecard the engine computes from both.
+          It reads the same `starter-software-factory` the three figures above read, so a
+          reader meets the parts, then the words for them, then both assembled on one
+          bundle. It is the page's single hinge from drawing to file.
+
+          It owns its own full-bleed `bg-void py-20 sm:py-28` band and its own eyebrow.
+          The band above it is `bg-surface`, so the seam is a change of ground, which is
+          how the landing marks one. That was true when the band above was the three parts
+          and it is still true now that it is the words. */}
+      <SectionExample />
 
       <section className="border-t border-line bg-void py-16">
         <div className="container-page flex flex-col gap-8">

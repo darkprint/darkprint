@@ -38,10 +38,8 @@
 import Link from "next/link";
 import { DARKPRINT_CONFIG, shortDigest } from "@/lib/core";
 import { getBlueprintBySlug } from "@/lib/content";
-import { contentHref } from "@/lib/href";
 import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { ButtonLink } from "@/components/ui/Button";
 import { MetricBars } from "@/components/ui/MetricBars";
 
 const SLUG = "starter-software-factory";
@@ -69,8 +67,6 @@ function PanelLabel({ children }: { children: React.ReactNode }) {
 export function SectionExample() {
   const bp = getBlueprintBySlug(SLUG);
   if (bp === undefined) return null;
-
-  const href = contentHref(bp);
 
   return (
     <section id="examples" className="bg-void py-20 sm:py-28">
@@ -200,17 +196,16 @@ export function SectionExample() {
           </p>
         </div>
 
-        <div className="mt-8 flex flex-wrap items-center gap-4">
-          <ButtonLink href={href} size="lg">
-            Open the blueprint
-          </ButtonLink>
-          <Link
-            href="/blueprints"
-            className="font-mono text-sm text-muted underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan"
-          >
-            or all of them
-          </Link>
-        </div>
+        {/* No controls close this section, on the author's instruction: the large cyan
+            "Open the blueprint" button and the "or all of them" link beside it are both
+            gone. Recorded rather than merely removed, because the consequence is real and
+            is the kind of thing a later pass would otherwise "fix" by putting them back:
+            the only page that mounts this section, `/what-a-blueprint-is`, now has no link
+            of any kind to `/blueprints/starter-software-factory` — the one bundle its
+            three figures, this worked run and this scorecard are all read off. The shelf
+            itself stays reachable from that page twice over (step 01 and the closing
+            button pair), so it is not a dead end; it is the loss of one destination, and
+            it was asked for. */}
       </div>
     </section>
   );

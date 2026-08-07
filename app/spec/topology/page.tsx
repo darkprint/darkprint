@@ -7,7 +7,7 @@ import { TOPOLOGY_ROWS } from "@/components/spec/rows";
 import { specNeighbours } from "@/components/spec/sequence";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { SourcePanel } from "@/components/ui/SourcePanel";
+import { DotBreakdown } from "@/components/panes/DotBreakdown";
 
 /* ============================================================
    /spec/topology — layer 1 of the spec language.
@@ -26,10 +26,27 @@ import { SourcePanel } from "@/components/ui/SourcePanel";
    The author asked for that subsection off the page in this pass.
    The reasoning it carried is not lost: the loop and the absent
    edge are the whole subject of `TOPOLOGY_ROWS` below, and the DOT
-   listing on the right prints the five nodes and five edges the
+   breakdown under the prose prints the five nodes and five edges the
    drawing traced. What the page loses is a picture; what it gains
    is a route that starts at its own subject, the file, rather than
    at a second telling of the landing's argument.
+
+   ── The file, since the author asked for it to be readable ──
+   The `SourcePanel` that stood in the right half of the first band
+   is now `components/panes/DotBreakdown.tsx`, the figure the
+   blueprint pages mount: full container width, and a rail of buttons
+   that lights one block of the file at a time. Same component, same
+   behaviour, same source — `bundleSource(STARTER).dot` is
+   byte-for-byte the `bp.graph.dot` a blueprint page passes it.
+
+   One sentence went with the change. The first paragraph used to
+   read "One attribute does the joining. A node writes
+   card="id@version", and the version is exact…", which is
+   `NODES_BODY` in `components/panes/dot-breakdown.ts` restated a
+   second time on the same screen. The paragraph keeps the claim only
+   this page makes — that DOT attribute values are flat strings, which
+   is WHY the format splits in two — and hands the rest to the figure
+   that says it beside the lines it is about.
 
    `components/home/SectionRoles.tsx` was mounted here and nowhere
    else, so it is now mounted nowhere. The component and its guards
@@ -129,56 +146,68 @@ export default function SpecTopologyPage() {
               One file, and the attribute DarkPrint adds
             </h2>
           </div>
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
-            {/* `.prose-lane`, which is a no-op at `lg` — the grid column is already 564px
-                — and the whole point between `sm` and `lg`, where this column is the full
-                1152px container and these three paragraphs ran past 140 characters. */}
-            <div className="prose-lane flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
-              <p>
-                DOT attribute values are flat strings, which is the reason the
-                format splits in two: the graph carries the wiring and every
-                piece of detail lives in a card beside it. One attribute does
-                the joining. A node writes <Id>card=&quot;id@version&quot;</Id>,
-                and the version is exact, so the same file read twice describes
-                the same five nodes.
-              </p>
-              <p>
-                DarkPrint reads a strict subset of DOT that{" "}
-                <SpecLink href="https://github.com/strongdm/attractor" external>
-                  Attractor
-                </SpecLink>{" "}
-                runs as it stands. Attractor reserves a list of attribute names
-                and silently ignores every name outside it, which is what lets{" "}
-                <Id>card</Id> and <Id>digest</Id> ride along in a file a runner
-                still executes. The compatibility linter reports the places a
-                file would stop being runnable as warnings in their own{" "}
-                <Id>attractor/</Id> namespace, so a reader can tell which of the
-                two readers is complaining.
-              </p>
-              <p>
-                One name is worth knowing about because it looks free and is
-                not. A node <Id>type</Id> attribute means{" "}
-                {/* A leading space at the head of a multi-line JSX text node is
-                  dropped by the compiler, and this paragraph shipped once reading
-                  "handler overrideto Attractor". Written as a string expression so
-                  the space is data rather than layout, and so a formatter rewrapping
-                  the file cannot lose it again. */}
-                <em>handler override</em>
-                {
-                  " to Attractor. A card's ontology type stays inside the YAML for that reason, and a DOT that puts a term in "
-                }
-                <Id>type=</Id> is reported as{" "}
-                <Id>attractor/reserved-attribute</Id>.
-              </p>
-            </div>
-            {/* A code pane is not prose: it keeps its half of the grid. */}
-            <SourcePanel
-              source={dot}
-              language="DOT"
-              title={`${STARTER}/blueprint.dot`}
-              downloadName="blueprint.dot"
-            />
+          {/* ---------- prose above, figure below, and why the grid went ----------
+              This band was a `lg:grid-cols-[1fr_1fr]` with the three paragraphs on the left
+              and a `SourcePanel` on the right. The panel measured 564px against a longest
+              line of 690px and capped at `max-h-80`, so it clipped line 12 mid-sentence at
+              the right edge and cut the 27-line file at about line 16 — a figure whose
+              whole job is "here is the file" showing two thirds of it.
+
+              `DotBreakdown` is the same figure the blueprint pages mount, over byte-for-byte
+              the same DOT (`bundleSource(STARTER).dot` is `bp.graph.dot`), and it needs the
+              container's full 1152px: it splits 2:1 into a 727px listing and a 363px rail,
+              and 564px is below the longest line before the rail is even allowed for. So
+              the prose stops being a column and becomes what it always should have been —
+              body prose at `.prose-lane`'s measure — and the figure takes the width.
+
+              `gap-10` between them, unchanged from the grid this replaces. */}
+          <div className="prose-lane flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
+            <p>
+              DOT attribute values are flat strings, which is the reason the
+              format splits in two: the graph carries the wiring, and every
+              piece of detail lives in a card beside it. Which attribute does
+              the joining, and what each block of the file is for, is the
+              subject of the breakdown below.
+            </p>
+            <p>
+              DarkPrint reads a strict subset of DOT that{" "}
+              <SpecLink href="https://github.com/strongdm/attractor" external>
+                Attractor
+              </SpecLink>{" "}
+              runs as it stands. Attractor reserves a list of attribute names
+              and silently ignores every name outside it, which is what lets{" "}
+              <Id>card</Id> and <Id>digest</Id> ride along in a file a runner
+              still executes. The compatibility linter reports the places a
+              file would stop being runnable as warnings in their own{" "}
+              <Id>attractor/</Id> namespace, so a reader can tell which of the
+              two readers is complaining.
+            </p>
+            <p>
+              One name is worth knowing about because it looks free and is
+              not. A node <Id>type</Id> attribute means{" "}
+              {/* A leading space at the head of a multi-line JSX text node is
+                dropped by the compiler, and this paragraph shipped once reading
+                "handler overrideto Attractor". Written as a string expression so
+                the space is data rather than layout, and so a formatter rewrapping
+                the file cannot lose it again. */}
+              <em>handler override</em>
+              {
+                " to Attractor. A card's ontology type stays inside the YAML for that reason, and a DOT that puts a term in "
+              }
+              <Id>type=</Id> is reported as{" "}
+              <Id>attractor/reserved-attribute</Id>.
+            </p>
           </div>
+
+          {/* `downloadName`, which the blueprint pages do not pass: this route has no
+              `Download` disclosure of its own, and the `SourcePanel` this replaces offered
+              the file. Losing a working button to a redesign is a regression whatever else
+              the redesign fixes. */}
+          <DotBreakdown
+            source={dot}
+            title={`${STARTER}/blueprint.dot`}
+            downloadName="blueprint.dot"
+          />
         </div>
       </section>
 

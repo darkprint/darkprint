@@ -1,6 +1,12 @@
 /* ============================================================
-   The three pages of §4.2, and the one way their pager breaks
+   The two pages of §4.2, and the one way their pager breaks
    without saying so.
+
+   Three until 2026-08-07, when `/towards-a-dark-factory/which-tasks`
+   stopped being a route and its parent became it. `route.ts` records
+   why. Nothing in this file counts stops — every case below is
+   derived from `CLIMB_ROUTE` — so the merge cost it no edit beyond
+   this paragraph.
 
    `neighbours` used to return `{}` for a path the route does not
    carry, and `RoutePager` then ran its own `findIndex` and got -1

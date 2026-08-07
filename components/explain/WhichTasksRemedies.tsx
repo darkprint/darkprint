@@ -87,7 +87,11 @@ const INLINE =
 export function WhichTasksRemedies() {
   return (
     <section className="flex flex-col gap-10" aria-labelledby="remedies-heading">
+      {/* An eyebrow, like the three bands above it. The eyebrow says why the section is
+          here rather than restating the title: a filter that only turns people away is a
+          wall, and this is the half that makes it a filter. */}
       <SectionHeading
+        eyebrow="The other half of the filter"
         title={<span id="remedies-heading">What to do with a no</span>}
         lead="A no is about this task in its current shape."
       />

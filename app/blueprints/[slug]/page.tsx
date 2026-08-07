@@ -37,7 +37,7 @@ import { More } from "@/components/ui/More";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
 import { absencesFor } from "@/components/panes/absences";
 import { buildPaneModel, type PaneNodeInput } from "@/components/panes/build";
-import { DotWalk } from "@/components/panes/DotWalk";
+import { DotBreakdown } from "@/components/panes/DotBreakdown";
 import { SynchronisedPanes } from "@/components/panes/SynchronisedPanes";
 import { BundlePanel, type BundleNode } from "@/components/blueprint/BundlePanel";
 import { DownloadPanel, type DownloadCard } from "@/components/blueprint/DownloadPanel";
@@ -568,8 +568,11 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           "stay like now", per the author. */}
       <div className="mt-8 flex flex-col gap-8">
         {/* ---------- the file itself, at the width the file needs ----------
-            The author asked for the `<slug>/blueprint.dot` panel to be BIGGER, and for the
-            important tag to light up in blue as the page scrolls.
+            The author asked for the `<slug>/blueprint.dot` panel to be BIGGER, for the
+            important tag to light up in blue, and — this pass — for the highlight to be
+            driven by a CLICK on the rail beside the file rather than by the page's scroll
+            position. The scroll choreography that stood here for one release is gone, not
+            gated: `components/panes/DotBreakdown.tsx` records what replaced it.
 
             Both asks are answered by taking the listing out of a column. The page carried
             `blueprint.dot` only as a download button, and the panel the ask describes —
@@ -591,10 +594,17 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             last thing the page says in its own voice: here is the source, and here is what
             each part of it is.
 
-            `components/panes/DotWalk.tsx` carries the register, the contrast numbers and
-            the pacing; `components/panes/dot-walk.ts` derives every step from the file so
-            that nine different DOTs cannot drift out of a hand-typed table. */}
-        <DotWalk source={bp.graph.dot} title={`${bp.slug}/${paneModel.dotFile}`} />
+            `components/panes/DotBreakdown.tsx` carries the register and the contrast
+            numbers; `components/panes/dot-breakdown.ts` derives every block from the file
+            so that nine different DOTs cannot drift out of a hand-typed table. The same
+            figure is mounted on `/spec/topology`, over the same file, which is why it takes
+            its source and its title as props and holds no knowledge of either page.
+
+            No `downloadName` here. This page already offers `blueprint.dot` in its
+            `Download` disclosure a few hundred pixels below, and two buttons for the same
+            bytes is two answers to one question. `/spec/topology`, which has no such
+            disclosure, passes one. */}
+        <DotBreakdown source={bp.graph.dot} title={`${bp.slug}/${paneModel.dotFile}`} />
 
         <Comments comments={bp.comments} />
 

@@ -112,6 +112,20 @@ interface Phase {
   doing: string;
   /** What the phase is worth on its own, in the account's terms. */
   alone: string;
+  /**
+   * The disclosure's summary line: what is actually behind it.
+   *
+   * It used to be derived — `What ${phase} involves: ${title}` — which put the two labels
+   * printed twelve pixels above it back on the screen glued together, four times. A
+   * summary that repeats what a reader can already see gives them nothing to decide with,
+   * which is the one thing `More`'s own docstring asks a summary to be. These name the
+   * substance instead: the thresholds, the retry rule, the piece of infrastructure.
+   *
+   * Typed rather than derived, so it can say something the title does not. That costs the
+   * guarantee that it cannot drift from the title — and the title is not what it is about
+   * any more, so there is nothing left to drift from.
+   */
+  opens: string;
   /** What the phase actually involves. Behind the disclosure. */
   body: string;
 }
@@ -124,6 +138,7 @@ const PHASES: Phase[] = [
     at: 2,
     doing: "reads the diff",
     alone: "Better pull requests and fewer broken builds. Nobody's workflow changes.",
+    opens: "The AGENTS.md layering, and the two rules that travel with it",
     body: "The biggest return in the account has nothing to do with autonomy. Every repository gets an AGENTS.md, about a hundred lines, a table of contents over a docs/ folder holding coding patterns, API conventions, auth and testing. Two rules travel with it: the agent runs the build and the full suite before it pushes, so a broken change is fixed locally rather than across CI runs, and architectural rules move from the wiki into linters.",
   },
   {
@@ -133,6 +148,7 @@ const PHASES: Phase[] = [
     at: 2,
     doing: "reads the report",
     alone: "A spec produces validated code in hours. The localhost testing ritual is gone.",
+    opens: "What the orchestrator does with a failure, and what the approver reads",
     body: "An orchestrator clones the repository, hands the spec to the coding agent, runs the build and tests on what comes back, and opens a pull request. A failure goes onto the prompt and the agent retries on the same branch, behind an abstraction that makes swapping it a line of configuration. The approver reads a satisfaction report rather than a diff: five minutes against two hours.",
   },
   {
@@ -142,6 +158,7 @@ const PHASES: Phase[] = [
     at: 2,
     doing: "may block",
     alone: "On the one or two services whose numbers hold. Everyone can still stop a merge.",
+    opens: "The three measurements that have to hold, and the maintenance agents",
     body: "The change is one line of configuration, and three measurements have to hold first: scenario pass rate over the last twenty pull requests above 90%, false positives below 5%, and human rejections of something the scenarios passed below 10%. On timing, wait for twenty or thirty pull requests where gate and human agreed. The phase adds maintenance agents too, weekly jobs opening cleanup pull requests for drift and stale documentation through the same gate, because generated code accumulates small inconsistencies and nothing about that is catastrophic until nobody has swept for a year.",
   },
   {
@@ -151,6 +168,7 @@ const PHASES: Phase[] = [
     at: 0,
     doing: "writes both",
     alone: "Configuration rather than architecture. Nothing downstream of merge changes.",
+    opens: "Digital twins, and the one piece of infrastructure that is genuinely new",
     body: "Auto-merge expands to every service whose scenario numbers hold, a tagged ticket generates a spec and enters the pipeline, and dashboards go up. One piece of infrastructure is genuinely new: digital twins, mock servers standing in for the external dependencies that make scenario evaluation flaky or expensive, built one at a time starting with whichever causes the most trouble.",
   },
 ];
@@ -238,10 +256,10 @@ export function PhaseStrip() {
           </Sheet>
           <div className="panel flex flex-1 flex-col gap-3 p-5">
             <p className="text-[13px] leading-relaxed text-muted">{phase.alone}</p>
-            {/* The summary is the phase's own outcome, so four disclosures on one screen
-                say four different things and a reader can decide which to open — which is
-                what `More`'s own docstring asks a summary to be. Derived rather than
-                typed out, so it cannot drift from the title above it.
+            {/* The summary names what is behind it. It was derived from the phase's own
+                number and title — "What phase 1 involves: better context" — which is the
+                sheet's label and its title, twelve pixels above, glued into a sentence. A
+                reader deciding whether to open it learned nothing from it. See `opens`.
 
                 And no `mt-auto` on it. Pinning the summary to the bottom of the panel
                 lines the four up while they are closed, and then one open card grows the
@@ -250,7 +268,7 @@ export function PhaseStrip() {
             <More
               bare
               className="border-t border-line pt-3"
-              summary={`What ${phase.n.toLowerCase()} involves: ${phase.title.toLowerCase()}`}
+              summary={phase.opens}
             >
               <p className="text-[13px] leading-relaxed text-muted">{phase.body}</p>
             </More>

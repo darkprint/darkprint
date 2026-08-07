@@ -103,7 +103,34 @@ const SOURCE_ORDER: readonly MetricSource[] = ["auto", "community", "reported"];
 const LINK =
   "text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright";
 
-const BODY = "prose-lane text-[15px] leading-[1.7] text-muted";
+/* ── Full span above "The arithmetic": a deliberate, scoped exception to `.prose-lane` ──
+   The author's ruling, in their words: "in '/reading-the-radar' the texts up to the
+   section 'The arithmetic' should cover the full horizontal space instead of being placed
+   on the right." Everything from the header down to and including the REPORTED band now
+   runs the `container-page` measure. `<ScoringModel />` and the tail box below it are
+   untouched — that is where the boundary was drawn, because "The arithmetic" is the
+   `.label-lead` `ScoringModel` prints at its own top.
+
+   This is NOT an oversight for a later pass to "fix" back to `.prose-lane`. The site's
+   body measure is 36rem (`--measure`, globals.css) and it exists because long lines hurt
+   reading; it has been overruled here, for this page's opening only, by the person whose
+   page it is. The same ruling already stands on every `SectionHeading` lead sitewide, and
+   `SectionHeading`'s own docblock records it being made twice.
+
+   What that ruling costs, and how it is paid. `.container-page` is 1200px capped less
+   1.5rem of padding either side: a 1152px content box. At 15px these paragraphs measured
+   ~154 characters across it — double the ~75 a measure is set for, and the hardest line
+   on the page. The cure is the one `SectionHeading` already found for the deck: at full
+   span the TYPE goes up, not the span down. 18px from `sm` up measures 128 characters at
+   1440, against the deck's 115 at 20px in the same column, so body and deck end up on the
+   same footing rather than the body being the harder of the two. Below `sm` the container
+   is narrow enough that 15px is already a 46-character line, so the ramp starts at `sm`
+   and the phone keeps exactly the size and the wrapping it had. Measured at 390, 430,
+   640, 768, 1024 and 1440: no width overflows its container.
+
+   One class, so the five paragraphs, the two `NotBuilt` bodies, the three callouts and
+   the plate's caption cannot drift apart. */
+const BODY = "text-[15px] leading-[1.7] text-muted sm:text-lg sm:leading-[1.6]";
 
 /**
  * The `○ not built` line, beside the claim it qualifies.
@@ -112,15 +139,21 @@ const BODY = "prose-lane text-[15px] leading-[1.7] text-muted";
  * them, `.route-box`, appears on this very page in the tail box. Shape carries the
  * difference — globals.css writes that rule down — and this is the shape the deleted
  * `/spec/scoring` used before the disclosure was split in two.
+ *
+ * Full span, like everything else above "The arithmetic" (see `BODY`). The pill stays
+ * `shrink-0` and the sentence takes the rest of the row. The `basis-[20rem]` is what keeps
+ * the phone honest: below that the sentence wraps onto its own full-width line under the
+ * pill, exactly as it did when it was a `.prose-lane` block, and above it it grows to
+ * whatever the container leaves. `min-w-0` stops a long unbroken token widening the row.
  */
 function NotBuilt({ children }: { children: React.ReactNode }) {
   return (
-    <p className="flex flex-wrap items-start gap-2 text-[15px] leading-[1.7] text-dim">
+    <p className="flex flex-wrap items-start gap-2 text-[15px] leading-[1.7] text-dim sm:text-lg sm:leading-[1.6]">
       <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
         <span aria-hidden>○</span>
         not built
       </span>
-      <span className="prose-lane">{children}</span>
+      <span className="min-w-0 flex-1 basis-[20rem]">{children}</span>
     </p>
   );
 }
@@ -201,8 +234,13 @@ function Callout({
        it is `text-dim` now and earns its presence from size instead of hue. It sat 96px
        from its title with nothing bridging the gap; the gutter is 3rem and the baselines
        line up. And the rule ran the full 1152px container under a 62ch text column, so
-       every divider advertised the empty third of the page — it is capped with the
-       content now. */
+       every divider advertised the empty third of the page.
+
+       That last one is now solved from the other side. The 62ch caps on the body and the
+       figure are gone, and the `<ol>`'s own `max-w-[52rem]` with them, per the author's
+       full-span ruling recorded on `BODY`. The rule and the text under it reach the same
+       right edge again because the TEXT grew, not because the rule shrank. The numeral
+       keeps its 3rem gutter, so the text column is the container less 3.5rem. */
     <li className="grid gap-x-6 gap-y-3 border-t border-line pt-8 sm:grid-cols-[3rem_minmax(0,1fr)]">
       <span className="font-mono text-2xl leading-none tabular-nums text-dim sm:pt-1">
         {n}
@@ -211,8 +249,8 @@ function Callout({
         <h3 className="font-display text-xl font-semibold leading-snug text-fg">
           {title}
         </h3>
-        <p className="max-w-[62ch] text-[15px] leading-relaxed text-muted">{children}</p>
-        {extra !== undefined && <div className="mt-2 max-w-[62ch]">{extra}</div>}
+        <p className={BODY}>{children}</p>
+        {extra !== undefined && <div className="mt-2">{extra}</div>}
       </div>
     </li>
   );
@@ -286,7 +324,11 @@ export default function HowABlueprintIsGradedPage() {
             </Sheet>
 
             <figcaption className="flex flex-col gap-4">
-              <p className="prose-lane text-sm leading-relaxed text-muted">
+              {/* The caption takes `BODY` rather than a caption size of its own. At the
+                  full container span there is no size below body that reads: 14px across
+                  1152px is ~165 characters. It is the first paragraph of the page's
+                  argument as much as it is a caption, so it is set as one. */}
+              <p className={BODY}>
                 {sample.title}, drawn by the same component every blueprint page
                 mounts. Each axis is named in the colour of the badge its row carries
                 on the scorecard, and the three sections below take those badges in
@@ -327,7 +369,7 @@ export default function HowABlueprintIsGradedPage() {
           <h2 id="the-notes" className="sr-only">
             What each part of the drawing means
           </h2>
-          <ol className="flex max-w-[52rem] flex-col gap-10">
+          <ol className="flex flex-col gap-10">
             <Callout n="01" title={`${spokes.length} spokes, one per scored axis`}>
               {spokes.map((m) => m.label).join(", ")}, each vertex at that axis&rsquo;s
               value on a 0 to 100 scale. A larger polygon is not a better blueprint, it is
@@ -358,14 +400,23 @@ export default function HowABlueprintIsGradedPage() {
 
                    The 8px dot is the same swatch DRW-104's legend uses above, so the chart,
                    the legend and this list are one system rather than three ways of
-                   printing the same six names. */
+                   printing the same six names.
+
+                   The 62ch cap came off with the rest of the page's opening. This is a
+                   two-column listing, not body prose, and globals.css already says
+                   listings keep the full container — but a `dd` running the whole of it
+                   at 14px is the same defect in another shape, so the name column takes
+                   the extra room (11rem → 15rem) and both columns are set at 15px. The
+                   `dd` measures 824px at 1440, ~110 characters, which is what these
+                   one-to-three line entries need. `dt` came up from 13px with it: a name
+                   set two steps under its own definition is a hierarchy upside down. */
                 <dl className="flex flex-col">
                   {sample.metrics.map((m) => (
                     <div
                       key={m.key}
-                      className="grid gap-x-4 gap-y-1 border-t border-line/70 py-3 first:border-t-0 first:pt-0 sm:grid-cols-[11rem_minmax(0,1fr)]"
+                      className="grid gap-x-4 gap-y-1 border-t border-line/70 py-3 first:border-t-0 first:pt-0 sm:grid-cols-[15rem_minmax(0,1fr)]"
                     >
-                      <dt className="flex items-baseline gap-2 text-[13px] font-medium text-fg">
+                      <dt className="flex items-baseline gap-2 text-[15px] font-medium text-fg">
                         <span
                           aria-hidden
                           className="inline-block h-2 w-2 shrink-0 translate-y-[-1px] rounded-full"
@@ -373,7 +424,7 @@ export default function HowABlueprintIsGradedPage() {
                         />
                         {m.label}
                       </dt>
-                      <dd className="text-sm leading-relaxed text-muted">{m.detail}</dd>
+                      <dd className="text-[15px] leading-relaxed text-muted">{m.detail}</dd>
                     </div>
                   ))}
                 </dl>

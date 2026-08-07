@@ -22,15 +22,22 @@ import { cx } from "@/lib/format";
  *
  * Seven for a while, then nine. Redesign spec §4.2 renamed `/how-to-build-a-dark-factory`
  * to `/towards-a-dark-factory` and folded `/which-tasks` into it as a child, so the two
- * items that used to sit side by side in `learn` are one item leading to a three-page
- * sequence. Both old paths redirect from `next.config.ts` and neither is listed here: a
- * nav is a map of where the site is, and a redirect is for a link somebody else already
- * wrote down.
+ * items that used to sit side by side in `learn` are one item leading to a sequence. That
+ * sequence was three pages and is two: `/towards-a-dark-factory/which-tasks` was merged
+ * into its own parent on 2026-08-07 (`components/howto/route.ts` records why). All three
+ * old paths redirect from `next.config.ts` and none is listed here: a nav is a map of
+ * where the site is, and a redirect is for a link somebody else already wrote down.
  *
- * The `/spec` and `/towards-a-dark-factory` children are deliberately absent too. Each
- * sequence carries its own previous/next pager and its parent opens with a door per
- * child, so putting five more items in this row would make the header a table of contents
- * for two pages that already have one.
+ * The `/spec` and `/towards-a-dark-factory` children are deliberately absent too, and the
+ * grounds have been corrected. They used to read "each sequence carries its own
+ * previous/next pager and its parent opens with a door per child", and the second half was
+ * false for two passes: the climb route's doors had moved to the FOOT of its parent, at
+ * 86% scroll depth, so a reader arriving through this nav — the only permanent entrance —
+ * met the first link to a child four and a half screens down. The doors are gone with the
+ * merge and the reason is now the honest one: `/towards-a-dark-factory` has exactly one
+ * child and its pager is the last thing on the page, and the four spec pages are a
+ * notation a reader reaches from the page that says what a blueprint is. Listing all five
+ * here would make the header a table of contents for two routes that already carry one.
  *
  * ── Nine back to nine, with three of them different (2026-08-07) ──
  * The IA pass removed three `learn` rows and added none:

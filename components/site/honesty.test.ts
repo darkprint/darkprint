@@ -36,6 +36,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import SpecCardPage from "@/app/spec/card/page";
+import TheClimbPage from "@/app/towards-a-dark-factory/the-climb/page";
 import InstallPage, { metadata as installMetadata } from "@/app/install/page";
 import { allBlueprints } from "@/lib/content";
 import { CARD_ROWS } from "@/components/spec/rows";
@@ -83,6 +84,23 @@ const INSTALL_PAGE = renderToStaticMarkup(createElement(InstallPage as never));
  */
 const INSTALL_METADATA_DESCRIPTION = installMetadata.description ?? "";
 const WHICH_TASKS = renderToStaticMarkup(createElement(WhichTasksChecks));
+/**
+ * The last page of the climb route, whole, for the one paragraph that says what this site
+ * is not.
+ *
+ * It was guarded by a source comment reading "Do not fold it" and by nothing else. That
+ * comment is the only reason it survived two length passes: `/what-it-isnt` carried the
+ * other copy of the same statement and was deleted with the route, so this is now the sole
+ * place the route says there are no accounts, nothing publishes and there is no MCP server
+ * — on the page of the two most likely to read as a pitch, since it is the one that
+ * narrates a working pipeline for four sections before it gets there. A comment is not a
+ * guard. This is.
+ *
+ * The whole page rather than a component, because the paragraph is written in the page and
+ * extracting it into a component to make it testable would move the sentence for the
+ * test's convenience, which is how a claim ends up somewhere nobody reads it.
+ */
+const THE_CLIMB = renderToStaticMarkup(createElement(TheClimbPage as never));
 /**
  * The scoring panel `/reading-the-radar` mounts (PROJECT.md §3.4; moved off `/spec` onto
  * `/spec/scoring` by the lifecycle-scoring pass, spec §4, and moved again when the IA
@@ -234,23 +252,26 @@ const CLAIMS: Claim[] = [
     html: SCORING,
   },
 
-  /* ---- /towards-a-dark-factory/which-tasks ---- */
+  /* ---- /towards-a-dark-factory · the four checks ----
+     The surfaces are named `/towards-a-dark-factory` rather than `/…/which-tasks` as of
+     2026-08-07: that route was merged into its parent and `WhichTasksChecks` is mounted
+     there now. The component is unchanged and so are the three sentences. */
   {
-    surface: "/towards-a-dark-factory/which-tasks · check 01",
+    surface: "/towards-a-dark-factory · check 01",
     why: "the tester's structural position, which is why a task with no verdict is a veto rather than a caution. A grep for \"release gate\" over the built site returns one hit, and it describes the starter's wiring rather than the tester",
     says: "the tester is the one node standing between generated code and the release gate",
     where: "present",
     html: WHICH_TASKS,
   },
   {
-    surface: "/towards-a-dark-factory/which-tasks · check 01",
+    surface: "/towards-a-dark-factory · check 01",
     why: "what a rubber-stamping tester costs. The examples above say the tester passes whatever it is given; nothing else says what that makes the graph",
     says: "an expensive way to run one prompt",
     where: "present",
     html: WHICH_TASKS,
   },
   {
-    surface: "/towards-a-dark-factory/which-tasks · check 03",
+    surface: "/towards-a-dark-factory · check 03",
     why: "why ambiguity is not caught by the graph. The examples say every node downstream builds on a guess; this says the run ends before anyone can act on it",
     says: "the run is over before anyone finds out",
     where: "present",
@@ -268,6 +289,15 @@ const CLAIMS: Claim[] = [
      length pass wanted the words; it comes out when the claim it guards has nothing left
      to guard. If the composite-node idea is ever described again anywhere, this entry
      comes back with it. */
+
+  /* ---- /towards-a-dark-factory/the-climb ---- */
+  {
+    surface: "/towards-a-dark-factory/the-climb · the closing section",
+    why: "the only place the climb route states its limits. `/what-it-isnt` carried the other copy and was deleted with the route, and this paragraph closes the one page on the site that narrates a working autonomous pipeline for four sections — an account of somebody else's factory read as a description of this one is the exact misreading doc 2 §0.4 exists to stop. It sits in the open under two buttons, so it qualifies something printed in the open and has to be printed in the open with it",
+    says: "publishing is not built, there are no accounts, no votes and no telemetry, and there is no mcp server to point a client at yet",
+    where: "open",
+    html: THE_CLIMB,
+  },
 
   /* ---- /install ---- */
   {
@@ -346,7 +376,8 @@ describe("the surfaces the ledger is read off", () => {
     for (const [name, html] of [
       ["/spec/card", SPEC_CARD],
       ["the scoring panel", SCORING],
-      ["which-tasks checks", WHICH_TASKS],
+      ["the four checks", WHICH_TASKS],
+      ["/towards-a-dark-factory/the-climb", THE_CLIMB],
       ["the starter's canvas", STARTER],
       ["/build · download exit", DOWNLOAD_STEP],
       ["/build · agent-brief exit", AGENT_HANDOFF],

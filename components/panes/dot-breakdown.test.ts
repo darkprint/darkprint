@@ -1,53 +1,54 @@
 /* ============================================================
-   The DOT walk, held to the nine files it actually runs over.
+   The DOT breakdown, held to the nine files it actually runs over.
 
-   `components/panes/DotWalk.tsx` highlights `card="id@version"` in
-   the cyanotype register as a reader scrolls a blueprint page, and
-   every range it lights is derived from the file rather than typed
-   into a table. This is what makes that derivation worth trusting.
+   `components/panes/DotBreakdown.tsx` highlights `card="id@version"`
+   in the cyanotype register, and lights one block of the file when a
+   reader picks it out of the rail beside it. Every range it lights is
+   derived from the file rather than typed into a table. This is what
+   makes that derivation worth trusting.
 
    The one defect this file exists to make impossible is the one
    `components/home/nodecard/annotations.ts` records the author
    reporting on the card figure: steps that were not in document
-   order, so the highlight climbed the listing while the reader
-   scrolled down it. There the ranges are hand-written and resolved
-   by key name; here there are NINE files and no table at all, so
-   the property is asserted directly — strictly increasing, no
-   overlap, and no statement left out of the walk.
+   order, so a highlight landed on lines belonging to another step.
+   There the ranges are hand-written and resolved by key name; here
+   there are NINE files and no table at all, so the property is
+   asserted directly — strictly increasing, no overlap, and no
+   statement left out of the breakdown.
 
-   Node environment, no DOM: `./dot-walk.ts` is plain TypeScript for
-   exactly this reason.
+   Node environment, no DOM: `./dot-breakdown.ts` is plain TypeScript
+   for exactly this reason.
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
 
 import { allBlueprints } from "@/lib/content";
 
-import { lineSpan, resolveDotSteps, tokenizeDot } from "./dot-walk";
+import { lineSpan, resolveDotSteps, tokenizeDot } from "./dot-breakdown";
 
 const BLUEPRINTS = allBlueprints();
 
 /** Every blueprint the archive publishes, so a tenth one is covered the day it lands. */
 const CASES = BLUEPRINTS.map((bp) => [bp.slug, bp.graph.dot] as const);
 
-describe("the walk is derived from the file", () => {
-  it("has nine blueprints to walk", () => {
+describe("the breakdown is derived from the file", () => {
+  it("has nine blueprints to break down", () => {
     expect(BLUEPRINTS.length).toBeGreaterThan(0);
   });
 
   it.each(CASES)("%s resolves at least three steps", (_slug, dot) => {
-    // Header, declarations, wiring. Below three the rail is not a walk, it is a caption,
-    // and the pacing in `DotWalk.tsx` (11vh a step, floored at 130vh) assumes at least
-    // this many.
+    // Header, declarations, wiring. Below three the rail is not a breakdown, it is a
+    // caption: two buttons cannot tell a reader that a DOT file has parts, and the figure
+    // is mounted precisely to say that it does.
     expect(resolveDotSteps(dot).length).toBeGreaterThanOrEqual(3);
   });
 
   /**
    * THE ORDERING PROPERTY, stated as plainly as it can be.
    *
-   * A reader scrolling down moves through the steps in order, and the listing beside them
-   * lights the lines of the step they are on. If step n+1 began above step n the highlight
-   * would jump backwards up the file, which is the bug the card figure shipped once.
+   * The rail lists the steps top to bottom and the listing beside it lights the lines of
+   * the one picked. If step n+1 began above step n, two rail rows would light overlapping
+   * lines and one of them would be lying — which is the bug the card figure shipped once.
    */
   it.each(CASES)("%s numbers its steps in document order", (_slug, dot) => {
     const steps = resolveDotSteps(dot);
@@ -69,10 +70,10 @@ describe("the walk is derived from the file", () => {
   /**
    * And that nothing is left out.
    *
-   * The blocks tile the file — that is the reason `DotWalk` grounds only the ACTIVE step
-   * rather than every attached one, and the reason the left rule reads as one bracket per
-   * block. A statement outside every step would print with no marker and no rule, which
-   * looks like a rendering fault rather than like a decision.
+   * The blocks tile the file — that is the reason `DotBreakdown` grounds only the PICKED
+   * step rather than every one of them, and the reason the left rule reads as one bracket
+   * per block. A statement outside every step would print with no marker and no rule,
+   * which looks like a rendering fault rather than like a decision.
    */
   it.each(CASES)("%s leaves no statement out of a step", (_slug, dot) => {
     const lines = dot.replace(/\r\n?/g, "\n").split("\n");

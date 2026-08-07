@@ -364,10 +364,28 @@ export function SectionLifecycle() {
               />
 
               <div className="flex min-w-0 flex-col gap-3">
+                {/* What is left of a three-sentence paragraph, and why one sentence stayed.
+                    ------------------------------------------------------------------
+                    The author asked for the whole paragraph out: "The folder is real, and
+                    every bundle has that shape." was restating the listing beside it, and
+                    "Nothing here executes it for you." is the section lead's own sentence
+                    a second time — the lead already says "Nothing here executes a
+                    blueprint, and nothing you build has to come back.", above and in the
+                    open, so the limit does not leave the section with this paragraph. Both
+                    of those went.
+
+                    The middle sentence stayed because `components/home/beats.test.ts`
+                    pins it: "does not open the listing on the compiled file" asserts that
+                    `factory.dot` is somewhere in this beat's readable text and that
+                    `blueprint.dot` reads before it. This is the only place in the section
+                    that names `factory.dot` — the `Artefact` listing above deliberately
+                    does not, per this file's header and the author's own composition of
+                    that folder — so deleting the sentence would have deleted a pinned
+                    claim, not just prose. "beside it" lost its antecedent when the first
+                    sentence went; "beside them" points at the files listed alongside. */}
                 <p className="text-sm leading-relaxed text-muted">
-                  The folder is real, and every bundle has that shape. A{" "}
-                  <Mono>factory.dot</Mono> compiled from the same graph ships beside it and
-                  is the file that runs. Nothing here executes it for you.
+                  A <Mono>factory.dot</Mono> compiled from the same graph ships beside them
+                  and is the file that runs.
                 </p>
 
                 <ComposeHint />
