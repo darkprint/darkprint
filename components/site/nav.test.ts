@@ -212,16 +212,28 @@ describe("a route is called the same thing everywhere", () => {
     expect(disagreements).toEqual([]);
   });
 
-  /** The exemption closed. See `headerLabelsFor`. */
-  it("gives every `/upload` control in the header the footer's label", () => {
-    const footer = FOOTER.find((link) => link.href === "/upload")?.label;
-    expect(footer, "the footer stopped carrying /upload").toBeDefined();
-    const labels = headerLabelsFor(read("components/site/SiteHeader.tsx"), "/upload");
-    // Two today: the button in the wide row and the last row of the phone panel. A floor
-    // rather than a count — it is here to fail when the scan stops matching, not to pin
-    // the header's shape.
+  /**
+   * The exemption closed. See `headerLabelsFor`.
+   *
+   * Rebased off the footer on 2026-08-07: the author asked `/upload` out of the Registry
+   * column, so there is no footer row left to compare against. The defect this was written
+   * for is untouched by that — four names for one destination, the loudest of them on the
+   * page itself — so what it compares changed and what it forbids did not.
+   *
+   * The header is now the source of truth, and it can be: it names `/upload` twice, in the
+   * wide row's button and the last row of the phone panel, which is exactly the pair that
+   * disagreed for two passes ("Validate" against "Validate a bundle"). Two controls held
+   * to each other catch that; one control held to a footer row that no longer exists
+   * catches nothing.
+   */
+  const uploadLabels = () => headerLabelsFor(read("components/site/SiteHeader.tsx"), "/upload");
+
+  it("gives every `/upload` control in the header the same label", () => {
+    const labels = uploadLabels();
+    // Two today. A floor rather than a count — it is here to fail when the scan stops
+    // matching, not to pin the header's shape.
     expect(labels.length, "the header names /upload nowhere").toBeGreaterThan(1);
-    expect([...new Set(labels)]).toEqual([footer]);
+    expect([...new Set(labels)], "the header calls /upload two things").toHaveLength(1);
   });
 
   /**
@@ -231,7 +243,8 @@ describe("a route is called the same thing everywhere", () => {
    * arrival. Both halves — the `h1` and the browser tab.
    */
   it("titles the upload page with the label that sends a reader to it", () => {
-    const label = FOOTER.find((link) => link.href === "/upload")?.label;
+    const [label] = [...new Set(uploadLabels())];
+    expect(label, "the header names /upload nowhere").toBeDefined();
     const source = read("app/upload/page.tsx");
     expect(source).toContain(`title="${label}"`);
     expect(source).toContain(`title: "${label}",`);
@@ -357,7 +370,19 @@ describe("the nav is a complete map of the routes", () => {
     // Was 4. Removing `/what-it-isnt` took the footer's `/what-it-isnt#what-it-is` with
     // it, so the population is one smaller and the floor moves with it. The floor is here
     // to catch a regex that stopped matching, not to pin a count.
-    expect(hrefs.size).toBeGreaterThan(3);
+    //
+    // 2 since 2026-08-07: the author asked "What you can do with one" out of the Registry
+    // column, which was the last fragment link the footer carried, and `WhichTasksRemedies`
+    // was deleted with its `#autonomy` link the same day. Both survivors are JSX
+    // attributes, so the table form of the regex is now covered by nothing.
+    //
+    // A floor that has slid from 4 to 3 to 2 is a floor that has stopped guarding anything,
+    // so it stops being only a floor here: the walk has to come back with a link this
+    // repository is known to contain. A regex that silently stops matching returns an empty
+    // set and fails the named case, which is the failure the count was always standing in
+    // for.
+    expect(hrefs.size).toBeGreaterThan(1);
+    expect([...hrefs]).toContain("/what-a-blueprint-is#the-words");
     expect(unrenderedFragments([...hrefs].sort())).toEqual([]);
   });
 

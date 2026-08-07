@@ -77,7 +77,6 @@
    the row renders at rest in all three.
    ============================================================ */
 
-import Link from "next/link";
 
 import {
   FLOW,
@@ -597,15 +596,11 @@ function LevelRow({ level, flip }: { level: Level; flip: boolean }) {
           <span className="font-mono text-xs uppercase tracking-[0.14em] text-muted">
             {level.name}
           </span>
-          {level.you === true && (
-            /* §1.1: a location, and it has to read as one. A bordered marker beside the
-               level's own name says "this is the spot on the map", where the same words
-               trailing the paragraph read as a remark about the paragraph. */
-            <span className="inline-flex items-center gap-1.5 rounded border border-cyan/50 bg-cyan/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em] text-cyan">
-              <span aria-hidden>⌖</span>
-              you are probably here
-            </span>
-          )}
+          {/* A `⌖ you are probably here` chip hung off level 2 until 2026-08-07, when the
+              author asked it out. The `you` field stays on the data (`LEVELS`) and is
+              simply unread here: the section's own heading is still "Most teams are at
+              level 2", so the claim the chip made is made once, in the largest type on the
+              section, instead of twice. */}
         </div>
         <p className="text-sm leading-relaxed text-muted">{level.body}</p>
       </div>
@@ -650,7 +645,10 @@ export function SectionLevels() {
           <p className="max-w-3xl font-display text-xl leading-snug text-fg sm:text-2xl">
             The gap between level 2 and level 5 is architectural and organisational.
           </p>
-          <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted">
+          {/* Full width, on the author's instruction 2026-08-07: `max-w-3xl` off this
+              paragraph. The line above it keeps its cap — it is one display-size sentence
+              and a 48rem measure is what stops it running as a banner. */}
+          <p className="mt-4 text-base leading-relaxed text-muted">
             The technology to run at level 5 already exists. What is missing are the
             patterns for structuring the work: what each agent is handed, and what each
             one is kept away from. Better models will not supply that. It is a design
@@ -658,71 +656,24 @@ export function SectionLevels() {
           </p>
         </div>
 
-        {/* ---------- doc 2 §1.1, in as many words ---------- */}
-        <div id="autonomy" className="panel mt-6 scroll-mt-24 p-6 sm:p-8">
-          <h3 className="font-display text-xl font-semibold text-fg">
-            Two scales, and only one of them is a number
-          </h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
-            The word autonomy does two jobs here and the subjects are different. Keeping
-            them apart matters, because the second one appears on every blueprint in the
-            gallery.
-          </p>
+        {/* ---------- the two-scales panel stood here ----------
+            `id="autonomy"`, an `h3` reading "Two scales, and only one of them is a
+            number", a two-column `dl` and three closing paragraphs. The author asked the
+            section out on 2026-08-07.
 
-          <dl className="mt-6 grid gap-5 md:grid-cols-2">
-            <div className="flex flex-col gap-2 border-l-2 border-line-bright pl-4">
-              <dt className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
-                The five levels above
-              </dt>
-              {/* "The one thing on the site that is counted in rungs" was falsified three
-                  sections down by this same page: `security level 4` is printed under the
-                  example's schematic, and again on all nine blueprint pages, `/build`
-                  and the gallery. The binding constraint is the autonomy
-                  ordinal, which appears nowhere, and that is what the clause was reaching
-                  for. Narrowed to the claim that is true and that the panel is about: an
-                  organisation is counted in rungs here and nothing else is. */}
-              <dd className="text-sm leading-relaxed text-muted">
-                <span className="text-fg">The maturity of an organisation.</span> What a
-                team is able to do at all, across everything it ships. It is the only thing
-                on this site that puts an organisation on a numbered scale.
-              </dd>
-            </div>
-            <div className="flex flex-col gap-2 border-l-2 border-cyan/50 pl-4">
-              <dt className="font-mono text-[11px] uppercase tracking-[0.16em] text-cyan">
-                The autonomy class on a blueprint
-              </dt>
-              <dd className="text-sm leading-relaxed text-muted">
-                <span className="text-fg">A design choice on one graph.</span> What that
-                factory automated, and where its author decided a person should act. It
-                is a name, and the gallery prints no number beside it.
-              </dd>
-            </div>
-          </dl>
+            The constraint it carried is doc 2 §1.1 and it is NOT lost with the panel:
+            `/towards-a-dark-factory`'s own deck states it above everything, in the words
+            this panel was the long form of — two things get called autonomy here, only
+            one is a number, the ladder counts an organisation, the class on a blueprint
+            records where its author put a person and ranks nothing. That paragraph was
+            written when the correction moved upstream of the picture, and it is the
+            reason the long form could go without the claim going with it.
 
-          <p className="mt-6 max-w-3xl border-t border-line pt-5 text-sm leading-relaxed text-muted">
-            A team at level 5 publishes supervised blueprints on purpose. A factory that
-            holds for a person before it releases is a factory whose author decided where
-            a person belongs, and the class records that decision. In the gallery the
-            class filters; it never ranks, and nothing here badges or rewards a blueprint
-            for the class it is in.{" "}
-            <Link
-              href="/blueprints"
-              className="text-fg underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan"
-            >
-              See it on the blueprints
-            </Link>
-            .
-          </p>
-
-          <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted">
-            The phrase <span className="text-fg">dark factory</span> lands on both scales,
-            so it is worth saying which one a blueprint page means. On the ladder it is
-            the fifth rung, a way of working. On a blueprint it classes the drawing: no
-            node in this graph waits for a person, the way <em>acyclic</em> says a graph
-            has no cycle. A graph with somebody in it is a first-class blueprint here and
-            is shelved beside the rest.
-          </p>
-        </div>
+            What DID go is the `#autonomy` anchor. Two links pointed at it: the deck's own
+            "named apart in full", rewritten in the same commit, and one in
+            `WhichTasksRemedies`, deleted whole in the same commit for its own reason.
+            `components/home/levels.test.ts` held two assertions on this copy and now
+            holds them on the deck instead. */}
 
         {/* ---------- sources ---------- */}
         <div className="mt-10 border-t border-line pt-6">

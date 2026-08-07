@@ -69,13 +69,26 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
       { href: "/blueprints", label: "Blueprints" },
       { href: "/nodes", label: "Nodes" },
       { href: "/ontology", label: "Ontology" },
-      // Download, compose and upload. The lifecycle-scoring pass's own §2 brought this
-      // section back to the landing as its fourth beat, so the footer reaches it there
-      // again rather than on `/blueprints`, which renders no such id any more.
-      { href: "/#lifecycle", label: "What you can do with one" },
-      // Not "Share a blueprint": publishing has no backend, and this link is rendered
-      // on the landing too. The header and both doors use the same wording.
-      { href: "/upload", label: "Upload blueprint" },
+      // Two rows came out on 2026-08-07, both on the author's instruction, and the column
+      // is the three registry indexes and nothing else now.
+      //
+      //   `/#lifecycle` "What you can do with one" — the only fragment link left in this
+      //   table, and the only row here that was not a place the registry keeps something.
+      //   It pointed at a beat of the landing, which is one scroll from the wordmark every
+      //   page already carries.
+      //
+      //   `/upload` "Upload blueprint" — still reachable from the header's own button at
+      //   every width and from the phone panel, which is where an action belongs. It was
+      //   in this column because the column used to be a sitemap; a list of the three
+      //   things the registry holds is a better answer to the word "Registry" than a list
+      //   of everything adjacent to it.
+      //
+      // `nav.test.ts` had an assertion built on the second one being here — it held the
+      // header's wording for `/upload` to the footer's, since `/upload` is the one
+      // destination that is a button rather than a `NAV` row. That check is rewritten
+      // against the phone panel in the same commit rather than deleted, because the defect
+      // it was written for (four names for one destination, the loudest on the page
+      // itself) is not fixed by removing one of the names.
     ],
   },
   {
@@ -92,13 +105,17 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
       // "The climb" stood here — the route's second and last page, promoted out of a
       // column of its own. The author deleted that page on 2026-08-07, so the route is one
       // page again and the row above is all of it.
-      // Renamed with the header's row on 2026-08-07, and split with it later the same day
-      // when the author asked for "two pages, one for the skill and one for the mcp".
-      // Both moves had to happen in the same commit as the header's: `nav.test.ts` holds
-      // this table and `NAV` to one label per route, so a footer still saying "Install"
-      // beside a header saying something else is a failing test, which is the point.
-      { href: "/skill", label: "The DarkPrint skill" },
-      { href: "/mcp", label: "Connect via MCP" },
+      //
+      // "The DarkPrint skill" and "Connect via MCP" stood here too, until the author:
+      // "'The DarkPrint skill' and 'Connect via MCP' should not appear under 'Learn'".
+      // They are setup actions and this column is the reading path, which is the same
+      // distinction the header draws with a rule between Ontology and the first of them.
+      //
+      // Removed rather than moved to a fourth column. A "Setup" column of two rows would
+      // rebuild the shape a fourth column already had here once — "The route", deleted on
+      // 2026-08-07 — and both routes are in the header at every width, including the phone
+      // panel. If they should be in the footer under a heading of their own, that is a
+      // column to add rather than these two rows to put back.
       // "What it isn't" and "What a dark factory is" both pointed at `/what-it-isnt`,
       // which is gone. Neither is repointed: `SectionWhatItIs` held the definition and
       // was deleted with the route, so there is no id left for the second link and no

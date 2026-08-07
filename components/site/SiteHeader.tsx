@@ -70,10 +70,16 @@ export const NAV = [
   // Nodes in the navbar. I prefer there." It is the vocabulary both of the others are
   // written against, so it belongs with the things you can browse rather than with the
   // pages explaining them.
-  // The wordmark already goes home, and a reader who has not learned that a logo is a
-  // link has no way in from a deep page. Its own group, so the wide row draws the same
-  // rule after it that it draws before `Learn`.
-  { href: "/", label: "Home", group: "home" },
+  // `{ href: "/", label: "Home", group: "home" }` stood here until 2026-08-07, when the
+  // author asked it out: "remove from the NavBar the home".
+  //
+  // The comment defending it argued that "a reader who has not learned that a logo is a
+  // link has no way in from a deep page". The wordmark is still that link and still the
+  // leftmost thing in the header, which is where every site on the web puts the way home;
+  // the row now spends its width on the nine destinations a reader cannot guess instead of
+  // the one they can. `HOME` and the `home` group stay defined and simply resolve empty —
+  // the wide row and the phone panel both `.map()` over them and render nothing, so the
+  // row is not restructured around the absence and putting it back is one line.
   { href: "/blueprints", label: "Blueprints", group: "registry" },
   { href: "/nodes", label: "Nodes", group: "registry" },
   { href: "/ontology", label: "Ontology", group: "registry" },
@@ -141,8 +147,9 @@ const GROUPS = [
 
 /** Inside the dropdown. */
 const LEARN = NAV.filter((item) => item.group === "learn" && !("standalone" in item));
-/** Flat, first, with a rule after it. */
-const HOME = NAV.filter((item) => item.group === "home");
+/* `HOME` stood here. It filtered `group === "home"`, and with the row gone that predicate
+   narrows to `never` against an `as const` table — the filter does not merely return empty,
+   it stops typechecking. So the group is gone rather than left resolving to nothing. */
 /** Flat, before the trigger. */
 const REGISTRY = NAV.filter((item) => item.group === "registry");
 /** Flat, after the trigger. */
@@ -239,29 +246,14 @@ export function SiteHeader() {
             because the page unmounts it", which is wrong: client-side routing does not
             unmount the header. Both are handled in the effects above. */}
         <nav className="hidden items-center gap-1 lg:flex">
-          {/* Home, then the same `border-l` rule that separates the registry from the
-              menu. One divider means one thing across the row: what is on either side of
-              it is a different kind of destination. */}
           {/* Every `hover:` in this row is gated behind `hoverable`
               (`@custom-variant hoverable (@media (hover: hover) and (pointer: fine))`,
               declared in `app/globals.css`). A phone has no hover and still MATCHES
               `:hover` on tap, then holds it until the next tap lands somewhere else — so
               an ungated nav link stays lit all the way to the route change, which reads
               as "still loading" on the item the reader just chose. */}
-          {HOME.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cx(
-                "rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm",
-                pathname === item.href ? "text-cyan" : "text-muted hoverable:hover:text-fg",
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
 
-          {/* ── Learn sits beside Home, and the rule moved with it (2026-08-07) ──
+          {/* ── Learn leads the row (2026-08-07) ──
               The author: "The 'Learn' should be on the right of 'Home' in the Navbar, then
               there is the separator '|'."
 
@@ -362,6 +354,13 @@ export function SiteHeader() {
             </Link>
           ))}
 
+          {/* The row's second divider, on the author's instruction 2026-08-07: "add a
+              separator between 'ontology' and 'The DarkPrint skill'". Two rules in the row
+              now, and they cut it into the three kinds of destination it actually holds:
+              the reading path, the three registry indexes, and the two setup actions. That
+              is the same rule doing the same job twice rather than a second device. */}
+          <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-line xl:mx-2" />
+
           {/* After the registry, on the author's instruction. A setup action is not
               something to read, so it does not belong inside a menu called Learn. */}
           {STANDALONE.map((item) => (
@@ -436,21 +435,11 @@ export function SiteHeader() {
             {/* A `nav` per group, named by the same word the reader sees. The label is a
                 `p` and not a heading: the panel opens above the page's own `h1`, and a
                 heading here would put two levels of outline in front of it. */}
-            {/* Home first and unheaded: see `GROUPS`. */}
-            {HOME.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={cx(
-                  "block rounded-md px-3 py-2.5 text-sm",
-                  pathname === item.href ? "text-cyan" : "text-muted",
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
-
+            {/* An unheaded Home row led this panel until 2026-08-07. It came out with the
+                wide row's, and `GROUPS`' note about why it was unheaded goes with it: the
+                panel now opens on the "Registry" heading, which is a category rather than
+                a destination and needs no exemption. The wordmark stays visible above the
+                open panel, so the way home has not moved. */}
             {GROUPS.map((group) => (
               <nav key={group.id} aria-label={group.title} className="py-2">
                 <p className="px-3 pb-1 font-mono text-[11px] uppercase tracking-[0.18em] text-dim">

@@ -362,7 +362,9 @@ export function WhichTasksGlance() {
           the rail the drawing drew. This one is not in the figure and is not below it
           either: it says why question 01 is first, which is the only thing on this beat
           the ledger cannot carry. */}
-      <p className="prose-lane text-sm leading-relaxed text-muted">
+      {/* No `.prose-lane`, on the author's instruction 2026-08-07: this runs the full
+          width of the column. */}
+      <p className="text-sm leading-relaxed text-muted">
         A dark factory runs with nobody watching it, so the design rests on one property of
         the work: whether something other than your judgement can tell the graph it is
         finished.

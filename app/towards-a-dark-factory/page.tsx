@@ -3,9 +3,7 @@ import Link from "next/link";
 
 import { SectionLevels } from "@/components/home/SectionLevels";
 import { WhichTasksChecks } from "@/components/explain/WhichTasksChecks";
-import { WhichTasksExamples } from "@/components/explain/WhichTasksExamples";
 import { WhichTasksGlance } from "@/components/explain/WhichTasksGlance";
-import { WhichTasksRemedies } from "@/components/explain/WhichTasksRemedies";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
@@ -149,12 +147,13 @@ export default function TowardsPage() {
             </span>{" "}
             The ladder below counts what an organisation is able to do at all. The class
             printed on a blueprint records where the author of that one graph decided a
-            person should stand, and it ranks nothing. The two are{" "}
-            <Link href="/towards-a-dark-factory#autonomy" className={INLINE}>
-              named apart in full
+            person should stand, and it ranks nothing:{" "}
+            <Link href="/blueprints" className={INLINE}>
+              the gallery
             </Link>{" "}
-            under the ladder. Find yourself on it first; the four questions after it decide
-            whether the work in front of you is a candidate at all.
+            filters on it and prints no number beside it. Find yourself on the ladder
+            first; the four questions after it decide whether the work in front of you is a
+            candidate at all.
           </p>
         </div>
       </header>
@@ -189,11 +188,11 @@ export default function TowardsPage() {
         </div>
       </section>
 
-      <section className="border-t border-line bg-surface py-16 sm:py-20">
-        <div className="container-page">
-          <WhichTasksExamples />
-        </div>
-      </section>
+      {/* `WhichTasksExamples` — "The worked half / Eight real tasks, run through the four
+          questions" — stood here until 2026-08-07, when the author asked it out. The
+          running order's own note above still says a reader settles a comparison faster
+          than a definition; with the eight worked tasks gone there is no comparison left
+          on the route, and `WhichTasksChecks` below is the definitions on their own. */}
 
       <section className="border-t border-line bg-void py-16 sm:py-20">
         <div className="container-page">
@@ -201,41 +200,24 @@ export default function TowardsPage() {
         </div>
       </section>
 
-      <section className="border-t border-line bg-surface py-16 sm:py-20">
-        <div className="container-page">
-          <WhichTasksRemedies />
-        </div>
-      </section>
+      {/* `WhichTasksRemedies` — "The other half of the filter / What to do with a no" —
+          stood here until 2026-08-07, when the author asked it out. It was the only place
+          the route answered the reader it turns away, and it held the last link to
+          `#autonomy`, which was deleted the same day. */}
 
-      <section className="border-t border-line bg-void py-16 sm:py-20">
-        <div className="container-page flex flex-col gap-10">
-          {/* Kept, against the proposal that folded this route to two pages, which listed
-              it as a duplicate of the two buttons at the foot of `/the-climb`. That
-              argument has since won outright rather than been overruled: the author
-              deleted `/the-climb` on 2026-08-07, so these are no longer a duplicate of
-              anything — they are the route's only exit. A filter whose reader has just
-              answered yes four times has to have somewhere to go, and this is it. It is
-              also what keeps this route a feeder into the registry rather than a
-              destination of its own, which is what stops a special case reading as the
-              headline. */}
-          <p className="prose-lane text-sm leading-relaxed text-muted">
-            Four yeses and the task is a candidate. A yes has somewhere to go: the{" "}
-            <Link href="/build" className={INLINE}>
-              build workspace
-            </Link>
-            , and the{" "}
-            <Link href="/blueprints" className={INLINE}>
-              published graphs
-            </Link>
-            , whose authors settled the same four answers before drawing a node.
-          </p>
-          {/* `RoutePager` stood here and is gone with the page it paged to. A two-stop
-              sequence minus one stop is not a one-stop sequence, it is no sequence, and an
-              arrow row reading "1 of 1" with both arrows dead is worse than no arrow row.
-              The component, `route.ts` and `CLIMB_ROUTE` were deleted with it; nothing else
-              mounted them. */}
-        </div>
-      </section>
+      {/* The route's last section stood here and is gone with its only contents. It held
+          one paragraph — "Four yeses and the task is a candidate", with links to `/build`
+          and `/blueprints` — which the author asked out on 2026-08-07, and before that the
+          `RoutePager` that went with `/the-climb`.
+
+          Worth stating plainly rather than leaving as an absence somebody rediscovers: the
+          route now ends on `WhichTasksChecks`, and it offers a reader no onward link of its
+          own. The comment that used to sit here argued the opposite case at length — "a
+          filter whose reader has just answered yes four times has to have somewhere to go"
+          — and it was overruled directly. The header and the footer still reach `/build`
+          and `/blueprints` from every page, so nothing is unreachable; what is gone is this
+          page's own exit. */}
+
     </>
   );
 }

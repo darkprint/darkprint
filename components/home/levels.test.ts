@@ -83,7 +83,34 @@ describe("the ladder is credited to nobody who did not write it", () => {
   });
 });
 
-describe("the two-scales panel claims only what the site holds to", () => {
+/**
+ * The two-scales claim, after the panel that carried it was deleted.
+ *
+ * The author asked "Two scales, and only one of them is a number" off `SectionLevels` on
+ * 2026-08-07. Doc 2 §1.1 did not go with it: the constraint moved to the deck of the one
+ * route that mounts this section, which is where the correction had already been put when
+ * it was decided that a disclaimer below the picture is downstream of the thing it
+ * corrects.
+ *
+ * So both cases now read the page as well as the component. That is stricter than what
+ * they replaced, not looser. The negative case used to let the page say the forbidden
+ * thing as long as `SectionLevels` did not; the positive one would now pass on an empty
+ * string, because the sentence it looks for is no longer in the file it was reading.
+ */
+/*
+ * Whitespace collapsed, unlike `COPY`. A sentence in JSX is wrapped by the formatter at
+ * whatever column it reaches, so "only one of them is a number" is split across two source
+ * lines and a raw substring search does not find it — the phrase a reader sees in one line
+ * is two lines in the file. `COPY`'s own cases all look for short fragments that happen to
+ * survive that, which is luck rather than design; anything asserted here is a sentence.
+ */
+const PAGE_COPY = visibleCopy(
+  readFileSync(join(process.cwd(), "app/towards-a-dark-factory/page.tsx"), "utf8"),
+)
+  .replace(/\s+/g, " ")
+  .toLowerCase();
+
+describe("the two-scales claim survives the panel that carried it", () => {
   it("does not call the ladder the one numbered thing on the site", () => {
     for (const phrase of [
       "the one thing on the site",
@@ -91,12 +118,20 @@ describe("the two-scales panel claims only what the site holds to", () => {
       "nothing else on the site is counted",
     ]) {
       expect(COPY, `SectionLevels claims "${phrase}"`).not.toContain(phrase);
+      expect(PAGE_COPY, `the page claims "${phrase}"`).not.toContain(phrase);
     }
   });
 
   it("keeps the claim that is binding, which is about the autonomy ordinal", () => {
-    // Doc 2 §1.1: the class is a name and no number goes beside it. The panel has to keep
-    // saying that, because it is the sentence the constraint is actually about.
-    expect(COPY).toContain("the gallery prints no number beside it");
+    // Doc 2 §1.1: the class is a name and no number goes beside it. Something on this
+    // route has to keep saying it, because it is the sentence the constraint is actually
+    // about, and the deck is what says it now.
+    expect(PAGE_COPY).toContain("prints no number beside it");
+  });
+
+  /** The deck also has to keep the half the deleted panel's `h3` used to carry. */
+  it("still names the two scales apart before the ladder", () => {
+    expect(PAGE_COPY).toContain("only one of them is a number");
+    expect(PAGE_COPY).toContain("it ranks nothing");
   });
 });
