@@ -272,16 +272,29 @@ export function CardWalk({
   const open = active >= 0 ? notes[active] : undefined;
 
   /* The face goes out, the listing comes in, and they overlap for a twentieth of the pin
-     so the swap reads as one thing becoming another rather than as a cut. Both are inline
+     so the swap reads as one thing becoming another rather than as a cut. The hold before
+     the turn starts is 0.08 of a 190vh track — about 75px — which is the least that reads
+     as a card standing still rather than as one already leaving when it arrives. Both are inline
      opacity applied only once `motion` is confirmed: without it neither layer carries a
      style at all and the two render as ordinary blocks, one under the other, which is what
      the server and a reduced-motion reader get. `beats.test.ts` forbids shipping
      `opacity-0`, and this is why nothing here does. */
-  const faceOpacity = 1 - clamp01((progress - 0.05) / 0.09);
-  const listOpacity = clamp01((progress - 0.10) / 0.09);
-  const layer = (opacity: number) =>
+  const faceOpacity = 1 - clamp01((progress - 0.08) / 0.09);
+  const listOpacity = clamp01((progress - 0.13) / 0.09);
+  /* The same card flip `SourceSwap` does one beat up, and for the same reason the author
+     gave: "the same transition should be also applied below to the node card that becomes
+     the yaml". A layer is edge-on exactly when it is invisible, because the turn is tied to
+     the same ramp as the opacity. `perspective` sits on the grid so both children share a
+     vanishing point. */
+  const layer = (opacity: number, turn: number) =>
     motion
-      ? ({ gridArea: "1 / 1", opacity, pointerEvents: opacity < 0.5 ? "none" : "auto" } as const)
+      ? ({
+          gridArea: "1 / 1",
+          opacity,
+          transform: `rotateY(${turn}deg)`,
+          backfaceVisibility: "hidden",
+          pointerEvents: opacity < 0.5 ? "none" : "auto",
+        } as const)
       : undefined;
 
   return (
@@ -314,7 +327,10 @@ export function CardWalk({
         {/* Plain ground, one hairline. The author named the graticule as the thing to
             drop, and it is the whole difference between a figure the landing carries and
             a plate that reads as its own page. */}
-        <div className={cx(motion && "lg:grid")}>
+        <div
+          className={cx(motion && "lg:grid")}
+          style={motion ? { perspective: "1800px" } : undefined}
+        >
         {/* The card, before it is a file. Same shell, same grid cell, so the sticky box
             reserves the listing's height — which is the taller of the two and the height
             every number in the comment above is derived from. */}
@@ -325,16 +341,24 @@ export function CardWalk({
             one figure for one idea, drawn the same way wherever the idea appears.
 
             Centred, because the listing it becomes is full width and the card is not. */}
-        {/* `items-start` and not the flex default. This layer shares a grid cell with the
-            listing, which is the taller of the two, and a stretched flex child inherits that
-            height — `CardStackFigure`'s ghosts are absolutely positioned to its wrapper, so
-            they drew as three outlines running 600px past the bottom of the card. The card
-            hugs its own content and the cell keeps the listing's height, which is what the
-            sticky box needs to reserve. */}
-        <div className="flex items-start justify-center" style={layer(faceOpacity)}>
-          <CardStackFigure card={card} nodes={5} />
+        {/* `items-center`, and the alignment is load-bearing in two directions.
+            ------------------------------------------------------------
+            NOT the flex default: this layer shares a grid cell with the listing, which is
+            the taller of the two, and a STRETCHED flex child inherits that height —
+            `CardStackFigure`'s ghosts are absolutely positioned to its wrapper, so they drew
+            as three outlines running 600px past the bottom of the card.
+
+            `items-start` fixed that and left the other half: the card then hugged its own
+            content against the ceiling of a 613px cell, with 350px of empty box under it and
+            the pin holding all of it on screen. Centring prevents the stretch just as well —
+            any alignment but the default does — and puts the card in the middle of the space
+            the listing reserves, which is where a reader's eye already is when the beat
+            starts. The cell still measures the listing, which is what the sticky box needs
+            to reserve. */}
+        <div className="flex items-center justify-center" style={layer(faceOpacity, -90 * (1 - faceOpacity))}>
+          <CardStackFigure card={card} nodes={5} size="stage" />
         </div>
-        <div className={cx(!motion && "mt-5")} style={layer(listOpacity)}>
+        <div className={cx(!motion && "mt-5")} style={layer(listOpacity, 90 * (1 - listOpacity))}>
         <figure className="flex flex-col gap-4 rounded-xl border border-line bg-void p-4 sm:p-6">
           <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 font-mono text-[11px] text-dim">
             <span className="text-muted">{cardRef}</span>

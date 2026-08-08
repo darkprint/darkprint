@@ -1,4 +1,5 @@
 import type { NodeCard } from "@/lib/core";
+import { cx } from "@/lib/format";
 import type { AgentNodeKind, BlueprintGraph, FlowNodeSeed } from "@/lib/types";
 import {
   FLOW,
@@ -360,14 +361,31 @@ function Field({
   name,
   value,
   tone = "fg",
+  stage = false,
 }: {
   name: string;
   value: string;
   tone?: "fg" | "signal";
+  /**
+   * Drawn at the landing's size rather than beside prose.
+   *
+   * The row carries its own `text-[11px]`, so a caller cannot scale it by setting a size on
+   * the card around it — which is exactly what the first attempt at `size="stage"` did, and
+   * why a card given 32rem of width came out with 19rem of type in it. The label column
+   * widens with the type or `cannot`'s value shifts left of the others.
+   */
+  stage?: boolean;
 }) {
   return (
-    <div className="flex items-baseline gap-3 font-mono text-[11px] leading-[1.9]">
-      <span className="w-[3.6rem] shrink-0 text-dim">{name}</span>
+    <div
+      className={cx(
+        "flex items-baseline gap-3 font-mono leading-[1.9]",
+        stage ? "text-[14px]" : "text-[11px]",
+      )}
+    >
+      <span className={cx("shrink-0 text-dim", stage ? "w-[4.6rem]" : "w-[3.6rem]")}>
+        {name}
+      </span>
       <span
         className={`truncate ${tone === "signal" ? "text-signal" : "text-fg"}`}
         title={value}
@@ -395,40 +413,122 @@ function Field({
  * the field the prohibition is written in. That is the right place for it: a card states
  * the rule, and the drawing shows the run obeying it.
  */
-export function CardStackFigure({ card, nodes }: { card: NodeCard; nodes: number }) {
+export function CardStackFigure({
+  card,
+  nodes,
+  size = "inline",
+}: {
+  card: NodeCard;
+  nodes: number;
+  /**
+   * How much room the card takes.
+   *
+   * `inline` is what `/what-a-blueprint-is` has always drawn: a 19rem card sitting beside a
+   * column of prose, sized so the two balance.
+   *
+   * `stage` is the landing's, on the author's instruction (2026-08-08: "Make the card
+   * graphics occupies more space are it is too small. Make it fancy."). There the card IS
+   * the figure — it has a whole pinned stage to itself and turns into the file it is a
+   * picture of — so it is drawn at 38rem with the type up a step, the rows given more air,
+   * the stack offset further so the other four nodes read as a deck rather than as a
+   * double border, and a copper bloom behind it.
+   *
+   * The bloom is the only thing `stage` adds rather than scales, and it is deliberately
+   * NOT a graticule. `CardWalk`'s own header records what the author asked for when this
+   * beat was written — the card "in a lightweight version without using as background the
+   * blueprint" — so the blue sheet stays off it, and `.copper-grid` would be the same
+   * mistake in the card's own hue. A radial wash is depth, not ground: it lifts the deck
+   * off `bg-surface` and says which register the card belongs to, which is the one thing
+   * the listing it turns into says with every keyword.
+   *
+   * Copper and not cyan, because `app/globals.css` reserves cyan for what a reader can act
+   * on and this is a picture. It is the colour the walk's own step numbers and line spans
+   * already wear one element over.
+   */
+  size?: "inline" | "stage";
+}) {
   const input = card.inputs[0];
   const output = card.outputs[0];
   const ghosts = Math.max(0, Math.min(nodes - 1, 3));
+  const stage = size === "stage";
+  /* How far each ghost is offset, and therefore how deep the deck reads. Scaled with the
+     card rather than fixed: 6px behind a 19rem card is a visible step, and behind a 38rem
+     one it is a thick border. */
+  const step = stage ? 10 : 6;
   return (
-    <div className="relative w-full max-w-[19rem] pt-3 pl-3">
+    <div
+      className={cx(
+        "relative w-full",
+        stage ? "max-w-[38rem] pt-5 pl-5" : "max-w-[19rem] pt-3 pl-3",
+      )}
+    >
+      {/* The bloom. Behind everything including the ghosts, hence `-z-10` on a padded box
+          that overhangs the deck on every side — a glow clipped to the card's own rectangle
+          reads as a fill rather than as light. */}
+      {stage && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -inset-10 -z-10 rounded-[2rem]"
+          style={{
+            background:
+              "radial-gradient(62% 62% at 50% 45%, color-mix(in oklab, var(--color-copper-line) 17%, transparent), transparent 72%)",
+          }}
+        />
+      )}
       {Array.from({ length: ghosts }, (_, i) => (
         <div
           key={i}
           aria-hidden
           className="absolute rounded-lg border border-line bg-surface/60"
           style={{
-            inset: `${(ghosts - i - 1) * 6}px auto auto ${(ghosts - i - 1) * 6}px`,
-            right: `${(i + 1) * 6}px`,
-            bottom: `${(i + 1) * 6}px`,
+            inset: `${(ghosts - i - 1) * step}px auto auto ${(ghosts - i - 1) * step}px`,
+            right: `${(i + 1) * step}px`,
+            bottom: `${(i + 1) * step}px`,
           }}
         />
       ))}
-      <div className="relative rounded-lg border border-line-bright bg-surface px-4 py-3">
-        <div className="flex items-baseline justify-between gap-2 border-b border-line pb-2">
-          <span className="truncate font-mono text-xs text-fg">{card.id}</span>
-          <span className="shrink-0 font-mono text-[11px] text-dim">v{card.version}</span>
+      <div
+        className={cx(
+          "relative rounded-lg border border-line-bright bg-surface",
+          stage ? "px-6 py-5" : "px-4 py-3",
+        )}
+      >
+        <div
+          className={cx(
+            "flex items-baseline justify-between gap-2 border-b border-line",
+            stage ? "pb-3" : "pb-2",
+          )}
+        >
+          <span
+            className={cx("truncate font-mono text-fg", stage ? "text-base" : "text-xs")}
+          >
+            {card.id}
+          </span>
+          <span
+            className={cx(
+              "shrink-0 font-mono text-dim",
+              stage ? "text-[13px]" : "text-[11px]",
+            )}
+          >
+            v{card.version}
+          </span>
         </div>
-        <div className="pt-2">
-          <Field name="type" value={card.type} />
-          <Field name="phase" value={card.phases.join(", ")} />
-          <Field name="model" value={card.model ?? "inherits"} />
+        <div className={cx(stage ? "pt-3" : "pt-2")}>
+          <Field name="type" value={card.type} stage={stage} />
+          <Field name="phase" value={card.phases.join(", ")} stage={stage} />
+          <Field name="model" value={card.model ?? "inherits"} stage={stage} />
           {input !== undefined && (
-            <Field name="in" value={`${input.name} : ${input.type}`} />
+            <Field name="in" value={`${input.name} : ${input.type}`} stage={stage} />
           )}
           {output !== undefined && (
-            <Field name="out" value={`${output.name} : ${output.type}`} />
+            <Field name="out" value={`${output.name} : ${output.type}`} stage={stage} />
           )}
-          <Field name="cannot" value={card.cannot[0] ?? "nothing declared"} tone="signal" />
+          <Field
+            name="cannot"
+            value={card.cannot[0] ?? "nothing declared"}
+            tone="signal"
+            stage={stage}
+          />
         </div>
       </div>
     </div>

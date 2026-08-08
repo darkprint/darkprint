@@ -279,6 +279,7 @@ export function DotBreakdown({
   source,
   title,
   downloadName,
+  walkTo,
   className,
 }: {
   /** The DOT document, verbatim, read off the archive by the server half. */
@@ -295,6 +296,24 @@ export function DotBreakdown({
    * bytes is two answers to one question.
    */
   downloadName?: string;
+  /**
+   * Drive the figure from outside, one block at a time.
+   *
+   * `undefined` leaves it exactly as `/spec/topology` has it: nothing lit until a reader
+   * picks a block, and every note listed beside the file so the whole argument can be read
+   * at once. That is right for a page somebody is studying.
+   *
+   * A number turns it into a walk. The block is lit, and the notes column renders THAT NOTE
+   * ONLY. The author asked for this on the landing (2026-08-08): "while scrolling highlights
+   * the part of the code the right the identify and make the text elements appear when
+   * highlighting a given part and disappear when moving to the next".
+   *
+   * The vertical saving is the point. Five notes stacked run about three times the listing's
+   * height, so the landing's swap reserved a box sized for a column nobody was reading yet
+   * and left the drawing floating in the empty half of it. One note is shorter than the
+   * listing, so the figure is as tall as its own code.
+   */
+  walkTo?: number;
   className?: string;
 }) {
   /* `.trimEnd()`, the way `SectionNodeIsCard` trims the card before handing it to
@@ -311,14 +330,22 @@ export function DotBreakdown({
    * `null` and not `0`. A figure that opens with its first block lit has answered a
    * question nobody asked, and it would make the first render differ from the server's.
    */
-  const [selected, setSelected] = useState<number | null>(null);
+  const [picked, setPicked] = useState<number | null>(null);
+
+  /* A driven figure ignores its own state: the scroll is the only thing choosing, and a
+     click that lit a different block would fight the next scroll frame for it. `walkTo` is
+     clamped rather than trusted, so a caller's arithmetic cannot index past the file. */
+  const driven = walkTo !== undefined;
+  const selected = driven
+    ? Math.min(Math.max(walkTo, 0), Math.max(0, steps.length - 1))
+    : picked;
   const [copied, setCopied] = useState(false);
 
   /** One entry per block, pointing at the row that opens it. Filled by the listing below. */
   const rowRefs = useRef<(HTMLElement | null)[]>([]);
 
   const pick = useCallback((index: number) => {
-    setSelected(index);
+    setPicked(index);
     const row = rowRefs.current[index];
     if (row !== null && row !== undefined) revealRow(row);
   }, []);
@@ -523,7 +550,8 @@ export function DotBreakdown({
           onKeyDown={list.onKeyDown}
           className="flex min-w-0 flex-col"
         >
-          {steps.map((step, i) => {
+          {(driven ? steps.filter((_, i) => i === selected) : steps).map((step) => {
+            const i = steps.indexOf(step);
             const isPicked = i === selected;
             return (
               <li key={step.step} className="border-t border-line/70 first:border-t-0">

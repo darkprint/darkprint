@@ -39,14 +39,19 @@ import { clamp01, useScrollProgress } from "@/components/viz/useScrollProgress";
 /**
  * The two fades, as fractions of the pin.
  *
- * The drawing holds alone for the first third — long enough to be read as a drawing before
- * anything happens to it — then goes out while the file comes in, with the two overlapping
- * for a tenth of the travel so the swap reads as one thing becoming another rather than as
- * a cut. The file then holds alone to the end, so a reader who stops scrolling at the
- * bottom is left with the artefact rather than mid-dissolve.
+ * The drawing holds alone at first — long enough to be read as a drawing before anything
+ * happens to it — then turns away while the file turns towards the reader, the two
+ * overlapping so the swap reads as one object rotating rather than as a cut.
+ *
+ * Both windows moved earlier and the track grew to 300vh when the listing became a walk.
+ * The file used to be the end of the scroll; it is now the START of a five-block walk that
+ * needs the rest of the pin to run in. At the old numbers the swap ate two thirds of the
+ * travel and all five blocks fired inside the last 350px, which is faster than a reader can
+ * follow — and then the pin released with the last block still on screen and nothing left
+ * to do. The swap now finishes by 0.38 and the walk has the other 0.62 to spend.
  */
-const FIGURE_OUT = { from: 0.34, to: 0.56 };
-const SOURCE_IN = { from: 0.46, to: 0.68 };
+const FIGURE_OUT = { from: 0.16, to: 0.30 };
+const SOURCE_IN = { from: 0.24, to: 0.38 };
 
 /** `t` mapped through a window, 0 before it and 1 after. */
 function ramp(t: number, from: number, to: number): number {
@@ -61,8 +66,15 @@ export function SourceSwap({
 }: {
   /** The drawing. Rendered first, and the thing a reader meets. */
   figure: React.ReactNode;
-  /** The file the drawing is a picture of. */
-  source: React.ReactNode;
+  /**
+   * The file the drawing is a picture of.
+   *
+   * A function when the file wants the clock: `DotBreakdown` walks its own blocks off the
+   * same progress this component is already measuring, so the listing highlights a block
+   * and shows that block's note alone. Passing progress down rather than lifting the hook
+   * out keeps one measurement per figure.
+   */
+  source: React.ReactNode | ((progress: number) => React.ReactNode);
   /**
    * One line saying what is about to happen, shown only while it is about to happen.
    *
@@ -82,12 +94,35 @@ export function SourceSwap({
   const figureOpacity = 1 - ramp(progress, FIGURE_OUT.from, FIGURE_OUT.to);
   const sourceOpacity = ramp(progress, SOURCE_IN.from, SOURCE_IN.to);
 
-  /* `pointer-events` follows opacity so the layer a reader cannot see cannot be selected
-     or tabbed into either. A file listing under a drawing at zero opacity is text a mouse
-     can still drag-select, which is how a reader ends up copying something invisible. */
-  const layer = (opacity: number) =>
+  /* ── The two layers turn, they do not merely fade ──
+     The author, 2026-08-08: "the transition between blueprint graphics and the
+     implementation file happens via rotating the blueprint graphics that rotate while
+     scrolling."
+
+     So it is a card flip about the vertical axis. The drawing turns away from the reader
+     as it goes and the file turns towards them as it arrives, which says the two are the
+     same object seen from two sides — which is the claim this whole component exists to
+     make. A crossfade said only that one thing replaced another.
+
+     The rotation is tied to the SAME ramp as the opacity, so a layer is edge-on exactly
+     when it is invisible: a flip that finished before the fade would show a mirrored
+     listing, and one that lagged would show the drawing side-on and solid.
+
+     `perspective` lives on the grid below rather than here, because it has to be the
+     parent of both rotating children for them to share a vanishing point.
+
+     `pointer-events` follows opacity so the layer a reader cannot see cannot be selected or
+     tabbed into either. A file listing under a drawing at zero opacity is text a mouse can
+     still drag-select, which is how a reader ends up copying something invisible. */
+  const layer = (opacity: number, turn: number) =>
     motion
-      ? ({ gridArea: "1 / 1", opacity, pointerEvents: opacity < 0.5 ? "none" : "auto" } as const)
+      ? ({
+          gridArea: "1 / 1",
+          opacity,
+          transform: `rotateY(${turn}deg)`,
+          backfaceVisibility: "hidden",
+          pointerEvents: opacity < 0.5 ? "none" : "auto",
+        } as const)
       : undefined;
 
   /* In as the drawing starts to go, out once the file has arrived. Both edges are inside
@@ -96,7 +131,7 @@ export function SourceSwap({
     ramp(progress, 0.10, 0.22) * (1 - ramp(progress, SOURCE_IN.to, SOURCE_IN.to + 0.10));
 
   return (
-    <div ref={ref} className={cx(motion && "lg:h-[200vh]", className)}>
+    <div ref={ref} className={cx(motion && "lg:h-[300vh]", className)}>
       {/* Pinned near the top, not centred, and this is the third arrangement — the first
           two are worth recording because the reason is the same both times.
 
@@ -131,10 +166,19 @@ export function SourceSwap({
           </p>
         )}
 
-        <div className={cx(motion && "lg:grid lg:items-start")}>
-          <div style={layer(figureOpacity)}>{figure}</div>
-          <div className={cx(!motion && "mt-5")} style={layer(sourceOpacity)}>
-            {source}
+        <div
+          className={cx(motion && "lg:grid lg:items-start")}
+          style={motion ? { perspective: "1800px" } : undefined}
+        >
+          {/* The drawing turns away: 0° at rest, -90° and edge-on by the time it is gone. */}
+          <div style={layer(figureOpacity, -90 * (1 - figureOpacity))}>{figure}</div>
+          {/* The file turns towards the reader from the other side: +90° while unseen, 0°
+              once it has arrived. */}
+          <div
+            className={cx(!motion && "mt-5")}
+            style={layer(sourceOpacity, 90 * (1 - sourceOpacity))}
+          >
+            {typeof source === "function" ? source(progress) : source}
           </div>
         </div>
       </div>

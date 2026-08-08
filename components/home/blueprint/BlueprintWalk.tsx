@@ -198,17 +198,24 @@ export function BlueprintWalk({ dot, file }: { dot: string; file: string }) {
         </Sheet>
       }
       hint="Keep scrolling and the drawing becomes the file it is drawn from."
-      source={
-        /* The panel `/spec/topology` uses, on the author's instruction — line numbers, the
-           file's own path in the rail, and the numbered notes beside it. It replaces a
-           plain `<pre>` in a `Sheet`, which showed the bytes and said nothing about them.
+      source={(progress) => (
+        /* The panel `/spec/topology` uses, driven rather than clicked. `walkTo` walks the
+           five blocks off the swap's own clock, so the listing lights one block and shows
+           that block's note alone.
 
-           `DotBreakdown` derives its blocks from the source it is given rather than from a
-           table of line ranges, so handing it a comment-free file renumbers the notes to
-           match instead of pointing at lines that moved. `components/panes/dot-breakdown.ts`
-           records why it was built that way; this is the first caller to depend on it. */
-        <DotBreakdown source={dot} title={file} />
-      }
+           The window is the tail of the pin: the file has finished arriving by 0.38 and the
+           walk spends everything after it, 0.115 of the track per block. On a 950px viewport
+           that is about 230px of scroll each — close to the pace `CardWalk` settled on for
+           its nine, and slow enough to read a note before the next one replaces it.
+
+           `Math.min` and not a modulo: the last block holds while a reader scrolls the last
+           of the pin rather than wrapping back to the first, which would read as a loop. */
+        <DotBreakdown
+          source={dot}
+          title={file}
+          walkTo={Math.min(4, Math.floor(Math.max(0, progress - 0.40) / 0.115))}
+        />
+      )}
     />
   );
 }

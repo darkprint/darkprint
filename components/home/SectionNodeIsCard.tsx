@@ -49,6 +49,34 @@ import { CardWalk } from "./nodecard/CardWalk";
 
 const CARD_REF = "code-builder@1.0.0";
 
+/**
+ * The card without its `notes` block.
+ *
+ * The author asked it off this beat (2026-08-08). It is a nine-line paragraph arguing doc 1
+ * §3.2 — what isolation looks like on a card, the 3-gram Jaccard similarity against
+ * `spec-planner@1.0.0` measured at 0.0356 against a 0.35 threshold, and what
+ * `bundle/prohibition-violated` fires on. Every word of it is true and it stays in the file
+ * and on `/nodes/code-builder`, where a reader is studying one card.
+ *
+ * It does not belong here. This beat says "every node is a card" and shows one; a third of
+ * the listing being a footnote about a similarity metric is the reference arriving inside
+ * the introduction, and it was the single tallest thing in the walk.
+ *
+ * A block scalar, so the value is the indented run under the key rather than the rest of
+ * the line: the filter drops the `notes:` line and every line indented under it, stopping
+ * at the first line that starts in column zero. `resolveAnnotations` re-derives its parts
+ * from whatever it is handed, so the walk renumbers itself rather than pointing at lines
+ * that moved.
+ */
+function withoutNotes(card: string): string {
+  const lines = card.split("\n");
+  const at = lines.findIndex((line) => /^notes:/.test(line));
+  if (at === -1) return card;
+  let end = at + 1;
+  while (end < lines.length && (lines[end].trim() === "" || /^\s/.test(lines[end]))) end += 1;
+  return [...lines.slice(0, at), ...lines.slice(end)].join("\n").trimEnd();
+}
+
 export function SectionNodeIsCard() {
   const source = cardSource(CARD_REF);
   /* The parsed card as well as its text. The face `CardWalk` opens on is
@@ -77,7 +105,7 @@ export function SectionNodeIsCard() {
           <CardWalk
             /* The trailing newline every file on disk ends with would render as a blank
                line 53 under a 52-line card, and would count in the walk's arithmetic. */
-            source={source.trimEnd()}
+            source={withoutNotes(source)}
             cardRef={CARD_REF}
             card={card}
           />
