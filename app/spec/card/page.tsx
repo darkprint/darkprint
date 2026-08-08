@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { WhatACardReaches } from "@/components/explain/ConceptFigures";
 import { SectionNodeCard } from "@/components/home/SectionNodeCard";
 import { CheckLegend, CheckTable } from "@/components/spec/CheckTable";
 import { Id, SpecLink } from "@/components/spec/parts";
@@ -19,6 +20,7 @@ import {
   isolationDemo,
   ADDED_DOT_LINE,
 } from "@/components/explain/starter-isolation";
+import { getNodeCard } from "@/lib/content";
 
 /* ============================================================
    /spec/card — layer 2 of the spec language.
@@ -312,6 +314,9 @@ export default function SpecCardPage() {
   // rather than paraphrased, and guarded rather than indexed blindly: a page arguing that
   // a declaration is enforced should drop the quotation rather than invent one if the
   // demonstration ever stops being derivable.
+  /* The same card `SectionNodeCard` annotates, parsed, for the reach panel above it. */
+  const reachCard = getNodeCard("code-builder")?.card;
+
   const demo = isolationDemo();
   const refusal =
     demo === undefined
@@ -333,6 +338,44 @@ export default function SpecCardPage() {
           />
         </div>
       </header>
+
+      {/* ---------- what one card reaches, moved here 2026-08-08 ----------
+          The author asked this panel off `/what-a-blueprint-is` and onto this page, "just
+          below" the lead above.
+
+          It belongs here and it was the odd one out there. `/what-a-blueprint-is` answers
+          what a blueprint IS in three parts and a run; this figure is six named fields with
+          two paragraphs of fine print each, which is reference material about one file
+          format. This page is that file format, and the reader who arrives here has already
+          decided to study a card rather than to find out what one is.
+
+          Above `SectionNodeCard` rather than below it, because the annotated listing walks
+          nine parts of a real document and this names the six fields that decide a node's
+          reach. Fields, then the file.
+
+          Every value is read off `code-builder@1.0.0`, the card the rest of the site opens
+          with. A page explaining what `mcp` and `cannot` are, illustrated with invented
+          values, would be teaching a schema nobody ships. */}
+      {reachCard !== undefined && (
+        <section className="border-b border-line bg-void py-12 sm:py-16">
+          <div className="container-page">
+            <WhatACardReaches
+              model={reachCard.model ?? "inherits"}
+              tools={reachCard.tools.length > 0 ? reachCard.tools.join(", ") : "none"}
+              mcp={reachCard.mcp.length > 0 ? reachCard.mcp.join(", ") : "none"}
+              skill={reachCard.skill ?? "none"}
+              cannot={
+                reachCard.cannot.length > 0 ? (reachCard.cannot[0] ?? "") : "nothing declared"
+              }
+              riskMarkers={
+                reachCard.riskMarkers.length > 0
+                  ? reachCard.riskMarkers.join(", ")
+                  : "none declared"
+              }
+            />
+          </div>
+        </section>
+      )}
 
       {/* The figure this page opens with: the card the whole page is about, annotated
           line by line, read straight out of `content/cards/`, and broken into nine parts

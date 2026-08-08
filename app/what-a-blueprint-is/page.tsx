@@ -3,12 +3,8 @@ import Link from "next/link";
 
 import { partitionTerms } from "@/lib/core";
 import { allBlueprints, allNodeCards, getNodeCard, getOntologyView } from "@/lib/content";
-import {
-  EvalHarnessBlueprint,
-  GuardrailShape,
-  HandoverAxis,
-  WhatACardReaches,
-} from "@/components/explain/ConceptFigures";
+import { GuardrailShape, HandoverAxis } from "@/components/explain/ConceptFigures";
+import { RunLayers } from "@/components/explain/RunLayers";
 import {
   CardStackFigure,
   FigureFrame,
@@ -480,6 +476,35 @@ export default function WhatABlueprintIsPage() {
         </div>
       </section>
 
+      {/* ---------- what surrounds a blueprint when it runs ----------
+          New band on 2026-08-08, and the author placed it: "I want to move this just after
+          The vocabulary with a new section that start with such drawing."
+
+          It is `EvalHarnessBlueprint` rebuilt as a walk. That figure sat at the bottom of
+          "The words", four sections down, where it was the fourth block of a five-block
+          zoom-out and a reader met the nested boxes after two figures about a single field.
+          Here it lands directly after the three parts, which is the question it answers:
+          the section above says what a blueprint is MADE of, and this one says what has to
+          be around it before any of it moves.
+
+          The band is its own section rather than a fourth `Part` because the three above
+          are peers — graph, cards, vocabulary, all files in the folder — and none of these
+          four is. Only one of them is a file at all.
+
+          `bg-void` against the surface above and below it: the run down this page is void
+          (header) / surface / VOID / surface, so the seam is a ground change rather than
+          another hairline in a column that already has three. */}
+      <section className="border-t border-line bg-void py-16 sm:py-20">
+        <div className="container-page flex flex-col gap-10">
+          <SectionHeading
+            eyebrow="Around it"
+            title="What a blueprint needs before it moves"
+            lead="A blueprint is a specification and specifications do not run. Three other words travel with it, they are not interchangeable, and only one of the four is something you download."
+          />
+          <RunLayers />
+        </div>
+      </section>
+
       {/* ---------- the words that travel with this subject ----------
           The whole of the deleted `/concepts`, moved to sit directly under the three
           parts on the author's instruction ("place the words section right below the
@@ -520,27 +545,23 @@ export default function WhatABlueprintIsPage() {
         <div className="container-page flex flex-col gap-8">
           <SectionHeading
             eyebrow="The words"
-            title="Eval, harness, rubric and the rest"
-            lead="These words travel together and mean different things to different people. Here is what each one is on this site, starting inside one node card and zooming out until the whole graph is in view."
+            title="Guardrails, and where the checking stops"
+            /* The lead promised a walk "starting inside one node card and zooming out until
+               the whole graph is in view", and neither end of that walk is in this section
+               any more: `WhatACardReaches` is on `/spec/card` and the nested frames are the
+               band four sections up. What is left is narrower and better named for it — one
+               constraint, where it can sit, when this site stops being able to see it, and
+               why the thing that grades a node is not one. */
+            lead="These words travel together and mean different things to different people. What follows is one of them at close range: what a constraint on a node is, the three places it can sit, and where the checking stops."
           />
 
-          {/* Every field named is pulled off `code-builder@1.0.0`, the card the rest of
-              the site opens with. A page explaining what `mcp` and `cannot` are,
-              illustrated with invented values, would be teaching a schema nobody ships. */}
-          {card !== undefined && (
-            <WhatACardReaches
-              model={card.model ?? "inherits"}
-              tools={card.tools.length > 0 ? card.tools.join(", ") : "none"}
-              mcp={card.mcp.length > 0 ? card.mcp.join(", ") : "none"}
-              skill={card.skill ?? "none"}
-              cannot={card.cannot.length > 0 ? (card.cannot[0] ?? "") : "nothing declared"}
-              riskMarkers={
-                card.riskMarkers.length > 0
-                  ? card.riskMarkers.join(", ")
-                  : "none declared"
-              }
-            />
-          )}
+          {/* `WhatACardReaches` opened this section and is on `/spec/card` now, under that
+              page's own lead, on the author's instruction. It was six named fields with two
+              paragraphs of fine print each, which is reference material about one file
+              format; this page answers what a blueprint IS. The section's lead still
+              promises a walk that starts inside one card, and `GuardrailShape` below keeps
+              that promise — it starts on `cannot`, a field, and widens to the three places
+              a constraint can sit. */}
 
           {/* ---------- the guardrail, and the axis it sits on ----------
               New on 2026-08-07, from the podcast document's one genuine contribution: the
@@ -560,57 +581,26 @@ export default function WhatABlueprintIsPage() {
               answers that, and it answers it with a picture of *when* rather than with a
               third sentence about what DarkPrint does not do. The author has asked that
               sentence off twice. */}
-          <div className="flex flex-col gap-3">
-            <PanelHeading>A guardrail is a shape, not a sentence</PanelHeading>
-            {/* No `.prose-lane` here, on the author's instruction 2026-08-07: this
-                paragraph and "Why the rubric is kept away" below both run the full width of
-                the column. The measure still governs the rest of the page's body prose —
-                this is two named exceptions, not a repeal. */}
-            <p className={PROSE}>
-              &ldquo;Be careful with the database&rdquo; in a prompt is a wish. A guardrail
-              is a constraint with a place: on what arrives, on what a node may reach for,
-              or on what leaves. A blueprint is a file, so it writes constraints down
-              rather than applying them, and one of them is already enforced here.{" "}
-              <code className="font-mono text-[13px] text-copper-line">cannot</code> naming
-              a data type is a rule the resolver holds every incoming edge to, at error
-              severity, whichever node draws the edge.
-            </p>
-          </div>
-
+          {/* A `PanelHeading` and a paragraph stood here — "A guardrail is a shape, not a
+              sentence" — and the author asked both out on 2026-08-08. `GuardrailShape`
+              stays: the figure names the three places a constraint can sit and marks the
+              one this archive enforces, which is what the paragraph was describing in
+              words directly above it. */}
           <GuardrailShape />
           <HandoverAxis />
 
-          {/* Two sub-blocks, each a `PanelHeading` over one paragraph. On `/concepts`
-              both were `SectionHeading` bands of their own, one per full-bleed section;
-              folded into a section that already has a heading, a second and third `h2` at
-              32px would say the page had started again. `PanelHeading` is the tier below,
-              and the outline stays h1 → h2 → h3. */}
-          <div className="flex flex-col gap-3">
-            <PanelHeading>Many nodes, and the thing that runs them</PanelHeading>
-            {/* The second half is the podcast document's `Agente = Modello + Harness`,
-                spent as prose because the equation itself is drawn one element down, in
-                `EvalHarnessBlueprint`'s figcaption. Saying it twice in two registers is
-                what the figure is for; saying it here in words is what makes the third
-                term — the blueprint, which is on neither side of the equals sign — land. */}
-            {/* Full width, on the author's instruction 2026-08-07 — the third and fourth
-                named exceptions to `.prose-lane` on this page. */}
-            <p className={PROSE}>
-              Wire the nodes together and you have a blueprint: who hands what to whom,
-              and which edges were deliberately left out. Give that blueprint a harness
-              and it runs; grade what comes back against a rubric and you have an eval.
-              The card names the model, which is the brain. The harness is the body and
-              the building around it: it routes the work, holds the shared state, hands
-              each node its tools and retries what fails. A blueprint is neither, and it
-              is the only one of the three you download here.
-            </p>
-          </div>
+          {/* "Many nodes, and the thing that runs them" stood here, over a paragraph, and
+              `EvalHarnessBlueprint` under it. Both are gone on 2026-08-08 and both are
+              answered by `RunLayers` in the band directly after the three parts, which is
+              four sections up this page rather than down here at the end of a zoom-out.
 
-          {/* The `Correction` that stood above this figure read "Connected nodes are a
-              blueprint, not a harness ... DarkPrint publishes the blueprint and analyses
-              it standing still." The figure draws that relation, and the second half was
-              the site telling a reader again what does and does not run here, which the
-              author has asked off twice. */}
-          <EvalHarnessBlueprint />
+              The paragraph carried the podcast document's `Agente = Modello + Harness` as
+              prose, and the figure carried it as a caption. The author struck the equation
+              itself — "not totally correct" — so neither survives it: that document's own
+              table calls an agent the APPLICATION ("LLM con strumenti, memoria e stato che
+              decide e agisce in loop") and the harness its RUNTIME, and "model + harness"
+              leaves out the tools, the memory and the state. `RunLayers` writes all four
+              definitions from that table and none of them as a sum. */}
 
           {/* This block opened with a lead defining an eval and a card defining the
               rubric, and the figure above says both: the frames are the definition and

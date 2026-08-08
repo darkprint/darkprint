@@ -100,50 +100,19 @@ const STEP = 90;
    phases are taught on the landing and counted, off the ontology, by `VocabularyFigure`
    two sections up. They are not taught here any more. */
 
-/** The little graph's sheet, in viewBox units. */
-const SHEET = { w: 200, h: 84 } as const;
+/* `SHEET`, `DISC`, `SPOTS`, `RUNS`, `HEAD` and `trimmed()` stood here and drew the little
+   four-disc graph inside `EvalHarnessBlueprint`'s innermost frame. They went with it: the
+   drawing that replaced it, `components/explain/RunLayers.tsx`, puts the same diamond on
+   the page with CARDS instead of discs, on the author's instruction that "the node should
+   be clear they are cards in the blueprint".
 
-/** A disc's radius, and the clearance a run keeps from the discs it joins. */
-const DISC = { r: 5, gap: 3, stroke: 1.1 } as const;
+   Its trim is written the same way and for the same reason the note above gives — four
+   straight lines do not justify importing the whole luminous-edge register to get one
+   subtraction — but it trims to a 22x16 rectangle rather than to a radius, which is a
+   different sum. Nothing here would have been reusable.
 
-/** Where the four discs sit. A diamond: one out to two, two back into one. */
-const SPOTS: Record<string, readonly [number, number]> = {
-  source: [16, 42],
-  upper: [88, 15],
-  lower: [88, 69],
-  sink: [180, 42],
-};
-
-/** Which discs answer which. Four runs, one branch, one merge. */
-const RUNS: readonly (readonly [string, string])[] = [
-  ["source", "upper"],
-  ["source", "lower"],
-  ["upper", "sink"],
-  ["lower", "sink"],
-];
-
-/** The arrowhead, defined once. Namespaced because an SVG id is document-wide. */
-const HEAD = "dp-eval-blueprint-head";
-
-/**
- * One run, trimmed off both discs so a curve never touches what it joins.
- *
- * The same rule `components/viz/flow.ts` applies to every luminous edge, done here by
- * hand because this drawing is four straight lines and importing the register to get one
- * subtraction would drag the whole scene apparatus in with it.
- */
-function trimmed(from: readonly [number, number], to: readonly [number, number]) {
-  const dx = to[0] - from[0];
-  const dy = to[1] - from[1];
-  const len = Math.hypot(dx, dy) || 1;
-  const t = (DISC.r + DISC.gap) / len;
-  return {
-    x1: from[0] + dx * t,
-    y1: from[1] + dy * t,
-    x2: to[0] - dx * t,
-    y2: to[1] - dy * t,
-  };
-}
+   The paragraph above this stays: the no-`<text>` rule it states is what `RunLayers`'
+   card glyph obeys, and it is the reason that glyph carries no words at 22 units wide. */
 
 /**
  * A card drawn as what it is: a document. Its rows point outward, at things that are
@@ -255,247 +224,28 @@ export function WhatACardReaches({
   );
 }
 
-/**
- * Three frames, one inside the next, to the author's own sketch: "a third box containing
- * the harness that is defined as eval, and it contains the harness which contains the
- * blueprint, and the eval contains also a box named rubric."
- *
- * That is the whole page in one drawing. **Eval** is the outermost thing, because an eval
- * is the act of running something and grading it. It holds two things: the **harness**
- * that does the running, and the **rubric** it grades against. The harness in turn holds
- * the **blueprint**, which is the graph and its cards. Containment carries every relation,
- * so nothing has to be asserted in a sentence underneath.
- *
- * The rubric is a sibling of the harness rather than inside it on purpose: what the work
- * is judged against is decided before a run and does not belong to the runner. On this
- * site it has a name and a type, `acceptance-criteria`, which is why the analyzer can
- * follow it through a graph.
- */
-export function EvalHarnessBlueprint() {
-  return (
-    <figure className="flex flex-col gap-4 rounded-xl border border-line bg-surface/70 p-5 sm:p-6">
-      <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
-          Three things, one inside the next
-        </span>
-        {/* The equation, in the slot the caption already had.
-            ────────────────────────────────────────────────
-            The podcast document's one-line definition, `Agente = Modello + Harness`, and
-            it costs one line and no geometry because both of its terms are already frames
-            in the drawing below: the harness is a box, and the model is the field the
-            `model` row of the figure above names. The third thing — the blueprint — is
-            neither, and that is the point of putting the equation here rather than in a
-            paragraph: it sits directly over a drawing in which the blueprint is the
-            innermost box, so a reader sees that the thing this site hands over is not on
-            either side of the equals sign. */}
-        <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[13px] text-muted">
-          <code className="font-mono text-[12px] text-dim">agent = model + harness</code>
-          <span>A blueprint is what you download from here. Give it a harness and it runs.</span>
-        </span>
-      </figcaption>
+/* `EvalHarnessBlueprint` stood here, 240 lines of nested frames with their contrast
+   arithmetic, and it is deleted rather than left unmounted.
 
-      {/* eval */}
-      <div className="anim-strip-in flex flex-col gap-3 rounded-lg border border-violet/40 p-4 sm:p-5">
-        <p className="label text-violet">
-          eval
-        </p>
+   The author moved its subject to a band of its own on `/what-a-blueprint-is` ("a new
+   section that start with such drawing"), asked the nodes drawn as cards, asked the boxes
+   to arrive on scroll, and struck the caption's `agent = model + harness` as "not totally
+   correct". That is a different figure, and it is `components/explain/RunLayers.tsx`.
 
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
-          {/* harness
-              ────────────────────────────────────────────────
-              Neutral, and it is the only frame here that is. It wore
-              `border-amber/45` + `text-amber` until 2026-08-07, which was a
-              standing breach of the rule `app/globals.css` states over
-              `.route-box`: amber has exactly two jobs sitewide,
-              `ComingSoonBadge` ("not built yet") and a box that leaves the
-              page, and a nested category frame is neither. Worse than
-              spending the colour, it made a claim — amber reads "not built
-              yet", so an amber harness said DarkPrint intends to ship one.
-              It does not. The figcaption two elements up says the opposite in
-              words: "A blueprint is what you download from here. Give it a
-              harness and it runs."
+   Three findings survived the move, because they were measured rather than decorative:
 
-              So neutral is not a fallback, it is the accurate register. Of
-              the four boxes, three are things this site hands you or reads
-              off the engine — the eval is where a person decides to grade
-              (violet), the blueprint is the thing you download (cyan), the
-              rubric is a real card type, `acceptance-criteria`, the analyzer
-              can follow (emerald). The harness is the one box you bring
-              yourself, and it is now the one box with no accent.
+     the harness frame takes NO accent. It is the one box a reader brings themselves, and
+     amber, which it wore until 2026-08-07, means "not built yet" sitewide — an amber
+     harness said DarkPrint intends to ship one. It does not.
 
-              Nothing is lost by it: the docblock above records that
-              containment carries every relation in this drawing, so no
-              frame's hue is load-bearing, and the svg's `aria-label` gives
-              the shape to a screen reader independently.
+     the blueprint frame is the only one on the cyanotype sheet, `bp-grid` over
+     `bg-blueprint-deep/60` inside a `blueprint-line/55` border. That border weight is the
+     one that clears 3:1 on BOTH sides; `/50` fails on the inside at 2.75:1. Its label is
+     `blueprint-line` and its ink `blueprint-ink`, quoted against the brightest pixel
+     `.bp-grid` can put under a glyph, which is where two 96px major rules cross.
 
-              Measured against the figure's real ground (`bg-surface/70` over
-              void resolves to #080a13): the label at `text-muted` #9aa1ba is
-              7.87:1, past AAA and brighter than the 11px accent labels it
-              sits beside. `border-line-bright` #333a54 computes 1.76:1
-              against that ground, against 2.05:1 for the `border-violet/40`
-              directly outside it — the same order as its siblings, so the
-              frame does not read as weaker than the boxes it holds and is
-              held by. */}
-          <div
-            className="anim-strip-in flex flex-1 flex-col gap-3 rounded-lg border border-line-bright p-4"
-            style={{ animationDelay: `${STEP}ms` }}
-          >
-            <p className="label text-muted">
-              harness
-            </p>
-
-            {/* blueprint — the one frame drawn on the cyanotype sheet
-                ────────────────────────────────────────────────
-                The author's instruction: give this box "the background a blueprint gets on
-                the blueprint page", which is `.bp-grid` over the blueprint pole. It was
-                `border-cyan/40` on `bg-void/50`, a neutral hole with a cyan edge; every
-                other drawing of a blueprint on this site — the gallery card's plate, the
-                graph panes, the doors — is a graticule on deep blue, and this was the one
-                place the site named a blueprint and did not draw it on its own paper.
-
-                The whole frame moves register with the ground, because a light-blue sheet
-                with slate ink on it is two registers in one box:
-
-                  - the label goes `blueprint-line`, not `cyan`. Cyan is the interactive
-                    semantic and there is nothing to click here;
-                  - the gloss goes `blueprint-ink`, the pole's own text colour;
-                  - the little graph's runs go `blueprint-line` and its discs go
-                    `blueprint-ink`. They were `line-bright` and `cyan`: `line-bright`
-                    (#333a54) computes 1.15:1 on this ground and would have vanished
-                    outright, which is the failure mode of changing a ground and leaving
-                    the ink. Discs brighter than runs keeps the one relation the site's
-                    whole visual language rests on — a lit figure on a receding sheet.
-
-                ── Measured, not assumed ──
-                Ground: `bg-blueprint-deep/60` (#061c52 at 60%) over the figure's own
-                `bg-surface/70`-over-`bg-surface` (#0a0c16) resolves to #08163a. `.bp-grid`
-                lays 1px rules over it at 12% and 5% of `blueprint-line`, and the 12% rule
-                is the brightest pixel a glyph can land on: #152952. Every ratio below is
-                quoted against that worst case, with the field value after it.
-
-                  blueprint-ink gloss   10.92:1  (13.51 on the field)   AA needs 4.5
-                  blueprint-line label  6.64:1   (8.21)                 AA needs 4.5
-                  blueprint-ink discs   10.92:1  (13.51)                AA-graphic needs 3
-                  blueprint-line runs   6.64:1   (8.21)                 AA-graphic needs 3
-
-                The border is `blueprint-line/55`: 3.42:1 against the neutral ground
-                outside it and 3.12:1 against the sheet inside it, both past the 3:1 a
-                non-text boundary owes. `/50` was 3.02 and 2.75 — it fails on the inside —
-                and `/40`, what the cyan border used, is 2.34 and 2.13. The intensity was
-                picked the same way: at `/35` the sheet barely reads as blue, and past
-                `/70` the border's inner contrast slides under 3:1 because the sheet
-                brightens faster than the rule does. */}
-            <div
-              className="anim-strip-in bp-grid flex flex-col gap-3 rounded-lg border border-blueprint-line/55 bg-blueprint-deep/60 p-4"
-              style={{ animationDelay: `${STEP * 2}ms` }}
-            >
-              {/* `blueprint-ink`, and it was `blueprint-line` for one draft.
-                  Measured against real rendered pixels rather than against the arithmetic:
-                  `.bp-grid` lays two lattices, and where two 96px major rules cross, the
-                  sheet reaches rgb(38,68,115) — brighter than the 12% single rule the
-                  arithmetic predicts, because the crossing composites twice. Against that
-                  pixel `blueprint-line` computes 4.50:1, which meets AA exactly and by
-                  nothing, on 11px type whose stems are a pixel wide. `blueprint-ink` is
-                  7.41:1 on the same pixel and 13.47:1 on the field.
-
-                  Nothing is lost by it. The `harness` frame directly outside already draws
-                  its label and its gloss in one colour, so a frame whose name matches its
-                  own body text is this figure's existing practice, and `blueprint-line`
-                  keeps the two jobs it is named for: the border, and the runs of the
-                  little graph. */}
-              <p className="label text-blueprint-ink">
-                blueprint
-              </p>
-              {/* The stagger stays on the wrapper rather than moving inside the svg:
-                  `anim-strip-in` is a DOM keyframe and the drawing arrives as one thing,
-                  which is also what it is — a shape, not four events. */}
-              <div
-                className="anim-strip-in"
-                style={{ animationDelay: `${STEP * 3}ms` }}
-              >
-                <svg
-                  viewBox={`0 0 ${SHEET.w} ${SHEET.h}`}
-                  className="h-auto w-full max-w-[18rem]"
-                  role="img"
-                  aria-label="The shape of a blueprint: one node hands its work to two others, and both of those hand theirs to a fourth."
-                >
-                  <defs>
-                    <marker
-                      id={HEAD}
-                      viewBox="0 0 8 8"
-                      refX={8}
-                      refY={4}
-                      markerWidth={4}
-                      markerHeight={4}
-                      orient="auto"
-                    >
-                      <path d="M 0 0 L 8 4 L 0 8 Z" fill="var(--color-blueprint-line)" />
-                    </marker>
-                  </defs>
-                  {RUNS.map(([from, to]) => {
-                    const a = SPOTS[from];
-                    const b = SPOTS[to];
-                    if (a === undefined || b === undefined) return null;
-                    return (
-                      <line
-                        key={`${from}-${to}`}
-                        {...trimmed(a, b)}
-                        stroke="var(--color-blueprint-line)"
-                        strokeWidth={DISC.stroke}
-                        markerEnd={`url(#${HEAD})`}
-                      />
-                    );
-                  })}
-                  {Object.entries(SPOTS).map(([id, [x, y]]) => (
-                    <circle
-                      key={id}
-                      cx={x}
-                      cy={y}
-                      r={DISC.r}
-                      fill="var(--color-blueprint-ink)"
-                    />
-                  ))}
-                </svg>
-              </div>
-              <p className="text-[13px] leading-snug text-blueprint-ink">
-                The graph and the cards it pins. Text, versioned, checkable. It branches
-                and comes back together, which is the difference between a blueprint and a
-                list of steps.
-              </p>
-            </div>
-
-            <p className="text-[13px] leading-snug text-muted">
-              What executes the graph: a runner that takes each node in turn, and an
-              evaluator that reads the result.
-            </p>
-          </div>
-
-          {/* rubric, a sibling of the harness inside the eval */}
-          <div
-            className="anim-strip-in flex flex-col gap-3 rounded-lg border border-emerald/40 p-4 lg:w-[16rem]"
-            style={{ animationDelay: `${STEP * 2}ms` }}
-          >
-            <p className="label text-emerald">
-              rubric
-            </p>
-            <p className="text-[13px] leading-snug text-muted">
-              What the result is graded against. Here it has a name and a type,{" "}
-              <code className="font-mono text-[12px] text-emerald">
-                acceptance-criteria
-              </code>
-              , so the analyzer can follow it through a graph.
-            </p>
-          </div>
-        </div>
-
-        <p className="text-[13px] leading-snug text-muted">
-          One run of a blueprint through a harness, graded against a rubric. That is an
-          eval.
-        </p>
-      </div>
-    </figure>
-  );
-}
+     eval is violet and rubric is emerald, for the reasons this file gives at each of its
+     remaining figures: violet is where a person decides, emerald is what the engine reads.
 
 /* ==================== the guardrail, drawn as a shape ====================
    The one idea the podcast document carries that this site had nowhere: a guardrail is
