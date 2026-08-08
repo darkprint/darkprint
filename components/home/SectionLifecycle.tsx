@@ -306,9 +306,34 @@ export function SectionLifecycle() {
              after the download runs on your machine with your own tools. That was in the
              lead and the title said "A blueprint is a folder you can take away", which is
              a smaller claim about the same thing. The title carries it now, and the lead
-             says what the panels are. */
+             says what the panels are.
+
+             ── The second sentence, removed 2026-08-07 ──
+             It read "Nothing here executes a blueprint, and nothing you build has to come
+             back." Two claims, and both survive where a reader can act on them rather than
+             where they are merely announced:
+
+               execution — `components/blueprint/DownloadPanel.tsx`, beside the download
+               button on every blueprint page and on `/build`: "Execution happens on your
+               machine. DarkPrint distributes these files and analyses them. It runs
+               nothing and holds none of your provider keys." That is the same claim at the
+               moment it matters, in more detail, and `/build`'s own copy repeats it.
+
+               nothing comes back — the Upload panel below states the stronger version of
+               it in the open, and `components/site/honesty.test.ts` pins that one.
+
+             No ledger row covered the sentence and no test held it, which is exactly the
+             condition under which a limit statement normally goes missing by accident. It
+             is going deliberately, and this note is the record.
+
+             What it leaves behind is worth watching: the first sentence is an imperative
+             about a server that does not exist ("Point an agent at it over MCP"), and it no
+             longer has a second sentence softening it. The Connect panel four elements down
+             carries the correction verbatim — "The server is not built yet, so this is what
+             the setup will look like" — and `beats.test.ts` holds it there. If that panel
+             ever moves, this lead needs re-reading. */
           title="The registry publishes files, your machine runs them"
-          lead="Point an agent at it over MCP, or take the folder yourself and wire it into what you already have. Nothing here executes a blueprint, and nothing you build has to come back."
+          lead="Point an agent at it over MCP, or take the folder yourself and wire it into what you already have."
         />
 
         {/* Three panels in a two-column grid, the first spanning both.
