@@ -124,7 +124,7 @@ const ROSTER: readonly SceneEntry[] = [
      places the landing's blueprint from it and `roles.test.ts` still holds it to the
      starter bundle. */
   {
-    files: ["components/home/SectionBlueprint.tsx"],
+    files: ["components/home/blueprint/BlueprintWalk.tsx"],
     frames: 2,
     render: () => framesOf(createElement(SectionBlueprint)),
   },
@@ -262,7 +262,7 @@ describe("the guard covers every scene the site draws", () => {
     // the one drawing that is definitely still on the site, which is the landing's
     // blueprint. A walk that stops matching returns nothing and fails by name.
     expect(DRAWERS.length).toBeGreaterThan(2);
-    expect(DRAWERS).toContain("components/home/SectionBlueprint.tsx");
+    expect(DRAWERS).toContain("components/home/blueprint/BlueprintWalk.tsx");
   });
 
   it("measures each of them", () => {

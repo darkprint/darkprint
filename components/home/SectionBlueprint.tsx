@@ -1,192 +1,57 @@
-"use client";
-
-/* ============================================================
-   Beat 2 of redesign spec §2: a graph glowing into existence.
-
-   The line is "this is a blueprint", and the drawing is the whole
-   of the argument, so the copy is one sentence and stops. Every
-   paragraph the landing used to spend explaining the five roles,
-   the loop and the prohibition went to `/spec/topology` with
-   `SectionRoles`, and came off that page again when the trim pass
-   cut the roles band. The argument now lives where it is checkable
-   rather than where it was retold: `TOPOLOGY_ROWS` on
-   `/spec/topology` and the `cannot` line on `/spec/card`. This beat
-   never carried it and still does not — one sentence, then the
-   drawing.
-
-   ── What is drawn ──
-   The starter software factory the site ships, node for node and
-   edge for edge, placed by `./graph.ts` out of the facts in
-   `./roles.ts`. Doc 2 §2.1 rung 4 asks for "un esempio concreto,
-   singolo, visibile", and the first graph a visitor meets should be
-   one they can download.
-
-   ── Why the edges carry no words ──
-   Redesign spec §1: "suggestive and atmospheric, almost no text".
-   A label makes a glyph focusable, so labelling the five runs as
-   well as the five discs would put eleven tab stops in the first
-   figure on the site. The five roles are named, the absence is
-   named because it is the site's central argument, and what each
-   run carries is in the scene's `<desc>`, which is what a screen
-   reader is given instead of walking the drawing. A reader who
-   wants the labels drawn opens the blueprint, which is linked
-   under the sheet.
-   ============================================================ */
-
-
-import { FlowAbsence, FlowEdge, FlowNode, FlowScene, Sheet } from "@/components/viz";
-import { kindTone, type FlowTone } from "@/components/viz/flow";
-import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
+import { bundleSource } from "@/lib/content";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
-import {
-  LANDING_GRAPH_DESCRIPTION,
-  LANDING_GRAPH_LABEL,
-  LANDING_NARROW,
-  LANDING_WIDE,
-  type LandingGraph,
-} from "./graph";
+import { BlueprintWalk } from "./blueprint/BlueprintWalk";
 
+/* ============================================================
+   Beat 2: a graph, and then the file the graph is a picture of.
 
-/**
- * The disc is coloured by what the node IS, the way the gallery colours it.
- *
- * The author, 2026-08-07: "Improve the look of the blueprint in the home page; instead
- * follow the look adopted in the blueprint gallery."
- *
- * ── What this replaces, and why the old reason had already expired ──
- * `const NODE_TONE = "cyan"` stood here, one tone across all five discs, and the comment
- * defending it said: "Beat 3 takes one node out of it and lights it, and a resting graph
- * already painted five colours has nowhere left to go when one of them is supposed to come
- * on."
- *
- * That beat is gone. Beat 3 is `CardWalk` now — an annotated listing, DOM text, no `<svg>`
- * at all — and `scene-labels.test.ts` records the swap. Nothing anywhere on the site passes
- * `lit` to a `FlowNode` today, so the state the uniform palette was being held in reserve
- * for has no caller. The instruction and the expiry are independent, and the argument would
- * have been worth re-opening on its own.
- *
- * ── Four greens and a cyan is the truth, not a decision ──
- * `roles.ts` mirrors each node's `AgentNodeKind` and `roles.test.ts` holds all five to what
- * `allBlueprints()` resolves. Planner, Builder and Debugger are `executor`, Tester is
- * `verifier`, Deployer is `ship`. That is what the same graph looks like on `/blueprints`,
- * which is the whole point of the change: the landing and the registry stopped drawing one
- * blueprint in two colour languages one click apart.
- *
- * `kindTone` and not `NODE_KIND_META` directly, because `FlowNode` takes a tone rather than
- * a colour — `flow.ts` argues that at length, and `flow.test.ts` pins the two palettes to
- * each other so they cannot drift.
- */
-function nodeTone(kind: string): FlowTone {
-  /* `line`, the sheet's own drawing colour, for a kind this register reserves a colour for
-     (a router, a human gate). None of the starter's five is one, so the fallback is
-     unreachable today; it exists because `LandingNode.kind` is a `string` and a graph
-     swapped in here later should draw a neutral disc rather than throw. */
-  return kindTone(kind) ?? "line";
-}
+   The drawing and everything about how it is placed are unchanged and now live in
+   `./blueprint/BlueprintWalk.tsx`, which is the client half. This file is the server half
+   and it exists for one reason: to read `blueprint.dot` off the archive at build time.
 
-function Drawing({ graph, className }: { graph: LandingGraph; className: string }) {
-  /* One hook per placement, and both are in the DOM at once with one of them
-     `display:none`. An element with no box never intersects, so the hidden placement sits
-     in `armed` and costs nothing; when a reader rotates a tablet the observer fires on the
-     one that just gained a box and it plays then. */
-  const flow = useLuminousFlow({ amount: 0.15 });
+   ── Why the split ──
+   The author asked the drawing to be replaced by its own source as a reader scrolls
+   ("to give to the user the intuition how it is defined"). The source has to be the REAL
+   file — a hand-typed approximation of a DOT file on the page that introduces DOT files
+   would be the one thing this beat cannot afford — and reading it means `node:fs`, which a
+   `"use client"` module cannot do.
 
-  return (
-    <FlowScene
-      {...flow.scene}
-      /* Names on, always.
-         ------------------------------------------------------------
-         `useLuminousFlow` returns `labels: "hover"` the moment a scene animates, and on
-         this one that left five identical glowing discs with nothing written on them. The
-         beat's caption says "five nodes, five edges" and the drawing showed five dots: a
-         reader could not tell a planner from a release gate, and a reader without a mouse
-         never could at all. `beats.test.ts` states the rule this broke, in the site's own
-         words: "a figure whose meaning is only available to a mouse user is a broken
-         figure."
+   `SectionNodeIsCard` and `CardWalk` are the same pair for the same reason one beat down,
+   and this follows them rather than inventing a second arrangement.
 
-         Safe to turn on rather than a judgement call: `scene-labels.test.ts` measures
-         every label box in both of this section's frames, so a name that would collide or
-         leave the sheet fails the suite. After the spread, so it wins over the hook. */
-      labels="always"
-      width={graph.width}
-      height={graph.height}
-      label={LANDING_GRAPH_LABEL}
-      description={LANDING_GRAPH_DESCRIPTION}
-      className={className}
-      id="landing-graph"
-    >
-      {/* Curves first: a disc is drawn over the ends of its own runs. Both radii are the
-          placement's, so a curve stops at the rim of the disc actually drawn rather than
-          at the rim of the vocabulary's default one. */}
-      {graph.wires.map((wire) => (
-        <FlowEdge
-          key={wire.id}
-          id={wire.id}
-          from={wire.from}
-          to={wire.to}
-          bend={wire.bend}
-          fromRadius={graph.nodeRadius}
-          toRadius={graph.nodeRadius}
-        />
-      ))}
+   ── Why `bundleSource` and not a path ──
+   `lib/content` already reads every bundle once and caches it; `components/home/roles.ts`
+   names the same blueprint by path for its own test to check the drawing against. Going
+   through the reader means the bytes on this page are the bytes the rest of the site
+   resolved, scored and publishes, rather than a second read of the same file that could
+   drift from it.
+   ============================================================ */
 
-      {/* Doc 2 §5.2: "la lezione centrale non sta in un nodo, sta in un arco che non c'è."
-          Its label stays on without a pointer, because a reader who never hovers anything
-          still has to be able to read the one thing the site is built on. */}
-      <FlowAbsence
-        from={graph.absence.from}
-        to={graph.absence.to}
-        fromRadius={graph.nodeRadius}
-        toRadius={graph.nodeRadius}
-        label={graph.absence.label}
-        id="absent"
-      />
+/** The blueprint every worked example on this site opens with. */
+const STARTER = "starter-software-factory";
 
-      {graph.nodes.map((node) => (
-        <FlowNode
-          key={node.id}
-          id={node.id}
-          x={node.x}
-          y={node.y}
-          r={graph.nodeRadius}
-          label={node.label}
-          name={node.name}
-          tone={nodeTone(node.kind)}
-          /* The gallery's mark: one halo shell instead of three. Five lamps at 4.4× on one
-             sheet is more glow than drawing, and this beat is about the topology. */
-          mark="schematic"
-        />
-      ))}
-    </FlowScene>
-  );
-}
+/** What the file is called in the folder that downloads, and in the sheet's own rail. */
+const FILE = "blueprint.dot";
 
-/* `components/hero/Wordmark.tsx` links `#blueprint`. This section's own top padding
-   happens to be deeper than the sticky header, so nothing was hidden; the `scroll-mt-24`
-   is there so the rule in `components/site/anchors.test.ts` holds over every anchor
-   without an exemption list nobody would revisit. */
 export function SectionBlueprint() {
+  const { dot } = bundleSource(STARTER);
+
   return (
     <section id="blueprint" className="scroll-mt-24 bg-void py-20 sm:py-28">
       <div className="container-page">
         <SectionHeading
           eyebrow="The drawing"
           title="This is a blueprint"
-          lead="Which agents run, what each one hands to the next, and it is already yours to run."
+          /* The lead names the swap now. A reader who scrolls into a drawing that dissolves
+             into a file with no warning has been shown a trick; one who has been told the
+             drawing is a picture of a file watches it become one. */
+          lead="Which agents run, what each one hands to the next, and it is already yours to run. Keep scrolling and the drawing becomes the file it is drawn from."
           align="center"
           className="mx-auto"
         />
 
-        <Sheet
-          className="mx-auto mt-10 max-w-4xl"
-          label="starter software factory"
-          title="five nodes, five edges"
-          note="one run deliberately missing"
-        >
-          <Drawing graph={LANDING_NARROW} className="sm:hidden" />
-          <Drawing graph={LANDING_WIDE} className="hidden sm:block" />
-        </Sheet>
+        <BlueprintWalk dot={dot.trimEnd()} file={FILE} />
       </div>
     </section>
   );

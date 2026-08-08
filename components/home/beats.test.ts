@@ -142,13 +142,49 @@ describe("beat 2 draws the blueprint with its labels in the markup", () => {
 });
 
 describe("the landing carries no page of the site it is introducing", () => {
-  it.each(BEATS.map(([name]) => name))("%s writes no YAML, no table and no code block", (name) => {
+  /**
+   * Beat 2 carries one code block on purpose, and it is the only one the landing may have.
+   *
+   * The rule this narrows is the one that keeps the landing from becoming documentation:
+   * no tables, no YAML listings, no code. It held for every beat until 2026-08-08, when the
+   * author asked beat 2's drawing to be replaced by the file it draws as a reader scrolls
+   * — "to give to the user the intuition how it is defined".
+   *
+   * That is not the failure the rule was written against. What it forbids is the landing
+   * RE-EXPLAINING a page of the site; what beat 2 now does is show the one artefact the
+   * beat is already about, verbatim, as the second half of a single figure. So the
+   * exemption is scoped as tightly as the claim: exactly one `<pre>`, on exactly that beat,
+   * and its contents have to be the archive's own bytes rather than a hand-typed
+   * approximation — which is checked below rather than trusted.
+   */
+  const CODE_BLOCK_BEAT = "2 the blueprint";
+
+  it.each(BEATS.map(([name]) => name))("%s writes no YAML and no table", (name) => {
     const html = beat(name);
     expect(html, "a table").not.toContain("<table");
-    expect(html, "a code block").not.toContain("<pre");
     // The annotated card moved whole to `/spec/card`. A `key:` at the head of a line is
     // what a YAML listing looks like once the tags are gone.
     expect(readable(html)).not.toMatch(/\b(phase|cannot|accepts|emits|model):\s/);
+  });
+
+  it.each(BEATS.map(([name]) => name).filter((n) => n !== CODE_BLOCK_BEAT))(
+    "%s writes no code block",
+    (name) => {
+      expect(beat(name), "a code block").not.toContain("<pre");
+    },
+  );
+
+  it("gives beat 2 exactly one code block, holding the archive's own DOT", async () => {
+    const html = beat(CODE_BLOCK_BEAT);
+    expect((html.match(/<pre/g) ?? []).length, "beat 2 grew a second code block").toBe(1);
+
+    const { bundleSource } = await import("@/lib/content");
+    const dot = bundleSource("starter-software-factory").dot.trimEnd();
+    expect(dot.length, "the starter bundle has no DOT to show").toBeGreaterThan(0);
+    // The first line of the file, escaped the way React writes it into the markup. If the
+    // listing ever stops being the real file, this is what notices.
+    const [first] = dot.split("\n");
+    expect(readable(html), "the listing is not the archive's DOT").toContain(first);
   });
 
   it.each(BEATS.map(([name]) => name))("%s renders at full opacity with no script", (name) => {
