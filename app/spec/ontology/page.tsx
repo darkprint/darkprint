@@ -7,6 +7,7 @@ import { CheckLegend, CheckTable } from "@/components/spec/CheckTable";
 import { Id, SpecLink } from "@/components/spec/parts";
 import { ONTOLOGY_ROWS } from "@/components/spec/rows";
 import { specNeighbours } from "@/components/spec/sequence";
+import { RouteBoxLink } from "@/components/ui/RouteBoxLink";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SourcePanel } from "@/components/ui/SourcePanel";
@@ -340,7 +341,35 @@ export default function SpecOntologyPage() {
           no `border-t` of its own: `SpecPager` draws one at container width, and a
           full-bleed rule 64px above an inset rule is two lines saying one thing. */}
       <section className="bg-surface/40 py-16 sm:py-20">
-        <div className="container-page">
+        <div className="container-page flex flex-col gap-8">
+          {/* One exit, added 2026-08-08 on the author's instruction: "add a right light box
+              on the bottom with name Design your blueprint which connects to /build."
+
+              This page is the last of the three formats and the sequence ends on it — the
+              pager below has a PREVIOUS and no NEXT — so until now a reader who had read all
+              three reference pages was handed nothing to do with them. `/build` is the one
+              destination that uses all three at once.
+
+              Amber, and it is the reservation rather than a breach: `app/globals.css` spends
+              the colour on `ComingSoonBadge` and on `.route-box`, "this box leaves the page",
+              and `RouteBoxLink` IS that box. It is the same component `/build`'s own pager
+              draws and the three cards at the foot of `/what-a-blueprint-is` borrow.
+
+              `justify-end` because the author asked for it on the right: the rail under it
+              runs left to right and a box at the far end reads as the end of the page rather
+              than as another rail entry. */}
+          <div className="flex justify-end">
+            <RouteBoxLink
+              href="/build"
+              label={
+                <>
+                  Design <span aria-hidden>→</span>
+                </>
+              }
+              title="Design your blueprint"
+            />
+          </div>
+
           <SpecPager href={HERE} />
         </div>
       </section>

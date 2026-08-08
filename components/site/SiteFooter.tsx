@@ -137,7 +137,7 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
        notation, which is right at the top of a reference page and wrong in a list of three
        things to choose between. */
     links: [
-      { href: "/spec/topology", label: "The graph file (DOT)" },
+      { href: "/spec/topology", label: "The blueprint file (DOT)" },
       { href: "/spec/card", label: "The node card (YAML)" },
       { href: "/spec/ontology", label: "The vocabulary" },
     ],

@@ -165,6 +165,7 @@ import { MCP_ROUTE } from "@/lib/mcp";
 import { SKILL_ROUTE } from "@/lib/skill";
 
 import { Folder } from "./lifecycle/Folder";
+import { AssistFigure } from "./lifecycle/AssistFigure";
 import { TeacherFigure } from "./lifecycle/TeacherFigure";
 import { ConnectFigure } from "./lifecycle/ConnectFigure";
 import { UploadFigure } from "./lifecycle/UploadFigure";
@@ -413,9 +414,49 @@ export function SectionLifecycle() {
               person mark standing at a board, and what is on the board is a three-node
               graph — which is the thing being taught. `TeacherFigure` draws it. */}
           <article className="panel flex min-w-0 flex-col gap-4 p-5">
-            <PanelHeading index="02" title="Teaching" mark="✎" />
+            {/* "Teaching" until 2026-08-08, pointing at `/skill`. The author renamed it and
+                repointed it, and the two halves of that instruction go together: the drawing
+                is a person at a board explaining a finished graph, which is what LEARNING
+                what a blueprint is looks like, not what installing a skill looks like. The
+                figure stays exactly as it was — the author asked it kept — and the panel
+                finally says what it draws.
+
+                The skill it used to point at is the panel directly after this one. */}
+            <PanelHeading index="02" title="Learning" mark="✎" />
 
             <TeacherFigure />
+
+            <p className="text-sm leading-relaxed text-muted">
+              A blueprint is three plain text files: a graph in <Mono>DOT</Mono>, one
+              versioned card per node, and the vocabulary both are written against. One page
+              says what each one holds, and every example on it is read out of a bundle the
+              build resolved.
+            </p>
+
+            <Link href="/what-a-blueprint-is" className={linkCls}>
+              What a blueprint is
+            </Link>
+          </article>
+
+          {/* ---------- 03 · assisted design ----------
+              New on 2026-08-08, and it takes over the destination panel 02 used to carry.
+              The author: add a box "indicating Assisted-design where inside there is a
+              graphic of someone helping to draw a blueprint", connected to `/skill`.
+
+              It sits ABOVE the rule, with Download and Learning, because it ships: one
+              command installs the skill and it interviews a reader today. That is the same
+              placement argument panel 02 was carrying when it pointed here, moved to the
+              panel that now does.
+
+              `AssistFigure` draws the relation rather than the tool: an unfinished graph,
+              a violet person at it because the blueprint is theirs, and a cyan cursor
+              arriving at the one node still to be decided. Its own header argues why the
+              graph is unfinished — that is the whole difference between this drawing and
+              `TeacherFigure` beside it. */}
+          <article className="panel flex min-w-0 flex-col gap-4 p-5">
+            <PanelHeading index="03" title="Assisted design" mark="✦" />
+
+            <AssistFigure />
 
             <p className="text-sm leading-relaxed text-muted">
               The <Mono>DarkPrint skill</Mono> installs into your own agent in one command
@@ -445,7 +486,7 @@ export function SectionLifecycle() {
           {/* ---------- 03 · connect ---------- */}
           <article className="panel flex min-w-0 flex-col gap-4 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <PanelHeading index="03" title="Connect" mark="⇄" />
+              <PanelHeading index="04" title="Connect" mark="⇄" />
               <NotBuiltYet />
             </div>
 
@@ -473,7 +514,7 @@ export function SectionLifecycle() {
           {/* ---------- 04 · upload ---------- */}
           <article className="panel flex min-w-0 flex-col gap-4 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <PanelHeading index="04" title="Upload yours" mark="↑" />
+              <PanelHeading index="05" title="Upload yours" mark="↑" />
               <NotBuiltYet />
             </div>
 

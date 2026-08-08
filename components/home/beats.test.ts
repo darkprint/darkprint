@@ -404,13 +404,16 @@ describe("beat 4's panels can be narrower than the strings inside them", () => {
   const html = beat("4 the lifecycle");
   const ARTICLES = [...html.matchAll(/<article[^>]*>/g)].map((m) => m[0]);
 
-  it("renders the four panels this checks", () => {
-    /* Three since Compose became a hint inside Download rather than a peer beside it, and
-       four since 2026-08-07, when the author asked for a Teaching panel about the DarkPrint
-       skill. The count is asserted at all so the two cases under it cannot pass by walking
-       an empty list, and it is asserted exactly so a panel quietly reappearing — the shape
-       this section has changed three times now — has to come past this file. */
-    expect(ARTICLES).toHaveLength(4);
+  it("renders the five panels this checks", () => {
+    /* Three since Compose became a hint inside Download rather than a peer beside it, four
+       since 2026-08-07 when the author asked for a Teaching panel, and five since
+       2026-08-08: that panel became Learning and points at `/what-a-blueprint-is`, and a new
+       Assisted design panel took over the `/skill` destination it used to carry.
+
+       The count is asserted at all so the two cases under it cannot pass by walking an
+       empty list, and it is asserted exactly so a panel quietly reappearing — the shape this
+       section has changed four times now — has to come past this file. */
+    expect(ARTICLES).toHaveLength(5);
   });
 
   it("clears the automatic grid-item min-width on every one of them", () => {

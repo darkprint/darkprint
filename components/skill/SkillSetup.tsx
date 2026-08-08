@@ -219,23 +219,33 @@ export function SkillSetup({ className }: { className?: string }) {
       <article className="panel flex min-w-0 flex-col gap-4 p-5">
         <StepHeading index="01" title="Install it" />
 
-        {/* Command left, what it does right. Every panel in this tutorial is the same two
-            columns for the same reason `components/home/SectionLifecycle.tsx` gives its
-            Download panel: the artefact is the evidence for the sentence beside it, and a
-            reader should be able to check one against the other without scrolling between
-            them. It is also what stops a 1152px panel from carrying a 576px paragraph and
-            600px of nothing, which is the shape a reviewer measured on `/build` and asked
-            off that page. */}
-        <div className="grid gap-5 md:grid-cols-2">
-          <CommandLine
-            command={SKILL_INSTALL_COMMAND}
-            ariaLabel="Copy the command that installs the DarkPrint skill"
-          />
+        {/* Centred and capped, with the sentence UNDER it, since 2026-08-08. The author:
+            "align central the box containing npx skills@latest add … and place below the
+            text The skills CLI reads this repository over git…".
+
+            It was command left, sentence right, on the argument that an artefact should sit
+            beside the sentence it is evidence for. That argument holds for a FILE LISTING
+            and not for a command: the command is the thing a reader has come to run, and
+            half a panel wide with a paragraph competing for the eye beside it, it read as
+            one of two equal columns rather than as the page's one instruction. Centred at
+            42rem it is the only thing on its line, and the sentence explaining it follows —
+            which is also the order a reader uses them in.
+
+            `max-w-2xl mx-auto` rather than the panel's full width: a 1152px input holding a
+            44-character command is a field with 700px of nothing in it, which is the shape
+            the author asked off `/build` for the same reason. */}
+        <div className="flex flex-col gap-4">
+          <div className="mx-auto w-full max-w-2xl">
+            <CommandLine
+              command={SKILL_INSTALL_COMMAND}
+              ariaLabel="Copy the command that installs the DarkPrint skill"
+            />
+          </div>
 
           {/* What the command does, and the three things it does not do. The reader is one
               paste away from running it, so the account question is answered before it is
               asked rather than in the block under the rule. */}
-          <p className="text-[15px] leading-relaxed text-muted">
+          <p className="mx-auto max-w-2xl text-[15px] leading-relaxed text-muted">
             The <code className="font-mono text-fg">skills</code>{" "}
             CLI reads this repository over git and writes the DarkPrint skill into your
             agent&rsquo;s skills directory. There is no account, no key and nothing fetched
@@ -249,12 +259,23 @@ export function SkillSetup({ className }: { className?: string }) {
       <article className="panel flex min-w-0 flex-col gap-4 p-5">
         <StepHeading index="02" title="Answer its questions" />
 
-        {/* Asks left, writes right, and the two clarifications under the listing they are
-            about. The two halves are the whole of what a reader needs before they start:
-            what they are going to be answering, and what they are holding when the
-            answering stops. */}
-        <div className="grid gap-5 md:grid-cols-2">
-          <div className="flex min-w-0 flex-col gap-3">
+        {/* One column, not two, and the file listing at the foot rather than beside the
+            questions. The author: put "What it writes" at the bottom of the panel and "use
+            full horizontal space" for the interview paragraph and its list.
+
+            The two halves were never peers. What a reader is about to ANSWER is five
+            questions of up to eighteen words each, and in a half-width column every one of
+            them wrapped to three lines; what they are HOLDING at the end is three file
+            names. Side by side, the longer half was cramped so the shorter half could have
+            a column it did not need. Down the page, each takes the width it wants and they
+            are in the order a reader meets them: the interview, then its output.
+
+            `gap-6` between the two blocks rather than the panel's `gap-4`: the author asked
+            for "some vertical space between the text in this section as it is very dense",
+            and a five-item list under a paragraph under a heading is the densest block on
+            this page. */}
+        <div className="flex flex-col gap-6">
+          <div className="flex min-w-0 flex-col gap-4">
             <p className="text-[15px] leading-relaxed text-muted">
               It is an interview and not a generator. Ask it for a blueprint and it starts
               by asking you what the work is, because a graph nobody described is a graph
@@ -262,9 +283,12 @@ export function SkillSetup({ className }: { className?: string }) {
               anyway.
             </p>
 
-            <div className="flex min-w-0 flex-col gap-2">
+            <div className="flex min-w-0 flex-col gap-3">
               <span className="label">What it asks</span>
-              <ul className="flex flex-col gap-1.5">
+              {/* `gap-2.5` between items, not `gap-1.5`: five items of up to eighteen words
+                  at 1.6 leading are five paragraphs, and a list of paragraphs needs a gap a
+                  reader can see between them. */}
+              <ul className="flex flex-col gap-2.5">
                 {QUESTIONS.map((question) => (
                   <li
                     key={question}

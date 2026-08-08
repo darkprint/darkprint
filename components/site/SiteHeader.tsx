@@ -121,7 +121,7 @@ export const NAV = [
      three deliberately break that: it is a rule about a reader landing on the heading they
      clicked, and it was written when every menu row WAS a page title. The three `h1`s are
      unchanged and the test's rule is narrowed rather than dropped — see the case. */
-  { href: "/spec/topology", label: "The graph file (DOT)", group: "learn" },
+  { href: "/spec/topology", label: "The blueprint file (DOT)", group: "learn" },
   { href: "/spec/card", label: "The node card (YAML)", group: "learn" },
   { href: "/spec/ontology", label: "The vocabulary", group: "learn" },
   // The author named this label: "/which-tasks should be placed in The climb part which
