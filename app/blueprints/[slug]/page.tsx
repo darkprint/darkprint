@@ -10,8 +10,7 @@ import {
 import {
   BUNDLE_AGENTS,
   BUNDLE_README,
-  FACTORY_DOT,
-  TOPOLOGY_DOT,
+    TOPOLOGY_DOT,
   bundleDownloadCommand,
   bundleFilePaths,
   bundleHref,
@@ -82,7 +81,9 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
   // `scripts/generate-bundles.ts` before the build. The page only names them, and it
   // names them through the same helpers the generator writes them with, so a link here
   // and a file there cannot drift apart.
-  const factoryHref = bundleHref(bp.slug, FACTORY_DOT);
+  /* `factoryHref` was here. `DownloadPanel` stopped drawing `factory.dot` on 2026-08-08
+     and no other element on this page names it, so the binding went with the prop. The
+     file is still generated into every bundle by `scripts/generate-bundles.ts`. */
   // Spec §3.1: the header's quick download used to point at `factoryHref` under a
   // "Download factory.dot" label and got renamed to "Download blueprint.dot" without
   // moving what it saves — a label and a saved filename that disagree is a defect this
@@ -615,7 +616,6 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             only the download. */}
         <More summary="Download">
           <DownloadPanel
-            factoryHref={factoryHref}
             topologyHref={topologyHref}
             readmeHref={bundleHref(bp.slug, BUNDLE_README)}
             agentsHref={bundleHref(bp.slug, BUNDLE_AGENTS)}

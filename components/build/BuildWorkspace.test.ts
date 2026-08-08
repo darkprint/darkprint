@@ -114,17 +114,24 @@ describe("BuildWorkspace — SSR markup", () => {
     expect(match?.[1]).toBe("Your workspace");
   });
 
-  it("names the exits section, and gives both exits a peer title", () => {
-    const exitsHeading = html.match(/<h2 id="exits-heading"[^>]*>([^<]*)<\/h2>/);
-    expect(exitsHeading).not.toBeNull();
-    expect(exitsHeading?.[1]).toBe("You leave with one of two things");
+  it("gives both exits a peer title, and the section no heading of its own", () => {
+    /* The `h2` read "You leave with one of two things" and the author asked it out on
+       2026-08-08: a heading whose only content is that there are two of the things directly
+       under it is a caption for a count. The region keeps an `aria-label`, so a screen
+       reader is told where it is without a visible heading standing in for that.
 
-    // Fix round 1, FIX 1: only the download exit's own title is new; `AgentHandoff`'s lost
-    // its leading "Or" ("Or have your agent write one for your own goal") so the two read
-    // as siblings rather than a stated option and its alternative.
+       Held as an absence rather than dropped, because the two exit titles below only work
+       as peers if nothing sits above them claiming to introduce them. */
+    expect(html).not.toContain('id="exits-heading"');
+    expect(html).not.toContain("You leave with one of two things");
+    expect(html).toContain('aria-label="What you leave with"');
+
+    // Fix round 1, FIX 1: `AgentHandoff`'s title lost its leading "Or" ("Or have your agent
+    // write one…") so the two read as siblings rather than a stated option and its
+    // alternative. Both were renamed on 2026-08-08 and both are still peers.
     const text = plainText(html);
-    expect(text).toContain("This starter, as files");
-    expect(text).toContain("Have your agent write one for your own goal");
+    expect(text).toContain("Download the bundle");
+    expect(text).toContain("Assisted Design skill");
     expect(text).not.toContain("Or have your agent");
   });
 
@@ -148,7 +155,7 @@ describe("BuildWorkspace — SSR markup", () => {
     const exitTitles = [...html.matchAll(/<h3 class="font-display[^"]*">([^<]*)<\/h3>/g)].map(
       (match) => match[1],
     );
-    expect(exitTitles).toEqual(["This starter, as files", "Have your agent write one for your own goal"]);
+    expect(exitTitles).toEqual(["Download the bundle", "Assisted Design skill"]);
   });
 
   /**
@@ -166,21 +173,25 @@ describe("BuildWorkspace — SSR markup", () => {
   });
 
   /**
-   * The sentence that keeps a working skill from reading as a broken one.
+   * The two folder shapes, now that there is only one of them.
    *
-   * `DownloadStep` leads on `factory.dot` and `DownloadPanel` prints `attractor run
-   * factory.dot` inside it. The skill deliberately emits the registry shape and no
-   * `factory.dot` (`lib/skill.ts` records why). Both folders are described on this one
-   * screen, so the difference has to be stated on this one screen.
+   * This case held a reconciliation: `DownloadStep` led on `factory.dot` and `DownloadPanel`
+   * printed `attractor run factory.dot` inside it, while the skill deliberately emits the
+   * registry shape and no `factory.dot`. Both folders were described on one screen, so the
+   * difference had to be stated on that screen — "Not factory.dot, which DarkPrint's
+   * exporter compiles from those two on the way out".
+   *
+   * The author took `factory.dot` off the download on 2026-08-08, so both halves of the row
+   * name the same four files and there is nothing left to explain away. The case is
+   * INVERTED rather than deleted: the sentence must not come back while the download does
+   * not lead on the file, because an apology for a difference that no longer exists reads
+   * as a fault where there is none. What both halves must still agree on is the list, and
+   * that is what the first assertion holds.
    */
-  it("reconciles the two folder shapes it now describes at once", () => {
+  it("describes one folder shape, with nothing to reconcile", () => {
     const text = plainText(html);
-    // What it writes, then the one file it deliberately does not, then why that is not a
-    // fault. Three separate matches rather than one long string: `plainText` puts a space
-    // either side of every `<code>` tag in this sentence, and a single regex over the whole
-    // of it would be pinning the markup as much as the words.
     expect(text).toMatch(/it writes what the registry stores: blueprint\.dot/i);
-    expect(text).toMatch(/\bNot\s+factory\.dot\b/i);
-    expect(text).toMatch(/exporter compiles from those two on the way out/i);
+    expect(text).not.toMatch(/\bNot\s+factory\.dot\b/i);
+    expect(text).not.toMatch(/exporter compiles from those two on the way out/i);
   });
 });

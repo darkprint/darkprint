@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { SectionLevels } from "@/components/home/SectionLevels";
-import { WhichTasksGlance } from "@/components/explain/WhichTasksGlance";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
@@ -103,8 +101,12 @@ export const metadata: Metadata = {
 };
 
 
-const INLINE =
-  "font-medium text-fg underline decoration-line-bright underline-offset-2 transition-colors hover:text-cyan";
+/* `INLINE` and the `next/link` import went with the two paragraphs the author removed on
+   2026-08-08 — the deck's link to `/blueprints` and the section that carried the four
+   questions. Nothing on this route links inline any more; the header, the footer and the
+   ladder's own source list are the ways out. Recorded rather than dropped silently, because
+   the next inline link written here will want the class and there is no shared token for
+   it. */
 
 export default function TowardsPage() {
   return (
@@ -149,27 +151,22 @@ export default function TowardsPage() {
                that misreading. Unattended is the consequence; the harness is the cause. */
             lead="A dark factory is one shape a blueprint can take: a graph where planning, implementation, testing, debugging and deployment all run unattended, inside a harness somebody wrote. Unattended is what it costs to build, not what it saves. It is a special case and not a summit: a graph with a person standing in it is a first-class blueprint here, and is shelved beside the rest."
           />
-          {/* The two scales, named apart before the five-rung list rather than after it.
-              `text-fg` on the clause that does the work: this used to be the dimmest text
-              on the route carrying its most load-bearing constraint. */}
-          {/* Full width, on the author's instruction 2026-08-07. This is the deck that
-              carries doc 2 §1.1 — the paragraph the deleted two-scales panel handed its
-              claim to — so it is the one piece of prose on the route a reader must not
-              skim past, and it now runs the width of the band the ladder below it fills. */}
-          <p className="mt-6 text-[15px] leading-[1.7] text-muted">
-            <span className="text-fg">
-              Two different things get called autonomy here, and only one of them is a
-              number.
-            </span>{" "}
-            The ladder below counts what an organisation is able to do at all. The class
-            printed on a blueprint records where the author of that one graph decided a
-            person should stand, and it ranks nothing:{" "}
-            <Link href="/blueprints" className={INLINE}>
-              the gallery
-            </Link>{" "}
-            filters on it and prints no number beside it. Find yourself on the ladder
-            first; the four questions after it decide whether the work in front of you is a
-            candidate at all.
+          {/* This slot held "Two different things get called autonomy here, and only one of
+              them is a number …" and the author asked it out on 2026-08-08.
+
+              What stands here instead is the sentence they asked moved up from the foot of
+              the page, where it was the lead of the section that is now gone. It belongs
+              here: the ladder under it measures how much of a run goes unattended, and this
+              is the one property that decides whether unattended is possible at all. The
+              route opens on its constraint and then counts the rungs, rather than counting
+              first and naming the constraint 2,500px later.
+
+              `text-fg` across the whole line rather than on a clause: it is one sentence, it
+              is the page's premise, and it is the only body prose in this header. */}
+          <p className="mt-6 text-[15px] leading-[1.7] text-fg">
+            A dark factory runs with nobody watching it, so the design rests on one property
+            of the work: whether something other than your judgement can tell the graph it
+            is finished.
           </p>
         </div>
       </header>
@@ -191,23 +188,17 @@ export default function TowardsPage() {
           ends. The sentence about the unsuitable side being "written at full strength"
           above is now carried by the two `A NO ON …` columns inside the figure itself,
           which is the only place on the route that still says what to do with a no. */}
-      <section
-        id="which-tasks"
-        className="scroll-mt-24 border-t border-line bg-void py-16 sm:py-20"
-      >
-        <div className="container-page">
-          <SectionHeading
-            eyebrow="Before you build one"
-            title="Which tasks a dark factory can take"
-            lead="Four questions settle it, and all four are about the task rather than about the graph you would draw for it."
-          />
-          {/* The block tier. `SectionHeading` → content is 40px everywhere the scale
-              reached, and the figure is what the lead hands the reader to. */}
-          <div className="mt-10">
-            <WhichTasksGlance />
-          </div>
-        </div>
-      </section>
+      {/* The whole "Before you build one / Which tasks a dark factory can take" section
+          stood here, with `WhichTasksGlance` under it, and the author asked it out on
+          2026-08-08: "totally remove the section".
+
+          It was the second of this page's two jobs, and the sentence it opened with is now
+          the page's own deck — moved up in the same instruction, so the one claim that was
+          doing work at the foot of the route opens it instead.
+
+          `#which-tasks` was a live anchor and `next.config.ts` still redirects
+          `/which-tasks` here; the page resolves and the fragment matches nothing, which is
+          the state every other merged route on this site is already in. */}
 
       {/* Three sections stood between the figure above and the end of the page, and the
           author asked all three out on 2026-08-07, in two instructions:

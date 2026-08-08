@@ -164,9 +164,15 @@ const linkCls =
 export function AgentHandoff({ className }: { className?: string }) {
   return (
     <div className={className}>
-      <h3 className="font-display text-lg font-semibold text-fg">
-        Have your agent write one for your own goal
-      </h3>
+      {/* "Have your agent write one for your own goal" until 2026-08-08. The author named
+          the replacement and named what it is for: "the objective is to provide the user
+          with a skill to bootstrap its own blueprints."
+
+          The old title described an outcome; this one names the thing. `/skill` is called
+          "The DarkPrint skill" everywhere else on the site, so this is not a fourth name
+          for that route — it is what this exit OFFERS, which is design help, against the
+          other exit's finished folder. */}
+      <h3 className="font-display text-lg font-semibold text-fg">Assisted Design skill</h3>
       {/* The heading is verbatim and pinned (`BuildWorkspace.test.ts`). The paragraph under
           it is not, and it changed: it used to name the brief as the only way through,
           which stopped being true the day the skill shipped. It now says what both ways
@@ -211,19 +217,22 @@ export function AgentHandoff({ className }: { className?: string }) {
 
         {/* Sixty words before the link, and each of the three sentences is here for a
             different reason: the
-            first says what the command reaches (a repository, not a server), the second is
-            the output a reader will compare against the folder on the other half of this
-            row, and the third is the one that stops that comparison reading as a fault.
-            Everything else is `/skill`'s, one link away. */}
+            first says what the command reaches (a repository, not a server) and the second
+            is the output a reader will compare against the folder on the other half of this
+            row.
+
+            A THIRD sentence stood here — "Not `factory.dot`, which DarkPrint's exporter
+            compiles from those two on the way out" — and it went with `factory.dot` itself
+            on 2026-08-08. It existed to stop a comparison reading as a fault: this exit
+            wrote four files and the download beside it LED on a fifth. The download does
+            not lead on it any more, so both halves of the row now name the same four and
+            there is nothing left to explain away. */}
         <p className="text-[13px] leading-relaxed text-muted">
           The skills CLI reads it out of DarkPrint&rsquo;s own repository, over git. Tell it
           what you want built and it writes what the registry stores:{" "}
           <code className="font-mono text-fg">blueprint.dot</code>, one YAML card per node,
           a <code className="font-mono text-fg">README.md</code> and an{" "}
-          <code className="font-mono text-fg">AGENTS.md</code>. Not{" "}
-          <code className="font-mono text-fg">factory.dot</code>, which DarkPrint&rsquo;s
-          exporter compiles from those two on the way out, so a folder it writes will not
-          carry one.{" "}
+          <code className="font-mono text-fg">AGENTS.md</code>.{" "}
           <Link href={SKILL_ROUTE} className={linkCls}>
             What it writes, and what to say to it
           </Link>

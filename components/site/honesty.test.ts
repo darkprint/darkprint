@@ -180,7 +180,6 @@ const DOWNLOAD_STEP = renderToStaticMarkup(
     files: BUILD.files,
     ...(BUILD.blueprint === undefined ? {} : { digest: BUILD.blueprint.digest }),
     errors: BUILD.errors.length,
-    summary: "It builds a small web app, releases on the tester's verdict, and caps the debug loop at 2 turns.",
   }),
 );
 const AGENT_HANDOFF = renderToStaticMarkup(createElement(AgentHandoff));

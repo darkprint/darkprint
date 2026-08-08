@@ -325,12 +325,16 @@ function Part({
 /**
  * What is in a bundle, one row per kind of file.
  *
- * Read off `public/bundles/starter-software-factory/` rather than remembered: that folder
- * holds `blueprint.dot`, `factory.dot`, `README.md`, `AGENTS.md` and five cards under
- * `cards/`. Five rows, and the two `.dot` files are two rows because they are two different
- * things — one is what a person wrote and the other is what the build produced from it,
- * which is the distinction a reader opening the folder for the first time will otherwise
- * spend a minute working out.
+ * Four rows, and `factory.dot` is deliberately not one of them.
+ *
+ * The folder does hold it, and it stood here as a fifth row until the author asked it out
+ * on 2026-08-08. It is a BUILD PRODUCT — the graph with every card resolved into it, written
+ * by the exporter, never by a person — and this list answers what a bundle IS. Putting a
+ * compiled artefact in a list of things somebody authors is like listing the binary beside
+ * the source: true of the directory and false about the object.
+ *
+ * The four that remain are what a person writes and reads, which is also how the author
+ * defines a bundle: "the blueprint.dot, the cards, the README.md and the AGENTS.md".
  *
  * Typed, and that is the exception this file otherwise refuses. Every count and every field
  * on this page comes off the archive because a written count goes stale; these are the NAMES
@@ -349,11 +353,6 @@ const BUNDLE_FILES: readonly { name: string; role: string }[] = [
     name: "cards/*.yaml",
     role:
       "One versioned card per node, pinned by the graph at an exact version. What runs there, which model it uses, what it may reach and what must never reach it.",
-  },
-  {
-    name: "factory.dot",
-    role:
-      "The compiled export: the graph with every card resolved into it, so a runner has one file to read instead of a folder to assemble. Produced by the build, not written by hand.",
   },
   {
     name: "README.md",
@@ -518,8 +517,9 @@ export default function WhatABlueprintIsPage() {
           who met it on the landing meets the same object here, one page deeper.
 
           Every row is a file that is really in `public/bundles/starter-software-factory/`,
-          checked against the folder rather than remembered: `blueprint.dot`, `factory.dot`,
-          `cards/*.yaml`, `README.md`, `AGENTS.md`. */}
+          checked against the folder rather than remembered: `blueprint.dot`, `cards/*.yaml`,
+          `README.md`, `AGENTS.md`. The folder also holds `factory.dot` and this list does
+          not — see `BUNDLE_FILES` for why a build product is not part of what a bundle is. */}
       <section className="border-t border-line bg-void py-14 sm:py-16">
         <div className="container-page">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-center lg:gap-14">
@@ -535,7 +535,7 @@ export default function WhatABlueprintIsPage() {
             <div className="flex min-w-0 flex-col gap-4">
               <PanelHeading>A bundle is the folder</PanelHeading>
               <p className={PROSE}>
-                One blueprint, one folder, five kinds of file. Everything on these pages is
+                One blueprint, one folder, four kinds of file. Everything on these pages is
                 read out of it during the build, so a reader copying from here is copying a
                 file that loads.
               </p>

@@ -7,7 +7,6 @@ import {
   DEFAULT_CHOICES,
   OUTPUT_OPTIONS,
   clampIterations,
-  outputSubject,
   type StarterChoices,
 } from "./choices";
 import { CapSlider, RadioChoice } from "./controls";
@@ -186,15 +185,10 @@ export function BuildWorkspace() {
     setMarks((current) => current.filter((mark) => mark !== surface));
   }
 
-  // One sentence a reader can check the download against, built from the same three
-  // choices the artefact below it is built from.
-  const summary = `It builds ${outputSubject(choices.output)}, ${
-    choices.approval === "human"
-      ? "holds the run until a named approver accepts"
-      : "releases on the tester's verdict"
-  }, and caps the debug loop at ${choices.maxIterations} ${
-    choices.maxIterations === 1 ? "turn" : "turns"
-  }.`;
+  /* `summary` was here — one sentence a reader could check the download against, built from
+     the same three choices the artefact is. Its only reader was `DownloadStep`'s paragraph,
+     which the author removed on 2026-08-08, and the three choices it recited are the three
+     controls directly above the step. */
 
   return (
     <div className="flex flex-col gap-10">
@@ -288,10 +282,15 @@ export function BuildWorkspace() {
       {/* Spec §2.3: two co-equal exits, both in full, side by side rather than one
           following the other. Neither carries a step position or a Back/Next pair — that
           machinery belonged to a sequence, and there is none here. */}
-      <section aria-labelledby="exits-heading" className="flex flex-col gap-5">
-        <h2 id="exits-heading" className="label-lead">
-          You leave with one of two things
-        </h2>
+      {/* "You leave with one of two things" was the section's `h2` and the author asked it
+          out on 2026-08-08. Both children carry their own title — "Download the bundle" and
+          "Assisted Design skill" — and a heading whose only content is that there are two of
+          the things directly under it is a caption for a count.
+
+          The `aria-labelledby` goes with it and the section takes an `aria-label` instead:
+          the region still announces itself to a screen reader, which is what that attribute
+          was for, without a visible heading standing in for the announcement. */}
+      <section aria-label="What you leave with" className="flex flex-col gap-5">
         {/* `min-w-0` on both children: a grid item's automatic minimum size is its
             min-content, not `0`, and `DownloadStep` nests a `max-w-xl` `DownloadPanel`
             (576px) — without this, that cap becomes a floor, the grid track blows out to
@@ -338,7 +337,6 @@ export function BuildWorkspace() {
             files={state.files}
             {...(state.blueprint === undefined ? {} : { digest: state.blueprint.digest })}
             errors={state.errors.length}
-            summary={summary}
             className="min-w-0"
           />
           <AgentHandoff className="min-w-0" />

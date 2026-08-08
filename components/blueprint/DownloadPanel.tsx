@@ -1,5 +1,4 @@
 import { cx } from "@/lib/format";
-import { CopyButton } from "@/components/ui/CopyButton";
 import { CloneMenu } from "@/components/blueprint/CloneMenu";
 
 /** One downloadable card document. */
@@ -26,7 +25,6 @@ export interface DownloadCard {
  */
 export function DownloadPanel({
   headingLevel = "h2",
-  factoryHref,
   topologyHref,
   readmeHref,
   agentsHref,
@@ -43,8 +41,10 @@ export function DownloadPanel({
    * three sibling `h2`s, which said the page had three equal sections when it has one.
    */
   headingLevel?: "h2" | "h3";
-  /** `/bundles/<slug>/factory.dot` — the Attractor-runnable pipeline. */
-  factoryHref: string;
+  /* `factoryHref` was here and is gone with the block that drew it. The file is still
+     exported into every bundle and `/build` still hands it over; this panel simply does not
+     teach a build product. Callers passing it now fail to typecheck, which is the point:
+     the prop leaving is how the removal reaches them. */
   /** `/bundles/<slug>/blueprint.dot` — the topology, card pins intact. */
   topologyHref: string;
   readmeHref: string;
@@ -78,7 +78,6 @@ export function DownloadPanel({
   clone?: { command: string; cliCommand: string };
   className?: string;
 }) {
-  const command = "attractor run factory.dot";
 
   const Heading = headingLevel;
 
@@ -103,34 +102,30 @@ export function DownloadPanel({
         </span>
       </div>
 
-      {/* The runnable artefact, first and largest. */}
-      <a
-        href={factoryHref}
-        download="factory.dot"
-        className="flex items-center justify-between gap-3 rounded-md border border-line-bright px-3 py-2.5 transition-colors hover:border-cyan"
-      >
-        <span className="font-mono text-sm text-fg">factory.dot</span>
-        <span className="shrink-0 font-mono text-[11px] text-cyan">↓ download</span>
-      </a>
-      <p className="mt-2 text-xs leading-snug text-dim">
-        The pipeline Attractor runs. Every node carries its card&rsquo;s{" "}
-        <code className="font-mono text-muted">spec</code> as the prompt its agent
-        receives, so this one file is enough to start.
-      </p>
+      {/* `factory.dot` led this panel — the file, a sentence about Attractor, the
+          `attractor run factory.dot` command with its copy button, and the line about
+          execution happening on your machine — and the author asked the whole block out on
+          2026-08-08.
 
-      {/* The command. Copyable, because it is the thing a reader retypes wrongly. */}
-      <div className="mt-3 flex items-center gap-2">
-        <code className="min-w-0 flex-1 truncate rounded border border-line bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg">
-          {command}
-        </code>
-        <CopyButton text={command} ariaLabel="Copy the run command" />
-      </div>
-      {/* Doc 1 §0.1.3, stated where the download happens rather than only in the README. */}
-      <p className="mt-2 text-xs leading-snug text-dim">
-        Execution happens on your machine. DarkPrint distributes these files and analyses
-        them. It runs nothing and holds none of your provider keys.
-      </p>
+          It is a BUILD PRODUCT, and the same instruction took it off
+          `/what-a-blueprint-is`'s list of what a bundle is for the same reason: a compiled
+          export written by the exporter is not one of the things somebody authors. A panel
+          whose largest element was the one file in the folder nobody writes led with the
+          output of the process instead of with the process's subject.
 
+          `blueprint.dot` is first now, which is also the order the bundle's own README and
+          `AGENTS.md` describe the folder in.
+
+          WHAT WENT WITH IT, and what did not. The sentence "Execution happens on your
+          machine … It runs nothing and holds none of your provider keys" was in that block
+          and it is doc 1 §0.1.3, pinned by `components/site/honesty.test.ts`. It is re-laid
+          below the file list rather than deleted — the claim is about the whole download,
+          not about one file in it, and it reads better as the panel's closing statement
+          than as a footnote to a command that is gone.
+
+          `factoryHref` stays on the props: the file is still exported, still in every
+          bundle, and `/build`'s own step still hands it over. This panel simply stops
+          teaching it. */}
       {/* Taking the folder rather than the files one at a time.
           It sits here, after the runnable artefact and its command, and not above them:
           `factory.dot` is first and largest because it is the thing that runs, and a
@@ -234,20 +229,22 @@ export function DownloadPanel({
 
       {/* The cards, folded away: the panel above already lists the same names, and this
           is the one place they are files rather than links into the node library. */}
+      {/* Open, not a `<details>`, on the author's instruction: "remove the fact that Node
+          cards can be collapsable in this page."
+
+          The cards are half of what a bundle IS — one per node, pinned by version — and
+          folding them behind a triangle put the larger half of the folder one click further
+          away than `README.md`. The disclosure was there to keep the panel short when it
+          also carried the `factory.dot` block above it; that block is gone, so the panel has
+          the room it was borrowing. */}
       {cards.length > 0 && (
-        <details className="group mt-3 border-t border-line pt-3">
-          <summary className="flex cursor-pointer list-none items-center gap-2 font-mono text-xs text-muted transition-colors hover:text-fg [&::-webkit-details-marker]:hidden">
-            <span
-              className="inline-block text-cyan transition-transform group-open:rotate-90"
-              aria-hidden
-            >
-              ▸
-            </span>
+        <div className="mt-3 border-t border-line pt-3">
+          <p className="flex items-center gap-2 font-mono text-xs text-muted">
             Node cards
             <span className="text-dim">
               {cards.length} YAML file{cards.length === 1 ? "" : "s"}
             </span>
-          </summary>
+          </p>
           <ul className="mt-2 flex flex-col divide-y divide-line">
             {cards.map((card) => (
               <li key={card.ref} className="py-1.5 first:pt-0 last:pb-0">
@@ -264,8 +261,15 @@ export function DownloadPanel({
               </li>
             ))}
           </ul>
-        </details>
+        </div>
       )}
+
+      {/* Doc 1 §0.1.3, moved here with the removal of the `factory.dot` block it used to
+          close. `components/site/honesty.test.ts` pins this sentence to this panel. */}
+      <p className="mt-4 border-t border-line pt-3 text-xs leading-snug text-dim">
+        Execution happens on your machine. DarkPrint distributes these files and analyses
+        them. It runs nothing and holds none of your provider keys.
+      </p>
 
       {/* Doc 2 §6 is Fase 4. Saying so here costs one sentence and stops the download
           from implying an account flow that does not exist. */}

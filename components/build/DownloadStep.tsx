@@ -6,7 +6,6 @@ import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import {
   BUNDLE_AGENTS,
   BUNDLE_README,
-  FACTORY_DOT,
   TOPOLOGY_DOT,
   type ExportedFile,
 } from "@/lib/content/bundle-export";
@@ -67,7 +66,6 @@ export function DownloadStep({
   files,
   digest,
   errors,
-  summary,
   className,
 }: {
   /** `exportBundle` over the chosen factory, with no demonstration edge in it. */
@@ -75,8 +73,10 @@ export function DownloadStep({
   digest?: string;
   /** Error-severity diagnostics the engine reported on these exact bytes. */
   errors: number;
-  /** The three choices in one line, for the reader to check before downloading. */
-  summary: string;
+  /* `summary` was here: the three choices in one line, for a reader to check before
+     downloading. It had one reader, the paragraph the author removed on 2026-08-08, and the
+     three choices it recited are the three controls directly above this step. Dropping the
+     prop rather than leaving it unread is how the removal reaches the caller. */
   className?: string;
 }) {
   const hrefs = useMemo(() => {
@@ -112,35 +112,24 @@ export function DownloadStep({
 
   return (
     <div className={cx("flex flex-col gap-5", className)}>
-      {/* Fix round 1: a peer title, in the same register as `AgentHandoff`'s own `h3`
-          ("Have your agent write one for your own goal"). Before this, only the other exit
-          carried a title — its own opened on "Or", which reads as the second of a pair when
-          the first has nothing to be paired against. The words are the spec's own sketch
-          (§2.1: "This starter, as files"), not a fresh rewrite; the fix is giving them a
-          heading at all, not choosing new words for them. */}
-      <h3 className="font-display text-lg font-semibold text-fg">This starter, as files</h3>
+      {/* "This starter, as files" until 2026-08-08. The title names what the button under
+          it does now, which is what the section's own heading used to be doing for it. */}
+      <h3 className="font-display text-lg font-semibold text-fg">Download the bundle</h3>
 
-      {/* The walk through the folder that used to stand here is gone (redesign spec §5).
-          `DownloadPanel` sits directly under this line and describes every file as it
-          lists it: what Attractor runs, what the topology carries, what the README is for.
-          Two descriptions of one folder on one screen is the duplication the licence
-          names. What the panel does not say, the README's quotation of both computed
-          readings, moved down to the paragraph about checking the digest.
+      {/* A paragraph stood here — "This is your blueprint, in the same folder shape as
+          everything else in the gallery … It ships with its own AGENTS.md" — and the author
+          asked it out on 2026-08-08 along with the two headings around it.
 
-          Task 5: one more sentence added here, and it is not a third description of
-          `AGENTS.md` — the panel below already says what is in that file. This one states
-          the fact the two-exit page turns on: `bundle-export.ts` has written that file into
-          every download since 31cd65f, and nothing on this page said so out loud until now. */}
-      <p className="text-[15px] leading-relaxed text-muted">
-        This is your blueprint, in the same folder shape as everything else in the gallery.{" "}
-        {summary} It ships with its own{" "}
-        <code className="font-mono text-fg">{BUNDLE_AGENTS}</code>, so the folder is
-        already something to hand to a coding agent.
-      </p>
+          What it was doing, `DownloadPanel` directly below does better and file by file: it
+          lists `AGENTS.md` with a line saying what is in it, and the three choices the
+          `{summary}` clause recited are the three controls a reader has just used. A
+          paragraph describing a panel that is one element away was the duplication this
+          file's own notes have been trimming since it was written.
 
+          `summary`, `BUNDLE_AGENTS` and the `bytes` roll-up it used go with it where they
+          have no other reader. */}
       <DownloadPanel
         headingLevel="h3"
-        factoryHref={hrefs.get(FACTORY_DOT) ?? ""}
         topologyHref={hrefs.get(TOPOLOGY_DOT) ?? ""}
         readmeHref={hrefs.get(BUNDLE_README) ?? ""}
         agentsHref={hrefs.get(BUNDLE_AGENTS) ?? ""}

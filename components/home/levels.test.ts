@@ -135,16 +135,31 @@ describe("the two-scales claim survives the panel that carried it", () => {
     }
   });
 
-  it("keeps the claim that is binding, which is about the autonomy ordinal", () => {
-    // Doc 2 §1.1: the class is a name and no number goes beside it. Something on this
-    // route has to keep saying it, because it is the sentence the constraint is actually
-    // about, and the deck is what says it now.
-    expect(PAGE_COPY).toContain("prints no number beside it");
-  });
-
-  /** The deck also has to keep the half the deleted panel's `h3` used to carry. */
-  it("still names the two scales apart before the ladder", () => {
-    expect(PAGE_COPY).toContain("only one of them is a number");
-    expect(PAGE_COPY).toContain("it ranks nothing");
-  });
+  /*
+   * Two cases stood here and are removed on 2026-08-08, with the reason, which is what this
+   * file's own header asks of a deliberate removal:
+   *
+   *   "keeps the claim that is binding, which is about the autonomy ordinal"
+   *     expect(PAGE_COPY).toContain("prints no number beside it");
+   *
+   *   "still names the two scales apart before the ladder"
+   *     expect(PAGE_COPY).toContain("only one of them is a number");
+   *     expect(PAGE_COPY).toContain("it ranks nothing");
+   *
+   * The author removed the paragraph both were reading: "Two different things get called
+   * autonomy here, and only one of them is a number … the gallery filters on it and prints
+   * no number beside it."
+   *
+   * WHAT DOES NOT GO WITH IT is the constraint. Doc 2 §1.1 says the class is a name and no
+   * number goes beside it, and that is enforced where it can be — in the renderers, not in
+   * a paragraph. `ScoreRadar` filters `autonomy` out of its spokes because the band is not
+   * a length; `MetricBars` refuses to draw it as one; `lib/content/view.ts` keeps the
+   * fraction on the metric only so the six sit on one axis and says so at the field. The
+   * deleted sentences were the site TELLING a reader about a rule it already obeys.
+   *
+   * The negative case above survives and is the one that was doing real work: it fails if
+   * any surface starts calling the ladder the one numbered thing on the site. A rule worth
+   * keeping is worth keeping as a prohibition rather than as a required sentence, because a
+   * required sentence can be satisfied by wording and a prohibition cannot.
+   */
 });

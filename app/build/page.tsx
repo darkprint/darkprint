@@ -109,7 +109,13 @@ function verifyEveryVariant(): number {
 }
 
 export default function BuildPage() {
-  const combinations = verifyEveryVariant();
+  /* Called for the throw, not for the number. `verifyEveryVariant()` walks all 80
+     combinations through the engine at build time and fails the build on a single error;
+     the count it returns was printed under the lead until the author asked that line out on
+     2026-08-08. The call stays exactly where it was — a check nobody reads is still a check,
+     and deleting it to satisfy an unused-variable warning would trade a build-time guarantee
+     for a lint line. */
+  verifyEveryVariant();
 
   return (
     <div className="container-page py-12">
@@ -147,17 +153,20 @@ export default function BuildPage() {
              below is checking the sentence this lead makes, not just repeating it. */
           lead="Start from the five-node starter and change it with three choices. Every choice rewrites the graph, the cards and the vocabulary together."
         />
-        <p className="mt-4 text-[15px] leading-relaxed text-muted">
-          Each of the three choices sits in the panel under the graph, and every score on
-          the page is computed in your browser, by the analysis the gallery runs, on the
-          exact bytes you download. Nothing is uploaded.
-        </p>
-        {/* Doc 2 §5.7's count, stated rather than claimed: the number is the length of the
-            enumeration the build just walked through the engine. */}
-        <p className="mt-3 font-mono text-[11px] leading-relaxed text-dim">
-          {combinations} combinations, each resolved through the engine when this page was
-          built. One error would have failed the build.
-        </p>
+        {/* Two paragraphs stood here and the author asked both out on 2026-08-08.
+
+            "Each of the three choices sits in the panel under the graph, and every score on
+            the page is computed in your browser … Nothing is uploaded." It described the
+            layout of the thing directly under it — three controls in a panel under a graph
+            — to a reader who can see it, and its honesty clause is `DownloadPanel`'s closing
+            sentence at the foot of the same page, which `components/site/honesty.test.ts`
+            pins there.
+
+            "{combinations} combinations, each resolved through the engine when this page was
+            built. One error would have failed the build." That is the build's own coverage
+            figure. `verifyEveryVariant()` still computes it and the build still fails on a
+            single error; the number just stopped being printed at a reader. A check nobody
+            reads is still a check, which is why the function is untouched. */}
       </header>
 
       <div className="mt-10">

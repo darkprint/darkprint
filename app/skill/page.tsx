@@ -55,7 +55,7 @@ export default function SkillPage() {
         as="h1"
         eyebrow="Setup"
         title="The DarkPrint skill"
-        lead="One command puts a blueprint-writing skill in your own agent, and it works today. It asks your agent to ask you: what the work is, who does which part of it, and what must never reach whom. What it leaves behind is a folder in the shape the registry stores."
+        lead="One command puts a blueprint-writing skill in your own agent, and it works today. It asks your agent to ask you: what the work is, who does which part of it, and what must never reach whom. What it leaves behind is a bundle the registry stores."
       />
 
       <SkillSetup className="mt-10" />
