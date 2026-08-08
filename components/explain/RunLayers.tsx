@@ -55,6 +55,59 @@ import { stagesShown, useScrollProgress } from "@/components/viz/useScrollProgre
  * `id` is the word; `role` is the one-line answer to "what level of the stack is this",
  * lifted from the document's own middle column; `body` is what it does here.
  */
+/**
+ * Each frame's colour, in one place, because two elements now read it.
+ *
+ * The author, 2026-08-08: "the scrolling and appearing is not synched with the text and the
+ * text paragraph should be of the same color of the part appearing."
+ *
+ * The staging WAS synchronised — one `shown` drives the frames and the rows, and both
+ * transition over the same 500ms — and it did not read as synchronised, which is the same
+ * defect from the reader's side. Nothing tied a paragraph to the box that arrived with it:
+ * four grey paragraphs beside four frames means the eye has to notice which of the four
+ * nested rectangles changed opacity, and the rubric's is a thin empty strip.
+ *
+ * Colour is the tie. `accent` is the frame's own register at full strength, on the label and
+ * on the term; `ink` is the reading weight for a whole paragraph in it.
+ *
+ * The two poles have an ink of their own and it is used: `blueprint-ink` exists precisely
+ * to set body text on the cyanotype register. Emerald and violet do not, so theirs is mixed
+ * toward `--color-fg`, which lands them near the same lightness rather than putting a
+ * saturated accent under fifty words of prose.
+ *
+ * The harness keeps `--color-muted`, which is not a compromise: it is the one box a reader
+ * brings themselves, it is deliberately the only frame with no accent, and a paragraph in
+ * the page's ordinary body colour says exactly that.
+ *
+ * Measured on `bg-void` (#050609), the ground this band runs on:
+ *
+ *   blueprint-ink  #cfe2ff                             16.3 : 1
+ *   muted          #9aa1ba                              8.6 : 1
+ *   emerald ink    55% #34d399 over #e6e9f2            13.4 : 1
+ *   violet ink     55% #a78bfa over #e6e9f2            11.7 : 1
+ *   blueprint-line #74b4ff  (term, 13px)                9.4 : 1
+ *   emerald        #34d399  (term, 13px)               11.6 : 1
+ *   violet         #a78bfa  (term, 13px)                7.6 : 1
+ */
+const TONE = {
+  blueprint: {
+    accent: "var(--color-blueprint-line)",
+    ink: "var(--color-blueprint-ink)",
+  },
+  harness: {
+    accent: "var(--color-muted)",
+    ink: "var(--color-muted)",
+  },
+  rubric: {
+    accent: "var(--color-emerald)",
+    ink: "color-mix(in oklab, var(--color-emerald) 55%, var(--color-fg))",
+  },
+  eval: {
+    accent: "var(--color-violet)",
+    ink: "color-mix(in oklab, var(--color-violet) 55%, var(--color-fg))",
+  },
+} as const;
+
 const LAYERS = [
   {
     id: "blueprint",
@@ -76,9 +129,9 @@ const LAYERS = [
     id: "rubric",
     role: "the scoring schema",
     body:
-      "The criteria a result is graded against, usually several at once, turning “good” " +
-      "into something with a scale. Deterministic checks, a judge model, or both. Here it " +
-      "has a name and a type the analyzer can follow through a graph.",
+      "The criteria a result is graded against, several at once, each with a scale: what " +
+      "turns “good” into something with an answer. Deterministic checks, a judge model, or " +
+      "both. It is written down before the run, which is what makes two runs comparable.",
   },
   {
     id: "eval",
@@ -194,6 +247,56 @@ function BlueprintGraph() {
   );
 }
 
+/**
+ * The rubric, drawn as what the author's document calls it: "criteri multi-dimensionali".
+ *
+ * The frame was an empty strip with a label in it, which is the one box in the figure that
+ * said nothing — and it is the box whose arrival a reader was supposed to notice. Three
+ * criteria, each on a four-step scale with one step filled, is the smallest drawing that
+ * says "several dimensions, each with a grade" and it invents no term: naming a real
+ * ontology type here would claim this figure's rubric IS that type, which is a claim about
+ * a file rather than a picture of a shape.
+ */
+function RubricGlyph() {
+  return (
+    <svg
+      viewBox="0 0 200 34"
+      style={{ aspectRatio: "200 / 34" }}
+      className="block h-auto w-full max-w-[13rem]"
+      role="img"
+      aria-label="Three criteria, each graded on a four-step scale"
+      fill="none"
+    >
+      {[3, 15, 27].map((y, row) => (
+        <g key={y}>
+          {/* The criterion's name, as a rule rather than a word: at this height a word
+              lands under the site's 10px floor, and the drawing is about the SHAPE of a
+              rubric rather than about anyone's criteria. */}
+          <path
+            d={`M 0 ${y} L ${[46, 34, 40][row]} ${y}`}
+            stroke="var(--color-emerald)"
+            strokeOpacity={0.45}
+            strokeWidth={1.5}
+            strokeLinecap="round"
+          />
+          {[0, 1, 2, 3].map((step) => (
+            <rect
+              key={step}
+              x={64 + step * 18}
+              y={y - 4}
+              width={13}
+              height={8}
+              rx={1.5}
+              fill="var(--color-emerald)"
+              fillOpacity={step <= row ? 0.75 : 0.12}
+            />
+          ))}
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 /** Opacity for a frame that has not been reached yet. Never 0: see the header. */
 const DIM = 0.16;
 
@@ -216,88 +319,147 @@ export function RunLayers() {
     : LAYERS.length - 1;
   const shown = arrived + 1;
   const at = (i: number) => (i < shown ? 1 : DIM);
-  /* The frame the reader is on, for the rail. -1 in the static state, where nothing is
-     "current" because everything is. */
-  const active = motion ? shown - 1 : -1;
+
+  /* The label of a frame that has not arrived is dim; the label of one that has is its own
+     colour. That flip is the EVENT — an opacity change on a nested rectangle is easy to
+     miss, and the rubric's frame is a strip, so what a reader actually sees arrive is the
+     word going from grey to green at the same instant the paragraph beside it does. */
+  const label = (i: number, key: keyof typeof TONE) => ({
+    color: i < shown ? TONE[key].accent : "var(--color-dim)",
+  });
 
   return (
     <div ref={ref} className={cx(motion && "lg:h-[220vh]")}>
-      <div className={cx(motion && "lg:sticky lg:top-[max(4rem,calc(50vh_-_13rem))]")}>
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center lg:gap-12">
+      <div className={cx(motion && "lg:sticky lg:top-[max(4rem,calc(50vh_-_15rem))]")}>
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center lg:gap-14">
           {/* ---------- the frames ---------- */}
-          {/* Every frame is in the DOM from the first paint and only its opacity moves, so
-              nothing reflows as the walk runs and the box a reader is about to meet has
-              already reserved its padding. A frame that appeared by mounting would push the
-              drawing inside it a step down the screen on every stage. */}
-          <figure
-            className="flex flex-col gap-3 rounded-xl p-4 transition-opacity duration-500 sm:p-5"
-            style={{
-              opacity: at(3),
-              borderWidth: 1,
-              borderStyle: "solid",
-              borderColor: "color-mix(in oklab, var(--color-violet) 40%, transparent)",
-            }}
-          >
-            {/* Violet, because an eval is where a person decides what good means. It is
-                the site's one colour for where a human judgement enters, and grading is
-                exactly that even when a model applies the criteria. */}
-            <figcaption className="label text-violet">eval</figcaption>
-
+          {/* Every frame is in the DOM from the first paint and only colour and opacity
+              move, so nothing reflows as the walk runs and the box a reader is about to
+              meet has already reserved its padding. A frame that appeared by mounting
+              would push the drawing inside it a step down the screen at every stage. */}
+          <div className="relative">
+            {/* The bloom. Violet, because the outermost frame is the eval and this is that
+                frame's light rather than a decoration of its own: it comes up with the eval
+                and it is what makes the last stage land as an arrival rather than as one
+                more hairline. Behind everything, overhanging on every side, because a glow
+                clipped to the box it lights reads as a fill. */}
             <div
-              className="flex flex-col gap-3 rounded-lg border border-line-bright p-3 transition-opacity duration-500 sm:p-4"
-              style={{ opacity: at(1) }}
+              aria-hidden
+              className="pointer-events-none absolute -inset-8 -z-10 rounded-[2.5rem] transition-opacity duration-700"
+              style={{
+                opacity: at(3),
+                background:
+                  "radial-gradient(58% 58% at 50% 45%, color-mix(in oklab, var(--color-violet) 14%, transparent), transparent 72%)",
+              }}
+            />
+
+            <figure
+              className="flex flex-col gap-4 rounded-2xl p-5 transition-all duration-500 sm:p-6"
+              style={{
+                opacity: at(3),
+                borderWidth: 1,
+                borderStyle: "solid",
+                borderColor:
+                  shown > 3
+                    ? "color-mix(in oklab, var(--color-violet) 45%, transparent)"
+                    : "var(--color-line)",
+              }}
             >
-              {/* The harness is the one box with no accent, and that is the accurate
-                  register rather than a fallback: of the four, three are things this site
-                  hands you or reads off the engine, and the harness is the one you bring
-                  yourself. It wore amber once, which `app/globals.css` reserves for "not
-                  built yet" — saying DarkPrint intends to ship one. It does not. */}
-              <p className="label text-muted">harness</p>
+              <figcaption
+                className="label transition-colors duration-500"
+                style={label(3, "eval")}
+              >
+                eval
+              </figcaption>
 
               <div
-                className="bp-grid flex flex-col gap-3 rounded-lg border border-blueprint-line/55 bg-blueprint-deep/60 p-3 transition-opacity duration-500 sm:p-4"
-                style={{ opacity: at(0) }}
+                className="flex flex-col gap-4 rounded-xl p-4 transition-all duration-500 sm:p-5"
+                style={{
+                  opacity: at(1),
+                  borderWidth: 1,
+                  borderStyle: "solid",
+                  borderColor: shown > 1 ? "var(--color-line-bright)" : "var(--color-line)",
+                }}
               >
-                <p className="label text-blueprint-line">blueprint</p>
-                <BlueprintGraph />
-              </div>
-            </div>
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                  <p className="label transition-colors duration-500" style={label(1, "harness")}>
+                    harness
+                  </p>
+                  {/* What a runtime does, in the document's own three nouns, so the frame
+                      says something rather than being a labelled gap around the blueprint.
+                      Dim and 11px: it is a gloss on the label, not a second heading. */}
+                  <p className="font-mono text-[11px] text-dim">dispatch · context · state</p>
+                </div>
 
-            {/* Emerald: the rubric is the one frame here that names something the engine
-                can follow, `acceptance-criteria` being a real data type in the ontology. */}
-            <div
-              className="rounded-lg border border-emerald/40 p-3 transition-opacity duration-500 sm:p-4"
-              style={{ opacity: at(2) }}
-            >
-              <p className="label text-emerald">rubric</p>
-            </div>
-          </figure>
+                <div
+                  className="bp-grid flex flex-col gap-3 rounded-lg border border-blueprint-line/55 bg-blueprint-deep/60 p-4 transition-opacity duration-500"
+                  style={{ opacity: at(0) }}
+                >
+                  <p className="label text-blueprint-line">blueprint</p>
+                  <BlueprintGraph />
+                </div>
+              </div>
+
+              {/* Emerald: a rubric is what the engine can be held to. */}
+              <div
+                className="flex flex-col gap-3 rounded-xl p-4 transition-all duration-500 sm:p-5"
+                style={{
+                  opacity: at(2),
+                  borderWidth: 1,
+                  borderStyle: "solid",
+                  borderColor:
+                    shown > 2
+                      ? "color-mix(in oklab, var(--color-emerald) 45%, transparent)"
+                      : "var(--color-line)",
+                }}
+              >
+                <p className="label transition-colors duration-500" style={label(2, "rubric")}>
+                  rubric
+                </p>
+                <RubricGlyph />
+              </div>
+            </figure>
+          </div>
 
           {/* ---------- the sentences ---------- */}
           <ol className="flex min-w-0 flex-col">
             {LAYERS.map((layer, i) => {
               const reached = i < shown;
-              const isActive = i === active;
+              const tone = TONE[layer.id];
               return (
                 <li
                   key={layer.id}
-                  className="border-t border-line/70 py-3 transition-opacity duration-500 first:border-t-0 first:pt-0"
+                  className="py-3.5 transition-opacity duration-500 first:pt-0"
                   style={{ opacity: reached ? 1 : DIM }}
                 >
-                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <h3
-                      className={cx(
-                        "font-mono text-[13px] transition-colors",
-                        isActive || !motion ? "text-fg" : "text-muted",
-                      )}
+                  {/* A rule down the left in the frame's own colour, rather than a hairline
+                      between rows. It is the second half of the tie: the row is the same
+                      colour as the box, edge to edge, so a reader who is looking at either
+                      one can find the other without being told. `border-l` and not a
+                      background, because a tinted panel behind fifty words would put the
+                      paragraph on a coloured ground and cost the contrast measured above. */}
+                  <div
+                    className="flex flex-col gap-1.5 border-l-2 pl-4 transition-colors duration-500"
+                    style={{ borderColor: reached ? tone.accent : "var(--color-line)" }}
+                  >
+                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <h3
+                        className="font-mono text-[13px] transition-colors duration-500"
+                        style={{ color: reached ? tone.accent : "var(--color-dim)" }}
+                      >
+                        {layer.id}
+                      </h3>
+                      <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
+                        {layer.role}
+                      </span>
+                    </div>
+                    <p
+                      className="text-[15px] leading-relaxed transition-colors duration-500"
+                      style={{ color: reached ? tone.ink : "var(--color-muted)" }}
                     >
-                      {layer.id}
-                    </h3>
-                    <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
-                      {layer.role}
-                    </span>
+                      {layer.body}
+                    </p>
                   </div>
-                  <p className="mt-1.5 text-[15px] leading-relaxed text-muted">{layer.body}</p>
                 </li>
               );
             })}
