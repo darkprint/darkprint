@@ -141,7 +141,23 @@ export function SectionNodeIsCard() {
             shown — and "the archive really stores" is a claim the figure makes by being
             drawn from the file, not one the deck has to assert. */}
         <SectionHeading
-          title="Every node is a card"
+          /* The card's own register, on the author's instruction: "colour using the amber
+             colour typical of a node."
+
+             `copper-line` and NOT `--color-amber`, and the difference is the point rather
+             than a quibble. `app/globals.css` declares the copper pole for exactly this and
+             writes down why it must never become amber: amber is spent sitewide on two
+             claims — `ComingSoonBadge` ("not built yet") and `.route-box` ("this box leaves
+             the page") — and a node card is the most literally-built thing on this site,
+             read off `content/cards/` at build time with the engine enforcing what it
+             declares. So copper IS the warm colour a reader means when they point at the
+             card figure: the listing's keys, the walk's step numbers and the card's own
+             frame are all already in it, at oklch hue 46 against amber's 75.
+
+             The heading and the figure under it are now one register, and it pairs with the
+             cyanotype title one beat up — a card is a document, a blueprint is a drawing,
+             and the two say so before a word is read. */
+          title={<span className="text-copper-line">Every node is a card</span>}
           lead="Open one and it says what it does, the brief it is handed, which model runs it, what arrives, and what must never reach it."
           align="center"
           className="mx-auto"

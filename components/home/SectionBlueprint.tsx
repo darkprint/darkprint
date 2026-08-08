@@ -68,9 +68,29 @@ export function SectionBlueprint() {
   return (
     <section id="blueprint" className="scroll-mt-24 bg-void py-20 sm:py-28">
       <div className="container-page">
+        {/* The eyebrow was "The drawing" and the author asked it out (2026-08-08). It was
+            naming the medium of the thing directly under it, which the thing under it does
+            better by being a drawing — and it was the first of two lines that both had to
+            be read before the picture, on the beat that opens the argument.
+
+            `.eyebrow` is rationed to one per page or per full-bleed band; this frees one
+            rather than spending it, and the coloured title below now does the work of
+            saying which register a reader is in. */}
         <SectionHeading
-          eyebrow="The drawing"
-          title="This is a blueprint"
+          /* Cyanotype blue, the pole this whole beat is drawn in — the graticule ground,
+             the frame, the node labels and the edges are all `--color-blueprint-*`, and the
+             title now names its own register instead of standing outside it in `text-fg`.
+
+             `blueprint-line` and not `cyan`: `app/globals.css` spends cyan on "you can act
+             on this", and a 32px headline in the interactive colour reads as a link that
+             does nothing. It pairs with the copper title one beat down, which is the same
+             wheel from the other side — see `SectionNodeIsCard`.
+
+             A `<span>` inside `title` rather than a class on the heading, because the
+             heading declares `text-fg` and `cx` is not `tailwind-merge`: both classes would
+             be emitted and CSS source order would decide the colour. A child's own colour
+             always wins. */
+          title={<span className="text-blueprint-line">This is a blueprint</span>}
           /* The lead said "Keep scrolling and the drawing becomes the file it is drawn
              from." until 2026-08-08, when the author asked it out of the deck and into the
              scroll: the hint appears as a reader starts moving rather than sitting under
