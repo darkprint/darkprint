@@ -66,6 +66,16 @@ import { clamp01, useScrollProgress } from "@/components/viz/useScrollProgress";
 const FIGURE_OUT = { from: 0.06, to: 0.20 };
 const SOURCE_IN = { from: 0.14, to: 0.28 };
 
+/**
+ * The pinned box, head to foot, in CSS pixels.
+ *
+ * Measured on the built page at 1440 x 950 with the walk running: the heading block, the
+ * hint, and the 460px cell the two layers share. It is what the centring offset is half of,
+ * so it moves whenever the heading gains a line or the cell changes height — and the cell is
+ * the taller of the two layers, which is the file panel.
+ */
+const GROUP = 580;
+
 /* `CELL` (460) and `HINT_BLOCK` (36) stood here and were the two terms of the centring
    offset: `50vh - CELL/2 - HINT_BLOCK` put the drawing's middle on the screen's middle.
 
@@ -260,17 +270,26 @@ export function SourceSwap({
           Inline rather than a utility because the two terms are measurements, and `top` is
           inert on a `position: static` box — so this applies at exactly the widths
           `lg:sticky` does, and does nothing below them. */}
-      {/* Pinned near the top, not centred, now that the heading is inside the box.
+      {/* Pinned CENTRED: half a screen, less half the group.
           ------------------------------------------------------------
-          Centring was right when this box held only the drawing: half a screen less half the
-          cell put the figure in the middle. The box is now heading + hint + drawing, which
-          is roughly 700px, and centring a 700px box in a 950px viewport pins its top at
-          125px — 61px of travel for the whole group, and the drawing itself ends up low.
+          The author, with a correct screenshot and two wrong ones: the title and the drawing
+          are to "stay central" rather than ride up under the navbar. `top-20` was the wrong
+          reading of the previous fix — that fix was about the heading and the figure being
+          ONE box, and I took it as a licence to pin the box at the top.
 
-          `top-20` puts the heading just under the 4rem site header with a little air, and
-          everything below it follows at the spacing it has at rest. That is the arrangement
-          in the author's first screenshot. */}
-      <div className={cx(motion && "lg:sticky lg:top-20")}>
+          `GROUP` is that box measured on the built page: 580px at 1440 x 950, heading plus
+          hint plus the 460px cell. Half of it is 290, so the box locks with its middle on
+          the screen's middle and the group has 80px of air above it rather than sitting
+          against the header.
+
+          `max(5rem, …)` is the floor, one rem below where the group would otherwise pin, so
+          a short viewport puts it under the header rather than behind it. A window that
+          cannot hold 580px is going to cut something either way; the floor decides that it
+          is the bottom. */}
+      <div
+        className={cx(motion && "lg:sticky")}
+        style={motion ? { top: `max(5rem, calc(50vh - ${GROUP / 2}px))` } : undefined}
+      >
         {heading}
         {hint !== undefined && (
           /* ABOVE the pair, not under it, and the reason is the grid below.

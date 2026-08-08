@@ -132,6 +132,14 @@ import { tokenizeYaml } from "./yaml";
  * first. Hence `lg:py-0`: the padding is right on a phone, where the listing stands at
  * its own height and has no window to align to, and wrong the instant there is one.
  */
+/**
+ * The pinned box, head to foot, in CSS pixels: the heading and the 613px figure.
+ *
+ * Measured on the built page at 1440 x 950. The centring offset below is half of it, so it
+ * moves whenever the heading gains a line or `NC.rows` changes.
+ */
+const GROUP = 715;
+
 const PAD_Y = 2;
 
 /**
@@ -361,12 +369,19 @@ export function CardWalk({
           negative below a 635px viewport and would pin the figcaption under the 4rem sticky
           header. A window that short cannot hold the whole figure either way; what the floor
           decides is which end gets cut, and the top is where the card names itself. */}
-      {/* Pinned near the top, not centred, now that the heading is inside the box.
-          Centring was right when this box held only the figure; it is heading plus figure
-          now, and centring a group that tall leaves the drawing low with little travel.
-          `top-20` puts the heading just under the 4rem header, and everything below it holds
-          the spacing it has at rest. */}
-      <div className={cx(motion && "lg:sticky lg:top-20")}>
+      {/* Pinned CENTRED: half a screen, less half the group.
+          ------------------------------------------------------------
+          Same correction as `SourceSwap`'s, one beat down, and the same measurement: this
+          box is the heading plus the 613px cell, 715px on the built page at 1440 x 950.
+          Half is 357, so it locks with its middle on the screen's middle.
+
+          `max(5rem, …)` is the floor. Half of 715 is more than half of a 950px viewport
+          less the header, so this expression turns negative below a 794px window and the
+          floor is doing real work here rather than guarding an edge case. */}
+      <div
+        className={cx(motion && "lg:sticky")}
+        style={motion ? { top: `max(5rem, calc(50vh - ${GROUP / 2}px))` } : undefined}
+      >
         {heading}
         {/* Plain ground, one hairline. The author named the graticule as the thing to
             drop, and it is the whole difference between a figure the landing carries and
