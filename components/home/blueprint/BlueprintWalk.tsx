@@ -191,7 +191,11 @@ export function BlueprintWalk({ dot, file }: { dot: string; file: string }) {
         <Sheet
           label="starter software factory"
           title="five nodes, five edges"
-          note="one run deliberately missing"
+          /* `note="one run deliberately missing"` stood here and the author asked it out.
+             The absent edge is still drawn — dashed, labelled `acceptance-criteria`, with
+             its own absence glyph — and the walk's third and fourth notes name it in the
+             listing this drawing turns into. A caption in the sheet's corner saying the
+             same thing was the third telling. */
         >
           <Drawing graph={LANDING_NARROW} className="sm:hidden" />
           <Drawing graph={LANDING_WIDE} className="hidden sm:block" />

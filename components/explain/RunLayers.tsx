@@ -75,9 +75,20 @@ import { stagesShown, useScrollProgress } from "@/components/viz/useScrollProgre
  * toward `--color-fg`, which lands them near the same lightness rather than putting a
  * saturated accent under fifty words of prose.
  *
- * The harness keeps `--color-muted`, which is not a compromise: it is the one box a reader
- * brings themselves, it is deliberately the only frame with no accent, and a paragraph in
- * the page's ordinary body colour says exactly that.
+ * The harness takes `--color-fg`, and it is the one entry that changed twice.
+ *
+ * It was `--color-muted` on the argument that the harness is the one box a reader brings
+ * themselves and deliberately the only frame with no accent. The argument still holds and
+ * the colour did not: the author, 2026-08-08, "do not use the gray for the harness as it is
+ * not that evident." Muted IS the unlit weight for every other row, so the harness went from
+ * grey to the same grey — a state change with nothing to see.
+ *
+ * `--color-fg` keeps the claim and fixes the evidence. It is still not an accent, so nothing
+ * here says DarkPrint ships a harness or knows what colour one is; it is simply the
+ * brightest neutral this palette has, which puts it at the same LIGHTNESS as the three inks
+ * beside it (16.0:1 on `bg-void`, against 16.3, 13.4 and 11.7) while carrying no hue at all.
+ * Unlit it is `--color-muted` like the rest, so the step is muted → white rather than grey →
+ * grey.
  *
  * Measured on `bg-void` (#050609), the ground this band runs on:
  *
@@ -95,8 +106,8 @@ const TONE = {
     ink: "var(--color-blueprint-ink)",
   },
   harness: {
-    accent: "var(--color-muted)",
-    ink: "var(--color-muted)",
+    accent: "var(--color-fg)",
+    ink: "var(--color-fg)",
   },
   rubric: {
     accent: "var(--color-emerald)",
@@ -354,6 +365,40 @@ export function RunLayers() {
     color: lit(i) ? TONE[key].accent : "var(--color-dim)",
   });
 
+  /* A frame's border AND its ground, in its own hue.
+     ------------------------------------------------------------
+     The author, 2026-08-08: the blueprint's box is the one that works, and the other three
+     "should be more fancier … maybe each box can be filled with the color of the border (or
+     a slightly different shade)."
+
+     They are describing the blueprint frame's construction without naming it. That box is
+     `bg-blueprint-deep/60` inside a `blueprint-line/55` border — a GROUND in the register,
+     not an outline on the page's ground — and it is the only one of the four built that way,
+     which is exactly why it is the only one that reads as a place rather than as a rule.
+
+     So the same construction, per hue. The border is the register at 45%; the fill is the
+     same colour at 7%, which is the weight that reads as tinted rather than as filled when
+     three of them are nested one inside the next. Nested is the constraint that sets it: the
+     eval's wash sits under the harness's, which sits under the blueprint's sheet, so at 12%
+     the innermost box was three washes deep and the graticule inside it went muddy.
+
+     Unlit, both terms fall back to the neutral pair the figure already used, so the greying
+     out the author asked to keep is unchanged: `--color-line` and no fill at all.
+
+     `color-mix` rather than a `/07` utility, because these are inline styles driven by a
+     boolean and Tailwind cannot emit a class for a value it never sees. */
+  const frame = (i: number, key: keyof typeof TONE) =>
+    ({
+      borderWidth: 1,
+      borderStyle: "solid",
+      borderColor: lit(i)
+        ? `color-mix(in oklab, ${TONE[key].accent} 45%, transparent)`
+        : "var(--color-line)",
+      background: lit(i)
+        ? `color-mix(in oklab, ${TONE[key].accent} 7%, transparent)`
+        : "transparent",
+    }) as const;
+
   return (
     <div ref={ref} className={cx(motion && "lg:h-[220vh]")}>
       <div className={cx(motion && "lg:sticky lg:top-[max(4rem,calc(50vh_-_15rem))]")}>
@@ -385,13 +430,7 @@ export function RunLayers() {
 
             <figure
               className="flex flex-col gap-4 rounded-2xl p-5 transition-all duration-500 sm:p-6"
-              style={{
-                borderWidth: 1,
-                borderStyle: "solid",
-                borderColor: lit(3)
-                  ? "color-mix(in oklab, var(--color-violet) 45%, transparent)"
-                  : "var(--color-line)",
-              }}
+              style={frame(3, "eval")}
             >
               <figcaption
                 className="label transition-colors duration-500"
@@ -402,11 +441,10 @@ export function RunLayers() {
 
               <div
                 className="flex flex-col gap-4 rounded-xl p-4 transition-all duration-500 sm:p-5"
-                style={{
-                  borderWidth: 1,
-                  borderStyle: "solid",
-                  borderColor: lit(1) ? "var(--color-line-bright)" : "var(--color-line)",
-                }}
+                /* The harness's hue is `--color-fg`, so its 45% border is a bright hairline
+                   and its 7% fill a barely-there white wash. That is the accurate register:
+                   present, lit, and carrying no colour claim. */
+                style={frame(1, "harness")}
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                   <p className="label transition-colors duration-500" style={label(1, "harness")}>
@@ -430,13 +468,7 @@ export function RunLayers() {
               {/* Emerald: a rubric is what the engine can be held to. */}
               <div
                 className="flex flex-col gap-3 rounded-xl p-4 transition-all duration-500 sm:p-5"
-                style={{
-                  borderWidth: 1,
-                  borderStyle: "solid",
-                  borderColor: lit(2)
-                    ? "color-mix(in oklab, var(--color-emerald) 45%, transparent)"
-                    : "var(--color-line)",
-                }}
+                style={frame(2, "rubric")}
               >
                 <p className="label transition-colors duration-500" style={label(2, "rubric")}>
                   rubric

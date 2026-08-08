@@ -1672,7 +1672,24 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   downloadName={`${record.ref}.yaml`}
                   headingId="card-source-heading"
                   collapsible
-                  defaultOpen={false}
+                  /* Open by default since 2026-08-08, on the author's instruction: "in each
+                     node page, keep the Card source uncollapsed as we did for the
+                     blueprint.dot in the panel present of each blueprint page."
+
+                     The note above argues the other way and it argued it well, so this is a
+                     reversal rather than an oversight. What it weighed was WORD COUNT — 496
+                     of 1239 words on `intent-router`, re-printing fields the panels above
+                     already draw. What it did not weigh is that a blueprint page ships its
+                     `.dot` open on the same argument and always has, so the registry said
+                     "the bytes are one click away" for a card and "here are the bytes" for
+                     a graph, which is one claim in two voices.
+
+                     The mobile clipping the note names is not back with it: the `<pre>`
+                     that set this column's min-content at 783px was fixed at the top of the
+                     column, in the wrapper, not by keeping the panel shut.
+
+                     `collapsible` stays, so a reader who has read the file can put it away. */
+                  defaultOpen
                 />
                 {/* Selectable, not a tooltip. The full digest was rendered only in the
                     `title` of the Identity row, which a keyboard or touch reader cannot
