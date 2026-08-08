@@ -308,7 +308,21 @@ const CLAIMS: Claim[] = [
   {
     surface: "/what-a-blueprint-is#the-words · the guardrail figure's right-hand column",
     why: "the column lists retry, budget caps and blocking a call in flight. None of that happens here — this engine reads files standing still — and the possessive is the only thing that says so. Drop it and the figure claims a live path, on the page whose whole subject is what a bundle can and cannot promise",
-    says: "done by your harness, at run time",
+    /* Reworded 2026-08-08, not weakened, and the row is updated rather than removed
+       because the claim survives the rewording intact.
+
+       The author asked the figure reorganised so the right column reads as "an example of
+       what a harness does when running according the indications provided by the static
+       files in the bundle". The head is now "At run time · an example of what your harness
+       does with it", which keeps the possessive this row exists to protect AND adds the
+       word `example` — so the column no longer even reads as a list of what a harness will
+       do, only of what one might. That is a stronger limit than the one this row was
+       written for, in the same place, so the row follows the wording instead of failing on
+       it.
+
+       What must never go is `your`. It is the whole difference between describing a harness
+       and claiming one, on a page whose subject is what a bundle can and cannot promise. */
+    says: "an example of what your harness does with it",
     where: "open",
     html: GUARDRAILS,
   },

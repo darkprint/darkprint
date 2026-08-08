@@ -361,6 +361,24 @@ const BAND_GRID =
  * Read down the left column and you have the whole of what a bundle can promise. Read
  * down the right and you have what somebody else's runner does with it. The figure makes
  * the split visible instead of asserting it, which is the only reason it is a drawing.
+ *
+ * ── The two columns are two moments, and 2026-08-08 said so ──
+ * The author, moving this figure below `HandoverAxis`: reorganise it so that "the orange
+ * part is how in the bundle defined statically, and on the right it is an example of what
+ * a harness does when running according the indications provided by the static files in
+ * the bundle."
+ *
+ * That is what the columns always were, and the heads did not say it. "Written in the
+ * bundle" and "Done by your harness, at run time" name WHO, which a reader can only use
+ * once they already know that one of the two happens before anything runs. So the heads now
+ * name the moment first — `STATIC` before the run, `AT RUN TIME` — and the right column is
+ * labelled as what it holds: an example, not a specification. This site does not ship a
+ * harness, so the right column can never be a list of what one WILL do, and calling it an
+ * example is both truer and the thing the author asked for.
+ *
+ * The dependency this creates is why the figure moved. `HandoverAxis` draws the handover as
+ * a named step on one axis; standing after it, these two columns are that axis's two sides
+ * seen close up, on one node. Standing before it, they were two unexplained columns.
  */
 export function GuardrailShape() {
   return (
@@ -378,8 +396,12 @@ export function GuardrailShape() {
             attribution is never off-screen. Both spellings are real SSR text. */}
         <div className={`hidden ${BAND_GRID}`}>
           <span aria-hidden />
-          <span className="label text-copper-line">Written in the bundle</span>
-          <span className="label text-muted">Done by your harness, at run time</span>
+          <span className="label text-copper-line">
+            Static · written in the bundle
+          </span>
+          <span className="label text-muted">
+            At run time · an example of what your harness does with it
+          </span>
         </div>
 
         {GUARDRAIL_BANDS.map((row, i) => (
@@ -394,7 +416,9 @@ export function GuardrailShape() {
                 frame nobody has to tell apart from its neighbour, is 2.20 and would
                 have left the one distinction this drawing rests on under the floor. */}
             <p className="flex flex-col gap-1 rounded border border-copper-line/55 bg-surface-2 px-3 py-2 text-[13px] leading-snug text-muted">
-              <span className="label text-copper-line sm:hidden">Written in the bundle</span>
+              <span className="label text-copper-line sm:hidden">
+                Static · written in the bundle
+              </span>
               <span>{row.bundle}</span>
             </p>
             {/* Shorter than the column head above it, and still possessive. The head's
@@ -406,7 +430,7 @@ export function GuardrailShape() {
                 `components/site/honesty.test.ts` over the head, which is in the markup at
                 every width. */}
             <p className="flex flex-col gap-1 rounded border border-line-bright bg-surface-2 px-3 py-2 text-[13px] leading-snug text-muted">
-              <span className="label sm:hidden">Your harness, at run time</span>
+              <span className="label sm:hidden">At run time · your harness</span>
               <span>{row.harness}</span>
             </p>
           </div>
@@ -533,18 +557,17 @@ export function HandoverAxis() {
         ))}
       </div>
 
-      {/* "Before the handover" and "after it", never "on the left" and "on the right".
-          The strip is four columns at `sm` and four stacked blocks below it, so a caption
-          written in compass directions describes a layout half the readers of this page
-          are not looking at. The handover is a named step in the drawing at both widths,
-          which makes it the one reference that survives the stack. */}
-      <p className="text-[13px] leading-relaxed text-muted">
-        An eval measures before a run, on cases you chose. A guardrail sits in the live
-        path and can block, modify or divert. One artefact serves both:{" "}
-        <code className="font-mono text-[12px] text-emerald">acceptance-criteria</code> is
-        what the analyzer traces before the handover, standing still, and what a harness
-        would grade against after it.
-      </p>
+      {/* A caption stood here — "An eval measures before a run … one artefact serves both"
+          — and the author asked it out on 2026-08-08. It was defining eval and guardrail a
+          second time: `RunLayers`, in the band four sections up this page, now writes all
+          four of those words from the author's own source, and this strip's job is the
+          one thing that band does not draw, which is WHEN each of them can act.
+
+          The note it carried is worth keeping, because it constrains anything written here
+          next: say "before the handover" and "after it", never "on the left" and "on the
+          right". The strip is four columns at `sm` and four stacked blocks below it, so a
+          caption in compass directions describes a layout half this page's readers are not
+          looking at. The handover is a named step in the drawing at both widths. */}
     </figure>
   );
 }

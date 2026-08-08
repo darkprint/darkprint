@@ -586,8 +586,18 @@ export default function WhatABlueprintIsPage() {
               stays: the figure names the three places a constraint can sit and marks the
               one this archive enforces, which is what the paragraph was describing in
               words directly above it. */}
-          <GuardrailShape />
+          {/* `HandoverAxis` first, `GuardrailShape` second, swapped 2026-08-08 on the
+              author's instruction: "move below the panel One blueprint, four moments the
+              panel Three places a constraint can sit."
+
+              The order is a dependency rather than a preference. `GuardrailShape`'s two
+              columns are a static side and a run-time side, and a reader can only use that
+              split once they know a run has a before and an after — which is the whole of
+              what `HandoverAxis` draws, as a named handover on one axis. Standing first,
+              the three bands were two unexplained columns; standing second, they are that
+              axis seen close up, on one node. */}
           <HandoverAxis />
+          <GuardrailShape />
 
           {/* "Many nodes, and the thing that runs them" stood here, over a paragraph, and
               `EvalHarnessBlueprint` under it. Both are gone on 2026-08-08 and both are
