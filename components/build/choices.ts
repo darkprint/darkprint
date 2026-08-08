@@ -122,7 +122,18 @@ export const CAPS: readonly number[] = Array.from(
 /* --------------------- the whole space --------------------- */
 
 export const DEFAULT_CHOICES: StarterChoices = {
-  output: STARTER_VARIANTS[0].output,
+  /* `"data"`, not `STARTER_VARIANTS[0].output`, on the author's instruction 2026-08-08:
+     the workspace opens on "A data transformation".
+
+     It was the first variant in the enumeration, which is `"python"` and is an ordering
+     rather than a decision: `STARTER_OUTPUTS` lists python, react, data, docs, and nothing
+     about that order was chosen for a reader arriving cold. Naming the default explicitly
+     also means the enumeration can be reordered without silently changing what the page
+     opens on, which is the failure the old expression invited.
+
+     `STARTER_VARIANTS` still enumerates all four and `ALL_COMBINATIONS` still walks every
+     one of them, so the space this workspace covers is unchanged. */
+  output: "data",
   approval: "tester",
   maxIterations: DEFAULT_ITERATIONS,
 };

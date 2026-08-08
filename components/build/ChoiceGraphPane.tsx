@@ -233,7 +233,23 @@ export function ChoiceGraphPane({
           `@container` is `container-type: inline-size`: it is what `100cqw` inside that
           height resolves against. Without it the expression falls back to the small
           viewport and every pane on the route is the wrong height. */}
-      <div onClick={onGraphClick} onKeyDown={onGraphKeyDown} className="@container p-3">
+      {/* `sm:px-14`, on the author's instruction 2026-08-08: "zoom a little down the graph
+          … I want when navigating to the page The graph."
+
+          The inset goes on the `@container` and nowhere else, which is the only place it can
+          go without breaking the fit. `graphPaneHeightCss` computes the pane's height from
+          `100cqw` — this element's own content box — so padding here shrinks the width the
+          drawing is fitted to AND the height that follows from it, in one move. A
+          `max-width` on the graph itself would have shrunk the drawing and left the pane at
+          its old height, which is the failure mode `framing.ts` calls being height-bound.
+
+          `sm:` and not every width: 56px a side is a fifth of a 390px phone, where the
+          drawing has no room to give. */}
+      <div
+        onClick={onGraphClick}
+        onKeyDown={onGraphKeyDown}
+        className="@container p-3 sm:px-14"
+      >
         <BlueprintGraph
           graph={drawn}
           id={graphId}

@@ -175,21 +175,15 @@ export function DownloadStep({
             </dl>
           </div>
 
-          {/* An inventory, not a second set of links: the panel above already downloads
-              every one of these, and two routes to the same bytes is noise. What this adds
-              is the shape of the folder and what each file weighs. */}
-          <ul className="flex max-h-[22rem] flex-col divide-y divide-line overflow-auto rounded-lg border border-line">
-            {files.map((file) => (
-              <li key={file.path} className="flex items-baseline gap-3 px-4 py-2">
-                <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-muted">
-                  {file.path}
-                </span>
-                <span className="shrink-0 font-mono text-[11px] tabular-nums text-dim">
-                  {bytes(file.text).toLocaleString("en-GB")} B
-                </span>
-              </li>
-            ))}
-          </ul>
+          {/* A per-file inventory stood here — every path in the folder with its byte
+              count — and the author asked it out on 2026-08-08.
+
+              The row above keeps the two facts it was really carrying: how many files there
+              are and what they weigh in total. What the list added was nine paths a reader
+              cannot act on from here, in a `max-h-[22rem]` scroller, directly under a panel
+              that already downloads every one of them by name. Two routes to the same bytes
+              is what the note here already called noise; the list was the third telling of
+              a folder the panel above draws. */}
         </div>
 
         {/* Doc 2 §6 is Fase 4. No account prompt, and no button that implies one.
