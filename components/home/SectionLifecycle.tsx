@@ -162,6 +162,10 @@ import Link from "next/link";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { MCP_ROUTE } from "@/lib/mcp";
+import { SKILL_ROUTE } from "@/lib/skill";
+
+import { Folder } from "./lifecycle/Folder";
+import { TeacherFigure } from "./lifecycle/TeacherFigure";
 
 const STARTER = "/blueprints/starter-software-factory";
 
@@ -366,62 +370,74 @@ export function SectionLifecycle() {
             holds the floor now. */}
         <div className="mt-10 grid gap-5 md:grid-cols-2">
           {/* ---------- 01 · download ---------- */}
-          <article className="panel flex min-w-0 flex-col gap-4 p-5 md:col-span-2">
+          {/* Half a row, not the whole one. It spanned both columns when it held a
+              five-row file listing beside a column of prose — "the one capability that
+              ships in full is the widest object here". The listing is a folder now, and a
+              104px folder centred in a full-width panel is 900px of empty sheet. Download
+              and Teaching are the two that ship, they are the same size, and they sit side
+              by side above the rule. */}
+          <article className="panel flex min-w-0 flex-col gap-4 p-5">
             <PanelHeading index="01" title="Download" mark="↓" />
 
-            {/* Listing left, argument right, because the folder is the evidence for every
-                sentence beside it and a reader should be able to check one against the
-                other without scrolling between them. One column on a phone, where the
-                stack puts the listing first for the same reason. */}
-            <div className="grid gap-5 md:grid-cols-2">
-              {/* The generic folder, in the author's own order and verified against
-                  `public/bundles/` — see this file's header for the check. `blueprint.dot`
-                  is what the registry stores and what the digest is taken over; the cards
-                  are one YAML per node the graph pins, true of all nine bundles on disk;
-                  the two docs address a person and an agent. */}
-              <Artefact
-                lines={[
-                  ["", "blueprint.dot"],
-                  ["", "cards/spec-planner@1.0.0.yaml"],
-                  ["", "cards/code-builder@1.0.0.yaml"],
-                  ["", "cards/ … one YAML per node the graph pins"],
-                  ["", "README.md · AGENTS.md"],
-                ]}
-              />
+            {/* The listing became a folder you open (2026-08-07, the author: "for the
+                download box remove all the details and add the components
+                https://reactbits.dev/components/folder where on mouse over appears 3
+                files"). What stood here was a five-row `Artefact` beside a column of
+                prose; both are gone and `components/home/lifecycle/Folder.tsx` carries the
+                same four filenames on its three papers.
 
-              <div className="flex min-w-0 flex-col gap-3">
-                {/* What is left of a three-sentence paragraph, and why one sentence stayed.
-                    ------------------------------------------------------------------
-                    The author asked for the whole paragraph out: "The folder is real, and
-                    every bundle has that shape." was restating the listing beside it, and
-                    "Nothing here executes it for you." is the section lead's own sentence
-                    a second time — the lead already says "Nothing here executes a
-                    blueprint, and nothing you build has to come back.", above and in the
-                    open, so the limit does not leave the section with this paragraph. Both
-                    of those went.
+                `ComposeHint` and the link stayed, and neither is a "detail" in the sense
+                the instruction meant. The hint is a claim the author asked for by name in
+                an earlier pass — "compose should be a hint not a per se box" — and
+                `beats.test.ts` holds both its words and its position above the unbuilt
+                rule; the link is the panel's only way out. Removing either needs its own
+                instruction. */}
+            <Folder />
 
-                    The middle sentence stayed one pass longer because
-                    `components/home/beats.test.ts` pinned it. The author has since asked
-                    for the name off this page entirely — "in home avoid the use of
-                    factory.dot use instead blueprint.dot" — so the sentence went and the
-                    pin was inverted: that test now asserts `factory.dot` is ABSENT here.
+            <div className="flex min-w-0 flex-col gap-3">
+              <ComposeHint />
 
-                    The file is still in every bundle and is still what runs; this beat
-                    simply stops being where a reader meets that. `/blueprints/[slug]`'s
-                    download panel names it, which is the surface where a reader is
-                    actually taking the folder away. Nothing untrue was removed, and
-                    nothing was renamed — `blueprint.dot` does NOT carry the model line
-                    (0 occurrences against `factory.dot`'s 4, measured on the starter),
-                    so swapping the name in a sentence about what runs would have been a
-                    lie rather than a simplification. */}
-
-                <ComposeHint />
-
-                <Link href={`${STARTER}#download`} className={linkCls}>
-                  Take the starter folder
-                </Link>
-              </div>
+              <Link href={`${STARTER}#download`} className={linkCls}>
+                Take the starter folder
+              </Link>
             </div>
+          </article>
+
+          {/* ---------- 02 · teaching ----------
+              The author asked for a fourth panel "named teaching where there is an image of
+              a teacher referring to the fact that there is a skill (DarkPrint skill) that
+              helps user to define a blueprint".
+
+              ── It sits ABOVE the rule, and that is the whole placement argument ──
+              This file's header states the order the section is built on: what ships leads,
+              what does not is grouped after it under one rule. The DarkPrint skill installs
+              in one command and runs today, so a panel about it belongs beside Download and
+              not with Connect and Upload. It is the fourth panel by count and the second by
+              position, and Connect and Upload renumber to 03 and 04 behind it.
+
+              ── The teacher is drawn, not photographed ──
+              There is no photography anywhere on this site, and the register is not
+              decorative: `app/globals.css` and `components/viz/` define a cyanotype
+              vocabulary where a violet mark means a person and a lit disc means a step in a
+              run. A stock photograph of a teacher would be the only raster image on the
+              site and would say nothing in that vocabulary. So the teacher is the site's own
+              person mark standing at a board, and what is on the board is a three-node
+              graph — which is the thing being taught. `TeacherFigure` draws it. */}
+          <article className="panel flex min-w-0 flex-col gap-4 p-5">
+            <PanelHeading index="02" title="Teaching" mark="✎" />
+
+            <TeacherFigure />
+
+            <p className="text-sm leading-relaxed text-muted">
+              The <Mono>DarkPrint skill</Mono> installs into your own agent in one command
+              and interviews you into a blueprint: what the work is, who does which part of
+              it, and what must never reach whom. It writes the graph and the cards for you
+              and it runs today.
+            </p>
+
+            <Link href={SKILL_ROUTE} className={linkCls}>
+              Install the skill
+            </Link>
           </article>
 
           {/* ---------- the line the working capability ends at ----------
@@ -437,10 +453,10 @@ export function SectionLifecycle() {
             <span className="label">Next, and not built yet</span>
           </div>
 
-          {/* ---------- 02 · connect ---------- */}
+          {/* ---------- 03 · connect ---------- */}
           <article className="panel flex min-w-0 flex-col gap-4 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <PanelHeading index="02" title="Connect" mark="⇄" />
+              <PanelHeading index="03" title="Connect" mark="⇄" />
               <NotBuiltYet />
             </div>
 
@@ -466,10 +482,10 @@ export function SectionLifecycle() {
             </Link>
           </article>
 
-          {/* ---------- 03 · upload ---------- */}
+          {/* ---------- 04 · upload ---------- */}
           <article className="panel flex min-w-0 flex-col gap-4 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <PanelHeading index="03" title="Upload yours" mark="↑" />
+              <PanelHeading index="04" title="Upload yours" mark="↑" />
               <NotBuiltYet />
             </div>
 

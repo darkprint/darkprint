@@ -359,12 +359,13 @@ describe("beat 4's panels can be narrower than the strings inside them", () => {
   const html = beat("4 the lifecycle");
   const ARTICLES = [...html.matchAll(/<article[^>]*>/g)].map((m) => m[0]);
 
-  it("renders the three panels this checks", () => {
-    /* Three since Compose became a hint inside Download rather than a peer beside it. The
-       count is asserted at all so the two cases under it cannot pass by walking an empty
-       list, and it is asserted exactly so a panel quietly reappearing — the shape this
-       section has changed twice now — has to come past this file. */
-    expect(ARTICLES).toHaveLength(3);
+  it("renders the four panels this checks", () => {
+    /* Three since Compose became a hint inside Download rather than a peer beside it, and
+       four since 2026-08-07, when the author asked for a Teaching panel about the DarkPrint
+       skill. The count is asserted at all so the two cases under it cannot pass by walking
+       an empty list, and it is asserted exactly so a panel quietly reappearing — the shape
+       this section has changed three times now — has to come past this file. */
+    expect(ARTICLES).toHaveLength(4);
   });
 
   it("clears the automatic grid-item min-width on every one of them", () => {
