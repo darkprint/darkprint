@@ -324,9 +324,12 @@ export function CardWalk({
           middle of the page and not when it is high". `top-24` pinned the figure 96px
           down, so the walk began with it against the top edge.
 
-          `calc(50vh - 19.25rem)` is half a viewport less half the figure, which centres
-          the LISTING at any height — 308px is half of the 612.5px it measures at `lg` (530
-          of window, 24 of `sm:p-6` at each end, 16 of `gap-4`, 18.5 of figcaption). It also
+          `calc(50vh - 19.83rem)` is half a viewport less half the figure, which centres
+          the LISTING at any height — 317.25px is half of the 634.5px it measures at `lg`
+          (552 of window, 24 of `sm:p-6` at each end, 16 of `gap-4`, 18.5 of figcaption).
+          It was 19.25rem against a 528px window; `NC.rows` gained a row so the overlay
+          scrollbar stops sitting on the file's last line, and this number moved with it
+          because the two are one measurement written twice. It also
           buys the settle for free: the figure locks when the track's top reaches this
           offset, and `scrollProgress` only starts counting once the top passes zero, so it
           sits still for those pixels before step 2 arrives.
@@ -345,12 +348,12 @@ export function CardWalk({
           became 71, and the gap between the deck and the card went 211 → 87 at 1440 x 950
           with nothing here changing.
 
-          `max(4rem, …)` is the floor. Half the figure is 308px, so `50vh - 19.25rem` turns
-          negative below a 616px viewport and would pin the figcaption under the 4rem sticky
+          `max(4rem, …)` is the floor. Half the figure is 317px, so `50vh - 19.83rem` turns
+          negative below a 635px viewport and would pin the figcaption under the 4rem sticky
           header. A window that short cannot hold the whole figure either way; what the floor
           decides is which end gets cut, and the top is where the card names itself. */}
       <div
-        className={cx(motion && "lg:sticky lg:top-[max(4rem,calc(50vh_-_19.25rem))]")}
+        className={cx(motion && "lg:sticky lg:top-[max(4rem,calc(50vh_-_19.83rem))]")}
       >
         {/* Plain ground, one hairline. The author named the graticule as the thing to
             drop, and it is the whole difference between a figure the landing carries and

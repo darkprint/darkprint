@@ -523,18 +523,13 @@ export default function WhatABlueprintIsPage() {
       <section className="border-t border-line bg-void py-14 sm:py-16">
         <div className="container-page">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-center lg:gap-14">
-            <div className="flex flex-col items-center gap-2 lg:items-start">
-              <Folder label="Bundle" />
-              {/* An affordance line, which the landing's mount does not need and this one
-                  does. There the folder sits inside beat 4's Download panel with a heading,
-                  a sentence and a link around it; here it is alone on a band, and a shut
-                  folder with no caption is a blue rectangle a reader has no reason to point
-                  at. Three verbs because the component takes three gestures — it opens on
-                  hover, on focus and on click — and naming only the first would describe a
-                  figure half its readers cannot operate. */}
-              <p className="font-mono text-[11px] text-dim">
-                hover, focus or tap to open
-              </p>
+            {/* The caption is the component's now, not a sibling here: `Folder` centres its
+                button and a caption beside it aligned to this box instead, 60px off. It
+                also reads "hover to open" rather than naming all three gestures — the
+                author asked for the short line, and the component still opens on focus and
+                on click, so nothing a keyboard or a touch reader can do has gone. */}
+            <div className="flex justify-center lg:justify-start">
+              <Folder label="Bundle" caption="hover to open" />
             </div>
 
             <div className="flex min-w-0 flex-col gap-4">
@@ -568,7 +563,7 @@ export default function WhatABlueprintIsPage() {
         <div className="container-page flex flex-col gap-8">
           <SectionHeading
             eyebrow="Three parts"
-            title="A graph, a card for every node, one vocabulary"
+            title="A blueprint, a card for every node, one vocabulary"
             lead="Each part is a plain text file, and each is checked against the others."
           />
 
@@ -608,7 +603,13 @@ export default function WhatABlueprintIsPage() {
           <div className="grid gap-y-14 lg:grid-cols-12 lg:gap-y-20">
             <Part
               layer={topology}
-              title="The graph"
+              /* "The blueprint", not "The graph", on the author's instruction 2026-08-08,
+                 and the section title above it changed in the same breath. The band is
+                 about `blueprint.dot` — the file the bundle band two sections up names in
+                 its first row — and calling it "the graph" made a reader hold two words for
+                 one file. `layer.title` is still "The topology, in DOT", which is the
+                 reference page's own name and belongs to it. */
+              title="The blueprint"
               side="left"
               figure={
                 starter === undefined ? null : (

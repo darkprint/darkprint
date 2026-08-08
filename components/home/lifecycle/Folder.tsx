@@ -68,6 +68,7 @@ const OPEN_AT = [
 export function Folder({
   className,
   label,
+  caption,
 }: {
   className?: string;
   /**
@@ -83,12 +84,28 @@ export function Folder({
    * `aria-hidden` because the button already carries an accessible name.
    */
   label?: string;
+  /**
+   * A line under the folder saying it opens.
+   *
+   * Inside this component and not beside it in the page, which is the whole of the fix the
+   * author asked for: "make it aligned with the folder". The root is `justify-center`, so
+   * the button sits in the middle of whatever box the caller gives it; a caption rendered
+   * as the button's SIBLING in the page aligned to that box's edge instead, and at `lg`
+   * the two were 60px apart. Rendered here it shares the same centring by construction.
+   *
+   * The landing passes none: there the folder has a heading, a sentence and a link around
+   * it, and a fourth line would be a caption on a captioned thing.
+   */
+  caption?: string;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
     <div
-      className={cx("flex items-end justify-center pb-6 pt-14", className)}
+      /* A column, so the caption below the button is centred on the button rather than on
+         the box. `justify-end` keeps the folder where `items-end` used to put it, which is
+         what the landing's panel is spaced against. */
+      className={cx("flex flex-col items-center justify-end pb-6 pt-14", className)}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
@@ -178,6 +195,10 @@ export function Folder({
           />
         ))}
       </button>
+
+      {caption !== undefined && (
+        <p className="mt-3 font-mono text-[11px] text-dim">{caption}</p>
+      )}
     </div>
   );
 }

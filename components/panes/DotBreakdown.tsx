@@ -550,8 +550,19 @@ export function DotBreakdown({
           onKeyDown={list.onKeyDown}
           className="flex min-w-0 flex-col"
         >
-          {(driven ? steps.filter((_, i) => i === selected) : steps).map((step) => {
-            const i = steps.indexOf(step);
+          {/* Every step, in every mode. A driven figure showed ONLY the selected one for one
+              revision, and the author asked for the rail back: "on the right are always
+              present the title of the 5 sections and when scrolling each of them in an
+              ordered way, get uncollapsed much like in the card node yaml below."
+
+              They are right, and the node card is the precedent to follow: `CardWalk` has
+              always drawn all nine heads with one body open, so the figure says how many
+              parts a file has before it has walked any of them, and a reader can see what
+              is coming. One head at a time said nothing about the shape of the file, and it
+              made the panel's height change under the reader as each note replaced the
+              last. The BODY is what collapses now, which is the thing the original change
+              was actually about. */}
+          {steps.map((step, i) => {
             const isPicked = i === selected;
             return (
               <li key={step.step} className="border-t border-line/70 first:border-t-0">
@@ -612,10 +623,26 @@ export function DotBreakdown({
                   </span>
 
                   {/* A `<span class="block">` and not a `<p>`: flow content is invalid
-                      inside a button, and every body is open in every state, so there is
-                      no collapse to shift the rail under the reader's cursor as they
-                      click down it. */}
-                  <span className="block pl-[1.9rem] text-[13px] leading-relaxed text-muted">
+                      inside a button.
+
+                      Open in every state when a reader is CLICKING — there is no collapse
+                      to shift the rail under their cursor as they go down it — and only on
+                      the selected step when the scroll is choosing, which is what the
+                      author asked for and what `CardWalk` does with its nine.
+
+                      `sr-only` and never `hidden`, the fix `CardWalk`'s own note records:
+                      `display: none` takes an element out of the accessibility tree as well
+                      as out of the layout, so four of the five bodies would be unreachable
+                      to a screen reader, to find-in-page and to a text extractor, with the
+                      only route to them being a 300vh scroll one step at a time. `sr-only`
+                      is a 1px clip, so the rail measures the same and the words are still
+                      there. */}
+                  <span
+                    className={cx(
+                      "block pl-[1.9rem] text-[13px] leading-relaxed text-muted",
+                      driven && !isPicked && "sr-only",
+                    )}
+                  >
                     {body(step.body)}
                   </span>
                 </button>

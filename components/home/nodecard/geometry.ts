@@ -49,11 +49,20 @@ export const NC = {
    *
    * Twenty-four rather than eighteen because the figure is pinned and centred, and at
    * eighteen it stood 495px tall inside a 900px viewport with void above and below it.
-   * At twenty-four the figure measures 612.5px, a little over two thirds of the screen it
-   * holds. `CardWalk`'s sticky offset is half that height, written in rem because CSS
-   * cannot ask, and it has to move whenever this number does.
+   *
+   * Twenty-FIVE since 2026-08-08, and the extra row is not for a line of the file. The
+   * author: the card's last line "is not visible, need to extend a little bit the height of
+   * the panel." The listing carries `overflow-x: auto`, macOS draws that scrollbar as an
+   * overlay rather than in the layout, and it lands on the bottom row of the window — so
+   * the last line of a file whose reel has hit its clamp is struck through by a scrollbar
+   * that owes the box no space. One whole row is the fix, because a partial row is exactly
+   * what `window` exists to forbid.
+   *
+   * At twenty-five the figure measures 634.5px. `CardWalk`'s sticky offset is half that
+   * height, written in rem because CSS cannot ask, and it has to move whenever this number
+   * does — 19.83rem now, and `nodecard.test.ts` holds `window` to `rows * line`.
    */
-  rows: 24,
+  rows: 25,
   /**
    * Height of the window the listing scrolls inside while the reel is running.
    *
@@ -63,13 +72,13 @@ export const NC = {
    * scroll container's bottom padding does not hold a blank strip open at the visible
    * edge — it sits after the last line of the file, 1160px down.
    */
-  window: 528,
+  window: 550,
   /**
    * Lines of head-room kept above the run being annotated, so the reader sees what comes
    * before it rather than the run arriving at the top edge.
    *
    * Three, which is `CardWalk`'s number and not the stage's six. The stage parked six
-   * rows above a 504px window; this window is 528px and the walk reads better with the
+   * rows above a 504px window; this window is 550px and the walk reads better with the
    * run higher in it, because there is no leader line drawing the eye to a particular
    * band and the annotated run has to be the thing at the top of the window.
    */
