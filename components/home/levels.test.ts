@@ -73,13 +73,24 @@ describe("the ladder is credited to nobody who did not write it", () => {
     // The names are the site's, so the site has to be the place they are written down.
     for (const name of [
       "Autocomplete",
-      "Chat-assisted",
-      "Agentic",
-      "Harness-driven",
+      "Reviewed generation",
+      "Spec-driven",
+      "Partial auto-merge",
       "Dark factory",
     ]) {
       expect(SOURCE, `level "${name}" is missing`).toContain(`name: "${name}"`);
     }
+  });
+
+  /**
+   * The author asked the ladder to "mimic such division" on 2026-08-08, pointing at the
+   * article's own table. The division is therefore the source's and the half step is the
+   * proof: nobody inventing a five-rung scale writes 3.5. The test above still holds the
+   * NAMES to this file, because those are ours and the article gives none.
+   */
+  it("keeps the half step, which is what makes the division the source's", () => {
+    expect(SOURCE).toContain("n: 3.5");
+    expect(SOURCE).toContain("n: 1 | 2 | 3 | 3.5 | 4");
   });
 });
 

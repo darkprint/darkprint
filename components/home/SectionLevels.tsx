@@ -95,7 +95,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { cx } from "@/lib/format";
 
 type Level = {
-  n: 1 | 2 | 3 | 4 | 5;
+  n: 1 | 2 | 3 | 3.5 | 4;
   name: string;
   body: string;
   /** The one the reader is most likely standing on. Stated, never styled as a fault. */
@@ -103,65 +103,64 @@ type Level = {
 };
 
 /**
- * The five levels, in the wording this site uses.
+ * The five rungs: the SOURCE'S division, in this site's words.
  *
- * All five are ours: the numbering, the names and the sentences. The HackerNoon piece
- * works through a ladder of its own and its rungs are numbered 1, 2, 3, 3.5 and 4 with no
- * names at all, so a doc comment claiming the names came from there was describing a
- * source nobody could check it against. It is linked underneath for the account of the
- * climb, which is what it does carry.
+ * The author, 2026-08-08, with the article's own table in hand: "I expect to mimic such
+ * division — the graphics does not report that."
  *
- * Level 2 and level 5 are the two the positioning depends on, and both are phrased the
- * way doc 2 §1 phrases them: level 2 is "prompti, revisioni, mergi", level 5 is the
- * factory. The other three are described in the same register so the list reads as one
- * scale rather than as several borrowed ones.
+ * So the numbering is the linked piece's, 1 / 2 / 3 / 3.5 / 4 including the half step, and
+ * the distinction each rung turns on is its:
  *
- * ── 4 and 5 rewritten 2026-08-08, and the reason is a real error ──
- * The author: "The dark factory itself has a harness. Read the link about what a dark
- * factory is and reframe the whole page."
+ *   1     the model completes what you are typing; everything else is yours
+ *   2     an agent writes whole files; every change passes your review
+ *   3     an agent works from a spec, held-out scenarios gate it, you approve the merge
+ *   3.5   the same, except some services merge without you
+ *   4     specs in, merged tested code out, your existing pipeline deploys it
  *
- * Level 5 said "nobody is standing on the path it takes" and nothing else, and level 4 was
- * the rung where the harness lived. Between them they described a ladder you climb OUT of
- * your constraints — 4 has a harness, 5 does not — and the source says the opposite in as
- * many words: the harness is what a dark factory runs on. It names the parts (sandboxes,
- * CI/CD, policy engines, testing layers, observability) and states that the model "depends
- * entirely on this layered control system".
+ * The SENTENCES are ours and deliberately not the table's. Two reasons, and neither is
+ * squeamishness: copying five rows of someone else's prose onto a page that credits them
+ * for "the account of the climb" is a different kind of borrowing than the credit claims,
+ * and the article's rows are written for its reader while ours have to name the phases this
+ * site's ontology closes over. The half step keeps its number because renumbering it would
+ * be the one edit that breaks the mapping the author asked for.
  *
- * That is not a nuance on this page. Its second half is a filter for work that must not be
- * run unattended, and a picture of level 5 as an unconstrained row of agents is the exact
- * misreading the filter exists to prevent. So 4 names the harness's parts, and 5 opens by
- * saying the harness is the same one and closes by naming the single thing that left:
- * "What was removed is the checkpoint, not the constraints."
+ * ── What this replaced ──
+ * Five rungs of our own — Autocomplete, Chat-assisted, Agentic, Harness-driven, Dark
+ * factory — numbered 1 to 5, with a comment insisting "All five are ours: the numbering,
+ * the names and the sentences." That was honest and it was the wrong call: it put a private
+ * scale beside a public one, so a reader arriving from the article had to translate, and our
+ * level 5 and its level 4 were the same rung under different numbers. `levels.test.ts` held
+ * the old names and now holds these.
  *
- * The drawings say it too — see `DRAWINGS`, where 4 and 5 now differ by one violet mark and
- * nothing else at all.
+ * Level 4 stays "Dark factory" because that is the article's own phrase for its top rung and
+ * this site's central term. Level 2 is still where most readers stand.
  */
 const LEVELS: Level[] = [
   {
     n: 1,
     name: "Autocomplete",
-    body: "The model finishes the line you are typing. You are still the one writing the code.",
+    body: "The model finishes the line you are typing. Everything else on the run is yours: you plan it, you build it, you test it, you debug it and you release it.",
   },
   {
     n: 2,
-    name: "Chat-assisted",
-    body: "You prompt, you review, you merge. An agent does most of the typing and you stay on the critical path for every change.",
+    name: "Reviewed generation",
+    body: "An agent writes whole functions and files. Every change passes under your eye before it lands, so you are on the critical path for all of them.",
     you: true,
   },
   {
     n: 3,
-    name: "Agentic",
-    body: "An agent takes a whole task end to end, running what it wrote and reading the output before it decides what to do next. You read the result and decide whether it lands.",
+    name: "Spec-driven",
+    body: "An agent works from a specification inside a harness, and held-out scenarios decide whether what came back is good enough. You approve the merge, every time.",
+  },
+  {
+    n: 3.5,
+    name: "Partial auto-merge",
+    body: "The same run, except some services merge without you. Which ones is a decision somebody wrote down, and the rest still stop at you.",
   },
   {
     n: 4,
-    name: "Harness-driven",
-    body: "A harness runs the tasks: sandboxes, a pipeline, tests, and the constraints somebody wrote down. People read the output at named checkpoints, and the checkpoints are part of the design.",
-  },
-  {
-    n: 5,
     name: "Dark factory",
-    body: "The same harness, with nobody standing in it. A specification goes in and the pipeline plans, builds, tests, debugs and releases. What was removed is the checkpoint, not the constraints.",
+    body: "A specification goes in, tested and merged code comes out, and the pipeline you already have deploys it. The harness is the same one; what was removed is the checkpoint, not the constraints.",
   },
 ];
 
@@ -178,7 +177,7 @@ const SOURCES: Source[] = [
     title: "The Dark Factory Pattern: Moving From AI-Assisted to Fully Autonomous Coding",
     where: "HackerNoon",
     href: "https://hackernoon.com/the-dark-factory-pattern-moving-from-ai-assisted-to-fully-autonomous-coding",
-    note: "One team's account of the climb, and the source this framing is borrowed from. Its own ladder is numbered differently and stops at four; the five rungs above are ours.",
+    note: "One team's account of the climb, and the source this framing is borrowed from. The five rungs above are its division, half step and all: 1, 2, 3, 3.5 and 4. The sentences on them are ours.",
   },
   {
     title: "strongdm/attractor",
@@ -306,6 +305,32 @@ const STATIONS = [
 const LOOP_FROM = 3;
 const LOOP_TO = 2;
 
+/**
+ * The merge gate: where a person sits when they are approving a machine's work rather than
+ * doing a phase of it.
+ *
+ * It is OFF the row on purpose. A person drawn at `release` says they are the one releasing,
+ * which is levels 1 and 2; from level 3 up the release is the agent's and what the person
+ * does is let it through. That is a decision on an EDGE, so it is drawn on the edge —
+ * halfway between debug and release, on the lane above the row.
+ *
+ * The gate is what makes the top three rungs one picture with one variable, which is the
+ * whole of what the author asked for:
+ *
+ *   3     every run goes through the gate, and the direct run does not exist
+ *   3.5   both runs exist — "some services merge without you"
+ *   4     only the direct run
+ *
+ * y=34 rather than the return lane's 28: an 8-unit mark centred at 28 would touch the
+ * harness box's top edge at 20, and `scene-labels.test.ts` fails a box edge drawn through a
+ * word. At 34 the mark spans 26–42 and its label lands near 54, clear of the station discs
+ * whose tops are at 65.
+ *
+ * x=318 is the midpoint of debug and release, and the return lane it shares a corridor with
+ * runs from 204 to 280 — so the two never overlap even at 3.5, where both are drawn.
+ */
+const GATE = { x: 318, y: 34 } as const;
+
 /** One directed run between two stations, trimmed to both rims and always arrowed. */
 function Wire({ from, to, fromR, toR }: { from: number; to: number; fromR: number; toR: number }) {
   return (
@@ -400,6 +425,7 @@ function Run({
   people,
   harness,
   loop = false,
+  gate,
 }: {
   people: readonly number[];
   harness?: string;
@@ -427,15 +453,48 @@ function Run({
    * next", which IS the lane.
    */
   loop?: boolean;
+  /**
+   * Whether a person has to let the run through before it releases, and whether every run
+   * goes that way.
+   *
+   * `"all"` is level 3 — "you approve the merge, every time" — so the direct run from debug
+   * to release is NOT drawn: there is no path to release that does not pass the gate.
+   * `"some"` is level 3.5, where both runs exist. Level 4 passes nothing and keeps only the
+   * direct run. See `GATE`.
+   */
+  gate?: "all" | "some";
 }) {
   const at = (i: number) => (people.includes(i) ? HR : R);
+  /* The last forward run, debug → release, is the one the gate is about. At `"all"` it is
+     replaced by the two legs through the gate rather than drawn beside them. */
+  const forward = STATIONS.slice(0, gate === "all" ? -2 : -1);
   return (
     <>
       {harness !== undefined && <Boundary label={harness} />}
 
-      {STATIONS.slice(0, -1).map((s, i) => (
+      {forward.map((s, i) => (
         <Wire key={s.label} from={s.x} to={STATIONS[i + 1].x} fromR={at(i)} toR={at(i + 1)} />
       ))}
+
+      {gate !== undefined && (
+        <>
+          <FlowEdge
+            from={[STATIONS[3].x, ROW]}
+            to={[GATE.x, GATE.y]}
+            fromRadius={at(3)}
+            toRadius={HR}
+            pulse={false}
+          />
+          <FlowEdge
+            from={[GATE.x, GATE.y]}
+            to={[STATIONS[4].x, ROW]}
+            fromRadius={HR}
+            toRadius={at(4)}
+            pulse={false}
+          />
+          <HumanFlowNode x={GATE.x} y={GATE.y} r={HR} label="approve" mark="schematic" />
+        </>
+      )}
 
       {loop && (
         <ReturnLane
@@ -508,19 +567,19 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
   },
   3: {
     label:
-      "The same five-phase run, with agents at plan, build, test and debug and a person only at release. A return run appears from debug back to test: the first rung where the pipeline goes round again on its own.",
-    note: "a person at the end, and the run closes on itself",
-    body: <Run people={[4]} loop />,
+      "The same five-phase run, inside a harness, with an agent at every one of the five. A return run goes from debug back to test, and the only way to reach release is through a person marked approve.",
+    note: "every run stops at a person",
+    body: <Run people={[]} harness="harness" loop gate="all" />,
+  },
+  3.5: {
+    label:
+      "The same drawing again, with one run added: debug now reaches release directly as well as through the person marked approve, so some runs merge without anyone and the rest still stop.",
+    note: "some runs go round the person",
+    body: <Run people={[]} harness="harness" loop gate="some" />,
   },
   4: {
     label:
-      "The same five-phase run and its return run, now inside a harness, with agents at every station and one person at test: a checkpoint the design chose, with everything after it unattended.",
-    note: "a person at one designed checkpoint",
-    body: <Run people={[2]} harness="harness" loop />,
-  },
-  5: {
-    label:
-      "The same five-phase run, its return run and the same harness as the level above, with an agent at every station and no person anywhere inside it.",
+      "The same five-phase run, its return run and the same harness, with an agent at every station, the direct run to release and no person anywhere inside it.",
     note: "the same harness, nobody in it",
     body: <Run people={[]} harness="harness" loop />,
   },
@@ -600,13 +659,13 @@ export function SectionLevels() {
         {/* Doc 2 §1's hook. The one sentence that does the positioning. */}
         <div className="mt-14 rounded-lg border border-cyan/30 bg-cyan/5 p-6 sm:p-8">
           <p className="max-w-3xl font-display text-xl leading-snug text-fg sm:text-2xl">
-            The gap between level 2 and level 5 is architectural and organisational.
+            The gap between level 2 and level 4 is architectural and organisational.
           </p>
           {/* Full width, on the author's instruction 2026-08-07: `max-w-3xl` off this
               paragraph. The line above it keeps its cap — it is one display-size sentence
               and a 48rem measure is what stops it running as a banner. */}
           <p className="mt-4 text-base leading-relaxed text-muted">
-            The technology to run at level 5 already exists. What is missing are the
+            The technology to run at level 4 already exists. What is missing are the
             patterns for structuring the work: what each agent is handed, and what each
             one is kept away from. Better models will not supply that. It is a design
             problem, and designs are what this site collects.

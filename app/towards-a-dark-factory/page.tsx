@@ -99,7 +99,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 export const metadata: Metadata = {
   title: "Towards a Dark Factory",
   description:
-    "Five levels of working with agents, where most teams actually sit, and the four questions that decide whether a task belongs in a pipeline nobody is watching. The gap between level 2 and level 5 is architectural and organisational, which makes it a design problem.",
+    "Five levels of working with agents, where most teams actually sit, and the four questions that decide whether a task belongs in a pipeline nobody is watching. The gap between level 2 and level 4 is architectural and organisational, which makes it a design problem.",
 };
 
 
