@@ -135,6 +135,25 @@ import { tokenizeYaml } from "./yaml";
 const PAD_Y = 2;
 
 /**
+ * How far down the shared cell the card face sits, in CSS pixels.
+ *
+ * The cell is the LISTING's height — 613px — and the card is 271, so 342px of slack has to
+ * go somewhere. Centring split it 171/171 and the author asked the card closer to its own
+ * deck ("it is too distant"): those 171 pixels sit between the lead and the card before the
+ * pin engages and read as a gap rather than as air. 71 above and 271 below measures 87px
+ * from the deck at 1440 x 950, against 211 centred.
+ *
+ * This is the ONLY term that was allowed to move. The sticky offset below also places the
+ * card — a pinned card lands at `top + FACE_TOP` — and spending 100px of it here was tried
+ * and reverted, because `top` is what centres the listing and the listing owns the last 86%
+ * of the pin. See that comment.
+ *
+ * Not a percentage: the two heights are fixed numbers this file already derives everything
+ * else from, and a percentage of the cell would drift the moment `NC.rows` changes.
+ */
+const FACE_TOP = 71;
+
+/**
  * The landing's wording for the nine parts. Roughly 25 words each, against the 45 that
  * `annotations.ts` carries.
  *
@@ -306,21 +325,30 @@ export function CardWalk({
           down, so the walk began with it against the top edge.
 
           `calc(50vh - 19.25rem)` is half a viewport less half the figure, which centres
-          it at any height. It also buys the settle the author is asking for for free: the
-          figure locks when the track's top reaches that offset, and `scrollProgress` only
-          starts counting once the top passes zero, so the figure sits centred and still
-          for those pixels before step 2 arrives.
+          the LISTING at any height — 308px is half of the 612.5px it measures at `lg` (530
+          of window, 24 of `sm:p-6` at each end, 16 of `gap-4`, 18.5 of figcaption). It also
+          buys the settle for free: the figure locks when the track's top reaches this
+          offset, and `scrollProgress` only starts counting once the top passes zero, so it
+          sits still for those pixels before step 2 arrives.
 
-          19.25rem, not 16.5: the figure grew with `NC.rows` and half of it grew with it. The
-          two numbers have to move together or the walk pins off-centre, high by the
-          difference. 308px is half of the 612.5px the figure measures at `lg` — 530 of
-          window, 24 of `sm:p-6` at each end, 16 of `gap-4` and 18.5 of figcaption.
+          THE LISTING and not the card, deliberately, and the two cannot both be centred.
+          `top` places the cell and `FACE_TOP` places the card inside it, so a pinned card
+          lands at their sum; the listing lands at `top` alone. Moving 100px from one term to
+          the other was tried and reverted — it centred the card at 473 and pushed the
+          listing's middle to 573, a hundred pixels low. The listing is on screen for the
+          last 86% of the pin and the card for the first 14%, so the offset belongs to the
+          listing and the card takes the 102px of rise that leaves it. It is arriving at that
+          point rather than being read.
 
-          `max(4rem, …)` is the floor the old comment claimed for free and no longer got.
-          Half the figure is 308px, so `50vh - 19.25rem` turns negative below a 616px
-          viewport and would pin the figcaption under the 4rem sticky header. A window
-          that short cannot hold the whole figure either way; what the floor decides is
-          which end gets cut, and the top is where the card names itself. */}
+          What closed the author's "it is too distant" is `FACE_TOP` alone, which is slack
+          inside the cell rather than a term in this offset: 171px of it above the card
+          became 71, and the gap between the deck and the card went 211 → 87 at 1440 x 950
+          with nothing here changing.
+
+          `max(4rem, …)` is the floor. Half the figure is 308px, so `50vh - 19.25rem` turns
+          negative below a 616px viewport and would pin the figcaption under the 4rem sticky
+          header. A window that short cannot hold the whole figure either way; what the floor
+          decides is which end gets cut, and the top is where the card names itself. */}
       <div
         className={cx(motion && "lg:sticky lg:top-[max(4rem,calc(50vh_-_19.25rem))]")}
       >
@@ -328,7 +356,7 @@ export function CardWalk({
             drop, and it is the whole difference between a figure the landing carries and
             a plate that reads as its own page. */}
         <div
-          className={cx(motion && "lg:grid")}
+          className={cx(motion && "lg:grid lg:items-start")}
           style={motion ? { perspective: "1800px" } : undefined}
         >
         {/* The card, before it is a file. Same shell, same grid cell, so the sticky box
@@ -341,21 +369,30 @@ export function CardWalk({
             one figure for one idea, drawn the same way wherever the idea appears.
 
             Centred, because the listing it becomes is full width and the card is not. */}
-        {/* `items-center`, and the alignment is load-bearing in two directions.
+        {/* Where the card sits in the cell, and why it is a number rather than an alignment.
             ------------------------------------------------------------
-            NOT the flex default: this layer shares a grid cell with the listing, which is
-            the taller of the two, and a STRETCHED flex child inherits that height —
-            `CardStackFigure`'s ghosts are absolutely positioned to its wrapper, so they drew
-            as three outlines running 600px past the bottom of the card.
+            The layer must not be the grid's default `stretch`: `CardStackFigure`'s ghosts
+            are absolutely positioned to its wrapper, so a layer stretched to the LISTING's
+            613px drew them as three outlines running 350px past the bottom of the card. Both
+            `items-start` on the grid and `items-center` here solve that; what they disagree
+            about is the 342px of slack, and the author has now ruled on both ends of it.
 
-            `items-start` fixed that and left the other half: the card then hugged its own
-            content against the ceiling of a 613px cell, with 350px of empty box under it and
-            the pin holding all of it on screen. Centring prevents the stretch just as well —
-            any alignment but the default does — and puts the card in the middle of the space
-            the listing reserves, which is where a reader's eye already is when the beat
-            starts. The cell still measures the listing, which is what the sticky box needs
-            to reserve. */}
-        <div className="flex items-center justify-center" style={layer(faceOpacity, -90 * (1 - faceOpacity))}>
+            `items-start` put the whole 342 under the card. Centring split it, 171 above and
+            171 below — which centres the card on screen while pinned, and is why the author
+            then asked for it closer to the heading: before the pin engages, those 171 pixels
+            sit between the deck and the card and read as a gap rather than as air.
+
+            `FACE_TOP` is the third answer: 71 above and 271 below. It takes 100px straight
+            out of the pre-pin gap, and it is the only term here that may — the sticky offset
+            also places the card, but it is what centres the LISTING, and the listing is on
+            screen for the last 86% of the pin against the card's first 14%. */}
+        <div
+          className="flex items-start justify-center"
+          style={{
+            ...layer(faceOpacity, -90 * (1 - faceOpacity)),
+            ...(motion ? { paddingTop: FACE_TOP } : {}),
+          }}
+        >
           <CardStackFigure card={card} nodes={5} size="stage" />
         </div>
         <div className={cx(!motion && "mt-5")} style={layer(listOpacity, 90 * (1 - listOpacity))}>

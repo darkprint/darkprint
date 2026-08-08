@@ -163,7 +163,12 @@ export function SectionNodeIsCard() {
           className="mx-auto"
         />
 
-        <div className="mt-10">
+        {/* `mt-4`, not `mt-10`. The other 24px of the author's "it is too distant" — the
+            rest came out of the card's own placement inside the cell, see `FACE_TOP`. A
+            figure that turns into the file it describes belongs against its deck rather
+            than a section-gap away from it; the 40px rhythm is for a section following a
+            section, and this is a caption following its own picture. */}
+        <div className="mt-4">
           <CardWalk
             /* The trailing newline every file on disk ends with would render as a blank
                line 53 under a 52-line card, and would count in the walk's arithmetic. */
