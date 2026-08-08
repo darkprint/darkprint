@@ -203,17 +203,17 @@ export function BlueprintWalk({ dot, file }: { dot: string; file: string }) {
            five blocks off the swap's own clock, so the listing lights one block and shows
            that block's note alone.
 
-           The window is the tail of the pin: the file has finished arriving by 0.38 and the
-           walk spends everything after it, 0.115 of the track per block. On a 950px viewport
-           that is about 230px of scroll each — close to the pace `CardWalk` settled on for
-           its nine, and slow enough to read a note before the next one replaces it.
+           The window is the tail of the pin: the file has finished arriving by 0.28 and the
+           walk spends everything after it, 0.14 of the track per block. At 1440 × 950 that
+           is 266px of scroll each — comfortably past the pace `CardWalk` settled on for its
+           nine, and slow enough to read a note before the next one replaces it.
 
            `Math.min` and not a modulo: the last block holds while a reader scrolls the last
            of the pin rather than wrapping back to the first, which would read as a loop. */
         <DotBreakdown
           source={dot}
           title={file}
-          walkTo={Math.min(4, Math.floor(Math.max(0, progress - 0.40) / 0.115))}
+          walkTo={Math.min(4, Math.floor(Math.max(0, progress - 0.30) / 0.14))}
         />
       )}
     />

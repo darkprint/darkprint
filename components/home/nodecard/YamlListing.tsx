@@ -85,11 +85,41 @@ const TOKEN_CLASS: Record<YamlTokenKind, string> = {
  * nothing. The two halves are the two mounts and never appear together: `CardWalk` passes
  * `live` and never `picked`, `CardBreakdown` passes `picked` and never `live`.
  */
+/* `attached` releases the ground, and this is the whole of the 2026-08-08 fix.
+   ------------------------------------------------------------
+   The author, with a screenshot of the walk two thirds through: "release the highlight of a
+   section when scrolling and moving to the next one, otherwise we end with all highlighted
+   like here." They are right, and the picture is the argument — by step 9 the listing had
+   eight `bg-copper/25` bands standing plus one `bg-copper-line/10` band, which is a tenth of
+   the register's line against a quarter of its body. The one run being read was the FAINTEST
+   thing on the page, and the other eight were saying "attached" long after that had stopped
+   being news.
+
+   `Grounding` already writes down why this is wrong when more than one run is lit: the nine
+   annotations very nearly tile this card, so grounding all of them "ends with the listing
+   lit, which is the same as nothing being lit". That paragraph was reasoned about
+   `CardBreakdown`'s pick and it applies here unchanged — a walk that never lets go
+   accumulates into the same state a moment at a time.
+
+   So while the choreography runs, exactly one run carries a ground: the one being read. What
+   still says a run is annotated is the pair that always did the standing work — the rule down
+   the margin and the two-digit step at its head — both of which keep their `attached` weight
+   below, because those are per-run marks rather than a wash over the code.
+
+   Only the `lg:` live layer changes. `ROW_MARKED` has no prefix and no `live` condition, so
+   the static layout — the server's, a phone's, a reduced-motion reader's — still bands all
+   nine, which is right there: all nine notes are open beside it and nothing is being read in
+   particular.
+
+   The active band goes to 15% to match. It was 10% because it had to beat eight neighbours
+   at 25 without shouting; with the neighbours gone it is competing with bare ground, and 15
+   is the weight `ROW_PICKED` already uses for the same situation one mount over, contrast
+   worked out in the comment above it. */
 const ROW_MARKED = "bg-copper/25";
 const ROW_LIVE: Record<BandState, string> = {
   pending: "lg:bg-transparent",
-  attached: "lg:bg-copper/25",
-  active: "lg:bg-copper-line/10",
+  attached: "lg:bg-transparent",
+  active: "lg:bg-copper-line/15",
 };
 
 /* The rule is a boundary rather than a word, so it is held to 3:1 and not to 4.5:1. The

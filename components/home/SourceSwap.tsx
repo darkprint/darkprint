@@ -48,10 +48,46 @@ import { clamp01, useScrollProgress } from "@/components/viz/useScrollProgress";
  * needs the rest of the pin to run in. At the old numbers the swap ate two thirds of the
  * travel and all five blocks fired inside the last 350px, which is faster than a reader can
  * follow — and then the pin released with the last block still on screen and nothing left
- * to do. The swap now finishes by 0.38 and the walk has the other 0.62 to spend.
+ * to do.
+ *
+ * They moved earlier AGAIN when the box started pinning centred. The author: "make the
+ * blueprint design to stick to center of the screen when scrolling and when reached the
+ * center, start flipping." Centring is what makes that instruction cheap to keep: sticky
+ * locks the box when the wrapper's top passes the offset below, which is 209px at a 950px
+ * viewport and therefore BEFORE `useScrollProgress` starts counting at a wrapper top of
+ * zero. So the drawing is already centred and still at progress 0, and a hold of 0.16 after
+ * that — 304px of scrolling past a picture that has finished arriving — was the dead scroll
+ * the instruction is about. 0.06 is a beat, not a wait.
+ *
+ * The swap now finishes by 0.28 and the walk has the other 0.72: 266px of scroll per block
+ * at 1440 × 950, against 230 before.
  */
-const FIGURE_OUT = { from: 0.16, to: 0.30 };
-const SOURCE_IN = { from: 0.24, to: 0.38 };
+const FIGURE_OUT = { from: 0.06, to: 0.20 };
+const SOURCE_IN = { from: 0.14, to: 0.28 };
+
+/**
+ * The height of the grid cell the two layers share, in CSS pixels.
+ *
+ * Measured on the built page rather than assumed, at 1024, 1280 and 1440 and at four
+ * scroll depths each: 460px in all twelve. It is stable because the taller layer sets it
+ * and the taller layer is the file panel, whose listing is a fixed 18 lines and whose notes
+ * column shows ONE note at a time — the walk's own doing. The drawing measures 405.
+ *
+ * Do not read the layers' own rects to check this. Both are rotated for most of the pin, and
+ * `getBoundingClientRect` returns the perspective-projected box of a rotated element: the
+ * drawing reads 566 while edge-on and the panel 643, neither of which is a height anything
+ * has. The unrotated grid row is the honest number.
+ */
+const CELL = 460;
+
+/**
+ * The hint's block, in CSS pixels: one line of `text-sm leading-relaxed` (20) plus `mb-4`.
+ *
+ * Subtracted from the pin offset only when a hint is passed, so the GRID is what lands in
+ * the middle of the screen and the hint sits above it. Centring the sticky box as a whole
+ * would put the figure half a hint low.
+ */
+const HINT_BLOCK = 36;
 
 /** `t` mapped through a window, 0 before it and 1 after. */
 function ramp(t: number, from: number, to: number): number {
@@ -128,24 +164,57 @@ export function SourceSwap({
   /* In as the drawing starts to go, out once the file has arrived. Both edges are inside
      the crossfade's own window so the line is never the only thing moving. */
   const hintOpacity =
-    ramp(progress, 0.10, 0.22) * (1 - ramp(progress, SOURCE_IN.to, SOURCE_IN.to + 0.10));
+    ramp(progress, 0.02, 0.12) * (1 - ramp(progress, SOURCE_IN.to, SOURCE_IN.to + 0.10));
 
   return (
     <div ref={ref} className={cx(motion && "lg:h-[300vh]", className)}>
-      {/* Pinned near the top, not centred, and this is the third arrangement — the first
-          two are worth recording because the reason is the same both times.
+      {/* Pinned CENTRED, and this is the fourth arrangement. The first three are recorded
+          because two of them failed for one reason and the fix is not what it looks like.
 
-          The two layers are very different heights: the drawing is about 300px and the file
-          listing about three times that. They share one grid cell, so the cell is ALWAYS the
-          listing's height. Centring the cell under `50vh - 15rem` therefore put the drawing
-          halfway down a box sized for something else, with the hint above it off the top of
-          the screen; top-aligning it inside that same tall cell left the drawing against the
-          ceiling with the rest of the cell empty beneath.
+          The author: "make the blueprint design to stick to center of the screen when
+          scrolling and when reached the center, start flipping (i.e., the same u do for the
+          node card)."
 
-          Pinning the box itself just under the header fixes both: whichever layer is showing
-          starts at the same place, the hint above it is always in view, and the listing runs
-          downward from there instead of being centred against a height nothing shares. */}
-      <div className={cx(motion && "lg:sticky lg:top-24")}>
+          ── Why centring failed twice before ──
+          The two layers were very different heights and the cell was always the taller
+          one's. Centring the box under `50vh - 15rem` put the drawing halfway down a box
+          sized for something else, with the hint above it off the top of the screen;
+          top-aligning inside that same tall cell left the drawing against the ceiling with
+          the rest empty beneath. So it was pinned at `top-24` instead, which was honest but
+          is not what was asked for.
+
+          ── Why it works now ──
+          Two things changed underneath it. The panel shows ONE note at a time rather than
+          five, which took the cell from a listing-shaped column to a measured, stable 460px
+          (see `CELL`); and the layers centre INSIDE that cell rather than sitting at its
+          top. So half the cell is a real number, the box is half a screen less that number
+          from the top, and whichever layer is showing lands in the middle of the screen —
+          which is exactly how `CardWalk` pins one beat down, as the author points out.
+
+          ── The offset, term by term ──
+            50vh          the middle of the screen
+            - CELL/2      half the figure, so its centre lands there and not its top
+            - HINT_BLOCK  the line above the grid, which is inside this box and would
+                          otherwise push the grid down by its own height
+            max(4rem, …)  the floor. Half the cell plus the hint is 266px, so the offset
+                          turns negative below a 532px viewport and would pin the figure
+                          under the sticky header. A window that short cannot hold the whole
+                          figure either way; the floor decides which end gets cut, and the
+                          top is where the hint and the file's own name are.
+
+          Inline rather than a utility because the two terms are measurements, and `top` is
+          inert on a `position: static` box — so this applies at exactly the widths
+          `lg:sticky` does, and does nothing below them. */}
+      <div
+        className={cx(motion && "lg:sticky")}
+        style={
+          motion
+            ? {
+                top: `max(4rem, calc(50vh - ${CELL / 2 + (hint === undefined ? 0 : HINT_BLOCK)}px))`,
+              }
+            : undefined
+        }
+      >
         {hint !== undefined && (
           /* ABOVE the pair, not under it, and the reason is the grid below.
              ------------------------------------------------------------
@@ -166,8 +235,13 @@ export function SourceSwap({
           </p>
         )}
 
+        {/* `lg:items-center`, not `items-start`. The row is sized by the taller child and
+            neither child stretches, so centring costs nothing and buys the half of the
+            author's instruction the sticky offset above cannot: the offset centres the CELL
+            on screen, and this centres the drawing inside the cell. Top-aligned, a 405px
+            drawing in a 460px row would sit 27px high of the middle it was asked to be in. */}
         <div
-          className={cx(motion && "lg:grid lg:items-start")}
+          className={cx(motion && "lg:grid lg:items-center")}
           style={motion ? { perspective: "1800px" } : undefined}
         >
           {/* The drawing turns away: 0° at rest, -90° and edge-on by the time it is gone. */}
