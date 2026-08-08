@@ -115,6 +115,26 @@ type Level = {
  * way doc 2 §1 phrases them: level 2 is "prompti, revisioni, mergi", level 5 is the
  * factory. The other three are described in the same register so the list reads as one
  * scale rather than as several borrowed ones.
+ *
+ * ── 4 and 5 rewritten 2026-08-08, and the reason is a real error ──
+ * The author: "The dark factory itself has a harness. Read the link about what a dark
+ * factory is and reframe the whole page."
+ *
+ * Level 5 said "nobody is standing on the path it takes" and nothing else, and level 4 was
+ * the rung where the harness lived. Between them they described a ladder you climb OUT of
+ * your constraints — 4 has a harness, 5 does not — and the source says the opposite in as
+ * many words: the harness is what a dark factory runs on. It names the parts (sandboxes,
+ * CI/CD, policy engines, testing layers, observability) and states that the model "depends
+ * entirely on this layered control system".
+ *
+ * That is not a nuance on this page. Its second half is a filter for work that must not be
+ * run unattended, and a picture of level 5 as an unconstrained row of agents is the exact
+ * misreading the filter exists to prevent. So 4 names the harness's parts, and 5 opens by
+ * saying the harness is the same one and closes by naming the single thing that left:
+ * "What was removed is the checkpoint, not the constraints."
+ *
+ * The drawings say it too — see `DRAWINGS`, where 4 and 5 now differ by one violet mark and
+ * nothing else at all.
  */
 const LEVELS: Level[] = [
   {
@@ -136,12 +156,12 @@ const LEVELS: Level[] = [
   {
     n: 4,
     name: "Harness-driven",
-    body: "A harness of orchestrators and evaluators runs tasks inside constraints somebody wrote down. People read the output at named checkpoints, and the checkpoints are part of the design.",
+    body: "A harness runs the tasks: sandboxes, a pipeline, tests, and the constraints somebody wrote down. People read the output at named checkpoints, and the checkpoints are part of the design.",
   },
   {
     n: 5,
     name: "Dark factory",
-    body: "A specification goes in. The pipeline plans, builds, tests, debugs and releases, and nobody is standing on the path it takes.",
+    body: "The same harness, with nobody standing in it. A specification goes in and the pipeline plans, builds, tests, debugs and releases. What was removed is the checkpoint, not the constraints.",
   },
 ];
 
@@ -328,8 +348,19 @@ function ReturnLane({ from, to, fromR, toR }: { from: number; to: number; fromR:
   );
 }
 
-/** A group drawn around the whole run, for level 4's harness. A hairline, because a harness
-    is present — `VIZ.dash.absent` already means the opposite. */
+/** The harness, drawn as a group around the whole run. A hairline, because a harness is
+    PRESENT — `VIZ.dash.absent` already means the opposite.
+
+    On levels 4 and 5, not on 4 alone. The author: "The dark factory itself has a harness."
+    The source agrees and is the reason this was wrong: it lists what the harness is —
+    sandboxes, CI/CD, policy engines, testing layers, observability — and says the dark
+    factory "depends entirely on this layered control system". Drawing level 5 as a bare row
+    of discs said a factory graduates OUT of its constraints, which is the opposite claim and
+    the dangerous one on a page whose second half is a filter for work that must not be run
+    unattended.
+
+    So the boundary is identical in both frames and only the person differs, which is the
+    property this whole file is built on. */
 function Boundary({ label }: { label: string }) {
   return (
     <g data-viz="boundary">
@@ -365,7 +396,38 @@ function Boundary({ label }: { label: string }) {
  * indices a person stands at and nothing else; every coordinate, every edge and every label
  * is the same in all five.
  */
-function Run({ people, harness }: { people: readonly number[]; harness?: string }) {
+function Run({
+  people,
+  harness,
+  loop = false,
+}: {
+  people: readonly number[];
+  harness?: string;
+  /**
+   * Whether the run closes on itself — debug hands a patch back to test and the run
+   * carries on — WITHOUT anyone deciding that it should.
+   *
+   * The author, 2026-08-08: "why does each graphic show a loop between test and debug? Not
+   * in every step such edge loop exists. You should introduce only when it is really
+   * present."
+   *
+   * It was in all five, and the comment that put it there argued "the work is the same work
+   * at every rung — only who is doing it changes." That is true of the WORK and false of
+   * the drawing. These frames draw what the system does unattended, and at the first two
+   * rungs the return is a person's hand: they read the failure, they decide to patch, they
+   * run the tests again. Drawing a machine lane there credits the system with the one
+   * behaviour the source treats as the whole threshold.
+   *
+   * The linked HackerNoon piece is explicit that the closed loop is what separates assisted
+   * from autonomous — "the workflow becomes closed-loop: the agent observes the current
+   * state of the system, takes an action, measures the result, and decides what to do next",
+   * and its examples are exactly this edge ("if a test fails, it reads the failure and
+   * patches the implementation"). So the lane appears at level 3 and stays: level 3's own
+   * sentence is "running what it wrote and reading the output before it decides what to do
+   * next", which IS the lane.
+   */
+  loop?: boolean;
+}) {
   const at = (i: number) => (people.includes(i) ? HR : R);
   return (
     <>
@@ -375,15 +437,14 @@ function Run({ people, harness }: { people: readonly number[]; harness?: string 
         <Wire key={s.label} from={s.x} to={STATIONS[i + 1].x} fromR={at(i)} toR={at(i + 1)} />
       ))}
 
-      {/* The loop, as an edge: the debugger hands a patch back to the tester and the run
-          carries on from there. Present in every frame, because the work is the same work
-          at every rung — only who is doing it changes. */}
-      <ReturnLane
-        from={STATIONS[LOOP_FROM].x}
-        to={STATIONS[LOOP_TO].x}
-        fromR={at(LOOP_FROM)}
-        toR={at(LOOP_TO)}
-      />
+      {loop && (
+        <ReturnLane
+          from={STATIONS[LOOP_FROM].x}
+          to={STATIONS[LOOP_TO].x}
+          fromR={at(LOOP_FROM)}
+          toR={at(LOOP_TO)}
+        />
+      )}
 
       {STATIONS.map((s, i) =>
         people.includes(i) ? (
@@ -415,37 +476,53 @@ interface LevelDrawing {
 /**
  * Keyed by the level number rather than carried on `Level`, so the copy above stays a
  * block of sentences with nothing interleaved. Five drawings of one job.
+ *
+ * ── What differs between two frames, and what may not ──
+ * Three things, and each one is a claim the level's own sentence makes:
+ *
+ *   who stands where   violet marks. 5 → 3 → 1 → 1 → 0.
+ *   the return lane    whether the run patches and re-tests without being told to.
+ *                      Absent at 1 and 2, present from 3 on.
+ *   the harness        the box around the run. Absent below 4, present at 4 AND 5.
+ *
+ * Everything else — the five stations, their positions, their names, the four forward
+ * runs, the frame — is identical in all five, which is what lets a reader answer "how much
+ * of this runs unattended" by scanning the column rather than by reading five pictures.
+ *
+ * The last two of those three were wrong until 2026-08-08 and the author caught both. The
+ * lane was in every frame; the harness was in one. Both are now read off the linked source
+ * rather than off a claim in a comment — see `Run`'s `loop` and `Boundary`.
  */
 const DRAWINGS: Record<Level["n"], LevelDrawing> = {
   1: {
     label:
-      "The five-phase run (plan, build, test, debug, release) with a person standing at every one of the five.",
+      "The five-phase run (plan, build, test, debug, release) with a person standing at every one of the five. No harness, and no return run: when a test fails, the person carries the work back.",
     note: "a person at all five",
     body: <Run people={[0, 1, 2, 3, 4]} />,
   },
   2: {
     label:
-      "The same five-phase run, with a person at plan, test and release and an agent doing the building and the debugging.",
+      "The same five-phase run, with a person at plan, test and release and an agent doing the building and the debugging. Still no return run: the person is the one who reads a failure and decides to go round again.",
     note: "a person at three of five",
     body: <Run people={[0, 2, 4]} />,
   },
   3: {
     label:
-      "The same five-phase run, with agents at plan, build, test and debug and a person only at release.",
-    note: "a person at the end",
-    body: <Run people={[4]} />,
+      "The same five-phase run, with agents at plan, build, test and debug and a person only at release. A return run appears from debug back to test: the first rung where the pipeline goes round again on its own.",
+    note: "a person at the end, and the run closes on itself",
+    body: <Run people={[4]} loop />,
   },
   4: {
     label:
-      "The same five-phase run, inside a harness, with agents at every station and one person at test: a checkpoint the design chose, with everything after it unattended.",
+      "The same five-phase run and its return run, now inside a harness, with agents at every station and one person at test: a checkpoint the design chose, with everything after it unattended.",
     note: "a person at one designed checkpoint",
-    body: <Run people={[2]} harness="harness" />,
+    body: <Run people={[2]} harness="harness" loop />,
   },
   5: {
     label:
-      "The same five-phase run with an agent at every station and no person anywhere in it.",
-    note: "nobody stands on the path",
-    body: <Run people={[]} />,
+      "The same five-phase run, its return run and the same harness as the level above, with an agent at every station and no person anywhere inside it.",
+    note: "the same harness, nobody in it",
+    body: <Run people={[]} harness="harness" loop />,
   },
 };
 

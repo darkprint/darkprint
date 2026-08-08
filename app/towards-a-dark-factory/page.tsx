@@ -135,7 +135,19 @@ export default function TowardsPage() {
                The second sentence is doc 2 §1.1, in the deck, ahead of the ladder rather
                than 2,586px below it. It is the constraint a deleted landing beat used to
                guard and it belongs upstream of the picture that puts it at risk. */
-            lead="A dark factory is one shape a blueprint can take: a graph where planning, implementation, testing, debugging and deployment all run unattended. It is a special case and not a summit. A graph with a person standing in it is a first-class blueprint here, and is shelved beside the rest."
+            /* "inside a harness somebody wrote" is not decoration, and it was missing.
+               ------------------------------------------------------------
+               The author, 2026-08-08: "The dark factory itself has a harness. Read the link
+               about what a dark factory is and reframe the whole page."
+
+               The linked source defines the pattern as an autonomous delivery environment
+               and then spends most of its length on what holds it up — sandboxes, a
+               pipeline, policy engines, testing layers, observability — saying the model
+               "depends entirely on this layered control system". This lead defined a dark
+               factory purely by what is ABSENT from it, which reads as fewer rules rather
+               than more, and the second half of this very page is a filter against exactly
+               that misreading. Unattended is the consequence; the harness is the cause. */
+            lead="A dark factory is one shape a blueprint can take: a graph where planning, implementation, testing, debugging and deployment all run unattended, inside a harness somebody wrote. Unattended is what it costs to build, not what it saves. It is a special case and not a summit: a graph with a person standing in it is a first-class blueprint here, and is shelved beside the rest."
           />
           {/* The two scales, named apart before the five-rung list rather than after it.
               `text-fg` on the clause that does the work: this used to be the dimmest text
