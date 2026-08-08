@@ -175,12 +175,36 @@ export default function OntologyPage() {
        — blueprints, nodes, ontology — each opened with a different amount of air. */
     <div className="container-page py-12 sm:py-16">
       {/* The lead was 62 words listing all five fields, which the figure below now
-          draws. It says what the vocabulary is for and stops. */}
+          draws. It says what the vocabulary is for and stops.
+
+          It opened with "Five lists of terms, N of them curated as <title> v<version>"
+          until the author asked that sentence out and the version onto the heading
+          instead. Nothing true is lost: the five kinds are the figure directly below,
+          the count is the first panel under it ("The curated core"), and the version is
+          the one fact of the three that a reader has to carry off this page — a card
+          declares `ontology_version` against it — so it belongs beside the name rather
+          than three clauses into a paragraph. */}
       <SectionHeading
         as="h1"
+        title={
+          <>
+            Ontology{" "}
+            {/* Mono, dim, and a step down, the way a version is written everywhere else
+                on this site: `CardStackFigure` sets `v{version}` at the right of a card's
+                id, and the node pages set the same run beside a card ref. `font-normal`
+                and `tracking-normal` because the heading around it is `font-semibold` at
+                -0.02em, and a mono run inherits both and comes out cramped and bold.
+
+                `align-middle` rather than a baseline: at 48px against 20px the two
+                baselines put the version's cap-height well under the word's, which reads
+                as a subscript rather than as a label. */}
+            <span className="align-middle font-mono text-[0.45em] font-normal tracking-normal text-dim">
+              v{version}
+            </span>
+          </>
+        }
         eyebrow="The shared vocabulary"
-        title="Ontology"
-        lead={`Five lists of terms, ${coreTerms} of them curated as ${title} v${version}. Every structural field on a node card points into one of them rather than saying something in free text, which is what lets an analyzer reason about a graph it has never seen.`}
+        lead={`Every structural field on a node card points into the ${title} rather than saying something in free text, which is what lets an analyzer reason about a graph it has never seen.`}
         className="mb-16"
       />
 
