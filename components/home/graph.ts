@@ -174,14 +174,29 @@ const { gentle, wide } = FLOW.edge.bend;
  */
 export const LANDING_WIDE: LandingGraph = place({
   width: 900,
-  height: 320,
+  /* 252 and not 320, and the two rows moved with it.
+     ------------------------------------------------------------
+     The author asked the drawing revisited. Measured before changing anything: the lowest
+     ink is the bottom row's node labels at y=259 and the highest is the top row's halo rim
+     at y=56, so a 320-unit frame held 56 units of empty sheet above the drawing and 61
+     below it — a third of the box, on the first figure a visitor meets.
+
+     The rows close from 158 units apart to 132, which is still more than twice the halo's
+     own diameter, so no mark crowds another and the absence keeps a clear vertical lane
+     between the planner and the builder. 252 leaves 15 units under the deepest label,
+     which clears the corner ticks' 12 and keeps the title block uncrowded.
+
+     WIDTH IS UNTOUCHED and is not a lever: `./graph.test.ts` does the legibility sum and
+     fails if this frame is widened, because a label's rendered size is its units times the
+     ratio of pixel width to frame width. */
+  height: 252,
   nodeRadius: 11,
   places: {
-    planner: [150, 76],
-    builder: [150, 234],
-    tester: [450, 76],
-    debugger: [450, 234],
-    deployer: [750, 76],
+    planner: [150, 66],
+    builder: [150, 198],
+    tester: [450, 66],
+    debugger: [450, 198],
+    deployer: [750, 66],
   },
   bends: {
     "planner-tester": -gentle,
