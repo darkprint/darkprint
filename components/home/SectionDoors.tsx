@@ -130,7 +130,7 @@ export function SectionDoors() {
             rationed to one per page or per full-bleed band. */}
         <div className="flex flex-col items-center text-center">
           <h2 className="max-w-3xl font-display text-4xl font-semibold leading-tight tracking-tight text-blueprint-ink sm:text-5xl">
-            Read one, or build one
+            Read one, or design one
           </h2>
         </div>
 
@@ -151,7 +151,18 @@ export function SectionDoors() {
 
           {/* `line="Three choices, and a blueprint that downloads to your machine."` stood
               here and came out with the two captions below, on the author's instruction. */}
-          <Door title="Build your own" href="/build" cta="Open the workspace">
+          {/* "Design your own", not "Build your own", and the heading above says "design"
+              for the same reason: `/build`'s own `h1` and its nav row have said "Design a
+              blueprint" since the route was renamed, and a door promising to BUILD one that
+              opens on a page offering to DESIGN one is the site using two verbs for one act.
+              Design is also the truer of the two here — what a reader leaves with is a
+              specification, and nothing on that page runs anything.
+
+              The call to action is "Components of a blueprint" rather than "Open the
+              workspace" on the author's instruction. "Workspace" named the furniture; the
+              new line names what is inside it, which is what a reader is deciding whether
+              to click for. */}
+          <Door title="Design your own" href="/build" cta="Components of a blueprint">
             {/* `<Figures items={PATH} />` — 3 choices, 80 combinations, 1 bundle — stood
                 here until 2026-08-07, when the author asked it out.
 

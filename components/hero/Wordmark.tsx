@@ -507,8 +507,12 @@ export function Wordmark() {
         <ButtonLink href="/blueprints" variant="primary" size="lg">
           Browse the blueprints
         </ButtonLink>
+        {/* "Design your own". The route's `h1`, its nav row and beat 5's door all say
+            "design"; this button was the last surface still saying "build", and one act
+            wearing two verbs across a single scroll is the reader's problem, not the
+            copy's. */}
         <ButtonLink href="/build" variant="outline" size="lg">
-          Build your own
+          Design your own
         </ButtonLink>
       </div>
 

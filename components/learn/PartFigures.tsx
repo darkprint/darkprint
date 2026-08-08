@@ -362,10 +362,32 @@ function Field({
   value,
   tone = "fg",
   stage = false,
+  hint,
 }: {
   name: string;
   value: string;
   tone?: "fg" | "signal";
+  /**
+   * A second line under the value, in the sheet's own dim, at the reading face.
+   *
+   * The author, 2026-08-08: "why did u not modify 'acceptance-criteria' of the cannot in
+   * something more clear?"
+   *
+   * Because it is not a label anything here wrote. `PartFigures`' own header states the
+   * rule the whole file is held to — "a card with invented fields in it would be the one
+   * thing this page cannot afford" — and `acceptance-criteria` is a data type in the
+   * ontology, read off `content/cards/code-builder@1.0.0.yaml`. It is the term the resolver
+   * ENFORCES: draw an edge carrying it into this node and the bundle fails with
+   * `bundle/prohibition-violated`. Rewriting it in the drawing would make the picture
+   * disagree with the file on the one beat whose entire claim is that the two are the same
+   * thing, and it would name a prohibition the engine does not hold.
+   *
+   * The clear wording exists and is already in the archive. That card's `cannot` has two
+   * entries — the term, then "read the checks the work will be run against" — so the fix is
+   * to print the second one under the first rather than to invent a third. Nothing typed,
+   * and a reader gets both the rule and what it means.
+   */
+  hint?: string;
   /**
    * Drawn at the landing's size rather than beside prose.
    *
@@ -379,18 +401,32 @@ function Field({
   return (
     <div
       className={cx(
-        "flex items-baseline gap-3 font-mono leading-[1.9]",
+        "flex gap-3 font-mono leading-[1.9]",
+        // `items-baseline` while the row is one line; `items-start` once a value can carry a
+        // gloss under it, because a two-line value baseline-aligned to its label drops the
+        // label to the SECOND line and the row reads as belonging to the gloss.
+        hint === undefined ? "items-baseline" : "items-start",
         stage ? "text-[14px]" : "text-[11px]",
       )}
     >
       <span className={cx("shrink-0 text-dim", stage ? "w-[4.6rem]" : "w-[3.6rem]")}>
         {name}
       </span>
-      <span
-        className={`truncate ${tone === "signal" ? "text-signal" : "text-fg"}`}
-        title={value}
-      >
-        {value}
+      <span className="min-w-0">
+        <span
+          className={cx("block truncate", tone === "signal" ? "text-signal" : "text-fg")}
+          title={value}
+        >
+          {value}
+        </span>
+        {hint !== undefined && (
+          /* One step down in size and in the sheet's dim, so it reads as a gloss on the
+             line above rather than as a second value. Not `font-mono`'s job — it is a
+             sentence, and the card's mono is for what the file literally says. */
+          <span className="mt-0.5 block truncate font-sans text-[13px] leading-snug text-dim">
+            {hint}
+          </span>
+        )}
       </span>
     </div>
   );
@@ -523,11 +559,17 @@ export function CardStackFigure({
           {output !== undefined && (
             <Field name="out" value={`${output.name} : ${output.type}`} stage={stage} />
           )}
+          {/* The prohibition, and — on the stage card, which has the width for it — the
+              card's own plain-English gloss on it under the term. See `Field`'s `hint` for
+              why the term itself is left exactly as the file writes it. `inline` stays one
+              line: at 19rem beside a column of prose there is no room, and the page it
+              draws on spends a whole part explaining this field in its own prose. */}
           <Field
             name="cannot"
             value={card.cannot[0] ?? "nothing declared"}
             tone="signal"
             stage={stage}
+            hint={stage ? card.cannot[1] : undefined}
           />
         </div>
       </div>

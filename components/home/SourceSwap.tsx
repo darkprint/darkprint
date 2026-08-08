@@ -34,6 +34,7 @@
    ============================================================ */
 
 import { cx } from "@/lib/format";
+import { useReveal } from "@/components/viz/useReveal";
 import { clamp01, useScrollProgress } from "@/components/viz/useScrollProgress";
 
 /**
@@ -161,25 +162,45 @@ export function SourceSwap({
         } as const)
       : undefined;
 
-  /* There from the first sight of the figure, gone once the file has arrived.
+  /* In as the heading starts to leave, out once the file has arrived.
      ------------------------------------------------------------
-     The author, with a screenshot of the section just after it comes into view — heading,
-     lead, drawing, nothing else: "make the 'Keep scrolling and the drawing becomes the file
-     it is drawn from.' appears before like when the page is as this."
+     The author: make the line appear "once the text 'The drawing / This is a blueprint /
+     Which agents run…' start to go up."
 
-     That state is progress ZERO. `useScrollProgress` clamps to 0 until the wrapper's top
-     passes the top of the viewport, so every frame of the section's approach — including
-     the one in the screenshot — reports the same 0, and a fade-in keyed on progress cannot
-     start during it. The line had a ramp from 0.02 and was therefore invisible for exactly
-     the pixels it was being asked to speak for.
+     ── Why this cannot come from `progress` ──
+     That moment is progress ZERO. `useScrollProgress` reports 0 for the whole of a
+     section's approach and only starts counting once the wrapper's top passes the top of
+     the viewport — which, with the heading and the section's own padding above it, is a
+     good 260px AFTER the heading has gone. So the entire window this instruction is about
+     is a single clamped value, and no ramp on it can fire inside the window. The two
+     previous attempts are both explained by that one fact: a ramp from 0.02 put the line
+     in far too late, and removing the ramp put it in from the section's first pixel.
 
-     So there is no in-ramp. The hint is at full opacity the moment the box is on screen at
-     all, which is the moment the drawing is, and the only thing scroll does to it is take it
-     away. That is not the deck sentence the author struck earlier: it lives in the pinned
-     box beside the figure, not under the heading, and it leaves.
+     ── The signal that does exist ──
+     `useReveal` is an IntersectionObserver, so it answers a question about POSITION rather
+     than about pin travel, and it is already this codebase's answer to "has this risen far
+     enough to speak". `margin` shrinks the root's bottom edge upward, so `shown` turns true
+     when the box's top crosses that line rather than when it first appears: -42% puts the
+     line at 58% of the viewport, which at 950px is the box's top reaching 551px. Measured
+     against the section's own geometry, the heading is a third of the way off the top of
+     the screen at that point — going, and not yet gone.
 
-     It goes once the file has arrived, because by then it is describing the past. */
-  const hintOpacity = 1 - ramp(progress, SOURCE_IN.to, SOURCE_IN.to + 0.10);
+     `amount: 0` because what matters is the box's TOP crossing the line; the default 0.25
+     would wait for a quarter of a 460px figure to be inside it, which is most of the way
+     to the pin.
+
+     ── The static state, which is the reason `useReveal` and not a raw observer ──
+     It returns `shown: true` on the server, without JS and under reduced motion, so the
+     prerendered markup carries the sentence at full opacity and `beats.test.ts`'s rule that
+     nothing on the landing may ship hidden holds without an exception.
+
+     The out is unchanged: it goes once the file has arrived, because by then it is
+     describing the past. */
+  const { ref: hintRef, shown: hintIn } = useReveal<HTMLParagraphElement>({
+    amount: 0,
+    margin: "0px 0px -42% 0px",
+  });
+  const hintOpacity = (hintIn ? 1 : 0) * (1 - ramp(progress, SOURCE_IN.to, SOURCE_IN.to + 0.10));
 
   return (
     <div ref={ref} className={cx(motion && "lg:h-[300vh]", className)}>
@@ -243,7 +264,12 @@ export function SourceSwap({
              opacity moves. `aria-hidden` is deliberately not set: it is a real sentence a
              screen reader should hear, and without motion it simply reads as a caption. */
           <p
-            className="mb-4 text-center text-sm leading-relaxed text-dim"
+            ref={hintRef}
+            /* A transition, because the in edge is a boolean rather than a ramp: the fade
+               out is scroll-driven and continuous, the fade in is one state change, and
+               without this it would snap. 500ms is the site's own `duration-500`, which is
+               what `CardWalk`'s reel already eases on. */
+            className="mb-4 text-center text-sm leading-relaxed text-dim transition-opacity duration-500"
             style={motion ? { opacity: hintOpacity } : undefined}
           >
             {hint}

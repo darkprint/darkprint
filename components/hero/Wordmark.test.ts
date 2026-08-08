@@ -52,7 +52,7 @@ describe("Wordmark", () => {
     expect(html).toContain('href="/build"');
     const text = plainText(html);
     expect(text).toContain("Browse the blueprints");
-    expect(text).toContain("Build your own");
+    expect(text).toContain("Design your own");
   });
 
   /**

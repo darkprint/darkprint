@@ -50,31 +50,63 @@ import { CardWalk } from "./nodecard/CardWalk";
 const CARD_REF = "code-builder@1.0.0";
 
 /**
- * The card without its `notes` block.
+ * Top-level keys this beat does not show.
  *
- * The author asked it off this beat (2026-08-08). It is a nine-line paragraph arguing doc 1
- * §3.2 — what isolation looks like on a card, the 3-gram Jaccard similarity against
+ * `notes` went first (2026-08-08): a nine-line paragraph arguing doc 1 §3.2 — what
+ * isolation looks like on a card, the 3-gram Jaccard similarity against
  * `spec-planner@1.0.0` measured at 0.0356 against a 0.35 threshold, and what
- * `bundle/prohibition-violated` fires on. Every word of it is true and it stays in the file
- * and on `/nodes/code-builder`, where a reader is studying one card.
+ * `bundle/prohibition-violated` fires on. Every word of it is true, it stays in the file
+ * and on `/nodes/code-builder`, and a third of the listing being a footnote about a
+ * similarity metric is the reference arriving inside the introduction.
  *
- * It does not belong here. This beat says "every node is a card" and shows one; a third of
- * the listing being a footnote about a similarity metric is the reference arriving inside
- * the introduction, and it was the single tallest thing in the walk.
+ * The other five went the same day, on the same instruction: "remove from the yaml of the
+ * card in the home page the fields requires_human, risk_markers, version, author,
+ * ontology_version as they are unuseful details here to show to the user."
  *
- * A block scalar, so the value is the indented run under the key rather than the rest of
- * the line: the filter drops the `notes:` line and every line indented under it, stopping
- * at the first line that starts in column zero. `resolveAnnotations` re-derives its parts
- * from whatever it is handed, so the walk renumbers itself rather than pointing at lines
- * that moved.
+ * They are the card's METADATA, and this beat is not about a card's metadata. Two of them
+ * are empty or false, `version` is already printed in the figure's own header and in the
+ * rail above the listing, and `author` and `ontology_version` are provenance — real, worth
+ * having, and the business of `/nodes/[...id]`, where a reader is deciding whether to trust
+ * a card rather than learning what one is.
+ *
+ * Nothing annotated is at risk: `annotations.ts` anchors its nine runs on `id`/`name`/
+ * `type`/`phase`, `action`, `spec`, `model`, `tools`/`mcp`, `skill`, `inputs`, `outputs`
+ * and `cannot`, and not one of these six is among them. The last run ends at `cannot`, and
+ * all six sit below it.
  */
-function withoutNotes(card: string): string {
-  const lines = card.split("\n");
-  const at = lines.findIndex((line) => /^notes:/.test(line));
-  if (at === -1) return card;
-  let end = at + 1;
-  while (end < lines.length && (lines[end].trim() === "" || /^\s/.test(lines[end]))) end += 1;
-  return [...lines.slice(0, at), ...lines.slice(end)].join("\n").trimEnd();
+const HIDDEN_KEYS = [
+  "notes",
+  "requires_human",
+  "risk_markers",
+  "version",
+  "author",
+  "ontology_version",
+] as const;
+
+/**
+ * The card with those keys, and anything indented under them, taken out.
+ *
+ * Block scalars and lists are why the value is "the indented run under the key" rather than
+ * "the rest of the line": `notes:` is a `>-` block and `risk_markers:` could hold a list, so
+ * the filter drops the key's line and every line indented under it, stopping at the first
+ * line that starts in column zero. `resolveAnnotations` re-derives its parts from whatever
+ * it is handed, so the walk renumbers itself and re-marks its lines rather than pointing at
+ * lines that moved.
+ *
+ * Trailing blank lines collapse so the file does not end in the holes the removals left —
+ * five of the six are consecutive at the foot of this card, and without it the listing
+ * closed on four empty rows.
+ */
+function withoutKeys(card: string, keys: readonly string[]): string {
+  let lines = card.split("\n");
+  for (const key of keys) {
+    const at = lines.findIndex((line) => new RegExp(`^${key}:`).test(line));
+    if (at === -1) continue;
+    let end = at + 1;
+    while (end < lines.length && (lines[end].trim() === "" || /^\s/.test(lines[end]))) end += 1;
+    lines = [...lines.slice(0, at), ...lines.slice(end)];
+  }
+  return lines.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd();
 }
 
 export function SectionNodeIsCard() {
@@ -119,7 +151,7 @@ export function SectionNodeIsCard() {
           <CardWalk
             /* The trailing newline every file on disk ends with would render as a blank
                line 53 under a 52-line card, and would count in the walk's arithmetic. */
-            source={withoutNotes(source)}
+            source={withoutKeys(source, HIDDEN_KEYS)}
             cardRef={CARD_REF}
             card={card}
           />
