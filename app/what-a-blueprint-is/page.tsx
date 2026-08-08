@@ -379,19 +379,10 @@ const BUNDLE_FILES: readonly { name: string; role: string }[] = [
  * makes them a path rather than a menu — they are in `SPEC_LAYERS` order, numbered, and the
  * pager directly below carries a reader into the same sequence.
  */
-/**
- * What the header and the footer call these three routes.
- *
- * Keyed by href rather than imported from `SiteHeader`'s `NAV`, which is a `"use client"`
- * module: pulling a constant out of it would drag the header's whole client boundary into
- * this server page for three strings. `nav.test.ts` holds the header and the footer to one
- * label per route and this table is the third copy; if it drifts, the fix is here.
- */
-const NAV_TITLE: Record<string, string> = {
-  "/spec/topology": "The blueprint file (DOT)",
-  "/spec/card": "The node card (YAML)",
-  "/spec/ontology": "The vocabulary",
-};
+/* `NAV_TITLE` stood here: a third copy of the three routes' names, so the cards could print
+   what the header and the footer print while `SPEC_LAYERS.title` still held each page's own
+   `h1`. Those titles ARE the nav names now (`components/spec/sequence.ts`), so the table has
+   nothing left to bridge and `layer.title` is the one string again. */
 
 function WhereNext() {
   return (
@@ -435,13 +426,8 @@ function WhereNext() {
                     {layer.format}
                   </span>
                 </span>
-                {/* `NAV_TITLE`, not `layer.title`. The author renamed these three in the
-                    Learn menu and the footer on 2026-08-08 — "The blueprint file (DOT)" and
-                    its two siblings — and a card here still saying "The topology, in DOT"
-                    would be the fourth name for one route on a site whose `nav.test.ts`
-                    allows one. `layer.title` is the page's own `h1` and stays that. */}
                 <span className="text-[15px] font-medium leading-snug text-fg transition-colors group-hover:text-amber-bright">
-                  {NAV_TITLE[layer.href] ?? layer.title} <span aria-hidden>&rarr;</span>
+                  {layer.title} <span aria-hidden>&rarr;</span>
                 </span>
               </Link>
             </li>

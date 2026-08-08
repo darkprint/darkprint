@@ -358,41 +358,26 @@ export function SectionLifecycle() {
             panel's right border, the end of "executes it for you." and part of both
             honesty disclosures were simply off the phone. `components/home/beats.test.ts`
             holds the floor now. */}
+        {/* TWO bands, not one grid, since 2026-08-08. The author: "I want first of all the
+            Learning box and right after the Assisted design … below place a new section that
+            contains Download, Connect and Upload. Make the three fit in the same line."
+
+            The split is a real distinction and one grid was hiding it. The first pair is how
+            a reader COMES TO HAVE a blueprint — read what one is, or have a skill interview
+            them into one — and the second is what they and their machine then DO with one.
+            The old order opened on Download, which is taking a folder before the section has
+            said what is in it.
+
+            ── What the reorder costs, on the record ──
+            The rule that spanned the grid, labelled "Next, and not built yet", is gone:
+            Download ships and Connect and Upload do not, so no single rule can group the
+            second band. Nothing about the honesty goes with it. Each of those two panels
+            carries its own `NotBuiltYet` badge and its own sentence naming what is missing —
+            "The server is not built yet, so this is what the setup will look like", and
+            Upload's — both verbatim and both held by `components/home/beats.test.ts`. The
+            rule was a second telling; the badges are the first, and per-panel is the
+            stronger placement for a limit anyway. */}
         <div className="mt-10 grid gap-5 md:grid-cols-2">
-          {/* ---------- 01 · download ---------- */}
-          {/* Half a row, not the whole one. It spanned both columns when it held a
-              five-row file listing beside a column of prose — "the one capability that
-              ships in full is the widest object here". The listing is a folder now, and a
-              104px folder centred in a full-width panel is 900px of empty sheet. Download
-              and Teaching are the two that ship, they are the same size, and they sit side
-              by side above the rule. */}
-          <article className="panel flex min-w-0 flex-col gap-4 p-5">
-            <PanelHeading index="01" title="Download" mark="↓" />
-
-            {/* The listing became a folder you open (2026-08-07, the author: "for the
-                download box remove all the details and add the components
-                https://reactbits.dev/components/folder where on mouse over appears 3
-                files"). What stood here was a five-row `Artefact` beside a column of
-                prose; both are gone and `components/home/lifecycle/Folder.tsx` carries the
-                same four filenames on its three papers.
-
-                `ComposeHint` and the link stayed, and neither is a "detail" in the sense
-                the instruction meant. The hint is a claim the author asked for by name in
-                an earlier pass — "compose should be a hint not a per se box" — and
-                `beats.test.ts` holds both its words and its position above the unbuilt
-                rule; the link is the panel's only way out. Removing either needs its own
-                instruction. */}
-            <Folder />
-
-            <div className="flex min-w-0 flex-col gap-3">
-              <ComposeHint />
-
-              <Link href={`${STARTER}#download`} className={linkCls}>
-                Take the starter folder
-              </Link>
-            </div>
-          </article>
-
           {/* ---------- 02 · teaching ----------
               The author asked for a fourth panel "named teaching where there is an image of
               a teacher referring to the fact that there is a skill (DarkPrint skill) that
@@ -422,7 +407,7 @@ export function SectionLifecycle() {
                 finally says what it draws.
 
                 The skill it used to point at is the panel directly after this one. */}
-            <PanelHeading index="02" title="Learning" mark="✎" />
+            <PanelHeading index="01" title="Learning" mark="✎" />
 
             <TeacherFigure />
 
@@ -454,7 +439,7 @@ export function SectionLifecycle() {
               graph is unfinished — that is the whole difference between this drawing and
               `TeacherFigure` beside it. */}
           <article className="panel flex min-w-0 flex-col gap-4 p-5">
-            <PanelHeading index="03" title="Assisted design" mark="✦" />
+            <PanelHeading index="02" title="Assisted design" mark="✦" />
 
             <AssistFigure />
 
@@ -469,19 +454,45 @@ export function SectionLifecycle() {
               Install the skill
             </Link>
           </article>
+        </div>
 
-          {/* ---------- the line the working capability ends at ----------
-              One rule, one label, spanning both columns, so the pair below it is read as a
-              group with a shared state rather than as two panels each carrying a warning.
-              It is a `.label` and not a heading: `app/globals.css` records that a mono
-              uppercase run is a label, and a label is not a heading level — this names a
-              condition the next two panels share, it does not open a sub-section of the
-              document outline. Spacing: the grid's own `gap-5` plus `mt-5` puts a block
-              tier (40px) above the rule, and `pt-3` keeps the label tight under it so it
-              reads as the rule's caption rather than as the next panel's own eyebrow. */}
-          <div className="mt-5 border-t border-line pt-3 md:col-span-2">
-            <span className="label">Next, and not built yet</span>
-          </div>
+        {/* Three across at `lg`, two at `md`, one below. `lg` and not `md`: these three carry
+            the widest monospace rows in the section, and a 342px track at `md` is the width
+            `min-w-0` was added to survive rather than one to design three columns for. */}
+        <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {/* ---------- 01 · download ---------- */}
+          {/* Half a row, not the whole one. It spanned both columns when it held a
+              five-row file listing beside a column of prose — "the one capability that
+              ships in full is the widest object here". The listing is a folder now, and a
+              104px folder centred in a full-width panel is 900px of empty sheet. Download
+              and Teaching are the two that ship, they are the same size, and they sit side
+              by side above the rule. */}
+          <article className="panel flex min-w-0 flex-col gap-4 p-5">
+            <PanelHeading index="03" title="Download" mark="↓" />
+
+            {/* The listing became a folder you open (2026-08-07, the author: "for the
+                download box remove all the details and add the components
+                https://reactbits.dev/components/folder where on mouse over appears 3
+                files"). What stood here was a five-row `Artefact` beside a column of
+                prose; both are gone and `components/home/lifecycle/Folder.tsx` carries the
+                same four filenames on its three papers.
+
+                `ComposeHint` and the link stayed, and neither is a "detail" in the sense
+                the instruction meant. The hint is a claim the author asked for by name in
+                an earlier pass — "compose should be a hint not a per se box" — and
+                `beats.test.ts` holds both its words and its position above the unbuilt
+                rule; the link is the panel's only way out. Removing either needs its own
+                instruction. */}
+            <Folder />
+
+            <div className="flex min-w-0 flex-col gap-3">
+              <ComposeHint />
+
+              <Link href={`${STARTER}#download`} className={linkCls}>
+                Take the starter folder
+              </Link>
+            </div>
+          </article>
 
           {/* ---------- 03 · connect ---------- */}
           <article className="panel flex min-w-0 flex-col gap-4 p-5">

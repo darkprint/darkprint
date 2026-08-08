@@ -158,14 +158,33 @@ export const SPEC_OVERVIEW: SpecPage = {
   question: "What a blueprint is for, and the three files one is written in.",
 };
 
-/** The three layers, in the order a reader resolves them: graph, card, vocabulary. */
+/**
+ * The three layers, in the order a reader resolves them: graph, card, vocabulary.
+ *
+ * ── `title` is the site's name for the route, not a headline ──
+ * Renamed on 2026-08-08. They were "The topology, in DOT", "The node card, in YAML" and
+ * "The ontology, the vocabulary both draw from" — three sentences, each a good `h1` and none
+ * of them the words the header and the footer use. The author asked the page titles to match
+ * the Learn menu, and the pager's arrows with them: a NEXT box reading "The ontology, the
+ * vocabulary both draw from" beside a menu row reading "The vocabulary" is two names for one
+ * destination on one screen.
+ *
+ * This field feeds three surfaces, which is why one edit fixes all of them: each page's `h1`
+ * (`title={page.title}`), both `SpecPager` arrows, and the three cards at the foot of
+ * `/what-a-blueprint-is`. `nav.test.ts` requires one label per route and the site now has
+ * one, so `NAV_TITLE` — the third copy that page carried to bridge the gap — is deleted with
+ * this change rather than left to drift.
+ *
+ * `question` is what the old titles were really doing: naming the file is the title's job,
+ * saying what the file answers is the question's, and they were sharing the work.
+ */
 export const SPEC_LAYERS: readonly SpecLayerPage[] = [
   {
     href: "/spec/topology",
     step: "01",
     nav: "Topology",
     eyebrow: "Layer 01 of 03",
-    title: "The topology, in DOT",
+    title: "The blueprint file (DOT)",
     question: "Which nodes exist, and what flows between them.",
     format: "DOT",
     file: "blueprint.dot",
@@ -178,7 +197,7 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
     step: "02",
     nav: "Node card",
     eyebrow: "Layer 02 of 03",
-    title: "The node card, in YAML",
+    title: "The node card (YAML)",
     question: "What one node is, in enough detail to instantiate it.",
     format: "YAML, JSON accepted",
     file: "cards/id@version.yaml",
@@ -191,7 +210,7 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
     step: "03",
     nav: "Ontology",
     eyebrow: "Layer 03 of 03",
-    title: "The ontology, the vocabulary both draw from",
+    title: "The vocabulary",
     question: "Which identifiers the first two are allowed to use.",
     format: "a versioned term list",
     file: "ontology/extensions.yaml",

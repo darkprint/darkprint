@@ -466,9 +466,25 @@ describe("beat 4 leads with what ships and states what does not", () => {
     expect(at("Connect")).toBeLessThan(at("Upload yours"));
   });
 
-  it("labels the unbuilt pair once, between the two groups", () => {
-    expect(at("Compose")).toBeLessThan(at("Next, and not built yet"));
-    expect(at("Next, and not built yet")).toBeLessThan(at("Connect"));
+  /*
+   * "labels the unbuilt pair once, between the two groups" stood here and asserted the
+   * shared rule — "Next, and not built yet" — sat after Compose and before Connect.
+   *
+   * The author split this beat into two bands on 2026-08-08: Learning and Assisted design,
+   * then Download, Connect and Upload three across. Download ships and the two beside it do
+   * not, so no single rule can group the second band, and the rule is gone.
+   *
+   * The case is REPLACED rather than deleted, because what it was really protecting is the
+   * limit and not the rule. Each unbuilt panel carries its own `NotBuiltYet` badge and its
+   * own sentence; the sentences are asserted verbatim two cases down, and this now asserts
+   * that neither panel lost its badge. Per-panel is the stronger placement for a limit —
+   * a rule labels a region a reader has to still be inside to benefit from.
+   */
+  it("badges each unbuilt panel, now that no rule groups them", () => {
+    expect(words).not.toContain("Next, and not built yet");
+    // `NotBuiltYet` renders this string; two panels carry it and nothing else does.
+    const badges = [...words.matchAll(/not built yet/gi)].length;
+    expect(badges, "Connect and Upload should each carry a badge").toBeGreaterThanOrEqual(2);
   });
 
   it("keeps both disclosures verbatim, in the open, beside their panels", () => {
@@ -553,12 +569,15 @@ describe("beat 4 keeps the compose claim, as a hint inside Download", () => {
     expect(words).toContain("drop a card into a pipeline");
   });
 
-  it("keeps it above the unbuilt rule, where what ships is", () => {
+  it("keeps it ahead of both unbuilt panels, where what ships is", () => {
+    /* Was: above the shared "Next, and not built yet" rule, which is gone with the two-band
+       split (see the case that replaced it). The claim is the same one — the hint belongs on
+       the side of this beat that works — and it is asserted against the two panels
+       themselves rather than against a label that used to stand between them. */
     const compose = words.indexOf("A DOT file is text.");
-    const rule = words.indexOf("Next, and not built yet");
     expect(compose, "the compose hint is not in beat 4").toBeGreaterThan(0);
-    expect(rule, "the unbuilt rule is not in beat 4").toBeGreaterThan(0);
-    expect(compose).toBeLessThan(rule);
+    expect(compose).toBeLessThan(words.indexOf("Connect"));
+    expect(compose).toBeLessThan(words.indexOf("Upload yours"));
   });
 
   it("is no longer a panel of its own", () => {
