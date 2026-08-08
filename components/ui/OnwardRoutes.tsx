@@ -149,11 +149,26 @@ export function OnwardRoutes({
       <p className="label">{label}</p>
       {/* A row of signposts, not a two-column grid: the boxes are content-sized now.
           `flex-wrap` because three of these would otherwise run off a narrow tablet. */}
-      <div className="flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap">
-        {routes.map((route) => (
+      {/* `sm:flex-nowrap` and no `flex-wrap`, so `ms-auto` on the last box has a line to
+          push against: with wrapping on, a NEXT pushed right can end up alone on a second
+          line at a width where both would have fitted. Two boxes of this size never need to
+          wrap above `sm`, and below it the row is a column anyway. */}
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-start">
+        {routes.map((route, i) => (
           <RouteBoxLink
             key={route.href}
             href={route.href}
+            /* The forward box sits at the row's right end, which is what `SpecPager` does
+               with its own NEXT and what the author asked for here: "move the button next on
+               the right part of the page as we did for the other previous pages."
+
+               `ms-auto` on the LAST box rather than on any `next`, so a lone forward box —
+               `/towards-a-dark-factory` has one and no PREVIOUS — stays at the left margin
+               where a single signpost belongs, instead of drifting to the far edge with
+               nothing to be opposite. */
+            className={cx(
+              route.direction === "next" && i > 0 && "sm:ms-auto sm:text-right",
+            )}
             /* A word, not the path.
                ------------------------------------------------------------
                The author, of the version that printed `route.href` here: "remove the text

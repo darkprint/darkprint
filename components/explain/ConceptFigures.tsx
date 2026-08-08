@@ -386,22 +386,44 @@ export function GuardrailShape() {
     <figure className="flex flex-col gap-4 rounded-xl border border-line bg-surface/70 p-5 sm:p-6">
       <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <span className="label">Three places a constraint can sit</span>
-        <span className="text-[13px] text-muted">
-          Input, logic, output: the order a value moves through one node.
-        </span>
+        {/* "Input, logic, output: the order a value moves through one node." stood here and
+            the author asked it out. It was reciting the three band labels down the left of
+            the figure, in the order they are already in, four pixels below itself.
+
+            REMOVED TWICE, which is worth recording: it went once and came back with a
+            `git checkout` that reverted this file to recover from a bad splice, and the
+            revert was not re-inspected. The lesson is the recovery, not the sentence. */}
       </figcaption>
 
       <div className="flex flex-col gap-3">
-        {/* The two column heads stood here as one row, hidden below `sm`. They are
-            per-cell now and printed at every width rather than one row hidden below `sm`.
+        {/* One head per column, centred over it, since 2026-08-08. The author: take the
+            two labels out of the boxes and place them "aligned centered over" their column.
 
-            That is what let the two columns come BACK on 2026-08-08 — the author asked for
-            orange left and green right "as before". Stacking them was my fix for the heads
-            wrapping unevenly once they became two moments, and it solved that by giving up
-            the comparison the figure exists to make: a reader reads DOWN one column for what
-            a file can promise and down the other for what a runner does. Per-cell heads fix
-            the wrapping where it belongs, since neither has to share a baseline with the
-            other. */}
+            They were per-cell for one revision — repeated on every band — which was my fix
+            for the two heads wrapping unevenly once they became two moments. Repeating a
+            label three times to keep two labels from wrapping is the wrong trade: it puts
+            the same eleven words in the figure six times, and the attribution stops reading
+            as a column head and starts reading as part of each cell.
+
+            Centred is what makes one row work at the new lengths. Left-aligned, a
+            48-character head over a 1fr column and a 26-character head over its sibling sat
+            on one baseline with a ragged right; centred, each is symmetric in its own track
+            and the pair reads as two captions rather than as a broken table row.
+
+            Printed at every width now, not `hidden sm:grid`: the cells no longer carry a
+            copy for the stacked layout to fall back on, so hiding these would leave a phone
+            reader with two unattributed columns. Below `sm` the grid collapses and the heads
+            sit directly over their own boxes, which is the same relation. */}
+        <div className={BAND_GRID}>
+          <span aria-hidden className="hidden sm:block" />
+          <span className="label block text-copper-line sm:text-center">
+            Static · written in the bundle
+          </span>
+          <span className="label mt-4 block text-emerald sm:mt-0 sm:text-center">
+            At run time · an example of what your harness does with it
+          </span>
+        </div>
+
         {GUARDRAIL_BANDS.map((row, i) => (
           <div
             key={row.band}
@@ -422,7 +444,6 @@ export function GuardrailShape() {
                 frame nobody has to tell apart from its neighbour, is 2.20 and would
                 have left the one distinction this drawing rests on under the floor. */}
             <p className="flex flex-col gap-1 rounded border border-copper-line/55 bg-surface-2 px-3 py-2 text-[13px] leading-snug text-muted">
-              <span className="label text-copper-line">Static · written in the bundle</span>
               <span>{row.bundle}</span>
             </p>
             {/* Shorter than the column head above it, and still possessive. The head's
@@ -445,15 +466,6 @@ export function GuardrailShape() {
                 other at 40 and 55 — 3.24:1 against 3.19:1, both past the 3:1 a non-text
                 boundary owes. Matched weight rather than matched number. */}
             <p className="flex flex-col gap-1 rounded border border-emerald/40 bg-surface-2 px-3 py-2 text-[13px] leading-snug text-muted">
-              {/* Emerald, on the author's instruction: "the text … write in a shade of
-                  green." It widens the token honestly — `app/globals.css` reserves emerald
-                  for "a figure read off the engine", and this is what a RUNNER does at run
-                  time, the same register one step out. It is NOT amber, which means "not
-                  built yet" and would read as a promise to ship a harness. 11.6:1 on this
-                  figure's ground. */}
-              <span className="label text-emerald">
-                At run time · an example of what your harness does with it
-              </span>
               <span>{row.harness}</span>
             </p>
           </div>

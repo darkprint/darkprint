@@ -252,7 +252,11 @@ export default function TowardsPage() {
             routes={[
               {
                 href: "/reading-the-radar",
-                direction: "next",
+                /* "Previous", not "Next", on the author's instruction. The Learn menu runs
+                   what a blueprint is, design one, how one is graded, then this page — so
+                   `/reading-the-radar` is behind a reader who got here, and a lone forward
+                   arrow pointing at it would send them back up the path they walked. */
+                direction: "previous",
                 label: "How a blueprint is graded",
                 blurb: "Where the autonomy reading the ladder above describes is computed.",
               },
