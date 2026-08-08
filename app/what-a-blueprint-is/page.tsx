@@ -533,7 +533,13 @@ export default function WhatABlueprintIsPage() {
                 also reads "hover to open" rather than naming all three gestures — the
                 author asked for the short line, and the component still opens on focus and
                 on click, so nothing a keyboard or a touch reader can do has gone. */}
-            <div className="flex justify-center lg:justify-start">
+            {/* `justify-center` at every width, not `lg:justify-start`. The author asked the
+                folder "more on the right, to be in the middle between the text on the right
+                and the left limit" — which is what centring it in its own 20rem track does:
+                left-aligned it sat against the container's edge with 250px of nothing between
+                it and the list, and the drawing read as an orphan rather than as the list's
+                subject. */}
+            <div className="flex justify-center">
               <Folder label="Bundle" caption="hover to open" />
             </div>
 

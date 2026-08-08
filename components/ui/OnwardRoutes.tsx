@@ -110,6 +110,22 @@ export interface OnwardRoute {
    * field goes with the last of them.
    */
   blurb?: string;
+  /**
+   * Which way this box points, and therefore which word it wears.
+   *
+   * The author, 2026-08-08: a `/build` reader should meet "← Previous · The vocabulary" on
+   * the left and "Next → · How a blueprint is graded" on the right, and the same on
+   * `/reading-the-radar` and `/towards-a-dark-factory`.
+   *
+   * The note below argued "Read" on the grounds that these are parallel destinations rather
+   * than a sequence. That was true of a row of two unrelated exits and it is not true of
+   * these three pages: each row is now a detail behind and a step forward, which is exactly
+   * the relation `SpecPager` spells PREVIOUS and NEXT. One vocabulary for one gesture across
+   * the site beats a second one that only these boxes use.
+   *
+   * `"read"` stays the default so a genuinely parallel pair keeps the old word.
+   */
+  direction?: "previous" | "next" | "read";
 }
 
 export function OnwardRoutes({
@@ -147,13 +163,23 @@ export function OnwardRoutes({
 
                A path is an address, and an address is not what a reader is deciding between.
                The title underneath already names the destination in words; the label's job is
-               only to say what the box DOES. These are parallel destinations rather than a
-               sequence, so "Read" and not "Next" — next would promise an order that the two
-               or three boxes in this row do not have. */
+               only to say what the box DOES. "Read" was the default on the grounds that these
+               are parallel destinations rather than a sequence; `direction` is how a page
+               that IS a sequence says so, and the three routes that carry one now do. */
             label={
-              <>
-                Read <span aria-hidden>→</span>
-              </>
+              route.direction === "previous" ? (
+                <>
+                  <span aria-hidden>←</span> Previous
+                </>
+              ) : route.direction === "next" ? (
+                <>
+                  Next <span aria-hidden>→</span>
+                </>
+              ) : (
+                <>
+                  Read <span aria-hidden>→</span>
+                </>
+              )
             }
             title={route.label}
           />

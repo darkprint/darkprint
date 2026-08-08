@@ -549,11 +549,13 @@ export default function HowABlueprintIsGradedPage() {
             routes={[
               {
                 href: "/build",
+            direction: "previous",
                 label: "Design a blueprint",
                 blurb: "Three choices, and the scorecard recomputed on every one.",
               },
               {
                 href: "/towards-a-dark-factory",
+            direction: "next",
                 label: "Towards a Dark Factory",
                 blurb: "What the autonomy reading is a reading of, in four levels.",
               },

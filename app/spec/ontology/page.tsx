@@ -379,9 +379,13 @@ export default function SpecOntologyPage() {
             after={
               <RouteBoxLink
                 href="/build"
+                /* "Next", not "Design". It sits on the pager's own row, where the other
+                   box says PREVIOUS, and a row whose two ends read PREVIOUS and DESIGN is
+                   two vocabularies for one gesture. The title under it already says what
+                   the destination is. */
                 label={
                   <>
-                    Design <span aria-hidden>&rarr;</span>
+                    Next <span aria-hidden>&rarr;</span>
                   </>
                 }
                 title="Design your blueprint"

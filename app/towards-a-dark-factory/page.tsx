@@ -252,6 +252,7 @@ export default function TowardsPage() {
             routes={[
               {
                 href: "/reading-the-radar",
+                direction: "next",
                 label: "How a blueprint is graded",
                 blurb: "Where the autonomy reading the ladder above describes is computed.",
               },

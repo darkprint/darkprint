@@ -402,12 +402,25 @@ function Field({
         stage ? "text-[14px]" : "text-[11px]",
       )}
     >
-      <span className={cx("shrink-0 text-dim", stage ? "w-[4.6rem]" : "w-[3.6rem]")}>
+      {/* On the stage card the label takes `blueprint-line` and the value `blueprint-ink`,
+          which is the pole's own label/ink pair and the same two colours `CardNode` uses for
+          a field row. `signal` still overrides the value, because a prohibition is a
+          prohibition on any ground: #ff5470 measures 5.6:1 on the sheet. */}
+      <span
+        className={cx(
+          "shrink-0",
+          stage ? "text-blueprint-line" : "text-dim",
+          stage ? "w-[4.6rem]" : "w-[3.6rem]",
+        )}
+      >
         {name}
       </span>
       <span className="min-w-0">
         <span
-          className={cx("block truncate", tone === "signal" ? "text-signal" : "text-fg")}
+          className={cx(
+            "block truncate",
+            tone === "signal" ? "text-signal" : stage ? "text-blueprint-ink" : "text-fg",
+          )}
           title={value}
         >
           {value}
@@ -499,8 +512,13 @@ export function CardStackFigure({
           aria-hidden
           className="pointer-events-none absolute -inset-10 -z-10 rounded-[2rem]"
           style={{
+            /* The bloom follows the card onto the cyanotype register. Copper was right when
+               the card was a copper-register document; on a blue sheet it reads as a stain.
+               The heading above the figure stays copper — that is the SECTION's register and
+               `globals.css` reserves it for the node card as a subject; this is the card as
+               an object in a graph. */
             background:
-              "radial-gradient(62% 62% at 50% 45%, color-mix(in oklab, var(--color-copper-line) 17%, transparent), transparent 72%)",
+              "radial-gradient(62% 62% at 50% 45%, color-mix(in oklab, var(--color-blueprint-line) 16%, transparent), transparent 72%)",
           }}
         />
       )}
@@ -516,27 +534,46 @@ export function CardStackFigure({
           }}
         />
       ))}
+      {/* The stage card takes the CYANOTYPE register, on the author's instruction, and it
+          took two passes to understand which way the instruction pointed.
+
+          They asked twice for this figure and the little `CardNode` glyph in `RunLayers` to
+          share a look. I read it the first time as "restyle the glyph against the card" and
+          did that; the second time it was the card that was being pointed at. Both readings
+          were available from the words, and the drawing settles it — the glyph sits INSIDE a
+          blueprint, on `bg-blueprint-deep`, and this card is what a reader is told that glyph
+          is. The big one moves to the small one's register, not the other way round: a card
+          drawn on the graph's own paper says it belongs to the graph.
+
+          `inline` keeps `bg-surface`. On `/what-a-blueprint-is` this figure sits beside prose
+          on a neutral band with no graph anywhere near it, and a blue plate there would be a
+          sheet with nothing on it. */}
       <div
         className={cx(
-          "relative rounded-lg border border-line-bright bg-surface",
-          stage ? "px-6 py-5" : "px-4 py-3",
+          "relative rounded-lg border",
+          stage
+            ? "border-blueprint-line/55 bg-blueprint-deep/60 px-6 py-5"
+            : "border-line-bright bg-surface px-4 py-3",
         )}
       >
         <div
           className={cx(
-            "flex items-baseline justify-between gap-2 border-b border-line",
-            stage ? "pb-3" : "pb-2",
+            "flex items-baseline justify-between gap-2 border-b",
+            stage ? "border-blueprint-line/45 pb-3" : "border-line pb-2",
           )}
         >
           <span
-            className={cx("truncate font-mono text-fg", stage ? "text-base" : "text-xs")}
+            className={cx(
+              "truncate font-mono",
+              stage ? "text-base text-blueprint-ink" : "text-xs text-fg",
+            )}
           >
             {card.id}
           </span>
           <span
             className={cx(
-              "shrink-0 font-mono text-dim",
-              stage ? "text-[13px]" : "text-[11px]",
+              "shrink-0 font-mono",
+              stage ? "text-[13px] text-blueprint-line" : "text-[11px] text-dim",
             )}
           >
             v{card.version}

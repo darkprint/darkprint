@@ -299,24 +299,36 @@ export function CardWalk({
      `LIST_IN` above), and the annotations may not begin under it: step 1 attaching to a
      line nobody can see yet is the walk talking over itself.
 
-     0.22 is the crossfade's end plus a little air, so the listing is fully opaque and has
-     been still for a moment before the first head lights. The tail stays 0 for the reason
+     0.44 since the flip slowed on 2026-08-08: the listing now finishes arriving at 0.40, and
+     this is that plus a little air, so it is fully opaque and has been still for a moment
+     before the first head lights. It was 0.22 against a crossfade that ended at 0.22, and
+     leaving it there would have had step 1 attach to a line still turning. The tail stays 0 for the reason
      the note below gives — a tail reserve moves the LAST step earlier, which is the wrong
      direction here. */
-  const shown = motion ? stagesShown(progress, notes.length, { head: 0.22, tail: 0 }) : notes.length;
+  const shown = motion ? stagesShown(progress, notes.length, { head: 0.44, tail: 0 }) : notes.length;
   const active = motion ? Math.min(notes.length, Math.max(1, shown)) - 1 : -1;
   const open = active >= 0 ? notes[active] : undefined;
 
   /* The face goes out, the listing comes in, and they overlap for a twentieth of the pin
      so the swap reads as one thing becoming another rather than as a cut. The hold before
-     the turn starts is 0.08 of a 190vh track — about 75px — which is the least that reads
-     as a card standing still rather than as one already leaving when it arrives. Both are inline
+     the turn starts is 0.08 of a 190vh track, about 75px, which is the least that reads as a
+     card standing still rather than as one already leaving when it arrives.
+
+     The TURN itself is 0.18 of the track and was 0.09, on the author's instruction to make
+     the flip slower. The two windows are 0.08-0.26 and 0.22-0.40, so they overlap by 0.04
+     exactly as they did at the old speed: a first pass used 0.20 windows starting 0.08 apart
+     and overlapped by 0.12, which is a third of the turn spent with both layers half
+     visible. A flip is one object turning, so the overlap is a seam and not a state. At 190vh on a 950px viewport the pin travels 855px, so the card spends
+     171px of scroll rotating rather than 77 — a gesture a reader can follow rather than a
+     cut they catch the end of. The two windows still overlap by a twentieth so the swap
+     reads as one object turning; `stagesShown`'s `head` of 0.22 still clears the listing's
+     arrival at 0.36, which is what stops step 1 attaching to a line nobody can see yet. Both are inline
      opacity applied only once `motion` is confirmed: without it neither layer carries a
      style at all and the two render as ordinary blocks, one under the other, which is what
      the server and a reduced-motion reader get. `beats.test.ts` forbids shipping
      `opacity-0`, and this is why nothing here does. */
-  const faceOpacity = 1 - clamp01((progress - 0.08) / 0.09);
-  const listOpacity = clamp01((progress - 0.13) / 0.09);
+  const faceOpacity = 1 - clamp01((progress - 0.08) / 0.18);
+  const listOpacity = clamp01((progress - 0.22) / 0.18);
   /* The same card flip `SourceSwap` does one beat up, and for the same reason the author
      gave: "the same transition should be also applied below to the node card that becomes
      the yaml". A layer is edge-on exactly when it is invisible, because the turn is tied to

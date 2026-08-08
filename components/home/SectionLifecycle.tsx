@@ -470,9 +470,10 @@ export function SectionLifecycle() {
             The label names what the three below have in common, which is the only reason a
             seam needs one: the two above are how you come to HAVE a blueprint, and these are
             what you and your machine do with one. */}
-        <div className="mt-14 border-t border-line pt-10">
-          <span className="label">What you do with one</span>
-        </div>
+        {/* The rule alone, with no label. "What you do with one" stood here and the author
+            asked it out: the seam is the thing that was missing, and a label naming a group
+            of three panels that each name themselves is a fourth title over three titles. */}
+        <div className="mt-14 border-t border-line" />
 
         {/* Three across at `lg`, two at `md`, one below. `lg` and not `md`: these three carry
             the widest monospace rows in the section, and a 342px track at `md` is the width

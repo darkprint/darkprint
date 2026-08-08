@@ -394,7 +394,11 @@ export default function OntologyPage() {
           <div className="flex flex-col gap-5 px-5 py-5">
             <TermTree kind="node-type" ontology={view} />
             <div className="flex flex-col gap-4 border-t border-line pt-5">
-              <p className="prose-lane text-sm leading-relaxed text-muted">
+              {/* No `.prose-lane` on these two, on the author's instruction 2026-08-08.
+                  The measure governs body prose a reader settles into; these sit directly
+                  under a term tree they are annotating, and a 36rem column beside a
+                  full-width figure reads as a second column rather than as its caption. */}
+              <p className="text-sm leading-relaxed text-muted">
                 A subtype indented under its parent is <Id>broader</Id>&apos;s other end, and
                 the relation is load-bearing: a node typed <Id>human-input</Id> puts a person
                 in the loop because{" "}
@@ -402,7 +406,7 @@ export default function OntologyPage() {
                 only question the autonomy metric asks, not because anybody remembered to
                 tick a flag.
               </p>
-              <p className="prose-lane text-sm leading-relaxed text-muted">
+              <p className="text-sm leading-relaxed text-muted">
                 There are {nodeTypeRoots} roots below, not one. <Id>agent</Id> and{" "}
                 <Id>tool</Id> stand on their own; <Id>human-in-the-loop</Id> and{" "}
                 <Id>evaluative</Id> are abstract categories that exist to be asked about and

@@ -355,8 +355,20 @@ export function SkillSetup({ className }: { className?: string }) {
       <article className="panel flex min-w-0 flex-col gap-4 p-5">
         <StepHeading index="03" title="See what it wrote" />
 
-        <div className="grid gap-5 md:grid-cols-2">
-          <div className="flex min-w-0 flex-col gap-2">
+        {/* The panel centred, its sentence under it, since 2026-08-08. The author: "align
+            central the left part with the right part … instead place the text Drop the
+            folder on Upload blueprint … below the panel What that page does with it."
+
+            The two were never a pair. `InOut` is four short mono rows and the paragraph is
+            forty words, so side by side one column ran to two lines and the other to four,
+            and the halves shared a top edge and nothing else. Down the page each takes the
+            width it wants, and the order is the one a reader uses them in: what the page
+            does, then how to hand it the folder.
+
+            `max-w-2xl mx-auto` on both, which is what step 01 does with its command and its
+            sentence — the same shape, one panel up, for the same reason. */}
+        <div className="flex flex-col gap-5">
+          <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-2">
             <span className="label">What that page does with it</span>
             <InOut
               lines={[
@@ -368,7 +380,7 @@ export function SkillSetup({ className }: { className?: string }) {
             />
           </div>
 
-          <div className="flex min-w-0 flex-col gap-3">
+          <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-3">
             <p className="text-[15px] leading-relaxed text-muted">
               Drop the folder on{" "}
               <Link
@@ -384,15 +396,12 @@ export function SkillSetup({ className }: { className?: string }) {
 
             {/* A paragraph stood here about `/upload` resolving against `CORE_ONTOLOGY`, so
                 a local term comes back unknown unless the folder carries the file defining
-                it. The author asked it out on 2026-08-08.
-
-                It is true and it is `/upload`'s to say: that page resolves the bundle, that
-                page reports the unknown term, and its own copy is where a reader meets the
-                consequence with the result in front of them. Said here it was a caveat about
-                a page a reader has not opened yet, attached to a file they have not written
-                yet, about a term they may never coin. */}
+                it. The author asked it out on 2026-08-08: it is `/upload`'s to say, with the
+                result in front of the reader, rather than a caveat here about a page they
+                have not opened. */}
           </div>
         </div>
+
       </article>
     </div>
   );

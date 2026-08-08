@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { cx } from "@/lib/format";
 import { ReachList, ReachRow } from "@/components/ui/ReachList";
 
 /* ============================================================
@@ -392,17 +393,30 @@ export function GuardrailShape() {
 
       <div className="flex flex-col gap-3">
         {/* The two column heads stood here as one row, hidden below `sm`. They are
-            per-cell now and printed at every width: the cells are stacked, so a head over a
-            column that no longer exists names nothing. The emerald note that lived here
-            moved with the run-time head. */}
+            per-cell now and printed at every width rather than one row hidden below `sm`.
+
+            That is what let the two columns come BACK on 2026-08-08 — the author asked for
+            orange left and green right "as before". Stacking them was my fix for the heads
+            wrapping unevenly once they became two moments, and it solved that by giving up
+            the comparison the figure exists to make: a reader reads DOWN one column for what
+            a file can promise and down the other for what a runner does. Per-cell heads fix
+            the wrapping where it belongs, since neither has to share a baseline with the
+            other. */}
         {GUARDRAIL_BANDS.map((row, i) => (
           <div
             key={row.band}
-            className={`anim-strip-in flex flex-col gap-2 ${BAND_GRID}`}
+            /* A rule between the bands, not just a gap. The author asked for "a more
+               evident split between the subsections input, logic and output": three pairs of
+               boxes 12px apart read as six boxes, and what a reader has to see first is that
+               they come in threes. `first:` clears it off the top one so the figure does not
+               open on a line. */
+            className={cx(
+              "anim-strip-in flex flex-col gap-2 border-t border-line pt-4 first:border-t-0 first:pt-0",
+              BAND_GRID,
+            )}
             style={{ animationDelay: `${i * STEP}ms` }}
           >
             <span className="label sm:pt-2">{row.band}</span>
-            <div className="flex min-w-0 flex-col gap-2">
             {/* Copper edge at 55%: 3.19:1 on the figure's ground, past the 3:1 a
                 non-text boundary owes. `/40`, the weight the sibling figures use for a
                 frame nobody has to tell apart from its neighbour, is 2.20 and would
@@ -442,7 +456,6 @@ export function GuardrailShape() {
               </span>
               <span>{row.harness}</span>
             </p>
-            </div>
           </div>
         ))}
       </div>

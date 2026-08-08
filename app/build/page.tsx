@@ -205,10 +205,12 @@ export default function BuildPage() {
                how both are computed. The Learn menu runs in that order too: what a blueprint
                is, design one, how one is graded. */
             href: "/spec/ontology",
+            direction: "previous",
             label: "The vocabulary",
           },
           {
             href: "/reading-the-radar",
+            direction: "next",
             // The name the header and the footer both give this route: `nav.test.ts` holds
             // every table to one label per route.
             label: "How a blueprint is graded",

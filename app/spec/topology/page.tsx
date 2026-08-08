@@ -173,26 +173,37 @@ export default function SpecTopologyPage() {
               intentional: do not "restore" `.prose-lane` here. The band below (`The
               checks`) and every other route are untouched, and `DotBreakdown` itself is
               not involved — it already took the full width. */}
+          {/* Two paragraphs, and it was three. The author asked whether this could be
+              compacted; it could, and roughly half of it went.
+
+              What came out, and why each one:
+
+                "Which attribute does the joining, and what each block of the file is for, is
+                the subject of the breakdown below."  A table of contents for a figure four
+                inches down, which announces itself.
+
+                "The compatibility linter reports the places a file would stop being runnable
+                as warnings in their own `attractor/` namespace, so a reader can tell which of
+                the two readers is complaining."  The namespace is visible in every code it
+                emits, and the checks table on this page prints those codes.
+
+              What stayed is the claim only this page makes — attribute values are flat
+              strings, which is WHY the format splits in two — and the one name a reader can
+              act on wrongly. `type=` is the paragraph a reader loses a morning to and it is
+              untouched. */}
           <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
             <p>
               DOT attribute values are flat strings, which is the reason the
               format splits in two: the graph carries the wiring, and every
-              piece of detail lives in a card beside it. Which attribute does
-              the joining, and what each block of the file is for, is the
-              subject of the breakdown below.
-            </p>
-            <p>
-              DarkPrint reads a strict subset of DOT that{" "}
+              piece of detail lives in a card beside it. DarkPrint reads a
+              strict subset that{" "}
               <SpecLink href="https://github.com/strongdm/attractor" external>
                 Attractor
               </SpecLink>{" "}
-              runs as it stands. Attractor reserves a list of attribute names
-              and silently ignores every name outside it, which is what lets{" "}
+              runs as it stands, and Attractor silently ignores every attribute
+              name outside its own reserved list, which is what lets{" "}
               <Id>card</Id> and <Id>digest</Id> ride along in a file a runner
-              still executes. The compatibility linter reports the places a
-              file would stop being runnable as warnings in their own{" "}
-              <Id>attractor/</Id> namespace, so a reader can tell which of the
-              two readers is complaining.
+              still executes.
             </p>
             <p>
               One name is worth knowing about because it looks free and is
