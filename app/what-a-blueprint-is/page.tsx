@@ -783,6 +783,43 @@ export default function WhatABlueprintIsPage() {
               stays: the figure names the three places a constraint can sit and marks the
               one this archive enforces, which is what the paragraph was describing in
               words directly above it. */}
+          {/* The rubric block leads the section, moved above `HandoverAxis` on the author's
+              instruction 2026-08-08. It stood last, after both figures.
+
+              It reads better first and the reason is the same dependency the two figures
+              have between themselves: this paragraph is the only prose in the section, it
+              names the one separation the whole page is built on, and both drawings under
+              it are that separation seen from somewhere — `HandoverAxis` in time,
+              `GuardrailShape` on one node. Argument, then evidence. */}
+            {/* "Why the rubric is kept away" until 2026-08-08, when the author named the
+                thing it is kept away FROM and gave the reason the old paragraph left out.
+
+                The old text argued from evidence: a verdict is worth something because the
+                node doing the work never saw what it would be judged against. True, and it
+                is the consequence rather than the cause. What the author supplied is the
+                cause, and it is about the harness rather than about any one node: a rubric
+                is what a harness is measured against, so the harness must not be able to
+                see how that measurement is implemented, or the system optimises for the
+                measurement instead of for the work. Held-out scenarios are the same
+                argument one rung up, on `/towards-a-dark-factory`.
+
+                The link out — "The edge that is not there →" — went with the rewrite on
+                the author's instruction, and so did the paragraph that followed ("That is
+                what a guardrail looks like once there is more than one agent…"). The
+                sentence about a guardrail becoming a rule on a handoff is what
+                `GuardrailShape` two elements up draws. */}
+            <PanelHeading>Why the rubric is kept away from the harness</PanelHeading>
+            {/* Full width, on the author's instruction 2026-08-07 — one of the two named
+                exceptions to `.prose-lane` on this page. */}
+            <p className={PROSE}>
+              A rubric is what the harness is measured against, so nothing inside the
+              harness may see how the measurement is built. A system that can read its own
+              criteria optimises for them: it finds the shape that satisfies the eval rather
+              than doing the work the eval was standing in for, and the score stops being
+              evidence of anything. Keeping the two apart is what makes a passing run worth
+              believing.
+            </p>
+          </div>
           {/* `HandoverAxis` first, `GuardrailShape` second, swapped 2026-08-08 on the
               author's instruction: "move below the panel One blueprint, four moments the
               panel Three places a constraint can sit."
@@ -815,35 +852,6 @@ export default function WhatABlueprintIsPage() {
               thing containment cannot draw, which is why the rubric is kept away from the
               node being judged. */}
           <div className="flex flex-col gap-3">
-            {/* "Why the rubric is kept away" until 2026-08-08, when the author named the
-                thing it is kept away FROM and gave the reason the old paragraph left out.
-
-                The old text argued from evidence: a verdict is worth something because the
-                node doing the work never saw what it would be judged against. True, and it
-                is the consequence rather than the cause. What the author supplied is the
-                cause, and it is about the harness rather than about any one node: a rubric
-                is what a harness is measured against, so the harness must not be able to
-                see how that measurement is implemented, or the system optimises for the
-                measurement instead of for the work. Held-out scenarios are the same
-                argument one rung up, on `/towards-a-dark-factory`.
-
-                The link out — "The edge that is not there →" — went with the rewrite on
-                the author's instruction, and so did the paragraph that followed ("That is
-                what a guardrail looks like once there is more than one agent…"). The
-                sentence about a guardrail becoming a rule on a handoff is what
-                `GuardrailShape` two elements up draws. */}
-            <PanelHeading>Why the rubric is kept away from the harness</PanelHeading>
-            {/* Full width, on the author's instruction 2026-08-07 — one of the two named
-                exceptions to `.prose-lane` on this page. */}
-            <p className={PROSE}>
-              A rubric is what the harness is measured against, so nothing inside the
-              harness may see how the measurement is built. A system that can read its own
-              criteria optimises for them: it finds the shape that satisfies the eval rather
-              than doing the work the eval was standing in for, and the score stops being
-              evidence of anything. Keeping the two apart is what makes a passing run worth
-              believing.
-            </p>
-          </div>
         </div>
       </section>
 

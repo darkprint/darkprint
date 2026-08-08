@@ -82,14 +82,18 @@ describe("BuildWorkspace — SSR markup", () => {
   const html = renderToStaticMarkup(createElement(BuildWorkspace));
 
   /**
-   * Spec §2.2 asked for one route-box with BOTH destinations above the workspace, and this
-   * held them. The author removed the `/spec/topology` exit on 2026-08-07, so the case
-   * holds the one that stayed and asserts the other is gone rather than dropping the
-   * clause — a route-box that quietly grows a second exit back is the thing worth failing
-   * on, and `nav.test.ts` has no view of this page's body.
+   * Spec §2.2 asked for one route-box with BOTH destinations above the workspace. The
+   * author removed `/spec/topology` on 2026-08-07 and `/what-a-blueprint-is` on 2026-08-08,
+   * so the row is empty and the case is inverted rather than deleted.
+   *
+   * Inverted and not dropped, because the thing worth failing on has not changed — it has
+   * only changed sign. A workspace that quietly grows an exit back is what this case exists
+   * to catch, and the argument is now the one both removals were made on: two exits from a
+   * workspace, both to reading, is the workspace pointing away from itself. Both routes are
+   * a click away in the header on every page, and a reader who arrived HERE chose to build.
    */
-  it("holds the one outbound link of the route-box, and no second one", () => {
-    expect(html).toContain('href="/what-a-blueprint-is"');
+  it("offers no reading exit above the workspace", () => {
+    expect(html).not.toContain('href="/what-a-blueprint-is"');
     expect(html).not.toContain('href="/spec/topology"');
   });
 

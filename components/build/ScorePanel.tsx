@@ -4,6 +4,8 @@ import type { AutonomyResult, Diagnostic, SecurityResult } from "@/lib/core";
 import { shortDigest } from "@/lib/core";
 import type { StarterRunBudget } from "@/lib/starter/variants";
 import { autonomyStatement, cx } from "@/lib/format";
+import { ScoreRadar } from "@/components/ui/ScoreRadar";
+import type { Metric } from "@/lib/types";
 
 /* ============================================================
    The panel that never leaves the screen.
@@ -157,6 +159,23 @@ export interface ScorePanelProps {
    * would refuse to score and `lib/content/read.ts` would refuse to load.
    */
   errors?: readonly Diagnostic[];
+  /**
+   * The six axes, if this caller has them, drawn as a radar beside the readings.
+   *
+   * The author, 2026-08-08: "Import the radar in the score. The scope of this page is to
+   * give the intuitions to the user. Not need to be completely grounded."
+   *
+   * That instruction is what makes this prop possible. Four of the six axes on a blueprint
+   * page are community-voted and no ballot exists for a graph a reader assembled thirty
+   * seconds ago — `/build`'s caller says so in each axis's `detail`, so the figure carries
+   * its own qualification rather than borrowing another blueprint's numbers. What is real
+   * on both surfaces is the two the engine computes, autonomy and security, and they are
+   * the two this panel prints in words directly beside the chart.
+   *
+   * Optional, so `/blueprints/[slug]` — which draws its own radar in its own scorecard —
+   * is untouched.
+   */
+  metrics?: Metric[];
   className?: string;
 }
 
@@ -168,6 +187,7 @@ export function ScorePanel({
   budget,
   previous,
   errors = [],
+  metrics,
   className,
 }: ScorePanelProps) {
   const people = autonomy?.contributions.filter((c) => c.requiresHuman) ?? [];
@@ -246,6 +266,24 @@ export function ScorePanel({
         </div>
       )}
 
+      {/* ---------- the radar, and the readings beside it ----------
+          Two columns from `lg` up and stacked below it, on the author's instruction: the
+          chart left, autonomy / security / the run right. The chart is a shape a reader
+          takes in at a glance and the three readings are what that shape MEANS, so side by
+          side is the arrangement that lets one explain the other — stacked, the reader
+          scrolls away from the picture to read its caption.
+
+          `lg:` and not `sm:`: this panel is one tab of a workspace stage and its column is
+          already narrow at `sm`. A 280px chart beside a column of readings inside a 640px
+          tab is two things too small rather than two things side by side. */}
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-8">
+        {metrics !== undefined && (
+          <div className="flex shrink-0 justify-center lg:w-[17.5rem]">
+            <ScoreRadar metrics={metrics} size={280} render={280} />
+          </div>
+        )}
+
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
       {/* ---------- autonomy ---------- */}
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -347,6 +385,8 @@ export function ScorePanel({
           by whoever runs it: execution happens on your machine, so DarkPrint has no way to
           measure either.
         </p>
+      </div>
+        </div>
       </div>
     </section>
   );

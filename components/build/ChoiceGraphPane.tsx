@@ -243,12 +243,20 @@ export function ChoiceGraphPane({
           `max-width` on the graph itself would have shrunk the drawing and left the pane at
           its old height, which is the failure mode `framing.ts` calls being height-bound.
 
-          `sm:` and not every width: 56px a side is a fifth of a 390px phone, where the
-          drawing has no room to give. */}
+          `sm:` and not every width: the inset is a fifth of a 390px phone, where the drawing
+          has no room to give.
+
+          The number is a third of the pane, on the author's second instruction: "zoom out
+          the graph by 1/3." Measured at 1440 the pane's content box was 1038px after the
+          first pass; `sm:px-[17%]` takes 34% of it — 17 a side — which lands the drawing at
+          two thirds of the width it was fitted to. A percentage rather than a rem, because
+          the ask is a ratio and this column is three different widths across the route's
+          breakpoints; a fixed inset would be a third at one of them and a rounding error at
+          another. */}
       <div
         onClick={onGraphClick}
         onKeyDown={onGraphKeyDown}
-        className="@container p-3 sm:px-14"
+        className="@container p-3 sm:px-[17%]"
       >
         <BlueprintGraph
           graph={drawn}

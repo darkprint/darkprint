@@ -1,5 +1,3 @@
-"use client";
-
 /* ============================================================
    Four words, one inside the next, arriving one at a time.
 
@@ -46,8 +44,6 @@
    unreached rows are dimmed rather than removed, so find-in-page reaches all four.
    ============================================================ */
 
-import { cx } from "@/lib/format";
-import { stagesShown, useScrollProgress } from "@/components/viz/useScrollProgress";
 
 /**
  * The four frames, innermost first, which is also the order they arrive in.
@@ -336,57 +332,52 @@ function RubricGlyph() {
    in two palettes. */
 
 export function RunLayers() {
-  const { ref, progress, motion } = useScrollProgress<HTMLDivElement>({ steps: 80 });
+  /* No scroll, no pin, no staging. The author, 2026-08-08: "remove the scrolling just place
+     static all already highlighted."
 
-  /* THREE stages, not four, and the blueprint is not one of them.
-     ------------------------------------------------------------
-     The author placed this band as "a new section that start with such drawing": the
-     blueprint is the state the section opens in, not a stage a reader has to scroll to
-     reach. Staging all four put the figure's own subject behind a scroll gesture and left
-     the first screen showing four dimmed rows and a dimmed drawing, which says the section
-     has not started.
+     The walk is gone in three steps, and it is worth recording that the third one is what
+     the instruction is really about. The first pass staged PRESENCE and the author asked for
+     the figure visible; the second staged COLOUR and it still asked a reader to scroll 220vh
+     to finish reading four sentences they could already see. A figure whose every frame and
+     every paragraph is on screen at once has nothing left to reveal — the staging was
+     animating a reader through a list.
 
-     So the walk stages what ARRIVES — harness, rubric, eval — and `shown` is one plus that.
-     `head` is a beat before the first wrapper, `tail` leaves the eval frame standing rather
-     than releasing the pin on the frame that is still fading in. */
-  const arrived = motion
-    ? stagesShown(progress, LAYERS.length - 1, { head: 0.10, tail: 0.18 })
-    : LAYERS.length - 1;
-  const shown = arrived + 1;
-  /* Which of the four have been reached. Read for COLOUR only: see the note where `DIM`
-     used to be for why nothing here touches opacity any more. */
-  const lit = (i: number) => i < shown;
+     What survives is everything the staging was FOR: the four tones, the ties between a
+     frame and its paragraph, the nesting, the rubric glyph. `lit()` returns true for all
+     four, which keeps every colour expression below reading exactly as written rather than
+     making each one collapse to its lit branch by hand — one line to restore staging if it
+     is ever wanted again, and no dead branches in the meantime.
 
-  /* The label of a frame that has not arrived is dim; the label of one that has is its own
-     colour. That flip is the EVENT — an opacity change on a nested rectangle is easy to
-     miss, and the rubric's frame is a strip, so what a reader actually sees arrive is the
-     word going from grey to green at the same instant the paragraph beside it does. */
+     `useScrollProgress` and `stagesShown` go with it, and so does the 220vh track: this is
+     an ordinary two-column figure now, as tall as its content.
+
+     `index >= 0` rather than a bare `true` so the parameter is read: an ignored argument is
+     a lint warning and, worse, a signature nobody can tell is deliberate. Every index this
+     is called with is 0 to 3. */
+  const lit = (index: number): boolean => index >= 0;
+
+  /** A frame's label, in its own register. */
   const label = (i: number, key: keyof typeof TONE) => ({
     color: lit(i) ? TONE[key].accent : "var(--color-dim)",
   });
 
   /* A frame's border AND its ground, in its own hue.
      ------------------------------------------------------------
-     The author, 2026-08-08: the blueprint's box is the one that works, and the other three
-     "should be more fancier … maybe each box can be filled with the color of the border (or
-     a slightly different shade)."
+     The author: the blueprint's box is the one that works, and the other three "should be
+     more fancier … maybe each box can be filled with the color of the border."
 
-     They are describing the blueprint frame's construction without naming it. That box is
-     `bg-blueprint-deep/60` inside a `blueprint-line/55` border — a GROUND in the register,
-     not an outline on the page's ground — and it is the only one of the four built that way,
-     which is exactly why it is the only one that reads as a place rather than as a rule.
+     They were describing the blueprint frame's construction without naming it. That box is
+     `bg-blueprint-deep/60` inside a `blueprint-line/55` border — a GROUND in the register
+     rather than an outline on the page's ground — and it was the only one of the four built
+     that way, which is why it was the only one reading as a place rather than as a rule.
 
-     So the same construction, per hue. The border is the register at 45%; the fill is the
-     same colour at 7%, which is the weight that reads as tinted rather than as filled when
-     three of them are nested one inside the next. Nested is the constraint that sets it: the
-     eval's wash sits under the harness's, which sits under the blueprint's sheet, so at 12%
-     the innermost box was three washes deep and the graticule inside it went muddy.
+     So the same construction per hue: the border is the register at 45%, the fill the same
+     colour at 7%. Nesting sets that number — the eval's wash sits under the harness's, which
+     sits under the blueprint's sheet, and at 12% the innermost box was three washes deep and
+     its graticule went muddy.
 
-     Unlit, both terms fall back to the neutral pair the figure already used, so the greying
-     out the author asked to keep is unchanged: `--color-line` and no fill at all.
-
-     `color-mix` rather than a `/07` utility, because these are inline styles driven by a
-     boolean and Tailwind cannot emit a class for a value it never sees. */
+     `color-mix` rather than a Tailwind alpha utility, because these are inline styles and
+     the framework cannot emit a class for a value it never sees. */
   const frame = (i: number, key: keyof typeof TONE) =>
     ({
       borderWidth: 1,
@@ -400,8 +391,8 @@ export function RunLayers() {
     }) as const;
 
   return (
-    <div ref={ref} className={cx(motion && "lg:h-[220vh]")}>
-      <div className={cx(motion && "lg:sticky lg:top-[max(4rem,calc(50vh_-_15rem))]")}>
+    <div>
+      <div>
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center lg:gap-14">
           {/* ---------- the frames ---------- */}
           {/* Every frame is in the DOM from the first paint and only colour and opacity

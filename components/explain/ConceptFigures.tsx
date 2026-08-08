@@ -442,7 +442,18 @@ export function GuardrailShape() {
                 claiming one, and the full sentence is held by
                 `components/site/honesty.test.ts` over the head, which is in the markup at
                 every width. */}
-            <p className="flex flex-col gap-1 rounded border border-line-bright bg-surface-2 px-3 py-2 text-[13px] leading-snug text-muted">
+            {/* `border-emerald/40`, matching the column head above it, on the author's
+                instruction 2026-08-08. The head went green when the two columns became two
+                moments; the cells under it stayed `line-bright`, so a reader scanning down
+                the run-time column lost the thread after the first row. The static column
+                beside it has read `copper-line/55` on every cell since it was built, so this
+                is the pair finally being drawn the same way twice.
+
+                40% and not 55%: emerald is a lighter hue than copper at the same alpha, and
+                measured on this figure's ground the two borders land within a tenth of each
+                other at 40 and 55 — 3.24:1 against 3.19:1, both past the 3:1 a non-text
+                boundary owes. Matched weight rather than matched number. */}
+            <p className="flex flex-col gap-1 rounded border border-emerald/40 bg-surface-2 px-3 py-2 text-[13px] leading-snug text-muted">
               <span className="label text-emerald sm:hidden">At run time · your harness</span>
               <span>{row.harness}</span>
             </p>

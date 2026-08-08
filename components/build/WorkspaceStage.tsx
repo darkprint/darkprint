@@ -13,6 +13,8 @@ import {
 } from "@/components/panes/model";
 import { SourcePane } from "@/components/panes/SourcePane";
 import { ChoiceGraphPane } from "./ChoiceGraphPane";
+import { autonomyStatement } from "@/lib/format";
+import type { Metric } from "@/lib/types";
 import { ScorePanel, ScoreStrip } from "./ScorePanel";
 import type { BuildState } from "./state";
 import type { Surface } from "./surfaces";
@@ -305,6 +307,58 @@ export function WorkspaceStage({
   const autonomy = state.analysis?.autonomy;
   const security = state.analysis?.security;
 
+  /* The six axes for the Score tab's radar, built here rather than read off a published
+     blueprint, because this graph is not published — a reader assembled it in the tab.
+     ------------------------------------------------------------
+     The author asked for the radar and said what it is for: "the scope of this page is to
+     give the intuitions to the user. Not need to be completely grounded."
+
+     So two of the six are the engine's own and four are not, and each one says which it is
+     in its `detail`, which is the string `MetricBars` and the radar's caption both print:
+
+       autonomy    real. `analysis.autonomy.fraction`, the share of the graph that runs
+                   unattended, which is the same number `lib/content/view.ts` puts on this
+                   axis for every published blueprint. `ScoreRadar` filters it out of the
+                   spokes anyway (doc 2 §1.1: the band is not a length) and uses it for the
+                   caption, which is exactly what is wanted — it is printed in words two
+                   inches to the right.
+       security    real. The level is 1..4, so it is scaled to the 0..100 the axis takes.
+       the other   NOT real, and not seeded from someone else's ballot either. They are the
+       three       community axes on a published blueprint, and nobody has voted on a graph
+                   that has existed for thirty seconds. They sit at 50 so the shape has a
+                   ground to be read against, and every one of them says so in its own
+                   detail line rather than leaving a reader to assume a rating happened.
+
+     `undefined` until the bundle resolves, so a graph the engine refused draws no chart at
+     all: a radar over a rejected bundle would be the one surface on this site scoring one. */
+  const radar: Metric[] | undefined =
+    state.analysis === undefined
+      ? undefined
+      : [
+          {
+            key: "autonomy",
+            label: "Autonomy",
+            value: Math.round(state.analysis.autonomy.fraction * 100),
+            source: "auto",
+            detail: autonomyStatement(state.analysis.autonomy.rationale),
+          },
+          {
+            key: "security",
+            label: "Security",
+            value: Math.round((state.analysis.security.level / 4) * 100),
+            source: "auto",
+            detail: `Level ${state.analysis.security.level} of 4, read off the markers the cards declare.`,
+          },
+          ...(["efficacy", "reliability", "transparency"] as const).map((key) => ({
+            key,
+            label: key.replace(/^./, (c) => c.toUpperCase()),
+            value: 50,
+            source: "community" as const,
+            detail:
+              "Community-rated on a published blueprint. Nobody has rated this one: it exists only in this tab.",
+          })),
+        ];
+
   /**
    * The score channel's sentence, reachable except while the `Score` tab is open — see the
    * header docblock's "Two live regions, one per channel". Mirrors `ScorePanel.tsx`'s own
@@ -565,6 +619,7 @@ export function WorkspaceStage({
           {...(state.blueprint === undefined ? {} : { digest: state.blueprint.digest })}
           budget={state.budget}
           errors={state.errors}
+          {...(radar === undefined ? {} : { metrics: radar })}
         />
       </div>
     </div>

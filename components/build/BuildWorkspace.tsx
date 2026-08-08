@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { RouteBoxLink } from "@/components/ui/RouteBoxLink";
 import { AgentHandoff } from "./AgentHandoff";
 import {
   APPROVAL_OPTIONS,
@@ -205,18 +204,15 @@ export function BuildWorkspace() {
           tellable apart on a screen that shows both. `flex-wrap` because two cards capped
           at 19rem each still need somewhere to go on a narrow tablet. */}
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap">
-        {/* "Read", not the path — the same correction `OnwardRoutes` carries. The author:
-            "remove the text reporting the path in the button". The title below each one
-            already names where it goes; the label only has to say what the box does. */}
-        <RouteBoxLink
-          href="/what-a-blueprint-is"
-          label={
-            <>
-              Read <span aria-hidden>→</span>
-            </>
-          }
-          title="What a blueprint is"
-        />
+        {/* A `RouteBoxLink` to `/what-a-blueprint-is` stood here — "Read → What a blueprint
+            is" — and the author asked it out on 2026-08-08.
+
+            It is the same argument the note below already makes about the second exit that
+            used to sit beside it: two exits from a workspace, both to reading, is the
+            workspace pointing away from itself. `/what-a-blueprint-is` is stop 00 of the
+            spec sequence, it is in the header's Learn menu on every page, and a reader who
+            has arrived HERE has chosen to build rather than to read. The row is empty now
+            and stays in the tree because the section below it is spaced against it. */}
         {/* A second exit to `/spec/topology` ("The topology, in DOT") stood here and the
             author asked it out on 2026-08-07. The route is still one click away in the
             footer's spec column on every page, and the DOT tab of the stage below is where

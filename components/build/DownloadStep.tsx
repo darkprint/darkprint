@@ -198,12 +198,10 @@ export function DownloadStep({
               `DownloadPanel`, twenty lines above, already says execution happens on the
               reader's machine and that the site holds none of their keys, which is the
               same claim and more of it. */}
-          <p className="text-[13px] leading-relaxed text-muted">
-            The <code className="font-mono text-fg">{BUNDLE_README}</code>{" "}states the
-            digest these files hash to and quotes both computed readings in the
-            engine&rsquo;s own words, so you can confirm that what you have is what was
-            scored on this page.
-          </p>
+          {/* A sentence about the README quoting the digest and both readings stood here
+              and the author asked it out. The digest is in the row directly above it, as
+              text a reader can select, and the README says what it says whether or not this
+              page describes it in advance. */}
           {/* "Keep the folder somewhere you will find it again. This page cannot hand
               it back to you." stood here and is gone: it was the third statement of the
               same fact inside 460px of step 7. `DownloadPanel` says "Execution happens on
