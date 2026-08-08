@@ -81,27 +81,20 @@ export const NAV = [
   // the wide row and the phone panel both `.map()` over them and render nothing, so the
   // row is not restructured around the absence and putting it back is one line.
   { href: "/blueprints", label: "Blueprints", group: "registry" },
-  { href: "/nodes", label: "Nodes", group: "registry" },
+  /* "Cards", not "Nodes", on the author's instruction 2026-08-08.
+     ------------------------------------------------------------
+     A node is a position in a graph; a card is the FILE this shelf holds, one per node, and
+     the shelf beside it is called Blueprints after the file IT holds. Naming one by the
+     artefact and its sibling by the abstraction was the registry describing itself two ways.
+     `/nodes` is untouched: the route has been linked for months and a rename would cost a
+     redirect to change a word. */
+  { href: "/nodes", label: "Cards", group: "registry" },
   { href: "/ontology", label: "Ontology", group: "registry" },
   // The first item of the menu, because it is the one a cold reader needs first and the
   // only page that says what a blueprint is *for*. It is also the door onto the three
   // layer pages, and stop 00 of `SPEC_SEQUENCE`, since `/spec` was deleted — which is why
   // the row that used to sit two below this one is gone rather than repointed.
   { href: "/what-a-blueprint-is", label: "What a blueprint is", group: "learn" },
-  // The scorecard, whole: the picture (five spokes, why autonomy has none, what a
-  // vertex's colour says) and the arithmetic (three badges, every weight) on one route
-  // after `/spec/scoring` merged into it. The label is the phrase the page's own `h1` and
-  // every inline link on the site already use. It follows "What a blueprint is" because a
-  // reader has to know what a blueprint is made of before a grade of one means anything.
-  /* `/build` before `/reading-the-radar`, swapped on the author's instruction 2026-08-08.
-     Designing one comes before grading one: a reader who has not made a blueprint has
-     nothing for the scorecard to be about, and the menu now runs what a blueprint is, how to
-     make one, how one is read. */
-  { href: "/build", label: "Design a blueprint", group: "learn" },
-  // The scorecard, whole: the picture (five spokes, why autonomy has none, what a vertex's
-  // colour says) and the arithmetic (three badges, every weight) on one route after
-  // `/spec/scoring` merged into it.
-  { href: "/reading-the-radar", label: "How a blueprint is graded", group: "learn" },
   /* ---- the three file formats, added to the menu 2026-08-08 ----
      The author: "below What is a blueprint add also the references to the topology in DOT,
      the node card in YAML, and the ontology … find better names for these pages; should be
@@ -117,6 +110,12 @@ export const NAV = [
        The node card (YAML)      cards/<node>.yaml
        The vocabulary            the ontology both of the above are written against
 
+     Directly under "What a blueprint is" on the author's instruction 2026-08-08, not after
+     the two how-to routes. They are the DETAIL of the page above them — that page says a
+     blueprint is three files and these three say what each file holds — so they belong with
+     it, and `/build` and `/reading-the-radar` are things to do rather than things to look
+     up.
+
      `nav.test.ts` holds every row's label to its page's `h1` character for character. These
      three deliberately break that: it is a rule about a reader landing on the heading they
      clicked, and it was written when every menu row WAS a page title. The three `h1`s are
@@ -124,6 +123,20 @@ export const NAV = [
   { href: "/spec/topology", label: "The blueprint file (DOT)", group: "learn" },
   { href: "/spec/card", label: "The node card (YAML)", group: "learn" },
   { href: "/spec/ontology", label: "The vocabulary", group: "learn" },
+  // The scorecard, whole: the picture (five spokes, why autonomy has none, what a
+  // vertex's colour says) and the arithmetic (three badges, every weight) on one route
+  // after `/spec/scoring` merged into it. The label is the phrase the page's own `h1` and
+  // every inline link on the site already use. It follows "What a blueprint is" because a
+  // reader has to know what a blueprint is made of before a grade of one means anything.
+  /* `/build` before `/reading-the-radar`, swapped on the author's instruction 2026-08-08.
+     Designing one comes before grading one: a reader who has not made a blueprint has
+     nothing for the scorecard to be about, and the menu now runs what a blueprint is, how to
+     make one, how one is read. */
+  { href: "/build", label: "Design a blueprint", group: "learn" },
+  // The scorecard, whole: the picture (five spokes, why autonomy has none, what a vertex's
+  // colour says) and the arithmetic (three badges, every weight) on one route after
+  // `/spec/scoring` merged into it.
+  { href: "/reading-the-radar", label: "How a blueprint is graded", group: "learn" },
   // The author named this label: "/which-tasks should be placed in The climb part which
   // I'd rename Towards a Dark Factory". It is also the page's own `h1`, character for
   // character, which is what `nav.test.ts` holds it to. The label a reader clicks is the

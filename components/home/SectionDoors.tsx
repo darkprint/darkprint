@@ -71,9 +71,11 @@ import { ButtonLink } from "@/components/ui/Button";
    back — it is the reason they were checkable rather than decorative. */
 
 /** What the figures above it are worth. One line, under the row it qualifies. */
-function Caption({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs leading-relaxed text-blueprint-ink/70">{children}</p>;
-}
+/* `Caption` stood here. Its one caller was the second door's ".dot topology, the cards
+   it pins" line, and that door became the card shelf on 2026-08-08 with a `line` prop
+   instead. `Door` still takes `children`, so a door that wants a caption again has the
+   slot; it wants a component too, and this is what it looked like. */
+
 
 function Door({
   title,
@@ -130,7 +132,7 @@ export function SectionDoors() {
             rationed to one per page or per full-bleed band. */}
         <div className="flex flex-col items-center text-center">
           <h2 className="max-w-3xl font-display text-4xl font-semibold leading-tight tracking-tight text-blueprint-ink sm:text-5xl">
-            Read one, or design one
+            Read one, or read its parts
           </h2>
         </div>
 
@@ -149,50 +151,28 @@ export function SectionDoors() {
                 counts are exact on a card showing no counts is a claim about nothing. */}
           </Door>
 
-          {/* `line="Three choices, and a blueprint that downloads to your machine."` stood
-              here and came out with the two captions below, on the author's instruction. */}
-          {/* "Design your own", not "Build your own", and the heading above says "design"
-              for the same reason: `/build`'s own `h1` and its nav row have said "Design a
-              blueprint" since the route was renamed, and a door promising to BUILD one that
-              opens on a page offering to DESIGN one is the site using two verbs for one act.
-              Design is also the truer of the two here — what a reader leaves with is a
-              specification, and nothing on that page runs anything.
+          {/* The second door is the CARD gallery, not `/build`, since 2026-08-08. The
+              author: "on the left the link for browsing the blueprints gallery and on the
+              right the link for browsing the Nodes gallery (which I want you rename Cards)."
 
-              The call to action is "Components of a blueprint" rather than "Open the
-              workspace" on the author's instruction. "Workspace" named the furniture; the
-              new line names what is inside it, which is what a reader is deciding whether
-              to click for. */}
-          <Door title="Design your own" href="/build" cta="Components of a blueprint">
-            {/* `<Figures items={PATH} />` — 3 choices, 80 combinations, 1 bundle — stood
-                here until 2026-08-07, when the author asked it out.
+              The two doors are one pair now instead of two errands: the registry has two
+              shelves and this band opens both. `/build` is not orphaned — it is the first
+              item under Learn's how-to half, the workspace a reader reaches from the
+              landing's own hero button, and `/what-a-blueprint-is` ends on it. What it was
+              doing HERE was answering a different question from the door beside it, so the
+              heading above them ("Read one, or design one") had to cover a browse and a
+              build at once.
 
-                It was evidence of the wrong kind for this door. The gallery's figures count
-                things a reader can go and look at, and its caption says they are exact; this
-                door's counted the SHAPE OF A GENERATOR, and "80 combinations" is a fact
-                about the code behind the workspace rather than about anything a reader
-                receives. The caption below already answers the question this door is
-                actually asked — what do I end up holding — and it answers it in nouns. */}
-            {/* What the three choices hand over. The gallery door's caption says its figures
-                are exact; this one says what its figures produce, which is the equivalent
-                question for a workspace rather than an archive. */}
-            <Caption>A .dot topology, the cards it pins, and a README you can run.</Caption>
-            {/* "The workspace ends at the download. There is nowhere to publish yet."
-                stood here, and it is the one removal in this pass worth reading twice.
-
-                `beats.test.ts` guarded it with a docblock recording that it had left the
-                site by accident TWICE — once as an orphan under the section, and once when
-                `/build`'s eight-step path became a workspace and the noun changed while the
-                limit did not. It comes out only because the claim it qualified went with it
-                in the same edit: this door no longer promises a download, or three choices,
-                or anything beyond its own title and a control. A door that promises nothing
-                has nothing to refuse.
-
-                Where the refusal still lives, unchanged: `DownloadPanel` on `/build` ends
-                on "there is nowhere to save this yet", at the step where a reader is
-                actually holding the folder, and `/build`'s `metadata.description` carries
-                it for anyone who never opens the page. If a promise returns to this door,
-                this sentence returns with it. */}
-          </Door>
+              "Design your own" and its caption go with it, along with the `cta`
+              "Components of a blueprint". Recorded because both were the author's own
+              wording from earlier in the same day, and neither is being overruled — the
+              door they sat on is what changed. */}
+          <Door
+            title="Browse the cards"
+            line="One versioned card per node, and the graphs that pin it."
+            href="/nodes"
+            cta="Open the cards"
+          />
         </div>
       </div>
     </section>

@@ -273,23 +273,20 @@ describe("every link the landing draws goes somewhere", () => {
     expect(all.length).toBeGreaterThan(0);
   });
 
-  it("still reaches the gallery from the doors", () => {
+  it("reaches both shelves from the doors", () => {
     /* What is left of the landing's own route into the archive, stated so the next change
        to `SectionDoors` cannot quietly close it.
 
-       Worth recording precisely, because removing beat 3's card link cost more than it
-       looks: the beats now emit no `/nodes` href at all, so the section arguing that every
-       node is a card offers no way to open one, and the node library is reachable from
-       this page only through the persistent header. That is a live consequence of the
-       author's instruction, not an oversight, and it is written here rather than in a
-       comment nobody greps. */
+       This case used to assert the OPPOSITE of its second half. Removing beat 3's card link
+       left the landing emitting no `/nodes` href at all, so the section arguing that every
+       node is a card offered no way to open one, and the card library was reachable from
+       this page only through the persistent header. That was recorded here as a live
+       consequence rather than an oversight, and it is fixed on 2026-08-08: the author
+       repointed the second door at the card shelf, so both shelves the registry has are one
+       click from the landing again and the doors are one pair rather than two errands. */
     const hrefs = [...beat("5 the doors").matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
     expect(hrefs).toContain("/blueprints");
-
-    const fromBeats = BEATS.flatMap(([name]) =>
-      [...beat(name).matchAll(/href="([^"]+)"/g)].map((m) => m[1]),
-    );
-    expect(fromBeats.filter((href) => href.startsWith("/nodes"))).toEqual([]);
+    expect(hrefs).toContain("/nodes");
   });
 });
 

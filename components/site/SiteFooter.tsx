@@ -67,7 +67,7 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
     title: "Registry",
     links: [
       { href: "/blueprints", label: "Blueprints" },
-      { href: "/nodes", label: "Nodes" },
+      { href: "/nodes", label: "Cards" },
       { href: "/ontology", label: "Ontology" },
       // Two rows came out on 2026-08-07, both on the author's instruction, and the column
       // is the three registry indexes and nothing else now.
