@@ -161,10 +161,25 @@ export function SourceSwap({
         } as const)
       : undefined;
 
-  /* In as the drawing starts to go, out once the file has arrived. Both edges are inside
-     the crossfade's own window so the line is never the only thing moving. */
-  const hintOpacity =
-    ramp(progress, 0.02, 0.12) * (1 - ramp(progress, SOURCE_IN.to, SOURCE_IN.to + 0.10));
+  /* There from the first sight of the figure, gone once the file has arrived.
+     ------------------------------------------------------------
+     The author, with a screenshot of the section just after it comes into view — heading,
+     lead, drawing, nothing else: "make the 'Keep scrolling and the drawing becomes the file
+     it is drawn from.' appears before like when the page is as this."
+
+     That state is progress ZERO. `useScrollProgress` clamps to 0 until the wrapper's top
+     passes the top of the viewport, so every frame of the section's approach — including
+     the one in the screenshot — reports the same 0, and a fade-in keyed on progress cannot
+     start during it. The line had a ramp from 0.02 and was therefore invisible for exactly
+     the pixels it was being asked to speak for.
+
+     So there is no in-ramp. The hint is at full opacity the moment the box is on screen at
+     all, which is the moment the drawing is, and the only thing scroll does to it is take it
+     away. That is not the deck sentence the author struck earlier: it lives in the pinned
+     box beside the figure, not under the heading, and it leaves.
+
+     It goes once the file has arrived, because by then it is describing the past. */
+  const hintOpacity = 1 - ramp(progress, SOURCE_IN.to, SOURCE_IN.to + 0.10);
 
   return (
     <div ref={ref} className={cx(motion && "lg:h-[300vh]", className)}>

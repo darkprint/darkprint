@@ -106,9 +106,9 @@ export const NAV = [
   // heading they land on, so there is nothing to re-resolve on arrival.
   { href: "/towards-a-dark-factory", label: "Towards a Dark Factory", group: "learn" },
   // Out of the menu and to the right of it. These are setup actions rather than things to
-  // read, and `standalone` keeps them in the `learn` group for the phone panel, where a
-  // section of one item would read as a mistake, while the wide row draws them beside the
-  // trigger.
+  // read: `standalone` is what the WIDE row reads, drawing them beside the trigger instead
+  // of inside it. The phone panel reads `group`, and that is a separate decision — see
+  // `GROUPS` for why these two now head a section of their own there.
   //
   // ── One row until 2026-08-07, and why it is two now ──
   // This was `{ href: "/install", label: "Install" }`, and the comment argued the label
@@ -128,25 +128,56 @@ export const NAV = [
   // on every surface, precisely because a card's `skill:` field means something else and
   // one level down. Both labels are their pages' `h1` character for character, which is
   // what `nav.test.ts` holds every row to.
-  { href: "/skill", label: "The DarkPrint skill", group: "learn", standalone: true },
-  { href: "/mcp", label: "Connect via MCP", group: "learn", standalone: true },
+  { href: "/skill", label: "The DarkPrint skill", group: "setup", standalone: true },
+  { href: "/mcp", label: "Connect via MCP", group: "setup", standalone: true },
 ] as const;
 
 /**
  * The phone panel's sections. `home` is deliberately absent.
  *
  * A section headed "Home" holding one link called "Home" says the word twice and reads as
- * a mistake, which is the same reason the two setup routes carry `standalone` rather than
- * a group of their own. On the panel it is rendered above these, unheaded, where a first
- * item does not need a category to be understood.
+ * a mistake. On the panel it is rendered above these, unheaded, where a first item does not
+ * need a category to be understood.
+ *
+ * ── Why "Set up" is a section and not two rows under "Learn" ──
+ * The author: "when the navbar becomes an hamburger menu, I want that the DarkPrint skill
+ * and the Connect via MCP pages, belong to a third category. Find the best name."
+ *
+ * They were in `learn` because the wide row draws them outside the menu anyway and a
+ * section of one item reads as a mistake — but there are TWO of them, so that exemption
+ * never applied, and filing them under "Learn" made the same claim the author had already
+ * struck out of the footer: "'The DarkPrint skill' and 'Connect via MCP' should not appear
+ * under 'Learn'". The wide row said one thing and the collapsed panel said another.
+ *
+ * ── The name ──
+ * "Set up" is the phrase this file has used for these two rows since they were split, in
+ * the comment right above them: "setup actions rather than things to read". Promoting the
+ * word the code already reached for beats inventing one.
+ *
+ * What it has to be true of is both halves at once, and the two are not the same shape:
+ * one is a skill you install into Claude Code, the other is a server you point a client at.
+ * What they share is that you DO them once, to your own machine, before any of the rest of
+ * this site is useful to you — which is setup and is not reading.
+ *
+ * Four that were weighed and dropped. "Connect" repeats a word already inside one of its
+ * own rows, which is the "Home"/"Home" fault one paragraph up. "Install" is what the merged
+ * route was called and is wrong for MCP — nothing is installed, a client is pointed. "Tools"
+ * collides with a node card's `tools:` field, which this site reserves for exactly the reason
+ * `lib/skill.ts` reserves "skill". "In Claude Code" is true of both today and narrows the
+ * MCP page to one client on the day a second one connects.
  */
 const GROUPS = [
   { id: "registry", title: "Registry" },
   { id: "learn", title: "Learn" },
+  { id: "setup", title: "Set up" },
 ] as const;
 
-/** Inside the dropdown. */
-const LEARN = NAV.filter((item) => item.group === "learn" && !("standalone" in item));
+/** Inside the dropdown.
+ *
+ * The `!("standalone" in item)` clause this carried is gone with the group split: the two
+ * standalone rows are `setup` now, so `group === "learn"` already excludes them and a second
+ * predicate saying the same thing would be a rule with nothing left to catch. */
+const LEARN = NAV.filter((item) => item.group === "learn");
 /* `HOME` stood here. It filtered `group === "home"`, and with the row gone that predicate
    narrows to `never` against an `as const` table — the filter does not merely return empty,
    it stops typechecking. So the group is gone rather than left resolving to nothing. */

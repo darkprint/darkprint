@@ -89,16 +89,30 @@ export function SectionNodeIsCard() {
   return (
     <section id="node" className="bg-surface py-20 sm:py-28">
       <div className="container-page">
-        {/* Left, not centred. A centred heading over a centred drawing was right when the
-            drawing was a symmetrical scene; the walk below is a listing beside a list, and
-            both start on the left margin. */}
+        {/* Centred, on the author's instruction (2026-08-08), and the reason the old note
+            here gave for the left margin has expired. It argued that "the walk below is a
+            listing beside a list, and both start on the left margin" — but the walk no
+            longer OPENS on the listing. It opens on the card, which is a 38rem figure
+            centred in its own cell, and a left-aligned heading over a centred card is the
+            mismatch the note was written to prevent, pointing the other way.
+
+            It matches the beat above it either way: `SectionBlueprint` centres the same
+            pair over the same kind of figure. */}
         {/* No eyebrow. `.eyebrow` is rationed to one per page or per full-bleed band, and
             "ONE NODE" spent one of them saying what the headline beside it already says
             in bigger type. What was left was a cyan mono run competing with the cyan keys
             in the listing below it for the same reader's attention. */}
+        {/* The lead ended "Nine parts, on a card the archive really stores." until the
+            author asked it out. It was the deck counting the figure's own steps: the walk
+            numbers its nine parts 01 to 09 down the rail and marks each one's lines in the
+            margin, so the sentence was telling a reader a number they were about to be
+            shown — and "the archive really stores" is a claim the figure makes by being
+            drawn from the file, not one the deck has to assert. */}
         <SectionHeading
           title="Every node is a card"
-          lead="Open one and it says what it does, the brief it is handed, which model runs it, what arrives, and what must never reach it. Nine parts, on a card the archive really stores."
+          lead="Open one and it says what it does, the brief it is handed, which model runs it, what arrives, and what must never reach it."
+          align="center"
+          className="mx-auto"
         />
 
         <div className="mt-10">
