@@ -136,7 +136,11 @@ const ROSTER: readonly SceneEntry[] = [
   // enforces, and `beats.test.ts` still holds the beat's copy.
   {
     files: ["components/home/SectionLevels.tsx"],
-    frames: 5,
+    // 4, not 5. The ladder took the source's numbering on 2026-08-08 and drew its half step
+    // at 3.5 for one revision; the author then asked that rung out. This number is the whole
+    // reason the removal could not be silent: a frame deleted without it fails here rather
+    // than shipping a roster that measures a scene nobody draws.
+    frames: 4,
     render: () => framesOf(createElement(SectionLevels)),
   },
   // `components/home/lifecycle/ForkScene.tsx` had an entry here and the file is gone.

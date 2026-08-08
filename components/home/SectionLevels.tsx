@@ -95,7 +95,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { cx } from "@/lib/format";
 
 type Level = {
-  n: 1 | 2 | 3 | 3.5 | 4;
+  n: 1 | 2 | 3 | 4;
   name: string;
   body: string;
   /** The one the reader is most likely standing on. Stated, never styled as a fault. */
@@ -103,19 +103,25 @@ type Level = {
 };
 
 /**
- * The five rungs: the SOURCE'S division, in this site's words.
+ * The four rungs: the SOURCE'S numbering, in this site's words.
  *
  * The author, 2026-08-08, with the article's own table in hand: "I expect to mimic such
  * division — the graphics does not report that."
  *
- * So the numbering is the linked piece's, 1 / 2 / 3 / 3.5 / 4 including the half step, and
- * the distinction each rung turns on is its:
+ * So the numbering is the linked piece's, 1 / 2 / 3 / 4, and the distinction each rung
+ * turns on is its:
  *
- *   1     the model completes what you are typing; everything else is yours
- *   2     an agent writes whole files; every change passes your review
- *   3     an agent works from a spec, held-out scenarios gate it, you approve the merge
- *   3.5   the same, except some services merge without you
- *   4     specs in, merged tested code out, your existing pipeline deploys it
+ *   1   the model completes what you are typing; everything else is yours
+ *   2   an agent writes whole files; every change passes your review
+ *   3   an agent works from a spec, held-out scenarios gate it, you approve the merge
+ *   4   specs in, merged tested code out, your existing pipeline deploys it
+ *
+ * The source carries a fifth row between 3 and 4, a half step at 3.5 where "some services
+ * auto-merge without you". It was drawn here for one revision and the author asked it out.
+ * The ladder is what a reader locates themselves on, and 3.5 is not a place to stand: it is
+ * 3 for some of your services and 4 for the others, which is a rollout and not a rung. What
+ * it did say — that the gate comes off one service at a time — the gate below still says by
+ * being the single thing that separates 3 from 4.
  *
  * The SENTENCES are ours and deliberately not the table's. Two reasons, and neither is
  * squeamishness: copying five rows of someone else's prose onto a page that credits them
@@ -153,11 +159,6 @@ const LEVELS: Level[] = [
     body: "An agent works from a specification inside a harness, and held-out scenarios decide whether what came back is good enough. You approve the merge, every time.",
   },
   {
-    n: 3.5,
-    name: "Partial auto-merge",
-    body: "The same run, except some services merge without you. Which ones is a decision somebody wrote down, and the rest still stop at you.",
-  },
-  {
     n: 4,
     name: "Dark factory",
     body: "A specification goes in, tested and merged code comes out, and the pipeline you already have deploys it. The harness is the same one; what was removed is the checkpoint, not the constraints.",
@@ -177,7 +178,7 @@ const SOURCES: Source[] = [
     title: "The Dark Factory Pattern: Moving From AI-Assisted to Fully Autonomous Coding",
     where: "HackerNoon",
     href: "https://hackernoon.com/the-dark-factory-pattern-moving-from-ai-assisted-to-fully-autonomous-coding",
-    note: "One team's account of the climb, and the source this framing is borrowed from. The five rungs above are its division, half step and all: 1, 2, 3, 3.5 and 4. The sentences on them are ours.",
+    note: "One team's account of the climb, and the source this framing is borrowed from. The four rungs above are numbered as it numbers them; it carries a half step at 3.5 that this ladder does not, and the sentences are ours.",
   },
   {
     title: "strongdm/attractor",
@@ -317,9 +318,12 @@ const LOOP_TO = 2;
  * The gate is what makes the top three rungs one picture with one variable, which is the
  * whole of what the author asked for:
  *
- *   3     every run goes through the gate, and the direct run does not exist
- *   3.5   both runs exist — "some services merge without you"
- *   4     only the direct run
+ *   3   every run goes through the gate, and the direct run does not exist
+ *   4   only the direct run, and no gate
+ *
+ * A middle state where both runs are drawn — the source's 3.5 — was built and removed with
+ * that rung. The two-armed prop it needed is gone with it: `gate` is a boolean, and what it
+ * answers is the one question separating the top two rungs.
  *
  * y=34 rather than the return lane's 28: an 8-unit mark centred at 28 would touch the
  * harness box's top edge at 20, and `scene-labels.test.ts` fails a box edge drawn through a
@@ -327,7 +331,7 @@ const LOOP_TO = 2;
  * whose tops are at 65.
  *
  * x=318 is the midpoint of debug and release, and the return lane it shares a corridor with
- * runs from 204 to 280 — so the two never overlap even at 3.5, where both are drawn.
+ * runs from 204 to 280, so the two never overlap.
  */
 const GATE = { x: 318, y: 34 } as const;
 
@@ -457,17 +461,16 @@ function Run({
    * Whether a person has to let the run through before it releases, and whether every run
    * goes that way.
    *
-   * `"all"` is level 3 — "you approve the merge, every time" — so the direct run from debug
-   * to release is NOT drawn: there is no path to release that does not pass the gate.
-   * `"some"` is level 3.5, where both runs exist. Level 4 passes nothing and keeps only the
-   * direct run. See `GATE`.
+   * True at level 3 — "you approve the merge, every time" — and the direct run from debug to
+   * release is then NOT drawn: there is no path to release that does not pass the gate.
+   * Level 4 passes nothing and keeps only the direct run. See `GATE`.
    */
-  gate?: "all" | "some";
+  gate?: boolean;
 }) {
   const at = (i: number) => (people.includes(i) ? HR : R);
   /* The last forward run, debug → release, is the one the gate is about. At `"all"` it is
      replaced by the two legs through the gate rather than drawn beside them. */
-  const forward = STATIONS.slice(0, gate === "all" ? -2 : -1);
+  const forward = STATIONS.slice(0, gate === true ? -2 : -1);
   return (
     <>
       {harness !== undefined && <Boundary label={harness} />}
@@ -476,7 +479,7 @@ function Run({
         <Wire key={s.label} from={s.x} to={STATIONS[i + 1].x} fromR={at(i)} toR={at(i + 1)} />
       ))}
 
-      {gate !== undefined && (
+      {gate === true && (
         <>
           <FlowEdge
             from={[STATIONS[3].x, ROW]}
@@ -542,7 +545,9 @@ interface LevelDrawing {
  *   who stands where   violet marks. 5 → 3 → 1 → 1 → 0.
  *   the return lane    whether the run patches and re-tests without being told to.
  *                      Absent at 1 and 2, present from 3 on.
- *   the harness        the box around the run. Absent below 4, present at 4 AND 5.
+ *   the harness        the box around the run. Absent below 3, present at 3 and 4.
+ *   the merge gate     whether a person has to let the run through. Present at 3, gone
+ *                      at 4, and it is the ONLY thing those two frames disagree about.
  *
  * Everything else — the five stations, their positions, their names, the four forward
  * runs, the frame — is identical in all five, which is what lets a reader answer "how much
@@ -569,13 +574,7 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
     label:
       "The same five-phase run, inside a harness, with an agent at every one of the five. A return run goes from debug back to test, and the only way to reach release is through a person marked approve.",
     note: "every run stops at a person",
-    body: <Run people={[]} harness="harness" loop gate="all" />,
-  },
-  3.5: {
-    label:
-      "The same drawing again, with one run added: debug now reaches release directly as well as through the person marked approve, so some runs merge without anyone and the rest still stop.",
-    note: "some runs go round the person",
-    body: <Run people={[]} harness="harness" loop gate="some" />,
+    body: <Run people={[]} harness="harness" loop gate />,
   },
   4: {
     label:

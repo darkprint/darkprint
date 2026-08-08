@@ -69,13 +69,12 @@ describe("the ladder is credited to nobody who did not write it", () => {
     expect(COPY).toContain("account of the climb");
   });
 
-  it("names all five rungs itself", () => {
+  it("names all four rungs itself", () => {
     // The names are the site's, so the site has to be the place they are written down.
     for (const name of [
       "Autocomplete",
       "Reviewed generation",
       "Spec-driven",
-      "Partial auto-merge",
       "Dark factory",
     ]) {
       expect(SOURCE, `level "${name}" is missing`).toContain(`name: "${name}"`);
@@ -84,13 +83,16 @@ describe("the ladder is credited to nobody who did not write it", () => {
 
   /**
    * The author asked the ladder to "mimic such division" on 2026-08-08, pointing at the
-   * article's own table. The division is therefore the source's and the half step is the
-   * proof: nobody inventing a five-rung scale writes 3.5. The test above still holds the
-   * NAMES to this file, because those are ours and the article gives none.
+   * article's own table, and then asked its half step out. Both instructions bind: the
+   * numbering is the source's 1 to 4, and 3.5 is not a rung here.
+   *
+   * The absence is worth a test rather than a comment, because "add the half step back" is
+   * the obvious-looking fix for anyone who reads the source next to the ladder and counts.
+   * The names above stay ours; the article gives none.
    */
-  it("keeps the half step, which is what makes the division the source's", () => {
-    expect(SOURCE).toContain("n: 3.5");
-    expect(SOURCE).toContain("n: 1 | 2 | 3 | 3.5 | 4");
+  it("numbers itself 1 to 4, with no half step", () => {
+    expect(SOURCE).toContain("n: 1 | 2 | 3 | 4");
+    expect(SOURCE, "the half step is not a rung on this ladder").not.toContain("n: 3.5");
   });
 });
 
