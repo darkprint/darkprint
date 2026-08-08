@@ -45,7 +45,7 @@ export default function NodesPage() {
     author: record.card.author === undefined ? undefined : getAuthor(record.card.author),
   }));
 
-  const blueprints = registry.blueprints().length;
+  /* `blueprints` was here, for the count the deck printed until 2026-08-08. */
 
   return (
     <div className="container-page py-12 sm:py-16">
@@ -55,7 +55,12 @@ export default function NodesPage() {
         as="h1"
         eyebrow="Registry"
         title="Node cards"
-        lead={`The ${nodes.length} cards the registry's ${blueprints} blueprints are assembled from, grouped by what kind of step they are.`}
+        /* No counts, on the author's instruction 2026-08-08. `architecture/ontology.md`'s
+           rule is that a written count goes stale the moment content lands, which is why
+           both of these were interpolated rather than typed; the author's point is the one
+           the rule does not cover — a reader on the shelf is about to see how many there
+           are, and two numbers in the deck are the page counting itself out loud. */
+        lead="The cards the registry's blueprints are assembled from, grouped by what kind of step they are."
         className="mb-10"
       />
       {/* No `Suspense`, and no `useSearchParams` behind it — see `NodeBrowser`.

@@ -236,68 +236,76 @@ export default function SpecOntologyPage() {
                   : "The one term this archive added for itself"}
               </h2>
             </div>
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
-              {/* `.prose-lane` is a no-op at `lg`, where the grid column is already
-                  564px, and the whole point between `sm` and `lg`, where this column is
-                  the full 1152px container. */}
-              <div className="prose-lane flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
+            {/* Prose first at full width, the file under it, since 2026-08-08.
+                ------------------------------------------------------------
+                The author: "make the text more clear as it is very difficult to understand
+                what is the message. Then, move the panel ontology/extensions.yaml below the
+                text and the text then can occupy the full horizontal length."
+
+                Both halves of that are one problem. Four paragraphs in a 564px column beside
+                a code pane is a 60-character measure carrying an argument in four moves, and
+                the argument was being made in the order it was DISCOVERED rather than the
+                order it is understood: what the term is, then why it is not in the core, then
+                what it declares, then how it travels. A reader met the trade before they had
+                the claim.
+
+                The prose is rewritten to lead with the claim — anyone may add a term, in
+                their own namespace, and it stays visibly theirs — and the rest follows as
+                consequences of it. Full width at `lg`, so four short paragraphs read as four
+                sentences rather than as a narrow column of twelve lines, and the file sits
+                under them as the evidence rather than beside them as a competitor. */}
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
                 {overlayTerm === undefined ? (
                   <p>
-                    Everything above describes the curated core. This archive
-                    also carries{" "}
-                    {local.length === 1
-                      ? "one term"
-                      : `${local.length} terms`}{" "}
-                    of its own, namespaced and outside that count. The file
-                    shown here is the whole of them.
+                    The {core.length} terms above are the curated core, and nobody but this
+                    project can change them. Anyone can add their own: this archive carries{" "}
+                    {local.length === 1 ? "one term" : `${local.length} terms`} of its own, in
+                    a namespace, outside that count. The file below is the whole of them.
                   </p>
                 ) : (
                   <>
                     <p>
-                      Everything above describes the curated core. This archive
-                      needed one thing the core does not have: a way to mark a
-                      node that handles personal data. So it defined{" "}
-                      <Id>{overlayTerm.id}</Id>, whose own definition, quoted
-                      from the file shown here, is{" "}
+                      The {core.length} terms above are the curated core, and nobody but this
+                      project can change them. Anyone can add their own, and this archive did:
+                      it needed a way to mark a node that handles personal data, so it defined{" "}
+                      <Id>{overlayTerm.id}</Id> in a namespace of its own. Its definition,
+                      quoted from the file below, is
                       &ldquo;{overlayTerm.description}&rdquo;
                     </p>
                     <p>
-                      It sits in a namespace rather than in the core because
-                      adding a curated term from the content side would grow a
-                      set this archive does not own. That is the trade: the{" "}
-                      {core.length}{" "}
-                      above stay the number two authors can hold each other to,
-                      and this one is visibly somebody&apos;s local decision.
+                      The namespace is the point rather than a formality. A term added to the
+                      core would grow the set two authors hold each other to, and no single
+                      archive gets to do that. A namespaced one stays visibly somebody&apos;s
+                      local decision, and the {core.length} above stay the number everybody
+                      shares.
                     </p>
                     <p>
-                      A local term still has to earn its place. It declares{" "}
+                      It still has to say what it is. It declares{" "}
                       <Id>{overlayTerm.broader ?? "a core term"}</Id> as its{" "}
-                      <Id>broader</Id>, so a reader or an analyzer that knows
-                      only the core can still tell what kind of thing it is
+                      <Id>broader</Id>, so an analyzer that knows only the core can place it
                       {overlayTerm.defaultWeight === undefined
                         ? ", and it declares no weight, so it counts zero and moves no score"
                         : `, and it prices itself at ${overlayTerm.defaultWeight}. A local marker that named no weight would count zero and move no score`}
                       .
                     </p>
                     <p>
-                      The definition travels with the work that uses it. Any
-                      bundle whose cards name the term ships this file in its
-                      own folder, as the{" "}
+                      And it travels with the work. There is no registry to ask at resolve
+                      time, so any bundle whose cards name the term ships this file in its own
+                      folder, as the{" "}
                       <SpecLink href={`/blueprints/${LOCAL_VOCAB_SLUG}`}>
                         {LOCAL_VOCAB_SLUG}
                       </SpecLink>{" "}
-                      bundle does, so the card resolves wherever the folder is
-                      opened, with no registry to ask.
+                      bundle does. The card resolves wherever the folder is opened.
                     </p>
                   </>
                 )}
                 <p className="text-sm">
-                  <SpecLink href="/ontology">Read the full vocabulary</SpecLink>
-                  , with every term, its subsumption tree, and which cards use
-                  it.
+                  <SpecLink href="/ontology">Read the full vocabulary</SpecLink>, with every
+                  term, its subsumption tree, and which cards use it.
                 </p>
               </div>
-              {/* A code pane is not prose: it keeps its half of the grid. */}
+
               <SourcePanel
                 source={vocabulary.text}
                 language="YAML"
@@ -355,22 +363,31 @@ export default function SpecOntologyPage() {
               and `RouteBoxLink` IS that box. It is the same component `/build`'s own pager
               draws and the three cards at the foot of `/what-a-blueprint-is` borrow.
 
-              `justify-end` because the author asked for it on the right: the rail under it
-              runs left to right and a box at the far end reads as the end of the page rather
-              than as another rail entry. */}
-          <div className="flex justify-end">
-            <RouteBoxLink
-              href="/build"
-              label={
-                <>
-                  Design <span aria-hidden>→</span>
-                </>
-              }
-              title="Design your blueprint"
-            />
-          </div>
+              On the right, because the rail runs left to right and a box at the far end
+              reads as the end of the page rather than as another rail entry. */}
+          {/* The Design box sits ON the pager's row now, at its right end, on the author's
+              instruction 2026-08-08. It stood in a band of its own above it, which put two
+              amber `.route-box`es on two lines with nothing between them, and this page's
+              pager has a PREVIOUS and no NEXT, so the right end of that row was empty and is
+              exactly the slot a forward exit belongs in.
 
-          <SpecPager href={HERE} />
+              Passed INTO the pager rather than laid beside it: `SpecPager` draws its own
+              rule and its own rail, and a sibling `<div>` would put the two boxes on two
+              lines at every width instead of sharing one baseline and one wrap. */}
+          <SpecPager
+            href={HERE}
+            after={
+              <RouteBoxLink
+                href="/build"
+                label={
+                  <>
+                    Design <span aria-hidden>&rarr;</span>
+                  </>
+                }
+                title="Design your blueprint"
+              />
+            }
+          />
         </div>
       </section>
     </>

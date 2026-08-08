@@ -140,6 +140,24 @@ export function SectionNodeIsCard() {
             margin, so the sentence was telling a reader a number they were about to be
             shown — and "the archive really stores" is a claim the figure makes by being
             drawn from the file, not one the deck has to assert. */}
+        {/* Sticky, on the author's instruction 2026-08-08: this heading is not to "scroll
+            away" while the figure below it is pinned.
+
+            It works because the two are SIBLINGS in one scroll container, so each takes its
+            own offset: the heading locks at `top-16`, just under the site header, and the
+            figure locks lower down at its own centring offset. Neither is inside the other,
+            which is what would have made the second one's offset meaningless.
+
+            `bg-bg-surface` is not decoration. The figure passes underneath a sticky element,
+            and a heading with a transparent ground would have a 460px drawing sliding
+            through its letters. The class is the section's own ground, so the strip reads as
+            the page rather than as a bar.
+
+            `-mx-4 px-4` so the ground reaches past the text to the container's padding
+            edge, and `pb-6` so the figure never touches the last line. `z-30` is the section
+            chrome rung of `app/globals.css`'s ladder — above the figure, below the header at
+            50. */}
+        <div className="bg-surface sticky top-16 z-30 -mx-4 px-4 pb-6">
         <SectionHeading
           /* The card's own register, on the author's instruction: "colour using the amber
              colour typical of a node."
@@ -162,6 +180,7 @@ export function SectionNodeIsCard() {
           align="center"
           className="mx-auto"
         />
+        </div>
 
         {/* `mt-4`, not `mt-10`. The other 24px of the author's "it is too distant" — the
             rest came out of the card's own placement inside the cell, see `FACE_TOP`. A

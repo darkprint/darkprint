@@ -11,7 +11,11 @@ type SortKey = "used" | "name" | "type" | "phase";
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "used", label: "Most used" },
   { value: "name", label: "Name A–Z" },
-  { value: "type", label: "By node type" },
+  /* "By card type", not "By node type", on the author's instruction 2026-08-08 and for the
+     reason the shelf itself was renamed: this page lists CARDS, one per node, and the header
+     calls it Cards. The `sr-only` label and the `aria-label` below follow it, so what a
+     screen reader hears is what the control says. */
+  { value: "type", label: "By card type" },
   // Lifecycle order, not alphabetical — see `phaseRank` below.
   { value: "phase", label: "By phase" },
 ];
@@ -509,11 +513,11 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
           </div>
 
           <label className="flex items-center gap-2">
-            <span className="sr-only">Filter by node type</span>
+            <span className="sr-only">Filter by card type</span>
             <select
               value={type ?? ""}
               onChange={(e) => setParam("type", e.target.value || null)}
-              aria-label="Filter by node type"
+              aria-label="Filter by card type"
               className={controlClass}
             >
               <option value="">All node types</option>

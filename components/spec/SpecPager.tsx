@@ -140,8 +140,21 @@ function PagerLink({ page, side }: { page: SpecPage; side: "previous" | "next" }
 export function SpecPager({
   href,
   showNext = true,
+  after,
 }: {
   href: string;
+  /**
+   * One more signpost, at the right end of the arrow row.
+   *
+   * `/spec/ontology` passes the Design box: that page ends the sequence, so it has a
+   * PREVIOUS and no NEXT, and the right end of the row is empty. A forward exit belongs
+   * exactly there — on the row a reader already reads for "where next" — rather than in a
+   * band of its own above it.
+   *
+   * Rendered inside the row rather than beside the pager so the two boxes share one
+   * baseline and one wrap; a sibling `<div>` puts them on two lines at every width.
+   */
+  after?: React.ReactNode;
   /**
    * Whether to draw the NEXT signpost.
    *
@@ -187,12 +200,13 @@ export function SpecPager({
         ))}
       </ol>
 
-      {(previous !== undefined || (showNext && next !== undefined)) && (
+      {(previous !== undefined || (showNext && next !== undefined) || after !== undefined) && (
         /* A row of two signposts, not a two-column grid: the boxes are content-sized
            now, so a grid would stretch them straight back to half the measure each. */
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-start">
           {previous !== undefined && <PagerLink page={previous} side="previous" />}
           {showNext && next !== undefined && <PagerLink page={next} side="next" />}
+          {after !== undefined && <div className="sm:ms-auto">{after}</div>}
         </div>
       )}
     </nav>

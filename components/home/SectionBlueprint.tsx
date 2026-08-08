@@ -76,6 +76,24 @@ export function SectionBlueprint() {
             `.eyebrow` is rationed to one per page or per full-bleed band; this frees one
             rather than spending it, and the coloured title below now does the work of
             saying which register a reader is in. */}
+        {/* Sticky, on the author's instruction 2026-08-08: this heading is not to "scroll
+            away" while the figure below it is pinned.
+
+            It works because the two are SIBLINGS in one scroll container, so each takes its
+            own offset: the heading locks at `top-16`, just under the site header, and the
+            figure locks lower down at its own centring offset. Neither is inside the other,
+            which is what would have made the second one's offset meaningless.
+
+            `bg-bg-void` is not decoration. The figure passes underneath a sticky element,
+            and a heading with a transparent ground would have a 460px drawing sliding
+            through its letters. The class is the section's own ground, so the strip reads as
+            the page rather than as a bar.
+
+            `-mx-4 px-4` so the ground reaches past the text to the container's padding
+            edge, and `pb-6` so the figure never touches the last line. `z-30` is the section
+            chrome rung of `app/globals.css`'s ladder — above the figure, below the header at
+            50. */}
+        <div className="bg-void sticky top-16 z-30 -mx-4 px-4 pb-6">
         <SectionHeading
           /* Cyanotype blue, the pole this whole beat is drawn in — the graticule ground,
              the frame, the node labels and the edges are all `--color-blueprint-*`, and the
@@ -99,6 +117,7 @@ export function SectionBlueprint() {
           align="center"
           className="mx-auto"
         />
+        </div>
 
         <BlueprintWalk dot={withoutComments(dot)} file={FILE} />
       </div>
