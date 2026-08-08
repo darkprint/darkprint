@@ -166,6 +166,8 @@ import { SKILL_ROUTE } from "@/lib/skill";
 
 import { Folder } from "./lifecycle/Folder";
 import { TeacherFigure } from "./lifecycle/TeacherFigure";
+import { ConnectFigure } from "./lifecycle/ConnectFigure";
+import { UploadFigure } from "./lifecycle/UploadFigure";
 
 const STARTER = "/blueprints/starter-software-factory";
 
@@ -213,31 +215,18 @@ function Mark({ mark }: { mark: string }) {
   );
 }
 
-/**
- * What the step actually hands you, in the space the glyph box used to take.
- *
- * The author on these three panels: they "si possono rendere più carini come passaggi che
- * indicano che cosa si possa fare". The empty box was the weak part, and the fix is not a
- * fourth attempt at an illustration — this file's header records two of those coming off,
- * ending at "I'd lean toward a solution without the use of blueprint as images". So the
- * space carries the artefact instead: the command you run, the files you get, the line you
- * write, the reading you get back. Information rather than decoration, in the register the
- * rest of the page already uses for a file listing.
- */
-function Artefact({ lines }: { lines: readonly (readonly [string, string])[] }) {
-  return (
-    <div className="rounded-lg border border-line bg-surface-2/60 px-3 py-2.5">
-      {lines.map(([key, value]) => (
-        <div key={key + value} className="flex items-baseline gap-2 font-mono text-[11px] leading-[1.9]">
-          <span className="shrink-0 text-dim">{key}</span>
-          <span className="min-w-0 truncate text-fg" title={value}>
-            {value}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
+/* `Artefact` stood here — the bordered monospace box that carried each panel's own
+   command, listing or reading. Its docblock recorded why it existed: the author had
+   asked these panels to "si possono rendere più carini come passaggi che indicano che
+   cosa si possa fare", two illustration attempts had already come off, and the answer
+   was "information rather than decoration".
+
+   All three boxes are gone now, in two instructions: Download's became a folder you
+   open, and Connect's and Upload's became drawings. The earlier ruling is not being
+   quietly reversed — what it rejected was an illustration in place of the artefact,
+   and what replaced these is a drawing OF the artefact: a folder holding the four real
+   filenames, a client reaching a shelf, a bundle entering a tab. The information is
+   still what is drawn. `components/home/lifecycle/` holds the three. */
 
 const linkCls =
   "mt-auto font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan";
@@ -460,12 +449,11 @@ export function SectionLifecycle() {
               <NotBuiltYet />
             </div>
 
-            <Artefact
-              lines={[
-                ["$", "claude mcp add darkprint -- npx -y darkprint mcp"],
-                ["→", "every blueprint and node card, as resources"],
-              ]}
-            />
+            {/* The command and the resources it would return stood here as two monospace
+                rows. The author asked the technical box out, so the shape is drawn instead:
+                a client, a run into the shelf, and one card coming back dashed, because
+                nothing comes back yet. `ConnectFigure` argues the dash. */}
+            <ConnectFigure />
 
             {/* Doc 2 §0.4: the panel that describes an unbuilt thing says so beside the
                 thing, not in a footnote. `/mcp` carries the same sentence as its lead and
@@ -489,12 +477,12 @@ export function SectionLifecycle() {
               <NotBuiltYet />
             </div>
 
-            <Artefact
-              lines={[
-                ["in", "your bundle, in the browser tab"],
-                ["out", "autonomy class · security reading"],
-              ]}
-            />
+            {/* `in` and `out` as two monospace rows stood here, and the author asked the
+                technical box out. The in and the out are the whole of what the drawing
+                keeps: a folder goes into a tab, and a reading comes back out of it. The
+                frame is closed on every side, which is the drawing's half of the sentence
+                below it. */}
+            <UploadFigure />
 
             {/* Doc 2 §0.4, and §1 of this pass's own spec: this is the landing's one
                 highest-honesty-risk sentence, so it says what `/upload` does and stops

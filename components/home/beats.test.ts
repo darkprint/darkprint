@@ -376,16 +376,20 @@ describe("beat 4's panels can be narrower than the strings inside them", () => {
       ).toMatch(/\bmin-w-0\b/);
   });
 
-  it("leaves the row too long for that column free to ellipsis", () => {
-    // The single string that drove the whole overflow. It stays in the markup in full —
-    // `title` carries it to a tooltip and a screen reader reads the text node, not the
-    // painted box — and the span around it is the one allowed to cut it visually.
-    const at = html.indexOf("claude mcp add darkprint -- npx -y darkprint mcp");
-    expect(at, "the MCP command is not in the markup").toBeGreaterThan(0);
-    const span = html.slice(html.lastIndexOf("<span", at), at);
-    expect(span, "the long command's cell cannot shrink").toContain("min-w-0");
-    expect(span, "the long command's cell has nothing to cut it with").toContain("truncate");
-  });
+  /* A third case stood here: "leaves the row too long for that column free to ellipsis".
+     It held the one string that drove the whole overflow — `claude mcp add darkprint --
+     npx -y darkprint mcp`, 331px of monospace in a 342px track — to a `min-w-0 truncate`
+     span that could cut it.
+
+     The author asked the Connect panel's monospace box out on 2026-08-08 and the string
+     went with it. Nothing in beat 4 is an unbreakable run of text now: what replaced the
+     three boxes is a folder, two drawings and prose, and prose wraps.
+
+     The case above it is the one that mattered anyway and it is untouched — every panel
+     still has to clear its automatic grid-item minimum, because that is a property of the
+     LAYOUT rather than of any one string, and it is what stops the next long thing from
+     setting a floor. If a monospace row returns to these panels, this case returns with
+     it. */
 });
 
 /**

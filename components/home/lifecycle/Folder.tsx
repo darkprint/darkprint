@@ -138,7 +138,13 @@ export function Folder({ className }: { className?: string }) {
             key={skew}
             aria-hidden
             className={cx(
-              "absolute inset-0 z-30 block origin-bottom rounded-[4px_8px_8px_8px] bg-blueprint-line/55",
+              /* Opaque, and the alpha is the whole reason this line has a comment. At
+                 `/55` the flaps were translucent, so the topmost paper — light ink on a
+                 dark sheet — ghosted straight through a shut folder while the other two
+                 did not. One name showing and two hidden reads as a rendering fault
+                 rather than as a closed folder. The flaps cover their own contents now,
+                 which is what makes the hover a reveal. */
+              "absolute inset-0 z-30 block origin-bottom rounded-[4px_8px_8px_8px] bg-blueprint-line",
               "transition-transform duration-300 ease-out",
               open && (skew === 15 ? "skew-x-[15deg] scale-y-[0.55]" : "-skew-x-[15deg] scale-y-[0.55]"),
             )}
