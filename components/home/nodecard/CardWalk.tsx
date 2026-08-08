@@ -94,10 +94,11 @@
 
 import { useMemo } from "react";
 
-import { stagesShown, useScrollProgress } from "@/components/viz/useScrollProgress";
+import { clamp01, stagesShown, useScrollProgress } from "@/components/viz/useScrollProgress";
 import { cx } from "@/lib/format";
 
 import { resolveAnnotations } from "./annotations";
+import { CardFace } from "./CardFace";
 import { NC, reelShift } from "./geometry";
 import { body, lineSpan, ordinal } from "./prose";
 import { YamlListing } from "./YamlListing";
@@ -250,9 +251,33 @@ export function CardWalk({
      number seven steps had at 170vh. Two more notes at the same pace, for a fifth of a
      screen of landing. Leave the pace alone and each step would have fallen to 67px,
      which is under a single trackpad flick and would have made the walk skip. */
-  const shown = motion ? stagesShown(progress, notes.length, { head: 0.04, tail: 0 }) : notes.length;
+  /* `head` was 0.04 and is 0.22 because the walk no longer starts on the listing.
+     ------------------------------------------------------------
+     The author asked for a card drawn as a card first, swapped for its own YAML as a
+     reader scrolls. That swap spends the first fifth of the pin (see `FACE_OUT` and
+     `LIST_IN` above), and the annotations may not begin under it: step 1 attaching to a
+     line nobody can see yet is the walk talking over itself.
+
+     0.22 is the crossfade's end plus a little air, so the listing is fully opaque and has
+     been still for a moment before the first head lights. The tail stays 0 for the reason
+     the note below gives — a tail reserve moves the LAST step earlier, which is the wrong
+     direction here. */
+  const shown = motion ? stagesShown(progress, notes.length, { head: 0.22, tail: 0 }) : notes.length;
   const active = motion ? Math.min(notes.length, Math.max(1, shown)) - 1 : -1;
   const open = active >= 0 ? notes[active] : undefined;
+
+  /* The face goes out, the listing comes in, and they overlap for a twentieth of the pin
+     so the swap reads as one thing becoming another rather than as a cut. Both are inline
+     opacity applied only once `motion` is confirmed: without it neither layer carries a
+     style at all and the two render as ordinary blocks, one under the other, which is what
+     the server and a reduced-motion reader get. `beats.test.ts` forbids shipping
+     `opacity-0`, and this is why nothing here does. */
+  const faceOpacity = 1 - clamp01((progress - 0.05) / 0.09);
+  const listOpacity = clamp01((progress - 0.10) / 0.09);
+  const layer = (opacity: number) =>
+    motion
+      ? ({ gridArea: "1 / 1", opacity, pointerEvents: opacity < 0.5 ? "none" : "auto" } as const)
+      : undefined;
 
   return (
     <div ref={ref} className={cx(motion && "lg:h-[190vh]")}>
@@ -284,6 +309,14 @@ export function CardWalk({
         {/* Plain ground, one hairline. The author named the graticule as the thing to
             drop, and it is the whole difference between a figure the landing carries and
             a plate that reads as its own page. */}
+        <div className={cx(motion && "lg:grid")}>
+        {/* The card, before it is a file. Same shell, same grid cell, so the sticky box
+            reserves the listing's height — which is the taller of the two and the height
+            every number in the comment above is derived from. */}
+        <div style={layer(faceOpacity)}>
+          <CardFace source={source} cardRef={cardRef} />
+        </div>
+        <div className={cx(!motion && "mt-5")} style={layer(listOpacity)}>
         <figure className="flex flex-col gap-4 rounded-xl border border-line bg-void p-4 sm:p-6">
           <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 font-mono text-[11px] text-dim">
             <span className="text-muted">{cardRef}</span>
@@ -458,6 +491,8 @@ export function CardWalk({
             </ol>
           </div>
         </figure>
+        </div>
+        </div>
       </div>
     </div>
   );
