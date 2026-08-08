@@ -5,6 +5,7 @@ import { partitionTerms } from "@/lib/core";
 import { allBlueprints, allNodeCards, getNodeCard, getOntologyView } from "@/lib/content";
 import { GuardrailShape, HandoverAxis } from "@/components/explain/ConceptFigures";
 import { RunLayers } from "@/components/explain/RunLayers";
+import { Folder } from "@/components/home/lifecycle/Folder";
 import {
   CardStackFigure,
   FigureFrame,
@@ -123,8 +124,14 @@ export const metadata: Metadata = {
 /** The blueprint every worked example on this site opens with. */
 const STARTER_SLUG = "starter-software-factory";
 
-const LINK =
-  "font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan";
+/* `LINK` stood here — a mono, underlined cyan run — and it had exactly one caller left,
+   the deep link inside each of the three bands. That link moved to `WhereNext` at the foot
+   of the page and became a card rather than a run of text, so the class went with it.
+
+   Recorded rather than silently dropped because it was the page's only inline-link style
+   and the next inline link written here will want one. `components/site/` has no shared
+   token for it: `INLINE` on `/towards-a-dark-factory` is the nearest thing, and it is a
+   sans run rather than a mono one. */
 
 const PROSE = "text-[15px] leading-relaxed text-muted";
 
@@ -280,9 +287,18 @@ function Part({
           </span>
         </div>
         <p className={PROSE}>{children}</p>
-        <Link href={layer.href} className={`${LINK} mt-1 self-start`}>
-          {layer.title} <span aria-hidden>&rarr;</span>
-        </Link>
+        {/* The band's own link out — "The topology, in DOT →" and its two siblings — stood
+            here and is at the foot of the page now, in `WhereNext`.
+
+            The author's reason is about reading rather than about layout: "the user by
+            seeing those links while reading, it can be curious and click on it and stop
+            following the reading of the page which is important before moving to details."
+            Three deep links into three reference pages, one per band, offered a reader an
+            exit at each of the three moments this section is trying to build an argument
+            across — and each exit lands on a page that assumes the argument. So the doors
+            are all in one place, after the argument, in the order the sequence walks them.
+
+            `layer.href` is still read, by `WhereNext`. Nothing about `SPEC_LAYERS` changed. */}
         {/* Where the file sits inside a bundle, and which part of the engine reads it.
             `layer.source` renders on no other page — the deleted `/spec` door was its one
             call site — so cutting it in a pacing pass would delete it from the site rather
@@ -303,6 +319,107 @@ function Part({
    a heading, a body and a route link. Deleted 2026-08-07 with the only section that
    called it. The three bands above are `Part`, which is a different shape for a
    different job: a band has a figure and needs the width, a step had neither. */
+
+/**
+ * What is in a bundle, one row per kind of file.
+ *
+ * Read off `public/bundles/starter-software-factory/` rather than remembered: that folder
+ * holds `blueprint.dot`, `factory.dot`, `README.md`, `AGENTS.md` and five cards under
+ * `cards/`. Five rows, and the two `.dot` files are two rows because they are two different
+ * things — one is what a person wrote and the other is what the build produced from it,
+ * which is the distinction a reader opening the folder for the first time will otherwise
+ * spend a minute working out.
+ *
+ * Typed, and that is the exception this file otherwise refuses. Every count and every field
+ * on this page comes off the archive because a written count goes stale; these are the NAMES
+ * of files in a fixed layout, which is a schema rather than content, and the alternative —
+ * globbing a public directory at build time to print five nouns — would make the list depend
+ * on whichever bundle happened to be listed first. `components/home/lifecycle/Folder.tsx`
+ * names the same files for the same reason, and `beats.test.ts` holds it to them.
+ */
+const BUNDLE_FILES: readonly { name: string; role: string }[] = [
+  {
+    name: "blueprint.dot",
+    role:
+      "The graph, as a person wrote it: which node hands what to which, and which edges were deliberately left out. This is the file the rest of the folder is pinned to.",
+  },
+  {
+    name: "cards/*.yaml",
+    role:
+      "One versioned card per node, pinned by the graph at an exact version. What runs there, which model it uses, what it may reach and what must never reach it.",
+  },
+  {
+    name: "factory.dot",
+    role:
+      "The compiled export: the graph with every card resolved into it, so a runner has one file to read instead of a folder to assemble. Produced by the build, not written by hand.",
+  },
+  {
+    name: "README.md",
+    role:
+      "What this blueprint is, for a person: the shape in a sentence, the digest to check the files against, and how to run it with your own harness.",
+  },
+  {
+    name: "AGENTS.md",
+    role:
+      "The same folder addressed to an agent, listing what must never be connected and why. It describes the pattern and nothing else: it has not seen your codebase, and it carries no instructions from whoever published it.",
+  },
+];
+
+/**
+ * The three doors, at the foot of the page, in the order the sequence walks them.
+ *
+ * The author, 2026-08-08: the deep links were one per band, and "the user by seeing those
+ * links while reading, it can be curious and click on it and stop following the reading of
+ * the page which is important before moving to details."
+ *
+ * That is a reading argument and it is right: each of the three links leaves for a reference
+ * page that assumes the argument this page is still making. Collected here they stop being
+ * three interruptions and become the thing the page was building toward, which is also what
+ * makes them a path rather than a menu — they are in `SPEC_LAYERS` order, numbered, and the
+ * pager directly below carries a reader into the same sequence.
+ */
+function WhereNext() {
+  return (
+    <section className="border-t border-line bg-surface py-16 sm:py-20">
+      <div className="container-page flex flex-col gap-8">
+        <SectionHeading
+          eyebrow="Next"
+          title="The three files, in full"
+          lead="Each part above has a reference page: the notation, the schema, and the vocabulary. They are worth reading in this order, and none of them is worth reading before now."
+        />
+        <ol className="grid gap-4 sm:grid-cols-3">
+          {SPEC_LAYERS.map((layer, i) => (
+            <li key={layer.href}>
+              <Link
+                href={layer.href}
+                className="group flex h-full flex-col gap-2 rounded-xl border border-line bg-surface-2/40 p-5 transition-colors hover:border-cyan/50"
+              >
+                <span className="flex items-baseline gap-3">
+                  <span className="font-mono text-[11px] tabular-nums text-dim">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  {/* The format chip in the layer's own colour, the same one the band above
+                      prints, so a reader recognises which of the three parts this is
+                      without re-reading its title. */}
+                  <span
+                    className="font-mono text-[11px] uppercase tracking-[0.12em]"
+                    style={{ color: layer.color }}
+                  >
+                    {layer.format}
+                  </span>
+                </span>
+                <span className="text-[15px] font-medium leading-snug text-fg transition-colors group-hover:text-cyan">
+                  {layer.title} <span aria-hidden>&rarr;</span>
+                </span>
+                <span className="font-mono text-[11px] text-dim">{layer.file}</span>
+              </Link>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
 
 export default function WhatABlueprintIsPage() {
   const all = allBlueprints();
@@ -372,6 +489,70 @@ export default function WhatABlueprintIsPage() {
         </div>
       </header>
 
+      {/* ---------- what you actually download ----------
+          New band, 2026-08-08, and the author placed it: below the lead, "the definition of
+          what a bundle is in this project (ie. the folder containing the blueprints, the
+          yaml cards, the README.md and the AGENTS.md) and specifying the roles of each
+          file", with the landing's download folder on the left.
+
+          It is a definition the page badly needed here. "You take the folder and run it with
+          your own tools" is the last clause of the lead, and until now the first thing a
+          reader learned about that folder was one sentence four hundred pixels down, inside
+          a section about something else. A page whose deliverable is a folder should say
+          what is in the folder before it says what the files mean.
+
+          The `Folder` is the landing's, unchanged: it is beat 4's Download panel, it opens
+          on hover, on focus and on click, and its three papers name the same files this
+          list does. Reusing it rather than drawing a second folder is the point — a reader
+          who met it on the landing meets the same object here, one page deeper.
+
+          Every row is a file that is really in `public/bundles/starter-software-factory/`,
+          checked against the folder rather than remembered: `blueprint.dot`, `factory.dot`,
+          `cards/*.yaml`, `README.md`, `AGENTS.md`. */}
+      <section className="border-t border-line bg-void py-14 sm:py-16">
+        <div className="container-page">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-center lg:gap-14">
+            <div className="flex flex-col items-center gap-2 lg:items-start">
+              <Folder />
+              {/* An affordance line, which the landing's mount does not need and this one
+                  does. There the folder sits inside beat 4's Download panel with a heading,
+                  a sentence and a link around it; here it is alone on a band, and a shut
+                  folder with no caption is a blue rectangle a reader has no reason to point
+                  at. Three verbs because the component takes three gestures — it opens on
+                  hover, on focus and on click — and naming only the first would describe a
+                  figure half its readers cannot operate. */}
+              <p className="font-mono text-[11px] text-dim">
+                hover, focus or tap to open
+              </p>
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-4">
+              <PanelHeading>A bundle is the folder</PanelHeading>
+              <p className={PROSE}>
+                One blueprint, one folder, five kinds of file. Everything on these pages is
+                read out of it during the build, so a reader copying from here is copying a
+                file that loads.
+              </p>
+              <dl className="flex flex-col">
+                {BUNDLE_FILES.map((file) => (
+                  <div
+                    key={file.name}
+                    className="flex flex-col gap-1 border-t border-line/70 py-3 first:border-t-0 first:pt-0 sm:flex-row sm:gap-5"
+                  >
+                    <dt className="shrink-0 font-mono text-[13px] text-copper-line sm:w-[10.5rem]">
+                      {file.name}
+                    </dt>
+                    <dd className="min-w-0 text-[15px] leading-relaxed text-muted">
+                      {file.role}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="border-t border-line bg-surface py-16">
         <div className="container-page flex flex-col gap-8">
           <SectionHeading
@@ -380,8 +561,18 @@ export default function WhatABlueprintIsPage() {
             lead="Each part is a plain text file, and each is checked against the others."
           />
 
-          {/* The sentence the deleted `/spec` index carried above its three doors, and the
-              only place on the site that says what a bundle is as an object on disk.
+          {/* REMOVED 2026-08-08, and the paragraph it introduced with it. This was "the only
+              place on the site that says what a bundle is as an object on disk", and it is
+              not any more: the band directly above this section says it in five rows, one
+              per file, with the folder itself beside them. Leaving both would define the
+              same word twice inside one screen of scrolling, with the shorter and vaguer of
+              the two second.
+
+              The full note is kept below because everything it argues about MEASURE still
+              binds the paragraphs that remain in this section.
+
+              The sentence the deleted `/spec` index carried above its three doors, and the
+              only place on the site that said what a bundle is as an object on disk.
 
               Full width, on the author's instruction: "this paragraph must occupy the full
               horizontal space". It wore `.prose-lane` (36rem) until 2026-08-07 and the note
@@ -394,12 +585,6 @@ export default function WhatABlueprintIsPage() {
               line is about 152 characters, which is past `--measure` by a long way and is
               the deliberate cost of the alignment — the same trade the bands' own note
               records, made once more and for the same reason. */}
-          <p className={PROSE}>
-            A bundle is a folder holding all three: the graph, the cards it pins, and the
-            local vocabulary when its cards reach for a term the curated core does not
-            have. Every example on these pages is read out of that folder during the
-            build, so a reader copying from here is copying a file that loads.
-          </p>
 
           {/* The twelve-column frame each band spans in full. It stays a grid rather
               than becoming a plain stack because the band's own template is written in
@@ -644,16 +829,7 @@ export default function WhatABlueprintIsPage() {
               criteria optimises for them: it finds the shape that satisfies the eval rather
               than doing the work the eval was standing in for, and the score stops being
               evidence of anything. Keeping the two apart is what makes a passing run worth
-              believing.{" "}
-              This graph writes that separation down and the resolver holds it: no path may
-              carry{" "}
-              {/* `text-copper-line`, not the amber this line wore on `/concepts`. Amber is
-                  spent on `ComingSoonBadge` and `.route-box`, and an identifier in the
-                  vocabulary is neither; copper is the node card's own orange. */}
-              <code className="font-mono text-[13px] text-copper-line">
-                acceptance-criteria
-              </code>{" "}
-              into the node whose work that criteria will judge, whoever drew the edge.
+              believing.
             </p>
           </div>
         </div>
@@ -726,6 +902,8 @@ export default function WhatABlueprintIsPage() {
           inset rule is two lines saying one thing. This page is stop 00 of the sequence
           now, so the rail belongs at the foot of it the same way it belongs at the foot
           of the three layer pages. */}
+      <WhereNext />
+
       <section className="bg-void py-16 sm:py-20">
         <div className="container-page">
           <SpecPager href={SPEC_OVERVIEW.href} />
