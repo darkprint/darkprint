@@ -256,6 +256,11 @@ function BlueprintGraph() {
  * says "several dimensions, each with a grade" and it invents no term: naming a real
  * ontology type here would claim this figure's rubric IS that type, which is a claim about
  * a file rather than a picture of a shape.
+ *
+ * Painted in `currentColor` rather than in the token directly, so it greys out with the box
+ * around it. It was the loudest thing in the rubric frame and the only part of it already
+ * green while the label and the border were still grey, which read as the box being half
+ * lit — and half of a two-state figure is the one state it must never be in.
  */
 function RubricGlyph() {
   return (
@@ -274,7 +279,7 @@ function RubricGlyph() {
               rubric rather than about anyone's criteria. */}
           <path
             d={`M 0 ${y} L ${[46, 34, 40][row]} ${y}`}
-            stroke="var(--color-emerald)"
+            stroke="currentColor"
             strokeOpacity={0.45}
             strokeWidth={1.5}
             strokeLinecap="round"
@@ -287,7 +292,7 @@ function RubricGlyph() {
               width={13}
               height={8}
               rx={1.5}
-              fill="var(--color-emerald)"
+              fill="currentColor"
               fillOpacity={step <= row ? 0.75 : 0.12}
             />
           ))}
@@ -297,8 +302,27 @@ function RubricGlyph() {
   );
 }
 
-/** Opacity for a frame that has not been reached yet. Never 0: see the header. */
-const DIM = 0.16;
+/* `DIM` stood here, an opacity of 0.16 for a frame or a row that had not been reached, and
+   it is gone with the whole idea of staging PRESENCE.
+
+   The author, 2026-08-08: make the panel "already visible when scrolling down (not appearing
+   gradually) — what I want is still that on scrolling the part that are described gets the
+   color and stops to be grayed out."
+
+   That is a better figure and the reason is worth stating: the drawing is four boxes one
+   inside the next, and the nesting IS the argument. Fading three of them to a sixth of an
+   opacity meant a reader met the argument one box at a time and could not see the shape
+   until the end — and the eye reads a faded box as further away rather than as not-yet-said.
+
+   So everything is present at full opacity from the first paint, and what the scroll moves
+   is COLOUR: a frame's label and border go from `--color-dim` and `--color-line` to their
+   own register, and the paragraph beside it goes from `--color-muted` to that register's
+   ink. Grey to coloured, which is a state a reader can read as "this one now" without
+   having to notice that something arrived.
+
+   It also deletes the last reason this component needed a no-motion special case. Nothing
+   is hidden in any state, so the static markup and the finished walk are the same drawing
+   in two palettes. */
 
 export function RunLayers() {
   const { ref, progress, motion } = useScrollProgress<HTMLDivElement>({ steps: 80 });
@@ -318,14 +342,16 @@ export function RunLayers() {
     ? stagesShown(progress, LAYERS.length - 1, { head: 0.10, tail: 0.18 })
     : LAYERS.length - 1;
   const shown = arrived + 1;
-  const at = (i: number) => (i < shown ? 1 : DIM);
+  /* Which of the four have been reached. Read for COLOUR only: see the note where `DIM`
+     used to be for why nothing here touches opacity any more. */
+  const lit = (i: number) => i < shown;
 
   /* The label of a frame that has not arrived is dim; the label of one that has is its own
      colour. That flip is the EVENT — an opacity change on a nested rectangle is easy to
      miss, and the rubric's frame is a strip, so what a reader actually sees arrive is the
      word going from grey to green at the same instant the paragraph beside it does. */
   const label = (i: number, key: keyof typeof TONE) => ({
-    color: i < shown ? TONE[key].accent : "var(--color-dim)",
+    color: lit(i) ? TONE[key].accent : "var(--color-dim)",
   });
 
   return (
@@ -347,7 +373,11 @@ export function RunLayers() {
               aria-hidden
               className="pointer-events-none absolute -inset-8 -z-10 rounded-[2.5rem] transition-opacity duration-700"
               style={{
-                opacity: at(3),
+                /* The one opacity left, and it is light rather than presence: the bloom is
+                   the eval frame's own colour arriving, so it comes up with that frame's
+                   border and label. A violet wash under a grey box would colour the figure
+                   before the sentence that explains it. */
+                opacity: lit(3) ? 1 : 0,
                 background:
                   "radial-gradient(58% 58% at 50% 45%, color-mix(in oklab, var(--color-violet) 14%, transparent), transparent 72%)",
               }}
@@ -356,13 +386,11 @@ export function RunLayers() {
             <figure
               className="flex flex-col gap-4 rounded-2xl p-5 transition-all duration-500 sm:p-6"
               style={{
-                opacity: at(3),
                 borderWidth: 1,
                 borderStyle: "solid",
-                borderColor:
-                  shown > 3
-                    ? "color-mix(in oklab, var(--color-violet) 45%, transparent)"
-                    : "var(--color-line)",
+                borderColor: lit(3)
+                  ? "color-mix(in oklab, var(--color-violet) 45%, transparent)"
+                  : "var(--color-line)",
               }}
             >
               <figcaption
@@ -375,10 +403,9 @@ export function RunLayers() {
               <div
                 className="flex flex-col gap-4 rounded-xl p-4 transition-all duration-500 sm:p-5"
                 style={{
-                  opacity: at(1),
                   borderWidth: 1,
                   borderStyle: "solid",
-                  borderColor: shown > 1 ? "var(--color-line-bright)" : "var(--color-line)",
+                  borderColor: lit(1) ? "var(--color-line-bright)" : "var(--color-line)",
                 }}
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -391,10 +418,10 @@ export function RunLayers() {
                   <p className="font-mono text-[11px] text-dim">dispatch · context · state</p>
                 </div>
 
-                <div
-                  className="bp-grid flex flex-col gap-3 rounded-lg border border-blueprint-line/55 bg-blueprint-deep/60 p-4 transition-opacity duration-500"
-                  style={{ opacity: at(0) }}
-                >
+                {/* No staging at all. The blueprint is the state this band opens in, it is
+                    the only frame drawn on the cyanotype sheet, and a sheet cannot grey
+                    out — its ground is the register. */}
+                <div className="bp-grid flex flex-col gap-3 rounded-lg border border-blueprint-line/55 bg-blueprint-deep/60 p-4">
                   <p className="label text-blueprint-line">blueprint</p>
                   <BlueprintGraph />
                 </div>
@@ -404,19 +431,25 @@ export function RunLayers() {
               <div
                 className="flex flex-col gap-3 rounded-xl p-4 transition-all duration-500 sm:p-5"
                 style={{
-                  opacity: at(2),
                   borderWidth: 1,
                   borderStyle: "solid",
-                  borderColor:
-                    shown > 2
-                      ? "color-mix(in oklab, var(--color-emerald) 45%, transparent)"
-                      : "var(--color-line)",
+                  borderColor: lit(2)
+                    ? "color-mix(in oklab, var(--color-emerald) 45%, transparent)"
+                    : "var(--color-line)",
                 }}
               >
                 <p className="label transition-colors duration-500" style={label(2, "rubric")}>
                   rubric
                 </p>
-                <RubricGlyph />
+                {/* The glyph inherits this colour: see `RubricGlyph`. */}
+                <div
+                  className="transition-colors duration-500"
+                  style={{
+                    color: lit(2) ? "var(--color-emerald)" : "var(--color-dim)",
+                  }}
+                >
+                  <RubricGlyph />
+                </div>
               </div>
             </figure>
           </div>
@@ -424,14 +457,10 @@ export function RunLayers() {
           {/* ---------- the sentences ---------- */}
           <ol className="flex min-w-0 flex-col">
             {LAYERS.map((layer, i) => {
-              const reached = i < shown;
+              const reached = lit(i);
               const tone = TONE[layer.id];
               return (
-                <li
-                  key={layer.id}
-                  className="py-3.5 transition-opacity duration-500 first:pt-0"
-                  style={{ opacity: reached ? 1 : DIM }}
-                >
+                <li key={layer.id} className="py-3.5 first:pt-0">
                   {/* A rule down the left in the frame's own colour, rather than a hairline
                       between rows. It is the second half of the tie: the row is the same
                       colour as the box, edge to edge, so a reader who is looking at either
