@@ -608,37 +608,42 @@ export default function WhatABlueprintIsPage() {
               thing containment cannot draw, which is why the rubric is kept away from the
               node being judged. */}
           <div className="flex flex-col gap-3">
-            <PanelHeading>Why the rubric is kept away</PanelHeading>
-            {/* Full width, on the author's instruction 2026-08-07 — the other of the two
-                named exceptions to `.prose-lane` on this page. See the guardrail paragraph
-                above. */}
+            {/* "Why the rubric is kept away" until 2026-08-08, when the author named the
+                thing it is kept away FROM and gave the reason the old paragraph left out.
+
+                The old text argued from evidence: a verdict is worth something because the
+                node doing the work never saw what it would be judged against. True, and it
+                is the consequence rather than the cause. What the author supplied is the
+                cause, and it is about the harness rather than about any one node: a rubric
+                is what a harness is measured against, so the harness must not be able to
+                see how that measurement is implemented, or the system optimises for the
+                measurement instead of for the work. Held-out scenarios are the same
+                argument one rung up, on `/towards-a-dark-factory`.
+
+                The link out — "The edge that is not there →" — went with the rewrite on
+                the author's instruction, and so did the paragraph that followed ("That is
+                what a guardrail looks like once there is more than one agent…"). The
+                sentence about a guardrail becoming a rule on a handoff is what
+                `GuardrailShape` two elements up draws. */}
+            <PanelHeading>Why the rubric is kept away from the harness</PanelHeading>
+            {/* Full width, on the author's instruction 2026-08-07 — one of the two named
+                exceptions to `.prose-lane` on this page. */}
             <p className={PROSE}>
-              A verdict is worth something because the node doing the work never saw what
-              it would be judged against. That is a property of the topology, so it is
-              checkable, and the check holds whoever wrote the graph: no path may carry{" "}
+              A rubric is what the harness is measured against, so nothing inside the
+              harness may see how the measurement is built. A system that can read its own
+              criteria optimises for them: it finds the shape that satisfies the eval rather
+              than doing the work the eval was standing in for, and the score stops being
+              evidence of anything. Keeping the two apart is what makes a passing run worth
+              believing.{" "}
+              This graph writes that separation down and the resolver holds it: no path may
+              carry{" "}
               {/* `text-copper-line`, not the amber this line wore on `/concepts`. Amber is
                   spent on `ComingSoonBadge` and `.route-box`, and an identifier in the
                   vocabulary is neither; copper is the node card's own orange. */}
               <code className="font-mono text-[13px] text-copper-line">
                 acceptance-criteria
               </code>{" "}
-              into the node whose work that criteria will judge.{" "}
-              <Link href={topology.href} className={LINK}>
-                The edge that is not there <span aria-hidden>&rarr;</span>
-              </Link>
-            </p>
-            {/* The multi-agent half of the guardrail block above, said where it is
-                demonstrated rather than where it is defined. In a graph a guardrail stops
-                being a wall around the system and becomes a rule on a handoff, and this
-                prohibition is one: it is checked on every path, not at an edge somebody
-                remembered to annotate. It replaces the argument `SectionExample` used to
-                draw one band down with its check/cross pair, which is gone. */}
-            {/* Full width, on the same instruction. */}
-            <p className={PROSE}>
-              That is what a guardrail looks like once there is more than one agent. It
-              stops being a wall around the system and becomes a rule on a handoff, and
-              this one is checked on every path through the graph rather than on the edges
-              somebody remembered to annotate.
+              into the node whose work that criteria will judge, whoever drew the edge.
             </p>
           </div>
         </div>
