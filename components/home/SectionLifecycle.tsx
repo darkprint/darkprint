@@ -505,6 +505,28 @@ export function SectionLifecycle() {
             <Folder />
 
             <div className="flex min-w-0 flex-col gap-3">
+              {/* The panel says what it does. The author, 2026-08-08: "the text that
+                  describes the download is wrong as it reports compose rather than
+                  download."
+
+                  They are right, and it is a consequence of an earlier change rather than a
+                  wrong sentence. Compose was demoted from a panel to a hint INSIDE this one
+                  (see this file's header), and the same pass replaced the panel's own
+                  five-row listing with the folder drawing — so the only prose left under a
+                  heading reading "Download" was the hint about composing, tagged `Compose`.
+                  A panel with one paragraph and a different word at the top of it reads as a
+                  mislabelled box.
+
+                  So the description is back, above the hint, in the order the two are true
+                  in: here is what the folder is, and here is what you can do with the file
+                  once you have it. `ComposeHint` is unchanged — `beats.test.ts` holds its
+                  words and its position ahead of both unbuilt panels. */}
+              <p className="text-sm leading-relaxed text-muted">
+                The whole bundle, as files: the graph, one card per node, and the two
+                markdown files that say what it is. Nothing is fetched at run time and no
+                account is asked for.
+              </p>
+
               <ComposeHint />
 
               <Link href={`${STARTER}#download`} className={linkCls}>

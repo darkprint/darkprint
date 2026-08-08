@@ -407,11 +407,7 @@ function Field({
           a field row. `signal` still overrides the value, because a prohibition is a
           prohibition on any ground: #ff5470 measures 5.6:1 on the sheet. */}
       <span
-        className={cx(
-          "shrink-0",
-          stage ? "text-blueprint-line" : "text-dim",
-          stage ? "w-[4.6rem]" : "w-[3.6rem]",
-        )}
+        className={cx("shrink-0 text-blueprint-line", stage ? "w-[4.6rem]" : "w-[3.6rem]")}
       >
         {name}
       </span>
@@ -419,7 +415,7 @@ function Field({
         <span
           className={cx(
             "block truncate",
-            tone === "signal" ? "text-signal" : stage ? "text-blueprint-ink" : "text-fg",
+            tone === "signal" ? "text-signal" : "text-blueprint-ink",
           )}
           title={value}
         >
@@ -545,35 +541,37 @@ export function CardStackFigure({
           is. The big one moves to the small one's register, not the other way round: a card
           drawn on the graph's own paper says it belongs to the graph.
 
-          `inline` keeps `bg-surface`. On `/what-a-blueprint-is` this figure sits beside prose
-          on a neutral band with no graph anywhere near it, and a blue plate there would be a
-          sheet with nothing on it. */}
+          BOTH SIZES, since 2026-08-08. I kept `inline` on `bg-surface` and argued it: on
+          `/what-a-blueprint-is` the figure sits beside prose on a neutral band "with no graph
+          anywhere near it". The author asked for the same update there, and the argument
+          does not survive looking at the page — the band directly above that one draws the
+          starter graph on the same cyanotype sheet, so there IS a graph near it, and one card
+          in two registers on one page is the drift this whole component exists to prevent.
+          One figure, one look, both mounts. */}
       <div
         className={cx(
-          "relative rounded-lg border",
-          stage
-            ? "border-blueprint-line/55 bg-blueprint-deep/60 px-6 py-5"
-            : "border-line-bright bg-surface px-4 py-3",
+          "relative rounded-lg border border-blueprint-line/55 bg-blueprint-deep/60",
+          stage ? "px-6 py-5" : "px-4 py-3",
         )}
       >
         <div
           className={cx(
-            "flex items-baseline justify-between gap-2 border-b",
-            stage ? "border-blueprint-line/45 pb-3" : "border-line pb-2",
+            "flex items-baseline justify-between gap-2 border-b border-blueprint-line/45",
+            stage ? "pb-3" : "pb-2",
           )}
         >
           <span
             className={cx(
-              "truncate font-mono",
-              stage ? "text-base text-blueprint-ink" : "text-xs text-fg",
+              "truncate font-mono text-blueprint-ink",
+              stage ? "text-base" : "text-xs",
             )}
           >
             {card.id}
           </span>
           <span
             className={cx(
-              "shrink-0 font-mono",
-              stage ? "text-[13px] text-blueprint-line" : "text-[11px] text-dim",
+              "shrink-0 font-mono text-blueprint-line",
+              stage ? "text-[13px]" : "text-[11px]",
             )}
           >
             v{card.version}
