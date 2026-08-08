@@ -130,9 +130,15 @@ export const COLS: { title: string; links: { href: string; label: string }[] }[]
     // and is not a bundle file — it merged into `/reading-the-radar`, which the Learn
     // column above carries under the label that came with it.
     title: "The spec language",
+    /* Renamed with the header on 2026-08-08, and renamed HERE because `nav.test.ts`'s
+       one-label-per-route rule is worth more than either wording. The author asked the Learn
+       menu for "better names … should be clear"; the site has one name per route, so the
+       menu's new names are the site's. The pages' own `h1`s are untouched — they name the
+       notation, which is right at the top of a reference page and wrong in a list of three
+       things to choose between. */
     links: [
-      { href: "/spec/topology", label: "The topology, in DOT" },
-      { href: "/spec/card", label: "The node card, in YAML" },
+      { href: "/spec/topology", label: "The graph file (DOT)" },
+      { href: "/spec/card", label: "The node card (YAML)" },
       { href: "/spec/ontology", label: "The vocabulary" },
     ],
   },

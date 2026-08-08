@@ -276,14 +276,23 @@ export function ScorePanel({
           `lg:` and not `sm:`: this panel is one tab of a workspace stage and its column is
           already narrow at `sm`. A 280px chart beside a column of readings inside a 640px
           tab is two things too small rather than two things side by side. */}
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-8">
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-10">
         {metrics !== undefined && (
-          <div className="flex shrink-0 justify-center lg:w-[17.5rem]">
-            <ScoreRadar metrics={metrics} size={280} render={280} />
+          /* Half the panel, not a 17.5rem sidebar. The author: "make the radar bigger …
+             such to have half space for the radar and half for the autonomy, security and
+             the run."
+
+             `plate` drops `ScoreRadar`'s own 340px cap, which is what was holding the chart
+             at sidebar size inside a track twice that wide, and `render` is what the
+             geometry solves the label positions against — it has to be the CSS width the
+             chart will really occupy or the axis names sit at the wrong radius. At 1440
+             this track measures 512px, so 460 is that less the panel's own padding. */
+          <div className="flex justify-center">
+            <ScoreRadar metrics={metrics} size={460} render={460} plate />
           </div>
         )}
 
-        <div className="flex min-w-0 flex-1 flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
       {/* ---------- autonomy ---------- */}
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -378,13 +387,15 @@ export function ScorePanel({
             </p>
           </>
         )}
-        {/* Doc 1 §8: cost and runtime are reported by whoever runs the blueprint, never
-            measured here. The ceiling above is the part that can be read off the graph. */}
-        <p className="text-[11px] leading-relaxed text-dim">
-          A worst case, read off the graph. What a run costs in money and time is reported
-          by whoever runs it: execution happens on your machine, so DarkPrint has no way to
-          measure either.
-        </p>
+        {/* Doc 1 §8's sentence stood here — "A worst case, read off the graph. What a run
+            costs in money and time is reported by whoever runs it…" — and the author asked
+            it out on 2026-08-08.
+
+            The claim it protects is not lost and is not this panel's to make twice:
+            `DownloadPanel` at the foot of the same page says execution happens on your
+            machine and that DarkPrint holds none of your keys, and
+            `components/site/honesty.test.ts` pins it there. What this block still says is
+            what it can: a ceiling, and the arithmetic behind it. */}
       </div>
         </div>
       </div>

@@ -103,15 +103,22 @@ describe("the tutorial covers what a reader is in for", () => {
     expect(text).toContain("nothing is uploaded and nothing is sent anywhere");
   });
 
-  /**
-   * No claim that a skill-written bundle comes back clean. `/upload` resolves against
-   * `CORE_ONTOLOGY`, so a card naming a local term comes back with an unknown term and a
-   * reading computed without it. The site already says that; the skill is the first thing
-   * on the site that creates the case.
+  /*
+   * "does not promise the result validates cleanly" stood here and asserted the sentence
+   * "comes back with that term unknown". The author removed that paragraph on 2026-08-08
+   * and the case goes with it, on the record, because this file's own rule is that a
+   * removed limit sentence takes its guard out in the same commit with the reason.
+   *
+   * The limit is `/upload`'s and stays there: that page resolves against `CORE_ONTOLOGY`,
+   * reports the unknown term, and says so with the result in front of the reader. What was
+   * removed is this page pre-empting it — a caveat about a page a reader has not opened,
+   * attached to a file they have not written, about a term they may never coin.
+   *
+   * What still holds here and is asserted two cases up: this page sends a reader to
+   * `/upload` to see the result rather than claiming one. That is the assertion that stops
+   * the page promising a clean bundle, and it is the stronger of the two, because it cannot
+   * be satisfied by wording.
    */
-  it("does not promise the result validates cleanly", () => {
-    expect(text).toContain("comes back with that term unknown");
-  });
 
   /**
    * Never "the skill" on its own, anywhere a reader can see it. The word means something

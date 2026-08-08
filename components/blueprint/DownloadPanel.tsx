@@ -271,12 +271,16 @@ export function DownloadPanel({
         them. It runs nothing and holds none of your provider keys.
       </p>
 
-      {/* Doc 2 §6 is Fase 4. Saying so here costs one sentence and stops the download
-          from implying an account flow that does not exist. */}
-      <p className="mt-3 border-t border-line pt-3 text-xs leading-relaxed text-dim">
-        There is nowhere to save this yet. Accounts and publishing are designed and not
-        built, so the download is the whole of it.
-      </p>
+      {/* Doc 2 §6's sentence stood here — "There is nowhere to save this yet. Accounts and
+          publishing are designed and not built…" — and the author asked it out on
+          2026-08-08.
+
+          Nothing on this panel now implies an account flow: there is no save control, no
+          sign-in, and no second destination for the files — a reader downloads, and that is
+          visibly the whole of it. The refusal is still made where a reader could actually
+          expect the opposite, which is `/upload`'s dropzone and `/skill`'s handover, both
+          pinned in `components/site/honesty.test.ts`. A panel that offers only downloads
+          does not owe an apology for not offering uploads. */}
     </section>
   );
 }

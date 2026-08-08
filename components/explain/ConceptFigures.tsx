@@ -391,32 +391,10 @@ export function GuardrailShape() {
       </figcaption>
 
       <div className="flex flex-col gap-3">
-        {/* The column heads. Hidden below `sm` because the columns are not columns down
-            there; each cell carries the same words itself at that width, so the
-            attribution is never off-screen. Both spellings are real SSR text. */}
-        <div className={`hidden ${BAND_GRID}`}>
-          <span aria-hidden />
-          <span className="label text-copper-line">
-            Static · written in the bundle
-          </span>
-          {/* Emerald, on the author's instruction 2026-08-08: "the text … write in a shade
-              of green."
-
-              It is a widening of the token's meaning and the widening is honest.
-              `app/globals.css` reserves emerald for "a figure read off the engine"; this
-              column is what a RUNNER does at run time, which is the same register one step
-              out — machine execution rather than a person's decision or a file's promise.
-              Against the copper of the static column it reads as the pair it is, static
-              and running, which is the whole point of the reorganisation.
-
-              What it is NOT is amber. That reservation is absolute: amber means "not built
-              yet", and this site does not ship a harness, so an amber head here would read
-              as a promise to. #34d399 measures 11.6:1 on the figure's ground. */}
-          <span className="label text-emerald">
-            At run time · an example of what your harness does with it
-          </span>
-        </div>
-
+        {/* The two column heads stood here as one row, hidden below `sm`. They are
+            per-cell now and printed at every width: the cells are stacked, so a head over a
+            column that no longer exists names nothing. The emerald note that lived here
+            moved with the run-time head. */}
         {GUARDRAIL_BANDS.map((row, i) => (
           <div
             key={row.band}
@@ -424,14 +402,13 @@ export function GuardrailShape() {
             style={{ animationDelay: `${i * STEP}ms` }}
           >
             <span className="label sm:pt-2">{row.band}</span>
+            <div className="flex min-w-0 flex-col gap-2">
             {/* Copper edge at 55%: 3.19:1 on the figure's ground, past the 3:1 a
                 non-text boundary owes. `/40`, the weight the sibling figures use for a
                 frame nobody has to tell apart from its neighbour, is 2.20 and would
                 have left the one distinction this drawing rests on under the floor. */}
             <p className="flex flex-col gap-1 rounded border border-copper-line/55 bg-surface-2 px-3 py-2 text-[13px] leading-snug text-muted">
-              <span className="label text-copper-line sm:hidden">
-                Static · written in the bundle
-              </span>
+              <span className="label text-copper-line">Static · written in the bundle</span>
               <span>{row.bundle}</span>
             </p>
             {/* Shorter than the column head above it, and still possessive. The head's
@@ -454,9 +431,18 @@ export function GuardrailShape() {
                 other at 40 and 55 — 3.24:1 against 3.19:1, both past the 3:1 a non-text
                 boundary owes. Matched weight rather than matched number. */}
             <p className="flex flex-col gap-1 rounded border border-emerald/40 bg-surface-2 px-3 py-2 text-[13px] leading-snug text-muted">
-              <span className="label text-emerald sm:hidden">At run time · your harness</span>
+              {/* Emerald, on the author's instruction: "the text … write in a shade of
+                  green." It widens the token honestly — `app/globals.css` reserves emerald
+                  for "a figure read off the engine", and this is what a RUNNER does at run
+                  time, the same register one step out. It is NOT amber, which means "not
+                  built yet" and would read as a promise to ship a harness. 11.6:1 on this
+                  figure's ground. */}
+              <span className="label text-emerald">
+                At run time · an example of what your harness does with it
+              </span>
               <span>{row.harness}</span>
             </p>
+            </div>
           </div>
         ))}
       </div>

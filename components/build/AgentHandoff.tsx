@@ -172,7 +172,7 @@ export function AgentHandoff({ className }: { className?: string }) {
           "The DarkPrint skill" everywhere else on the site, so this is not a fourth name
           for that route — it is what this exit OFFERS, which is design help, against the
           other exit's finished folder. */}
-      <h3 className="font-display text-lg font-semibold text-fg">Assisted Design skill</h3>
+      <h3 className="font-display text-lg font-semibold text-fg">DarkPrint skill</h3>
       {/* The heading is verbatim and pinned (`BuildWorkspace.test.ts`). The paragraph under
           it is not, and it changed: it used to name the brief as the only way through,
           which stopped being true the day the skill shipped. It now says what both ways

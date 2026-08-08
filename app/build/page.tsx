@@ -185,18 +185,20 @@ export default function BuildPage() {
           // every width, and `DownloadStep` already hands a reader the folder that route
           // reads — an exit repeating the header's own button is the third copy of it.
           {
-            // `/skill` and not `/mcp`, now that "Install" is two routes. This page is the
-            // workspace where a reader designs a blueprint by hand, and the skill is the
-            // same job done by an agent instead — the one exit of the two that continues
-            // what they were already doing. `/mcp` is about reading the registry from
-            // inside a client, which is a different errand and not built.
-            href: "/skill",
-            // The name the header and the footer both give this route. "Point a client
-            // at it" was a third name for one destination, and it read as a sentence in
-            // a slot that is now a button's face. It was "Install MCP", then "Install",
-            // and the three tables move in one commit every time: `nav.test.ts` holds
-            // them to one label per route.
-            label: "The DarkPrint skill",
+            /* `/reading-the-radar` and not `/skill`, on the author's instruction
+               2026-08-08.
+
+               The skill is not gone from this page: it is one of the two exits INSIDE the
+               workspace, titled "DarkPrint skill", so a route box repeating it at the foot
+               was the third copy of one destination on one screen. What a reader who has
+               just built a blueprint has not met is the scorecard — the Score tab printed
+               them an autonomy class and a security level, and this is the page that says
+               how both are computed. The Learn menu runs in that order too: what a blueprint
+               is, design one, how one is graded. */
+            href: "/reading-the-radar",
+            // The name the header and the footer both give this route: `nav.test.ts` holds
+            // every table to one label per route.
+            label: "How a blueprint is graded",
           },
         ]}
       />

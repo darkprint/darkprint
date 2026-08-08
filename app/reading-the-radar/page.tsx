@@ -544,11 +544,12 @@ export default function HowABlueprintIsGradedPage() {
                 label: "The blueprint gallery",
                 blurb: "Nine scorecards to read the chart against.",
               },
-              {
-                href: "/what-a-blueprint-is",
-                label: "What a blueprint is",
-                blurb: "The graph and the cards the two computed rows are read off.",
-              },
+              /* A second route to `/what-a-blueprint-is` stood here and the author asked it
+                 out on 2026-08-08. That page is stop 00 of the sequence, the first item of
+                 the header's Learn menu on every page, and the place a reader arriving here
+                 came FROM: the menu now runs what a blueprint is, then how to design one,
+                 then this page. An exit pointing back up the path a reader has just walked
+                 is the route offering to start over. */
             ]}
           />
         </div>

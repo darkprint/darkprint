@@ -358,15 +358,15 @@ export function SkillSetup({ className }: { className?: string }) {
               is sent anywhere.
             </p>
 
-            {/* No claim that a skill-written bundle comes back clean. `/upload` resolves
-                against `CORE_ONTOLOGY`, so a local term is an unknown term there and the
-                reading is computed without it. The site already says this; it now covers a
-                case the site itself creates. */}
-            <p className="text-[13px] leading-relaxed text-dim">
-              That page resolves against the core vocabulary. A card naming a term of your
-              own comes back with that term unknown, and a reading computed without it,
-              unless the folder also carries the file that defines it.
-            </p>
+            {/* A paragraph stood here about `/upload` resolving against `CORE_ONTOLOGY`, so
+                a local term comes back unknown unless the folder carries the file defining
+                it. The author asked it out on 2026-08-08.
+
+                It is true and it is `/upload`'s to say: that page resolves the bundle, that
+                page reports the unknown term, and its own copy is where a reader meets the
+                consequence with the result in front of them. Said here it was a caveat about
+                a page a reader has not opened yet, attached to a file they have not written
+                yet, about a term they may never coin. */}
           </div>
         </div>
       </article>

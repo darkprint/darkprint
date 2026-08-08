@@ -138,7 +138,9 @@ const LAYERS = [
     body:
       "The criteria a result is graded against, several at once, each with a scale: what " +
       "turns “good” into something with an answer. Deterministic checks, a judge model, or " +
-      "both. It is written down before the run, which is what makes two runs comparable.",
+      "both. It is written down before the run, which is what makes two runs comparable, " +
+      "and kept away from the harness: a system that can read its own criteria optimises " +
+      "for them rather than for the work they stood in for.",
   },
   {
     id: "eval",

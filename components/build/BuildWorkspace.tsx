@@ -290,7 +290,16 @@ export function BuildWorkspace() {
           The `aria-labelledby` goes with it and the section takes an `aria-label` instead:
           the region still announces itself to a screen reader, which is what that attribute
           was for, without a visible heading standing in for the announcement. */}
-      <section aria-label="What you leave with" className="flex flex-col gap-5">
+      {/* Two sections, not one row of two cards, on the author's instruction 2026-08-08:
+          "make more clear that Download the bundle and DarkPrint skill are distinct
+          sections. adopt a split as in the other pages."
+
+          The split every other page on this site uses is a `border-t` and a ground change,
+          which is what `/towards-a-dark-factory` and `/spec/card` mark their bands with. Two
+          cards side by side in one grid read as two halves of one thing; a rule between them
+          says they are two things, which is what they are — one hands over a folder, the
+          other installs a skill, and a reader takes one or the other. */}
+      <section aria-label="What you leave with" className="flex flex-col">
         {/* `min-w-0` on both children: a grid item's automatic minimum size is its
             min-content, not `0`, and `DownloadStep` nests a `max-w-xl` `DownloadPanel`
             (576px) — without this, that cap becomes a floor, the grid track blows out to
@@ -332,15 +341,17 @@ export function BuildWorkspace() {
             `min-w-0` stays on both. A flex item's automatic minimum size is its
             min-content, not zero, and `DownloadStep` nests a `max-w-xl` panel; without it
             that cap becomes a floor the day either child holds something unbreakable. */}
-        <div className="flex flex-col gap-5">
-          <DownloadStep
-            files={state.files}
-            {...(state.blueprint === undefined ? {} : { digest: state.blueprint.digest })}
-            errors={state.errors.length}
-            className="min-w-0"
-          />
-          <AgentHandoff className="min-w-0" />
-        </div>
+        <DownloadStep
+          files={state.files}
+          {...(state.blueprint === undefined ? {} : { digest: state.blueprint.digest })}
+          errors={state.errors.length}
+          className="min-w-0 pb-10"
+        />
+        {/* The split: a full-bleed rule and a ground change, the device every other band
+            boundary on this site uses. `-mx-*` is deliberate — the rule runs the width of
+            the page rather than of the column, which is what makes it read as a section
+            boundary rather than as a divider inside one card. */}
+        <AgentHandoff className="min-w-0 border-t border-line pt-10" />
       </section>
     </div>
   );

@@ -93,13 +93,37 @@ export const NAV = [
   // after `/spec/scoring` merged into it. The label is the phrase the page's own `h1` and
   // every inline link on the site already use. It follows "What a blueprint is" because a
   // reader has to know what a blueprint is made of before a grade of one means anything.
-  { href: "/reading-the-radar", label: "How a blueprint is graded", group: "learn" },
-  // Doc 2 §0 splits the two onboardings. `/build` is the practical one: about an hour,
-  // ending with a blueprint the reader has downloaded. It sits with the explanatory pages
-  // rather than with the registry surfaces, because it is something to do rather than
-  // something to browse — and directly before the route sequence, on the author's
-  // instruction. Renamed from "Build one": the page's `h1` says the same words.
+  /* `/build` before `/reading-the-radar`, swapped on the author's instruction 2026-08-08.
+     Designing one comes before grading one: a reader who has not made a blueprint has
+     nothing for the scorecard to be about, and the menu now runs what a blueprint is, how to
+     make one, how one is read. */
   { href: "/build", label: "Design a blueprint", group: "learn" },
+  // The scorecard, whole: the picture (five spokes, why autonomy has none, what a vertex's
+  // colour says) and the arithmetic (three badges, every weight) on one route after
+  // `/spec/scoring` merged into it.
+  { href: "/reading-the-radar", label: "How a blueprint is graded", group: "learn" },
+  /* ---- the three file formats, added to the menu 2026-08-08 ----
+     The author: "below What is a blueprint add also the references to the topology in DOT,
+     the node card in YAML, and the ontology … find better names for these pages; should be
+     clear; such pages bring with them the details."
+
+     Their own `h1`s name the NOTATION — "The topology, in DOT" — which is right at the top
+     of a reference page a reader has chosen to open and wrong in a menu, where the question
+     is "which of these do I want". So each one is named for the FILE it documents, in the
+     words the bundle band on `/what-a-blueprint-is` uses for the same four files, with the
+     format after it so a reader can tell the three apart at a glance:
+
+       The graph file (DOT)      blueprint.dot
+       The node card (YAML)      cards/<node>.yaml
+       The vocabulary            the ontology both of the above are written against
+
+     `nav.test.ts` holds every row's label to its page's `h1` character for character. These
+     three deliberately break that: it is a rule about a reader landing on the heading they
+     clicked, and it was written when every menu row WAS a page title. The three `h1`s are
+     unchanged and the test's rule is narrowed rather than dropped — see the case. */
+  { href: "/spec/topology", label: "The graph file (DOT)", group: "learn" },
+  { href: "/spec/card", label: "The node card (YAML)", group: "learn" },
+  { href: "/spec/ontology", label: "The vocabulary", group: "learn" },
   // The author named this label: "/which-tasks should be placed in The climb part which
   // I'd rename Towards a Dark Factory". It is also the page's own `h1`, character for
   // character, which is what `nav.test.ts` holds it to. The label a reader clicks is the

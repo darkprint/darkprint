@@ -329,6 +329,13 @@ export function WorkspaceStage({
                    ground to be read against, and every one of them says so in its own
                    detail line rather than leaving a reader to assume a rating happened.
 
+     ALL SIX KEYS, in `lib/types.ts`'s own order, because the radar a reader has already met
+     on nine blueprint pages has five spokes and this one had three. `ScoreRadar` filters
+     `autonomy` out of the spokes (doc 2 §1.1: the band is not a length), so six metrics draw
+     the five-pointed chart that is the site's standard shape — a three-pointed one is a
+     different figure wearing the same name, and the author asked for "the standard one with
+     5 metrics".
+
      `undefined` until the bundle resolves, so a graph the engine refused draws no chart at
      all: a radar over a rejected bundle would be the one surface on this site scoring one. */
   const radar: Metric[] | undefined =
@@ -349,7 +356,7 @@ export function WorkspaceStage({
             source: "auto",
             detail: `Level ${state.analysis.security.level} of 4, read off the markers the cards declare.`,
           },
-          ...(["efficacy", "reliability", "transparency"] as const).map((key) => ({
+          ...(["efficacy", "reliability", "transparency", "cost"] as const).map((key) => ({
             key,
             label: key.replace(/^./, (c) => c.toUpperCase()),
             value: 50,

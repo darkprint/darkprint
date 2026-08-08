@@ -131,7 +131,7 @@ describe("BuildWorkspace — SSR markup", () => {
     // alternative. Both were renamed on 2026-08-08 and both are still peers.
     const text = plainText(html);
     expect(text).toContain("Download the bundle");
-    expect(text).toContain("Assisted Design skill");
+    expect(text).toContain("DarkPrint skill");
     expect(text).not.toContain("Or have your agent");
   });
 
@@ -155,7 +155,7 @@ describe("BuildWorkspace — SSR markup", () => {
     const exitTitles = [...html.matchAll(/<h3 class="font-display[^"]*">([^<]*)<\/h3>/g)].map(
       (match) => match[1],
     );
-    expect(exitTitles).toEqual(["Download the bundle", "Assisted Design skill"]);
+    expect(exitTitles).toEqual(["Download the bundle", "DarkPrint skill"]);
   });
 
   /**
