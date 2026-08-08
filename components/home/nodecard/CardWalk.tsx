@@ -218,6 +218,7 @@ const WALK_BODY: Record<string, string> = {
 
 export function CardWalk({
   source,
+  heading,
   cardRef,
   card,
   bodies = WALK_BODY,
@@ -227,6 +228,14 @@ export function CardWalk({
   cardRef: string;
   /** The same card, parsed, for the face the walk opens on. */
   card: NodeCard;
+  /**
+   * The section's heading, rendered INSIDE the pinned box.
+   *
+   * Same fix, same reason as `SourceSwap`'s: it was a sticky sibling, two sticky boxes in
+   * one scroll container each take their own offset, and the distance between them therefore
+   * changed as each one pinned. One box cannot come apart from itself.
+   */
+  heading?: React.ReactNode;
   /**
    * Per-step wording, keyed by `AnnotationSpec.id`, overriding `annotations.ts`.
    *
@@ -352,9 +361,13 @@ export function CardWalk({
           negative below a 635px viewport and would pin the figcaption under the 4rem sticky
           header. A window that short cannot hold the whole figure either way; what the floor
           decides is which end gets cut, and the top is where the card names itself. */}
-      <div
-        className={cx(motion && "lg:sticky lg:top-[max(4rem,calc(50vh_-_19.83rem))]")}
-      >
+      {/* Pinned near the top, not centred, now that the heading is inside the box.
+          Centring was right when this box held only the figure; it is heading plus figure
+          now, and centring a group that tall leaves the drawing low with little travel.
+          `top-20` puts the heading just under the 4rem header, and everything below it holds
+          the spacing it has at rest. */}
+      <div className={cx(motion && "lg:sticky lg:top-20")}>
+        {heading}
         {/* Plain ground, one hairline. The author named the graticule as the thing to
             drop, and it is the whole difference between a figure the landing carries and
             a plate that reads as its own page. */}

@@ -140,47 +140,13 @@ export function SectionNodeIsCard() {
             margin, so the sentence was telling a reader a number they were about to be
             shown — and "the archive really stores" is a claim the figure makes by being
             drawn from the file, not one the deck has to assert. */}
-        {/* Sticky, on the author's instruction 2026-08-08: this heading is not to "scroll
-            away" while the figure below it is pinned.
+        {/* The heading is passed INTO the walk and rendered inside its pinned box rather
+            than drawn here.
 
-            It works because the two are SIBLINGS in one scroll container, so each takes its
-            own offset: the heading locks at `top-16`, just under the site header, and the
-            figure locks lower down at its own centring offset. Neither is inside the other,
-            which is what would have made the second one's offset meaningless.
-
-            `bg-bg-surface` is not decoration. The figure passes underneath a sticky element,
-            and a heading with a transparent ground would have a 460px drawing sliding
-            through its letters. The class is the section's own ground, so the strip reads as
-            the page rather than as a bar.
-
-            `-mx-4 px-4` so the ground reaches past the text to the container's padding
-            edge, and `pb-6` so the figure never touches the last line. `z-30` is the section
-            chrome rung of `app/globals.css`'s ladder — above the figure, below the header at
-            50. */}
-        <div className="bg-surface sticky top-16 z-30 -mx-4 px-4 pb-6">
-        <SectionHeading
-          /* The card's own register, on the author's instruction: "colour using the amber
-             colour typical of a node."
-
-             `copper-line` and NOT `--color-amber`, and the difference is the point rather
-             than a quibble. `app/globals.css` declares the copper pole for exactly this and
-             writes down why it must never become amber: amber is spent sitewide on two
-             claims — `ComingSoonBadge` ("not built yet") and `.route-box` ("this box leaves
-             the page") — and a node card is the most literally-built thing on this site,
-             read off `content/cards/` at build time with the engine enforcing what it
-             declares. So copper IS the warm colour a reader means when they point at the
-             card figure: the listing's keys, the walk's step numbers and the card's own
-             frame are all already in it, at oklch hue 46 against amber's 75.
-
-             The heading and the figure under it are now one register, and it pairs with the
-             cyanotype title one beat up — a card is a document, a blueprint is a drawing,
-             and the two say so before a word is read. */
-          title={<span className="text-copper-line">Every node is a card</span>}
-          lead="Open one and it says what it does, the brief it is handed, which model runs it, what arrives, and what must never reach it."
-          align="center"
-          className="mx-auto"
-        />
-        </div>
+            It was a sticky SIBLING of the figure, which is the bug the author caught: two
+            sticky boxes in one scroll container each take their own offset, so the distance
+            between them depended on which of the two had pinned yet — 40px in flow, and
+            something else once both were stuck. One box cannot come apart from itself. */}
 
         {/* `mt-4`, not `mt-10`. The other 24px of the author's "it is too distant" — the
             rest came out of the card's own placement inside the cell, see `FACE_TOP`. A
@@ -194,6 +160,23 @@ export function SectionNodeIsCard() {
             source={withoutKeys(source, HIDDEN_KEYS)}
             cardRef={CARD_REF}
             card={card}
+            heading={
+              <SectionHeading
+                /* The card's own register, on the author's instruction: "colour using the
+                   amber colour typical of a node."
+
+                   `copper-line` and NOT `--color-amber`: `app/globals.css` declares the
+                   copper pole for exactly this and writes down why it must never become
+                   amber, which is spent on `ComingSoonBadge` and `.route-box`. A node card
+                   is the most literally-built thing on this site, read off `content/cards/`
+                   at build time with the engine enforcing what it declares. Copper IS the
+                   warm colour a reader means when they point at the card figure. */
+                title={<span className="text-copper-line">Every node is a card</span>}
+                lead="Open one and it says what it does, the brief it is handed, which model runs it, what arrives, and what must never reach it."
+                align="center"
+                className="mx-auto"
+              />
+            }
           />
         </div>
       </div>

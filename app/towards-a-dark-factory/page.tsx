@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { SectionLevels } from "@/components/home/SectionLevels";
+import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
@@ -234,6 +235,30 @@ export default function TowardsPage() {
           and `/blueprints` from every page, so nothing is unreachable; what is gone is this
           page's own exit. */}
 
+      {/* ---------- where to next ----------
+          Restored 2026-08-08 on the author's instruction: "add section Where to next at the
+          bottom as for the other pages and add to the left the button towards
+          /reading-the-radar."
+
+          The note directly above records the 2026-08-07 removal and the argument it
+          overruled, and both stand: what came out was a paragraph and its two links, and
+          what goes back is the band every other route on this site ends with. `/build` and
+          `/blueprints` are still not offered here — the header carries them from every page,
+          and this route's own next step is the scorecard, because the ladder above measures
+          autonomy and `/reading-the-radar` is where that reading is explained. */}
+      <section className="border-t border-line bg-surface pb-20 pt-16">
+        <div className="container-page">
+          <OnwardRoutes
+            routes={[
+              {
+                href: "/reading-the-radar",
+                label: "How a blueprint is graded",
+                blurb: "Where the autonomy reading the ladder above describes is computed.",
+              },
+            ]}
+          />
+        </div>
+      </section>
     </>
   );
 }

@@ -180,9 +180,19 @@ function Drawing({ graph, className }: { graph: LandingGraph; className: string 
  * make the frame the constant and the content the variable, which is backwards: the point
  * is that these are two renderings of one artefact, not one container showing two things.
  */
-export function BlueprintWalk({ dot, file }: { dot: string; file: string }) {
+export function BlueprintWalk({
+  dot,
+  file,
+  heading,
+}: {
+  dot: string;
+  file: string;
+  /** The section's heading, drawn inside the pin. See `SourceSwap`'s own `heading`. */
+  heading?: React.ReactNode;
+}) {
   return (
     <SourceSwap
+      {...(heading === undefined ? {} : { heading })}
       /* `max-w-5xl`, not the `4xl` the sheet alone wanted: the source layer is
          `DotBreakdown`, which lays a listing beside a column of notes, and at 4xl the notes
          wrapped to three words a line. The drawing is centred in the same width. */

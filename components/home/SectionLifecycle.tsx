@@ -456,6 +456,24 @@ export function SectionLifecycle() {
           </article>
         </div>
 
+        {/* A real seam, not a wider gap. The author, with a screenshot of the two rows: the
+            first pair "should be in a different section" from the three below, "not like in
+            the following picture" — where five panels in two rows read as one grid that
+            happened to wrap.
+
+            The device is the site's own: a full-bleed rule and a label, which is what
+            `/towards-a-dark-factory` marks every band boundary with and what this section
+            itself used for the unbuilt pair before the reorder. `-mx-*` so the rule runs the
+            page's width rather than the column's — a rule inset to the text reads as a
+            divider inside one thing, and a full-bleed one reads as the end of it.
+
+            The label names what the three below have in common, which is the only reason a
+            seam needs one: the two above are how you come to HAVE a blueprint, and these are
+            what you and your machine do with one. */}
+        <div className="mt-14 border-t border-line pt-10">
+          <span className="label">What you do with one</span>
+        </div>
+
         {/* Three across at `lg`, two at `md`, one below. `lg` and not `md`: these three carry
             the widest monospace rows in the section, and a 342px track at `md` is the width
             `min-w-0` was added to survive rather than one to design three columns for. */}

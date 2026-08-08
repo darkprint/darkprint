@@ -538,11 +538,24 @@ export default function HowABlueprintIsGradedPage() {
       <section className="border-t border-line bg-surface pb-20 pt-16">
         <div className="container-page">
           <OnwardRoutes
+            /* Left `/build`, right `/towards-a-dark-factory`, on the author's instruction
+               2026-08-08. `OnwardRoutes` lays them in source order.
+
+               The gallery exit goes with the change: a reader who now knows how the chart is
+               computed has two moves, which are to make one of their own or to read what the
+               reading is FOR, and the gallery is the first item of the header's registry
+               group on every page. Left is the thing to do, right is the thing to read,
+               which is the order every other pair on this site uses. */
             routes={[
               {
-                href: "/blueprints",
-                label: "The blueprint gallery",
-                blurb: "Nine scorecards to read the chart against.",
+                href: "/build",
+                label: "Design a blueprint",
+                blurb: "Three choices, and the scorecard recomputed on every one.",
+              },
+              {
+                href: "/towards-a-dark-factory",
+                label: "Towards a Dark Factory",
+                blurb: "What the autonomy reading is a reading of, in four levels.",
               },
               /* A second route to `/what-a-blueprint-is` stood here and the author asked it
                  out on 2026-08-08. That page is stop 00 of the sequence, the first item of

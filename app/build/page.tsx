@@ -185,8 +185,17 @@ export default function BuildPage() {
           // every width, and `DownloadStep` already hands a reader the folder that route
           // reads — an exit repeating the header's own button is the third copy of it.
           {
-            /* `/reading-the-radar` and not `/skill`, on the author's instruction
-               2026-08-08.
+            /* Two routes, left then right, on the author's instruction 2026-08-08: "place
+               the link how a blueprint is graded on the right while add on the left the link
+               to The vocabulary."
+
+               `OnwardRoutes` lays them in source order, so left is the first entry. The
+               vocabulary is the one of the three format pages a reader of THIS page has just
+               used without reading — every card the workspace wrote names terms from it —
+               and the scorecard is what the Score tab printed them. Detail on the left, next
+               step on the right.
+
+               `/reading-the-radar` and not `/skill`, from the earlier pass on 2026-08-08.
 
                The skill is not gone from this page: it is one of the two exits INSIDE the
                workspace, titled "DarkPrint skill", so a route box repeating it at the foot
@@ -195,6 +204,10 @@ export default function BuildPage() {
                them an autonomy class and a security level, and this is the page that says
                how both are computed. The Learn menu runs in that order too: what a blueprint
                is, design one, how one is graded. */
+            href: "/spec/ontology",
+            label: "The vocabulary",
+          },
+          {
             href: "/reading-the-radar",
             // The name the header and the footer both give this route: `nav.test.ts` holds
             // every table to one label per route.

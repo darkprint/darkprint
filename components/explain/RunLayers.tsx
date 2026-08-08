@@ -163,40 +163,90 @@ const LAYERS = [
  * blueprint is made of: the sentence beside it says "the graph and the cards it pins", and
  * a disc draws the graph and hides the cards.
  *
- * Deliberately minimal: a frame, a rule under a header, two body lines. No text, because at
- * 18 units wide any word would land under the site's 10px legibility floor, and because
- * four labelled cards would be a card figure rather than a graph of them. `CardStackFigure`
- * is the drawing that names fields, one section up the page.
+ * Restyled 2026-08-08 against `CardStackFigure`, the card this site draws everywhere else.
+ * The author asked why that reference had not been used, and the answer is that it had not:
+ * the first version was a frame, one rule and two lines, which says "a document" and not "a
+ * card". What makes the reference recognisable is the SHAPE OF ITS CONTENT — an id with a
+ * version at the far end of the header line, then rows of label-then-value, then `cannot` in
+ * the alarm colour — and every one of those survives at 30 units where the words do not.
+ *
+ * Still no text, and that has not changed: at this size any word lands under the site's 10px
+ * legibility floor, and four labelled cards would be a card figure rather than a graph of
+ * them. `CardStackFigure` is the drawing that names fields, one section up the page.
  */
 function CardNode({ x, y }: { x: number; y: number }) {
-  const w = 22;
-  const h = 16;
+  const w = 30;
+  const h = 22;
   return (
     <g transform={`translate(${x - w / 2} ${y - h / 2})`}>
+      {/* The card's own ground, one step lighter than the sheet it sits on, so it reads as
+          an object ON the paper rather than as a hole cut in it. `CardStackFigure` does the
+          same thing with `bg-surface` inside `bg-void`. */}
       <rect
         width={w}
         height={h}
-        rx={2.5}
-        fill="var(--color-blueprint-deep)"
-        fillOpacity={0.9}
+        rx={3}
+        fill="var(--color-blueprint)"
+        fillOpacity={0.55}
         stroke="var(--color-blueprint-ink)"
         strokeWidth={1}
       />
-      {/* The header rule: the line a card's id and version sit on. */}
+      {/* The header rule, at a third of the height, which is where `CardStackFigure` puts
+          the line under a card's id and version. */}
       <path
-        d={`M 0 5.5 L ${w} 5.5`}
+        d={`M 0 7.5 L ${w} 7.5`}
         stroke="var(--color-blueprint-ink)"
-        strokeOpacity={0.75}
-        strokeWidth={0.8}
+        strokeOpacity={0.7}
+        strokeWidth={0.9}
       />
-      {[9.5, 12.5].map((ly, i) => (
-        <path
-          key={ly}
-          d={`M 3.5 ${ly} L ${i === 0 ? w - 4 : w - 9} ${ly}`}
-          stroke="var(--color-blueprint-line)"
-          strokeOpacity={0.8}
-          strokeWidth={0.8}
-        />
+      {/* The id, and the version at the right end of the same line: two marks rather than
+          one, because a header with a single rule in it is a title and a header with a short
+          run at each end is a title and a version. That pairing is what makes the reference
+          card recognisable at a glance, and it survives at 30 units where the words do not. */}
+      <path
+        d="M 3.5 4 L 15 4"
+        stroke="var(--color-blueprint-ink)"
+        strokeOpacity={0.85}
+        strokeWidth={1.1}
+        strokeLinecap="round"
+      />
+      <path
+        d={`M ${w - 9} 4 L ${w - 3.5} 4`}
+        stroke="var(--color-blueprint-line)"
+        strokeOpacity={0.75}
+        strokeWidth={1}
+        strokeLinecap="round"
+      />
+      {/* Three field rows, not two, and each drawn as a LABEL and a VALUE with a gap
+          between them — which is what a card's body is: `type  agent`, `phase
+          implementation`, `cannot  acceptance-criteria`. Two plain rules said "there is
+          text here"; a short mark, a gap and a longer mark says "there are fields here",
+          which is the whole claim this figure is making about a node.
+
+          The third row's value takes the alarm colour, because the third row of the
+          reference card is `cannot` and it is red there. One coloured mark on a 30-unit
+          glyph is the only detail small enough to carry and loud enough to be seen. */}
+      {[
+        { y: 11.5, label: 5, value: 11, tone: "var(--color-blueprint-line)" },
+        { y: 15, label: 4, value: 13, tone: "var(--color-blueprint-line)" },
+        { y: 18.5, label: 5, value: 9, tone: "var(--color-signal)" },
+      ].map((row) => (
+        <g key={row.y}>
+          <path
+            d={`M 3.5 ${row.y} L ${3.5 + row.label} ${row.y}`}
+            stroke="var(--color-blueprint-line)"
+            strokeOpacity={0.55}
+            strokeWidth={0.9}
+            strokeLinecap="round"
+          />
+          <path
+            d={`M 12 ${row.y} L ${12 + row.value} ${row.y}`}
+            stroke={row.tone}
+            strokeOpacity={row.tone === "var(--color-signal)" ? 0.85 : 0.8}
+            strokeWidth={0.9}
+            strokeLinecap="round"
+          />
+        </g>
       ))}
     </g>
   );
@@ -209,9 +259,11 @@ function Run({ from, to }: { from: [number, number]; to: [number, number] }) {
   const dx = x2 - x1;
   const dy = y2 - y1;
   const len = Math.hypot(dx, dy);
-  /* 15 units clears the 22×16 card at every angle this figure uses, which is what keeps an
-     arrowhead off the frame it points at. */
-  const t = 15 / len;
+  /* 19 units clears the 30×22 card at every angle this figure uses, which is what keeps an
+     arrowhead off the frame it points at. It was 15 for a 22×16 card; the glyph grew when it
+     was restyled on the reference card, and this number grows with it or the heads land
+     inside the boxes. */
+  const t = 19 / len;
   const ax = x1 + dx * t;
   const ay = y1 + dy * t;
   const bx = x2 - dx * t;

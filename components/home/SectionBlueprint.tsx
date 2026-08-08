@@ -76,50 +76,43 @@ export function SectionBlueprint() {
             `.eyebrow` is rationed to one per page or per full-bleed band; this frees one
             rather than spending it, and the coloured title below now does the work of
             saying which register a reader is in. */}
-        {/* Sticky, on the author's instruction 2026-08-08: this heading is not to "scroll
-            away" while the figure below it is pinned.
+        {/* The heading is passed INTO the walk and rendered inside its pinned box rather
+            than drawn here.
 
-            It works because the two are SIBLINGS in one scroll container, so each takes its
-            own offset: the heading locks at `top-16`, just under the site header, and the
-            figure locks lower down at its own centring offset. Neither is inside the other,
-            which is what would have made the second one's offset meaningless.
+            It was a sticky SIBLING of the figure, which is the bug the author caught: two
+            sticky boxes in one scroll container each take their own offset, so the distance
+            between them depended on which of the two had pinned yet — 40px in flow, and
+            something else once both were stuck. One box cannot come apart from itself. */}
 
-            `bg-bg-void` is not decoration. The figure passes underneath a sticky element,
-            and a heading with a transparent ground would have a 460px drawing sliding
-            through its letters. The class is the section's own ground, so the strip reads as
-            the page rather than as a bar.
+        <BlueprintWalk
+          dot={withoutComments(dot)}
+          file={FILE}
+          heading={
+            <SectionHeading
+              /* Cyanotype blue, the pole this whole beat is drawn in — the graticule ground,
+                 the frame, the node labels and the edges are all `--color-blueprint-*`, and the
+                 title now names its own register instead of standing outside it in `text-fg`.
 
-            `-mx-4 px-4` so the ground reaches past the text to the container's padding
-            edge, and `pb-6` so the figure never touches the last line. `z-30` is the section
-            chrome rung of `app/globals.css`'s ladder — above the figure, below the header at
-            50. */}
-        <div className="bg-void sticky top-16 z-30 -mx-4 px-4 pb-6">
-        <SectionHeading
-          /* Cyanotype blue, the pole this whole beat is drawn in — the graticule ground,
-             the frame, the node labels and the edges are all `--color-blueprint-*`, and the
-             title now names its own register instead of standing outside it in `text-fg`.
+                 `blueprint-line` and not `cyan`: `app/globals.css` spends cyan on "you can act
+                 on this", and a 32px headline in the interactive colour reads as a link that
+                 does nothing. It pairs with the copper title one beat down, which is the same
+                 wheel from the other side — see `SectionNodeIsCard`.
 
-             `blueprint-line` and not `cyan`: `app/globals.css` spends cyan on "you can act
-             on this", and a 32px headline in the interactive colour reads as a link that
-             does nothing. It pairs with the copper title one beat down, which is the same
-             wheel from the other side — see `SectionNodeIsCard`.
-
-             A `<span>` inside `title` rather than a class on the heading, because the
-             heading declares `text-fg` and `cx` is not `tailwind-merge`: both classes would
-             be emitted and CSS source order would decide the colour. A child's own colour
-             always wins. */
-          title={<span className="text-blueprint-line">This is a blueprint</span>}
-          /* The lead said "Keep scrolling and the drawing becomes the file it is drawn
-             from." until 2026-08-08, when the author asked it out of the deck and into the
-             scroll: the hint appears as a reader starts moving rather than sitting under
-             the heading before there is anything to hint at. `SourceSwap` draws it. */
-          lead="Which agents run, what each one hands to the next, and it is already yours to run."
-          align="center"
-          className="mx-auto"
+                 A `<span>` inside `title` rather than a class on the heading, because the
+                 heading declares `text-fg` and `cx` is not `tailwind-merge`: both classes would
+                 be emitted and CSS source order would decide the colour. A child's own colour
+                 always wins. */
+              title={<span className="text-blueprint-line">This is a blueprint</span>}
+              /* The lead said "Keep scrolling and the drawing becomes the file it is drawn
+                 from." until 2026-08-08, when the author asked it out of the deck and into the
+                 scroll: the hint appears as a reader starts moving rather than sitting under
+                 the heading before there is anything to hint at. `SourceSwap` draws it. */
+              lead="Which agents run, what each one hands to the next, and it is already yours to run."
+              align="center"
+              className="mx-auto"
+            />
+          }
         />
-        </div>
-
-        <BlueprintWalk dot={withoutComments(dot)} file={FILE} />
       </div>
     </section>
   );

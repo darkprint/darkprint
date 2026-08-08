@@ -66,29 +66,15 @@ import { clamp01, useScrollProgress } from "@/components/viz/useScrollProgress";
 const FIGURE_OUT = { from: 0.06, to: 0.20 };
 const SOURCE_IN = { from: 0.14, to: 0.28 };
 
-/**
- * The height of the grid cell the two layers share, in CSS pixels.
- *
- * Measured on the built page rather than assumed, at 1024, 1280 and 1440 and at four
- * scroll depths each: 460px in all twelve. It is stable because the taller layer sets it
- * and the taller layer is the file panel, whose listing is a fixed 18 lines and whose notes
- * column shows ONE note at a time — the walk's own doing. The drawing measures 405.
- *
- * Do not read the layers' own rects to check this. Both are rotated for most of the pin, and
- * `getBoundingClientRect` returns the perspective-projected box of a rotated element: the
- * drawing reads 566 while edge-on and the panel 643, neither of which is a height anything
- * has. The unrotated grid row is the honest number.
- */
-const CELL = 460;
+/* `CELL` (460) and `HINT_BLOCK` (36) stood here and were the two terms of the centring
+   offset: `50vh - CELL/2 - HINT_BLOCK` put the drawing's middle on the screen's middle.
 
-/**
- * The hint's block, in CSS pixels: one line of `text-sm leading-relaxed` (20) plus `mb-4`.
- *
- * Subtracted from the pin offset only when a hint is passed, so the GRID is what lands in
- * the middle of the screen and the hint sits above it. Centring the sticky box as a whole
- * would put the figure half a hint low.
- */
-const HINT_BLOCK = 36;
+   The box is heading + hint + drawing now (see `heading`), so there is nothing to centre —
+   the group is roughly 700px in a 950px viewport and pinning it at `top-20` is the whole of
+   the placement. Recorded because both numbers were measured rather than guessed: the cell
+   is 460px at 1024, 1280 and 1440 and at four scroll depths each, and the hint block is one
+   line of `text-sm leading-relaxed` plus `mb-4`. If this box ever goes back to holding the
+   drawing alone, those are the numbers. */
 
 /** `t` mapped through a window, 0 before it and 1 after. */
 function ramp(t: number, from: number, to: number): number {
@@ -99,6 +85,7 @@ export function SourceSwap({
   figure,
   source,
   hint,
+  heading,
   className,
 }: {
   /** The drawing. Rendered first, and the thing a reader meets. */
@@ -124,6 +111,24 @@ export function SourceSwap({
    * left on screen is the file, which is the thing the beat is handing over.
    */
   hint?: React.ReactNode;
+  /**
+   * The section's own heading, rendered INSIDE the pinned box.
+   *
+   * The author, 2026-08-08, with two screenshots: the unscrolled state is what they want and
+   * the scrolled state is not. Both are correct renderings of the arrangement that produced
+   * them, which is why this is a structural fix rather than a spacing one.
+   *
+   * The heading was a sticky SIBLING of this component: two sticky boxes in one scroll
+   * container, each with its own offset, and the distance between them therefore depended on
+   * which of the two had pinned yet. In flow they sat 40px apart; both pinned, they sat
+   * `figureOffset - headingHeight - 64` apart, which is a different number and is the gap in
+   * the second screenshot.
+   *
+   * One box cannot come apart from itself. The heading is inside the sticky element now, so
+   * the heading, the hint and the drawing hold the spacing they have at rest at every scroll
+   * position, which is what the first screenshot shows.
+   */
+  heading?: React.ReactNode;
   className?: string;
 }) {
   const { ref, progress, motion } = useScrollProgress<HTMLDivElement>({ steps: 60 });
@@ -255,16 +260,18 @@ export function SourceSwap({
           Inline rather than a utility because the two terms are measurements, and `top` is
           inert on a `position: static` box — so this applies at exactly the widths
           `lg:sticky` does, and does nothing below them. */}
-      <div
-        className={cx(motion && "lg:sticky")}
-        style={
-          motion
-            ? {
-                top: `max(4rem, calc(50vh - ${CELL / 2 + (hint === undefined ? 0 : HINT_BLOCK)}px))`,
-              }
-            : undefined
-        }
-      >
+      {/* Pinned near the top, not centred, now that the heading is inside the box.
+          ------------------------------------------------------------
+          Centring was right when this box held only the drawing: half a screen less half the
+          cell put the figure in the middle. The box is now heading + hint + drawing, which
+          is roughly 700px, and centring a 700px box in a 950px viewport pins its top at
+          125px — 61px of travel for the whole group, and the drawing itself ends up low.
+
+          `top-20` puts the heading just under the 4rem site header with a little air, and
+          everything below it follows at the spacing it has at rest. That is the arrangement
+          in the author's first screenshot. */}
+      <div className={cx(motion && "lg:sticky lg:top-20")}>
+        {heading}
         {hint !== undefined && (
           /* ABOVE the pair, not under it, and the reason is the grid below.
              ------------------------------------------------------------
