@@ -142,49 +142,58 @@ describe("beat 2 draws the blueprint with its labels in the markup", () => {
 });
 
 describe("the landing carries no page of the site it is introducing", () => {
-  /**
-   * Beat 2 carries one code block on purpose, and it is the only one the landing may have.
-   *
-   * The rule this narrows is the one that keeps the landing from becoming documentation:
-   * no tables, no YAML listings, no code. It held for every beat until 2026-08-08, when the
-   * author asked beat 2's drawing to be replaced by the file it draws as a reader scrolls
-   * — "to give to the user the intuition how it is defined".
-   *
-   * That is not the failure the rule was written against. What it forbids is the landing
-   * RE-EXPLAINING a page of the site; what beat 2 now does is show the one artefact the
-   * beat is already about, verbatim, as the second half of a single figure. So the
-   * exemption is scoped as tightly as the claim: exactly one `<pre>`, on exactly that beat,
-   * and its contents have to be the archive's own bytes rather than a hand-typed
-   * approximation — which is checked below rather than trusted.
-   */
-  const CODE_BLOCK_BEAT = "2 the blueprint";
-
-  it.each(BEATS.map(([name]) => name))("%s writes no YAML and no table", (name) => {
+  it.each(BEATS.map(([name]) => name))("%s writes no YAML, no table and no code block", (name) => {
     const html = beat(name);
     expect(html, "a table").not.toContain("<table");
+    expect(html, "a code block").not.toContain("<pre");
     // The annotated card moved whole to `/spec/card`. A `key:` at the head of a line is
     // what a YAML listing looks like once the tags are gone.
     expect(readable(html)).not.toMatch(/\b(phase|cannot|accepts|emits|model):\s/);
   });
 
-  it.each(BEATS.map(([name]) => name).filter((n) => n !== CODE_BLOCK_BEAT))(
-    "%s writes no code block",
-    (name) => {
-      expect(beat(name), "a code block").not.toContain("<pre");
-    },
-  );
-
-  it("gives beat 2 exactly one code block, holding the archive's own DOT", async () => {
-    const html = beat(CODE_BLOCK_BEAT);
-    expect((html.match(/<pre/g) ?? []).length, "beat 2 grew a second code block").toBe(1);
-
+  /**
+   * Beat 2 shows the real DOT, and shows it without its comments.
+   *
+   * The rule above forbids a code block on every beat and still does — the listing beat 2
+   * grew on 2026-08-08 is `DotBreakdown`, the panel `/spec/topology` uses, and it draws its
+   * lines as rows rather than as a `<pre>`. So nothing was exempted; what needed adding was
+   * the other direction, because two claims about that listing are now load-bearing and
+   * neither is obvious from reading the component.
+   *
+   * The author asked for the file itself ("to give to the user the intuition how it is
+   * defined") and then for its comments out ("I want to just give the user the intuition of
+   * what's behind the graphics"). The archive's file argues doc 2 §5.2, §5.4 and §5.5 in six
+   * comment lines — why the planner does not reach the builder, what `criteria-leak` would
+   * cost, why the loop never returns to the builder. Those lines stay in the file and stay
+   * on `/spec/topology`, where a reader is studying the notation. A listing here that
+   * quietly grew them back would be the argument arriving before the shape.
+   */
+  it("shows the archive's own DOT on beat 2, with its comments taken out", async () => {
+    const words = readable(beat("2 the blueprint"));
     const { bundleSource } = await import("@/lib/content");
-    const dot = bundleSource("starter-software-factory").dot.trimEnd();
-    expect(dot.length, "the starter bundle has no DOT to show").toBeGreaterThan(0);
-    // The first line of the file, escaped the way React writes it into the markup. If the
-    // listing ever stops being the real file, this is what notices.
-    const [first] = dot.split("\n");
-    expect(readable(html), "the listing is not the archive's DOT").toContain(first);
+    const dot = bundleSource("starter-software-factory").dot;
+
+    /* Compared with every space removed, and `&gt;` resolved, because `DotBreakdown`
+       tokenizes a line into one span per token: `rankdir=LR;` reaches `readable()` as
+       `rankdir = LR ;`. Whitespace is exactly what the renderer is entitled to change and
+       the characters are exactly what it is not, so the comparison drops the first and
+       keeps the second. */
+    const squeeze = (text: string) => text.replace(/&gt;/g, ">").replace(/\s+/g, "");
+    const shown = squeeze(words);
+
+    const line = (l: string) => l.trim();
+    const statements = dot.split("\n").map(line).filter((l) => l.length > 0 && !l.startsWith("//"));
+    expect(statements.length, "the starter DOT has no statements").toBeGreaterThan(5);
+    for (const statement of statements) {
+      expect(shown, `the listing is missing \`${statement}\``).toContain(squeeze(statement));
+    }
+
+    const comments = dot.split("\n").map(line).filter((l) => l.startsWith("//"));
+    expect(comments.length, "the starter DOT carries no comments to strip").toBeGreaterThan(0);
+    for (const comment of comments) {
+      const prose = comment.replace(/^\/\/\s*/, "");
+      expect(shown, `a comment came back: \`${prose}\``).not.toContain(squeeze(prose));
+    }
   });
 
   it.each(BEATS.map(([name]) => name))("%s renders at full opacity with no script", (name) => {

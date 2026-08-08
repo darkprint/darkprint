@@ -42,7 +42,7 @@
    HTML is the finished one.
    ============================================================ */
 
-import { cardSource } from "@/lib/content";
+import { cardSource, getNodeCard } from "@/lib/content";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 import { CardWalk } from "./nodecard/CardWalk";
@@ -51,7 +51,12 @@ const CARD_REF = "code-builder@1.0.0";
 
 export function SectionNodeIsCard() {
   const source = cardSource(CARD_REF);
-  if (source === undefined) return null;
+  /* The parsed card as well as its text. The face `CardWalk` opens on is
+     `CardStackFigure`, which `/what-a-blueprint-is` already draws — the author asked for
+     that shape rather than the one this beat had — and it reads a `NodeCard` rather than
+     the document. Same card, two readings, and both come off the archive. */
+  const card = getNodeCard("code-builder", "1.0.0")?.card;
+  if (source === undefined || card === undefined) return null;
 
   return (
     <section id="node" className="bg-surface py-20 sm:py-28">
@@ -74,6 +79,7 @@ export function SectionNodeIsCard() {
                line 53 under a 52-line card, and would count in the walk's arithmetic. */
             source={source.trimEnd()}
             cardRef={CARD_REF}
+            card={card}
           />
         </div>
       </div>

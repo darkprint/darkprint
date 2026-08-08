@@ -94,11 +94,13 @@
 
 import { useMemo } from "react";
 
+import type { NodeCard } from "@/lib/core";
+
 import { clamp01, stagesShown, useScrollProgress } from "@/components/viz/useScrollProgress";
 import { cx } from "@/lib/format";
 
 import { resolveAnnotations } from "./annotations";
-import { CardFace } from "./CardFace";
+import { CardStackFigure } from "@/components/learn/PartFigures";
 import { NC, reelShift } from "./geometry";
 import { body, lineSpan, ordinal } from "./prose";
 import { YamlListing } from "./YamlListing";
@@ -198,11 +200,14 @@ const WALK_BODY: Record<string, string> = {
 export function CardWalk({
   source,
   cardRef,
+  card,
   bodies = WALK_BODY,
 }: {
   /** The card document, verbatim, read off the archive by the server half. */
   source: string;
   cardRef: string;
+  /** The same card, parsed, for the face the walk opens on. */
+  card: NodeCard;
   /**
    * Per-step wording, keyed by `AnnotationSpec.id`, overriding `annotations.ts`.
    *
@@ -313,8 +318,21 @@ export function CardWalk({
         {/* The card, before it is a file. Same shell, same grid cell, so the sticky box
             reserves the listing's height — which is the taller of the two and the height
             every number in the comment above is derived from. */}
-        <div style={layer(faceOpacity)}>
-          <CardFace source={source} cardRef={cardRef} />
+        {/* `CardStackFigure`, the shape `/what-a-blueprint-is` draws, on the author's
+            instruction: a card with ghosts stacked behind it for the other nodes in the
+            graph, its id and version in the header, and six fields under a rule with
+            `cannot` in the alarm colour. It replaced a face written for this beat alone —
+            one figure for one idea, drawn the same way wherever the idea appears.
+
+            Centred, because the listing it becomes is full width and the card is not. */}
+        {/* `items-start` and not the flex default. This layer shares a grid cell with the
+            listing, which is the taller of the two, and a stretched flex child inherits that
+            height — `CardStackFigure`'s ghosts are absolutely positioned to its wrapper, so
+            they drew as three outlines running 600px past the bottom of the card. The card
+            hugs its own content and the cell keeps the listing's height, which is what the
+            sticky box needs to reserve. */}
+        <div className="flex items-start justify-center" style={layer(faceOpacity)}>
+          <CardStackFigure card={card} nodes={5} />
         </div>
         <div className={cx(!motion && "mt-5")} style={layer(listOpacity)}>
         <figure className="flex flex-col gap-4 rounded-xl border border-line bg-void p-4 sm:p-6">

@@ -37,6 +37,7 @@
 import { FlowAbsence, FlowEdge, FlowNode, FlowScene, Sheet } from "@/components/viz";
 import { kindTone, type FlowTone } from "@/components/viz/flow";
 import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
+import { DotBreakdown } from "@/components/panes/DotBreakdown";
 import { SourceSwap } from "../SourceSwap";
 
 import {
@@ -182,7 +183,10 @@ function Drawing({ graph, className }: { graph: LandingGraph; className: string 
 export function BlueprintWalk({ dot, file }: { dot: string; file: string }) {
   return (
     <SourceSwap
-      className="mx-auto mt-10 max-w-4xl"
+      /* `max-w-5xl`, not the `4xl` the sheet alone wanted: the source layer is
+         `DotBreakdown`, which lays a listing beside a column of notes, and at 4xl the notes
+         wrapped to three words a line. The drawing is centred in the same width. */
+      className="mx-auto mt-10 max-w-5xl"
       figure={
         <Sheet
           label="starter software factory"
@@ -193,16 +197,17 @@ export function BlueprintWalk({ dot, file }: { dot: string; file: string }) {
           <Drawing graph={LANDING_WIDE} className="hidden sm:block" />
         </Sheet>
       }
+      hint="Keep scrolling and the drawing becomes the file it is drawn from."
       source={
-        <Sheet label={file} title="the same graph, as the registry stores it" note="verbatim">
-          {/* The file, unedited. `overflow-x-auto` and not a wrap: a DOT line is a
-              statement, and breaking one across two visual lines would show a reader a
-              file that is not the file. The archive's own bytes are what make the swap
-              worth doing at all. */}
-          <pre className="overflow-x-auto font-mono text-[11px] leading-relaxed text-blueprint-ink sm:text-xs">
-            <code>{dot}</code>
-          </pre>
-        </Sheet>
+        /* The panel `/spec/topology` uses, on the author's instruction — line numbers, the
+           file's own path in the rail, and the numbered notes beside it. It replaces a
+           plain `<pre>` in a `Sheet`, which showed the bytes and said nothing about them.
+
+           `DotBreakdown` derives its blocks from the source it is given rather than from a
+           table of line ranges, so handing it a comment-free file renumbers the notes to
+           match instead of pointing at lines that moved. `components/panes/dot-breakdown.ts`
+           records why it was built that way; this is the first caller to depend on it. */
+        <DotBreakdown source={dot} title={file} />
       }
     />
   );

@@ -31,8 +31,36 @@ import { BlueprintWalk } from "./blueprint/BlueprintWalk";
 /** The blueprint every worked example on this site opens with. */
 const STARTER = "starter-software-factory";
 
-/** What the file is called in the folder that downloads, and in the sheet's own rail. */
-const FILE = "blueprint.dot";
+/** What the file is called in the folder that downloads, and in the panel's own rail. */
+const FILE = `${STARTER}/blueprint.dot`;
+
+/**
+ * The DOT with its comment lines taken out.
+ *
+ * The author: "remove all the comments in the .dot as I want to just give the user the
+ * intuition of what's behind the graphics."
+ *
+ * The archive's file carries six comment lines arguing doc 2 §5.2, §5.4 and §5.5 — why the
+ * planner does not reach the builder, what `criteria-leak` would cost, why the loop never
+ * returns to the builder. That is the right place for them and they stay there: `/spec/topology`
+ * shows the same file WITH them, because that page is where a reader is studying the notation.
+ * This beat is not. It is showing what is behind a picture, and twelve lines of prose in a
+ * twenty-seven line file is the argument arriving before the shape.
+ *
+ * Only whole comment lines go. A trailing comment after a statement would take the statement
+ * with it, and nothing in this archive writes one — but the regex is anchored so that if one
+ * ever appears it is left alone rather than silently truncating a node.
+ *
+ * Blank runs collapse to one so the file does not open with the holes the comments left.
+ */
+function withoutComments(dot: string): string {
+  return dot
+    .split("\n")
+    .filter((line) => !/^\s*(\/\/|#)/.test(line))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 
 export function SectionBlueprint() {
   const { dot } = bundleSource(STARTER);
@@ -43,15 +71,16 @@ export function SectionBlueprint() {
         <SectionHeading
           eyebrow="The drawing"
           title="This is a blueprint"
-          /* The lead names the swap now. A reader who scrolls into a drawing that dissolves
-             into a file with no warning has been shown a trick; one who has been told the
-             drawing is a picture of a file watches it become one. */
-          lead="Which agents run, what each one hands to the next, and it is already yours to run. Keep scrolling and the drawing becomes the file it is drawn from."
+          /* The lead said "Keep scrolling and the drawing becomes the file it is drawn
+             from." until 2026-08-08, when the author asked it out of the deck and into the
+             scroll: the hint appears as a reader starts moving rather than sitting under
+             the heading before there is anything to hint at. `SourceSwap` draws it. */
+          lead="Which agents run, what each one hands to the next, and it is already yours to run."
           align="center"
           className="mx-auto"
         />
 
-        <BlueprintWalk dot={dot.trimEnd()} file={FILE} />
+        <BlueprintWalk dot={withoutComments(dot)} file={FILE} />
       </div>
     </section>
   );

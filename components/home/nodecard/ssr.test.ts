@@ -58,15 +58,26 @@ import { describe, expect, it } from "vitest";
 import { NODE_CARD_ANNOTATIONS } from "./annotations";
 import { CardBreakdown } from "./CardBreakdown";
 import { CardWalk } from "./CardWalk";
+import { getNodeCard } from "@/lib/content";
 
 const CARD = readFileSync(
   join(process.cwd(), "content/cards/code-builder@1.0.0.yaml"),
   "utf8",
 ).trimEnd();
 
+/**
+ * The same card, parsed, for the face the walk now opens on.
+ *
+ * Read through `lib/content` rather than parsed here: the face is `CardStackFigure`, which
+ * takes a `NodeCard`, and building one by hand in a test is how a fixture drifts from the
+ * document beside it. This is the archive's own reading of the same file `CARD` holds.
+ */
+const PARSED = getNodeCard("code-builder", "1.0.0")?.card;
+if (PARSED === undefined) throw new Error("code-builder@1.0.0 is not in the archive");
+
 /** The landing's mount: `CardWalk`'s own short wording for the nine parts. */
 const WALK = renderToStaticMarkup(
-  createElement(CardWalk, { source: CARD, cardRef: "code-builder@1.0.0" }),
+  createElement(CardWalk, { source: CARD, cardRef: "code-builder@1.0.0", card: PARSED }),
 );
 
 /**
