@@ -137,7 +137,25 @@ function PagerLink({ page, side }: { page: SpecPage; side: "previous" | "next" }
  * reader without counting the links; the entry stays a `span` rather than a link to
  * itself, which is a stop that goes nowhere.
  */
-export function SpecPager({ href }: { href: string }) {
+export function SpecPager({
+  href,
+  showNext = true,
+}: {
+  href: string;
+  /**
+   * Whether to draw the NEXT signpost.
+   *
+   * True everywhere except `/what-a-blueprint-is`, where the author asked it out on
+   * 2026-08-08. That page ends on `WhereNext`, three cards carrying all three layer pages
+   * in sequence order, and the pager's NEXT is the first of those three a second time,
+   * forty pixels below it. Two boxes offering one destination is not a choice.
+   *
+   * The rail above it is untouched, so the sequence is still navigable from that page and
+   * still announces which stop it is on. PREVIOUS is untouched too; on stop 00 there is
+   * none to draw.
+   */
+  showNext?: boolean;
+}) {
   const { previous, next } = specNeighbours(href);
 
   return (
@@ -169,12 +187,12 @@ export function SpecPager({ href }: { href: string }) {
         ))}
       </ol>
 
-      {(previous !== undefined || next !== undefined) && (
+      {(previous !== undefined || (showNext && next !== undefined)) && (
         /* A row of two signposts, not a two-column grid: the boxes are content-sized
            now, so a grid would stretch them straight back to half the measure each. */
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-start">
           {previous !== undefined && <PagerLink page={previous} side="previous" />}
-          {next !== undefined && <PagerLink page={next} side="next" />}
+          {showNext && next !== undefined && <PagerLink page={next} side="next" />}
         </div>
       )}
     </nav>

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { partitionTerms } from "@/lib/core";
-import { allBlueprints, allNodeCards, getNodeCard, getOntologyView } from "@/lib/content";
+import { allBlueprints, getNodeCard, getOntologyView } from "@/lib/content";
 import { GuardrailShape, HandoverAxis } from "@/components/explain/ConceptFigures";
 import { RunLayers } from "@/components/explain/RunLayers";
 import { Folder } from "@/components/home/lifecycle/Folder";
@@ -299,15 +298,18 @@ function Part({
             are all in one place, after the argument, in the order the sequence walks them.
 
             `layer.href` is still read, by `WhereNext`. Nothing about `SPEC_LAYERS` changed. */}
-        {/* Where the file sits inside a bundle, and which part of the engine reads it.
-            `layer.source` renders on no other page — the deleted `/spec` door was its one
-            call site — so cutting it in a pacing pass would delete it from the site rather
-            than move it. Below the link rather than above it: "where is this implemented"
-            is not a question somebody meeting the format for the first time is asking, and
-            a reader who wants it wants it after they have decided to open the page. */}
+        {/* Where the file sits inside a bundle. `layer.source` — `lib/core/dot/`,
+            `lib/core/card/schema.ts`, `lib/core/ontology/` — stood under it and the author
+            asked all three out on 2026-08-08.
+
+            It renders on no other page, so this is a deletion from the site rather than a
+            move, and it is the right one: "which module implements this" is a question
+            about the engine, and these three bands are about the FILES a reader downloads.
+            Somebody who wants the implementation is reading the repository, not this page.
+
+            `SPEC_LAYERS` still carries `source`; nothing about the sequence changed. */}
         <p className="mt-1 flex flex-col gap-1 font-mono text-[11px] text-dim">
           <span>{layer.file}</span>
-          <span>{layer.source}</span>
           {meta !== undefined && <span>{meta}</span>}
         </p>
       </div>
@@ -382,17 +384,29 @@ function WhereNext() {
   return (
     <section className="border-t border-line bg-surface py-16 sm:py-20">
       <div className="container-page flex flex-col gap-8">
+        {/* The title was "The three files, in full" and the lead ended "and none of them is
+            worth reading before now"; the author asked both out on 2026-08-08. */}
         <SectionHeading
           eyebrow="Next"
-          title="The three files, in full"
-          lead="Each part above has a reference page: the notation, the schema, and the vocabulary. They are worth reading in this order, and none of them is worth reading before now."
+          title="Where to go from here"
+          lead="Each part above has a reference page: the notation, the schema, and the vocabulary. They are worth reading in this order."
         />
         <ol className="grid gap-4 sm:grid-cols-3">
           {SPEC_LAYERS.map((layer, i) => (
             <li key={layer.href}>
               <Link
                 href={layer.href}
-                className="group flex h-full flex-col gap-2 rounded-xl border border-line bg-surface-2/40 p-5 transition-colors hover:border-cyan/50"
+                /* Amber on hover, on the author's instruction, and it is the one place
+                   on this site where a third amber would NOT be a third: `app/globals.css`
+                   reserves the colour for `ComingSoonBadge` ("not built yet") and
+                   `.route-box` ("this box leaves the page"), and these three cards are
+                   exactly the second of those. They are what the pager's own amber NEXT box
+                   was, in the position that box used to occupy — which is why that box came
+                   off this page in the same commit. Same meaning, same colour, one copy.
+
+                   Hover only: at rest they are neutral, because three amber cards standing
+                   in a row would read as three warnings. */
+                className="group flex h-full flex-col gap-2 rounded-xl border border-line bg-surface-2/40 p-5 transition-colors hover:border-amber/60 hover:bg-amber/[0.04]"
               >
                 <span className="flex items-baseline gap-3">
                   <span className="font-mono text-[11px] tabular-nums text-dim">
@@ -408,10 +422,9 @@ function WhereNext() {
                     {layer.format}
                   </span>
                 </span>
-                <span className="text-[15px] font-medium leading-snug text-fg transition-colors group-hover:text-cyan">
+                <span className="text-[15px] font-medium leading-snug text-fg transition-colors group-hover:text-amber-bright">
                   {layer.title} <span aria-hidden>&rarr;</span>
                 </span>
-                <span className="font-mono text-[11px] text-dim">{layer.file}</span>
               </Link>
             </li>
           ))}
@@ -423,7 +436,6 @@ function WhereNext() {
 
 export default function WhatABlueprintIsPage() {
   const all = allBlueprints();
-  const cards = allNodeCards().length;
 
   /* The three figures, all read off the archive at build time.
 
@@ -445,12 +457,11 @@ export default function WhatABlueprintIsPage() {
   const builder = getNodeCard("code-builder");
   const card = builder?.card;
   const view = getOntologyView();
-  /* The curated core, counted apart from the overlay this archive layers on it. `terms`
-     is the merged view, and a count taken from it would include `lupo/pii-handling`,
-     which is namespaced and no part of the set two authors can hold each other to. This
-     line came over from the deleted `/spec`, where the ontology door printed it. */
-  const { core } = partitionTerms(view.ontology.terms);
-  const termLine = `v${view.ontology.version} · ${core.length} curated terms`;
+  /* `partitionTerms` and `termLine` stood here: "v0.1.0 · 49 curated terms", printed as the
+     vocabulary band's `meta` line. The author asked it out on 2026-08-08, and the count it
+     carried is not lost — `VocabularyFigure` beside that band draws every kind with its
+     size, off the same ontology, and the version is in `/ontology`'s own heading now. */
+
   /* The vocabulary figure draws kinds and how many terms each holds, not a sample.
 
      Four sample terms was the wrong picture of this part. The sentence beside it says the
@@ -513,7 +524,7 @@ export default function WhatABlueprintIsPage() {
         <div className="container-page">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-center lg:gap-14">
             <div className="flex flex-col items-center gap-2 lg:items-start">
-              <Folder />
+              <Folder label="Bundle" />
               {/* An affordance line, which the landing's mount does not need and this one
                   does. There the folder sits inside beat 4's Download panel with a heading,
                   a sentence and a link around it; here it is alone on a band, and a shut
@@ -638,14 +649,12 @@ export default function WhatABlueprintIsPage() {
               }
             >
               One versioned card per node, saying what runs there, which model it uses,
-              what it may reach, and what must never reach it. {cards} of them are
-              published here.
+              what it may reach, and what must never reach it.
             </Part>
 
             <Part
               layer={ontology}
               title="The vocabulary"
-              meta={termLine}
               side="left"
               figure={
                 <FigureFrame caption="Both files spell a term the same way, or the checker says so.">
@@ -684,7 +693,7 @@ export default function WhatABlueprintIsPage() {
           <SectionHeading
             eyebrow="Around it"
             title="What a blueprint needs before it moves"
-            lead="A blueprint is a specification and specifications do not run. Three other words travel with it, they are not interchangeable, and only one of the four is something you download."
+            lead="A blueprint is a specification and specifications do not run. Three other words travel with it."
           />
           <RunLayers />
         </div>
@@ -728,17 +737,19 @@ export default function WhatABlueprintIsPage() {
           `.route-box`, and a bordered amber note was neither. */}
       <section id="the-words" className="scroll-mt-24 border-t border-line bg-surface py-16">
         <div className="container-page flex flex-col gap-8">
-          <SectionHeading
-            eyebrow="The words"
-            title="Guardrails, and where the checking stops"
-            /* The lead promised a walk "starting inside one node card and zooming out until
-               the whole graph is in view", and neither end of that walk is in this section
-               any more: `WhatACardReaches` is on `/spec/card` and the nested frames are the
-               band four sections up. What is left is narrower and better named for it — one
-               constraint, where it can sit, when this site stops being able to see it, and
-               why the thing that grades a node is not one. */
-            lead="These words travel together and mean different things to different people. What follows is one of them at close range: what a constraint on a node is, the three places it can sit, and where the checking stops."
-          />
+          {/* The section's `SectionHeading` — eyebrow "The words", title "Guardrails, and where
+              the checking stops", and a lead promising "one of them at close range" — is
+              gone on the author's instruction: "the content below are some examples to fix
+              some concepts."
+
+              That is the accurate description and the heading was not. Two figures and one
+              paragraph is not a chapter on a word; it is three worked examples pinned under
+              the band that defines the words, which is `RunLayers` three sections up. A
+              32px `h2` over them announced a new subject and there is not one.
+
+              The section keeps its `id` and its ground, so `#the-words` still resolves and
+              the seam still reads. What it does not keep is an outline entry it had not
+              earned. */}
 
           {/* `WhatACardReaches` opened this section and is on `/spec/card` now, under that
               page's own lead, on the author's instruction. It was six named fields with two
@@ -906,7 +917,7 @@ export default function WhatABlueprintIsPage() {
 
       <section className="bg-void py-16 sm:py-20">
         <div className="container-page">
-          <SpecPager href={SPEC_OVERVIEW.href} />
+          <SpecPager href={SPEC_OVERVIEW.href} showNext={false} />
         </div>
       </section>
     </>

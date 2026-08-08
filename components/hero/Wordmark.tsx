@@ -99,18 +99,16 @@ const MARK = "DarkPrint";
  */
 const CLAIM = "Autonomy you can read as a graph.";
 
-/**
- * The line under the claim, and the only sentence in the first viewport that names a
- * concrete thing a reader will find.
- *
- * The claim is an abstraction — deliberately, it is the site's one line — and an
- * abstraction alone left the eye ranking the hero brand name → glow → small grey
- * abstraction → the 11px eyebrow that actually said what the product is. This says what
- * the graph, the card and the score ARE, in the reader's own words, so the eyebrow no
- * longer has to carry that job at the bottom of the type scale.
- */
-const SUPPORT =
-  "DOT graphs of agent pipelines, the YAML card behind every node, and a score for how much autonomy each one takes.";
+/* `SUPPORT` stood here — "DOT graphs of agent pipelines, the YAML card behind every node,
+   and a score for how much autonomy each one takes." — and the author asked it out on
+   2026-08-08.
+
+   The note that argued for it is worth keeping, because it names a risk the hero now
+   carries alone: `CLAIM` above is an abstraction, deliberately, and this line was what said
+   what the graph, the card and the score ARE. Without it the eyebrow carries that job again
+   at the bottom of the type scale, which is the state the line was written to fix. If the
+   hero ever reads as brand-name-then-abstraction, this is the element that went. */
+
 
 /* The first viewport used to print three counts ("9 blueprints · 53 node cards · 50
    ontology terms") under the two buttons, handed down from `Hero` as a `stats` prop
@@ -471,18 +469,6 @@ export function Wordmark() {
           {CLAIM}
         </span>
       </h1>
-
-      {/* The concrete line, outside the `h1` on purpose: the heading's accessible name is
-          the site's name and its claim, and a third sentence inside it would announce the
-          whole paragraph as the page's one level-one heading. It carries `data-mark="claim"`
-          so it arrives on the same beat as the sentence it supports — the timeline selects
-          every element with that mark, not one. */}
-      <p
-        data-mark="claim"
-        className="mt-4 max-w-2xl text-balance font-sans text-base leading-relaxed text-muted"
-      >
-        {SUPPORT}
-      </p>
 
       {/* The first viewport's two real actions.
 

@@ -65,7 +65,25 @@ const OPEN_AT = [
   "-translate-x-1/2 -translate-y-[124%] rotate-0",
 ] as const;
 
-export function Folder({ className }: { className?: string }) {
+export function Folder({
+  className,
+  label,
+}: {
+  className?: string;
+  /**
+   * A word written across the front of the folder, on the flaps.
+   *
+   * The landing does not pass one: there the folder sits inside beat 4's Download panel,
+   * under a heading that already names it. `/what-a-blueprint-is` does, because there it
+   * opens a band whose whole subject is the word — "A bundle is the folder" — and a reader
+   * scanning the page meets the drawing before the heading beside it.
+   *
+   * `z-40`, above the flaps at `z-30` and the papers at `z-20`, so it stays legible shut
+   * and open. `pointer-events-none` so it never eats the button's own hover. It is
+   * `aria-hidden` because the button already carries an accessible name.
+   */
+  label?: string;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -130,6 +148,15 @@ export function Folder({ className }: { className?: string }) {
             </span>
           ))}
         </span>
+
+        {label !== undefined && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-[26%] z-40 block text-center font-mono text-[11px] uppercase tracking-[0.18em] text-blueprint-deep"
+          >
+            {label}
+          </span>
+        )}
 
         {/* The two front flaps, skewed apart on open. Drawn after the papers so they cover
             them when the folder is shut. */}

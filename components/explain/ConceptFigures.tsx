@@ -399,7 +399,20 @@ export function GuardrailShape() {
           <span className="label text-copper-line">
             Static · written in the bundle
           </span>
-          <span className="label text-muted">
+          {/* Emerald, on the author's instruction 2026-08-08: "the text … write in a shade
+              of green."
+
+              It is a widening of the token's meaning and the widening is honest.
+              `app/globals.css` reserves emerald for "a figure read off the engine"; this
+              column is what a RUNNER does at run time, which is the same register one step
+              out — machine execution rather than a person's decision or a file's promise.
+              Against the copper of the static column it reads as the pair it is, static
+              and running, which is the whole point of the reorganisation.
+
+              What it is NOT is amber. That reservation is absolute: amber means "not built
+              yet", and this site does not ship a harness, so an amber head here would read
+              as a promise to. #34d399 measures 11.6:1 on the figure's ground. */}
+          <span className="label text-emerald">
             At run time · an example of what your harness does with it
           </span>
         </div>
@@ -430,7 +443,7 @@ export function GuardrailShape() {
                 `components/site/honesty.test.ts` over the head, which is in the markup at
                 every width. */}
             <p className="flex flex-col gap-1 rounded border border-line-bright bg-surface-2 px-3 py-2 text-[13px] leading-snug text-muted">
-              <span className="label sm:hidden">At run time · your harness</span>
+              <span className="label text-emerald sm:hidden">At run time · your harness</span>
               <span>{row.harness}</span>
             </p>
           </div>
