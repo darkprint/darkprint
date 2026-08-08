@@ -370,22 +370,15 @@ function Field({
   /**
    * A second line under the value, in the sheet's own dim, at the reading face.
    *
-   * The author, 2026-08-08: "why did u not modify 'acceptance-criteria' of the cannot in
-   * something more clear?"
+   * Currently unused: the stage card was drawn with the ontology term as its value and this
+   * as a gloss under it for one revision, and the author then scoped the original request —
+   * "a new user could not understand the meaning of the field `cannot: acceptance-criteria`
+   * so I suggested to use a more evocative name … but ONLY for the home page". A term with
+   * a footnote is still a term first. See `CardStackFigure` for what replaced it.
    *
-   * Because it is not a label anything here wrote. `PartFigures`' own header states the
-   * rule the whole file is held to — "a card with invented fields in it would be the one
-   * thing this page cannot afford" — and `acceptance-criteria` is a data type in the
-   * ontology, read off `content/cards/code-builder@1.0.0.yaml`. It is the term the resolver
-   * ENFORCES: draw an edge carrying it into this node and the bundle fails with
-   * `bundle/prohibition-violated`. Rewriting it in the drawing would make the picture
-   * disagree with the file on the one beat whose entire claim is that the two are the same
-   * thing, and it would name a prohibition the engine does not hold.
-   *
-   * The clear wording exists and is already in the archive. That card's `cannot` has two
-   * entries — the term, then "read the checks the work will be run against" — so the fix is
-   * to print the second one under the first rather than to invent a third. Nothing typed,
-   * and a reader gets both the rule and what it means.
+   * The prop stays because a card whose `cannot[0]` has no plain sibling in the archive
+   * will want it, and because it is the only place the two-line row's alignment is worked
+   * out. Nothing calls it today.
    */
   hint?: string;
   /**
@@ -559,17 +552,36 @@ export function CardStackFigure({
           {output !== undefined && (
             <Field name="out" value={`${output.name} : ${output.type}`} stage={stage} />
           )}
-          {/* The prohibition, and — on the stage card, which has the width for it — the
-              card's own plain-English gloss on it under the term. See `Field`'s `hint` for
-              why the term itself is left exactly as the file writes it. `inline` stays one
-              line: at 19rem beside a column of prose there is no room, and the page it
-              draws on spends a whole part explaining this field in its own prose. */}
+          {/* The prohibition, in the plainest wording the CARD ITSELF carries.
+              ------------------------------------------------------------
+              The author: "a new user could not understand the meaning of the field
+              `cannot: acceptance-criteria` so I suggested to use a more evocative name
+              instead of `acceptance-criteria` but ONLY for the home page."
+
+              `cannot` is a list, and this archive writes it as a pair: the ontology term
+              the resolver enforces, then the same rule in words. `code-builder@1.0.0` has
+              `acceptance-criteria` and "read the checks the work will be run against". So
+              the stage card prints the SECOND entry, and nothing is invented — the evocative
+              name was already in the file, one line down from the technical one.
+
+              That is the whole reason the term is not simply rewritten here. It names a data
+              type in the ontology, and drawing a different word would have this figure
+              disagree with the file it turns into three seconds later, on the beat whose one
+              claim is that the two are the same thing. Printing the card's own second line
+              keeps the picture true AND readable, and the term is still right there in the
+              YAML the card becomes.
+
+              `inline` keeps the term. `/what-a-blueprint-is` spends a whole part on this
+              field in prose beside the figure, so there the term is the thing being
+              explained rather than a word a reader has to decode alone. */}
           <Field
             name="cannot"
-            value={card.cannot[0] ?? "nothing declared"}
+            value={
+              (stage ? (card.cannot[1] ?? card.cannot[0]) : card.cannot[0]) ??
+              "nothing declared"
+            }
             tone="signal"
             stage={stage}
-            hint={stage ? card.cannot[1] : undefined}
           />
         </div>
       </div>

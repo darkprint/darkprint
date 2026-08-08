@@ -406,7 +406,14 @@ export default function SpecCardPage() {
 
           {refusal !== undefined && (
             <div className="flex flex-col gap-3">
-              <p className="prose-lane text-[15px] leading-relaxed text-muted">
+              {/* No `prose-lane`, on the author's instruction (2026-08-08). The 36rem
+                  measure is right for a run of body prose a reader settles into; this is a
+                  one-sentence caption for the panel directly under it, and the panel is
+                  full width. Held to 36rem it broke over three lines and ended a third of
+                  the way across, with an `<Id>` chip carrying a DOT statement wrapping
+                  inside it — a caption narrower than the thing it captions reads as a
+                  different column rather than as a label. */}
+              <p className="text-[15px] leading-relaxed text-muted">
                 The sentence below comes back from the resolver during the build rather
                 than from this page, run over the starter bundle with{" "}
                 <Id>{ADDED_DOT_LINE}</Id> inserted.

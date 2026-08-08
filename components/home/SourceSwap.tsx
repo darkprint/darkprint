@@ -180,14 +180,28 @@ export function SourceSwap({
      `useReveal` is an IntersectionObserver, so it answers a question about POSITION rather
      than about pin travel, and it is already this codebase's answer to "has this risen far
      enough to speak". `margin` shrinks the root's bottom edge upward, so `shown` turns true
-     when the box's top crosses that line rather than when it first appears: -42% puts the
-     line at 58% of the viewport, which at 950px is the box's top reaching 551px. Measured
-     against the section's own geometry, the heading is a third of the way off the top of
-     the screen at that point — going, and not yet gone.
+     when this paragraph's top crosses that line rather than when it first appears.
 
      `amount: 0` because what matters is the box's TOP crossing the line; the default 0.25
      would wait for a quarter of a 460px figure to be inside it, which is most of the way
      to the pin.
+
+     ── Where the line goes, and why it is this high ──
+     -42% put it at 58% of the viewport, and the author: the line "is still already visible
+     even before the blueprint graphic is in the center — I want to make appear such text
+     when [the heading block] is nearly reached the navbar while scrolling."
+
+     So the trigger is the SETTLE, not the entrance. -72% puts the line at 28% of the
+     viewport, 266px at 950 — within a few pixels of the offset the sticky box locks at
+     (`50vh - CELL/2 - HINT_BLOCK`, 209px there). That is not a coincidence worth hiding
+     behind a percentage: this paragraph is the top of the pinned box, so a line just below
+     the lock offset fires as the box comes to rest, and the heading above it is passing
+     under the 4rem header at the same moment. One gesture, two things arriving.
+
+     A percentage rather than the pixel offset itself, because `rootMargin` is resolved
+     against the root once and the offset is a `max()` of two viewport-dependent terms. On a
+     short window the percentage fires slightly before the lock instead of at it, which is
+     the harmless direction: the line appears a beat early rather than never.
 
      ── The static state, which is the reason `useReveal` and not a raw observer ──
      It returns `shown: true` on the server, without JS and under reduced motion, so the
@@ -198,7 +212,7 @@ export function SourceSwap({
      describing the past. */
   const { ref: hintRef, shown: hintIn } = useReveal<HTMLParagraphElement>({
     amount: 0,
-    margin: "0px 0px -42% 0px",
+    margin: "0px 0px -72% 0px",
   });
   const hintOpacity = (hintIn ? 1 : 0) * (1 - ramp(progress, SOURCE_IN.to, SOURCE_IN.to + 0.10));
 
