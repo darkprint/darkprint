@@ -147,21 +147,25 @@ describe("the route keeps what ships apart from what does not", () => {
   });
 
   /**
-   * One amber pill on the working half would say the install is coming rather than here.
+   * An amber pill on the working half would say the install is coming rather than here.
    *
-   * The count was 2 until 2026-08-07 — the publishing panel's badge and `InstallTabs`'s —
-   * and it is 1 now because the author split the route and `InstallTabs` went to `/mcp`
-   * with the rest of the MCP preview. The exact number is asserted rather than a floor:
-   * "at least one badge below the rule" would pass on the day a second, unrelated amber
-   * pill appears somewhere on this page, and amber has exactly two sanctioned jobs
-   * sitewide. `app/mcp/page.tsx`'s own ledger rows now hold the badge that left.
+   * The count has been 2, then 1, and is 2 again: the publishing badge plus `InstallTabs`'s
+   * until the author split the route on 2026-08-07, then the publishing badge alone, and now
+   * that badge plus the one on "Design against what exists", added 2026-08-08.
+   *
+   * The exact number is still asserted rather than a floor, and the reason is unchanged:
+   * "at least one badge below the rule" would pass on the day an unrelated amber pill
+   * appears anywhere on this page, and amber has exactly two sanctioned jobs sitewide. What
+   * the case really protects is the POSITION — every badge below the rule and none above
+   * it — so that is asserted for all of them rather than for the first.
    */
-  it("puts its one coming-soon marker below the rule", () => {
+  it("puts every coming-soon marker below the rule, and there are two", () => {
     const rule = page.indexOf("Not built yet");
-    const first = page.indexOf("Coming soon");
-    expect(first, "no coming-soon marker on the page at all").toBeGreaterThan(-1);
-    expect(first).toBeGreaterThan(rule);
-    expect(plainText(PAGE).match(/Coming soon/g) ?? []).toHaveLength(1);
+    expect(rule, "the rule is not on the page").toBeGreaterThan(-1);
+    const marks = [...page.matchAll(/Coming soon/g)].map((m) => m.index ?? -1);
+    expect(marks.length, "no coming-soon marker on the page at all").toBeGreaterThan(0);
+    for (const at of marks) expect(at).toBeGreaterThan(rule);
+    expect(plainText(PAGE).match(/Coming soon/g) ?? []).toHaveLength(2);
   });
 
   /** The four unbuilt capabilities, in the open, in one sentence rather than four claims. */

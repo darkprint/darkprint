@@ -69,10 +69,13 @@ export default function SkillPage() {
           as="h2"
           eyebrow="Next"
           title="Not built yet"
-          lead="One thing this page will eventually do and does not do now. Nothing below this line is a control, and none of it runs."
+          lead="Two things this page will eventually do and does not do now. Nothing below this line is a control, and none of it runs."
         />
 
-        <article className="panel mt-10 flex min-w-0 flex-col gap-4 p-5">
+        {/* Two panels, since 2026-08-08. The section's lead says "one thing"; it says two
+            now, and the second is the one the author asked for. */}
+        <div className="mt-10 grid gap-5 lg:grid-cols-2">
+        <article className="panel flex min-w-0 flex-col gap-4 p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <PanelHeading as="h3">Share what you wrote</PanelHeading>
             <ComingSoonBadge />
@@ -117,6 +120,74 @@ export default function SkillPage() {
             , and it is not built either.
           </p>
         </article>
+
+        {/* ---------- the second unbuilt half: the skill reading the registry ----------
+            The author, 2026-08-08: the skill should also be able to "use the mcp to look
+            for node cards already prepared by others from which draw inspiration for
+            drawing their own blueprint … in this way the assisted design is grounded to
+            already defined cards or even subgraphs of blueprints that can be used."
+
+            It belongs on this page and under this rule, and both halves of that matter.
+
+            On this page, because it changes what the INTERVIEW is. The skill asks a reader
+            what the work is and writes a graph from the answers; with the registry behind
+            it, the same question can be answered against cards somebody has already written
+            and scored, so a reader picks a published node rather than describing one from
+            nothing. That is a different tool, not a faster one, and the page that installs
+            the tool is where the difference is worth stating.
+
+            Under this rule, because none of it exists. `/mcp` is a design and this is a use
+            of it, so it is one unbuilt thing depending on another. `ComingSoonBadge` says
+            so in the site's own amber, which `app/globals.css` reserves for exactly this
+            claim, and the sentence says it again in words rather than leaving the badge to
+            carry it alone — the same rule the panel beside it follows.
+
+            No number, no date, and no list of what would be reachable. `components/site/
+            honesty.test.ts` holds this page to describing what is not built without
+            promising when; a paragraph enumerating a catalogue nobody can query yet would
+            be a specification wearing a badge. */}
+        <article className="panel flex min-w-0 flex-col gap-4 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <PanelHeading as="h3">Design against what exists</PanelHeading>
+            <ComingSoonBadge />
+          </div>
+
+          <p className="text-[15px] leading-relaxed text-muted">
+            The interview draws on nothing but your answers today. Pointed at the registry
+            over{" "}
+            <Link
+              href={MCP_ROUTE}
+              className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
+            >
+              MCP
+            </Link>
+            , it could search the cards other people have already written and scored, and
+            offer you one instead of asking you to describe a node from nothing: a published
+            card to pin, or a run of nodes out of a blueprint that already does part of what
+            you are describing.
+          </p>
+
+          <p className="text-[15px] leading-relaxed text-muted">
+            That is what would make assisted design grounded rather than generative. It
+            needs the server, and the server is not built, so today the skill writes what
+            you tell it and the comparing is yours to do in{" "}
+            <Link
+              href="/blueprints"
+              className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
+            >
+              the gallery
+            </Link>{" "}
+            and{" "}
+            <Link
+              href="/nodes"
+              className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
+            >
+              the cards
+            </Link>
+            .
+          </p>
+        </article>
+        </div>
       </section>
     </div>
   );
