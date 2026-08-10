@@ -4,19 +4,25 @@ import { buildStarterBundle, starterSlug } from "@/lib/starter/variants";
 import { Eyebrow, SectionHeading } from "@/components/ui/SectionHeading";
 import { BuildWorkspace } from "@/components/build/BuildWorkspace";
 import { ALL_COMBINATIONS } from "@/components/build/choices";
-import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
+import { specNeighbours } from "@/components/spec/sequence";
+import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 
 export const metadata: Metadata = {
-  /* "Design a blueprint", not "Build your own blueprint". The author renamed the nav
-     label on 2026-08-07 and this site's own doctrine — `components/site/nav.test.ts`'s
-     header, "one route, one name" — makes the page's `h1` and its `<title>` follow: the
-     label a reader clicks should be the heading they land on, with nothing to re-resolve
-     on arrival. "Design" is also the truer verb for what this workspace is. Nothing is
-     built here; three choices are made over a graph and a folder comes out. */
-  title: "Design a blueprint",
+  /* This site's doctrine — `components/site/nav.test.ts`'s header, "one route, one name" —
+     makes the page's `h1` and its `<title>` follow the label a reader clicks, with nothing
+     to re-resolve on arrival. The label moved when the page split: "Create" went to
+     `/skill` with the authoring half, and what is left here is the worked example, which is
+     what the Learn rail and the `h1` now both call it.
+
+     Both strings are read off `components/spec/sequence.ts` below rather than typed, except
+     this one: `metadata` is a module constant and cannot call `specNeighbours`. It is the
+     one place the title is spelled twice, and `spec-routes.test.ts` holds the pair. */
+  title: "Customize the starter blueprint",
   description:
-    "One workspace over a blueprint's three parts: the graph, a card for every node, and the vocabulary both are written against. Start from the five-node starter, make three choices that stay in the artefact, and leave holding a blueprint that runs from your own command line. Every score is computed by the same static analysis the registry uses. Nothing is uploaded and there is nowhere to save it yet.",
+    "A sandbox for one five-node software workflow. Change its output, release gate, and retry cap, and watch the graph, the cards, the vocabulary and the static reading move together.",
 };
+
+const HERE = "/build";
 
 /* ============================================================
    /build — doc 2 §5, items 12 and 13. Restructured as one workspace
@@ -117,6 +123,8 @@ export default function BuildPage() {
      for a lint line. */
   verifyEveryVariant();
 
+  const { page } = specNeighbours(HERE);
+
   return (
     <div className="container-page py-12">
       {/* Full width, on the author's instruction 2026-08-07. `max-w-3xl` capped the lead,
@@ -124,7 +132,8 @@ export default function BuildPage() {
           below has always run the container's whole width, so the page opened on a column
           two thirds as wide as the thing it introduces. */}
       <header>
-        <Eyebrow>Workspace</Eyebrow>
+        <SpecCrumb href={HERE} />
+        <Eyebrow className="mt-5">{page.eyebrow}</Eyebrow>
         {/* Redesign spec §4.3: the header is the first thing a reader skips, so it holds
             one sentence of orientation and one of honesty. What left it is the promise
             that there is nowhere to save the result, which `DownloadPanel` states at the
@@ -133,7 +142,7 @@ export default function BuildPage() {
         <SectionHeading
           className="mt-3"
           as="h1"
-          title="Design a blueprint"
+          title={page.title}
           /* Doc 2 §5.3/§5.7 named the choices; the build-restructure spec's §2.4 fixed
              where the hour goes.
              ------------------------------------------------------------
@@ -151,7 +160,7 @@ export default function BuildPage() {
              faith — `components/build/surfaces.ts` diffs the real bundle before and after
              every choice and only marks a tab whose bytes actually moved, so the workspace
              below is checking the sentence this lead makes, not just repeating it. */
-          lead="Start from the five-node starter and change it with three choices. Every choice rewrites the graph, the cards and the vocabulary together."
+          lead="This is a sandbox for one five-node software workflow, not a general designer. Change its output, release gate, and retry cap to see the graph, cards, vocabulary, and static reading move together."
         />
         {/* Two paragraphs stood here and the author asked both out on 2026-08-08.
 
@@ -169,6 +178,23 @@ export default function BuildPage() {
             reads is still a check, which is why the function is untouched. */}
       </header>
 
+      {/* The sandbox, and now the whole page rather than the second half of one.
+          ------------------------------------------------------------
+          `CreateEntry` stood above this, under an `h1` reading "Create a blueprint from
+          your goal", and the section below it repeated that heading one type-step down as
+          "Customize the starter blueprint" with `Eyebrow`, an `h2` and a paragraph. The
+          author asked the two halves apart, so the skill half is at `/skill` and what was
+          the sub-heading is now the page's own name.
+
+          The duplicated block goes with it. Keeping the eyebrow, the `h2` and the sentence
+          under an `h1` that now says the same words would be the page starting twice, which
+          is the defect `/what-a-blueprint-is` records refusing when the doors moved onto it.
+          The sentence is not lost: it is the lead above, verbatim.
+
+          `#starter-sandbox-title` goes too, and nothing links it. It was declared in this
+          page's own `PageContents` panel, which the rail replaced, and
+          `components/spec/sequence.ts` lists the one anchor a reader still needs, the
+          workspace's own `#workspace-heading`. */}
       <div className="mt-10">
         <BuildWorkspace />
       </div>
@@ -177,46 +203,9 @@ export default function BuildPage() {
           paragraph two thirds of the way down, and the page ended on a download with
           nowhere to go. A reader who has just built a blueprint has two obvious next
           moves and neither was offered. */}
-      <OnwardRoutes
-        className="mt-12"
-        routes={[
-          // An "Upload blueprint" box pointed at `/upload` here and the author asked it out
-          // on 2026-08-07. The destination is still the one control the header carries at
-          // every width, and `DownloadStep` already hands a reader the folder that route
-          // reads — an exit repeating the header's own button is the third copy of it.
-          {
-            /* Two routes, left then right, on the author's instruction 2026-08-08: "place
-               the link how a blueprint is graded on the right while add on the left the link
-               to The vocabulary."
-
-               `OnwardRoutes` lays them in source order, so left is the first entry. The
-               vocabulary is the one of the three format pages a reader of THIS page has just
-               used without reading — every card the workspace wrote names terms from it —
-               and the scorecard is what the Score tab printed them. Detail on the left, next
-               step on the right.
-
-               `/reading-the-radar` and not `/skill`, from the earlier pass on 2026-08-08.
-
-               The skill is not gone from this page: it is one of the two exits INSIDE the
-               workspace, titled "DarkPrint skill", so a route box repeating it at the foot
-               was the third copy of one destination on one screen. What a reader who has
-               just built a blueprint has not met is the scorecard — the Score tab printed
-               them an autonomy class and a security level, and this is the page that says
-               how both are computed. The Learn menu runs in that order too: what a blueprint
-               is, design one, how one is graded. */
-            href: "/spec/ontology",
-            direction: "previous",
-            label: "The vocabulary",
-          },
-          {
-            href: "/reading-the-radar",
-            direction: "next",
-            // The name the header and the footer both give this route: `nav.test.ts` holds
-            // every table to one label per route.
-            label: "How a blueprint is graded",
-          },
-        ]}
-      />
+      <div className="mt-12">
+        <SpecPager href={HERE} />
+      </div>
     </div>
   );
 }

@@ -83,6 +83,18 @@ export function downloadsFor(id: string): number {
 }
 
 /**
+ * Fixture support for the GitHub-style star affordance on node-card pages.
+ *
+ * There is no community service yet. Until one exists, the mock keeps the support count
+ * proportional to its already-seeded download row and the UI marks it `◐ seeded`. Keeping
+ * the derivation here, rather than in a page, makes the placeholder replaceable by one
+ * repository lookup without changing the presentation contract.
+ */
+export function starsFor(id: string): number {
+  return Math.round(downloadsFor(id) * 0.08);
+}
+
+/**
  * Notes per node card, keyed by card id. Seeded, exactly like `NODE_DOWNLOADS`.
  *
  * Empty today, and that is the honest state rather than a placeholder: nobody has written

@@ -211,7 +211,7 @@ export function BundlePanel({
             href="#security-explained"
             className="text-muted underline-offset-4 hover:text-cyan hover:underline"
           >
-            Security
+            Static risk exposure
           </Link>{" "}
           with the {explainedNotes.length === 1 ? "node" : "nodes"} named. Nothing there
           costs a point.

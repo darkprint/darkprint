@@ -399,7 +399,7 @@ function Field({
         // gloss under it, because a two-line value baseline-aligned to its label drops the
         // label to the SECOND line and the row reads as belonging to the gloss.
         hint === undefined ? "items-baseline" : "items-start",
-        stage ? "text-[14px]" : "text-[11px]",
+        stage ? "text-[12px] sm:text-[14px]" : "text-[11px]",
       )}
     >
       {/* On the stage card the label takes `blueprint-line` and the value `blueprint-ink`,
@@ -407,7 +407,10 @@ function Field({
           a field row. `signal` still overrides the value, because a prohibition is a
           prohibition on any ground: #ff5470 measures 5.6:1 on the sheet. */}
       <span
-        className={cx("shrink-0 text-blueprint-line", stage ? "w-[4.6rem]" : "w-[3.6rem]")}
+        className={cx(
+          "shrink-0 text-blueprint-line",
+          stage ? "w-[4rem] sm:w-[4.6rem]" : "w-[3.6rem]",
+        )}
       >
         {name}
       </span>
@@ -563,7 +566,7 @@ export function CardStackFigure({
           <span
             className={cx(
               "truncate font-mono text-blueprint-ink",
-              stage ? "text-base" : "text-xs",
+              stage ? "text-sm sm:text-base" : "text-xs",
             )}
           >
             {card.id}

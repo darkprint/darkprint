@@ -69,8 +69,9 @@ const nextConfig: NextConfig = {
       { source: "/gallery", destination: "/blueprints", permanent: true },
       { source: "/parts", destination: "/nodes", permanent: true },
       { source: "/parts/:slug", destination: "/nodes", permanent: true },
-      { source: "/ontologies", destination: "/ontology", permanent: true },
-      { source: "/ontologies/:slug", destination: "/ontology", permanent: true },
+      { source: "/ontologies", destination: "/spec/ontology", permanent: true },
+      { source: "/ontologies/:slug", destination: "/spec/ontology", permanent: true },
+      { source: "/ontology", destination: "/spec/ontology", permanent: true },
       /* Repointed 2026-08-07: this landed on `/towards-a-dark-factory/the-climb` until the
          author deleted that page, and a 308 to a 308 costs every link written before §4.2
          two hops. Both of these now land on the parent, which is the whole route. */

@@ -191,7 +191,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
       {/* ---------- Header ---------- */}
       <header className="flex flex-col gap-5">
         <nav className="font-mono text-xs text-dim" aria-label="Breadcrumb">
-          <Link href="/ontology" className="transition-colors hover:text-cyan">
+          <Link href="/spec/ontology" className="transition-colors hover:text-cyan">
             ← Ontology
           </Link>
           <span className="mx-2 text-faint">/</span>

@@ -351,7 +351,7 @@ export function WorkspaceStage({
           },
           {
             key: "security",
-            label: "Security",
+            label: "Static risk exposure",
             value: Math.round((state.analysis.security.level / 4) * 100),
             source: "auto",
             detail: `Level ${state.analysis.security.level} of 4, read off the markers the cards declare.`,
@@ -377,7 +377,9 @@ export function WorkspaceStage({
       ? "No readings yet."
       : [
           autonomy === undefined ? null : `Autonomy: ${autonomy.label}.`,
-          security === undefined ? null : `Security: level ${security.level} of 4.`,
+          security === undefined
+            ? null
+            : `Static risk exposure: level ${security.level} of 4, ${security.raw.toFixed(2)} of 4.00 points.`,
           state.errors.length === 0 ? null : "This graph does not resolve.",
           `${state.budget.modelCallsAtMost} model calls at most.`,
         ]

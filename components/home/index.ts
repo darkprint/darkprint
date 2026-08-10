@@ -21,6 +21,7 @@
    by path from `app/blueprints/page.tsx` the way it briefly was.
 
    `app/page.tsx` carries the table of where every rung went. */
+export { SectionSameRun } from "./SectionSameRun";
 export { SectionBlueprint } from "./SectionBlueprint";
 export { SectionNodeIsCard } from "./SectionNodeIsCard";
 export { SectionLifecycle } from "./SectionLifecycle";

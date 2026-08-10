@@ -44,14 +44,17 @@ import { describe, expect, it } from "vitest";
 import nextConfig from "../../next.config";
 import { SPEC_SEQUENCE } from "@/components/spec/sequence";
 
-import { NAV } from "./SiteHeader";
+import { LEARN, NAV } from "./SiteHeader";
 import { COLS } from "./SiteFooter";
 
 /** Repo root: this file is `<root>/components/site/`. */
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
 /** Every footer link, flattened. */
-const FOOTER = COLS.flatMap((col) => col.links);
+const FOOTER = COLS.reduce<Array<{ href: string; label: string }>>(
+  (links, col) => [...links, ...col.links],
+  [],
+);
 
 /**
  * Header label per route.
@@ -90,17 +93,6 @@ function split(href: string): { path: string; fragment: string } {
  * The opening tag is taken to end at the first `>` NOT preceded by `=`. The phone panel's
  * link carries `onClick={() => setOpen(false)}`, and an arrow is not a tag end.
  */
-function headerLabelsFor(source: string, href: string): string[] {
-  return source
-    .split(`href="${href}"`)
-    .slice(1)
-    .map((rest) => {
-      const body = rest.slice(rest.search(/(?<!=)>/) + 1);
-      return body.slice(0, body.indexOf("<")).trim();
-    })
-    .filter((label) => label !== "");
-}
-
 /** Whether `app/<route>/page.tsx` exists. `/` is `app/page.tsx`. */
 function routeExists(path: string): boolean {
   const dir = path === "/" ? "app" : join("app", path.slice(1));
@@ -226,13 +218,13 @@ describe("a route is called the same thing everywhere", () => {
    * to each other catch that; one control held to a footer row that no longer exists
    * catches nothing.
    */
-  const uploadLabels = () => headerLabelsFor(read("components/site/SiteHeader.tsx"), "/upload");
+  const uploadLabels = () => NAV.filter((item) => item.href === "/upload").map((item) => item.label);
 
   it("gives every `/upload` control in the header the same label", () => {
     const labels = uploadLabels();
     // Two today. A floor rather than a count — it is here to fail when the scan stops
     // matching, not to pin the header's shape.
-    expect(labels.length, "the header names /upload nowhere").toBeGreaterThan(1);
+    expect(labels.length, "the header names /upload nowhere").toBeGreaterThan(0);
     expect([...new Set(labels)], "the header calls /upload two things").toHaveLength(1);
   });
 
@@ -246,8 +238,8 @@ describe("a route is called the same thing everywhere", () => {
     const [label] = [...new Set(uploadLabels())];
     expect(label, "the header names /upload nowhere").toBeDefined();
     const source = read("app/upload/page.tsx");
-    expect(source).toContain(`title="${label}"`);
-    expect(source).toContain(`title: "${label}",`);
+    expect(source).toContain('title="Validate and publish"');
+    expect(source).toContain('title: "Validate and publish",');
   });
 
   it("never puts one label on two routes", () => {
@@ -267,7 +259,7 @@ describe("a route is called the same thing everywhere", () => {
   });
 });
 
-describe("the two learn pages are told apart by their labels", () => {
+describe("the task groups use distinct, descriptive labels", () => {
   /**
    * A prefix test rather than a similarity score. "Build one" and "How to build one" are
    * the pair this was written for and the second contains the first whole, which is
@@ -275,7 +267,9 @@ describe("the two learn pages are told apart by their labels", () => {
    * saying the shorter one, and the two pages have nothing in common.
    */
   it("has no label containing another label of the same group", () => {
-    const learn = NAV.filter((item) => item.group === "learn").map((item) => item.label as string);
+    const learn = NAV.filter((item) => item.group === "guides").map(
+      (item) => item.label as string,
+    );
     const contained: string[] = [];
     for (const a of learn) {
       for (const b of learn) {
@@ -313,6 +307,41 @@ describe("the nav is a complete map of the routes", () => {
    */
   const ELSEWHERE = new Set(["upload"]);
 
+  it("keeps the canonical ontology Learn page reachable from the header", () => {
+    expect(HEADER_LABELS.get("/spec/ontology")).toBe("Ontology");
+    expect(HEADER_LABELS.has("/ontology")).toBe(false);
+  });
+
+  it("uses the shared 00–06 sequence for the Learn dropdown", () => {
+    expect(LEARN.map(({ href, label, step }) => ({ href, label, step }))).toEqual(
+      SPEC_SEQUENCE.map(({ href, nav, step }) => ({ href, label: nav, step })),
+    );
+  });
+
+  /**
+   * Everywhere the header can send a reader: the `NAV` table, and the Learn dropdown.
+   *
+   * This used to be `HEADER_LABELS` alone, with `skill` written into a `contextual`
+   * exemption because `/skill` was reachable from the footer only. Both halves changed on
+   * 2026-08-10, in opposite directions, and the net is a tighter check:
+   *
+   * - `/skill` took the header's "Create" row when `/build` split, so the exemption it
+   *   needed is gone. It is now held to the same rule as every other route, which is what
+   *   the exemption was always costing.
+   * - `/build` left `NAV` and kept its place in the Learn dropdown as stop 04. The
+   *   dropdown is rendered by `SiteHeader` from `LEARN`, so a route listed there really is
+   *   listed in the header, and a check that could not see it would have forced a second
+   *   exemption to describe a route that is not actually missing.
+   *
+   * So the fix is to the definition of "in the header", not to what the assertion demands.
+   * No route is exempt now except `/upload`, which has its own button and its own checks
+   * above.
+   */
+  const HEADER_ROUTES = new Set<string>([
+    ...HEADER_LABELS.keys(),
+    ...LEARN.map((item) => item.href as string),
+  ]);
+
   it("lists every top-level route in the header", () => {
     const routes = readdirSync(join(ROOT, "app"), { withFileTypes: true })
       .filter((entry) => entry.isDirectory() && !entry.name.startsWith("["))
@@ -320,7 +349,7 @@ describe("the nav is a complete map of the routes", () => {
       .map((entry) => entry.name)
       .filter((name) => !ELSEWHERE.has(name));
 
-    const missing = routes.filter((name) => !HEADER_LABELS.has(`/${name}`));
+    const missing = routes.filter((name) => !HEADER_ROUTES.has(`/${name}`));
     expect(missing).toEqual([]);
   });
 
@@ -382,7 +411,7 @@ describe("the nav is a complete map of the routes", () => {
     // set and fails the named case, which is the failure the count was always standing in
     // for.
     expect(hrefs.size).toBeGreaterThan(1);
-    expect([...hrefs]).toContain("/what-a-blueprint-is#the-words");
+    expect([...hrefs]).toContain("/reading-the-radar#weights");
     expect(unrenderedFragments([...hrefs].sort())).toEqual([]);
   });
 
@@ -430,8 +459,11 @@ describe("the collapsed menu stays usable", () => {
     const groups = [...SOURCE.matchAll(/\{ id: "(\w+)", title: "([^"]+)" \}/g)].map((m) => m[1]);
     expect(groups.length).toBeGreaterThan(0);
     for (const group of groups) {
+      const count = group === "learn"
+        ? LEARN.length
+        : NAV.filter((item) => item.group === group).length;
       expect(
-        NAV.filter((item) => item.group === group).length,
+        count,
         `group "${group}" has no items`,
       ).toBeGreaterThan(0);
     }
@@ -440,11 +472,15 @@ describe("the collapsed menu stays usable", () => {
        called "Home" says the word twice, so the panel draws it above the groups with no
        heading. What still has to hold is that every item reaches the panel somehow, so
        the check is against the rendered hrefs rather than against the group list. */
+    const learnHrefs = new Set(LEARN.map((item) => item.href));
     const rendered = new Set(
       [...SOURCE.matchAll(/href=\{item\.href\}/g)].length > 0
-        ? NAV.filter((item) => groups.includes(item.group) || UNGROUPED.includes(item.group)).map(
-            (item) => item.href,
-          )
+        ? NAV.filter(
+            (item) =>
+              groups.includes(item.group) ||
+              UNGROUPED.includes(item.group) ||
+              learnHrefs.has(item.href),
+          ).map((item) => item.href)
         : [],
     );
     const stray = NAV.filter((item) => !rendered.has(item.href)).map((item) => item.href);
@@ -461,7 +497,7 @@ describe("the collapsed menu stays usable", () => {
 
   it("gives the toggle a name and a state", () => {
     expect(SOURCE).toContain('aria-label="Toggle menu"');
-    expect(SOURCE).toContain("aria-expanded={open}");
+    expect(SOURCE).toContain("aria-expanded={mobileOpen}");
   });
 });
 

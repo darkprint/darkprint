@@ -157,7 +157,7 @@ export function DownloadPanel({
             className="group flex items-baseline justify-between gap-2"
           >
             <span className="font-mono text-sm text-fg transition-colors group-hover:text-cyan">
-              blueprint.dot
+              Download blueprint.dot
             </span>
             <span className="shrink-0 font-mono text-[11px] text-dim">↓</span>
           </a>

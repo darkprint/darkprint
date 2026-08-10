@@ -199,7 +199,7 @@ function metricsFor(analysis: BlueprintAnalysis, community: CommunitySignals): M
     },
     {
       key: "security",
-      label: "Security",
+      label: "Static risk exposure",
       // §8.2 subtracts penalties from a clean 4. The raw figure can overshoot in either
       // direction — a graph can accumulate more than four points of penalty — so it is
       // clamped before being put on the same 0–100 axis as the rest.

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { AnyContent } from "@/lib/types";
-import { compact, cx } from "@/lib/format";
+import { cx } from "@/lib/format";
 import { contentHref } from "@/lib/href";
 import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
 import { Avatar } from "./Avatar";
@@ -19,19 +19,6 @@ import { TagPill } from "./TagPill";
  * blueprint scorecard already use for exactly this class of number, and the glyph carries
  * a word beside it for a reader who cannot separate amber from dim.
  */
-function Meta({ downloads, votes }: { downloads: number; votes: number }) {
-  return (
-    <div className="flex items-center gap-2 font-mono text-[11px] text-dim">
-      <span className="text-amber" aria-hidden title="Seeded, no ballot and no counter">
-        ◐
-      </span>
-      <span className="sr-only">Seeded index figures, with no ballot or counter behind them:</span>
-      <span title="Downloads, a seeded row in the index">↓ {compact(downloads)}</span>
-      <span title="Votes, a seeded row in the index">▲ {compact(votes)}</span>
-    </div>
-  );
-}
-
 /** Gallery / profile card for one blueprint: schematic, kind, autonomy and signals. */
 export function ContentCard({
   item,
@@ -194,7 +181,9 @@ export function ContentCard({
               {item.author.displayName}
             </span>
           </Link>
-          <Meta downloads={item.downloads} votes={item.votes} />
+          <span className="font-mono text-[11px] text-emerald">
+            ✓ resolved · {item.requiredTools.length} tool{item.requiredTools.length === 1 ? "" : "s"}
+          </span>
         </div>
       </div>
     </article>

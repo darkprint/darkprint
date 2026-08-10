@@ -9,6 +9,8 @@ export interface McpClientSetup {
   id: string;
   label: string;
   snippet: string;
+  note: string;
+  docsHref?: string;
 }
 
 export const MCP_CLIENTS: readonly McpClientSetup[] = [
@@ -16,6 +18,14 @@ export const MCP_CLIENTS: readonly McpClientSetup[] = [
     id: "claude-code",
     label: "Claude Code",
     snippet: "claude mcp add darkprint -- npx -y darkprint mcp",
+    note: "Adds the server from the terminal for Claude Code.",
+  },
+  {
+    id: "codex",
+    label: "Codex",
+    snippet: "codex mcp add darkprint -- npx -y darkprint mcp",
+    note: "Codex CLI, the IDE extension, and the ChatGPT desktop app share this host configuration.",
+    docsHref: "https://developers.openai.com/codex/mcp",
   },
   {
     id: "claude-desktop",
@@ -28,6 +38,7 @@ export const MCP_CLIENTS: readonly McpClientSetup[] = [
     }
   }
 }`,
+    note: "Add this server entry to Claude Desktop's MCP configuration.",
   },
   {
     id: "cursor",
@@ -40,6 +51,7 @@ export const MCP_CLIENTS: readonly McpClientSetup[] = [
     }
   }
 }`,
+    note: "Use this entry in Cursor's MCP configuration.",
   },
   {
     id: "vscode",
@@ -52,5 +64,20 @@ export const MCP_CLIENTS: readonly McpClientSetup[] = [
     }
   }
 }`,
+    note: "Use this entry in VS Code's MCP server configuration.",
+  },
+  {
+    id: "gemini-cli",
+    label: "Gemini CLI",
+    snippet: `{
+  "mcpServers": {
+    "darkprint": {
+      "command": "npx",
+      "args": ["-y", "darkprint", "mcp"]
+    }
+  }
+}`,
+    note: "Add this entry to ~/.gemini/settings.json; Gemini Code Assist agent mode reads the same shape.",
+    docsHref: "https://developers.google.com/gemini-code-assist/docs/use-agentic-chat-pair-programmer",
   },
 ] as const;

@@ -10,7 +10,7 @@ import {
   nodeCardVersions,
 } from "@/lib/content";
 import { cardDownloadCommand } from "@/lib/content/bundle-export";
-import { commentsFor, downloadsFor } from "@/lib/data/node-community";
+import { commentsFor, downloadsFor, starsFor } from "@/lib/data/node-community";
 import { getAuthor } from "@/lib/data/users";
 import { compact, cx } from "@/lib/format";
 import { CARD_BLOCKS } from "@/components/panes/model";
@@ -22,6 +22,7 @@ import { AuthorChip } from "@/components/ui/Avatar";
 import { KindBadge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { FavoriteStar } from "@/components/ui/FavoriteStar";
+import { SideRail, type SideRailItem } from "@/components/ui/SideRail";
 import { SourcePanel } from "@/components/ui/SourcePanel";
 import { formatWeight, markerWeight } from "@/components/ontology/TermTable";
 import {
@@ -531,7 +532,7 @@ const FIELD_ROWS: readonly FieldRow[] = [
                   {" "}
                   Costs{" "}
                   <span className="text-warn">{formatWeight(risk.weight)}</span> of the
-                  blueprint&apos;s security reading.
+                  blueprint&apos;s static risk-exposure reading.
                 </>
               )}
             </Detail>
@@ -647,78 +648,6 @@ function SidePanel({
       </h2>
       {children}
     </section>
-  );
-}
-
-/** One row of the card map: where a section is, and how much is in it. */
-interface MapEntry {
-  /** Written as a literal at the call site, never derived. See `CardMap`. */
-  href: string;
-  /** The section's own label, so the rail and the panel cannot drift apart. */
-  label: string;
-  /** One figure, so a reader can tell a 20-word section from a 1500px one. */
-  meta: string;
-  /**
-   * The `:target` mark, spelled out per row because Tailwind scans source text.
-   *
-   * `body:has(#fields:target) &` is the whole mechanism: the page is static and there
-   * is no scroll spy, so "the current section" means the one the reader jumped to,
-   * which is exactly what `:target` is. No JavaScript, nothing to hydrate, and the
-   * unmarked state — every rule `--color-line` — is already the finished drawing.
-   */
-  mark: string;
-}
-
-/**
- * The rail, and it leads the aside.
- *
- * This page is nine panels and roughly 4,000px of card. The field table alone is 1460px
- * of it, 36%, and there is no scroll spy and nothing to hydrate, so the only way a reader
- * learns what is down there is a list that says so. That makes this the first thing in
- * the sticky column rather than the last: the two panels beneath it — risk and identity —
- * are answers you look up once you know the question, and this is where the questions
- * are. It sat third for a while on the argument that the aside had empty space below the
- * answers and this was a use for it; that reasoned from where there was ROOM, which is
- * not the same as reasoning from what a reader needs first.
- *
- * Six rows, one per section, each with the one figure that says how much is behind it.
- * It is a `<nav>` rather than a `<section>` because that is what it is, and it is not
- * hidden below `lg`: on a phone the aside stacks under the main column, where the same
- * six links read as a way back up rather than a way in. A list of six anchors is worth
- * having in both places; hiding content by viewport is not.
- *
- * Measured at 1440x900 after the move: the three panels stack to 761px under a sticky
- * `top-20`, so the aside is still shorter than one viewport and nothing it holds is
- * pushed off-screen by going first.
- */
-function CardMap({ entries }: { entries: readonly MapEntry[] }) {
-  return (
-    <nav aria-labelledby="card-map-heading" className="panel p-5">
-      <span id="card-map-heading" className="label-lead mb-4 block">
-        On this card
-      </span>
-      <ul className="flex flex-col">
-        {entries.map((entry) => (
-          <li key={entry.href}>
-            <a
-              href={entry.href}
-              className={cx(
-                "group flex items-baseline justify-between gap-3 border-l-2 border-l-line py-2 pl-3",
-                "transition-[transform,scale,color,background-color,border-color] duration-[var(--dur-base)] ease-out",
-                "hoverable:hover:border-l-line-bright hoverable:hover:bg-surface-2/60",
-                "active:scale-[0.99] active:duration-[var(--dur-press)]",
-                entry.mark,
-              )}
-            >
-              <span className="min-w-0 text-sm leading-snug text-fg hoverable:group-hover:text-cyan">
-                {entry.label}
-              </span>
-              <span className="label shrink-0">{entry.meta}</span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
   );
 }
 
@@ -927,6 +856,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   };
   const declared = FIELD_ROWS.filter((row) => !row.read(card, fieldView).empty).length;
   const downloads = downloadsFor(card.id);
+  const stars = starsFor(card.id);
   const specWords = card.spec.trim().split(/\s+/).filter(Boolean).length;
 
   /* The rail's map of this page.
@@ -937,7 +867,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
      only compiles a class it can see spelled out. Deriving either from `label` would
      produce links no guard checks and marks that never compile, which is the failure
      mode both tools were written to catch. */
-  const cardMap: readonly MapEntry[] = [
+  const cardMap: readonly SideRailItem[] = [
     {
       href: "#specification",
       label: "Specification",
@@ -977,6 +907,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   ];
 
   return (
+    <SideRail label="On this node" items={cardMap} ariaLabel="On this node">
     <div className="container-page py-10 lg:py-12">
       {/* ---------- Header ---------- */}
       <header className="flex flex-col gap-5">
@@ -996,9 +927,16 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
         </nav>
 
         <div className="flex flex-col gap-3">
-          <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
-            {card.name}
-          </h1>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
+              {card.name}
+            </h1>
+            <FavoriteStar
+              id={`node:${card.id}@${card.version}`}
+              count={stars}
+              seeded
+            />
+          </div>
 
           {/* Provenance and the two actions, directly under the title rather than below
               the chips and the action sentence — the same move the blueprint page's
@@ -1164,7 +1102,6 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 {risks.length} risk marker{risks.length === 1 ? "" : "s"}
               </a>
             )}
-            <FavoriteStar id={`node:${card.id}@${card.version}`} className="ml-auto" />
           </div>
           {/* Full width, same ask as the blueprint hero and `SectionHeading`. */}
           <p className="text-lg leading-relaxed text-muted">
@@ -1409,8 +1346,8 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           <Panel
             id="fields"
             className="scroll-mt-24"
-            label="Every field on this card"
-            meta={`${declared} declared, in five blocks`}
+            label="Card values"
+            meta={`${declared} declared · definitions in the reference`}
           >
             <div className="flex flex-col gap-5">
               {CARD_BLOCKS.map((block) => {
@@ -1476,7 +1413,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                            has a note, so in practice it is always true; a row that somehow
                            opened onto nothing must not also be a row that hides half its
                            value behind a fold nobody can lift. */
-                        const opens = detail !== undefined || note !== undefined;
+                        const opens = false;
                         const head = (
                           <>
                             {/* `text-copper-line`, the same token as the block title
@@ -1604,10 +1541,10 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   and an inline sentence link wearing the same hue was a third meaning
                   for the colour on a page that already had two too many. */}
               <Link
-                href="/what-a-blueprint-is#the-words"
+                href="/spec/card"
                 className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:decoration-cyan"
               >
-                eval, harness and the rest <span aria-hidden>&rarr;</span>
+                Definitions for every card field <span aria-hidden>&rarr;</span>
               </Link>
             </p>
 
@@ -1736,28 +1673,23 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           aria-label="Card metadata"
           className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-20 lg:self-start"
         >
-          {/* The rail leads, because the rail is the way in.
+          {/* The rail used to lead this aside, as "On this card", and it has moved out of
+              the page entirely.
               ------------------------------------------------------------
-              "On this card" used to sit third, under the two answer panels, on the
-              argument that the sticky aside had visible empty space beneath them and
-              this was a use for it. That argument was about where there was ROOM, not
-              about what a reader meets first, and it put the page's only table of
-              contents below the fold of the aside's own stack.
+              The author asked for it on the left, in the position the Learn sequence and
+              the blueprint pages already use: `components/ui/SideRail.tsx`, mounted at the
+              top of this file's return, labelled "On this node". It is the same `cardMap`
+              table passed to a different component — same six anchors, same order, same
+              per-row figures, and the same spelled-out `:target` marks, which is why that
+              table did not move with it.
 
-              The two panels below are answers you look up — can this node do damage, and
-              which version am I reading. You go to them with a question already formed.
-              The rail is the opposite: it is how you find out what questions this page
-              can answer at all, on a document that runs past four thousand pixels and
-              nine panels. First position is the one thing a rail wants, so it takes it.
+              What the move buys is what a sticky aside could not: the rail is now beside
+              the reader for the whole document rather than beside the first screen of it,
+              on a page that runs past four thousand pixels and nine panels. What it costs
+              is the aside's first slot, which the two answer panels below now take.
 
-              Nothing else moves. Both panels keep their `id` and their `scroll-mt-24` on
-              the same JSX tags, so `#evaluation` (the header's risk chip) and
-              `#identity` still resolve; the six rail rows are the same six anchors in
-              the same order, `cardMap` is not order-coupled to this stack, and no test
-              reads this file's source order. Measured at 1440x900: the aside's three
-              panels total 761px against a sticky `top-20`, so the whole stack still
-              fits one viewport and promoting the rail pushes nothing out of view. */}
-          <CardMap entries={cardMap} />
+              Both of those keep their `id` and their `scroll-mt-24` on the same JSX tags,
+              so `#evaluation` (the header's risk chip) and `#identity` still resolve. */}
 
           {/* "Risk and autonomy", not "Evaluation metadata". The panel answers two
               questions a reader has — can this node do damage, and does anybody watch —
@@ -1885,7 +1817,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                       <span className="font-mono text-emerald" aria-hidden>
                         ✓
                       </span>
-                      None declared. Nothing here costs a blueprint security points.
+                      None declared. Nothing here changes a blueprint&apos;s static risk exposure.
                     </p>
                   )}
                 </div>
@@ -1966,5 +1898,6 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
         <Comments comments={commentsFor(card.id)} subject="node card" />
       </div>
     </div>
+    </SideRail>
   );
 }

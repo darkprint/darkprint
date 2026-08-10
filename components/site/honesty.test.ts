@@ -37,7 +37,6 @@ import { describe, expect, it } from "vitest";
 
 import SpecCardPage from "@/app/spec/card/page";
 import SkillPage, { metadata as skillMetadata } from "@/app/skill/page";
-import McpPage, { metadata as mcpMetadata } from "@/app/mcp/page";
 import UploadPage from "@/app/upload/page";
 import { allBlueprints } from "@/lib/content";
 import { CARD_ROWS } from "@/components/spec/rows";
@@ -85,7 +84,6 @@ const SPEC_CARD = renderToStaticMarkup(createElement(SpecCardPage as never));
  * snippet — and `/skill` keeps the publishing limit its own output provokes.
  */
 const SKILL_PAGE = renderToStaticMarkup(createElement(SkillPage as never));
-const MCP_PAGE = renderToStaticMarkup(createElement(McpPage as never));
 /**
  * The two `<head>` descriptions, not the rendered bodies.
  *
@@ -100,7 +98,6 @@ const MCP_PAGE = renderToStaticMarkup(createElement(McpPage as never));
  * looks runnable and is not.
  */
 const SKILL_METADATA_DESCRIPTION = skillMetadata.description ?? "";
-const MCP_METADATA_DESCRIPTION = mcpMetadata.description ?? "";
 /**
  * `/upload`, whole — the one route where a reader hands the site a file.
  *
@@ -352,53 +349,6 @@ const CLAIMS: Claim[] = [
      to guard. If the composite-node idea is ever described again anywhere, this entry
      comes back with it. */
 
-  /* ---- /mcp ----
-     `/install` split in two on 2026-08-07 and this is the unbuilt half, now a route of its
-     own with an `h1`, a tab strip of client configs and a command a reader could copy. It
-     is reachable from the header and from the landing's hero. Nothing about its shape says
-     "preview" — that is what a dedicated route costs, and the three entries below are what
-     buys it back.
-
-     The sentence is UNCHANGED, character for character, from the one `/install` carried,
-     and it has now moved twice: page lead, then into the MCP panel when the skill took the
-     top of the page, then back to being a lead here. It has never been reworded. A limit
-     that gets rephrased on every relocation is a limit being negotiated down, and the
-     wording is the part these assertions can actually hold.
-
-     What they cannot hold is placement — `MCP_PAGE` renders the whole route and passes
-     with the sentence anywhere on it. On `/install` that mattered enormously, because the
-     same words above a working install command qualified the wrong thing. Here it matters
-     less than it ever has: there is no working command on this page for a stray disclaimer
-     to attach itself to. The page is about one thing and the one thing is not built. */
-  {
-    surface: "/mcp · the lead, directly under the h1",
-    why: "doc 2 §0.4's disclaimer, back where it started. The route previews a client config that reads as something to run unless the page says otherwise, and it no longer shares a page with anything that does run — so the limit is the lead again rather than a note beside a panel, which is the strongest position the sentence has ever had",
-    says: "not built yet: this is what setup will look like once the registry has an mcp server to point a client at",
-    where: "open",
-    html: MCP_PAGE,
-  },
-  {
-    surface: "/mcp · beside the tab strip",
-    why: "the sentence above is prose a reader can scroll past; this is the marker on the snippet itself. A reader who arrives from the landing's hero chip has already seen one badge on that chip and is looking for the command, not the paragraph, and the command is the thing that would be copied into a terminal. `InstallTabs` prints its own `ComingSoonBadge` inside the tab panel for exactly this reason",
-    says: "coming soon",
-    where: "open",
-    html: MCP_PAGE,
-  },
-  {
-    surface: "/mcp · the retrieval paragraph",
-    why: "added 2026-08-07 when the author gave the server a scope: a Claude Code session searching an embedded index of published blueprints and cards by the task in front of it. That paragraph is the most detailed description of unbuilt machinery anywhere on this site — detailed enough to read like a changelog entry for something shipped — and detail is exactly what makes a future capability read as a present one. The lead above it already says the server is not built; this closing clause is the same refusal attached to the specific new claim, because a reader who skimmed to this paragraph for the interesting part never read the lead",
-    says: "neither the index nor the search exists yet",
-    where: "open",
-    html: MCP_PAGE,
-  },
-  {
-    surface: "/mcp · metadata.description",
-    why: "the one description on the site doing genuine load-bearing work. Every other route's preview card describes a page a reader can judge on arrival; this one describes a page that looks built and is not, and the card is what a reader sees in a search result or a shared link before deciding whether to trust it. It carries the limit first and names the half that does run second, so the string is useful rather than only cautious",
-    says: "not built yet: this is what setup will look like once the registry has an mcp server to point a client at",
-    where: "open",
-    html: MCP_METADATA_DESCRIPTION,
-  },
-
   /* ---- /skill ----
      The half that runs. Its one limit is not inherited from the old shared rule — it is
      the question this page's own output provokes, which is why it stayed here when the MCP
@@ -470,30 +420,6 @@ const CLAIMS: Claim[] = [
     html: CLONE_NODE,
   },
 
-  /* ---- /build · the two exits (task 5) ---- */
-  {
-    surface: "/build · download exit (`DownloadStep`)",
-    why: "the download exit hands over a folder that already carries an `AGENTS.md` and, as of task 5, says so out loud. A page that just told a reader their folder is agent-ready is the page likeliest to read as though the registry's own MCP call already exists, so the limit has to sit beside that claim rather than only on `/install`",
-    says: "not built yet: your agent querying the registry over mcp for the blueprint that best fits a goal like this one",
-    where: "open",
-    html: DOWNLOAD_STEP,
-  },
-  {
-    surface: "/build · agent-brief exit (`AgentHandoff`)",
-    why: "the same limit on the exit that already asks an agent to act — the co-equal one, not a postscript to the download — so a reader who opens only this exit still meets it",
-    says: "not built yet: your agent querying the registry over mcp for the blueprint that best fits a goal like this one",
-    where: "open",
-    html: AGENT_HANDOFF,
-  },
-
-  /* ---- / · the lifecycle beat's upload panel ---- */
-  {
-    surface: "/ · beat 4, the Upload panel's reason for existing",
-    why: "the panel states a motive — other people reading the blueprint you proposed and answering it — and there is no backend, no publishing and no readership behind any part of it. The motive and the limit are one sentence on purpose: a reader who meets \"get feedback from other users\" as a separate, positive line will take it as live, and this is the landing, where most readers meet the idea first",
-    says: "not built yet: the second reader. once a bundle can be published, other people can open the blueprint you proposed and tell you where it does not hold.",
-    where: "open",
-    html: LIFECYCLE,
-  },
 ];
 
 /** The two dropdown panels, asserted together wherever the assertion is the same. */

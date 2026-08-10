@@ -1176,12 +1176,12 @@ function SecurityPanel({
           {/* `components/blueprint/BundlePanel.tsx` links this id, so it needs the same
               offset every other anchor target on the site carries (`anchors.test.ts`). */}
           <h3 id="security-explained" className={cx("scroll-mt-24", LABEL)}>
-            Security, what it gets to touch
+            Static risk exposure, what it gets to touch
           </h3>
         </span>
         <span className="flex flex-col items-end gap-0.5 font-mono text-[11px] text-dim">
-          <span>Security: {security.raw.toFixed(2)} / 4.00</span>
-          <span>security level {security.level}</span>
+          <span>Static risk exposure: {security.raw.toFixed(2)} / 4.00</span>
+          <span>risk level {security.level}</span>
         </span>
       </summary>
 
@@ -1205,7 +1205,7 @@ function SecurityPanel({
       <div
         tabIndex={0}
         role="group"
-        aria-label="Security ledger, scrollable"
+        aria-label="Static risk exposure ledger, scrollable"
         className="overflow-x-auto"
       >
         <table className="w-full min-w-[19rem] font-mono text-[12px]">
@@ -1213,7 +1213,7 @@ function SecurityPanel({
               paragraph directly above, which a screen reader reaches first; the nodes
               column carries the rest of what this used to spell out. */}
           <caption className="sr-only">
-            Security ledger
+            Static risk exposure ledger
           </caption>
           <thead>
             <tr className="border-b border-line text-left">
@@ -1287,7 +1287,7 @@ function SecurityPanel({
                 arithmetic and not a restatement of the first. */}
             <tr>
               <th scope="row" className="pt-1 text-left font-normal text-muted">
-                Security level
+                Static risk exposure band
               </th>
               <td className="pt-1 pl-3 text-right text-dim"><span className="sr-only">not applicable</span></td>
               <td className="pt-1 pl-3 text-right tabular-nums text-fg">
@@ -1419,7 +1419,7 @@ export function Explainability({
         id="explainability-heading"
         className="scroll-mt-24 font-display text-xl font-semibold text-fg"
       >
-        Autonomy and security
+        Autonomy and static risk
       </h2>
 
       <div className="mt-5 flex flex-col gap-4">

@@ -357,7 +357,7 @@ export default function SpecCardPage() {
           with. A page explaining what `mcp` and `cannot` are, illustrated with invented
           values, would be teaching a schema nobody ships. */}
       {reachCard !== undefined && (
-        <section className="border-b border-line bg-void py-12 sm:py-16">
+        <section id="card-reach" className="scroll-mt-24 border-b border-line bg-void py-12 sm:py-16">
           <div className="container-page">
             <WhatACardReaches
               model={reachCard.model ?? "inherits"}
@@ -396,7 +396,7 @@ export default function SpecCardPage() {
         <div className="container-page flex flex-col gap-10">
           <div className="flex flex-col gap-3">
             <span className="label-lead">The reference</span>
-            <h2 id="fields-heading" className={BAND_H2}>
+            <h2 id="fields-heading" className={`${BAND_H2} scroll-mt-24`}>
               Every field, and what holds it
             </h2>
           </div>

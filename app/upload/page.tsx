@@ -32,9 +32,9 @@ export const metadata: Metadata = {
      below, the paragraph beside the wizard's Publish button and the eyebrow all carry
      that, and none of them may be dropped for pace — two HIGH findings in this project
      were exactly that. `components/site/nav.test.ts` holds the chrome to this name. */
-  title: "Upload blueprint",
+  title: "Validate and publish",
   description:
-    "Upload the DOT graph of your pipeline. DarkPrint parses it in your browser, names its autonomy class and scores its security by static analysis. Publishing to the registry is not built yet, nothing leaves the tab.",
+    "Validate and publish a blueprint bundle. DarkPrint resolves it in your browser, names its autonomy class, and reports static risk exposure before a release is created.",
 };
 
 /**
@@ -105,12 +105,12 @@ export default function UploadPage() {
             names the action; "Check your work" names the outcome, one line above it, so
             the two are read together and a reader knows before the fold that uploading
             here is how a bundle gets checked and not how it gets somewhere. */}
-        <Eyebrow>Check your work</Eyebrow>
+        <Eyebrow>Validate before release</Eyebrow>
         <SectionHeading
           as="h1"
           className="mt-3"
-          title="Upload blueprint"
-          lead="Upload the DOT graph of your pipeline. It is parsed in your own tab, nothing is sent anywhere, and it comes back with its autonomy class named and its security scored, with no form to guess your way through."
+          title="Validate and publish"
+          lead="Choose a blueprint bundle and resolve it in your own tab. You get explainable diagnostics, an autonomy class, and a bounded static risk-exposure reading before the separate publish step."
         />
         {/* ── Where the folder in front of the reader came from ──
             The population arriving here changed. Until now the only person with a bundle
@@ -193,7 +193,7 @@ export default function UploadPage() {
           It resolves what you drop against the curated core vocabulary only. Bundles in
           the archive are resolved against the core plus the terms this release adds in
           its own namespace, so a graph using one of those comes back with the term
-          unknown and a security score computed without it.
+          unknown and a static risk-exposure reading computed without it.
         </p>
       </header>
 

@@ -96,7 +96,7 @@
  *   emerald        #34d399  (term, 13px)               11.6 : 1
  *   violet         #a78bfa  (term, 13px)                7.6 : 1
  */
-const TONE = {
+export const TONE = {
   blueprint: {
     accent: "var(--color-blueprint-line)",
     ink: "var(--color-blueprint-ink)",
@@ -115,7 +115,7 @@ const TONE = {
   },
 } as const;
 
-const LAYERS = [
+export const LAYERS = [
   {
     id: "blueprint",
     role: "the specification",
@@ -286,7 +286,7 @@ function Run({ from, to }: { from: [number, number]; to: [number, number] }) {
 }
 
 /** The graph, as four cards that branch and come back together. */
-function BlueprintGraph() {
+export function BlueprintGraph() {
   return (
     <svg
       viewBox="0 0 260 96"
@@ -323,7 +323,7 @@ function BlueprintGraph() {
  * green while the label and the border were still grey, which read as the box being half
  * lit — and half of a two-state figure is the one state it must never be in.
  */
-function RubricGlyph() {
+export function RubricGlyph() {
   return (
     <svg
       viewBox="0 0 200 34"

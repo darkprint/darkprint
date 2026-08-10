@@ -94,7 +94,7 @@ export const FIELD_NOTE: Record<string, string> = {
 
   requires_human: "Whether a person acts at this node. Both answers are a design decision and neither is a result: `true` means no graph containing this node is closed-loop, `false` means the node runs unattended whenever the graph reaches it.",
 
-  risk_markers: "`risk-marker` terms the author declares against the node. The static analysis prices them into the blueprint's security reading. Declaring none is an answer, not an omission, and nothing infers a marker the card did not write.",
+  risk_markers: "`risk-marker` terms the author declares against the node. The static analysis prices them into the blueprint's static risk-exposure reading. Declaring none is an answer, not an omission, and nothing infers a marker the card did not write.",
 
   notes: "The author's commentary on the card, addressed to whoever reads it. Nothing in the engine reads it and no check is made against it.",
 

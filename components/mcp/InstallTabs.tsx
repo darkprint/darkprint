@@ -1,7 +1,7 @@
 "use client";
 
+import Link from "next/link";
 import { useId, useRef, useState, type KeyboardEvent } from "react";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { cx } from "@/lib/format";
 import { MCP_CLIENTS } from "./clients";
 
@@ -41,7 +41,7 @@ export function InstallTabs({ className }: { className?: string } = {}) {
     /* `border-emerald/50` over `.panel`'s own border, on the author's instruction
        2026-08-07. Emerald is the engine's register on this site — `app/globals.css` calls
        it "a figure read off the engine" and the hero extends it to a command that reaches
-       one — and this panel holds four client configurations, which is machine-facing text
+       one — and this panel holds six client configurations, which is machine-facing text
        if anything on the site is.
 
        The tension is worth naming rather than leaving for someone to spot: green normally
@@ -50,7 +50,12 @@ export function InstallTabs({ className }: { className?: string } = {}) {
        page's lead and its `<head>` description both say the server is not built. The frame
        says what register the text is in; the badge says whether it runs. Those are
        different claims and the panel makes both. */
-    <div className={cx("panel border-emerald/50 p-4 sm:p-6", className)}>
+    <div
+      className={cx(
+        "panel min-w-0 max-w-full border-emerald/50 p-4 sm:p-6",
+        className,
+      )}
+    >
       <div
         className="flex flex-wrap gap-2 border-b border-line pb-3"
         role="tablist"
@@ -94,13 +99,13 @@ export function InstallTabs({ className }: { className?: string } = {}) {
       </div>
 
       {/* The panel reserves the tallest client's height instead of shrinking to each one.
-          The four snippets run 1 line and 8 lines — 8 × 16px line-height + 24px padding +
+          The snippets run 1 line and 8 lines — 8 × 16px line-height + 24px padding +
           2px border = 154px against 42px — so switching from Claude Code to Claude Desktop
           used to shove the paragraph below this panel, and both "Read next" boxes with it,
           112px down the page in a single frame: the reader clicks a tab and the thing they
           were reading leaves the screen.
 
-          189 = 27 (the label row) + 8 (`mt-2`) + 154 (the tallest snippet box). Narrow
+          232 also reserves the one-line client note under the snippet. Narrow
           enough and the longest label — "Claude Desktop configuration" — wraps to two
           lines and that row becomes 43px, so the reservation is 205 there.
 
@@ -120,11 +125,13 @@ export function InstallTabs({ className }: { className?: string } = {}) {
         role="tabpanel"
         id={`${tabsId}-panel`}
         aria-labelledby={`${tabsId}-tab-${current.id}`}
-        className="mt-4 min-h-[205px] min-[480px]:min-h-[189px]"
+        className="mt-4 min-w-0 min-h-[248px] min-[480px]:min-h-[232px]"
       >
         <div className="flex items-center justify-between gap-3">
           <span className="label">{current.label} configuration</span>
-          <ComingSoonBadge />
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-emerald">
+            configuration
+          </span>
         </div>
 
         {/* `key` remounts the box on a tab change so `starting:opacity-0` has a first style
@@ -134,10 +141,23 @@ export function InstallTabs({ className }: { className?: string } = {}) {
             the rule is dropped and the snippet simply appears. */}
         <pre
           key={current.id}
-          className="mt-2 overflow-x-auto rounded-md border border-line bg-surface-2 p-3 font-mono text-xs text-fg transition-opacity duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] starting:opacity-0"
+          className="mt-2 max-w-full overflow-x-auto rounded-md border border-line bg-surface-2 p-3 font-mono text-xs text-fg transition-opacity duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] starting:opacity-0"
         >
           <code>{current.snippet}</code>
         </pre>
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-3 text-xs leading-relaxed text-dim">
+          <p className="max-w-xl">{current.note}</p>
+          {current.docsHref !== undefined && (
+            <Link
+              href={current.docsHref}
+              target="_blank"
+              rel="noreferrer"
+              className="shrink-0 font-mono text-cyan underline decoration-cyan/40 underline-offset-4"
+            >
+              Client docs ↗
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );

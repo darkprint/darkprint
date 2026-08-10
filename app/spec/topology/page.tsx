@@ -78,7 +78,7 @@ import { DotBreakdown } from "@/components/panes/DotBreakdown";
    ============================================================ */
 
 export const metadata: Metadata = {
-  title: "The topology, in DOT",
+  title: "The blueprint file (DOT)",
   description:
     "Layer 1 of a DarkPrint blueprint: one directed graph per bundle, written in a subset of DOT that Attractor runs as it stands, with one added attribute pinning each node to the card that describes it.",
 };
@@ -142,7 +142,7 @@ export default function SpecTopologyPage() {
         <div className="container-page flex flex-col gap-10">
           <div className="flex flex-col gap-3">
             <span className="label-lead">The file</span>
-            <h2 id="dot-file-heading" className={BAND_H2}>
+            <h2 id="dot-file-heading" className={`${BAND_H2} scroll-mt-24`}>
               One file, and the attribute DarkPrint adds
             </h2>
           </div>
@@ -245,7 +245,7 @@ export default function SpecTopologyPage() {
         <div className="container-page flex flex-col gap-10">
           <div className="flex flex-col gap-3">
             <span className="label-lead">The checks</span>
-            <h2 id="dot-checks-heading" className={BAND_H2}>
+            <h2 id="dot-checks-heading" className={`${BAND_H2} scroll-mt-24`}>
               What the engine checks in the DOT layer
             </h2>
           </div>

@@ -261,7 +261,7 @@ export function ScoringModel({
           <span className="label-lead">The arithmetic</span>
           <SectionHeading
             title="What each check is worth"
-            lead={`Security opens at ${CEILING} and subtracts. These are the amounts, read at build time out of the engine's configuration and the vocabulary this archive ships.`}
+            lead={`Static risk exposure opens at ${CEILING} and subtracts declared or inferred risk-marker weights. It is a structural reading, not a security audit.`}
           />
         </div>
 
@@ -278,7 +278,7 @@ export function ScoringModel({
             <table className="w-full min-w-[38rem] border-collapse text-sm">
               <caption className="sr-only">
                 Every risk marker the engine weighs, what it means, and how much it
-                subtracts from a security reading.
+                subtracts from the static risk-exposure reading.
               </caption>
               <thead>
                 <tr className="border-b border-line">

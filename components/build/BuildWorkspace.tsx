@@ -216,7 +216,7 @@ export function BuildWorkspace() {
       </div>
 
       <section aria-labelledby="workspace-heading" className="flex flex-col gap-5">
-        <h2 id="workspace-heading" className="label-lead">
+        <h2 id="workspace-heading" className="label-lead scroll-mt-24">
           Your workspace
         </h2>
 

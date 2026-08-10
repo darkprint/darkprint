@@ -57,19 +57,35 @@
    itself; every other rung is about a blueprint, a card or a
    ladder, and each of those still has its own page.
 
-   ── What the five beats are ──
+   ── What the six beats are ──
+   Beat 2 is the newest and the only one that argues rather than
+   shows. The author asked for it on 2026-08-10, out of their own
+   note on reproducibility: a prompt hands the harness a goal and
+   the harness invents the route, so nothing about the run can be
+   held constant and nothing about a change can be attributed. It
+   sits before either artifact deliberately, because "why not just
+   a prompt?" is the objection a reader forms in the second after
+   the hero, and its figure was chosen so that answering it needs
+   no graph literacy. `docs/superpowers/specs/2026-08-10-landing-
+   reproducibility-beat-design.md` carries the argument and the
+   honesty position; `SectionSameRun` carries the reasoning for
+   the drawing.
+
    One illustration and roughly one sentence each, mostly. Beat 1 is
    the wordmark and takes the animation budget, because it is the
-   thing the author missed and the first thing anyone sees. Beats 2
-   and 3 carry one concept apiece in the luminous-flow register of
-   spec §1. Beat 4 is three short panels, each its own sentence and
-   its own figure, of what a reader can do with the folder beat 2
+   thing the author missed and the first thing anyone sees. Beats 3
+   and 4 carry one concept apiece in the luminous-flow register of
+   spec §1. Beat 5 is three short panels, each its own sentence and
+   its own figure, of what a reader can do with the folder beat 3
    just drew: download it, compose it into something bigger, or
-   upload it for the analyzer to read. Beat 5 is the two doors.
+   upload it for the analyzer to read. Beat 6 is the two doors.
 
-   Beat 5 used to be a fifth beat on its own count, the lights going
-   out across the starter graph (`SectionLightsOut`), cut from the
-   landing at the author's request. Doc 2 §1.1's constraint that beat
+   The doors were preceded by a beat of their own for a while, the
+   lights going out across the starter graph (`SectionLightsOut`),
+   cut from the landing at the author's request. (That sentence used
+   to name a position rather than the beat. Two renumberings later
+   the position had moved and the sentence had not, so it names the
+   thing now.) Doc 2 §1.1's constraint that beat
    existed to guard — a graph with a person in it is a first-class
    blueprint, never a shortfall — still binds every autonomy reading
    on the site; it is simply no longer illustrated on this page.
@@ -82,6 +98,7 @@
 
 import { Hero } from "@/components/hero/Hero";
 import {
+  SectionSameRun,
   SectionBlueprint,
   SectionNodeIsCard,
   SectionLifecycle,
@@ -92,6 +109,7 @@ export default function HomePage() {
   return (
     <>
       <Hero />
+      <SectionSameRun />
       <SectionBlueprint />
       <SectionNodeIsCard />
       <SectionLifecycle />

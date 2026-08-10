@@ -1,178 +1,45 @@
-/* ============================================================
-   Beat 5 of redesign spec §2, and rung 6 of doc 2 §2.1: two doors.
-
-   "Due porte. *Sfoglia i blueprint* oppure *costruisci il tuo*."
-
-   ── What came off, and why that is allowed ──
-   Redesign spec §5 lets a page drop "prose that says the same thing
-   a second time", and this section carried four paragraphs of it.
-   The gallery door explained what a published bundle contains,
-   which every blueprint page prints in full; the build door
-   explained the three choices, which `/build` puts on the screen a
-   reader is about to open; and the closing line pointed at
-   `/which-tasks`, a route that has folded into
-   `/towards-a-dark-factory` and is reachable from the nav.
-
-   ── What stayed, and why it had to ──
-   The line about where `/build` stops. Spec §0.4: nothing
-   may be described as working that is not built, "say so wherever
-   the question arises", and a door that says "build your own" is
-   exactly where it arises. One sentence is enough to be honest;
-   four were enough to lose the reader.
-
-   The three counts stay because they are read off the archive at
-   build time rather than written here, so they are the one thing on
-   this beat a reader could check.
-
-   And the line saying so stays with them. It went out with the four
-   paragraphs and it was not one of them: "Counted off the archive on
-   the last deploy, and nothing here is rounded up" is the claim that
-   makes the three figures worth printing, and it was the only
-   sentence on the site that made it. A number beside a door with
-   nothing behind it is marketing.
-
-   ── Why the second door now carries figures too ──
-   `md:grid-cols-2` stretches both cells to the taller one and
-   `Door`'s `mt-auto` pins the button to the floor, so a door with no
-   children is not a shorter card: it is the same card with ~112px of
-   void in the middle of it. Measured inside the 305px cell it used
-   to be, the gallery door ran h3, line, counts, caption, CTA and the
-   build door ran h3, line, nothing, nothing, CTA. The reader is at the one
-   decision point on the landing, and the option with no evidence
-   under it reads as the lesser one or as the unfinished one — which
-   is backwards, because `/build` is the path that works end to end
-   today and the gallery is the one that only reads.
-
-   So the build door states its own shape in the same register: three
-   figures and a line saying what they buy. They are not counted off
-   disk the way `PLATFORM_STATS` is, and the constant below records
-   where each one is read from so a change to the path is a failing
-   grep rather than a stale number.
-
-   ── And the limit statement moved into it ──
-   "The workspace ends at the download. There is nowhere to publish
-   yet." hung under the two-column grid, centred, attached to
-   neither door. It is about the build door specifically. A sentence
-   that qualifies one of two options and is printed under both of
-   them qualifies the wrong one half the time, so it sits inside the
-   door it is about, in the same caption register as the gallery
-   door's own qualifier. Verbatim; spec §0.4 is why it exists.
-   ============================================================ */
-
 import { ButtonLink } from "@/components/ui/Button";
-
-/* `COUNTS`, the `PLATFORM_STATS` import it read, and the `Figures` component that
-   rendered it all stood here. The author asked both doors' figure rows out on 2026-08-07,
-   so there is nothing left to render and no second caller to keep the component honest
-   against.
-
-   `lib/data` still exports `PLATFORM_STATS` and it still counts `content/` at build time.
-   Nothing on the landing reads it now. That is the piece to reach for if figures ever come
-   back — it is the reason they were checkable rather than decorative. */
-
-/** What the figures above it are worth. One line, under the row it qualifies. */
-/* `Caption` stood here. Its one caller was the second door's ".dot topology, the cards
-   it pins" line, and that door became the card shelf on 2026-08-08 with a `line` prop
-   instead. `Door` still takes `children`, so a door that wants a caption again has the
-   slot; it wants a component too, and this is what it looked like. */
-
-
-function Door({
-  title,
-  line,
-  href,
-  cta,
-  children,
-}: {
-  title: string;
-  /** The door's one sentence. Optional since 2026-08-07: the build door has none. */
-  line?: string;
-  href: string;
-  cta: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <article className="flex flex-col gap-4 rounded-lg border border-blueprint-line/40 bg-blueprint/20 p-6 sm:p-8">
-      <h3 className="font-display text-2xl font-semibold text-blueprint-ink">{title}</h3>
-      {line !== undefined && (
-        <p className="text-sm leading-relaxed text-blueprint-ink/85">{line}</p>
-      )}
-      {children}
-      <div className="mt-auto pt-2">
-        <ButtonLink href={href} variant="primary" size="lg">
-          {cta}
-        </ButtonLink>
-      </div>
-    </article>
-  );
-}
 
 export function SectionDoors() {
   return (
-    <section
-      id="start"
-      className="relative overflow-hidden bg-blueprint-deep py-20 sm:py-28"
-    >
+    <section id="start" className="relative overflow-hidden bg-blueprint-deep py-20 sm:py-28">
       <div aria-hidden className="pointer-events-none absolute inset-0 bp-grid opacity-90" />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(120% 80% at 50% 0%, transparent 40%, color-mix(in oklab, var(--color-void) 55%, transparent) 100%)",
-        }}
-      />
-
       <div className="container-page relative">
-        {/* A `darkprint.io` mono strip stood above this heading and is gone. A domain name
-            is not a section label: it names the site a reader is already on, on the one
-            band that needs no naming — the cyanotype ground is a register nothing else on
-            the landing uses, and that is what says "this is the end of the argument". It
-            was also the site's only instance of 0.28em tracking, and the mono eyebrow is
-            rationed to one per page or per full-bleed band. */}
-        <div className="flex flex-col items-center text-center">
-          <h2 className="max-w-3xl font-display text-4xl font-semibold leading-tight tracking-tight text-blueprint-ink sm:text-5xl">
-            Read one, or read its parts
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-blueprint-line">
+            Start with the job in front of you
+          </p>
+          <h2 className="mt-3 font-display text-4xl font-semibold leading-tight tracking-tight text-blueprint-ink sm:text-5xl">
+            Find a proven shape, or make the one you need
           </h2>
         </div>
 
         <div className="mt-10 grid gap-5 md:grid-cols-2">
-          <Door
-            title="Browse the blueprints"
-            line="Every graph is published as the files it runs from."
-            href="/blueprints"
-            cta="Open the gallery"
-          >
-            {/* The three counts and their caption — "Counted off the archive on the last
-                deploy, and nothing here is rounded up" — stood here until 2026-08-07.
+          <article className="flex flex-col rounded-lg border border-blueprint-line/40 bg-blueprint/20 p-6 sm:p-8">
+            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-blueprint-line">Find and reuse</span>
+            <h3 className="mt-3 font-display text-2xl font-semibold text-blueprint-ink">Start from a task</h3>
+            <p className="mt-3 text-sm leading-relaxed text-blueprint-ink/85">
+              Search by what you need done, inspect the graph and static findings, then take
+              an exact release to adapt on your machine.
+            </p>
+            <div className="mt-6">
+              <ButtonLink href="/blueprints" variant="primary" size="lg">Find a blueprint</ButtonLink>
+            </div>
+          </article>
 
-                The caption goes WITH the numbers rather than outliving them: it existed to
-                vouch for figures that are no longer printed, and a sentence promising the
-                counts are exact on a card showing no counts is a claim about nothing. */}
-          </Door>
-
-          {/* The second door is the CARD gallery, not `/build`, since 2026-08-08. The
-              author: "on the left the link for browsing the blueprints gallery and on the
-              right the link for browsing the Nodes gallery (which I want you rename Cards)."
-
-              The two doors are one pair now instead of two errands: the registry has two
-              shelves and this band opens both. `/build` is not orphaned — it is the first
-              item under Learn's how-to half, the workspace a reader reaches from the
-              landing's own hero button, and `/what-a-blueprint-is` ends on it. What it was
-              doing HERE was answering a different question from the door beside it, so the
-              heading above them ("Read one, or design one") had to cover a browse and a
-              build at once.
-
-              "Design your own" and its caption go with it, along with the `cta`
-              "Components of a blueprint". Recorded because both were the author's own
-              wording from earlier in the same day, and neither is being overruled — the
-              door they sat on is what changed. */}
-          <Door
-            title="Browse the cards"
-            line="One versioned card per node, and the graphs that pin it."
-            href="/nodes"
-            cta="Open the cards"
-          />
+          <article className="flex flex-col rounded-lg border border-blueprint-line/40 bg-blueprint/20 p-6 sm:p-8">
+            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-blueprint-line">Create and publish</span>
+            <h3 className="mt-3 font-display text-2xl font-semibold text-blueprint-ink">Start from your goal</h3>
+            <p className="mt-3 text-sm leading-relaxed text-blueprint-ink/85">
+              Let your agent interview you into a bundle, validate it locally, and prepare a
+              versioned release for the registry.
+            </p>
+            <div className="mt-6">
+              {/* `/skill` since the `/build` split: the door promises an interview into a
+                  bundle, and the interview is the authoring skill. */}
+              <ButtonLink href="/skill" variant="primary" size="lg">Create a blueprint</ButtonLink>
+            </div>
+          </article>
         </div>
       </div>
     </section>

@@ -6,7 +6,7 @@ import type { MetricSource } from "@/lib/types";
 import { METRIC_SOURCE_META, cx } from "@/lib/format";
 import { ScoringModel } from "@/components/spec/ScoringModel";
 import { SourceBadge } from "@/components/ui/Badge";
-import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
+import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { ScoreRadar } from "@/components/ui/ScoreRadar";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Sheet } from "@/components/viz";
@@ -94,6 +94,8 @@ export const metadata: Metadata = {
     "A blueprint's scorecard, taken apart: five spokes, why autonomy is not one of them, and what the colour of each vertex says about where its number came from. Then the three badges behind the six axes and every weight the engine charges. Nothing votes and nothing runs, so four of the six are seeded rows that say so.",
 };
 
+const HERE = "/reading-the-radar";
+
 /** The blueprint whose card is drawn. Named, so the page says which one it is. */
 const SAMPLE_SLUG = "starter-software-factory";
 
@@ -157,7 +159,6 @@ function NotBuilt({ children }: { children: React.ReactNode }) {
     </p>
   );
 }
-
 /**
  * One band, one badge.
  *
@@ -171,6 +172,7 @@ function SourceBand({
   title,
   id,
   ground,
+  className,
   children,
 }: {
   source: MetricSource;
@@ -180,11 +182,12 @@ function SourceBand({
   id: string;
   /** The band's ground, alternating down the page. */
   ground: string;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
     <section
-      className={cx("border-t border-line py-16 sm:py-20", ground)}
+      className={cx("border-t border-line py-16 sm:py-20", ground, className)}
       aria-labelledby={id}
     >
       <div className="container-page flex flex-col gap-5">
@@ -195,7 +198,7 @@ function SourceBand({
           </div>
           <h2
             id={id}
-            className="font-display text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] text-fg sm:text-[32px]"
+            className="scroll-mt-24 font-display text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] text-fg sm:text-[32px]"
           >
             {title}
           </h2>
@@ -283,7 +286,8 @@ export default function HowABlueprintIsGradedPage() {
   return (
     <>
       <header className="border-b border-line bg-void py-16 sm:py-20">
-        <div className="container-page">
+        <div className="container-page flex flex-col gap-5">
+          <SpecCrumb href={HERE} />
           <SectionHeading
             as="h1"
             eyebrow="The six radar axes"
@@ -304,7 +308,7 @@ export default function HowABlueprintIsGradedPage() {
           geometry solves against that: a single desktop solve puts the axis names at
           three CSS pixels on a phone. Both placements below are the two
           `components/learn/figures.test.ts` measures against the legibility floor. */}
-      <section className="bg-void py-16 sm:py-20" aria-label="The scorecard this page reads">
+      <section id="scorecard" className="scroll-mt-24 bg-void py-16 sm:py-20" aria-label="The scorecard this page reads">
         <div className="container-page">
           <figure className="flex flex-col gap-5">
             <Sheet
@@ -366,7 +370,7 @@ export default function HowABlueprintIsGradedPage() {
         className="border-t border-line bg-surface py-16 sm:py-20"
       >
         <div className="container-page flex flex-col gap-10">
-          <h2 id="the-notes" className="sr-only">
+          <h2 id="the-notes" className="scroll-mt-24 sr-only">
             What each part of the drawing means
           </h2>
           <ol className="flex flex-col gap-10">
@@ -456,6 +460,7 @@ export default function HowABlueprintIsGradedPage() {
         title="Read off the graph"
         id="auto-heading"
         ground="bg-surface/40"
+        className="scroll-mt-24"
       >
         <p className={BODY}>
           These two are the engine&apos;s own arithmetic, run at build time. Autonomy
@@ -531,42 +536,10 @@ export default function HowABlueprintIsGradedPage() {
         </div>
       </section>
 
-      {/* The way on. The pair this page used to make with `/spec/scoring` is gone — both
-          of its old tail boxes pointed at the other half of this page — so the two that
-          are left are the gallery to read the chart against, and the page that says what
-          the graph and the cards behind the two computed rows actually are. */}
+      {/* The shared Learn rail closes every page in the seven-part path. */}
       <section className="border-t border-line bg-surface pb-20 pt-16">
         <div className="container-page">
-          <OnwardRoutes
-            /* Left `/build`, right `/towards-a-dark-factory`, on the author's instruction
-               2026-08-08. `OnwardRoutes` lays them in source order.
-
-               The gallery exit goes with the change: a reader who now knows how the chart is
-               computed has two moves, which are to make one of their own or to read what the
-               reading is FOR, and the gallery is the first item of the header's registry
-               group on every page. Left is the thing to do, right is the thing to read,
-               which is the order every other pair on this site uses. */
-            routes={[
-              {
-                href: "/build",
-            direction: "previous",
-                label: "Design a blueprint",
-                blurb: "Three choices, and the scorecard recomputed on every one.",
-              },
-              {
-                href: "/towards-a-dark-factory",
-            direction: "next",
-                label: "Towards a Dark Factory",
-                blurb: "What the autonomy reading is a reading of, in four levels.",
-              },
-              /* A second route to `/what-a-blueprint-is` stood here and the author asked it
-                 out on 2026-08-08. That page is stop 00 of the sequence, the first item of
-                 the header's Learn menu on every page, and the place a reader arriving here
-                 came FROM: the menu now runs what a blueprint is, then how to design one,
-                 then this page. An exit pointing back up the path a reader has just walked
-                 is the route offering to start over. */
-            ]}
-          />
+          <SpecPager href={HERE} />
         </div>
       </section>
     </>

@@ -3,388 +3,121 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+
 import { ButtonLink } from "@/components/ui/Button";
+import { SPEC_SEQUENCE } from "@/components/spec/sequence";
 import { cx } from "@/lib/format";
 
-/**
- * Two groups, and the divider between them is doc 2 §0's distinction made navigable.
- *
- * `registry` is the three surfaces of doc 1 §0 — the things a convinced reader came for.
- * `learn` is everything that answers "what is this", "would it work on my problem" and
- * "how is any of it written down" for somebody who does not yet know. Mixing them into
- * one run reads as eight equal destinations, which is the flattening §0 blames for the
- * site being unreadable cold.
- *
- * The pass that added `/spec` and the climb took the header from six items to eight, and
- * eight is where the arrangement stops being decoration: the group headings in the
- * collapsed panel below are the only thing that keeps a phone reader from scrolling a
- * flat list, and the rule in the wide row is the same statement made with one border.
- *
- * Seven for a while, then nine. Redesign spec §4.2 renamed `/how-to-build-a-dark-factory`
- * to `/towards-a-dark-factory` and folded `/which-tasks` into it as a child, so the two
- * items that used to sit side by side in `learn` are one item leading to a sequence. That
- * sequence was three pages and is two: `/towards-a-dark-factory/which-tasks` was merged
- * into its own parent on 2026-08-07 (`components/howto/route.ts` records why). All three
- * old paths redirect from `next.config.ts` and none is listed here: a nav is a map of
- * where the site is, and a redirect is for a link somebody else already wrote down.
- *
- * The `/spec` and `/towards-a-dark-factory` children are deliberately absent too, and the
- * grounds have been corrected. They used to read "each sequence carries its own
- * previous/next pager and its parent opens with a door per child", and the second half was
- * false for two passes: the climb route's doors had moved to the FOOT of its parent, at
- * 86% scroll depth, so a reader arriving through this nav — the only permanent entrance —
- * met the first link to a child four and a half screens down. The doors are gone with the
- * merge and the reason is now the honest one: `/towards-a-dark-factory` has exactly one
- * child and its pager is the last thing on the page, and the four spec pages are a
- * notation a reader reaches from the page that says what a blueprint is. Listing all five
- * here would make the header a table of contents for two routes that already carry one.
- *
- * ── Nine back to nine, with three of them different (2026-08-07) ──
- * The IA pass removed three `learn` rows and added none:
- *
- *   - `/spec` is deleted. `/what-a-blueprint-is` is the door onto the three layer pages
- *     now, and it was already the item above `/spec` in this list, so the row came out
- *     rather than being repointed.
- *   - `/spec/scoring` is deleted. Its content merged into `/reading-the-radar`, which
- *     takes over its label: "How a blueprint is graded" is the phrase that page's own
- *     `h1` and every inline link on the site already use, and it covers the merged page
- *     where "Reading the radar" covered only the picture half.
- *   - `/concepts` is deleted. Its content is the `#the-words` section of
- *     `/what-a-blueprint-is`, so a row here would have been a second name for a page
- *     already in this list.
- *
- * Two rows were renamed rather than moved. `/build` is "Design a blueprint" on the
- * author's instruction, and sits directly before `/towards-a-dark-factory`; the page's
- * own `h1` says the same words, which is what `nav.test.ts` holds every label to. And the
- * `/upload` control is "Upload blueprint", the label the footer and the phone panel use
- * as well — one destination, one name, and that test reads all three out of this source.
- *
- * Ten, then: home, three registry surfaces, four in the menu, and the two setup routes
- * beside it. It was nine with one `/install` row until 2026-08-07; the split is what
- * added the tenth, and the row still fits at every breakpoint (measured at 1024, 1120,
- * 1280, 1440 and 1600: no overflow at any of them).
- */
 export const NAV = [
-  // The three registry surfaces, flat. `/ontology` sat in the menu for one pass and the
-  // author put it back beside `/nodes`: "the Ontology should be placed on the right of
-  // Nodes in the navbar. I prefer there." It is the vocabulary both of the others are
-  // written against, so it belongs with the things you can browse rather than with the
-  // pages explaining them.
-  // `{ href: "/", label: "Home", group: "home" }` stood here until 2026-08-07, when the
-  // author asked it out: "remove from the NavBar the home".
-  //
-  // The comment defending it argued that "a reader who has not learned that a logo is a
-  // link has no way in from a deep page". The wordmark is still that link and still the
-  // leftmost thing in the header, which is where every site on the web puts the way home;
-  // the row now spends its width on the nine destinations a reader cannot guess instead of
-  // the one they can. `HOME` and the `home` group stay defined and simply resolve empty —
-  // the wide row and the phone panel both `.map()` over them and render nothing, so the
-  // row is not restructured around the absence and putting it back is one line.
-  { href: "/blueprints", label: "Blueprints", group: "registry" },
-  /* "Cards", not "Nodes", on the author's instruction 2026-08-08.
-     ------------------------------------------------------------
-     A node is a position in a graph; a card is the FILE this shelf holds, one per node, and
-     the shelf beside it is called Blueprints after the file IT holds. Naming one by the
-     artefact and its sibling by the abstraction was the registry describing itself two ways.
-     `/nodes` is untouched: the route has been linked for months and a rename would cost a
-     redirect to change a word. */
-  { href: "/nodes", label: "Cards", group: "registry" },
-  { href: "/ontology", label: "Ontology", group: "registry" },
-  // The first item of the menu, because it is the one a cold reader needs first and the
-  // only page that says what a blueprint is *for*. It is also the door onto the three
-  // layer pages, and stop 00 of `SPEC_SEQUENCE`, since `/spec` was deleted — which is why
-  // the row that used to sit two below this one is gone rather than repointed.
-  { href: "/what-a-blueprint-is", label: "What a blueprint is", group: "learn" },
-  /* ---- the three file formats, added to the menu 2026-08-08 ----
-     The author: "below What is a blueprint add also the references to the topology in DOT,
-     the node card in YAML, and the ontology … find better names for these pages; should be
-     clear; such pages bring with them the details."
+  { href: "/blueprints", label: "Blueprints", group: "explore" },
+  { href: "/nodes", label: "Cards", group: "explore" },
+  /* "Create" points at `/skill`, not `/build`, since 2026-08-10.
 
-     Their own `h1`s name the NOTATION — "The topology, in DOT" — which is right at the top
-     of a reference page a reader has chosen to open and wrong in a menu, where the question
-     is "which of these do I want". So each one is named for the FILE it documents, in the
-     words the bundle band on `/what-a-blueprint-is` uses for the same four files, with the
-     format after it so a reader can tell the three apart at a glance:
-
-       The graph file (DOT)      blueprint.dot
-       The node card (YAML)      cards/<node>.yaml
-       The vocabulary            the ontology both of the above are written against
-
-     Directly under "What a blueprint is" on the author's instruction 2026-08-08, not after
-     the two how-to routes. They are the DETAIL of the page above them — that page says a
-     blueprint is three files and these three say what each file holds — so they belong with
-     it, and `/build` and `/reading-the-radar` are things to do rather than things to look
-     up.
-
-     `nav.test.ts` holds every row's label to its page's `h1` character for character. These
-     three deliberately break that: it is a rule about a reader landing on the heading they
-     clicked, and it was written when every menu row WAS a page title. The three `h1`s are
-     unchanged and the test's rule is narrowed rather than dropped — see the case. */
-  { href: "/spec/topology", label: "The blueprint file (DOT)", group: "learn" },
-  { href: "/spec/card", label: "The node card (YAML)", group: "learn" },
-  { href: "/spec/ontology", label: "The vocabulary", group: "learn" },
-  // The scorecard, whole: the picture (five spokes, why autonomy has none, what a
-  // vertex's colour says) and the arithmetic (three badges, every weight) on one route
-  // after `/spec/scoring` merged into it. The label is the phrase the page's own `h1` and
-  // every inline link on the site already use. It follows "What a blueprint is" because a
-  // reader has to know what a blueprint is made of before a grade of one means anything.
-  /* `/build` before `/reading-the-radar`, swapped on the author's instruction 2026-08-08.
-     Designing one comes before grading one: a reader who has not made a blueprint has
-     nothing for the scorecard to be about, and the menu now runs what a blueprint is, how to
-     make one, how one is read. */
-  { href: "/build", label: "Design a blueprint", group: "learn" },
-  // The scorecard, whole: the picture (five spokes, why autonomy has none, what a vertex's
-  // colour says) and the arithmetic (three badges, every weight) on one route after
-  // `/spec/scoring` merged into it.
-  { href: "/reading-the-radar", label: "How a blueprint is graded", group: "learn" },
-  // The author named this label: "/which-tasks should be placed in The climb part which
-  // I'd rename Towards a Dark Factory". It is also the page's own `h1`, character for
-  // character, which is what `nav.test.ts` holds it to. The label a reader clicks is the
-  // heading they land on, so there is nothing to re-resolve on arrival.
-  { href: "/towards-a-dark-factory", label: "Towards a Dark Factory", group: "learn" },
-  // Out of the menu and to the right of it. These are setup actions rather than things to
-  // read: `standalone` is what the WIDE row reads, drawing them beside the trigger instead
-  // of inside it. The phone panel reads `group`, and that is a separate decision — see
-  // `GROUPS` for why these two now head a section of their own there.
-  //
-  // ── One row until 2026-08-07, and why it is two now ──
-  // This was `{ href: "/install", label: "Install" }`, and the comment argued the label
-  // hard: "Install MCP" was wrong once the route stopped being only about MCP, naming it
-  // after the skill would put the word "skill" in a fourth place on a site that already
-  // uses it for a node card's `skill:` field, and the bare verb was what both halves had
-  // in common.
-  //
-  // The author split the route — "I prefer two pages, one for the skill and one for the
-  // mcp" — and the argument for the bare verb went with it: there is no longer a single
-  // page for a single word to cover. The cost is the tenth header row the old comment in
-  // `lib/skill.ts` was written to avoid, and it is paid on purpose. The benefit is that
-  // the nav now says which half is which, and a reader looking for the thing that works
-  // no longer has to open a page to find out whether it is on it.
-  //
-  // "The DarkPrint skill" and not "Skill": the qualifier is what `lib/skill.ts` requires
-  // on every surface, precisely because a card's `skill:` field means something else and
-  // one level down. Both labels are their pages' `h1` character for character, which is
-  // what `nav.test.ts` holds every row to.
-  { href: "/skill", label: "The DarkPrint skill", group: "setup", standalone: true },
-  { href: "/mcp", label: "Connect via MCP", group: "setup", standalone: true },
+     `/build` split: the authoring half — install the skill, name your goal, take the brief
+     — moved onto `/skill`, which was already the page about the skill and was reachable
+     from the footer alone. What is left at `/build` is the worked sandbox, and the author
+     asked that one "only among the Learn pages", where it now sits as stop 04 under its own
+     name. So this row follows the content rather than the path. */
+  { href: "/skill", label: "Create", group: "work" },
+  { href: "/upload", label: "Publish", group: "work" },
+  { href: "/mcp", label: "MCP", group: "work" },
+  { href: "/what-a-blueprint-is", label: "What a blueprint is", group: "docs" },
+  { href: "/spec/topology", label: "Blueprint file (DOT)", group: "docs" },
+  { href: "/spec/card", label: "Node card (YAML)", group: "docs" },
+  { href: "/spec/ontology", label: "Ontology", group: "docs" },
+  { href: "/reading-the-radar", label: "How a blueprint is graded", group: "docs" },
+  { href: "/towards-a-dark-factory", label: "Towards a Dark Factory", group: "guides" },
 ] as const;
 
-/**
- * The phone panel's sections. `home` is deliberately absent.
- *
- * A section headed "Home" holding one link called "Home" says the word twice and reads as
- * a mistake. On the panel it is rendered above these, unheaded, where a first item does not
- * need a category to be understood.
- *
- * ── Why "Set up" is a section and not two rows under "Learn" ──
- * The author: "when the navbar becomes an hamburger menu, I want that the DarkPrint skill
- * and the Connect via MCP pages, belong to a third category. Find the best name."
- *
- * They were in `learn` because the wide row draws them outside the menu anyway and a
- * section of one item reads as a mistake — but there are TWO of them, so that exemption
- * never applied, and filing them under "Learn" made the same claim the author had already
- * struck out of the footer: "'The DarkPrint skill' and 'Connect via MCP' should not appear
- * under 'Learn'". The wide row said one thing and the collapsed panel said another.
- *
- * ── The name ──
- * "Set up" is the phrase this file has used for these two rows since they were split, in
- * the comment right above them: "setup actions rather than things to read". Promoting the
- * word the code already reached for beats inventing one.
- *
- * What it has to be true of is both halves at once, and the two are not the same shape:
- * one is a skill you install into Claude Code, the other is a server you point a client at.
- * What they share is that you DO them once, to your own machine, before any of the rest of
- * this site is useful to you — which is setup and is not reading.
- *
- * Four that were weighed and dropped. "Connect" repeats a word already inside one of its
- * own rows, which is the "Home"/"Home" fault one paragraph up. "Install" is what the merged
- * route was called and is wrong for MCP — nothing is installed, a client is pointed. "Tools"
- * collides with a node card's `tools:` field, which this site reserves for exactly the reason
- * `lib/skill.ts` reserves "skill". "In Claude Code" is true of both today and narrows the
- * MCP page to one client on the day a second one connects.
- */
-const GROUPS = [
-  { id: "registry", title: "Registry" },
+const PRIMARY = NAV.filter((item) => item.group === "explore" || item.group === "work");
+export const LEARN = SPEC_SEQUENCE.map((page) => ({
+  href: page.href,
+  label: page.nav,
+  step: page.step,
+}));
+
+const MOBILE_GROUPS = [
+  { id: "explore", title: "Explore" },
+  { id: "work", title: "Create and use" },
   { id: "learn", title: "Learn" },
-  { id: "setup", title: "Set up" },
 ] as const;
 
-/** Inside the dropdown.
- *
- * The `!("standalone" in item)` clause this carried is gone with the group split: the two
- * standalone rows are `setup` now, so `group === "learn"` already excludes them and a second
- * predicate saying the same thing would be a rule with nothing left to catch. */
-const LEARN = NAV.filter((item) => item.group === "learn");
-/* `HOME` stood here. It filtered `group === "home"`, and with the row gone that predicate
-   narrows to `never` against an `as const` table — the filter does not merely return empty,
-   it stops typechecking. So the group is gone rather than left resolving to nothing. */
-/** Flat, before the trigger. */
-const REGISTRY = NAV.filter((item) => item.group === "registry");
-/** Flat, after the trigger. */
-const STANDALONE = NAV.filter((item) => "standalone" in item);
+function mobileLinks(group: (typeof MOBILE_GROUPS)[number]["id"]) {
+  return group === "learn" ? LEARN : NAV.filter((item) => item.group === group);
+}
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const [docsAt, setDocsAt] = useState<string | null>(null);
+  const [mobileAt, setMobileAt] = useState<string | null>(null);
+  const docsOpen = docsAt === pathname;
+  const mobileOpen = mobileAt === pathname;
+  const docsRef = useRef<HTMLDetailsElement>(null);
 
-  /* The Learn menu, controlled rather than left to the element.
-     ------------------------------------------------------------
-     A bare `<details>` gives keyboard operation and a toggle for free, and it gives
-     nothing at all for the two things a reader expects of a menu: clicking away from it
-     closes it, and so does Escape. Left alone it stayed open behind whatever the reader
-     clicked next, including the page under it.
-
-     So `open` is React state and the element is told what it is. `onToggle` syncs the
-     other way, because the summary is still what the pointer and the keyboard operate;
-     without it the element and the state disagree the first time somebody clicks the
-     trigger. */
-  /* Both menus store *where* they were opened rather than whether they are open, so
-     "close on navigation" is derived instead of being an effect that writes state back
-     after the route has already changed. `react-hooks/set-state-in-effect` rejects the
-     effect version, and it is right to: the render after a route change would paint the
-     menu still open and then close it. This way the menu is shut in the same render the
-     path changes in, including on the browser's own back button. */
-  const [learnAt, setLearnAt] = useState<string | null>(null);
-  const [panelAt, setPanelAt] = useState<string | null>(null);
-  const learnOpen = learnAt === pathname;
-  const open = panelAt === pathname;
-  const setLearnOpen = (next: boolean) => setLearnAt(next ? pathname : null);
-  const setOpen = (next: boolean) => setPanelAt(next ? pathname : null);
-  const learnRef = useRef<HTMLDetailsElement>(null);
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   useEffect(() => {
-    if (!learnOpen) return;
-    /* `pointerdown`, not `click`: a reader who presses inside the page and releases over
-       the menu should not have the menu treated as the target, and pointerdown is also
-       what feels immediate. Capture phase so a handler that stops propagation somewhere
-       in the page cannot leave the menu stuck open. */
-    /* `setLearnAt` rather than the `setLearnOpen` helper: the helper closes over
-       `pathname` and is a new function every render, so depending on it would tear down
-       and rebuild both listeners on each one. The raw setter is stable. */
-    const onPointerDown = (event: PointerEvent) => {
-      if (!learnRef.current?.contains(event.target as Node)) setLearnAt(null);
+    if (!docsOpen) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!docsRef.current?.contains(event.target as Node)) setDocsAt(null);
     };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setLearnAt(null);
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setDocsAt(null);
     };
-    document.addEventListener("pointerdown", onPointerDown, true);
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", closeOutside, true);
+    document.addEventListener("keydown", closeOnEscape);
     return () => {
-      document.removeEventListener("pointerdown", onPointerDown, true);
-      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", closeOutside, true);
+      document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [learnOpen]);
-
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(href + "/");
+  }, [docsOpen]);
 
   return (
-    /* z-50, and it is the top of a ladder rather than a number picked to win an
-       argument. One rung per kind of thing, so the next sticky element has a number to
-       pick instead of another 50:
-
-         50  the header — the only chrome that outranks a page
-         40  page chrome  (a sticky filter bar)
-         30  section chrome (a sticky group heading inside a list)
-         20  card furniture (a favourite star, an author link)
-         10  a card's stretched hit target
-
-       Nothing inside a card may exceed 20. The Learn panel below carries `z-50` of its
-       own, which is a rank *within this header's* stacking context and not a second
-       claim on the page's. */
-    <header className="sticky top-0 z-50 border-b border-line/70 bg-void/80 backdrop-blur-md">
-      <div className="container-page flex h-16 items-center justify-between gap-4">
-        <Link href="/" className="font-display text-lg font-semibold tracking-tight">
+    <header className="sticky top-0 z-50 border-b border-line/70 bg-void/88 backdrop-blur-md">
+      <div className="container-page flex h-16 items-center gap-3">
+        <Link href="/" className="mr-auto font-display text-lg font-semibold tracking-tight">
           <span className="text-fg">Dark</span>
           <span className="text-cyan">Print</span>
         </Link>
 
-        {/* Three registry links, a menu, and one standalone link after it.
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary navigation">
+          {PRIMARY.map((item) => {
+            const action = item.href === "/upload";
+            return action ? (
+              <ButtonLink key={item.href} href={item.href} variant="outline" size="sm">
+                {item.label}
+              </ButtonLink>
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cx(
+                  "rounded-md px-2.5 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm",
+                  isActive(item.href) ? "text-cyan" : "text-muted hoverable:hover:text-fg",
+                )}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
 
-            The width problem this solves was real: nine items in 976px at `lg` had the row
-            tightening its own padding and type to fit, and the longest label in the set
-            ("How a blueprint is graded") was added without re-measuring. Five of the nine
-            are behind one 5-character trigger now, so the row has slack at every
-            breakpoint instead of being tuned to one.
+          <span aria-hidden className="mx-1 h-5 w-px bg-line xl:mx-2" />
 
-            A `<details>` rather than a button and a popover, because keyboard operation,
-            the toggle and focus order come from the element, and `More`, `DownloadPanel`
-            and `ForkAction` already use the same primitive elsewhere. What it does *not*
-            give is a menu that closes when a reader clicks away from it or presses
-            Escape, and the first version of this row claimed it closed "on navigation
-            because the page unmounts it", which is wrong: client-side routing does not
-            unmount the header. Both are handled in the effects above. */}
-        <nav className="hidden items-center gap-1 lg:flex">
-          {/* Every `hover:` in this row is gated behind `hoverable`
-              (`@custom-variant hoverable (@media (hover: hover) and (pointer: fine))`,
-              declared in `app/globals.css`). A phone has no hover and still MATCHES
-              `:hover` on tap, then holds it until the next tap lands somewhere else — so
-              an ungated nav link stays lit all the way to the route change, which reads
-              as "still loading" on the item the reader just chose. */}
-
-          {REGISTRY.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cx(
-                "rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm",
-                isActive(item.href) ? "text-cyan" : "text-muted hoverable:hover:text-fg",
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
-
-          {/* First of the row's two rules: what the registry holds, then the pages about it. */}
-          <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-line xl:mx-2" />
-
-          {/* ── The menu sits between the registry and the setup routes ──
-              The author gave the order outright on 2026-08-07: "Blueprints, Nodes, Ontology
-              | Learn | The DarkPrint Skill, Connect via MCP."
-
-              That is the third arrangement in a day and the last one is the one that reads:
-              three things the registry holds, then the pages about them, then the two things
-              you install. Each rule separates a kind from a kind, and the menu — the only
-              item in the row that opens rather than navigates — is in the middle where its
-              panel hangs clear of both edges.
-
-              What this replaced, so the reasoning is not lost: Learn led the row for one
-              revision, beside a Home link that came out in the same instruction, and the
-              note here argued the single divider then split "the ways in" from "the
-              destinations". Two dividers make that reading unnecessary.
-
-              The `<details>` lost `border-l border-line pl-3` when it moved, and stays
-              without it: that padding was a second divider doing the same job as a `<span>`,
-              and the row now draws both of its rules the same way. `relative` stays — the
-              panel is positioned against it. */}
           <details
-            ref={learnRef}
-            open={learnOpen}
-            onToggle={(e) => setLearnOpen(e.currentTarget.open)}
+            ref={docsRef}
+            open={docsOpen}
+            onToggle={(event) => setDocsAt(event.currentTarget.open ? pathname : null)}
             className="group relative"
           >
             <summary
               className={cx(
-                "flex cursor-pointer list-none items-center gap-1.5 rounded-md px-2 py-2 text-[13px] transition-[transform,scale,color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97] xl:px-3 xl:text-sm [&::-webkit-details-marker]:hidden",
+                "flex cursor-pointer list-none items-center gap-1.5 rounded-md px-2.5 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm [&::-webkit-details-marker]:hidden",
                 LEARN.some((item) => isActive(item.href))
                   ? "text-cyan"
                   : "text-muted hoverable:hover:text-fg",
               )}
             >
               Learn
-              {/* An SVG chevron and not `▾`. A text glyph sits on the baseline of its own
-                  em square with the box's slack underneath it, so rotating the character
-                  180° pivots it about a centre that is not its own — the caret visibly
-                  drifts downward as it flips. A path drawn in a 12×12 box rotates about
-                  the middle of the mark.
-
-                  The list names `rotate` explicitly, for the reason
-                  `components/ui/Button.tsx` records at length: Tailwind v4 compiles
-                  `rotate-180` to the standalone CSS property `rotate: 180deg`, and an
-                  EXPLICIT `transition-[…]` naming only `transform` does not cover it.
-                  The bare `transition-transform` shorthand is not that trap — measured in
-                  the compiled stylesheet, v4 expands it to
-                  `transform, translate, scale, rotate`, so the span this replaced did
-                  ramp. The trap is only ever a hand-written list. */}
               <svg
                 aria-hidden
                 viewBox="0 0 12 12"
@@ -395,19 +128,12 @@ export function SiteHeader() {
                 strokeWidth={1.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="transition-[transform,rotate] duration-[160ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-open:rotate-180"
+                className="transition-transform duration-150 group-open:rotate-180"
               >
                 <path d="M3 4.75 6 7.75 9 4.75" />
               </svg>
             </summary>
-            {/* `shadow-lg` computed to rgba(0,0,0,0.1) over `--color-void` #05060d — a
-                shadow the ground cannot show — and `bg-void` is the page's own colour, so
-                the site's only dropdown was separated from what it covers by a single 1px
-                hairline. It now sits on `surface-2` with a shadow dark enough for this
-                ground, and `menu-panel` gives it the `@starting-style` entrance declared
-                in `app/globals.css`: it unfolds from its top-right corner, which is the
-                corner it hangs from. */}
-            <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-lg border border-line-bright bg-surface-2 py-1 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.85)]">
+            <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-line-bright bg-surface-2 py-2 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.85)]">
               {LEARN.map((item) => (
                 <Link
                   key={item.href}
@@ -417,125 +143,54 @@ export function SiteHeader() {
                     isActive(item.href) ? "text-cyan" : "text-muted hoverable:hover:text-fg",
                   )}
                 >
+                  <span className="mr-3 font-mono text-[10px] text-dim">{item.step}</span>
                   {item.label}
                 </Link>
               ))}
             </div>
           </details>
-
-          {/* The row's second divider, on the author's instruction 2026-08-07: "add a
-              separator between 'ontology' and 'The DarkPrint skill'". Two rules in the row
-              now, and they cut it into the three kinds of destination it actually holds:
-              the reading path, the three registry indexes, and the two setup actions. That
-              is the same rule doing the same job twice rather than a second device. */}
-          <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-line xl:mx-2" />
-
-          {/* After the registry, on the author's instruction. A setup action is not
-              something to read, so it does not belong inside a menu called Learn. */}
-          {STANDALONE.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cx(
-                "rounded-md px-2 py-2 text-[13px] transition-colors xl:px-3 xl:text-sm",
-                isActive(item.href) ? "text-cyan" : "text-muted hoverable:hover:text-fg",
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
         </nav>
 
-        {/* The one action the chrome carries, and it is now the brightest thing in it.
-            ------------------------------------------------------------
-            Two things were wrong here. The 40px of highest contrast in the header was a
-            32px magenta avatar reading MV inside a cyan focus ring — a signed-in
-            identity on a site with no auth at all, wearing the name of `AUTHORS.mara`,
-            a seeded persona in `lib/data/users.ts`. This site's doctrine is strict about
-            exactly that: `ContentCard` marks a seeded download count with ◐ and the
-            footer prints "seeded community". So the header cannot claim a session it
-            does not have. It is gone, with its imports.
-
-            And the one real action lived inside `hidden … lg:flex`, so a phone got a
-            header with no affordance in it whatsoever — a wordmark and a hamburger. It
-            is out of that wrapper and visible at every width, `primary` rather than
-            `outline`, sized `sm` and stepping up to the `md` geometry (h-10 px-4) at
-            `lg` where there is room for it.
-
-            `/upload` validates and scores a bundle in the browser and stops there;
-            publishing has no backend. A "+ Share" label on every page would be the one
-            promise the site cannot keep — and the label is "Upload blueprint", the
-            same words the phone panel, the footer and both landing doors use, so one
-            destination has one name everywhere. `nav.test.ts` holds them together, and
-            it holds the page's own `h1` and `<title>` to the same words. Renamed from
-            "Upload blueprint" on the author's instruction: the noun a reader is
-            carrying is a blueprint, and "bundle" is the word for the folder it arrives
-            in rather than for the thing they made. */}
-        <div className="flex items-center gap-2">
-          <ButtonLink
-            href="/upload"
-            variant="primary"
-            size="sm"
-            className="lg:h-10 lg:gap-2 lg:px-4"
-          >
-            Upload blueprint
-          </ButtonLink>
-
-          <button
-            className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted transition-[transform,scale,color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:text-fg hoverable:active:scale-[0.97] lg:hidden"
-            onClick={() => setOpen(!open)}
-            aria-label="Toggle menu"
-            aria-expanded={open}
-          >
-            <span className="text-xl">{open ? "✕" : "☰"}</span>
-          </button>
-        </div>
+        <ButtonLink href="/blueprints" variant="primary" size="sm" className="lg:hidden">
+          Find one
+        </ButtonLink>
+        <button
+          type="button"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors hoverable:hover:text-fg lg:hidden"
+          onClick={() => setMobileAt(mobileOpen ? null : pathname)}
+          aria-label="Toggle menu"
+          aria-expanded={mobileOpen}
+        >
+          <span className="text-xl" aria-hidden>{mobileOpen ? "✕" : "☰"}</span>
+        </button>
       </div>
 
-      {open && (
-        /* The panel is scrollable and capped below the header's own 4rem, because seven
-           items plus two headings plus the validate row is taller than a 640px phone in
-           landscape and the last item was unreachable under a `position: sticky` header.
-           `overflow-y: auto` on a `svh`-based cap is what keeps it reachable; do not swap
-           it for `h-screen`, which on iOS measures the viewport without the browser
-           chrome that is covering the bottom of it. */
+      {mobileOpen && (
         <div className="max-h-[calc(100svh-4rem)] overflow-y-auto border-t border-line bg-void lg:hidden">
-          <div className="container-page flex flex-col py-3">
-            {/* A `nav` per group, named by the same word the reader sees. The label is a
-                `p` and not a heading: the panel opens above the page's own `h1`, and a
-                heading here would put two levels of outline in front of it. */}
-            {/* An unheaded Home row led this panel until 2026-08-07. It came out with the
-                wide row's, and `GROUPS`' note about why it was unheaded goes with it: the
-                panel now opens on the "Registry" heading, which is a category rather than
-                a destination and needs no exemption. The wordmark stays visible above the
-                open panel, so the way home has not moved. */}
-            {GROUPS.map((group) => (
+          <div className="container-page grid gap-1 py-3 sm:grid-cols-2">
+            {MOBILE_GROUPS.map((group) => (
               <nav key={group.id} aria-label={group.title} className="py-2">
                 <p className="px-3 pb-1 font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
                   {group.title}
                 </p>
-                {NAV.filter((item) => item.group === group.id).map((item) => (
+                {mobileLinks(group.id).map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={() => setOpen(false)}
+                    onClick={() => setMobileAt(null)}
                     className={cx(
                       "block rounded-md px-3 py-2.5 text-sm",
                       isActive(item.href) ? "text-cyan" : "text-muted",
                     )}
                   >
+                    {"step" in item && (
+                      <span className="mr-3 font-mono text-[10px] text-dim">{item.step}</span>
+                    )}
                     {item.label}
                   </Link>
                 ))}
               </nav>
             ))}
-            <Link
-              href="/upload"
-              onClick={() => setOpen(false)}
-              className="mt-2 border-t border-line px-3 pb-1 pt-4 text-sm text-cyan"
-            >
-              Upload blueprint
-            </Link>
           </div>
         </div>
       )}

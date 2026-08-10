@@ -45,9 +45,15 @@ function trackedSourceFiles(): string[] {
 
 describe("source hygiene", () => {
   it("contains no raw NUL byte in any tracked .ts or .tsx file", () => {
-    const offenders = trackedSourceFiles().filter((path) =>
-      readFileSync(join(REPO_ROOT, path)).includes(0),
-    );
+    const offenders = trackedSourceFiles().filter((path) => {
+      const absolute = join(REPO_ROOT, path);
+      try {
+        return readFileSync(absolute).includes(0);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+        throw error;
+      }
+    });
     expect(
       offenders,
       offenders.length === 0

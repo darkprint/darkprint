@@ -11,6 +11,7 @@ import { RouteBoxLink } from "@/components/ui/RouteBoxLink";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SourcePanel } from "@/components/ui/SourcePanel";
+import { OntologyCatalog } from "@/components/ontology/OntologyCatalog";
 
 /* ============================================================
    /spec/ontology — layer 3, and the answer to the author's
@@ -58,7 +59,7 @@ import { SourcePanel } from "@/components/ui/SourcePanel";
    ============================================================ */
 
 export const metadata: Metadata = {
-  title: "The ontology, the vocabulary both draw from",
+  title: "Ontology",
   description:
     "Layer 3 of a DarkPrint blueprint: one versioned vocabulary of phases, node types, data types, tool capabilities and risk markers, which is where every identifier in the graph and the cards is finally resolved.",
 };
@@ -142,7 +143,7 @@ export default function SpecOntologyPage() {
         <div className="container-page flex flex-col gap-10">
           <div className="flex flex-col gap-3">
             <span className="label-lead">The vocabulary</span>
-            <h2 id="vocabulary-heading" className={BAND_H2}>
+            <h2 id="vocabulary-heading" className={`${BAND_H2} scroll-mt-24`}>
               {core.length} curated terms, versioned as a whole
             </h2>
           </div>
@@ -174,37 +175,26 @@ export default function SpecOntologyPage() {
               {coreOf("risk-marker")} risk markers.
             </p>
             <p>
-              This archive reads its bundles against those {core.length} plus{" "}
-              {local.length === 1
-                ? "one term of its own"
-                : `${local.length} terms of its own`}
-              , listed below. A namespaced term is resolvable wherever its
-              definition travels and is no part of the curated set, so the count
-              above is the one two authors can hold each other to.
-            </p>
-            <p>
-              The phases are closed and stay in lifecycle order:{" "}
-              {phases.map((phase, i) => (
+              The phases are closed and stay in lifecycle order: {phases.map((phase, i) => (
                 <span key={phase.id}>
                   {i > 0 && ", "}
                   <Id>{phase.id}</Id>
                 </span>
-              ))}
-              . A card names any number of them, including none, and a node that
-              stands outside all five is complete rather than short of
-              something.
-            </p>
-            <p>
-              Anyone can coin a node type or a risk marker inside their own
-              namespace without touching the curated core, on three conditions:
-              the term declares a <Id>broader</Id> that reaches a core term, it
-              is not a phase, and a risk marker prices itself or counts zero. A
-              bundle whose cards use one carries the definition in the folder,
-              because a card naming a term the reader cannot resolve does not
-              produce the numbers its own README prints.
+              ))}. This archive reads its bundles against the core plus{" "}
+              {local.length === 1
+                ? "one term of its own"
+                : `${local.length} terms of its own`}
+              . Local node types and risk markers must resolve to a core parent;
+              their definitions travel with the bundle, while phases remain closed.
             </p>
           </div>
         </div>
+      </section>
+
+      {/* The former `/ontology` index now lives here: the five kinds, every term and the
+          governance model are part of the same Learn stop as the motivation above. */}
+      <section className="border-t border-line bg-surface/40">
+        <OntologyCatalog showHeading={false} />
       </section>
 
       {/* ---------- the one term this archive coined for itself ----------
@@ -230,7 +220,7 @@ export default function SpecOntologyPage() {
           <div className="container-page flex flex-col gap-10">
             <div className="flex flex-col gap-3">
               <span className="label-lead">The overlay</span>
-              <h2 id="overlay-heading" className={BAND_H2}>
+              <h2 id="overlay-heading" className={`${BAND_H2} scroll-mt-24`}>
                 {overlayTerm === undefined
                   ? `The ${local.length} terms this archive added for itself`
                   : "The one term this archive added for itself"}
@@ -301,8 +291,8 @@ export default function SpecOntologyPage() {
                   </>
                 )}
                 <p className="text-sm">
-                  <SpecLink href="/ontology">Read the full vocabulary</SpecLink>, with every
-                  term, its subsumption tree, and which cards use it.
+                  The full vocabulary above lists every term, its subsumption tree, and
+                  which cards use it.
                 </p>
               </div>
 
@@ -328,15 +318,15 @@ export default function SpecOntologyPage() {
         <div className="container-page flex flex-col gap-10">
           <div className="flex flex-col gap-3">
             <span className="label-lead">The checks</span>
-            <h2 id="ontology-checks-heading" className={BAND_H2}>
-              What the engine checks about the vocabulary
+            <h2 id="ontology-checks-heading" className={`${BAND_H2} scroll-mt-24`}>
+              What the engine checks about the ontology
             </h2>
           </div>
           <div className="flex flex-col gap-4">
             <CheckLegend />
             <CheckTable
               rows={ONTOLOGY_ROWS}
-              caption="What the engine checks about the vocabulary itself"
+              caption="What the engine checks about the ontology itself"
             />
           </div>
         </div>
@@ -388,7 +378,11 @@ export default function SpecOntologyPage() {
                     Next <span aria-hidden>&rarr;</span>
                   </>
                 }
-                title="Design your blueprint"
+                /* The destination is unchanged — `/build` is still stop 04 — but its
+                   subject narrowed when the page split, so the box says what is actually
+                   there. "Design your blueprint" described the authoring half, which is on
+                   `/skill` now. */
+                title="Customize the starter blueprint"
               />
             }
           />

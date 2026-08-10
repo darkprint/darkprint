@@ -173,10 +173,10 @@ export function SpecPager({
 
   return (
     <nav
-      aria-label={`The spec language, in ${SPEC_SEQUENCE.length} parts`}
+      aria-label={`Learn, in ${SPEC_SEQUENCE.length} parts`}
       className="flex flex-col gap-6 border-t border-line pt-8"
     >
-      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px]">
+      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] xl:hidden">
         {SPEC_SEQUENCE.map((page, i) => (
           <li key={page.href} className="flex items-center gap-2">
             {i > 0 && (

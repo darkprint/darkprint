@@ -23,16 +23,16 @@ import {
   CRITERIA_SUSPECTED_CODE,
   CRITERIA_UNANCHORED_CODE,
 } from "@/lib/criteria-state";
-import { compact, prettyDate } from "@/lib/format";
+import { prettyDate } from "@/lib/format";
 import { AuthorChip } from "@/components/ui/Avatar";
 import { KindBadge } from "@/components/ui/Badge";
-import { ButtonLink } from "@/components/ui/Button";
 import { AutonomyMeter } from "@/components/ui/AutonomyMeter";
 import { FavoriteStar } from "@/components/ui/FavoriteStar";
 import { TagPill } from "@/components/ui/TagPill";
 import { ScoreRadar } from "@/components/ui/ScoreRadar";
 import { MetricBars } from "@/components/ui/MetricBars";
 import { More } from "@/components/ui/More";
+import { SideRail, type SideRailItem } from "@/components/ui/SideRail";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
 import { absencesFor } from "@/components/panes/absences";
 import { buildPaneModel, type PaneNodeInput } from "@/components/panes/build";
@@ -42,8 +42,8 @@ import { BundlePanel, type BundleNode } from "@/components/blueprint/BundlePanel
 import { DownloadPanel, type DownloadCard } from "@/components/blueprint/DownloadPanel";
 import { Comments } from "@/components/blueprint/Comments";
 import { ForkAction } from "@/components/blueprint/ForkAction";
-import { CloneMenu } from "@/components/blueprint/CloneMenu";
 import { ToolScopes } from "@/components/blueprint/Requirements";
+import { EvidenceLayers } from "@/components/blueprint/EvidenceLayers";
 
 /** Every slug is known at build time; an unknown one is a 404, not an on-demand render. */
 export const dynamicParams = false;
@@ -60,6 +60,35 @@ export async function generateMetadata({
   if (!bp) return { title: "Blueprint not found" };
   return { title: bp.title, description: bp.summary };
 }
+
+/**
+ * The rail every blueprint page draws, on the left.
+ *
+ * This was a `PageContents` panel at the foot of the header, and the author asked it into a
+ * rail: "In each blueprint we have `On this blueprint` as a panel. Make it on the left as
+ * you did for the pages in Learn." Same six destinations, same order; what changes is that
+ * a reader four screens down can still see where they are, which is the whole reason the
+ * Learn pages have one.
+ *
+ * A module constant rather than something derived per bundle, because these six sections
+ * are the page's own structure and not the blueprint's: every slug renders all six, and the
+ * two that live outside this file — `#evidence` in `EvidenceLayers` and `#community-notes`
+ * in `Comments` — are mounted unconditionally alongside the four declared here. A bundle
+ * with no comments still draws the section that says so.
+ *
+ * No `active`. `SideRail` reads that as "no row is the page you are on", which is the truth
+ * here: all six are anchors into the page a reader is already reading. Lighting one would
+ * need a scroll-spy, and a rail that claims a position it is not tracking is worse than a
+ * rail that claims none.
+ */
+const BLUEPRINT_SECTIONS: readonly SideRailItem[] = [
+  { href: "#overview", label: "Overview", step: "01" },
+  { href: "#blueprint-workspace", label: "Graph and cards", step: "02" },
+  { href: "#evidence", label: "Evidence", step: "03" },
+  { href: "#use-this-blueprint", label: "Use this release", step: "04" },
+  { href: "#blueprint-source", label: "Source", step: "05" },
+  { href: "#community-notes", label: "Community notes", step: "06" },
+];
 
 /** Small mono heading for the in-page panels. */
 function PanelLabel({ children }: { children: React.ReactNode }) {
@@ -178,6 +207,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
   const otherNotes = notes.filter((d) => !explainedCodes.has(d.code));
 
   return (
+    <SideRail label="On this blueprint" items={BLUEPRINT_SECTIONS} ariaLabel="On this blueprint">
     <div className="container-page py-10 lg:py-12">
       {/* ---------- Header ---------- */}
       <header className="flex flex-col gap-5">
@@ -190,9 +220,12 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
         </nav>
 
         <div className="flex flex-col gap-3">
-          <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
-            {bp.title}
-          </h1>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
+              {bp.title}
+            </h1>
+            <FavoriteStar id={`blueprint:${bp.slug}`} count={bp.votes} seeded />
+          </div>
 
           {/* Provenance and the two actions, directly under the title rather than below
               the summary and the collapsed description. Who made this, when, and how to
@@ -204,73 +237,9 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             <span className="font-mono text-xs text-dim">
               {prettyDate(bp.createdAt)}
             </span>
-            {/* This line sits beside the author and the date and reads as a fact about
-                the artefact. Doc 2 §0.4: no counter produced any of these three. Votes
-                and Comments joined Downloads here once the "Registry stats" panel that
-                used to hold them was removed — same emerald accent across all three,
-                since they are the same kind of fact. The visible "◐ seeded" pill that
-                used to sit beside Downloads is gone (the author asked for it removed
-                from this row specifically), and the Score panel's own "seeded" paragraph
-                that used to carry the word elsewhere on this page is gone too (panel
-                reorg pass). A `title` on the two seeded figures keeps the word in the
-                rendered page honestly — `components/ui/autonomy-surfaces.test.ts` holds
-                every file that reads `.votes`/`.downloads` to saying so somewhere in it
-                — without reintroducing a visible marker nobody asked to see back. */}
-            <span
-              className="font-mono text-xs text-emerald"
-              title="Seeded, no counter stands behind it"
-            >
-              ↓ {compact(bp.downloads)} downloads
+            <span className="font-mono text-xs text-dim" title={bp.digest}>
+              exact digest {bp.digest.slice(0, 12)}…
             </span>
-            <span
-              className="font-mono text-xs text-emerald"
-              title="Seeded, no ballot stands behind it"
-            >
-              ▲ {compact(bp.votes)} votes
-            </span>
-            <span className="font-mono text-xs text-emerald">
-              {bp.comments.length} comments
-            </span>
-            {/* Fork first, download second — spec §3.2, both grouped at the row's right
-                end. `ForkAction` is the disclosure spec §1 locks in rather than a second
-                file download of its own; the button beside it is the one real download
-                this row promises. */}
-            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-              <ForkAction />
-              {/* The topology, not the runnable pipeline: doc 2 §11 item 10's
-                  command-line artefact is `factory.dot`, which the sidebar
-                  `DownloadPanel` still leads with. This is a second, quicker entry point
-                  to `blueprint.dot` specifically, so the label and the file it saves have
-                  to name the same thing — `topologyHref`/`TOPOLOGY_DOT`, not
-                  `factoryHref`/`FACTORY_DOT`. */}
-              <ButtonLink href={topologyHref} download={TOPOLOGY_DOT} prefetch={false}>
-                Download blueprint.dot
-              </ButtonLink>
-              {/* The whole folder, one click from the top of the page. It cannot live only
-                  inside `DownloadPanel`: that panel sits behind `<More summary="Download">`
-                  at the foot of this page, so everything in it is two clicks away, and this
-                  is the affordance `ForkAction`'s own "Take the whole folder from Download"
-                  link has finally been pointing at.
-
-                  LAST IN THE GROUP ON PURPOSE, and it is a layout constraint rather than a
-                  preference. Its panel is `right-0`-anchored, and only the group's final
-                  item is guaranteed to end at the group's right edge on whatever line the
-                  wrap puts it: `justify-end` packs every wrapped line to the right, so the
-                  last item's right edge is the content column's right edge at every width.
-                  Second in the group, this measured a 560px viewport wrapping it to the
-                  head of a line — trigger at 206→343 — and 73px of a 416px panel hanging
-                  off the left of the screen. Last, it measured wholly on screen at 320,
-                  360, 390, 430, 480, 520, 560, 640, 768, 900, 1024, 1280 and 1440.
-
-                  Both dropdowns in this row close each other
-                  (`components/ui/menu-group.ts`): their panels are wider than the gap
-                  between the triggers, so with both open the second covers the first. */}
-              <CloneMenu
-                kind="blueprint"
-                command={clone.command}
-                cliCommand={clone.cliCommand}
-              />
-            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -287,7 +256,6 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               autonomy={bp.autonomy}
               contributions={bp.analysis.autonomy.contributions}
             />
-            <FavoriteStar id={`blueprint:${bp.slug}`} className="ml-auto" />
           </div>
           {/* Full width: same ask as `SectionHeading`'s lead. */}
           <p className="text-lg leading-relaxed text-muted">
@@ -328,7 +296,35 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             ))}
           </div>
         )}
+
       </header>
+
+      <section id="overview" aria-labelledby="fit-title" className="mt-10 scroll-mt-24">
+        <article className="panel p-5">
+          <PanelLabel>Overview</PanelLabel>
+          <h2 id="fit-title" className="mt-2 font-display text-xl font-semibold text-fg">
+            At a glance
+          </h2>
+          <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3 text-sm sm:grid-cols-4">
+            <div>
+              <dt className="text-dim">Domain</dt>
+              <dd className="mt-1 text-fg">{bp.category}</dd>
+            </div>
+            <div>
+              <dt className="text-dim">Shape</dt>
+              <dd className="mt-1 text-fg">{bp.graph.nodes.length} nodes · {bp.graph.edges.length} handoffs</dd>
+            </div>
+            <div>
+              <dt className="text-dim">Tool scopes</dt>
+              <dd className="mt-1 text-fg">{bp.requiredTools.length}</dd>
+            </div>
+            <div>
+              <dt className="text-dim">Release</dt>
+              <dd className="mt-1 font-mono text-[12px] text-fg">{bp.digest.slice(0, 12)}…</dd>
+            </div>
+          </dl>
+        </article>
+      </section>
 
       {/* ---------- Body ---------- */}
       {/* Panel reorg spec §A2, revised three times: the Score card rode in
@@ -418,7 +414,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           still the first `lg:col-span-2` and still precedes the mount, and the aside still
           follows it. */}
       <div className="mt-10 grid gap-8 lg:grid-cols-3">
-        <div className="flex min-w-0 flex-col gap-8 lg:col-span-2">
+        <div id="blueprint-workspace" className="scroll-mt-24 flex min-w-0 flex-col gap-8 lg:col-span-2">
         {/* The graph and the card skeleton, consolidated: doc 2 §5.1's pane 1 and pane 2, the
             first thing in the body after the header. Clicking a node — or picking one from
             the dropdown beside the card skeleton — moves the same `selection` both panes
@@ -471,18 +467,6 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             <div className="flex justify-center">
               <ScoreRadar metrics={bp.metrics} size={280} />
             </div>
-            {/* `audit` is what makes this card a glance rather than a second audit.
-                The explainability panel below prints the engine's rationale for
-                Autonomy and for Security verbatim, and this card was printing the
-                same two strings under its two computed rows, word for word, one
-                screen away. Handed the raw reading and the marker count, the
-                Security row states where the blueprint sits on the engine's own
-                0–4 scale instead of restating the subtraction that got it there.
-                `raw` and not `level`: the bar beside it is a rescale of `raw`, and
-                a rounded level printed next to it disagreed with the bar on four
-                of these nine pages (see `ScoreAudit`). The four seeded rows are
-                untouched: their detail carries the seeded marker and belongs
-                beside the figure. */}
             <MetricBars
               metrics={bp.metrics}
               autonomy={bp.autonomy}
@@ -568,6 +552,58 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
       {/* Comments and the download, full width under both columns. Community notes
           "stay like now", per the author. */}
       <div className="mt-8 flex flex-col gap-8">
+        <EvidenceLayers blueprint={bp} />
+
+        <details
+          id="use-this-blueprint"
+          className="group scroll-mt-24 rounded-xl border border-cyan/35 bg-surface p-5 sm:p-7"
+        >
+          <summary className="flex cursor-pointer list-none items-start justify-between gap-5 [&::-webkit-details-marker]:hidden">
+            <div className="max-w-2xl">
+              <PanelLabel>Exact release</PanelLabel>
+              <h2 className="mt-2 font-display text-2xl font-semibold text-fg">Use this blueprint</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                Take the complete bundle, adapt it locally, and validate the result before
+                you run or publish it. DarkPrint distributes these files; your own harness
+                decides how to execute them.
+              </p>
+            </div>
+            <span className="mt-1 inline-flex shrink-0 items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-cyan">
+              <span className="group-open:hidden">Show files</span>
+              <span className="hidden group-open:inline">Hide files</span>
+              <span
+                aria-hidden
+                className="text-lg transition-transform duration-150 group-open:rotate-45"
+              >
+                +
+              </span>
+            </span>
+          </summary>
+          <div className="mt-5 border-t border-line pt-5">
+            <div className="flex justify-end">
+              <ForkAction />
+            </div>
+            <p className="my-4 break-all font-mono text-[11px] text-dim">
+              digest {bp.digest}
+            </p>
+            <DownloadPanel
+              topologyHref={topologyHref}
+              readmeHref={bundleHref(bp.slug, BUNDLE_README)}
+              agentsHref={bundleHref(bp.slug, BUNDLE_AGENTS)}
+              {...(vocabulary === undefined
+                ? {}
+                : {
+                    vocabulary: {
+                      href: bundleHref(bp.slug, vocabulary.file),
+                      termIds: vocabulary.termIds,
+                    },
+                  })}
+              cards={downloadCards}
+              clone={clone}
+            />
+          </div>
+        </details>
+
         {/* ---------- the file itself, at the width the file needs ----------
             The author asked for the `<slug>/blueprint.dot` panel to be BIGGER, for the
             important tag to light up in blue, and — this pass — for the highlight to be
@@ -605,33 +641,13 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             `Download` disclosure a few hundred pixels below, and two buttons for the same
             bytes is two answers to one question. `/spec/topology`, which has no such
             disclosure, passes one. */}
-        <DotBreakdown source={bp.graph.dot} title={`${bp.slug}/${paneModel.dotFile}`} />
+        <div id="blueprint-source" className="scroll-mt-24">
+          <DotBreakdown source={bp.graph.dot} title={`${bp.slug}/${paneModel.dotFile}`} />
+        </div>
 
         <Comments comments={bp.comments} />
-
-        {/* Doc 2 §11 item 10: the bundle as files, generated at build time under
-            `public/bundles/<slug>/` and linked here. Its own disclosure, collapsed by
-            default, at the end of the page's content. Bundle used to share this
-            `<More>` and now sits in the right column beside Score, so this one holds
-            only the download. */}
-        <More summary="Download">
-          <DownloadPanel
-            topologyHref={topologyHref}
-            readmeHref={bundleHref(bp.slug, BUNDLE_README)}
-            agentsHref={bundleHref(bp.slug, BUNDLE_AGENTS)}
-            {...(vocabulary === undefined
-              ? {}
-              : {
-                  vocabulary: {
-                    href: bundleHref(bp.slug, vocabulary.file),
-                    termIds: vocabulary.termIds,
-                  },
-                })}
-            cards={downloadCards}
-            clone={clone}
-          />
-        </More>
       </div>
     </div>
+    </SideRail>
   );
 }

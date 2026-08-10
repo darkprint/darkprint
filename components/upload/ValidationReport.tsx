@@ -331,7 +331,7 @@ export function ValidationReport({
               {/* Security */}
               <div className="panel flex flex-col gap-3 bg-surface-2/40 p-5">
                 <div className="flex items-center justify-between">
-                  <span className={LABEL}>Security</span>
+                  <span className={LABEL}>Static risk exposure</span>
                   <SourceBadge source="auto" />
                 </div>
                 <div className="flex items-baseline gap-1.5">

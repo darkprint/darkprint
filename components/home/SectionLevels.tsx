@@ -1,5 +1,3 @@
-"use client";
-
 /* ============================================================
    Rung 3 of doc 2 §2.1 — self-localisation. The rung the site was
    missing, and the reason a cold tester could not read the old one:
@@ -90,9 +88,7 @@ import {
 } from "@/components/viz";
 import { arrowHeadPath } from "@/components/viz/Glyphs";
 import { returnLanePath } from "@/components/graph/return-lane";
-import { useReveal } from "@/components/viz/useReveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { cx } from "@/lib/format";
 
 type Level = {
   n: 1 | 2 | 3 | 4;
@@ -584,26 +580,13 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
   },
 };
 
-/**
- * One level: its words on one side, its drawing on the other, sides alternating.
- *
- * Its own component because each row observes its own arrival. `useReveal` reports
- * `static` on the server, without JS and under reduced motion, and `shown` is true in
- * all three, so the row is at rest and legible before any script runs.
- */
-function LevelRow({ level, flip }: { level: Level; flip: boolean }) {
-  const { ref, shown } = useReveal<HTMLLIElement>({ amount: 0.15 });
+/** One comparison row. Keeping every drawing on the same side makes changes scannable. */
+function LevelRow({ level }: { level: Level }) {
   const drawing = DRAWINGS[level.n];
 
   return (
-    <li
-      ref={ref}
-      className={cx(
-        "grid items-center gap-6 transition duration-700 ease-out md:grid-cols-2 md:gap-10",
-        shown ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
-      )}
-    >
-      <div className={cx("flex flex-col gap-3", flip ? "md:order-2" : "md:order-1")}>
+    <li className="grid items-center gap-6 md:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.28fr)] md:gap-10">
+      <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
           <span className="inline-flex items-center rounded border border-line-bright bg-surface-3 px-2 py-0.5 font-mono text-sm text-fg">
             level {level.n}
@@ -621,8 +604,8 @@ function LevelRow({ level, flip }: { level: Level; flip: boolean }) {
       </div>
 
       <Sheet
-        className={cx(flip ? "md:order-1" : "md:order-2")}
-        bodyClassName="p-3 sm:p-4"
+        label={`level ${level.n} · who acts where`}
+        bodyClassName="p-4 sm:p-5"
         note={drawing.note}
       >
         {/* A `FlowScene` rather than a plain `Scene`, because `FLOW_CSS` is scoped to the
@@ -639,7 +622,7 @@ function LevelRow({ level, flip }: { level: Level; flip: boolean }) {
 
 export function SectionLevels() {
   return (
-    <section id="levels" className="bg-surface py-20 sm:py-28">
+    <section id="levels" className="scroll-mt-24 bg-surface py-20 sm:py-28">
       <div className="container-page">
         <SectionHeading
           eyebrow="Where you are today"
@@ -647,11 +630,23 @@ export function SectionLevels() {
           lead="Before the rest of this makes sense, find yourself on the list. It describes how far along a team is with agents, and where you land decides which problem you actually have."
         />
 
-        {/* Five drawings of the same job. The frame is identical in each, so what a
-            reader compares is who is standing on the path and nothing else. */}
+        <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 border-y border-line py-3 font-mono text-[10px] uppercase tracking-[0.12em] text-dim">
+          <span className="inline-flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full border border-violet bg-violet/25" />
+            person acts here
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full border border-cyan bg-cyan/25" />
+            agent runs phase
+          </span>
+          <span>↩ retry loop appears when the system closes it</span>
+        </div>
+
+        {/* One coordinate system, four times. Copy stays on the left and the drawing on
+            the right so the actor marks can be compared vertically without zig-zagging. */}
         <ol className="mt-12 flex flex-col gap-14 sm:gap-16">
-          {LEVELS.map((l, i) => (
-            <LevelRow key={l.n} level={l} flip={i % 2 === 1} />
+          {LEVELS.map((l) => (
+            <LevelRow key={l.n} level={l} />
           ))}
         </ol>
 

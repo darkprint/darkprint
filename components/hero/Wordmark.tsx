@@ -63,7 +63,6 @@
    ============================================================ */
 
 import Link from "next/link";
-import { ButtonLink } from "@/components/ui/Button";
 import {
   animate,
   createScope,
@@ -75,6 +74,7 @@ import {
   utils,
 } from "animejs";
 
+import { ButtonLink } from "@/components/ui/Button";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { FLOW, FLOW_SELECTOR, FlowEdge } from "@/components/viz";
 import { EASE_OUT } from "@/components/viz/easing";
@@ -97,7 +97,7 @@ const MARK = "DarkPrint";
  * reuse them as-is. Splitting the claim with markup would put its words in separate text
  * nodes, and `app/layout.tsx` carries the same string in its own metadata.
  */
-const CLAIM = "Autonomy you can read as a graph.";
+const CLAIM = "Reusable blueprints for agent workflows.";
 
 /* `SUPPORT` stood here — "DOT graphs of agent pipelines, the YAML card behind every node,
    and a score for how much autonomy each one takes." — and the author asked it out on
@@ -491,180 +491,21 @@ export function Wordmark() {
         className="mt-8 flex flex-wrap items-center justify-center gap-3"
       >
         <ButtonLink href="/blueprints" variant="primary" size="lg">
-          Browse the blueprints
+          Find a blueprint
         </ButtonLink>
         {/* "Design your own". The route's `h1`, its nav row and beat 5's door all say
             "design"; this button was the last surface still saying "build", and one act
             wearing two verbs across a single scroll is the reader's problem, not the
             copy's. */}
-        <ButtonLink href="/build" variant="outline" size="lg">
-          Design your own
+        {/* `/skill`, not `/build`, since the split on 2026-08-10: creating a blueprint is
+            the authoring skill and the goal brief, and both live there now. `/build` is the
+            worked sandbox, which is a Learn stop rather than the answer to this button. */}
+        <ButtonLink href="/skill" variant="outline" size="lg">
+          Create a blueprint
         </ButtonLink>
       </div>
 
-      {/* The command, moved here 2026-07-29 from the section's top-right corner —
-          directly under the claim once it was actually on screen, and below the two real
-          buttons since.
-
-          ── It is a different command now, and it runs ──
-          It read `$ npx darkprint setup` and wore a `ComingSoonBadge`, because no such
-          binary exists and doc 2 §0.4 does not let an invented command stand unmarked.
-          That put the landing's ONLY command, in the highest-attention position on the
-          site, on a thing a reader could not do. It now prints `SKILL_INSTALL_COMMAND`
-          (`lib/skill.ts`): the blueprint-writing skill installs today, out of this
-          repository, over git, and the honesty direction is the good one for once — a
-          claim getting truer rather than looser.
-
-          The badge came off with the old string, and it came off because the sentence it
-          qualified is gone, not because a chip looked tidier without it. Amber still has
-          exactly two sanctioned jobs sitewide; the SKILL chip has simply stopped needing
-          one of them.
-
-          What that paragraph could not anticipate is that the badge would come back on
-          2026-08-07 — on a second chip, beside a second command, for the MCP server this
-          one's old string used to imply. That is not the old mistake returning. The old
-          mistake was the landing's ONLY command being one nobody could run; there are two
-          now, the badge is on the one that cannot, and the one that can carries no badge
-          at all. See the two-chip block below for the placement rules.
-
-          The link target moved once, on the same day: `/install` split into `/skill` and
-          `/mcp`, and each chip opens the page for its own half.
-
-          `transition-[…]` is spelled out because bare `transition-colors` in Tailwind v4
-          includes `outline-color`, which fades the keyboard ring in over 150ms — a reader
-          tabbing at 80ms sees a half-strength ring. `scale` is named beside `transform`
-          because Tailwind v4 compiles `scale-[0.97]` to the standalone `scale` property,
-          which a list naming only `transform` does not cover.
-
-          ── Why the command is green ──
-          The author asked for "a shade of green" on the chip. It is `--color-emerald`,
-          the palette's only green, and no new token: a fourth accent invented for one
-          chip would be a fourth meaning to keep straight. `app/globals.css` records
-          emerald as "a figure read off the engine", which is a reading and not a command,
-          so this **extends** that meaning rather than reusing it — the common thread is
-          that emerald marks something the machine produces or accepts, an engine's own
-          register, as against cyan's "you can click this" and violet's "a person acts
-          here". The chip is still a link and still gets cyan's affordances by shape
-          (border, hover, press), not by colour. The argument is unchanged by the new
-          string, and stronger with it: the whole reason emerald was arguable here is that
-          this is the engine's own register, and the command now genuinely reaches it.
-
-          What used to sit beside the command, and what its removal did NOT license: the
-          paragraph here read "What must NOT go green is `ComingSoonBadge`", because amber
-          has exactly two sanctioned jobs sitewide and an emerald-tinted pill would have
-          spent one of them wrongly. That is still true everywhere the badge is still
-          printed. What changed is that this chip no longer prints one — see the head of
-          this comment — so there is no amber on this element to keep apart from the green.
-          The chip's fill stays the neutral `bg-surface-2/80` regardless: it was never
-          chosen to sit under a pill, it was chosen so the green is a frame and a text
-          colour rather than a filled button competing with the two real ones above it.
-
-          Contrast, measured (sRGB, WCAG 2.x), against the chip's real composite ground —
-          `bg-surface-2/80` (#0f121e at 80%) over the hero's void (#05060d) resolves to
-          #0d101b:
-            · `text-emerald` #34d399 on #0d101b … 9.89:1 — past AA 4.5:1 and AAA 7:1.
-            · `border-emerald/50` over the void … 3.22:1, and 3.03:1 against the chip's
-              own fill: both clear the 3:1 non-text floor, which the `border-line` this
-              replaced never did (1.37:1). 40% would have been 2.43:1, so 50 is the rung,
-              not a taste call.
-            · hover `border-emerald/75` … 5.4:1, comfortably above.
-          Hover still lands the text on `text-fg`, unchanged: brightening is the affordance
-          this chip already had, and the green frame keeps the register while it happens.
-
-          ── Spacing ──
-          `mt-6` (24px) was both off the canonical ladder and too tight under the CTA row:
-          the chip read as a third button. `mt-10` is 40px, the block tier, and it is the
-          smallest rung that separates the chip from the two buttons above without opening
-          a gap the eye reads as a section break. The timeline is unaffected — `cli` is a
-          mark on this element itself, not on a wrapper, so the extra margin cannot strand
-          a target; the beat still animates exactly the element a reader can click.
-
-          ── The new string is twice as long, so the chip has to be able to wrap ──
-          `npx skills@latest add Brotherhood94/darkprint` is 44 characters against the old
-          command's 19, and at 390 the hero's column is 358px wide: 46 monospace
-          characters at 12px do not fit on one line, and the lifecycle beat already shipped
-          41px of unreachable horizontal overflow from exactly this class of string
-          (`SectionLifecycle.tsx`, on `min-w-0`). `max-w-full` caps the chip at its
-          ── The gap above, 40 to 64 to 192 (2026-08-07) ──
-          `mt-10` was the block tier, chosen when there was ONE chip: a single line under
-          two buttons reads as a footnote to them at 40px. Two stacked chips are a group of
-          their own, so it went to 64, the next rung on the canonical ladder.
-
-          The author then asked for "much more space ... at least 3 times", and this is
-          exactly 3× that: 192px. It is deliberately OFF the ladder, which tops out at
-          80–112 for structural spacing, and the reason to write that down rather than
-          quietly round to 112 is that 112 is not what was asked for.
-
-          What it costs, measured rather than assumed: `Hero` is
-          `min-h-[calc(100svh-4rem)]` with `items-center`, so this block is centred in the
-          first viewport and 128 extra units of gap push the wordmark up and the commands
-          down by 64 each. The commands still land inside the fold on a 900px viewport and
-          fall below it on a short laptop, where they are one scroll away rather than
-          on-screen. That is the trade the instruction buys, and it is the kind of thing
-          worth re-opening if the hero ever has to sell the commands rather than the name.
-
-          column, `flex-wrap` lets the row break, and the command is ONE text node so the
-          break falls at a space in the command rather than mid-token. `gap-x-2 gap-y-1`
-          because a wrapped second line needs a gap the single-line `gap-2` does not
-          describe, and `text-left` because a wrapped command reads as a command only when
-          its lines start at the same column, inside a hero that is otherwise centred. */}
-      {/* ── Two chips as of 2026-08-07, one per half of setup ──
-          The author: "On the home page, I want something like 'Connect via MCP: ' and
-          insert what to pass to claude code and on click browse to the MCP page. And
-          'Design your blueprint: ' with the command to install the skill and on click,
-          navigate to the page that provide what to expect from the skill."
-
-          So each chip now carries a label saying what the command is FOR, and the two
-          point at the two routes `/install` split into. The label is the reason the chips
-          can sit together at all: two bare commands stacked would read as one procedure
-          with a first and a second step, and these are alternatives — you would run either
-          without running the other.
-
-          ── Order: the one that runs is first, and this is a deliberate departure ──
-          The author listed MCP first. The landing's own beat 4 states the rule that
-          overrides it — what ships leads, what does not is grouped after it — and this is
-          the highest-attention position on the site. It held `$ npx darkprint setup` under
-          a `ComingSoonBadge` until the skill shipped, and the whole argument for replacing
-          that string was that the landing's lead command should be one a reader can
-          actually run. Putting an unrunnable command back above it would undo that on the
-          same element. One `.map()` order flip if the author wants it their way; the code
-          is written so the flip is exactly that and nothing else.
-
-          ── Only one of the two is emerald ──
-          `app/globals.css` gives emerald to "a figure read off the engine", extended by
-          the chip that used to be alone here to mean a command that genuinely reaches the
-          engine. That meaning is doing real work now that there are two chips: the green
-          frame is the difference between the command that installs and the command that
-          cannot, visible before either is read. The MCP chip takes `border-line` and
-          `text-muted` — the neutral it would have had anyway — plus the badge, which is
-          amber's first sanctioned job (`ComingSoonBadge`, "not built yet") and not a third
-          meaning invented here.
-
-          A badge and not a caveat sentence, because doc 2 §0.4 asks for the marker beside
-          the thing it qualifies and a reader copying a command out of a hero does not read
-          a paragraph first. `/mcp` carries the sentence, three times over.
-
-          ── Both keep `data-mark="cli"` ──
-          `Wordmark.tsx`'s timeline reads this mark with `querySelectorAll` (line 247), not
-          `querySelector`, so a second element joins the beat rather than stealing it. The
-          beat still animates exactly the elements a reader can click.
-
-          ── Wrapping, unchanged in principle and worse in fact ──
-          The skill command is 44 characters and the MCP command is 48, against the hero's
-          358px column at 390. Each command stays ONE text node so a break falls at a space
-          rather than mid-token, `max-w-full` caps each chip at the column, and the label
-          sits on its own line above the command rather than sharing the first one: a
-          two-part chip that wraps between label and command reads as two chips, and at
-          390px it would wrap on every load. `items-start` because a wrapped command must
-          start at the same column as its own first line. */}
-      {/* `w-fit` on a flex column plus the default `align-items: stretch` is what makes the
-          two chips the same width: the column takes the width of its widest child, and both
-          children then fill it. Measured before it was written — the skill chip's natural
-          width is 362px and the MCP chip's is 384px, so a centred pair sat 22px ragged, and
-          two boxes that nearly line up read as a mistake in a way two obviously different
-          ones do not. `max-w-full` keeps the 384 from forcing a scrollbar at 390, where the
-          column is 358 and both commands wrap instead. */}
-      <div className="mx-auto mt-48 flex w-fit max-w-full flex-col gap-3">
+      <div className="mx-auto mt-12 flex w-fit max-w-full flex-col gap-3">
         {[
           {
             key: "skill",
@@ -680,31 +521,31 @@ export function Wordmark() {
             href: MCP_ROUTE,
             built: false,
           },
-        ].map((chip) => (
+        ].map((setup) => (
           <Link
-            key={chip.key}
+            key={setup.key}
             data-mark="cli"
-            href={chip.href}
+            href={setup.href}
             className={cx(
               "group flex max-w-full flex-col items-start gap-1 rounded-md border bg-surface-2/80 px-3 py-2 text-left transition-[transform,scale,color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97]",
-              chip.built
+              setup.built
                 ? "border-emerald/50 hoverable:hover:border-emerald/75"
                 : "border-line hoverable:hover:border-line-bright",
             )}
           >
             <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="label">{chip.label}</span>
-              {!chip.built && <ComingSoonBadge />}
+              <span className="label">{setup.label}</span>
+              {!setup.built && <ComingSoonBadge />}
             </span>
             <span
               className={cx(
                 "max-w-full font-mono text-xs transition-colors",
-                chip.built
+                setup.built
                   ? "text-emerald hoverable:group-hover:text-fg"
                   : "text-muted",
               )}
             >
-              {`$ ${chip.command}`}
+              {`$ ${setup.command}`}
             </span>
           </Link>
         ))}

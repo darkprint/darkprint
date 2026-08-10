@@ -1,5 +1,5 @@
 /* ============================================================
-   The four spec routes, as one ordered list.
+   The seven Learn routes, as one ordered list.
 
    Redesign spec §4.1 splits `/spec` into an overview and three
    layer pages, and asks that they "read as a sequence". A sequence
@@ -42,6 +42,30 @@
    rule the rest of the site follows about figures it quotes.
    ============================================================ */
 
+/**
+ * One in-page section, as the left rail lists it under the page it belongs to.
+ *
+ * These were seven `PageContents` panels, one per route, each declared inline in the page
+ * that drew it. The author asked them into the rail: "add to each entry also the subtopic
+ * of the given page listed on `On this page` indented by one and clickable", and the panel
+ * off the page.
+ *
+ * Moving the list here rather than leaving it in the page and reading it back is what makes
+ * that possible at all. `LearnShell` is a client component that renders the rail for whichever
+ * route is active; it cannot import a server page to ask what sections that page has. One
+ * ordered list every surface derives from is the same argument this file already makes about
+ * the order itself, applied one level down.
+ *
+ * `id` carries no `#`. The rail adds it, and a page that wants to link its own section
+ * writes `#${id}` — one spelling of the anchor, in one place, so the two cannot drift.
+ */
+export interface SpecSection {
+  /** The element id on the page. Must exist, with `scroll-mt-24`, or the link goes nowhere. */
+  id: string;
+  /** What the rail prints. Short: it is indented under a label that already gives context. */
+  label: string;
+}
+
 /** What every page in the sequence carries. */
 export interface SpecPage {
   /** The route. Also the identity of the entry. */
@@ -63,6 +87,14 @@ export interface SpecPage {
    * `/spec` onto `/what-a-blueprint-is` the same day and kept it.
    */
   question: string;
+  /**
+   * The page's own sections, in the order they appear on it.
+   *
+   * Required, and empty is a legitimate value rather than a missing one: a page with no
+   * headed sections declares `[]` and the rail gives it no children. Making it optional
+   * would let a page that grew three sections keep an entry that silently has none.
+   */
+  sections: readonly SpecSection[];
 }
 
 /** A layer page, which additionally names a file and the engine code that reads it. */
@@ -156,6 +188,11 @@ export const SPEC_OVERVIEW: SpecPage = {
   eyebrow: "What a blueprint is",
   title: "What a blueprint is",
   question: "What a blueprint is for, and the three files one is written in.",
+  sections: [
+    { id: "bundle", label: "The bundle" },
+    { id: "parts", label: "The three parts" },
+    { id: "run", label: "What surrounds a run" },
+  ],
 };
 
 /**
@@ -186,6 +223,10 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
     eyebrow: "Layer 01 of 03",
     title: "The blueprint file (DOT)",
     question: "Which nodes exist, and what flows between them.",
+    sections: [
+      { id: "dot-file-heading", label: "The DOT file" },
+      { id: "dot-checks-heading", label: "Validator checks" },
+    ],
     format: "DOT",
     file: "blueprint.dot",
     source: "lib/core/dot/ · lib/core/attractor/",
@@ -199,6 +240,11 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
     eyebrow: "Layer 02 of 03",
     title: "The node card (YAML)",
     question: "What one node is, in enough detail to instantiate it.",
+    sections: [
+      { id: "card-reach", label: "Reach and limits" },
+      { id: "node-card", label: "A real card, annotated" },
+      { id: "fields-heading", label: "Field reference" },
+    ],
     format: "YAML, JSON accepted",
     file: "cards/id@version.yaml",
     source: "lib/core/card/schema.ts",
@@ -210,13 +256,84 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
     step: "03",
     nav: "Ontology",
     eyebrow: "Layer 03 of 03",
-    title: "The vocabulary",
+    title: "Ontology",
     question: "Which identifiers the first two are allowed to use.",
+    sections: [
+      { id: "vocabulary-heading", label: "Core vocabulary" },
+      { id: "phases", label: "Term catalog" },
+      { id: "overlay-heading", label: "Local overlay" },
+      { id: "ontology-checks-heading", label: "Validator checks" },
+    ],
     format: "a versioned term list",
     file: "ontology/extensions.yaml",
     source: "lib/core/ontology/",
     color: "var(--color-emerald)",
     anchor: "ontology",
+  },
+];
+
+/** The three application pages that follow the file-format reference. */
+export const LEARN_PRACTICE: readonly SpecPage[] = [
+  /**
+   * The sandbox, and it used to be half of a page called "Create".
+   *
+   * `/build` carried two things: `CreateEntry`, which installs the authoring skill and
+   * writes you a brief, and `BuildWorkspace`, which lets you turn three dials on one
+   * five-node graph and watch the reading move. The author asked them apart: "split the
+   * page /build into two pages. One containing the skill part and listed on the navbar and
+   * the `Customize the starter blueprint` move only among the Learn pages."
+   *
+   * So the skill half went to `/skill`, which was already the page about the skill and was
+   * reachable from the footer alone, and it took the navbar's "Create" with it. What is left
+   * here is the worked example, and it is renamed to what it is. Two things follow from
+   * that and both are load-bearing:
+   *
+   * 1. The label had to change. `components/site/nav.test.ts` forbids one label on two
+   *    routes, and "Create" now belongs to `/skill`. Calling this "Create" as well would be
+   *    two names for two pages that a reader would read as one.
+   * 2. `title` matches `nav` matches the `h2` the section already carried, per this site's
+   *    "one route, one name" doctrine: the words on the rail are the words at the top of
+   *    what loads.
+   *
+   * It stays at `/build` and stays step 04. Moving the path would have broken every inbound
+   * link for a rename, and the sequence position is about where the sandbox sits in the
+   * reading order, which the split did not change.
+   */
+  {
+    href: "/build",
+    step: "04",
+    nav: "Customize the starter blueprint",
+    eyebrow: "Optional worked example",
+    title: "Customize the starter blueprint",
+    question: "Turn three dials on one worked graph and watch every reading move with them.",
+    sections: [{ id: "workspace-heading", label: "Blueprint workspace" }],
+  },
+  {
+    href: "/reading-the-radar",
+    step: "05",
+    nav: "How a blueprint is graded",
+    eyebrow: "The scorecard",
+    title: "How a blueprint is graded",
+    question: "Read each score by its source and inspect the shipped weights.",
+    sections: [
+      { id: "scorecard", label: "The scorecard" },
+      { id: "the-notes", label: "How to read it" },
+      { id: "auto-heading", label: "Where scores come from" },
+      { id: "weights", label: "Weights and penalties" },
+    ],
+  },
+  {
+    href: "/towards-a-dark-factory",
+    step: "06",
+    nav: "Towards a Dark Factory",
+    eyebrow: "The route",
+    title: "Towards a Dark Factory",
+    question: "Decide which work can run unattended inside a deliberate harness.",
+    /* Empty on purpose, and it is the reason `sections` is required rather than optional.
+       This page is one argument from the ladder to the two sources under it, with no headed
+       sections to jump between and no `PageContents` panel to move: it never had one. The
+       rail gives it a row and no children, which is what a reader should see. */
+    sections: [],
   },
 ];
 
@@ -235,7 +352,11 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
  * document one is written in, so it belongs beside the scorecard a reader met it on
  * rather than in a sequence about file formats.
  */
-export const SPEC_SEQUENCE: readonly SpecPage[] = [SPEC_OVERVIEW, ...SPEC_LAYERS];
+export const SPEC_SEQUENCE: readonly SpecPage[] = [
+  SPEC_OVERVIEW,
+  ...SPEC_LAYERS,
+  ...LEARN_PRACTICE,
+];
 
 /** Where a page sits in the sequence, and what stands on either side of it. */
 export interface SpecNeighbours {
@@ -257,7 +378,7 @@ export interface SpecNeighbours {
  */
 export function specNeighbours(href: string): SpecNeighbours {
   const at = SPEC_SEQUENCE.findIndex((page) => page.href === href);
-  if (at === -1) throw new Error(`\`${href}\` is not part of the spec sequence`);
+  if (at === -1) throw new Error(`\`${href}\` is not part of the Learn sequence`);
   return {
     page: SPEC_SEQUENCE[at],
     position: at + 1,

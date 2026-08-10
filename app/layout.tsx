@@ -5,6 +5,7 @@ import "./globals.css";
 import "@xyflow/react/dist/style.css";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { LearnShell } from "@/components/learn/LearnShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,23 +36,22 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   metadataBase: new URL("https://darkprint.io"),
   title: {
-    default: "DarkPrint · autonomy you can read as a graph",
+    default: "DarkPrint · reusable blueprints for agent workflows",
     template: "%s · DarkPrint",
   },
   description:
-    "A registry of dark-factory blueprints: the DOT graph of an agent pipeline, one versioned card per node, and autonomy and security scored off the drawing without running anything.",
+    "Find, inspect, and publish reusable agent-workflow blueprints. DarkPrint stores and statically checks version-pinned files; your own harness adapts and runs them locally.",
   keywords: [
     "AI agents",
-    "dark factory",
     "agent orchestration",
     "blueprints",
-    "autonomous pipelines",
+    "workflow specifications",
     "DOT graph",
   ],
   openGraph: {
     title: "DarkPrint",
     description:
-      "Autonomy you can read as a graph. A registry of the graphs that make that work.",
+      "Reusable blueprints for agent workflows. Inspect the graph, take the files, and adapt them on your machine.",
     type: "website",
   },
 };
@@ -85,7 +85,7 @@ export default function RootLayout({
             target is focusable, and a reader whose focus stayed in the header would tab
             straight back into the nav. */}
         <main id="main" tabIndex={-1} className="flex-1 outline-none">
-          {children}
+          <LearnShell>{children}</LearnShell>
         </main>
         <SiteFooter />
         {/*

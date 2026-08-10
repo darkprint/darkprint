@@ -77,7 +77,7 @@ export function SectionNodeCard() {
   if (source === undefined) return null;
 
   return (
-    <section id="node-card" className="bg-void py-20 sm:py-28">
+    <section id="node-card" className="scroll-mt-24 bg-void py-20 sm:py-28">
       <div className="container-page">
         <SectionHeading
           eyebrow="One node, line by line"

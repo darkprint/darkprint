@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CreateEntry } from "@/components/build/CreateEntry";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { PanelHeading, SectionHeading } from "@/components/ui/SectionHeading";
 import { SkillSetup } from "@/components/skill/SkillSetup";
@@ -43,9 +44,16 @@ import { MCP_ROUTE } from "@/lib/mcp";
    ============================================================ */
 
 export const metadata: Metadata = {
-  title: "The DarkPrint skill",
+  /* "Create", because this route is now the one the header's "Create" points at.
+     `components/site/nav.test.ts` holds a page's `h1` and its `<title>` to the label that
+     sends a reader to it, and the label arrived here when `/build` split.
+
+     The description keeps "Not built yet: accounts and publishing" verbatim and in the
+     open: `components/site/honesty.test.ts` pins that string to this surface, and a retitle
+     is not a reason for it to move. */
+  title: "Create",
   description:
-    "One command puts a blueprint-writing skill in your own agent, and it interviews you into a folder: blueprint.dot, one card per node, README.md and AGENTS.md. Read it back on this site with nothing sent anywhere. Not built yet: accounts and publishing.",
+    "Start from your goal: one command puts a blueprint-writing skill in your own agent, and it interviews you into a folder of blueprint.dot, one card per node, README.md and AGENTS.md. Read it back on this site with nothing sent anywhere. Not built yet: accounts and publishing.",
 };
 
 export default function SkillPage() {
@@ -54,9 +62,26 @@ export default function SkillPage() {
       <SectionHeading
         as="h1"
         eyebrow="Setup"
-        title="The DarkPrint skill"
+        title="Create"
         lead="One command puts a blueprint-writing skill in your own agent, and it works today. It asks your agent to ask you: what the work is, who does which part of it, and what must never reach whom. What it leaves behind is a bundle the registry stores."
       />
+
+      {/* ---------- the goal box, moved here from `/build` on 2026-08-10 ----------
+          The author asked `/build` apart: "split the page /build into two pages. One
+          containing the skill part and listed on the navbar and the `Customize the starter
+          blueprint` move only among the Learn pages."
+
+          This is the skill part, and this is the page about the skill, so it comes here
+          rather than to a third route. It sits ABOVE `SkillSetup` because it is the reason
+          a reader installs anything: name the outcome you want, take the brief, and the
+          three numbered steps below are then what to do with the tool you just decided you
+          need. Install-then-motive is the order the page had when the motive was on another
+          route entirely.
+
+          Nothing about the component changed. It still writes the brief in the browser from
+          an uncontrolled goal field, and it still carries `#create-entry-title`, which is
+          the anchor `components/spec/sequence.ts` used to list under `/build`. */}
+      <CreateEntry className="mt-10" />
 
       <SkillSetup className="mt-10" />
 

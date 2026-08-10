@@ -32,14 +32,6 @@ import { PHASE_ORDER, phaseLabel } from "@/components/ui/PhaseCoverage";
  * order the shelf by a number it does not have has to say so where the offer is made,
  * not in a footer two screens down.
  */
-type SortKey = "recent" | "downloads" | "votes";
-
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "recent", label: "Recently updated" },
-  { value: "downloads", label: "Most downloaded · seeded" },
-  { value: "votes", label: "Most upvoted · seeded" },
-];
-
 /**
  * One field shape, for every control in this bar.
  *
@@ -119,10 +111,6 @@ export function GalleryBrowser({
      well as an unattended graph. Before that it meant "nobody stands in this graph",
      which the autonomy class beside it already said. */
   const darkFactory = params.get("df") === "1";
-  const rawSort = params.get("sort");
-  const sort: SortKey = SORT_OPTIONS.some((o) => o.value === rawSort)
-    ? (rawSort as SortKey)
-    : "recent";
   /* The disclosure below is open when a filter inside it is set, so a reader can never
      have an active filter they cannot see. `TagFromQuery` sets one from `?tag=`, which is
      exactly that case. */
@@ -188,11 +176,17 @@ export function GalleryBrowser({
       if (tag && !bp.tags.includes(tag)) return false;
       if (q) {
         const haystack =
-          bp.title.toLowerCase() +
-          " " +
-          bp.summary.toLowerCase() +
-          " " +
-          bp.tags.join(" ").toLowerCase();
+          [
+            bp.title,
+            bp.summary,
+            bp.description,
+            bp.category,
+            ...bp.tags,
+            ...bp.requiredAgents,
+            ...bp.requiredTools,
+            ...bp.cardRefs,
+            ...bp.graph.nodes.map((node) => node.label),
+          ].join(" ").toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       return true;
@@ -200,25 +194,12 @@ export function GalleryBrowser({
 
     const sorted = [...filtered];
     sorted.sort((a, b) => {
-      switch (sort) {
-        // Dates are stored as `YYYY-MM-DD`, so a string compare is a date compare.
-        // Title breaks the tie, which keeps a batch published on one day in a stable
-        // order instead of shuffling on every render.
-        case "recent": {
-          const at = a.updatedAt || a.createdAt;
-          const bt = b.updatedAt || b.createdAt;
-          return bt.localeCompare(at) || a.title.localeCompare(b.title);
-        }
-        case "downloads":
-          return b.downloads - a.downloads;
-        case "votes":
-          return b.votes - a.votes;
-        default:
-          return 0;
-      }
+      const at = a.updatedAt || a.createdAt;
+      const bt = b.updatedAt || b.createdAt;
+      return bt.localeCompare(at) || a.title.localeCompare(b.title);
     });
     return sorted;
-  }, [blueprints, search, tag, category, phase, autonomy, darkFactory, sort]);
+  }, [blueprints, search, tag, category, phase, autonomy, darkFactory]);
 
   /** How many of the filters behind the disclosure are set. Printed on the summary. */
   const narrowCount =
@@ -264,10 +245,9 @@ export function GalleryBrowser({
    * nine), so in the state that shows it, the lead cell reorders nothing at all — it only
    * widens what was already tile 1.
    */
-  const leadBlueprint =
-    !hasFilters && sort === "recent"
-      ? (results.find((bp) => bp.slug === STARTER_SLUG) ?? null)
-      : null;
+  const leadBlueprint = !hasFilters
+    ? (results.find((bp) => bp.slug === STARTER_SLUG) ?? null)
+    : null;
   const gridBlueprints =
     leadBlueprint === null ? results : results.filter((bp) => bp !== leadBlueprint);
 
@@ -372,7 +352,7 @@ export function GalleryBrowser({
               type="text"
               value={search}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Search blueprints, summaries, tags…"
+              placeholder="Describe a task, tool, input, or constraint…"
               aria-label="Search blueprints"
               /* `text-dim` (5.43:1), not `text-faint` (1.83:1). The twin control in
                  `components/nodes/NodeBrowser.tsx` already carried this fix and a comment
@@ -403,21 +383,6 @@ export function GalleryBrowser({
             </select>
           </label>
 
-          <label className="flex items-center gap-2">
-            <span className="sr-only">Sort blueprints</span>
-            <select
-              value={sort}
-              onChange={(e) => setParam("sort", e.target.value === "recent" ? null : e.target.value)}
-              aria-label="Sort blueprints"
-              className={controlClass}
-            >
-              {SORT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
 
         {/* Controlled rather than a bare `<details>`: `TagFromQuery` can set a tag from a

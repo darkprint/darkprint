@@ -37,6 +37,7 @@ import { describe, expect, it } from "vitest";
 import { allBlueprints, getNodeCard, getOntologyView } from "@/lib/content";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionLevels } from "@/components/home/SectionLevels";
+import { SectionSameRun } from "@/components/home/SectionSameRun";
 import { GraphFigure } from "@/components/learn/PartFigures";
 
 import {
@@ -127,6 +128,15 @@ const ROSTER: readonly SceneEntry[] = [
     files: ["components/home/blueprint/BlueprintWalk.tsx"],
     frames: 2,
     render: () => framesOf(createElement(SectionBlueprint)),
+  },
+  /* Beat 2's two panels. `frames: 2` is the claim that both are still drawn: the argument
+     is a comparison, so a panel that stopped rendering would leave a figure that reads as
+     a statement about prompts, or one about blueprints, and not as the contrast that is
+     the only thing either panel means on its own. */
+  {
+    files: ["components/home/SectionSameRun.tsx"],
+    frames: 2,
+    render: () => framesOf(createElement(SectionSameRun)),
   },
   // `components/home/SectionNodeIsCard.tsx` had an entry here and the file draws no
   // scene now. The beat carried a lit disc with a blank document hanging off it; the
@@ -266,7 +276,11 @@ describe("the guard covers every scene the site draws", () => {
     // the one drawing that is definitely still on the site, which is the landing's
     // blueprint. A walk that stops matching returns nothing and fails by name.
     expect(DRAWERS.length).toBeGreaterThan(2);
+    // Both named, now that the landing's blueprint walk is back on the page. Two scenes
+    // held by name is stronger than one: a matcher that stops seeing either fails here
+    // rather than quietly shrinking the population the floor above is measured against.
     expect(DRAWERS).toContain("components/home/blueprint/BlueprintWalk.tsx");
+    expect(DRAWERS).toContain("components/home/SectionLevels.tsx");
   });
 
   it("measures each of them", () => {

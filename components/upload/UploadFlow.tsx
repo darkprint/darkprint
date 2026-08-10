@@ -233,7 +233,7 @@ function reportMarkdown(args: {
   out.push("");
 
   if (!resolved || analysis === undefined) {
-    out.push("## Autonomy and security");
+    out.push("## Autonomy and static risk");
     out.push("");
     out.push(
       progress.state === "unfinished"
@@ -251,7 +251,7 @@ function reportMarkdown(args: {
     out.push(autonomyStatement(analysis.autonomy.rationale));
     out.push("");
 
-    out.push("## Security");
+    out.push("## Static risk exposure");
     out.push("");
     out.push(
       `Level ${analysis.security.level}, ${analysis.security.raw.toFixed(2)} of 4 points kept.`,
@@ -297,7 +297,7 @@ function reportMarkdown(args: {
   );
   out.push("");
   out.push(
-    "This bundle was resolved against the curated core vocabulary only. A blueprint in the archive is resolved against the core plus the terms its release adds in its own namespace, so a graph using one of those comes back here with the term unknown and a security reading computed without it.",
+    "This bundle was resolved against the curated core vocabulary only. A blueprint in the archive is resolved against the core plus the terms its release adds in its own namespace, so a graph using one of those comes back here with the term unknown and a static risk reading computed without it.",
   );
   out.push("");
 
@@ -679,14 +679,33 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
      decides: `html` is `scroll-behavior: smooth`, and the reduced-motion block turns it
      to `auto` — the reader who asked for less motion is not overruled from script.
 
-     Skipped on the first mount: nobody navigated to arrive. */
+     Skipped while the step has not changed: nobody navigated to arrive.
+
+     ── Why this is keyed on the step and not on "have I mounted yet" ──
+     It was a `mounted` ref that flipped false to true on the first run and returned, and
+     that guard does not survive a second mount of the same component instance. React
+     StrictMode runs every effect twice on mount — setup, cleanup, setup — against the same
+     instance, so the refs persist: run one consumed the guard, run two sailed past it and
+     scrolled. `reactStrictMode` defaults to on, so `next dev` did this on every arrival at
+     `/upload` and a reader who clicked "Publish" landed 664px down the page, looking at
+     "Upload the bundle" with the header and the page's own lead scrolled off. Measured, in
+     both modes: dev put `window.scrollY` at 664 and focus on the step heading; the
+     production build put it at 0. It was invisible in the built site and wrong every time
+     locally, which is the worst version of this bug to own.
+
+     Keying on the step value fixes it by making the effect idempotent, which is what
+     StrictMode is checking for: re-running it with a step that has already been scrolled to
+     is a no-op, however many times React chooses to run it. It is also the more direct
+     statement of the intent — the scroll belongs to a step CHANGE, and "first mount" was
+     only ever a proxy for "the step is still the one we started on".
+
+     Initialised to the starting step rather than to null, so mount needs no special case at
+     all. */
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const mounted = useRef(false);
+  const scrolledFor = useRef<StepId>(step);
   useEffect(() => {
-    if (!mounted.current) {
-      mounted.current = true;
-      return;
-    }
+    if (scrolledFor.current === step) return;
+    scrolledFor.current = step;
     const heading = headingRef.current;
     if (heading === null) return;
     heading.focus({ preventScroll: true });
@@ -1005,7 +1024,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                     {result.analysis.autonomy.autonomousNodes} of{" "}
                     {result.analysis.autonomy.totalNodes} nodes unattended
                   </dd>
-                  <dt className="label self-center">Security</dt>
+                  <dt className="label self-center">Static risk exposure</dt>
                   <dd className="text-muted">
                     level {result.analysis.security.level} ·{" "}
                     {result.analysis.security.findings.length} finding
@@ -1086,7 +1105,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                         </dd>
                       </div>
                       <div className="flex gap-2">
-                        <dt className="w-24 shrink-0 font-mono text-dim">security</dt>
+                        <dt className="w-24 shrink-0 font-mono text-dim">static risk</dt>
                         <dd className="text-muted">
                           level {result.analysis.security.level} ·{" "}
                           {result.analysis.security.findings.length} finding

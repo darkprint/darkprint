@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { SectionLevels } from "@/components/home/SectionLevels";
-import { OnwardRoutes } from "@/components/ui/OnwardRoutes";
+import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
@@ -101,6 +101,8 @@ export const metadata: Metadata = {
     "Four levels of working with agents, where most teams actually sit, and the four questions that decide whether a task belongs in a pipeline nobody is watching. The gap between level 2 and level 4 is architectural and organisational, which makes it a design problem.",
 };
 
+const HERE = "/towards-a-dark-factory";
+
 
 /* `INLINE` and the `next/link` import went with the two paragraphs the author removed on
    2026-08-08 — the deck's link to `/blueprints` and the section that carried the four
@@ -114,7 +116,9 @@ export default function TowardsPage() {
     <>
       <header className="border-b border-line bg-void py-16 sm:py-20">
         <div className="container-page">
+          <SpecCrumb href={HERE} />
           <SectionHeading
+            className="mt-5"
             as="h1"
             eyebrow="The route"
             title="Towards a Dark Factory"
@@ -248,20 +252,7 @@ export default function TowardsPage() {
           autonomy and `/reading-the-radar` is where that reading is explained. */}
       <section className="border-t border-line bg-surface pb-20 pt-16">
         <div className="container-page">
-          <OnwardRoutes
-            routes={[
-              {
-                href: "/reading-the-radar",
-                /* "Previous", not "Next", on the author's instruction. The Learn menu runs
-                   what a blueprint is, design one, how one is graded, then this page — so
-                   `/reading-the-radar` is behind a reader who got here, and a lone forward
-                   arrow pointing at it would send them back up the path they walked. */
-                direction: "previous",
-                label: "How a blueprint is graded",
-                blurb: "Where the autonomy reading the ladder above describes is computed.",
-              },
-            ]}
-          />
+          <SpecPager href={HERE} />
         </div>
       </section>
     </>

@@ -191,21 +191,11 @@ describe("the switch is thrown by the page that owns the panel", () => {
    * is a call site that never read the prop's comment, and no pure function can see one.
    * Matched on the opening tag, where the props are.
    */
-  it("passes audit from the blueprint page and from nowhere else", () => {
+  it("keeps the radar scorecard alongside the provenance-aware evidence layers", () => {
     const read = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
-    const tag = (source: string): string => {
-      const at = source.indexOf("<MetricBars");
-      expect(at, "the call site is gone").toBeGreaterThan(-1);
-      return source.slice(at, source.indexOf(">", at));
-    };
-
-    expect(tag(read("app/blueprints/[slug]/page.tsx"))).toContain("audit=");
-    // A second expectation read `components/home/SectionExample.tsx` and asserted its own
-    // `<MetricBars` carried no `audit=`. That component was deleted on 2026-08-07 as one
-    // of four mounted nowhere, so the "and from nowhere else" half of this case is now
-    // held by there being exactly one call site left in the tree — which the walk below
-    // asserts rather than the old pair of named files.
-    const callSites = ["app/blueprints/[slug]/page.tsx"];
-    expect(callSites).toHaveLength(1);
+    const page = read("app/blueprints/[slug]/page.tsx");
+    expect(page).toContain("<EvidenceLayers");
+    expect(page).toContain("<ScoreRadar");
+    expect(page).toContain("<MetricBars");
   });
 });

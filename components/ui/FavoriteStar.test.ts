@@ -19,9 +19,20 @@ describe("FavoriteStar", () => {
     expect(html).not.toContain("text-amber");
   });
 
-  it("marks the star decorative and puts the meaning on the button", () => {
+  it("marks the bookmark decorative and puts the meaning on the button", () => {
     const html = renderToStaticMarkup(createElement(FavoriteStar, { id: "blueprint:x" }));
     expect(html).toContain('<button type="button"');
     expect(html).toMatch(/<svg[^>]*aria-hidden/);
+  });
+
+  it("keeps the favorite action separate from a read-only seeded support count", () => {
+    const html = renderToStaticMarkup(
+      createElement(FavoriteStar, { id: "blueprint:x", count: 214, seeded: true }),
+    );
+    expect(html).toContain('aria-label="Add to favorites"');
+    expect(html).toContain(">Save<");
+    expect(html).toContain('aria-label="214 community stars, seeded"');
+    expect(html).not.toContain(">Star<");
+    expect(html).toContain("Seeded support count; no community backend is connected");
   });
 });

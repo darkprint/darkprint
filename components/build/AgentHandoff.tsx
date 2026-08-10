@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import { CORE_PHASE_IDS } from "@/lib/core";
 import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { SourcePanel } from "@/components/ui/SourcePanel";
 
@@ -280,10 +279,12 @@ export function AgentHandoff({ className }: { className?: string }) {
           exits are meant to be read independently, so a reader who only ever opens this
           one still meets the limit rather than inferring the registry call already exists.
           Pinned together with its twin in `components/site/honesty.test.ts`. */}
-      <p className="mt-3 flex flex-wrap items-center gap-2 text-[13px] leading-relaxed text-dim">
-        <ComingSoonBadge />
-        Not built yet: your agent querying the registry over MCP for the blueprint that
-        best fits a goal like this one.
+      <p className="mt-3 text-[13px] leading-relaxed text-dim">
+        If your agent should search published work before authoring,{" "}
+        <Link href="/mcp" className={linkCls}>
+          connect it to the registry through MCP
+        </Link>
+        .
       </p>
     </div>
   );

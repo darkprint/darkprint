@@ -1,14 +1,14 @@
 "use client";
 
 /* ============================================================
-   Favoriting a blueprint or node — browser-local, nothing else.
+   Saving a blueprint or node — browser-local, separate from stars.
 
    There is no account on this site and nothing here changes that: a
    favorite is a key in `localStorage`, one entry per browser, never sent
    anywhere. It does not survive a cleared browser, does not follow a
    reader to a second device, and nothing on the site reads or counts it
    but this component. That is the honest shape of "favorite" a site with
-   no backend can offer (doc 2 §0.4), so the star says nothing stronger.
+   no backend can offer (doc 2 §0.4), so the bookmark says nothing stronger.
 
    ── Why a sibling, not a nested button ──
    `ContentCard` and `NodeCardSummary` are a whole card wrapped in one
@@ -18,16 +18,16 @@
    this as a sibling of a "stretched" link that covers the card
    (`absolute inset-0`, transparent), with this button's `z-index` above
    it: the anchor still owns every pixel a plain click lands on, and the
-   star, layered above it, wins only over the small area it covers.
+   bookmark, layered above it, wins only over the small area it covers.
    ============================================================ */
 
 import { useCallback, useSyncExternalStore } from "react";
-import { cx } from "@/lib/format";
+import { compact, cx } from "@/lib/format";
 
 const STORAGE_KEY = "darkprint:favorites";
 
 /**
- * Every mounted star's re-render trigger, notified after a write in this tab —
+ * Every mounted bookmark's re-render trigger, notified after a write in this tab —
  * `storage` events only fire in *other* tabs, never the one that made the change.
  */
 const listeners = new Set<() => void>();
@@ -38,7 +38,7 @@ function readFavorites(): Set<string> {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     return raw ? new Set(JSON.parse(raw)) : new Set();
   } catch {
-    // Private browsing, a full quota, a disabled store — the star just stops
+    // Private browsing, a full quota, a disabled store — the bookmark just stops
     // persisting rather than throwing over a feature nothing else depends on.
     return new Set();
   }
@@ -91,19 +91,29 @@ function useFavorite(id: string): [boolean, () => void] {
 }
 
 /**
- * The star. `id` is a compound key (`"blueprint:<slug>"`, `"node:<id>@<version>"`) so
+ * The bookmark. `id` is a compound key (`"blueprint:<slug>"`, `"node:<id>@<version>"`) so
  * the two kinds can never collide in the one `localStorage` bucket they share.
  */
-export function FavoriteStar({ id, className }: { id: string; className?: string }) {
+export function FavoriteStar({
+  id,
+  className,
+  count,
+  seeded = false,
+}: {
+  id: string;
+  className?: string;
+  /** Fixture-backed community support shown beside the local save control. */
+  count?: number;
+  /** Marks a count that is illustrative rather than read from a live service. */
+  seeded?: boolean;
+}) {
   const [favorited, toggle] = useFavorite(id);
   const label = favorited ? "Remove from favorites" : "Add to favorites";
 
-  return (
+  const button = (
     <button
       type="button"
       onClick={(event) => {
-        // Both callers render this beside a stretched link over the whole card;
-        // without these two the click would also navigate.
         event.preventDefault();
         event.stopPropagation();
         toggle();
@@ -112,23 +122,10 @@ export function FavoriteStar({ id, className }: { id: string; className?: string
       aria-label={label}
       title={label}
       className={cx(
-        // 30px across (16px glyph + 6px padding + 1px border, both sides), so it takes the
-        // deepest of the site's three press bands: ≤40px → 0.94, 40–200px → 0.97,
-        // >200px → 0.99. The property list is written out rather than left as
-        // `transition-colors` because a bare colour list cannot animate the press, and
-        // `transition-all` would put a 40px-blur backdrop filter on the same clock.
-        //
-        // `scale` is named in that list on purpose. Tailwind v4 compiles `scale-[0.94]` to
-        // the standalone `scale:` property, not to `transform: scale(…)`, and CSS treats
-        // the two as different animatable properties — a list carrying only `transform`
-        // leaves the press snapping in and out with no duration at all.
-        //
-        // `hoverable:` is `@media (hover: hover) and (pointer: fine)` (app/globals.css).
-        // Without it a tap on a phone latches the hover border until the next tap
-        // somewhere else — on a card grid, that reads as a star that stayed selected.
-        "inline-flex items-center justify-center rounded-full border border-line bg-surface-2/90 p-1.5 backdrop-blur-sm transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-line-bright hoverable:active:scale-[0.94]",
+        "inline-flex items-center justify-center border border-line bg-surface-2/90 p-1.5 backdrop-blur-sm transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-line-bright hoverable:active:scale-[0.94]",
+        count === undefined ? "rounded-full" : "gap-1.5 rounded-md px-2.5 py-1.5",
         favorited ? "text-amber" : "text-dim hoverable:hover:text-fg",
-        className,
+        count === undefined && className,
       )}
     >
       <svg
@@ -141,8 +138,49 @@ export function FavoriteStar({ id, className }: { id: string; className?: string
         strokeWidth={1.75}
         strokeLinejoin="round"
       >
-        <path d="M12 3.5l2.47 5.006 5.53.804-4 3.9.944 5.507L12 16.9l-4.944 2.6.944-5.507-4-3.9 5.53-.804L12 3.5z" />
+        <path d="M6.75 4.75A1.75 1.75 0 0 1 8.5 3h7a1.75 1.75 0 0 1 1.75 1.75V21L12 17.65 6.75 21V4.75z" />
       </svg>
+      {count !== undefined && (
+        <span className="text-xs font-medium">{favorited ? "Saved" : "Save"}</span>
+      )}
     </button>
+  );
+
+  if (count !== undefined) {
+    return (
+      <div
+        className={cx("inline-flex items-stretch gap-2", className)}
+        title={seeded ? "Seeded support count; no community backend is connected" : undefined}
+      >
+        {button}
+        <span
+          className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 font-mono text-[11px] text-muted"
+          aria-label={`${count} community stars${seeded ? ", seeded" : ""}`}
+        >
+          <svg
+            aria-hidden
+            viewBox="0 0 24 24"
+            width={14}
+            height={14}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.75}
+            strokeLinejoin="round"
+          >
+            <path d="M12 3.5l2.47 5.006 5.53.804-4 3.9.944 5.507L12 16.9l-4.944 2.6.944-5.507-4-3.9 5.53-.804L12 3.5z" />
+          </svg>
+          {compact(count)}
+          {seeded && (
+            <span className="text-amber" aria-hidden>
+              ◐
+            </span>
+          )}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    button
   );
 }

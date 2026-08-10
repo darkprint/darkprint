@@ -42,7 +42,7 @@ const SHORT: Record<MetricKey, string> = {
   reliability: "Reliability",
   transparency: "Transparency",
   cost: "Cost",
-  security: "Security",
+  security: "Static risk exposure",
 };
 
 /**

@@ -234,12 +234,10 @@ describe("no surface prints a seeded index figure as a fact", () => {
       expect(text.toLowerCase(), `${path} prints an index figure and never says seeded`)
         .toContain("seeded");
     }
-    // A scan matching nothing passes silently, and these four are the surfaces the rule
-    // was written for.
+    // The detail header and discovery cards deliberately stopped printing these fixture
+    // counters. The remaining social surfaces must still identify seeded values.
     expect(printers).toEqual(
       expect.arrayContaining([
-        "app/blueprints/[slug]/page.tsx",
-        "components/ui/ContentCard.tsx",
         "components/blueprint/Comments.tsx",
         "app/u/[username]/page.tsx",
       ]),
@@ -251,16 +249,11 @@ describe("no surface prints a seeded index figure as a fact", () => {
    * in `<option>` text where no glyph or note can reach. So the option itself carries the
    * word.
    */
-  it("names the sort options that order on one", () => {
+  it("does not offer popularity sorting until event semantics are defined", () => {
     const gallery = STRIPPED.find((f) => f.path === "components/gallery/GalleryBrowser.tsx");
     expect(gallery).toBeDefined();
     for (const option of ["downloads", "votes"]) {
-      const at = gallery!.text.indexOf(`value: "${option}", label:`);
-      expect(at, `no sort option for ${option}`).toBeGreaterThan(-1);
-      const label = gallery!.text.slice(at, gallery!.text.indexOf("}", at));
-      expect(label.toLowerCase(), `the ${option} sort option does not say seeded`).toContain(
-        "seeded",
-      );
+      expect(gallery!.text).not.toContain(`value: "${option}"`);
     }
   });
 });

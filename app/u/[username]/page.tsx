@@ -3,7 +3,12 @@ import { notFound } from "next/navigation";
 import type { Blueprint } from "@/lib/types";
 import type { CardVersionRecord } from "@/lib/core";
 import { AUTHOR_LIST, getAuthor } from "@/lib/data";
-import { allBlueprints, allNodeCards, getOntologyView, getRegistry } from "@/lib/content";
+import {
+  allBlueprints,
+  allNodeCards,
+  getOntologyView,
+  getRegistry,
+} from "@/lib/content";
 import { HUMAN_PRESENCE_MARK, compact } from "@/lib/format";
 import { nodeHref } from "@/lib/href";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
@@ -114,48 +119,61 @@ export default async function Page({ params }: PageProps<"/u/[username]">) {
     <div className="container-page py-12">
       <ProfileHeader author={author} />
 
-      {/* Summary stats. Published is counted off the archive; the other three are
-          index rows, and the footnote keeps the two apart rather than letting the
-          grid imply they are all the same kind of fact. */}
-      <div className="mt-6 rounded-xl border border-line bg-surface-2 p-6">
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-4 sm:gap-8">
-          <Stat value={published} label="Published" />
-          <Stat
-            value={compact(totalDownloads)}
-            label="Downloads"
-            accent="var(--color-emerald)"
-          />
-          <Stat
-            value={compact(author.reputation)}
-            label="Reputation"
-            accent="var(--color-violet)"
-          />
-          <Stat
-            value={author.validator ? "Yes" : "No"}
-            label="Validator"
-            accent={
-              author.validator ? "var(--color-cyan)" : "var(--color-dim)"
-            }
-          />
-        </div>
-        <p className="mt-5 border-t border-line pt-4 text-xs leading-relaxed text-dim">
-          <span className="font-mono text-emerald" aria-hidden>
-            ✓
-          </span>{" "}
-          <span className="font-mono uppercase tracking-[0.12em] text-emerald">
-            counted
-          </span>{" "}
-          Published is the archive, read at build time.{" "}
-          <span className="font-mono text-amber" aria-hidden>
-            ◐
-          </span>{" "}
-          <span className="font-mono uppercase tracking-[0.12em] text-amber">
-            seeded
-          </span>{" "}
-          Downloads, reputation and the validator mark are rows in the index. There is
-          no ballot, no reputation that accrues and no badge to earn yet.
-        </p>
-      </div>
+      {/* Counted archive facts and illustrative community signals are different kinds of
+          evidence. They get different panels instead of sharing one undifferentiated row. */}
+      <section
+        aria-label="Profile summary"
+        className="mt-6 grid gap-5 lg:grid-cols-[1.2fr_0.8fr]"
+      >
+        <article className="rounded-xl border border-line bg-surface-2 p-5">
+          <div className="flex items-center justify-between gap-3 border-b border-line pb-4">
+            <h2 className="label-lead">Published here</h2>
+            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-emerald">
+              ✓ counted
+            </span>
+          </div>
+          <div className="mt-5 grid grid-cols-3 gap-5">
+            <Stat value={published} label="Total" />
+            <Stat
+              value={blueprints.length}
+              label="Blueprints"
+              accent="var(--color-cyan)"
+            />
+            <Stat
+              value={cards.length}
+              label="Node cards"
+              accent="var(--color-copper-line)"
+            />
+          </div>
+          <p className="mt-4 text-xs leading-relaxed text-dim">
+            Counted from the versioned archive at build time.
+          </p>
+        </article>
+
+        <article className="rounded-xl border border-amber/25 bg-amber/5 p-5">
+          <div className="flex items-center justify-between gap-3 border-b border-amber/20 pb-4">
+            <h2 className="label-lead">Preview signals</h2>
+            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-amber">
+              ◐ seeded
+            </span>
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-5">
+            <Stat
+              value={compact(totalDownloads)}
+              label="Downloads"
+              accent="var(--color-emerald)"
+            />
+            <Stat
+              value={compact(author.reputation)}
+              label="Reputation"
+              accent="var(--color-violet)"
+            />
+          </div>
+          <p className="mt-4 text-xs leading-relaxed text-dim">
+            Illustrative index rows. No telemetry, ballot, or accruing reputation is connected.
+          </p>
+        </article>
+      </section>
 
       {/* Published content */}
       <div className="mt-14 flex flex-col gap-14">
@@ -219,18 +237,20 @@ export default async function Page({ params }: PageProps<"/u/[username]">) {
             states the shape and marks it, rather than rendering an empty section that
             reads as "this builder has forked nothing". Same treatment as the seeded stats
             above: say which half is real. */}
-        <section className="flex flex-col gap-4 rounded-xl border border-dashed border-amber/30 bg-amber/5 p-6">
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="font-display text-xl font-semibold text-fg">Forks</h2>
-            <ComingSoonBadge />
+        <aside className="flex flex-col gap-3 rounded-lg border border-dashed border-amber/25 bg-amber/5 p-5 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="font-display text-lg font-semibold text-fg">
+                Private forks
+              </h2>
+              <ComingSoonBadge />
+            </div>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+              Account-owned copies are not stored yet. Today, adapting a blueprint means
+              copying its folder locally; this profile never learns that you did.
+            </p>
           </div>
-          <p className="max-w-2xl text-sm leading-relaxed text-muted">
-            Forking will work the way it does on GitHub: a copy that belongs to the person
-            who made it, private until they publish it, listed here when they do. Today
-            there are no accounts, so forking a blueprint means copying its folder onto
-            your own machine and this site never learns that you did.
-          </p>
-        </section>
+        </aside>
       </div>
     </div>
   );

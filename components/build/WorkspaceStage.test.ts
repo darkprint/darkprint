@@ -168,6 +168,7 @@ describe("WorkspaceStage", () => {
     const announced = match?.[1] ?? "";
     expect(announced).toContain(analysis.autonomy.label);
     expect(announced).toContain(`level ${analysis.security.level} of 4`);
+    expect(announced).toContain(analysis.security.raw.toFixed(2));
   });
 
   it("keeps exactly one live region reachable by default — the header's, not ScorePanel's own", () => {

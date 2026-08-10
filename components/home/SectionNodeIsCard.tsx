@@ -45,6 +45,7 @@
 import { cardSource, getNodeCard } from "@/lib/content";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
+import { BeatCaption } from "./BeatCaption";
 import { CardWalk } from "./nodecard/CardWalk";
 
 const CARD_REF = "code-builder@1.0.0";
@@ -179,6 +180,11 @@ export function SectionNodeIsCard() {
             }
           />
         </div>
+
+        <BeatCaption href="/spec/card" cta="Card format reference">
+          Each node pins an exact card version: its job, interface, tool reach, and
+          prohibitions. Reuse the card in another graph.
+        </BeatCaption>
       </div>
     </section>
   );

@@ -21,9 +21,10 @@ describe("InstallTabs", () => {
     expect(html).toContain(MCP_CLIENTS[0].snippet.split("\n")[0]);
   });
 
-  it("marks itself coming soon", () => {
+  it("presents the selected snippet as configuration, not preview status", () => {
     const html = renderToStaticMarkup(createElement(InstallTabs));
-    expect(plainText(html).toLowerCase()).toContain("coming soon");
+    expect(plainText(html).toLowerCase()).toContain("configuration");
+    expect(plainText(html).toLowerCase()).not.toContain("coming soon");
   });
 
   /**

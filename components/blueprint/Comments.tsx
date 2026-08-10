@@ -53,7 +53,7 @@ export function Comments({
     <section aria-labelledby="community-notes">
       <h2
         id="community-notes"
-        className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1 font-display text-xl font-semibold text-fg"
+        className="mb-4 flex scroll-mt-24 flex-wrap items-baseline gap-x-3 gap-y-1 font-display text-xl font-semibold text-fg"
       >
         Community notes{" "}
         <span className="font-mono text-sm font-normal text-dim">

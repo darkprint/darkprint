@@ -53,6 +53,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   SPEC_LAYERS,
+  LEARN_PRACTICE,
   SPEC_OVERVIEW,
   SPEC_SEQUENCE,
   specNeighbours,
@@ -103,6 +104,18 @@ describe("the sequence and the filesystem agree", () => {
       "/spec/card",
       "/spec/ontology",
     ]);
+  });
+
+  it("continues through the three practice pages as stops 04 to 06", () => {
+    expect(LEARN_PRACTICE.map(({ step, href, nav }) => ({ step, href, nav }))).toEqual([
+      { step: "04", href: "/build", nav: "Customize the starter blueprint" },
+      { step: "05", href: "/reading-the-radar", nav: "How a blueprint is graded" },
+      { step: "06", href: "/towards-a-dark-factory", nav: "Towards a Dark Factory" },
+    ]);
+  });
+
+  it("names stop 03 Ontology everywhere", () => {
+    expect(SPEC_LAYERS[2]).toMatchObject({ step: "03", nav: "Ontology", title: "Ontology" });
   });
 
   it("gives every page a distinct step, route and title", () => {
@@ -257,7 +270,7 @@ describe("the pager's aria-label names the true count", () => {
       createElement(SpecPager, { href: SPEC_OVERVIEW.href }),
     );
     expect(html).toContain(
-      `aria-label="The spec language, in ${SPEC_SEQUENCE.length} parts"`,
+      `aria-label="Learn, in ${SPEC_SEQUENCE.length} parts"`,
     );
     // The failure mode this guards: a hardcoded count that was right when written and
     // silently wrong after the next append or removal. A spelled-out number is the only
@@ -273,6 +286,15 @@ describe("the pager's aria-label names the true count", () => {
     // And the rail draws one entry per stop, so the announced count is the count.
     expect([...html.matchAll(/<li /g)]).toHaveLength(SPEC_SEQUENCE.length);
   });
+
+  it.each(SPEC_SEQUENCE.map((page) => [page.href, page.step, page.nav]))(
+    "highlights %s as the current Learn stop",
+    (href, step, nav) => {
+      const html = renderToStaticMarkup(createElement(SpecPager, { href }));
+      expect(html.match(/aria-current="page"/g)).toHaveLength(1);
+      expect(html).toContain(`aria-current="page" class="text-cyan">${step} ${nav}</span>`);
+    },
+  );
 });
 
 describe("the anchors the split would otherwise have broken", () => {

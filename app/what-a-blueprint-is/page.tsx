@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { allBlueprints, getNodeCard, getOntologyView } from "@/lib/content";
-import { GuardrailShape, HandoverAxis } from "@/components/explain/ConceptFigures";
-import { RunLayers } from "@/components/explain/RunLayers";
+import { RunSystemMap } from "@/components/explain/RunSystemMap";
 import { Folder } from "@/components/home/lifecycle/Folder";
 import {
   CardStackFigure,
@@ -525,7 +524,7 @@ export default function WhatABlueprintIsPage() {
           checked against the folder rather than remembered: `blueprint.dot`, `cards/*.yaml`,
           `README.md`, `AGENTS.md`. The folder also holds `factory.dot` and this list does
           not — see `BUNDLE_FILES` for why a build product is not part of what a bundle is. */}
-      <section className="border-t border-line bg-void py-14 sm:py-16">
+      <section id="bundle" className="scroll-mt-24 border-t border-line bg-void py-14 sm:py-16">
         <div className="container-page">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-center lg:gap-14">
             {/* The caption is the component's now, not a sibling here: `Folder` centres its
@@ -570,7 +569,7 @@ export default function WhatABlueprintIsPage() {
         </div>
       </section>
 
-      <section className="border-t border-line bg-surface py-16">
+      <section id="parts" className="scroll-mt-24 border-t border-line bg-surface py-16">
         <div className="container-page flex flex-col gap-8">
           <SectionHeading
             eyebrow="Three parts"
@@ -700,14 +699,14 @@ export default function WhatABlueprintIsPage() {
           `bg-void` against the surface above and below it: the run down this page is void
           (header) / surface / VOID / surface, so the seam is a ground change rather than
           another hairline in a column that already has three. */}
-      <section className="border-t border-line bg-void py-16 sm:py-20">
+      <section id="run" className="scroll-mt-24 border-t border-line bg-void py-16 sm:py-20">
         <div className="container-page flex flex-col gap-10">
           <SectionHeading
             eyebrow="Around it"
             title="What a blueprint needs before it moves"
             lead="A blueprint is a specification and specifications do not run. Three other words travel with it."
           />
-          <RunLayers />
+          <RunSystemMap />
         </div>
       </section>
 
@@ -747,8 +746,7 @@ export default function WhatABlueprintIsPage() {
           casualty. It was the page's only `Correction`, which also takes the amber that
           component spent with it — amber on this site is `ComingSoonBadge` and
           `.route-box`, and a bordered amber note was neither. */}
-      <section id="the-words" className="scroll-mt-24 border-t border-line bg-surface py-16">
-        <div className="container-page flex flex-col gap-8">
+      {/* Guardrail and handover examples now live only on their relevant reference pages. */}
           {/* The section's `SectionHeading` — eyebrow "The words", title "Guardrails, and where
               the checking stops", and a lead promising "one of them at close range" — is
               gone on the author's instruction: "the content below are some examples to fix
@@ -814,8 +812,6 @@ export default function WhatABlueprintIsPage() {
               what `HandoverAxis` draws, as a named handover on one axis. Standing first,
               the three bands were two unexplained columns; standing second, they are that
               axis seen close up, on one node. */}
-          <HandoverAxis />
-          <GuardrailShape />
 
           {/* "Many nodes, and the thing that runs them" stood here, over a paragraph, and
               `EvalHarnessBlueprint` under it. Both are gone on 2026-08-08 and both are
@@ -829,9 +825,6 @@ export default function WhatABlueprintIsPage() {
               decide e agisce in loop") and the harness its RUNTIME, and "model + harness"
               leaves out the tools, the memory and the state. `RunLayers` writes all four
               definitions from that table and none of them as a sum. */}
-
-        </div>
-      </section>
 
       {/* ---------- "One factory, drawn" was here, and is gone ----------
           The author asked for the section removed entirely (2026-08-07). It was

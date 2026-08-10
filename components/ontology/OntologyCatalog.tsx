@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import type { OntologyTerm, TermKind } from "@/lib/core";
 import { CORE_PHASE_IDS, partitionTerms } from "@/lib/core";
 import { getOntologyView, getRegistry } from "@/lib/content";
@@ -11,12 +10,6 @@ import {
   markerWeight,
   termUsageIndex,
 } from "@/components/ontology/TermTable";
-
-export const metadata: Metadata = {
-  title: "Ontology",
-  description:
-    "The controlled vocabulary every DarkPrint node card is written against, the five lifecycle phases, node types, risk markers, data types and tool capabilities, with the subsumption hierarchy the static analyzers read.",
-};
 
 /** A term id quoted inside prose, in the same mono the rows use. */
 /** A link from the index above into the section that holds those terms. */
@@ -92,7 +85,31 @@ function KindHeader({
   );
 }
 
-export default function OntologyPage() {
+/** Keep lookup rows visible; tuck explanatory context behind one predictable control. */
+function KindNotes({ children }: { children: React.ReactNode }) {
+  return (
+    <details className="group border-t border-line">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-3 font-mono text-[11px] uppercase tracking-[0.12em] text-muted transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60">
+        How to read this set
+        <span
+          aria-hidden
+          className="text-base text-cyan transition-transform group-open:rotate-45"
+        >
+          +
+        </span>
+      </summary>
+      <div className="flex flex-col gap-4 pb-5">{children}</div>
+    </details>
+  );
+}
+
+export function OntologyCatalog({
+  beforeHeading,
+  showHeading = true,
+}: {
+  beforeHeading?: React.ReactNode;
+  showHeading?: boolean;
+}) {
   const view = getOntologyView();
   const registry = getRegistry();
   const usage = termUsageIndex(registry);
@@ -174,6 +191,7 @@ export default function OntologyPage() {
        `py-12` and then an ad-hoc `mt-10` under the heading, so the three registry shelves
        — blueprints, nodes, ontology — each opened with a different amount of air. */
     <div className="container-page py-12 sm:py-16">
+      {showHeading && beforeHeading}
       {/* The lead was 62 words listing all five fields, which the figure below now
           draws. It says what the vocabulary is for and stops.
 
@@ -184,11 +202,12 @@ export default function OntologyPage() {
           the one fact of the three that a reader has to carry off this page — a card
           declares `ontology_version` against it — so it belongs beside the name rather
           than three clauses into a paragraph. */}
-      <SectionHeading
-        as="h1"
-        title={
-          <>
-            Ontology{" "}
+      {showHeading && (
+        <SectionHeading
+          as="h1"
+          title={
+            <>
+              Ontology{" "}
             {/* Mono, dim, and a step down, the way a version is written everywhere else
                 on this site: `CardStackFigure` sets `v{version}` at the right of a card's
                 id, and the node pages set the same run beside a card ref. `font-normal`
@@ -198,15 +217,16 @@ export default function OntologyPage() {
                 `align-middle` rather than a baseline: at 48px against 20px the two
                 baselines put the version's cap-height well under the word's, which reads
                 as a subscript rather than as a label. */}
-            <span className="align-middle font-mono text-[0.45em] font-normal tracking-normal text-dim">
-              v{version}
-            </span>
-          </>
-        }
-        eyebrow="The shared vocabulary"
-        lead={`Every structural field on a node card points into the ${title} rather than saying something in free text, which is what lets an analyzer reason about a graph it has never seen.`}
-        className="mb-16"
-      />
+              <span className="align-middle font-mono text-[0.45em] font-normal tracking-normal text-dim">
+                v{version}
+              </span>
+            </>
+          }
+          eyebrow="The shared vocabulary"
+          lead={`Every structural field on a node card points into the ${title} rather than saying something in free text, which is what lets an analyzer reason about a graph it has never seen.`}
+          className="mb-16"
+        />
+      )}
 
       {/* ---------- The five kinds ----------
 
@@ -294,7 +314,7 @@ export default function OntologyPage() {
           >
             <KindLink href="#risk-markers">Risk markers</KindLink>, what it could damage:{" "}
             <Roots ids={termRootIds(view, "risk-marker")} />. Each priced one carries a
-            weight the security metric charges.
+            weight the static risk analysis charges.
           </ReachRow>
           <ReachRow
             field="inputs · outputs"
@@ -349,7 +369,7 @@ export default function OntologyPage() {
           />
           <div className="flex flex-col gap-5 px-5 py-5">
             <TermTable terms={phases} />
-            <div className="flex flex-col gap-4 border-t border-line pt-5">
+            <KindNotes>
               <p className="prose-lane text-sm leading-relaxed text-muted">
                 These five are what the word <em>blueprint</em> means here, from the request
                 to a plan, from the plan to an artefact, to the checks, to the fix, to the
@@ -375,7 +395,7 @@ export default function OntologyPage() {
                 phases it leaves to somebody else, and nothing scores a node for standing
                 outside them.
               </p>
-            </div>
+            </KindNotes>
           </div>
         </section>
 
@@ -393,7 +413,7 @@ export default function OntologyPage() {
           />
           <div className="flex flex-col gap-5 px-5 py-5">
             <TermTree kind="node-type" ontology={view} />
-            <div className="flex flex-col gap-4 border-t border-line pt-5">
+            <KindNotes>
               {/* No `.prose-lane` on these two, on the author's instruction 2026-08-08.
                   The measure governs body prose a reader settles into; these sit directly
                   under a term tree they are annotating, and a 36rem column beside a
@@ -426,7 +446,7 @@ export default function OntologyPage() {
                     : `${stillSpelledThatWay} card${stillSpelledThatWay === 1 ? "" : "s"} in the registry still spell it that way, and nothing forces them to change.`}
                 </p>
               )}
-            </div>
+            </KindNotes>
           </div>
         </section>
 
@@ -444,9 +464,9 @@ export default function OntologyPage() {
           />
           <div className="flex flex-col gap-5 px-5 py-5">
             <TermTree kind="risk-marker" ontology={view} showWeight />
-            <div className="flex flex-col gap-4 border-t border-line pt-5">
+            <KindNotes>
               <p className="prose-lane text-sm leading-relaxed text-muted">
-                The security analyzer starts every blueprint at a clean 4 and subtracts the weight of every marker present, then clamps the
+                The static risk analyzer starts every blueprint at a clean 4 and subtracts the weight of every marker present, then clamps the
                 result into 1–4. A marker counts <strong className="font-medium text-fg">
                 once for the whole blueprint</strong> however many nodes carry it, gravity,
                 not frequency, and the explanation still lists every node that fired it.
@@ -465,7 +485,7 @@ export default function OntologyPage() {
                 changing one is a patch of the ontology version, because it re-scores every
                 blueprint in the archive.
               </p>
-            </div>
+            </KindNotes>
           </div>
         </section>
 
@@ -483,7 +503,7 @@ export default function OntologyPage() {
           />
           <div className="flex flex-col gap-5 px-5 py-5">
             <TermTree kind="data-type" ontology={view} />
-            <div className="flex flex-col gap-4 border-t border-line pt-5">
+            <KindNotes>
               <p className="prose-lane text-sm leading-relaxed text-muted">
                 Every port on every card declares one, and the resolver checks both ends before a blueprint is allowed to load: an edge
                 type-checks when the producer&apos;s type is the consumer&apos;s, or
@@ -493,7 +513,7 @@ export default function OntologyPage() {
                 the analyzer finds the node that produces the criteria, and therefore how it
                 can tell whether the node being judged can see them.
               </p>
-            </div>
+            </KindNotes>
           </div>
         </section>
 
@@ -506,7 +526,7 @@ export default function OntologyPage() {
           <KindHeader id="tools-heading" kind="tool" count={tools.length} />
           <div className="flex flex-col gap-5 px-5 py-5">
             <TermTree kind="tool" ontology={view} />
-            <div className="flex flex-col gap-4 border-t border-line pt-5">
+            <KindNotes>
               <p className="prose-lane text-sm leading-relaxed text-muted">
                 A card lists capabilities, not vendors,{" "}
                 <Id>web-search</Id> rather than the name of one search API, so the same
@@ -517,7 +537,7 @@ export default function OntologyPage() {
                 from its host. The two live in different dimensions and never resolve to
                 each other.
               </p>
-            </div>
+            </KindNotes>
           </div>
         </section>
       </div>

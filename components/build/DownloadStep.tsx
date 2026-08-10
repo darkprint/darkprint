@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { DownloadPanel, type DownloadCard } from "@/components/blueprint/DownloadPanel";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import {
   BUNDLE_AGENTS,
   BUNDLE_README,
@@ -221,10 +221,12 @@ export function DownloadStep({
           sentence beside it is pinned in `components/site/honesty.test.ts` alongside its
           twin in `AgentHandoff` below, because a page that just handed over an agent-ready
           folder is the page most likely to read as though the call already exists. */}
-      <p className="flex flex-wrap items-center gap-2 text-[13px] leading-relaxed text-dim">
-        <ComingSoonBadge />
-        Not built yet: your agent querying the registry over MCP for the blueprint that
-        best fits a goal like this one.
+      <p className="text-[13px] leading-relaxed text-dim">
+        To start from registry retrieval instead of this starter,{" "}
+        <Link href="/mcp" className="text-cyan underline decoration-cyan/40 underline-offset-4">
+          connect your agent through MCP
+        </Link>
+        .
       </p>
 
       {/* `AgentHandoff` does not render inside this component. It sits one level up, in
