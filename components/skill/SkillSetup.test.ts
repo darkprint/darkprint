@@ -69,9 +69,19 @@ describe("the tutorial covers what a reader is in for", () => {
    * The interview framing, which is the whole reason this is a tutorial rather than a
    * command in a box. A reader who expects a generator types one line, waits, and finds
    * the skill asking them questions.
+   *
+   * Reworded 2026-08-11, not weakened, so the case follows the wording instead of failing
+   * on it. The sentence was "It is an interview and not a generator"; the density pass made
+   * it "An interview, not a generator", which drops four words and says the same thing in
+   * the same place. The rule this file works to is the one its own deleted cases record: a
+   * case comes out when the copy it guards is DELETED, with the reason in the commit. This
+   * copy is not deleted, so neither is the case.
+   *
+   * What is held is still the claim and not the connective — the noun and the refusal, in
+   * that order, at the head of step 2.
    */
   it("says it is an interview and not a generator", () => {
-    expect(text).toContain("interview and not a generator");
+    expect(text).toContain("interview, not a generator");
   });
 
   it("names the files it leaves behind, in the shape the registry stores", () => {

@@ -211,18 +211,48 @@ function InOut({ lines }: { lines: readonly (readonly [string, string])[] }) {
 }
 
 /**
- * What the interview wants out of the reader, in the order it asks, one line per phase of
+ * What the interview wants out of the reader, in the order it asks, one row per phase of
  * `skills/darkprint/SKILL.md`: the artefact, the gate, the nodes, the ports and the absent
- * edge, the cap on the cycle. Written from that document rather than from an idea of what
- * a blueprint interview ought to cover, and it is the part of this page most likely to go
+ * edge, the cap on the cycle. Written from that document rather than from an idea of what a
+ * blueprint interview ought to cover, and it is the part of this page most likely to go
  * stale, since the skill is read over git by a CLI this repository does not test.
+ *
+ * ── The labels are new, and they are the part to be careful with ──
+ * Each sentence gained a two-word label in a fixed left column on 2026-08-11. As five
+ * bullets these were five paragraphs of up to eighteen words with nothing to scan by; the
+ * label is what lets a reader find the row they are being asked about rather than reading
+ * all five to locate one.
+ *
+ * The staleness risk this docblock already carried now has a second half. A sentence that
+ * drifts from `SKILL.md` describes the interview wrongly; a LABEL that drifts renames a
+ * phase of it, and a caption that renames the thing it captions is worse than no caption.
+ * Two of the five are that document's own words — `the nodes` is Phase 1's title exactly,
+ * and `the check` is the noun Phase 0 uses for the gate. `the outcome` and `the loop` name
+ * what a phase establishes rather than the phase.
+ *
+ * `the boundaries` is the one that is neither, and it is recorded here rather than left for
+ * somebody to find: it covers Phase 2 (`the ports`) and Phase 3 (`the absent edge`), and
+ * `SKILL.md` spends `boundary` on a release boundary and on the `spec`'s own sentences, never
+ * on these. Phase 3 is the one that document calls "the centre of the grill and the reason
+ * the format exists", so this label is where the most is folded away. It is the author's
+ * copy and it ships as given; if the two phases ever need telling apart on this page, this
+ * is the row that splits.
+ *
+ * Two sentences are also trimmed at the head, because the label now says that part: "what
+ * you want done, and…" and "which node does each part of it" lost their opening clauses.
  */
-const QUESTIONS: readonly string[] = [
-  "what you want done, and what exists at the end that does not exist now",
-  "the command that exits non-zero when the work is wrong",
-  "which node does each part of it, and whether that node is an agent, a tool or a person",
-  "what has to reach each node, and what must never reach it",
-  "where the loop closes, and how many turns it may take before it stops",
+const QUESTIONS: readonly { label: string; text: string }[] = [
+  { label: "the outcome", text: "what exists at the end that does not exist now" },
+  { label: "the check", text: "the command that exits non-zero when the work is wrong" },
+  {
+    label: "the nodes",
+    text: "who does each part, and whether that is an agent, a tool or a person",
+  },
+  { label: "the boundaries", text: "what has to reach each node, and what must never" },
+  {
+    label: "the loop",
+    text: "where it closes, and how many turns it may take before it stops",
+  },
 ];
 
 export function SkillSetup({ className }: { className?: string }) {
@@ -289,28 +319,50 @@ export function SkillSetup({ className }: { className?: string }) {
             this page. */}
         <div className="flex flex-col gap-6">
           <div className="flex min-w-0 flex-col gap-4">
+            {/* Tightened with the table below it, and it says one thing more than it did:
+                "Five things". The count was carried by the bullets and nothing else, and a
+                labelled table is scanned rather than read through, so the number a reader
+                is committing to now has to be in the sentence. */}
             <p className="text-[15px] leading-relaxed text-muted">
-              It is an interview and not a generator. Ask it for a blueprint and it starts
-              by asking you what the work is, because a graph nobody described is a graph
-              nobody can check. Expect to decide the things you would have had to decide
-              anyway.
+              An interview, not a generator. Ask it for a blueprint and it asks you what the
+              work is first, because a graph nobody described is a graph nobody can check.
+              Five things, all of which you would have had to decide anyway.
             </p>
 
             <div className="flex min-w-0 flex-col gap-3">
               <span className="label">What it asks</span>
-              {/* `gap-2.5` between items, not `gap-1.5`: five items of up to eighteen words
-                  at 1.6 leading are five paragraphs, and a list of paragraphs needs a gap a
-                  reader can see between them. */}
-              <ul className="flex flex-col gap-2.5">
+              {/* A hairline table, not a bullet list.
+                  ------------------------------------------------------------
+                  It was five `<li>` of up to eighteen words at `gap-2.5`, and the gap was
+                  there because five sentences that long ARE five paragraphs. That is the
+                  shape the label fixes rather than the spacing: a reader arriving at this
+                  panel wants to know what they are about to be asked, and five paragraphs
+                  answer that only by being read end to end. With a two-word label in a fixed
+                  column the same five are scannable, and the sentence beside each is the
+                  answer to "what does that mean" rather than the only way in.
+
+                  Still a `<ul>`. It is five items of one kind and the label is the item's
+                  own name, not a header over a column of values — `QUESTIONS` has no second
+                  axis, so this is a list that happens to be aligned, and a `<table>` here
+                  would promise a grid that is not there. The label and its sentence sit in
+                  one `<li>` so a screen reader takes them together.
+
+                  148px is the mock's column and it is a `sm:` and up rule: at 390 a fixed
+                  148 leaves about 170 for a fifteen-word sentence, which wraps to four lines
+                  beside a two-word label. Below `sm` the two stack, which the mock has no
+                  width to show. */}
+              <ul className="flex min-w-0 flex-col border-t border-line">
                 {QUESTIONS.map((question) => (
                   <li
-                    key={question}
-                    className="flex gap-2 text-[15px] leading-relaxed text-muted"
+                    key={question.label}
+                    className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1 border-b border-line py-[13px] sm:grid-cols-[148px_minmax(0,1fr)] sm:gap-5"
                   >
-                    <span className="shrink-0 text-cyan" aria-hidden>
-                      ·
+                    <span className="font-mono text-[12px] leading-relaxed tracking-[0.06em] text-blueprint-ink">
+                      {question.label}
                     </span>
-                    <span className="min-w-0">{question}</span>
+                    <span className="min-w-0 text-[15px] leading-relaxed text-muted">
+                      {question.text}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -359,7 +411,13 @@ export function SkillSetup({ className }: { className?: string }) {
 
       {/* ---------- 03 · read it back ---------- */}
       <article className="panel flex min-w-0 flex-col gap-4 p-5">
-        <StepHeading index={3} title="See what you end up holding" />
+        {/* "Keep the folder", not "See what you end up holding", since 2026-08-11. The old
+            title described the reader's posture at the end of a tutorial; this one names the
+            thing, which is what the other two headings do — "Install it", "Answer its
+            questions". It is also four words against six in a heading a screen reader reads
+            as one of three steps in a sequence, and the panel under it opens on the folder
+            anyway. Nothing inside the step moved with it. */}
+        <StepHeading index={3} title="Keep the folder" />
 
         {/* The panel centred, its sentence under it, since 2026-08-08. The author: "align
             central the left part with the right part … instead place the text Drop the

@@ -68,7 +68,17 @@ export default function SkillPage() {
         as="h1"
         eyebrow="Setup"
         title="Assisted Design"
-        lead="One command puts a blueprint-writing skill in your own agent, and it works today. It asks your agent to ask you: what the work is, who does which part of it, and what must never reach whom. What it leaves behind is a bundle the registry stores."
+        /* Two sentences, not three, since 2026-08-11. The middle one — "It asks your agent
+           to ask you: what the work is, who does which part of it, and what must never reach
+           whom" — was a summary of step 2's list, and step 2's list sits 200px below it and
+           says the same thing five times more precisely. A lead that previews a table the
+           reader is about to reach is spending the top of the page on the second-best
+           statement of it.
+
+           What the two survivors carry is the pair a stranger needs before scrolling: that
+           this is one command into an agent they already have, and that what comes back is
+           text on their disk rather than an account somewhere. */
+        lead="One command puts a blueprint-writing skill in the agent you already use. It interviews you about the work, then writes what you decided as a folder of text the registry can store."
       />
 
       {/* `CreateEntry` stood here, above the steps: a goal field, a textarea that wrote a
