@@ -21,7 +21,7 @@ import { cx } from "@/lib/format";
       and sat two items apart, and neither said which one you wanted.
    2. **MCP stood as a peer of the two content types.** A protocol the site does not
       implement had the same weight in the chrome as the registry's own shelves.
-   3. **The vocabulary browser had no entry at all.** `/ontology` is one of the three things
+   3. **The ontology browser had no entry at all.** `/ontology` is one of the three things
       the registry holds, it has a browser and a profile tab, and the only route to it in
       the nav was the Learn menu's row for the *spec document* about it.
 
@@ -29,19 +29,31 @@ import { cx } from "@/lib/format";
    ways to make one, Learn unchanged in mechanism, Publish as the button, and the account
    last, where a reader already looks for identity.
 
-   ── Decision 1: `/ontology` is "Vocabulary" here, and `/spec/ontology` stays "Ontology" ──
+   ── Decision 1: `/ontology` is "Ontology", and the spec row takes its siblings' shape ──
    The browser and the spec document about it are two routes, and `nav.test.ts` forbids one
-   label on two of them. "Vocabulary" is what the browser is for — the words a blueprint and
-   a card are allowed to use — and "Ontology" is the name of the format, which is what the
-   Learn stop teaches. Neither route moves.
+   label on two of them. That constraint was answered for a while by calling the browser
+   "Vocabulary" — the words a blueprint and a card are allowed to use — and leaving
+   "Ontology" to the format.
+
+   The author overruled it on 2026-08-12: "adopt the term Ontology also for /ontology page …
+   be consistent through all the website". One concept, one word, everywhere it appears —
+   the route is `/ontology`, the file is `ontology/`, the field on a card is
+   `ontology_version`, and the chrome was the only surface calling it something else.
+
+   So the collision is resolved at the other end, and the fix was available all along:
+   `/spec/ontology` becomes "Ontology file (YAML)", which is the shape its two siblings in
+   the same menu already have — "Blueprint file (DOT)", "Node card (YAML)". Those pages'
+   own `h1`s differ from their nav rows in exactly this way ("The node card, in YAML"), so
+   nothing on the spec page moves. Neither route moves either.
    ============================================================ */
 
 export const NAV = [
   { href: "/blueprints", label: "Blueprints", group: "browse" },
   { href: "/nodes", label: "Cards", group: "browse" },
   /* The third thing the registry holds. It had no entry in the chrome at all until this
-     pass; see decision 1 in the header docblock for why it is not called "Ontology". */
-  { href: "/ontology", label: "Vocabulary", group: "browse" },
+     pass, and was called "Vocabulary" until 2026-08-12; see decision 1 in the header
+     docblock for why the word changed and what it cost the spec row below. */
+  { href: "/ontology", label: "Ontology", group: "browse" },
   /* MCP first, then the skill. The author set this order in the footer and it holds here
      too: the two are not a sequence, and the one a reader is likelier to be looking for by
      name goes first.
@@ -64,7 +76,10 @@ export const NAV = [
   { href: "/what-a-blueprint-is", label: "What a blueprint is", group: "docs" },
   { href: "/spec/topology", label: "Blueprint file (DOT)", group: "docs" },
   { href: "/spec/card", label: "Node card (YAML)", group: "docs" },
-  { href: "/spec/ontology", label: "Ontology", group: "docs" },
+  /* "Ontology file (YAML)" and not "Ontology": the browser one group up took that word on
+     the author's instruction, and this row moves to the shape its two siblings above it
+     already have rather than the browser wearing a synonym. See decision 1. */
+  { href: "/spec/ontology", label: "Ontology file (YAML)", group: "docs" },
   { href: "/reading-the-radar", label: "How a blueprint is graded", group: "docs" },
   /* `/towards-a-dark-factory` stood here as `group: "guides"` and was deleted 2026-08-11.
      `guides` is not one of the groups this file renders (`browse`, `build`, `action`,

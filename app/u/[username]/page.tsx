@@ -183,7 +183,7 @@ export default async function Page({ params }: PageProps<"/u/[username]">) {
             {terms.length > 0 && (
               <section className="flex flex-col gap-5">
                 <SectionTitle
-                  label="Vocabulary terms"
+                  label="Ontology terms"
                   dot="var(--color-violet)"
                   count={terms.length}
                 />

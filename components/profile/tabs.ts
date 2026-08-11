@@ -42,7 +42,9 @@ export const PROFILE_TABS: readonly ProfileTab[] = [
   { id: "blueprints", label: "Blueprints", segment: "blueprints" },
   { id: "cards", label: "Cards", segment: "cards" },
   { id: "saved", label: "Saved", segment: "saved", ownerOnly: true },
-  { id: "terms", label: "Vocabulary terms", segment: "terms" },
+  /* "Ontology terms" since 2026-08-12, with the nav rows and the browser's count line: one
+     word for the thing across the whole site, on the author's instruction. */
+  { id: "terms", label: "Ontology terms", segment: "terms" },
 ];
 
 /** Where a tab points, for one handle. */

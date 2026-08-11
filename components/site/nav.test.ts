@@ -328,21 +328,27 @@ describe("the nav is a complete map of the routes", () => {
   const ELSEWHERE = new Set(["upload"]);
 
   /**
-   * Decision 1 of the accounts pass, held from both ends.
+   * Decision 1 of the accounts pass, held from both ends, and rewritten twice.
    *
-   * This used to assert that `/ontology` was NOT in the header at all, which was true and
-   * was the defect: the vocabulary browser is one of the three things the registry holds
-   * and the only route to it in the chrome was the Learn menu's row for the spec document
-   * ABOUT it. The browser now has its own row, and the two routes keep two names — the
-   * rule this file's first block enforces is one label per route, and calling both of them
-   * "Ontology" is exactly what that forbids.
+   * It first asserted that `/ontology` was NOT in the header at all, which was true and was
+   * the defect: the ontology browser is one of the three things the registry holds and the
+   * only route to it in the chrome was the Learn menu's row for the spec document ABOUT it.
+   * The browser got its own row, and the collision that created was resolved by calling the
+   * browser "Vocabulary" — which this case then pinned.
    *
-   * So the claim is stronger than it was: both routes are in the header, and they are
-   * called different things on purpose.
+   * The author overruled that on 2026-08-12 ("adopt the term Ontology also for /ontology
+   * page … be consistent through all the website"), so the case is rewritten rather than
+   * deleted: the claim it holds is unchanged and only the answer moved. Both routes are in
+   * the header, they are called different things on purpose, and the browser is the one
+   * that gets the bare word.
+   *
+   * The spec row takes its siblings' shape instead — `/spec/topology` is "Blueprint file
+   * (DOT)" and `/spec/card` is "Node card (YAML)" — which is asserted here too, because a
+   * future rename reaching for the short form would reopen exactly this.
    */
-  it("names the vocabulary browser and its spec page differently", () => {
-    expect(HEADER_LABELS.get("/spec/ontology")).toBe("Ontology");
-    expect(HEADER_LABELS.get("/ontology")).toBe("Vocabulary");
+  it("gives the ontology browser the bare word, and the spec page its file form", () => {
+    expect(HEADER_LABELS.get("/ontology")).toBe("Ontology");
+    expect(HEADER_LABELS.get("/spec/ontology")).toBe("Ontology file (YAML)");
   });
 
   it("uses the shared 00–06 sequence for the Learn dropdown", () => {

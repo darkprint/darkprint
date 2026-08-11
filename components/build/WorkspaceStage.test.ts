@@ -37,7 +37,11 @@ describe("WorkspaceStage", () => {
       createElement(WorkspaceStage, { state: buildState(base), marks: [], onTabOpen: () => {} }),
     );
     const text = plainText(html);
-    for (const label of ["Graph", "DOT", "Cards", "Vocabulary", "Score"]) {
+    /* "Ontology" and not "Vocabulary" since 2026-08-12: the site calls the thing one word
+       everywhere now, on the author's instruction, and this tab was one of the surfaces
+       still using the other. The tab's `id` is untouched and still `vocabulary` — it keys
+       `Surface` and the pane module, which no reader sees. */
+    for (const label of ["Graph", "DOT", "Cards", "Ontology", "Score"]) {
       expect(text).toContain(label);
     }
   });

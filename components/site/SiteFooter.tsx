@@ -27,6 +27,10 @@ import { RUNS, SPEC_SEQUENCE, type SpecRun } from "@/components/spec/sequence";
 const LEARN_LABELS: Record<string, string> = {
   "/spec/topology": "Blueprint file (DOT)",
   "/spec/card": "Node card (YAML)",
+  /* No row for `/spec/ontology`. It carries its long form in `sequence.ts` itself since the
+     Vocabulary → Ontology rename, because the header's Learn dropdown prints `page.nav`
+     directly and would otherwise have shown "Ontology" beside the Browse row of the same
+     name. See the note on that stop. */
   "/reading-the-radar": "How a blueprint is graded",
 };
 
@@ -56,9 +60,9 @@ export const COLS = [
       { href: "/blueprints", label: "Blueprints" },
       { href: "/nodes", label: "Cards" },
       /* The third thing the registry holds. It had no row in either the header or the
-         footer until this pass; see `SiteHeader`'s decision 1 for why the browser is
-         "Vocabulary" here and the spec document about it stays "Ontology" below. */
-      { href: "/ontology", label: "Vocabulary" },
+         footer until this pass, and was called "Vocabulary" in both until 2026-08-12; see
+         `SiteHeader`'s decision 1. `nav.test.ts` holds this label to the header's. */
+      { href: "/ontology", label: "Ontology" },
     ],
   },
   {

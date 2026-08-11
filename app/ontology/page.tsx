@@ -13,20 +13,26 @@ import {
 } from "@/components/ontology/VocabularyBrowser";
 
 /* ============================================================
-   /ontology — the vocabulary, browsable.
+   /ontology — the ontology, browsable.
 
    ── This route did not exist ──
    `app/ontology/[...term]/` is a catch-all, and a catch-all does not match its own parent,
    so `/ontology` answered 404 while `README.md` described it as the browser and
    `next.config.ts` 308'd `/ontologies` onto it — a redirect that landed on a 404. Nothing
    noticed because nothing linked it: until the nav pass the chrome had no entry for the
-   vocabulary at all, which is precisely the third problem that pass names.
+   ontology at all, which is precisely the third problem that pass names.
 
-   ── Why it is called Vocabulary in the chrome and Ontology on the spec page ──
-   Two routes, two questions. This one lists the words a blueprint and a card are allowed
-   to use; `/spec/ontology` is the specification of the format those words are written in.
-   `components/site/nav.test.ts` forbids one label on two routes, and calling both of them
-   "Ontology" is exactly what that forbids.
+   ── It was called "Vocabulary" here until 2026-08-12 ──
+   Two routes, two questions: this one lists the words a blueprint and a card are allowed to
+   use, and `/spec/ontology` is the specification of the format those words are written in.
+   `components/site/nav.test.ts` forbids one label on two routes, so one of them had to be a
+   synonym, and this page took it.
+
+   The author ruled the other way: "adopt the term Ontology also for /ontology page … be
+   consistent through all the website." The word is `/ontology` in the URL, `ontology/` in a
+   bundle and `ontology_version` on a card, and the chrome was the only surface disagreeing.
+   The spec row is now "Ontology file (YAML)", the shape its siblings in that menu already
+   had — see `SiteHeader`'s decision 1.
 
    Every figure on this page is counted off the archive at build time. The usage column is
    the one worth naming: it says how many cards in `content/` name each term, which is what
@@ -34,7 +40,7 @@ import {
    ============================================================ */
 
 export const metadata: Metadata = {
-  title: "Vocabulary",
+  title: "Ontology",
   description:
     "Every term a blueprint and a node card are allowed to use: node types, data types, tools, risk markers and the five phases, with what each one costs and how many cards name it.",
 };
@@ -117,7 +123,7 @@ export default function Page() {
     <div className="container-page flex flex-col gap-10 py-10 lg:py-12">
       <SectionHeading
         as="h1"
-        eyebrow="Vocabulary"
+        eyebrow="Ontology"
         title="The words a blueprint is written in"
         lead="One curated set of identifiers, plus whatever a bundle declares in its own namespace. A card may only name a term that resolves here, which is what makes an edge checkable at all."
       />

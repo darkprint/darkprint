@@ -57,10 +57,16 @@ import { SourcePanel } from "@/components/ui/SourcePanel";
    page is a server component and takes no props.
    ============================================================ */
 
+/* "The ontology file (YAML)", not "Ontology", and the two siblings already read this way —
+   `/spec/card` is "The node card, in YAML" and `/spec/topology` is "The blueprint file
+   (DOT)". This one was the exception, and it stopped being affordable on 2026-08-12 when
+   `/ontology` took the bare word on the author's instruction: two routes, two tabs, and
+   both of them saying "Ontology · DarkPrint". The page's own `h1` still says Ontology,
+   because that is the thing this document specifies. */
 export const metadata: Metadata = {
-  title: "Ontology",
+  title: "The ontology file (YAML)",
   description:
-    "Layer 3 of a DarkPrint blueprint: one versioned vocabulary of phases, node types, data types, tool capabilities and risk markers, which is where every identifier in the graph and the cards is finally resolved.",
+    "Layer 3 of a DarkPrint blueprint: one versioned ontology of phases, node types, data types, tool capabilities and risk markers, which is where every identifier in the graph and the cards is finally resolved.",
 };
 
 const HERE = "/spec/ontology";

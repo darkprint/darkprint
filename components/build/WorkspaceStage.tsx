@@ -149,7 +149,11 @@ const TABS: readonly { id: TabId; label: string }[] = [
   { id: "graph", label: "Graph" },
   { id: "dot", label: "DOT" },
   { id: "cards", label: "Cards" },
-  { id: "vocabulary", label: "Vocabulary" },
+  /* The tab is labelled "Ontology" and the id stays `vocabulary`. The label is the site's
+     one word for the thing, renamed with the nav on 2026-08-12; the id keys `Surface`,
+     `SURFACE_OF` and the pane's own module, none of which a reader ever sees, and renaming
+     those would be a refactor riding along on a copy change. */
+  { id: "vocabulary", label: "Ontology" },
   { id: "score", label: "Score" },
 ];
 

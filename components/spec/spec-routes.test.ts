@@ -194,8 +194,25 @@ describe("the sequence and the filesystem agree", () => {
     expect(Object.keys(RUNS).sort()).toEqual(["practice", "specification"]);
   });
 
-  it("names stop 03 Ontology everywhere", () => {
-    expect(SPEC_LAYERS[2]).toMatchObject({ step: "03", nav: "Ontology", title: "Ontology" });
+  /* `nav` and `title` deliberately DIFFER on this stop, where the case used to require them
+     to match.
+
+     They matched while "Ontology" was free. It stopped being free on 2026-08-12: the author
+     asked the browser at `/ontology` to take the word across the whole site, and `nav` is
+     what the header's Learn dropdown, the footer, the rail and the pager print — so the
+     short form would have put two "Ontology" rows in one header pointing at two routes.
+     `nav` took the file form its two siblings already wear in the chrome ("Blueprint file
+     (DOT)", "Node card (YAML)"); `title` is the page's own heading, and the thing the page
+     specifies is still the ontology.
+
+     Both halves are still pinned, so the stop cannot drift to a third name in either slot,
+     and `nav.test.ts` holds the chrome end of the same rename. */
+  it("names stop 03 for the file in the chrome and the concept on the page", () => {
+    expect(SPEC_LAYERS[2]).toMatchObject({
+      step: "03",
+      nav: "Ontology file (YAML)",
+      title: "Ontology",
+    });
   });
 
   it("gives every page a distinct step, route and title", () => {

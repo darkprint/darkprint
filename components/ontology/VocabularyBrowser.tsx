@@ -211,7 +211,11 @@ export function VocabularyBrowser({
               reader learns the two are the same terms arranged twice, without being told. */}
           <p role="status" aria-live="polite" aria-atomic="true">
             <span className="text-fg">{results.length}</span> of {terms.length} term
-            {terms.length === 1 ? "" : "s"} · vocabulary v{version}
+            {/* "ontology v", not "vocabulary v", on the author's instruction of 2026-08-12.
+                The version this prints is `OntologyView.ontology.version`, the semver the
+                core file carries and the number a card's own `ontology_version` is checked
+                against — so the word here now matches the field it is reading. */}
+            {terms.length === 1 ? "" : "s"} · ontology v{version}
             {active === 0 && " · grouped by kind"}
           </p>
           {active > 0 && (
