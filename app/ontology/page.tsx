@@ -5,6 +5,7 @@ import { partitionTerms } from "@/lib/core";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ButtonLink } from "@/components/ui/Button";
 import { markerWeight, termUsageIndex } from "@/components/ontology/TermTable";
+import { OntologyCatalog } from "@/components/ontology/OntologyCatalog";
 import {
   VocabularyBrowser,
   type VocabularyRow,
@@ -91,7 +92,15 @@ export default function Page() {
         </span>
       </div>
 
-      <VocabularyBrowser terms={rows} version={version} />
+      {/* The catalog is the page's resting state and the filter bar sits over it, so the
+          reader who came to read gets the five kinds with their trees and their notes, and
+          the reader who came holding a word gets the flat matching rows. `OntologyCatalog`
+          renders here on the server and travels through the client boundary as children,
+          which is what lets it keep reading the ontology view and drawing the subsumption
+          rails that no serialisable row shape could carry. */}
+      <VocabularyBrowser terms={rows} version={version}>
+        <OntologyCatalog />
+      </VocabularyBrowser>
     </div>
   );
 }

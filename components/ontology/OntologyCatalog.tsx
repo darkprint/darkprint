@@ -2,7 +2,6 @@ import type { OntologyTerm, TermKind } from "@/lib/core";
 import { CORE_PHASE_IDS, partitionTerms } from "@/lib/core";
 import { getOntologyView, getRegistry } from "@/lib/content";
 import { ReachList, ReachRow } from "@/components/ui/ReachList";
-import { SectionHeading } from "@/components/ui/SectionHeading";
 import { TermTree, termRootIds } from "@/components/ontology/TermTree";
 import {
   TERM_KIND_META,
@@ -103,18 +102,23 @@ function KindNotes({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function OntologyCatalog({
-  beforeHeading,
-  showHeading = true,
-}: {
-  beforeHeading?: React.ReactNode;
-  showHeading?: boolean;
-}) {
+/* ── Where this mounts, and what it stopped carrying ──
+
+   It is the browse half of `/ontology`, rendered on the server and handed to
+   `VocabularyBrowser` as its children: the filter bar shows this when nothing is filtered
+   and its own flat result list when something is. One enumeration on screen at a time, and
+   the shape a reader who is reading rather than looking one word up actually wants.
+
+   It used to carry the page heading and its own `container-page`, because it was mounted
+   as a full-bleed band on `/spec/ontology` and had to supply both. The route owns them now,
+   so this is a plain stack: a component that sets its own page container cannot be nested
+   inside one, and this one is. */
+export function OntologyCatalog() {
   const view = getOntologyView();
   const registry = getRegistry();
   const usage = termUsageIndex(registry);
 
-  const { version, title, terms } = view.ontology;
+  const { version, terms } = view.ontology;
   const nodeTypes = view.byKind("node-type");
   const dataTypes = view.byKind("data-type");
   const tools = view.byKind("tool");
@@ -186,48 +190,7 @@ export function OntologyCatalog({
   ];
 
   return (
-    /* `py-12 sm:py-16` and a `mb-16` under the heading: the section tier, which is what
-       every document-page header on the site opens with now. This page used a flat
-       `py-12` and then an ad-hoc `mt-10` under the heading, so the three registry shelves
-       — blueprints, nodes, ontology — each opened with a different amount of air. */
-    <div className="container-page py-12 sm:py-16">
-      {showHeading && beforeHeading}
-      {/* The lead was 62 words listing all five fields, which the figure below now
-          draws. It says what the vocabulary is for and stops.
-
-          It opened with "Five lists of terms, N of them curated as <title> v<version>"
-          until the author asked that sentence out and the version onto the heading
-          instead. Nothing true is lost: the five kinds are the figure directly below,
-          the count is the first panel under it ("The curated core"), and the version is
-          the one fact of the three that a reader has to carry off this page — a card
-          declares `ontology_version` against it — so it belongs beside the name rather
-          than three clauses into a paragraph. */}
-      {showHeading && (
-        <SectionHeading
-          as="h1"
-          title={
-            <>
-              Ontology{" "}
-            {/* Mono, dim, and a step down, the way a version is written everywhere else
-                on this site: `CardStackFigure` sets `v{version}` at the right of a card's
-                id, and the node pages set the same run beside a card ref. `font-normal`
-                and `tracking-normal` because the heading around it is `font-semibold` at
-                -0.02em, and a mono run inherits both and comes out cramped and bold.
-
-                `align-middle` rather than a baseline: at 48px against 20px the two
-                baselines put the version's cap-height well under the word's, which reads
-                as a subscript rather than as a label. */}
-              <span className="align-middle font-mono text-[0.45em] font-normal tracking-normal text-dim">
-                v{version}
-              </span>
-            </>
-          }
-          eyebrow="The shared vocabulary"
-          lead={`Every structural field on a node card points into the ${title} rather than saying something in free text, which is what lets an analyzer reason about a graph it has never seen.`}
-          className="mb-16"
-        />
-      )}
-
+    <div>
       {/* ---------- The five kinds ----------
 
           This slot held silhouettes: one small SVG per kind, dots and edges laid out from

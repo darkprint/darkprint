@@ -26,6 +26,24 @@ import { useQueryState } from "@/components/ui/useQueryState";
    flat list of every term with its ancestry and what it costs — the three questions a
    reader has about a controlled vocabulary they are about to write a card against.
 
+   ── Two ways to read 50 terms, and only ever one of them on screen ──
+   This shipped as a flat list and nothing else, and the author's verdict was that the old
+   catalog described the terms better. It did, for reading: the catalog groups by kind,
+   draws `broader` as a tree with the subterms hanging off a rail, and puts the paragraph
+   that says how to read each kind under the terms themselves. A flat list throws all of
+   that away, and it throws it away for a reader who arrived to read rather than to look
+   one word up.
+
+   But it is the right shape for the reader who did arrive holding a word, which is what
+   the route had none of. So both are here and the filter decides which: with nothing
+   filtered this renders `children`, the catalog exactly as it was, and the moment a
+   search or a filter is set it renders the matching rows flat. One enumeration on screen
+   at a time, chosen by what the reader just did rather than by a toggle they have to find.
+
+   Ranking the two would have been the wrong call either way round: browsing a vocabulary
+   and searching one are different tasks, and a page that only does the second makes every
+   reader who wanted the first do it with Cmd-F.
+
    ── What this is not ──
    It is not `/spec/ontology`, which is the spec document about the format: what a term is,
    how the local overlay works, what the validator refuses. This is the terms themselves.
@@ -80,10 +98,19 @@ const KIND_LABEL: Record<string, string> = {
 export function VocabularyBrowser({
   terms,
   version,
+  children,
 }: {
   terms: readonly VocabularyRow[];
   /** The vocabulary's own semver, printed with the count. */
   version: string;
+  /**
+   * The catalog, rendered on the server and shown whenever nothing is filtered.
+   *
+   * It arrives already rendered, so this file still never touches `lib/core` or the
+   * filesystem: a server component passed as children through a client boundary is the one
+   * way `OntologyCatalog` and its trees can keep reading the ontology view directly.
+   */
+  children: React.ReactNode;
 }) {
   const { params, set: setParam, clear } = useQueryState();
   const search = params.get("q") ?? "";
@@ -116,82 +143,98 @@ export function VocabularyBrowser({
   const active = [kind, origin].filter((v) => v !== null).length + (search === "" ? 0 : 1);
 
   return (
+    /* `max-w-4xl` on the bar, the count line and the flat list, and nothing on the children.
+       The catalog sets that same 896px on its own panels and deliberately lets the
+       governance band under them run the full container, which is an argument it makes in
+       its own file; clamping it from out here would overrule that silently. So the
+       constraint goes on the three things this component draws, and the effect is one left
+       and one right edge over every term on the page either way it is rendered. A filter
+       bar wider than the list it filters is exactly the stray edge the catalog's own
+       comments spent a pass removing. */
     <div className="flex flex-col gap-5">
-      <RegistryFilterBar
-        id="vocabulary-filters"
-        label="Filter the vocabulary"
-        results={results.length}
-        total={terms.length}
-        active={active}
-      >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <SearchField
-            value={search}
-            onChange={(value) => setParam("q", value || null)}
-            placeholder="Search ids, labels, descriptions…"
-            ariaLabel="Search the vocabulary"
-          />
+      <div className="flex max-w-4xl flex-col gap-5">
+        <RegistryFilterBar
+          id="vocabulary-filters"
+          label="Filter the vocabulary"
+          results={results.length}
+          total={terms.length}
+          active={active}
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <SearchField
+              value={search}
+              onChange={(value) => setParam("q", value || null)}
+              placeholder="Search ids, labels, descriptions…"
+              ariaLabel="Search the vocabulary"
+            />
 
-          <label className="flex items-center gap-2">
-            <span className="sr-only">Filter by kind</span>
-            <select
-              value={kind ?? ""}
-              onChange={(e) => setParam("kind", e.target.value || null)}
-              aria-label="Filter by kind"
-              className={CONTROL_CLASS}
-            >
-              <option value="">All kinds</option>
-              {kinds.map(([id, count]) => (
-                <option key={id} value={id}>
-                  {KIND_LABEL[id] ?? id} ({count})
-                </option>
-              ))}
-            </select>
-          </label>
+            <label className="flex items-center gap-2">
+              <span className="sr-only">Filter by kind</span>
+              <select
+                value={kind ?? ""}
+                onChange={(e) => setParam("kind", e.target.value || null)}
+                aria-label="Filter by kind"
+                className={CONTROL_CLASS}
+              >
+                <option value="">All kinds</option>
+                {kinds.map(([id, count]) => (
+                  <option key={id} value={id}>
+                    {KIND_LABEL[id] ?? id} ({count})
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          {/* Doc 3 §7's one real division: a term is curated or it arrived namespaced
-              through the local channel, and which of the two it is decides whether
-              anybody may edit it. */}
-          <label className="flex items-center gap-2">
-            <span className="sr-only">Filter by origin</span>
-            <select
-              value={origin ?? ""}
-              onChange={(e) => setParam("origin", e.target.value || null)}
-              aria-label="Filter by origin"
-              className={CONTROL_CLASS}
+            {/* Doc 3 §7's one real division: a term is curated or it arrived namespaced
+                through the local channel, and which of the two it is decides whether
+                anybody may edit it. */}
+            <label className="flex items-center gap-2">
+              <span className="sr-only">Filter by origin</span>
+              <select
+                value={origin ?? ""}
+                onChange={(e) => setParam("origin", e.target.value || null)}
+                aria-label="Filter by origin"
+                className={CONTROL_CLASS}
+              >
+                <option value="">Core and local</option>
+                <option value="core">Curated core</option>
+                <option value="local">Local namespace</option>
+                <option value="deprecated">Deprecated</option>
+              </select>
+            </label>
+          </div>
+        </RegistryFilterBar>
+
+        <div className="flex items-center justify-between gap-3 font-mono text-xs text-dim">
+          {/* The count line stands over both views, and says which one is below it. Reading
+              "50 of 50" over a set of grouped panels and "9 of 50" over a flat list is how a
+              reader learns the two are the same terms arranged twice, without being told. */}
+          <p role="status" aria-live="polite" aria-atomic="true">
+            <span className="text-fg">{results.length}</span> of {terms.length} term
+            {terms.length === 1 ? "" : "s"} · vocabulary v{version}
+            {active === 0 && " · grouped by kind"}
+          </p>
+          {active > 0 && (
+            <button
+              type="button"
+              onClick={() => clear(["q", "kind", "origin"])}
+              className="cursor-pointer text-muted underline-offset-4 transition-colors hoverable:hover:text-cyan hoverable:hover:underline"
             >
-              <option value="">Core and local</option>
-              <option value="core">Curated core</option>
-              <option value="local">Local namespace</option>
-              <option value="deprecated">Deprecated</option>
-            </select>
-          </label>
+              Clear filters
+            </button>
+          )}
         </div>
-      </RegistryFilterBar>
-
-      <div className="flex items-center justify-between gap-3 font-mono text-xs text-dim">
-        <p role="status" aria-live="polite" aria-atomic="true">
-          <span className="text-fg">{results.length}</span> of {terms.length} term
-          {terms.length === 1 ? "" : "s"} · vocabulary v{version}
-        </p>
-        {active > 0 && (
-          <button
-            type="button"
-            onClick={() => clear(["q", "kind", "origin"])}
-            className="cursor-pointer text-muted underline-offset-4 transition-colors hoverable:hover:text-cyan hoverable:hover:underline"
-          >
-            Clear filters
-          </button>
-        )}
       </div>
 
-      {results.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-line bg-surface/40 px-5 py-16 text-center text-sm text-muted">
+      {active === 0 ? (
+        children
+      ) : results.length === 0 ? (
+        <p className="max-w-4xl rounded-lg border border-dashed border-line bg-surface/40 px-5 py-16 text-center text-sm text-muted">
           No term matches. The vocabulary is curated and small on purpose: doc 3 §6 adds a
           term rather than letting one be coined at the point of use.
         </p>
       ) : (
-        <ul className="overflow-hidden rounded-lg border border-line bg-surface">
+        <ul className="max-w-4xl overflow-hidden rounded-lg border border-line bg-surface">
           {results.map((term) => (
             <li
               key={term.id}

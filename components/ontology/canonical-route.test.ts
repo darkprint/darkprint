@@ -58,18 +58,24 @@ describe("the canonical ontology route", () => {
    *
    * So the split is by question and this is what holds it: the browser enumerates, the spec
    * page specifies and links across. Either half absorbing the other fails here.
+   *
+   * The catalog moved WITH the enumeration rather than being deleted by it: `/ontology`
+   * mounts it as the browser's unfiltered view, so the one exhaustive listing on the site
+   * is on the one route that is allowed one. Both halves are named below, because "the
+   * spec page does not enumerate" is only half the rule and the other half went missing
+   * once already.
    */
   it("keeps the two routes answering different questions", () => {
     const browser = readFileSync(`${ROOT}/app/ontology/page.tsx`, "utf8");
     const spec = readFileSync(`${ROOT}/app/spec/ontology/page.tsx`, "utf8");
 
-    // The browser is the filtered list, on the bar the other two registry browsers use.
+    // The browser is the filtered list, on the bar the other two registry browsers use,
+    // over the catalog it falls back to when nothing is filtered.
     expect(browser).toContain("VocabularyBrowser");
+    expect(browser).toContain("<OntologyCatalog");
     // The spec page enumerates nothing and points at the page that does.
     expect(spec).not.toContain("<OntologyCatalog");
     expect(spec).toContain('href="/ontology"');
-    // And the browser is not a second copy of the spec page's exposition.
-    expect(browser).not.toContain("OntologyCatalog");
   });
 
   /**
@@ -86,16 +92,23 @@ describe("the canonical ontology route", () => {
   });
 
   /**
-   * `OntologyCatalog` is unmounted and kept.
+   * The catalog is the browser's unfiltered view, and it still says what it always said.
    *
-   * It is the shape a future browse-by-kind view starts from, and deleting it would throw
-   * away the one drawing of the vocabulary that groups by kind and names the roots. What is
-   * asserted is that it stays coherent, not that anything renders it — so the day somebody
-   * mounts it again they inherit a component that still says what it always said.
+   * It stood unmounted for one pass, kept as "the shape a future browse-by-kind view starts
+   * from". That view is this one. Deleting it at any point would have thrown away the only
+   * drawing of the vocabulary that groups by kind, hangs the subtypes off their parents and
+   * puts the paragraph about how to read a kind under the terms of that kind, none of which
+   * a flat list can carry, and the author asked for exactly that reading back.
+   *
+   * Two claims: the sections are intact, and the component supplies no page container of
+   * its own. It used to, because it mounted as a full-bleed band; it is nested inside the
+   * route's container now, and a second `container-page` inside the first pads the whole
+   * catalog twice and narrows it against the heading above it.
    */
-  it("keeps the catalog component intact for a future mount", () => {
+  it("keeps the catalog intact and lets its route own the page container", () => {
     const catalog = readFileSync(`${ROOT}/components/ontology/OntologyCatalog.tsx`, "utf8");
     expect(catalog).toContain("The five kinds of term");
     expect(catalog).toContain("One curated core, room for local terms");
+    expect(catalog).not.toContain('className="container-page');
   });
 });
