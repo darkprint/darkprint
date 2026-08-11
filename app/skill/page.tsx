@@ -1,9 +1,52 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
-import { PanelHeading, SectionHeading } from "@/components/ui/SectionHeading";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SkillSetup } from "@/components/skill/SkillSetup";
 import { MCP_ROUTE } from "@/lib/mcp";
+
+/**
+ * The three things around the tutorial that do not exist.
+ *
+ * Two of them are the sentence `components/site/honesty.test.ts` pins, split and named: the
+ * account and the private draft, then the release and the push. The third is the one the
+ * author asked for on 2026-08-08 — the interview drawing on cards other people have already
+ * written rather than on nothing — and it is here rather than beside the other two because
+ * it is a use OF `/mcp` and `/mcp` is a design, so it is one unbuilt thing depending on
+ * another.
+ *
+ * No dates and no counts. `honesty.test.ts` holds this page to describing what is not built
+ * without promising when, and a row saying how much of a catalogue would be reachable is a
+ * specification wearing a badge.
+ */
+const UNBUILT: readonly { label: string; body: React.ReactNode }[] = [
+  {
+    label: "accounts",
+    body: "an account of your own, and a blueprint kept private while it is under construction",
+  },
+  {
+    label: "publish from the editor",
+    body: "releasing a version, and pushing a change to it, without leaving your agent",
+  },
+  {
+    label: "grounded design",
+    /* A colon where the mock writes an em dash. `app/skill/page.tsx` is walked by
+       `workspace.test.ts`'s route check and `APP_EXEMPT` does not cover it. */
+    body: (
+      <>
+        the interview searching cards other people already wrote instead of asking you to
+        describe a node from nothing: it needs{" "}
+        <Link
+          href={MCP_ROUTE}
+          className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
+        >
+          MCP
+        </Link>
+        , which is not built either
+      </>
+    ),
+  },
+];
 
 /* ============================================================
    Half of `/install`, and the half that runs.
@@ -98,134 +141,72 @@ export default function SkillPage() {
           since; grep before assuming that is still true. */}
       <SkillSetup className="mt-10" />
 
-      {/* 40px above the rule and 40px under it: one block tier on each side, so this reads
-          as a limit the tutorial above it provokes rather than as one more step in the
-          sequence. A single panel now, not the pair this page used to print — the MCP half
-          of that pair is its own route. */}
-      <section className="mt-10 border-t border-line pt-10">
-        <SectionHeading
-          as="h2"
-          eyebrow="Next"
-          title="Not built yet"
-          lead="Two things this page will eventually do and does not do now. Nothing below this line is a control, and none of it runs."
-        />
+      {/* One block tier above the rule and one under it, so this reads as a limit the
+          tutorial provokes rather than as one more step in the sequence.
 
-        {/* Two panels, since 2026-08-08. The section's lead says "one thing"; it says two
-            now, and the second is the one the author asked for. */}
-        <div className="mt-10 grid gap-5 lg:grid-cols-2">
-        <article className="panel flex min-w-0 flex-col gap-4 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <PanelHeading as="h3">Share what you wrote</PanelHeading>
-            <ComingSoonBadge />
-          </div>
+          Three rows, not two panels, since 2026-08-11. It was a `SectionHeading` with its
+          own eyebrow plus two `.panel` articles carrying two paragraphs each: four
+          paragraphs of hedging to close a page whose subject runs. The rows say the same
+          things in the register step 2 already uses, and the eyebrow goes because `.eyebrow`
+          is rationed to one per page and the `h1` has spent it.
 
-          {/* One sentence covering all four unbuilt capabilities, rather than four lines
-              each reading as a feature with a date on it. Pinned in
-              `components/site/honesty.test.ts`: the skill's whole point is that a reader
-              ends up holding a blueprint, and the question a reader holding one asks next
-              is where to put it. The answer is nowhere, and the answer has to be on the
-              page that just handed them the folder. */}
-          <p className="text-[15px] leading-relaxed text-muted">
-            Not built yet: an account of your own, a blueprint kept private while it is
-            under construction, publishing one to the registry, and pushing a change to it
-            straight from Claude Code as you work.
-          </p>
+          ── The lead is longer than the mock's, and that is `honesty.test.ts` ──
+          The mock closes the lead at "The skill runs today. Three things around it do not,
+          and nothing below this line is a control." That sentence is better and it cannot
+          ship on its own yet.
 
-          <p className="text-[15px] leading-relaxed text-muted">
-            What is real is the folder on your disk and what you can do with it here. Read
-            it back on{" "}
-            <Link
-              href="/upload"
-              className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
-            >
-              Upload blueprint
-            </Link>{" "}
-            as often as you like, and compare it against the nine bundles in{" "}
-            <Link
-              href="/blueprints"
-              className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
-            >
-              the gallery
-            </Link>
-            , which are the same files published the same way. Reading the registry from
-            inside your agent instead is{" "}
-            <Link
-              href={MCP_ROUTE}
-              className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
-            >
-              the other half of setup
-            </Link>
-            , and it is not built either.
-          </p>
-        </article>
+          `components/site/honesty.test.ts` pins this page to the string "not built yet: an
+          account of your own, a blueprint kept private while it is under construction,
+          publishing one to the registry, and pushing a change to it straight from Claude
+          Code", verbatim and in the open, and rows one and two below are that sentence
+          split. Splitting it satisfies the CLAIM — all four refusals are still on the page,
+          named and grouped — and breaks the assertion, because the assertion is over a
+          contiguous string.
 
-        {/* ---------- the second unbuilt half: the skill reading the registry ----------
-            The author, 2026-08-08: the skill should also be able to "use the mcp to look
-            for node cards already prepared by others from which draw inspiration for
-            drawing their own blueprint … in this way the assisted design is grounded to
-            already defined cards or even subgraphs of blueprints that can be used."
+          The hand-off's §A4 gives two ways out and this is the first: keep the sentence as
+          the section lead. The second is to update the pin in the same commit with a reason,
+          which is a deliberate edit to the one file this repository does not let a pass edit
+          quietly, and the author has not been asked yet. So the sentence stays and the cost
+          is one lap of redundancy against rows one and two, which is the cheaper of the two
+          mistakes: a duplicated sentence is noise, and a limit statement that leaves during
+          a density pass is the exact failure `honesty.test.ts` exists to prevent. Its own
+          header records the site losing one twice that way.
 
-            It belongs on this page and under this rule, and both halves of that matter.
-
-            On this page, because it changes what the INTERVIEW is. The skill asks a reader
-            what the work is and writes a graph from the answers; with the registry behind
-            it, the same question can be answered against cards somebody has already written
-            and scored, so a reader picks a published node rather than describing one from
-            nothing. That is a different tool, not a faster one, and the page that installs
-            the tool is where the difference is worth stating.
-
-            Under this rule, because none of it exists. `/mcp` is a design and this is a use
-            of it, so it is one unbuilt thing depending on another. `ComingSoonBadge` says
-            so in the site's own amber, which `app/globals.css` reserves for exactly this
-            claim, and the sentence says it again in words rather than leaving the badge to
-            carry it alone — the same rule the panel beside it follows.
-
-            No number, no date, and no list of what would be reachable. `components/site/
-            honesty.test.ts` holds this page to describing what is not built without
-            promising when; a paragraph enumerating a catalogue nobody can query yet would
-            be a specification wearing a badge. */}
-        <article className="panel flex min-w-0 flex-col gap-4 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <PanelHeading as="h3">Design against what exists</PanelHeading>
-            <ComingSoonBadge />
-          </div>
-
-          <p className="text-[15px] leading-relaxed text-muted">
-            The interview draws on nothing but your answers today. Pointed at the registry
-            over{" "}
-            <Link
-              href={MCP_ROUTE}
-              className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
-            >
-              MCP
-            </Link>
-            , it could search the cards other people have already written and scored, and
-            offer you one instead of asking you to describe a node from nothing: a published
-            card to pin, or a run of nodes out of a blueprint that already does part of what
-            you are describing.
-          </p>
-
-          <p className="text-[15px] leading-relaxed text-muted">
-            That is what would make assisted design grounded rather than generative. It
-            needs the server, and the server is not built, so today the skill writes what
-            you tell it and the comparing is yours to do in{" "}
-            <Link
-              href="/blueprints"
-              className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
-            >
-              the gallery
-            </Link>{" "}
-            and{" "}
-            <Link
-              href="/nodes"
-              className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
-            >
-              the cards
-            </Link>
-            .
-          </p>
-        </article>
+          `/skill` is described as installing rather than running, which is the same
+          correction step 1 now makes: the skill's behaviour is not covered by anything
+          here. */}
+      <section className="mt-11 flex flex-col gap-5 border-t border-line pt-10">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="font-display text-2xl font-semibold text-fg">Not built yet</h2>
+          <ComingSoonBadge />
         </div>
+        <p className="max-w-[820px] text-[15px] leading-relaxed text-muted">
+          The DarkPrint skill installs today and three things around it do not, so nothing
+          below this line is a control. Not built yet: an account of your own, a blueprint
+          kept private while it is under construction, publishing one to the registry, and
+          pushing a change to it straight from Claude Code as you work.
+        </p>
+
+        {/* The same hairline rows step 2 draws, with the label in amber rather than
+            blueprint ink: `app/globals.css` reserves amber for a surface describing
+            something that does not exist, and three of them under one badge is exactly
+            that. 200px is the mock's track, since "publish from the editor" needs more than
+            step 2's 148; below `sm` the pair stacks, as there too. */}
+        <ul className="flex min-w-0 max-w-[860px] flex-col border-t border-line">
+          {UNBUILT.map((item) => (
+            <li
+              key={item.label}
+              className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1 border-b border-line py-3.5 sm:grid-cols-[200px_minmax(0,1fr)] sm:gap-5"
+            >
+              <span className="font-mono text-[12px] leading-relaxed tracking-[0.06em] text-amber">
+                {item.label}
+              </span>
+              <span className="min-w-0 text-[15px] leading-relaxed text-muted">
+                {item.body}
+              </span>
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );
