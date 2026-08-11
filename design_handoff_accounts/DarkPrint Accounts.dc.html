@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Geist:wght@400;500;600&display=swap" rel="stylesheet"><style>
+body{margin:0;background:#05060d;color:#e9ebf5;font-family:Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#38bdf8;text-decoration:none}
+a:hover{color:#7dd3fc}
+::selection{background:rgba(56,189,248,.35);color:#fff}
+.bpgrid{background-image:linear-gradient(rgba(116,180,255,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(116,180,255,.12) 1px,transparent 1px),linear-gradient(rgba(116,180,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(116,180,255,.05) 1px,transparent 1px);background-size:96px 96px,96px 96px,16px 16px,16px 16px;background-position:-1px -1px}
+.techgrid{background-image:linear-gradient(rgba(56,189,248,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.06) 1px,transparent 1px);background-size:48px 48px}
+.sc-label{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:400;letter-spacing:.18em;line-height:1.3;text-transform:uppercase;color:#828aa3}
+.sc-lead{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:500;letter-spacing:.14em;line-height:1.2;text-transform:uppercase;color:#e9ebf5}
+.sc-eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#38bdf8}
+.mono{font-family:'JetBrains Mono',monospace}
+.disp{font-family:'Space Grotesk',sans-serif}
+</style></helmet>
+
+<div style="display:flex;flex-direction:column;gap:0;background:#05060d">
+
+<!-- ═══════════ SCREEN 8 — Learn ═══════════ -->
+<section style="padding:44px 44px 40px;border-bottom:1px solid rgba(34,39,57,.6)">
+<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:20px">
+<span class="mono" style="font-size:10px;font-weight:600;padding:3px 7px;background:#e9ebf5;color:#05060d;border-radius:4px">08</span>
+<span class="disp" style="font-size:14px;font-weight:600;color:#e9ebf5">Learn · <span class="mono" style="font-size:13px;font-weight:400;color:#828aa3">SPEC_SEQUENCE · LearnShell · SideRail</span></span>
+<span style="font-size:12px;color:rgba(233,235,245,.45)">One flat sequence, or two named runs</span>
+</div>
+
+<div style="display:flex;gap:32px;align-items:flex-start;width:1280px">
+
+  <!-- current -->
+  <div style="flex:none;width:300px;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;gap:12px"><span class="sc-label">Today</span><span class="mono" style="font-size:11px;color:#828aa3">7 stops, one run</span></div>
+    <div style="border:1px solid #222739;border-radius:12px;background:#0a0c16;padding:20px">
+      <div style="border-bottom:1px solid #222739;padding:0 12px 16px;margin-bottom:12px">
+        <p class="sc-lead" style="margin:0">Learn</p>
+        <p class="mono" style="margin:8px 0 0;font-size:11px;color:#828aa3">3 of 7</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">00</span>What a blueprint is</span>
+        <span style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">01</span>Topology</span>
+        <span style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#e9ebf5;background:rgba(56,189,248,.05);border-left:2px solid #38bdf8"><span class="mono" style="font-size:10px;color:#38bdf8">02</span>Node card</span>
+        <span style="display:block;margin-left:22px;border-left:1px solid #222739;padding:6px 12px 6px 16px;font-size:12px;line-height:1.4;color:#9aa1ba">Reach and limits</span>
+        <span style="display:block;margin-left:22px;border-left:1px solid #222739;padding:6px 12px 6px 16px;font-size:12px;line-height:1.4;color:#9aa1ba">A real card, annotated</span>
+        <span style="display:block;margin-left:22px;border-left:1px solid #222739;padding:6px 12px 6px 16px;font-size:12px;line-height:1.4;color:#9aa1ba">Field reference</span>
+        <span style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">03</span>Ontology</span>
+        <span style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent;box-shadow:inset 0 -2px 0 rgba(255,84,112,.55)"><span class="mono" style="font-size:10px;color:#828aa3">04</span>Customize the starter blueprint</span>
+        <span style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">05</span>How a blueprint is graded</span>
+        <span style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent;box-shadow:inset 0 -2px 0 rgba(255,84,112,.55)"><span class="mono" style="font-size:10px;color:#828aa3">06</span>Towards a Dark Factory</span>
+      </div>
+    </div>
+    <p style="margin:0;font-size:12px;line-height:1.6;color:#9aa1ba">Stops 00–03 are a specification. Stops 04–06 are a sandbox, an explainer and an essay. One numbering says they are one reading, so a reader who came for DOT syntax is told they are two-sevenths through a course.</p>
+  </div>
+
+  <!-- proposed -->
+  <div style="flex:none;width:300px;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;gap:12px"><span class="sc-label">Proposed</span><span class="mono" style="font-size:11px;color:#34d399">two named runs</span></div>
+    <div style="border:1px solid #333a54;border-radius:12px;background:#0a0c16;padding:20px">
+      <div style="border-bottom:1px solid #222739;padding:0 12px 16px;margin-bottom:12px">
+        <p class="sc-lead" style="margin:0">Learn</p>
+        <p class="mono" style="margin:8px 0 0;font-size:11px;color:#828aa3">Specification · 3 of 4</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span class="mono" style="display:block;padding:4px 12px 6px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#38bdf8">Specification</span>
+        <span style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">00</span>What a blueprint is</span>
+        <span style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">01</span>Topology</span>
+        <span style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#e9ebf5;background:rgba(56,189,248,.05);border-left:2px solid #38bdf8"><span class="mono" style="font-size:10px;color:#38bdf8">02</span>Node card</span>
+        <span style="display:block;margin-left:22px;border-left:1px solid #222739;padding:6px 12px 6px 16px;font-size:12px;line-height:1.4;color:#9aa1ba">Reach and limits</span>
+        <span style="display:block;margin-left:22px;border-left:1px solid #222739;padding:6px 12px 6px 16px;font-size:12px;line-height:1.4;color:#9aa1ba">A real card, annotated</span>
+        <span style="display:block;margin-left:22px;border-left:1px solid #222739;padding:6px 12px 6px 16px;font-size:12px;line-height:1.4;color:#9aa1ba">Field reference</span>
+        <span style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">03</span>Ontology <span class="mono" style="margin-left:auto;font-size:11px;color:#828aa3">spec</span></span>
+        <span style="display:flex;gap:8px;align-items:baseline;border-radius:8px;padding:6px 12px 6px 40px;font-size:12px;color:#828aa3"><span style="color:#828aa3">└</span>Customize the starter <span class="mono" style="margin-left:auto;font-size:11px;color:#34d399">worked example</span></span>
+        <span style="height:1px;background:#222739;margin:10px 12px"></span>
+        <span class="mono" style="display:block;padding:4px 12px 6px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#828aa3">In practice</span>
+        <span style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">04</span>How a blueprint is graded</span>
+        
+      </div>
+    </div>
+    <p style="margin:0;font-size:12px;line-height:1.6;color:#9aa1ba">Six pages, one list in <span class="mono" style="font-size:11px">sequence.ts</span>. Two run labels; the sandbox loses its number, because an optional stop is not a stop; and the essay leaves the sequence altogether.</p>
+  </div>
+
+  <!-- notes + pager -->
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:20px;padding-top:32px">
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#38bdf8">The pager still crosses the boundary</span>
+      <div style="display:flex;gap:16px">
+        <div style="flex:1;min-width:0;border:1px solid rgba(255,176,32,.3);border-inline-start:2px solid rgba(255,176,32,.7);background:rgba(255,176,32,.05);border-radius:12px;padding:14px 16px">
+          <span class="mono" style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#ffb020">← Previous · Specification 02</span>
+          <p class="disp" style="margin:6px 0 0;font-size:15px;font-weight:600;color:#e9ebf5">The node card (YAML)</p>
+        </div>
+        <div style="flex:1;min-width:0;border:1px solid rgba(255,176,32,.3);border-inline-start:2px solid rgba(255,176,32,.7);background:rgba(255,176,32,.05);border-radius:12px;padding:14px 16px;text-align:right">
+          <span class="mono" style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#ffb020">Next · In practice 04 →</span>
+          <p class="disp" style="margin:6px 0 0;font-size:15px;font-weight:600;color:#e9ebf5">How a blueprint is graded</p>
+        </div>
+      </div>
+      <p style="margin:0;max-width:60ch;font-size:12px;line-height:1.6;color:#828aa3">The run name joins the label above the title, so a reader stepping out of the specification is told they are leaving it. One list, one pager, one <span class="mono" style="font-size:11px">specNeighbours()</span> — the grouping is presentational and the walk is unchanged.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;border-inline-start:2px solid rgba(255,84,112,.5);padding-left:16px">
+      <span class="mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#ff5470">Settled: the browser is the Vocabulary</span>
+      <p style="margin:0;max-width:60ch;font-size:13px;line-height:1.7;color:#9aa1ba">Two routes cannot share a label — <span class="mono" style="font-size:12px">nav.test.ts</span> fails the build for it. Decided: <span class="mono" style="font-size:12px">/ontology</span> is the <span style="color:#e9ebf5">Vocabulary</span>, the term list you walk, and Learn stop 03 stays <span style="color:#e9ebf5">Ontology</span>, the document that governs it. The route does not move; only what the bar and the rail call it.</p>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid #333a54;font-size:13px;color:#e9ebf5">Blueprints</span>
+        <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid #333a54;font-size:13px;color:#e9ebf5">Cards</span>
+        <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid rgba(52,211,153,.5);background:rgba(52,211,153,.08);font-size:13px;color:#34d399">Vocabulary</span>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;border-inline-start:2px solid rgba(167,139,250,.5);padding-left:16px">
+      <span class="mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#a78bfa">Settled: the essay leaves Learn</span>
+      <p style="margin:0;max-width:60ch;font-size:13px;line-height:1.7;color:#9aa1ba">&ldquo;Towards a Dark Factory&rdquo; is the site&rsquo;s thesis and the page most likely to be somebody&rsquo;s first, and it was the only stop with no sections, sitting last in a sequence about file formats. It leaves <span class="mono" style="font-size:12px">SPEC_SEQUENCE</span> and is linked from the landing as an essay. The route stays where it is; what goes is its step number, its rail row and its pager position — so <span class="mono" style="font-size:12px">specNeighbours()</span> ends at stop 04 and nothing walks into it by accident.</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════ SCREEN 7 — the shelf ═══════════ -->
+<section style="padding:44px 44px 40px;border-bottom:1px solid rgba(34,39,57,.6)">
+<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:20px">
+<span class="mono" style="font-size:10px;font-weight:600;padding:3px 7px;background:#e9ebf5;color:#05060d;border-radius:4px">07</span>
+<span class="disp" style="font-size:14px;font-weight:600;color:#e9ebf5">The shelf · <span class="mono" style="font-size:13px;font-weight:400;color:#828aa3">/blueprints</span></span>
+<span style="font-size:12px;color:rgba(233,235,245,.45)">Owner on the tile, and a stance on forks</span>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:32px;width:1280px">
+
+  <!-- tile: today vs proposed -->
+  <div style="display:flex;gap:32px;align-items:flex-start">
+
+    <div style="flex:none;width:380px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span class="sc-label">Today</span><span class="mono" style="font-size:11px;color:#828aa3">ContentCard</span></div>
+      <article style="position:relative;display:flex;flex-direction:column;overflow:hidden;border:1px solid #222739;background:#0a0c16;border-radius:12px">
+        <div style="display:flex;flex-direction:column;gap:6px;padding:16px 16px 12px">
+          <h3 class="disp" style="margin:0;padding-right:32px;font-size:18px;font-weight:600;line-height:1.35;color:#e9ebf5">Guarded Merge Bot</h3>
+          <p style="margin:0;padding-right:32px;font-size:14px;line-height:1.45;color:#9aa1ba">An agent line triages the PR and drafts the review, iterating with the test runner until the suite is green.</p>
+        </div>
+        <span style="position:absolute;right:8px;top:10px;z-index:20;display:inline-flex;align-items:center;justify-content:center;border:1px solid #222739;background:rgba(15,18,30,.9);border-radius:999px;padding:6px;color:#828aa3"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M6.75 4.75A1.75 1.75 0 0 1 8.5 3h7a1.75 1.75 0 0 1 1.75 1.75V21L12 17.65 6.75 21V4.75z"/></svg></span>
+        <div class="bpgrid" style="position:relative;height:112px;overflow:hidden;border-top:1px solid #222739;border-bottom:1px solid #222739;background:rgba(6,28,82,.4)">
+          <svg viewBox="11 -12 898 144" aria-hidden="true" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;opacity:.9">
+            <g fill="none" stroke-width="1.6" stroke="#74b4ff" stroke-opacity=".7"><path d="M 82.5 60 C 152 60, 168 60, 237.5 60"/><path d="M 282.5 60 C 352 60, 368 60, 437.5 60"/><path d="M 482.5 60 C 552 60, 568 30, 637.5 30"/><path d="M 482.5 60 C 552 60, 568 90, 637.5 90"/><path d="M 682.5 30 C 752 30, 768 60, 837.5 60"/><path d="M 682.5 90 C 752 90, 768 60, 837.5 60"/></g>
+            <g fill="#74b4ff" fill-opacity=".9"><path d="M 237.5 60 L 229.5 56.4 L 229.5 63.6 Z"/><path d="M 437.5 60 L 429.5 56.4 L 429.5 63.6 Z"/><path d="M 637.5 30 L 629.5 26.4 L 629.5 33.6 Z"/><path d="M 637.5 90 L 629.5 86.4 L 629.5 93.6 Z"/><path d="M 837.5 60 L 829.5 56.4 L 829.5 63.6 Z"/></g>
+            <g><g transform="translate(60 60)"><circle r="23" fill="#7dd3fc" fill-opacity=".12"/><circle r="13" fill="#7dd3fc" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#7dd3fc" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(260 60)"><circle r="23" fill="#38bdf8" fill-opacity=".12"/><circle r="13" fill="#38bdf8" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#38bdf8" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(460 60)"><circle r="23" fill="#34d399" fill-opacity=".12"/><circle r="13" fill="#34d399" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#34d399" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(660 30)"><circle r="23" fill="#7dd3fc" fill-opacity=".12"/><circle r="13" fill="#7dd3fc" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#7dd3fc" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(660 90)"><circle r="23" fill="#ff5470" fill-opacity=".12"/><circle r="13" fill="#ff5470" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#ff5470" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(860 60)"><circle r="23" fill="#34d399" fill-opacity=".12"/><circle r="13" fill="#34d399" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#34d399" stroke-opacity=".5" stroke-width="1"/></g></g>
+          </svg>
+          <div style="position:absolute;inset-inline:0;bottom:0;height:24px;background:linear-gradient(to top,#0a0c16,transparent)"></div>
+        </div>
+        <div style="display:flex;flex:1;flex-direction:column;gap:12px;padding:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid #222739;background:#0f121e;padding:2px 10px;font-size:11px;font-weight:500;color:#9aa1ba"><span style="width:6px;height:6px;border-radius:999px;background:#38bdf8"></span>Blueprint</span>
+            <span class="mono" style="font-size:11px;color:#9aa1ba">Conditional</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#code-review</span>
+            <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#CI</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #222739;padding-top:12px;margin-top:4px">
+            <span style="display:flex;align-items:center;gap:8px;box-shadow:inset 0 -2px 0 rgba(255,84,112,.55)"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,hsl(32 70% 72%),hsl(72 60% 66%));color:#05060d;font-size:11px;font-weight:600">SA</span><span style="font-size:12px;color:#9aa1ba">Sol Antczak</span></span>
+            <span class="mono" style="font-size:11px;color:#34d399">✓ resolved · 4 tools</span>
+          </div>
+        </div>
+      </article>
+      <p style="margin:0;font-size:12px;line-height:1.6;color:#9aa1ba">Identity is a face in the last row, under everything else. The tile cannot say the thing every other surface now leads with, and it has nowhere to state lineage.</p>
+    </div>
+
+    <div style="flex:none;width:380px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span class="sc-label">Proposed</span><span class="mono" style="font-size:11px;color:#34d399">owner / slug leads</span></div>
+      <article style="position:relative;display:flex;flex-direction:column;overflow:hidden;border:1px solid #333a54;background:#0a0c16;border-radius:12px">
+        <div style="display:flex;flex-direction:column;gap:6px;padding:16px 16px 12px">
+          <span style="display:flex;align-items:center;gap:7px;padding-right:32px"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,hsl(32 70% 72%),hsl(72 60% 66%));color:#05060d;font-size:11px;font-weight:600">SA</span><span class="mono" style="font-size:12px;color:#9aa1ba">sol-antczak</span><span class="mono" style="font-size:12px;color:#3b4058">/</span><span class="mono" style="font-size:12px;color:#38bdf8">guarded-merge-bot</span></span>
+          <h3 class="disp" style="margin:0;padding-right:32px;font-size:18px;font-weight:600;line-height:1.35;color:#e9ebf5">Guarded Merge Bot</h3>
+          <p style="margin:0;padding-right:32px;font-size:14px;line-height:1.45;color:#9aa1ba">An agent line triages the PR and drafts the review, iterating with the test runner until the suite is green.</p>
+        </div>
+        <span style="position:absolute;right:8px;top:10px;z-index:20;display:inline-flex;align-items:center;justify-content:center;border:1px solid #222739;background:rgba(15,18,30,.9);border-radius:999px;padding:6px;color:#828aa3"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M6.75 4.75A1.75 1.75 0 0 1 8.5 3h7a1.75 1.75 0 0 1 1.75 1.75V21L12 17.65 6.75 21V4.75z"/></svg></span>
+        <div class="bpgrid" style="position:relative;height:112px;overflow:hidden;border-top:1px solid #222739;border-bottom:1px solid #222739;background:rgba(6,28,82,.4)">
+          <svg viewBox="11 -12 898 144" aria-hidden="true" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;opacity:.9">
+            <g fill="none" stroke-width="1.6" stroke="#74b4ff" stroke-opacity=".7"><path d="M 82.5 60 C 152 60, 168 60, 237.5 60"/><path d="M 282.5 60 C 352 60, 368 60, 437.5 60"/><path d="M 482.5 60 C 552 60, 568 30, 637.5 30"/><path d="M 482.5 60 C 552 60, 568 90, 637.5 90"/><path d="M 682.5 30 C 752 30, 768 60, 837.5 60"/><path d="M 682.5 90 C 752 90, 768 60, 837.5 60"/></g>
+            <g fill="#74b4ff" fill-opacity=".9"><path d="M 237.5 60 L 229.5 56.4 L 229.5 63.6 Z"/><path d="M 437.5 60 L 429.5 56.4 L 429.5 63.6 Z"/><path d="M 637.5 30 L 629.5 26.4 L 629.5 33.6 Z"/><path d="M 637.5 90 L 629.5 86.4 L 629.5 93.6 Z"/><path d="M 837.5 60 L 829.5 56.4 L 829.5 63.6 Z"/></g>
+            <g><g transform="translate(60 60)"><circle r="23" fill="#7dd3fc" fill-opacity=".12"/><circle r="13" fill="#7dd3fc" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#7dd3fc" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(260 60)"><circle r="23" fill="#38bdf8" fill-opacity=".12"/><circle r="13" fill="#38bdf8" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#38bdf8" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(460 60)"><circle r="23" fill="#34d399" fill-opacity=".12"/><circle r="13" fill="#34d399" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#34d399" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(660 30)"><circle r="23" fill="#7dd3fc" fill-opacity=".12"/><circle r="13" fill="#7dd3fc" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#7dd3fc" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(660 90)"><circle r="23" fill="#ff5470" fill-opacity=".12"/><circle r="13" fill="#ff5470" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#ff5470" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(860 60)"><circle r="23" fill="#34d399" fill-opacity=".12"/><circle r="13" fill="#34d399" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#34d399" stroke-opacity=".5" stroke-width="1"/></g></g>
+          </svg>
+          <div style="position:absolute;inset-inline:0;bottom:0;height:24px;background:linear-gradient(to top,#0a0c16,transparent)"></div>
+        </div>
+        <div style="display:flex;flex:1;flex-direction:column;gap:12px;padding:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid #222739;background:#0f121e;padding:2px 10px;font-size:11px;font-weight:500;color:#9aa1ba"><span style="width:6px;height:6px;border-radius:999px;background:#38bdf8"></span>Blueprint</span>
+            <span class="mono" style="font-size:11px;color:#9aa1ba">Conditional</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#code-review</span>
+            <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#CI</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #222739;padding-top:12px;margin-top:4px">
+            <span class="mono" style="font-size:11px;color:#828aa3">v1.3.0 · Jun 20 · 7 forks</span>
+            <span class="mono" style="font-size:11px;color:#34d399">✓ resolved · 4 tools</span>
+          </div>
+        </div>
+      </article>
+      <p style="margin:0;font-size:12px;line-height:1.6;color:#9aa1ba">The owner line takes the row the star already shares, so nothing grows. The freed footer row carries the release and the fork count — the two facts a reader now needs before opening it.</p>
+    </div>
+
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:16px;padding-top:32px">
+      <p style="margin:0;max-width:44ch;font-size:13px;line-height:1.7;color:#9aa1ba">The tile keeps everything the current one argues for: the name above the drawing, three lines of summary before it, the 112px frame, the autonomy class without a number, and the star at <span class="mono" style="font-size:12px">z-20</span> over the stretched link.</p>
+      <p style="margin:0;max-width:44ch;font-size:13px;line-height:1.7;color:#9aa1ba">What it loses is the author chip in the footer, because the same fact now leads the tile. One identity per card, at the top, where every other surface puts it.</p>
+      <div style="border-inline-start:2px solid rgba(56,189,248,.5);padding-left:16px;display:flex;flex-direction:column;gap:6px">
+        <span class="mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#38bdf8">Same change on /nodes</span>
+        <p style="margin:0;max-width:40ch;font-size:12px;line-height:1.6;color:#828aa3">The node tile carries an avatar in the same place. It takes the owner line and keeps its lit disc, its type-grouped runs and its sticky headings — the best thing on either shelf, and nothing here touches it.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- shelf with a fork stance -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;gap:12px">
+      <span class="sc-label">The shelf, with forks</span>
+      <span class="mono" style="font-size:11px;color:#828aa3">the decision the gallery does not have yet</span>
+    </div>
+
+    <div style="border:1px solid #222739;border-radius:12px;background:#0a0c16;padding:20px">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:8px;flex:1;min-width:260px;height:40px;border:1px solid #222739;border-radius:8px;background:#0f121e;padding:0 12px"><span style="color:#828aa3;font-size:13px">⌕</span><span class="mono" style="font-size:12px;color:#828aa3">Search the registry…</span></span>
+        <span class="mono" style="display:inline-flex;align-items:center;height:40px;padding:0 12px;border:1px solid #222739;border-radius:8px;background:#0f121e;font-size:12px;color:#e9ebf5">Category: all ▾</span>
+        <span class="mono" style="display:inline-flex;align-items:center;height:40px;padding:0 12px;border:1px solid #222739;border-radius:8px;background:#0f121e;font-size:12px;color:#e9ebf5">Phase ▾</span>
+        <span class="mono" style="display:inline-flex;align-items:center;height:40px;padding:0 12px;border:1px solid #222739;border-radius:8px;background:#0f121e;font-size:12px;color:#e9ebf5">Autonomy ▾</span>
+        <span class="mono" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 12px;border:1px solid rgba(52,211,153,.45);border-radius:8px;background:rgba(52,211,153,.08);font-size:12px;color:#34d399">Forks: rolled up ▾</span>
+        <span class="mono" style="display:inline-flex;align-items:center;height:40px;padding:0 12px;border:1px solid #222739;border-radius:8px;background:#0f121e;font-size:12px;color:#e9ebf5">Sort: recent ▾</span>
+      </div>
+      <p style="margin:16px 0 0;max-width:80ch;font-size:12px;line-height:1.6;color:#828aa3">Default is <span style="color:#e9ebf5">rolled up</span>: a fork does not take a tile of its own on the shelf, it sits under the bundle it came from — the same call GitHub makes when it keeps forks out of search. Set it to <span class="mono">all</span> and every published fork gets its own tile; set it to <span class="mono">originals</span> and they disappear. Nine blueprints do not need this. Ninety do, and the shelf is where that decision is felt first.</p>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+
+        <div style="display:flex;flex-direction:column;gap:0">
+          <article style="display:flex;flex-direction:column;gap:10px;border:1px solid #333a54;background:rgba(15,18,30,.7);border-radius:12px 12px 0 0;border-bottom:0;padding:16px">
+            <span style="display:flex;align-items:center;gap:7px"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,hsl(32 70% 72%),hsl(72 60% 66%));color:#05060d;font-size:11px;font-weight:600">SA</span><span class="mono" style="font-size:12px;color:#9aa1ba">sol-antczak</span><span class="mono" style="font-size:12px;color:#3b4058">/</span><span class="mono" style="font-size:12px;color:#38bdf8">schema-forge-etl</span></span>
+            <h3 class="disp" style="margin:0;font-size:18px;font-weight:600;line-height:1.35;color:#e9ebf5">Schema Forge ETL</h3>
+            <p style="margin:0;font-size:14px;line-height:1.45;color:#9aa1ba">Infers a target schema from sampled rows, migrates the load, and rolls back on a type violation without asking.</p>
+            <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #222739;padding-top:10px">
+              <span class="mono" style="font-size:11px;color:#828aa3">v1.0.4 · Apr 30</span>
+              <span class="mono" style="font-size:11px;color:#9aa1ba">Closed-loop</span>
+            </div>
+          </article>
+          <div style="border:1px solid #333a54;border-radius:0 0 12px 12px;background:#0a0c16;overflow:hidden">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #222739;background:rgba(15,18,30,.4)">
+              <span class="mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#828aa3">2 published forks</span>
+              <span class="mono" style="margin-left:auto;font-size:11px;color:#38bdf8">show both ▾</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid #222739">
+              <span style="flex:none;color:#828aa3;font-size:12px">└</span>
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,hsl(268 70% 72%),hsl(308 60% 66%));color:#05060d;font-size:11px;font-weight:600">MV</span>
+              <a href="#7" class="mono" style="font-size:12px;color:#38bdf8">mara-veil / schema-forge-eu</a>
+              <span style="flex:1;min-width:0;font-size:12px;color:#828aa3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">rollback threshold lowered; retry given a budget</span>
+              <span class="mono" style="display:inline-flex;align-items:center;gap:6px;border:1px solid #222739;background:#0a0c16;border-radius:8px;padding:2px 10px;font-size:11px;color:#9aa1ba"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.47 5.006 5.53.804-4 3.9.944 5.507L12 16.9l-4.944 2.6.944-5.507-4-3.9 5.53-.804L12 3.5z"/></svg>18<span style="color:#ffb020" aria-hidden="true">◐</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 16px">
+              <span style="flex:none;color:#828aa3;font-size:12px">└</span>
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,hsl(120 70% 72%),hsl(160 60% 66%));color:#05060d;font-size:11px;font-weight:600">HI</span>
+              <a href="#7" class="mono" style="font-size:12px;color:#38bdf8">hachi / schema-forge-strict</a>
+              <span style="flex:1;min-width:0;font-size:12px;color:#828aa3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">every edge typed against the core lattice, no local terms</span>
+              <span class="mono" style="display:inline-flex;align-items:center;gap:6px;border:1px solid #222739;background:#0a0c16;border-radius:8px;padding:2px 10px;font-size:11px;color:#9aa1ba"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.47 5.006 5.53.804-4 3.9.944 5.507L12 16.9l-4.944 2.6.944-5.507-4-3.9 5.53-.804L12 3.5z"/></svg>4<span style="color:#ffb020" aria-hidden="true">◐</span></span>
+            </div>
+          </div>
+          <p style="margin:12px 0 0;font-size:12px;line-height:1.6;color:#9aa1ba"><span class="mono" style="color:#34d399">Rolled up</span> — the parent keeps its tile; its forks are a listing under it, named and starred but not competing for the eye. One graph, one entry.</p>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <article style="display:flex;flex-direction:column;gap:10px;border:1px solid #222739;background:#0a0c16;border-radius:12px;padding:16px">
+            <span style="display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,hsl(268 70% 72%),hsl(308 60% 66%));color:#05060d;font-size:11px;font-weight:600">MV</span><span class="mono" style="font-size:12px;color:#9aa1ba">mara-veil</span><span class="mono" style="font-size:12px;color:#3b4058">/</span><span class="mono" style="font-size:12px;color:#38bdf8">schema-forge-eu</span><span class="mono" style="border:1px solid #222739;border-radius:999px;padding:1px 8px;font-size:11px;color:#828aa3">forked</span></span>
+            <p class="mono" style="margin:0;font-size:11px;color:#828aa3">forked from <a href="#7" style="color:#9aa1ba">sol-antczak / schema-forge-etl</a></p>
+            <h3 class="disp" style="margin:0;font-size:18px;font-weight:600;line-height:1.35;color:#e9ebf5">Schema Forge, EU</h3>
+            <p style="margin:0;font-size:14px;line-height:1.45;color:#9aa1ba">The rollback threshold lowered and the retry node given a budget, for loads that cannot be replayed.</p>
+            <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #222739;padding-top:10px">
+              <span class="mono" style="font-size:11px;color:#828aa3">v1.2.0 · Jul 09</span>
+              <span class="mono" style="font-size:11px;color:#9aa1ba">Closed-loop</span>
+            </div>
+          </article>
+          <p style="margin:0;font-size:12px;line-height:1.6;color:#9aa1ba"><span class="mono" style="color:#38bdf8">Forks: all</span> — the fork stands as its own tile, and the lineage line is what stops a reader mistaking two near-identical drawings for two unrelated designs. The <span class="mono">forked</span> pill sits beside the slug, never in place of it.</p>
+          <div style="border-inline-start:2px solid rgba(255,176,32,.6);background:rgba(255,176,32,.05);padding:12px 16px;border-radius:0 8px 8px 0">
+            <span class="mono" style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#ffb020">One thing not to do</span>
+            <p style="margin:6px 0 0;font-size:12px;line-height:1.6;color:#9aa1ba">Do not sort or badge by fork count. Doc 2 §1.1 keeps league tables off this shelf, and &ldquo;most forked&rdquo; is one — the count states a fact on a tile and never orders the page.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════ SCREEN 6 — navbar ═══════════ -->
+<section style="padding:44px 44px 40px;border-bottom:1px solid rgba(34,39,57,.6)">
+<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:20px">
+<span class="mono" style="font-size:10px;font-weight:600;padding:3px 7px;background:#e9ebf5;color:#05060d;border-radius:4px">06</span>
+<span class="disp" style="font-size:14px;font-weight:600;color:#e9ebf5">Navigation · <span class="mono" style="font-size:13px;font-weight:400;color:#828aa3">SiteHeader</span></span>
+<span style="font-size:12px;color:rgba(233,235,245,.45)">Today, the proposal, the two menus open, and the mobile sheet</span>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:32px;width:1280px">
+
+  <!-- today -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;gap:12px">
+      <span class="sc-label">Today</span>
+      <span class="mono" style="font-size:11px;color:#828aa3">7 targets · 10 routes</span>
+    </div>
+    <div style="border:1px solid #222739;border-radius:12px;overflow:hidden;background:rgba(5,6,13,.88)">
+      <div style="width:100%;max-width:1200px;margin-inline:auto;padding-inline:24px;display:flex;height:64px;align-items:center;gap:12px;box-sizing:border-box">
+        <span class="disp" style="margin-right:auto;font-size:18px;font-weight:600;letter-spacing:-.01em"><span style="color:#e9ebf5">Dark</span><span style="color:#38bdf8">Print</span></span>
+        <nav style="display:flex;align-items:center;gap:4px">
+          <span style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Blueprints</span>
+          <span style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Cards</span>
+          <span style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba;box-shadow:inset 0 -2px 0 rgba(255,84,112,.55)">Create</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid #333a54;font-size:14px;color:#e9ebf5;box-shadow:inset 0 -2px 0 rgba(255,84,112,.55)">Publish</span>
+          <span style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba;box-shadow:inset 0 -2px 0 rgba(255,84,112,.55)">MCP</span>
+          <span style="width:1px;height:20px;background:#222739;margin:0 8px"></span>
+          <span style="display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Learn <span style="color:#828aa3;font-size:11px">▾</span></span>
+        </nav>
+        <span style="width:1px;height:20px;background:#222739;margin:0 4px"></span>
+        <span style="display:inline-flex;align-items:center;gap:6px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;background:linear-gradient(135deg,hsl(268 70% 72%),hsl(308 60% 66%));color:#05060d;font-size:11px;font-weight:600">MV</span>
+          <span style="color:#828aa3;font-size:11px">▾</span>
+        </span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      <p style="margin:0;font-size:12px;line-height:1.6;color:#9aa1ba"><span class="mono" style="color:#ff5470">Create / Publish</span> — two labels for one intent. One installs the authoring skill, the other is the upload wizard, and the words do not say which.</p>
+      <p style="margin:0;font-size:12px;line-height:1.6;color:#9aa1ba"><span class="mono" style="color:#ff5470">MCP</span> — an integration surface standing as a peer of the registry&rsquo;s two content types.</p>
+      <p style="margin:0;font-size:12px;line-height:1.6;color:#9aa1ba"><span class="mono" style="color:#ff5470">Vocabulary</span> — missing. It has its own browser and a profile tab, and the only nav route to it is the Learn menu&rsquo;s entry for the <em>spec document</em>.</p>
+    </div>
+  </div>
+
+  <!-- proposed -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;gap:12px">
+      <span class="sc-label">Proposed</span>
+      <span class="mono" style="font-size:11px;color:#828aa3">5 targets · same 10 routes, plus /ontology</span>
+    </div>
+    <div style="border:1px solid #333a54;border-radius:12px;overflow:hidden;background:rgba(5,6,13,.88)">
+      <div style="width:100%;max-width:1200px;margin-inline:auto;padding-inline:24px;display:flex;height:64px;align-items:center;gap:12px;box-sizing:border-box">
+        <span class="disp" style="margin-right:auto;font-size:18px;font-weight:600;letter-spacing:-.01em"><span style="color:#e9ebf5">Dark</span><span style="color:#38bdf8">Print</span></span>
+        <nav style="display:flex;align-items:center;gap:4px">
+          <span style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Blueprints</span>
+          <span style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Cards</span>
+          <span style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba;box-shadow:inset 0 -2px 0 rgba(52,211,153,.55)">Vocabulary</span>
+          <span style="width:1px;height:20px;background:#222739;margin:0 8px"></span>
+          <span style="display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba;box-shadow:inset 0 -2px 0 rgba(52,211,153,.55)">Build <span style="color:#828aa3;font-size:11px">▾</span></span>
+          <span style="display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Learn <span style="color:#828aa3;font-size:11px">▾</span></span>
+        </nav>
+        <span style="width:1px;height:20px;background:#222739;margin:0 8px"></span>
+        <span style="display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 14px;border-radius:8px;background:#38bdf8;color:#05060d;font-size:14px;font-weight:500;box-shadow:0 6px 16px -8px #38bdf8">Publish</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;margin-left:4px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;background:linear-gradient(135deg,hsl(268 70% 72%),hsl(308 60% 66%));color:#05060d;font-size:11px;font-weight:600">MV</span>
+          <span style="color:#828aa3;font-size:11px">▾</span>
+        </span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      <p style="margin:0;font-size:12px;line-height:1.6;color:#9aa1ba"><span class="mono" style="color:#34d399">Browse</span> — Blueprints, Cards, Vocabulary: the three things the registry holds, each named the way its own page is.</p>
+      <p style="margin:0;font-size:12px;line-height:1.6;color:#9aa1ba"><span class="mono" style="color:#34d399">Build ▾</span> — Create, MCP and the sandbox collapse into one menu, so the header stops asking a reader to tell Create from Publish at a glance.</p>
+      <p style="margin:0;font-size:12px;line-height:1.6;color:#9aa1ba"><span class="mono" style="color:#34d399">Publish</span> becomes the primary button and the avatar sits last, which is where a reader already looks for identity.</p>
+    </div>
+  </div>
+
+  <!-- open menus + mobile -->
+  <div style="display:flex;gap:32px;align-items:flex-start">
+
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px">
+      <span class="sc-label">Build ▾ and Learn ▾, open</span>
+      <div style="display:flex;gap:20px;align-items:flex-start">
+        <div style="flex:none;width:280px;border:1px solid #333a54;background:#0f121e;border-radius:12px;box-shadow:0 16px 40px -12px rgba(0,0,0,.85);overflow:hidden">
+          <div style="padding:8px 0;display:flex;flex-direction:column">
+            <span style="padding:8px 16px;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;color:#38bdf8">Create</span><span style="font-size:12px;line-height:1.5;color:#828aa3">Install the authoring skill and name your goal</span></span>
+            <span style="padding:8px 16px;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;color:#9aa1ba">Customize the starter</span><span style="font-size:12px;line-height:1.5;color:#828aa3">A worked sandbox over one real bundle</span></span>
+            <span style="padding:8px 16px;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;color:#9aa1ba">MCP</span><span style="font-size:12px;line-height:1.5;color:#828aa3">Reach the registry from your own agent</span></span>
+          </div>
+          <div style="border-top:1px solid #222739;padding:12px 16px">
+            <p style="margin:0;font-size:12px;line-height:1.5;color:#828aa3">Publishing is the button, not a row here: it is the one thing the site asks of you.</p>
+          </div>
+        </div>
+        <div style="flex:none;width:288px;border:1px solid #333a54;background:#0f121e;border-radius:12px;box-shadow:0 16px 40px -12px rgba(0,0,0,.85);overflow:hidden;padding:8px 0;display:flex;flex-direction:column">
+          <span style="padding:8px 16px;font-size:14px;color:#9aa1ba"><span class="mono" style="margin-right:12px;font-size:10px;color:#828aa3">00</span>What a blueprint is</span>
+          <span style="padding:8px 16px;font-size:14px;color:#9aa1ba"><span class="mono" style="margin-right:12px;font-size:10px;color:#828aa3">01</span>Topology</span>
+          <span style="padding:8px 16px;font-size:14px;color:#9aa1ba"><span class="mono" style="margin-right:12px;font-size:10px;color:#828aa3">02</span>Node card</span>
+          <span style="padding:8px 16px;font-size:14px;color:#9aa1ba"><span class="mono" style="margin-right:12px;font-size:10px;color:#828aa3">03</span>Ontology</span>
+          <span style="padding:8px 16px;font-size:14px;color:#9aa1ba"><span class="mono" style="margin-right:12px;font-size:10px;color:#828aa3">04</span>Customize the starter blueprint</span>
+          <span style="padding:8px 16px;font-size:14px;color:#9aa1ba"><span class="mono" style="margin-right:12px;font-size:10px;color:#828aa3">05</span>How a blueprint is graded</span>
+          
+        </div>
+      </div>
+      <p style="margin:0;max-width:60ch;font-size:12px;line-height:1.6;color:#828aa3">Learn keeps its mechanism and loses one row: the essay leaves the sequence (see <a href="#8" style="color:#38bdf8">08</a>), so the menu ends at 05. &ldquo;What a blueprint is&rdquo; stays inside it rather than being promoted to the bar — the landing already carries that job, and a tutorial link does not earn a permanent seat in the chrome.</p>
+    </div>
+
+    <div style="flex:none;display:flex;flex-direction:column;gap:12px">
+      <span class="sc-label">Mobile sheet</span>
+      <div style="width:390px;border:1px solid #222739;border-radius:12px;overflow:hidden;background:#05060d">
+        <div style="display:flex;height:64px;align-items:center;gap:12px;padding:0 24px;border-bottom:1px solid #222739">
+          <span class="disp" style="margin-right:auto;font-size:18px;font-weight:600"><span style="color:#e9ebf5">Dark</span><span style="color:#38bdf8">Print</span></span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 12px;border-radius:8px;background:#38bdf8;color:#05060d;font-size:14px;font-weight:500">Find one</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;color:#9aa1ba;font-size:20px">✕</span>
+        </div>
+        <div style="padding:12px 24px 20px;display:flex;flex-direction:column;gap:12px">
+          <div>
+            <p class="sc-label" style="margin:0;padding:0 12px 4px">Browse</p>
+            <span style="display:block;padding:10px 12px;font-size:14px;color:#9aa1ba">Blueprints</span>
+            <span style="display:block;padding:10px 12px;font-size:14px;color:#9aa1ba">Cards</span>
+            <span style="display:block;padding:10px 12px;font-size:14px;color:#9aa1ba">Vocabulary</span>
+          </div>
+          <div>
+            <p class="sc-label" style="margin:0;padding:0 12px 4px">Build</p>
+            <span style="display:block;padding:10px 12px;font-size:14px;color:#9aa1ba">Create</span>
+            <span style="display:block;padding:10px 12px;font-size:14px;color:#9aa1ba">Customize the starter</span>
+            <span style="display:block;padding:10px 12px;font-size:14px;color:#9aa1ba">MCP</span>
+            <span style="display:block;padding:10px 12px;font-size:14px;color:#38bdf8">Publish</span>
+          </div>
+          <div>
+            <p class="sc-label" style="margin:0;padding:0 12px 4px">Learn</p>
+            <span style="display:block;padding:10px 12px;font-size:14px;color:#9aa1ba"><span class="mono" style="margin-right:12px;font-size:10px;color:#828aa3">00</span>What a blueprint is</span>
+            <span style="display:block;padding:10px 12px;font-size:14px;color:#828aa3">…six more</span>
+          </div>
+          <div style="border-top:1px solid #222739;padding-top:12px">
+            <p class="sc-label" style="margin:0;padding:0 12px 4px">You</p>
+            <span style="display:flex;align-items:center;gap:10px;padding:10px 12px;font-size:14px;color:#9aa1ba"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,hsl(268 70% 72%),hsl(308 60% 66%));color:#05060d;font-size:11px;font-weight:600">MV</span>Your profile</span>
+            <span style="display:block;padding:10px 12px;font-size:14px;color:#9aa1ba">Saved</span>
+            <span style="display:block;padding:10px 12px;font-size:14px;color:#9aa1ba">Settings</span>
+          </div>
+        </div>
+      </div>
+      <p style="margin:0;max-width:44ch;font-size:12px;line-height:1.6;color:#828aa3">The sheet gains a fourth group instead of hanging the account off the existing three. Its three headings now match the desktop bar exactly.</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════ SCREEN 5 — public blueprint in the repository shell ═══════════ -->
+<section style="padding:44px 44px 40px;border-bottom:1px solid rgba(34,39,57,.6)">
+<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:20px">
+<span class="mono" style="font-size:10px;font-weight:600;padding:3px 7px;background:#e9ebf5;color:#05060d;border-radius:4px">05</span>
+<span class="disp" style="font-size:14px;font-weight:600;color:#e9ebf5">A published blueprint in the same shell · <span class="mono" style="font-size:13px;font-weight:400;color:#828aa3">/blueprints/guarded-merge-bot</span></span>
+<span style="font-size:12px;color:rgba(233,235,245,.45)">Repo header and sidebar adopted; the six existing sections keep their scroll and their rail</span>
+</div>
+
+<div style="width:1280px;border:1px solid #222739;border-radius:12px;overflow:hidden;background:#05060d">
+
+  <div style="border-bottom:1px solid rgba(34,39,57,.7);background:rgba(5,6,13,.88)">
+    <div style="width:100%;max-width:1200px;margin-inline:auto;padding-inline:24px;display:flex;height:64px;align-items:center;gap:12px">
+      <a href="#5" class="disp" style="margin-right:auto;font-size:18px;font-weight:600;letter-spacing:-.01em"><span style="color:#e9ebf5">Dark</span><span style="color:#38bdf8">Print</span></a>
+      <nav style="display:flex;align-items:center;gap:4px">
+        <a href="#5" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#38bdf8">Blueprints</a>
+        <a href="#5" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Cards</a>
+        <a href="#5" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Create</a>
+        <a href="#5" style="display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid #333a54;font-size:14px;color:#e9ebf5">Publish</a>
+        <a href="#5" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">MCP</a>
+        <span style="width:1px;height:20px;background:#222739;margin:0 8px"></span>
+        <span style="display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Learn <span style="color:#828aa3;font-size:11px">▾</span></span>
+      </nav>
+      <span style="width:1px;height:20px;background:#222739;margin:0 4px"></span>
+      <span style="display:inline-flex;align-items:center;gap:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;background:linear-gradient(135deg,hsl(268 70% 72%),hsl(308 60% 66%));color:#05060d;font-size:11px;font-weight:600">MV</span>
+        <span style="color:#828aa3;font-size:11px">▾</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- repo header band, adopted from 04 -->
+  <div style="border-bottom:1px solid #222739;background:#0a0c16">
+    <div style="width:100%;max-width:1200px;margin-inline:auto;padding:20px 24px 24px">
+      <nav class="mono" aria-label="Breadcrumb" style="font-size:12px;color:#828aa3;margin-bottom:12px">
+        <a href="#5" style="color:#828aa3">← Blueprints</a><span style="margin:0 8px;color:#3b4058">/</span><span style="color:#9aa1ba">Software</span>
+      </nav>
+      <div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap">
+        <div style="flex:1;min-width:320px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,hsl(32 70% 72%),hsl(72 60% 66%));color:#05060d;font-size:11px;font-weight:600">SA</span>
+            <a href="#1" class="disp" style="font-size:20px;font-weight:500;color:#38bdf8">sol-antczak</a>
+            <span class="disp" style="font-size:20px;color:#3b4058">/</span>
+            <a href="#5" class="disp" style="font-size:20px;font-weight:600;letter-spacing:-.01em;color:#e9ebf5">guarded-merge-bot</a>
+            <span class="mono" style="border:1px solid rgba(52,211,153,.4);background:rgba(52,211,153,.1);border-radius:999px;padding:2px 10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#34d399">Public</span>
+            <span class="mono" style="border:1px solid #222739;border-radius:999px;padding:2px 10px;font-size:11px;color:#828aa3">✦ validator</span>
+          </div>
+          <h1 class="disp" style="margin:0;font-size:36px;font-weight:600;line-height:1.05;letter-spacing:-.02em;color:#e9ebf5">Guarded Merge Bot</h1>
+          <p style="margin:0;max-width:60ch;font-size:18px;line-height:1.6;color:#9aa1ba">An agent line triages the PR and drafts the review, iterating with the test runner until the suite is green. A maintainer approves before the merge lands.</p>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:2px">
+            <span style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid #222739;background:#0f121e;padding:2px 10px;font-size:11px;font-weight:500;color:#9aa1ba"><span style="width:6px;height:6px;border-radius:999px;background:#38bdf8"></span>Blueprint</span>
+            <span class="mono" style="font-size:12px;color:#9aa1ba">Conditional</span>
+            <span class="mono" style="font-size:12px;color:#a78bfa">⏸ 1 node waits for a person: Maintainer approval</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+            <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#code-review</span>
+            <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#CI</span>
+            <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#human-in-loop</span>
+            <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#software</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+            <span style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:8px;border:1px solid #333a54;color:#e9ebf5;font-size:14px">Watch <span class="mono" style="font-size:11px;color:#828aa3">12</span></span>
+            <span style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:8px;border:1px solid #222739;background:rgba(15,18,30,.9);color:#ffb020;font-size:14px"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M6.75 4.75A1.75 1.75 0 0 1 8.5 3h7a1.75 1.75 0 0 1 1.75 1.75V21L12 17.65 6.75 21V4.75z"/></svg>Saved</span><span class="mono" style="display:inline-flex;align-items:center;gap:6px;border:1px solid #222739;background:#0a0c16;border-radius:8px;padding:2px 10px;font-size:11px;color:#9aa1ba"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.47 5.006 5.53.804-4 3.9.944 5.507L12 16.9l-4.944 2.6.944-5.507-4-3.9 5.53-.804L12 3.5z"/></svg>54<span style="color:#ffb020" aria-hidden="true">◐</span></span>
+            <span style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:8px;border:1px solid #333a54;color:#e9ebf5;font-size:14px">Fork <span class="mono" style="font-size:11px;color:#828aa3">7</span></span>
+            <span style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:8px;background:#38bdf8;color:#05060d;font-size:14px;font-weight:500;box-shadow:0 6px 16px -8px #38bdf8">Get the folder <span style="font-size:11px">▾</span></span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;border:1px solid #333a54;color:#e9ebf5;font-size:13px"><span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#828aa3">version</span> v1.3.0 <span style="font-size:11px;color:#828aa3">▾</span></span>
+            <span class="mono" style="font-size:11px;color:#828aa3">4 versions</span>
+          </div>
+          <span class="mono" style="font-size:11px;color:#828aa3">support and fork counts are seeded · a snapshot over HTTP, not a clone</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="width:100%;max-width:1200px;margin-inline:auto;padding:0 24px 56px;display:grid;grid-template-columns:256px minmax(0,1fr) 320px;gap:0;align-items:start">
+
+    <!-- rail, unchanged from the live page -->
+    <div style="border-right:1px solid #222739;background:rgba(10,12,22,.25);padding:24px 16px;align-self:stretch"><nav aria-label="On this blueprint" style="display:flex;flex-direction:column;gap:4px">
+      <div style="border-bottom:1px solid #222739;padding:0 12px 16px;margin-bottom:12px"><p class="sc-lead" style="margin:0">On this blueprint</p><p class="mono" style="margin:8px 0 0;font-size:11px;color:#828aa3">8 sections</p></div>
+      <a href="#5" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#e9ebf5;background:rgba(56,189,248,.05);border-left:2px solid #38bdf8"><span class="mono" style="font-size:10px;color:#38bdf8">01</span>Overview</a>
+      <a href="#5" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">02</span>Files</a>
+      <a href="#5" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">03</span>Graph and cards</a>
+      <a href="#5" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">04</span>Evidence</a>
+      <a href="#5" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">05</span>History</a>
+      <a href="#5" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">06</span>Use this release</a>
+      <a href="#5" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">07</span>Source</a>
+      <a href="#5" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">08</span>Community notes</a>
+    </nav></div>
+
+    <div style="display:flex;flex-direction:column;gap:20px;min-width:0;padding:40px 0 0 40px">
+
+      <!-- 01 overview -->
+      <section style="border:1px solid #222739;background:rgba(10,12,22,.92);border-radius:12px;padding:20px">
+        <span class="sc-label">Overview</span>
+        <h2 class="disp" style="margin:8px 0 0;font-size:20px;font-weight:600;color:#e9ebf5">At a glance</h2>
+        <dl style="margin:16px 0 0;display:grid;grid-template-columns:repeat(4,1fr);gap:12px 20px;font-size:14px">
+          <div><dt style="color:#828aa3">Domain</dt><dd style="margin:4px 0 0;color:#e9ebf5">Software</dd></div>
+          <div><dt style="color:#828aa3">Shape</dt><dd style="margin:4px 0 0;color:#e9ebf5">6 nodes · 7 handoffs</dd></div>
+          <div><dt style="color:#828aa3">Tool scopes</dt><dd style="margin:4px 0 0;color:#e9ebf5">4</dd></div>
+          <div><dt style="color:#828aa3">Release</dt><dd class="mono" style="margin:4px 0 0;font-size:12px;color:#e9ebf5">sha256:77b1ae…</dd></div>
+        </dl>
+      </section>
+
+      <!-- 02 files, new -->
+      <section style="border:1px solid #222739;border-radius:12px;overflow:hidden;background:#0a0c16">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #222739;background:#0f121e;flex-wrap:wrap">
+          <span class="sc-label">Files</span>
+          <span class="mono" style="font-size:11px;color:#828aa3">v1.3.0 · 6 entries</span>
+          <span style="margin-left:auto;display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 10px;border-radius:8px;border:1px solid #222739;font-size:12px;color:#9aa1ba">Open README</span>
+        </div>
+        <sc-for list="{{ publicFiles }}" as="f" hint-placeholder-count="6">
+          <div style="display:flex;align-items:center;gap:14px;padding:11px 16px;border-bottom:1px solid #222739">
+            <span style="flex:none;width:16px;text-align:center;font-size:12px;color:{{ f.iconColor }}">{{ f.icon }}</span>
+            <a href="#5" class="mono" style="flex:none;min-width:180px;font-size:13px;color:#e9ebf5">{{ f.name }}</a>
+            <span style="flex:1;min-width:0;font-size:13px;color:#828aa3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.change }}</span>
+            <span class="mono" style="flex:none;font-size:11px;color:{{ f.stateColor }}">{{ f.state }}</span>
+            <span class="mono" style="flex:none;box-sizing:border-box;width:60px;text-align:right;font-size:11px;color:#828aa3">{{ f.when }}</span>
+          </div>
+        </sc-for>
+        <p style="margin:0;padding:12px 16px;font-size:12px;line-height:1.6;color:#828aa3">These are the files the download command fetches, named the way the generator writes them. A bundle is a folder before it is a page.</p>
+      </section>
+
+      <!-- 03 graph -->
+      <section style="border:1px solid #333a54;background:rgba(15,18,30,.7);border-radius:12px;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #222739">
+          <span class="sc-lead">Graph and cards</span>
+          <span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#828aa3">jump to a node ▾</span>
+        </div>
+        <div class="bpgrid" style="height:260px;background:rgba(6,28,82,.4);padding:16px;box-sizing:border-box">
+          <svg viewBox="11 11 898 98" role="img" aria-label="Guarded Merge Bot pipeline" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%">
+            <g fill="none" stroke-width="1.6">
+              <path d="M 82.5 60 C 152.2 60, 167.8 60, 237.5 60" stroke="#74b4ff" stroke-opacity=".7"/>
+              <path d="M 282.5 60 C 352.2 60, 367.8 60, 437.5 60" stroke="#74b4ff" stroke-opacity=".7"/>
+              <path d="M 482.5 60 C 552.2 60, 567.8 30, 637.5 30" stroke="#74b4ff" stroke-opacity=".7"/>
+              <path d="M 482.5 60 C 552.2 60, 567.8 90, 637.5 90" stroke="#74b4ff" stroke-opacity=".7"/>
+              <path d="M 682.5 30 C 752.2 30, 767.8 60, 837.5 60" stroke="#74b4ff" stroke-opacity=".7"/>
+              <path d="M 682.5 90 C 752.2 90, 767.8 60, 837.5 60" stroke="#a78bfa" stroke-opacity=".7" stroke-dasharray="5 4"/>
+            </g>
+            <g>
+              <path d="M 237.5 60 L 229.5 56.4 L 229.5 63.6 Z" fill="#74b4ff" fill-opacity=".9"/>
+              <path d="M 437.5 60 L 429.5 56.4 L 429.5 63.6 Z" fill="#74b4ff" fill-opacity=".9"/>
+              <path d="M 637.5 30 L 629.5 26.4 L 629.5 33.6 Z" fill="#74b4ff" fill-opacity=".9"/>
+              <path d="M 637.5 90 L 629.5 86.4 L 629.5 93.6 Z" fill="#74b4ff" fill-opacity=".9"/>
+              <path d="M 837.5 60 L 829.5 56.4 L 829.5 63.6 Z" fill="#74b4ff" fill-opacity=".9"/>
+            </g>
+            <g>
+              <g transform="translate(60 60)"><circle r="23" fill="#7dd3fc" fill-opacity=".12"/><circle r="13" fill="#7dd3fc" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#7dd3fc" stroke-opacity=".5" stroke-width="1"/></g>
+              <g transform="translate(260 60)"><circle r="23" fill="#38bdf8" fill-opacity=".12"/><circle r="13" fill="#38bdf8" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#38bdf8" stroke-opacity=".5" stroke-width="1"/></g>
+              <g transform="translate(460 60)"><circle r="23" fill="#34d399" fill-opacity=".12"/><circle r="13" fill="#34d399" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#34d399" stroke-opacity=".5" stroke-width="1"/></g>
+              <g transform="translate(660 30)"><circle r="23" fill="#7dd3fc" fill-opacity=".12"/><circle r="13" fill="#7dd3fc" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#7dd3fc" stroke-opacity=".5" stroke-width="1"/></g>
+              <g transform="translate(660 90)"><circle r="23" fill="#ff5470" fill-opacity=".12"/><circle r="13" fill="#ff5470" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#ff5470" stroke-opacity=".5" stroke-width="1"/></g>
+              <g transform="translate(860 60)"><circle r="23" fill="#34d399" fill-opacity=".12"/><circle r="13" fill="#34d399" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#34d399" stroke-opacity=".5" stroke-width="1"/></g>
+            </g>
+          </svg>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:16px;padding:12px 20px;border-top:1px solid #222739">
+          <span class="mono" style="font-size:11px;color:#7dd3fc">▸ Trigger</span>
+          <span class="mono" style="font-size:11px;color:#38bdf8">◇ Planner</span>
+          <span class="mono" style="font-size:11px;color:#34d399">▮ Executor</span>
+          <span class="mono" style="font-size:11px;color:#7dd3fc">✓ Verifier</span>
+          <span class="mono" style="font-size:11px;color:#ff5470">⏸ Human gate</span>
+          <span class="mono" style="font-size:11px;color:#34d399">⇥ Ship</span>
+        </div>
+      </section>
+
+      <!-- 05 history, new -->
+      <section style="border:1px solid #222739;border-radius:12px;overflow:hidden;background:#0a0c16">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #222739;background:#0f121e">
+          <span class="sc-lead">History</span>
+          <span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#828aa3">a version is a digest, not a commit</span>
+        </div>
+        <sc-for list="{{ publicHistory }}" as="h" hint-placeholder-count="4">
+          <div style="display:flex;gap:16px;align-items:flex-start;padding:16px 20px;border-bottom:1px solid #222739">
+            <span style="flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:2px">
+              <span style="width:9px;height:9px;border-radius:999px;border:1.5px solid {{ h.dot }};background:#0a0c16"></span>
+              <span style="width:1px;height:28px;background:#222739"></span>
+            </span>
+            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+              <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span class="mono" style="font-size:13px;color:#e9ebf5">{{ h.version }}</span>
+                <span class="mono" style="border:1px solid #222739;border-radius:999px;padding:1px 8px;font-size:11px;color:#828aa3">{{ h.digest }}</span>
+                <span class="mono" style="font-size:11px;color:{{ h.tagColor }}">{{ h.tag }}</span>
+              </span>
+              <span style="font-size:13px;line-height:1.5;color:#9aa1ba">{{ h.message }}</span>
+              <span class="mono" style="font-size:11px;color:#828aa3">{{ h.who }} · {{ h.when }}</span>
+            </span>
+            <span style="flex:none;display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 10px;border-radius:8px;border:1px solid #222739;font-size:12px;color:#9aa1ba">Take</span>
+          </div>
+        </sc-for>
+        <p style="margin:0;padding:14px 20px;font-size:12px;line-height:1.6;color:#828aa3">Every release stays fetchable at its own digest, so a pin you took never disappears when the author publishes again.</p>
+      </section>
+
+      <!-- community notes stay full width in the live page; shown here as the tail -->
+      <section style="border:1px solid #222739;border-radius:12px;background:#0a0c16;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #222739;padding-bottom:16px">
+          <span class="sc-lead">Community notes</span>
+          <span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#ffb020">◐ seeded · no ballot</span>
+        </div>
+        <p style="margin:16px 0 0;font-size:13px;line-height:1.6;color:#9aa1ba">Unchanged from the live page: three seeded notes, each labelled, with no reply field — there is nowhere to post.</p>
+      </section>
+    </div>
+
+    <!-- sidebar, adopted from 04 -->
+    <aside style="display:flex;flex-direction:column;gap:12px;padding:40px 0 0 40px">
+
+      <section style="border:1px solid #333a54;background:rgba(15,18,30,.7);border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #222739;padding-bottom:12px;margin-bottom:12px">
+          <span class="sc-label">Scorecard</span>
+          <span class="mono" style="font-size:11px;color:#828aa3">6 metrics</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <sc-for list="{{ metrics }}" as="m" hint-placeholder-count="6">
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+                <span style="font-size:13px;color:#e9ebf5">{{ m.name }}</span>
+                <span style="display:flex;align-items:center;gap:8px">
+                  <span class="mono" style="font-size:12px;color:#e9ebf5">{{ m.value }}</span>
+                  <span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:{{ m.color }}">{{ m.source }}</span>
+                </span>
+              </div>
+              <sc-if value="{{ m.noBar }}">
+                <span class="mono" style="font-size:11px;color:#a78bfa">⏸ no bar — a class is not a quantity</span>
+              </sc-if>
+              <sc-if value="{{ m.hasBar }}">
+                <span style="height:4px;border-radius:999px;background:#05060d;overflow:hidden;display:block">
+                  <span style="display:block;height:100%;width:{{ m.bar }};background:{{ m.color }};opacity:.8"></span>
+                </span>
+              </sc-if>
+              <span style="font-size:11px;line-height:1.5;color:#828aa3">{{ m.detail }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section style="border:1px solid #222739;background:rgba(10,12,22,.92);border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span class="sc-label">Bundle</span>
+          <span class="mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#828aa3">content-addressed</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <code class="mono" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:5px;border:1px solid #222739;background:#0f121e;padding:4px 8px;font-size:11px;color:#e9ebf5">sha256:77b1ae04…c9d2</code>
+          <span class="mono" style="flex:none;border-radius:5px;border:1px solid #222739;padding:4px 8px;font-size:11px;color:#9aa1ba">copy</span>
+        </div>
+        <dl style="margin:16px 0 0;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #222739"><dt style="font-size:14px;color:#9aa1ba">Nodes</dt><dd class="mono" style="margin:0;font-size:14px;color:#e9ebf5">6</dd></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #222739"><dt style="font-size:14px;color:#9aa1ba">Pinned cards</dt><dd class="mono" style="margin:0;font-size:14px;color:#e9ebf5">12</dd></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #222739"><dt style="font-size:14px;color:#9aa1ba">Ontology declared</dt><dd class="mono" style="margin:0;font-size:14px;color:#a78bfa">v0.1.0</dd></div>
+        </dl>
+        <p style="margin:8px 0 0;font-size:12px;line-height:1.45;color:#828aa3">Two scores from different ontology versions are not comparable.</p>
+      </section>
+
+      <section style="border:1px solid #222739;background:#0a0c16;border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+          <span class="sc-label">Forks</span>
+          <span class="mono" style="font-size:11px;color:#828aa3">7 public</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <a href="#4" class="mono" style="font-size:12px;color:#38bdf8">mara-veil / guarded-merge-bot-hardened</a>
+          <a href="#5" class="mono" style="font-size:12px;color:#38bdf8">hachi / guarded-merge-bot-strict</a>
+          <a href="#5" class="mono" style="font-size:12px;color:#38bdf8">orin / merge-bot-for-docs</a>
+        </div>
+        <p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#828aa3">Public forks only. A private fork is never announced here, and the author is not told it exists.</p>
+      </section>
+
+      <section style="border:1px solid #222739;background:#0a0c16;border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+          <span class="sc-label">Releases</span>
+          <span class="mono" style="font-size:11px;color:#828aa3">4</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="display:flex;align-items:center;gap:8px"><span class="mono" style="font-size:13px;color:#38bdf8">v1.3.0</span><span class="mono" style="border:1px solid rgba(52,211,153,.4);background:rgba(52,211,153,.1);border-radius:999px;padding:1px 8px;font-size:11px;color:#34d399">latest</span></span>
+          <span class="mono" style="font-size:11px;color:#828aa3">Jun 20 · 20 files · 38 kB</span>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════ SCREEN 1 — public profile ═══════════ -->
+<section style="padding:44px 44px 40px;border-bottom:1px solid rgba(34,39,57,.6)">
+<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:20px">
+<span class="mono" style="font-size:10px;font-weight:600;padding:3px 7px;background:#e9ebf5;color:#05060d;border-radius:4px">01</span>
+<span class="disp" style="font-size:14px;font-weight:600;color:#e9ebf5">Public profile · <span class="mono" style="font-size:13px;font-weight:400;color:#828aa3">/u/sol-antczak</span></span>
+<span style="font-size:12px;color:rgba(233,235,245,.45)">Someone else&rsquo;s account, as a visitor sees it</span>
+</div>
+
+<div style="width:1280px;border:1px solid #222739;border-radius:12px;overflow:hidden;background:#05060d">
+
+  <!-- site header -->
+  <div style="border-bottom:1px solid rgba(34,39,57,.7);background:rgba(5,6,13,.88)">
+    <div style="width:100%;max-width:1200px;margin-inline:auto;padding-inline:24px;display:flex;height:64px;align-items:center;gap:12px">
+      <a href="#1" class="disp" style="margin-right:auto;font-size:18px;font-weight:600;letter-spacing:-.01em"><span style="color:#e9ebf5">Dark</span><span style="color:#38bdf8">Print</span></a>
+      <nav style="display:flex;align-items:center;gap:4px">
+        <a href="#1" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Blueprints</a>
+        <a href="#1" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Cards</a>
+        <a href="#1" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Create</a>
+        <a href="#1" style="display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid #333a54;font-size:14px;color:#e9ebf5">Publish</a>
+        <a href="#1" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">MCP</a>
+        <span style="width:1px;height:20px;background:#222739;margin:0 8px"></span>
+        <span style="display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Learn <span style="color:#828aa3;font-size:11px">▾</span></span>
+      </nav>
+      <span style="width:1px;height:20px;background:#222739;margin:0 4px"></span>
+      <span style="display:inline-flex;align-items:center;gap:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;background:linear-gradient(135deg,hsl(268 70% 72%),hsl(308 60% 66%));color:#05060d;font-size:11px;font-weight:600">MV</span>
+        <span style="color:#828aa3;font-size:11px">▾</span>
+      </span>
+    </div>
+  </div>
+
+  <div style="width:100%;max-width:1200px;margin-inline:auto;padding:40px 24px 56px">
+
+    <!-- profile header -->
+    <header style="position:relative;overflow:hidden;border:1px solid #222739;background:#0a0c16;border-radius:12px;padding:32px">
+      <div class="techgrid" aria-hidden="true" style="position:absolute;inset:0;opacity:.4;pointer-events:none"></div>
+      <div style="position:relative;display:flex;gap:20px;align-items:flex-start">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;flex:none;border-radius:999px;background:linear-gradient(135deg,hsl(32 70% 72%),hsl(72 60% 66%));color:#05060d;font-size:23px;font-weight:600;box-shadow:0 0 0 2px #05060d,0 0 0 4px rgba(56,189,248,.7)">SA</span>
+        <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:0">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+            <h1 class="disp" style="margin:0;font-size:30px;font-weight:600;letter-spacing:-.02em;color:#e9ebf5">Sol Antczak</h1>
+            <span style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid rgba(56,189,248,.4);background:rgba(56,189,248,.1);padding:2px 10px;font-size:11px;font-weight:500;color:#38bdf8"><span style="width:6px;height:6px;border-radius:999px;background:#38bdf8"></span>✦ Validator</span>
+          </div>
+          <span class="mono" style="font-size:14px;color:#9aa1ba">@sol-antczak</span>
+          <p style="margin:4px 0 0;max-width:36rem;font-size:14px;line-height:1.6;color:#9aa1ba">Validator. Writes the static analyzers that grade autonomy so you don&rsquo;t have to trust the README.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:6px;align-items:center">
+            <span class="mono" style="font-size:11px;color:#828aa3"><span style="color:#e9ebf5">3</span> blueprints · <span style="color:#e9ebf5">12</span> cards</span>
+          </div>
+        </div>
+        <div style="position:relative;display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex:none">
+          <div style="display:flex;gap:8px">
+            <button type="button" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid #333a54;background:transparent;color:#e9ebf5;font-family:Geist,sans-serif;font-size:14px">Watch <span class="mono" style="font-size:11px;color:#828aa3">3</span></button>
+            <span style="display:inline-flex;align-items:center;gap:8px"><span class="mono" style="display:inline-flex;align-items:center;gap:6px;border:1px solid #222739;background:#0a0c16;border-radius:8px;padding:2px 10px;font-size:11px;color:#9aa1ba"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.47 5.006 5.53.804-4 3.9.944 5.507L12 16.9l-4.944 2.6.944-5.507-4-3.9 5.53-.804L12 3.5z"/></svg>128<span style="color:#ffb020" aria-hidden="true">◐</span></span><span class="mono" style="font-size:11px;color:#828aa3">community support</span></span>
+          </div>
+          <span class="mono" style="font-size:11px;color:#828aa3">Joined Feb 2026</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- tabs -->
+    <div style="margin-top:20px;border-bottom:1px solid #222739;display:flex;gap:4px;align-items:flex-end">
+      <a href="#1" style="display:inline-flex;align-items:center;gap:8px;padding:12px 14px;font-size:14px;color:#38bdf8;border-bottom:2px solid #38bdf8;margin-bottom:-1px">Overview</a>
+      <a href="#1" style="display:inline-flex;align-items:center;gap:8px;padding:12px 14px;font-size:14px;color:#9aa1ba;border-bottom:2px solid transparent;margin-bottom:-1px">Blueprints <span class="mono" style="font-size:11px;padding:1px 6px;border-radius:999px;border:1px solid #222739;color:#828aa3">3</span></a>
+      <a href="#1" style="display:inline-flex;align-items:center;gap:8px;padding:12px 14px;font-size:14px;color:#9aa1ba;border-bottom:2px solid transparent;margin-bottom:-1px">Cards <span class="mono" style="font-size:11px;padding:1px 6px;border-radius:999px;border:1px solid #222739;color:#828aa3">12</span></a>
+      <a href="#1" style="display:inline-flex;align-items:center;gap:8px;padding:12px 14px;font-size:14px;color:#9aa1ba;border-bottom:2px solid transparent;margin-bottom:-1px">Saved <span class="mono" style="font-size:11px;padding:1px 6px;border-radius:999px;border:1px solid #222739;color:#828aa3">8</span></a>
+      <a href="#1" style="display:inline-flex;align-items:center;gap:8px;padding:12px 14px;font-size:14px;color:#9aa1ba;border-bottom:2px solid transparent;margin-bottom:-1px">Vocabulary terms <span class="mono" style="font-size:11px;padding:1px 6px;border-radius:999px;border:1px solid #222739;color:#828aa3">4</span></a>
+      <span style="margin-left:auto;padding:12px 4px 14px;display:inline-flex;align-items:center;gap:8px">
+        <span class="mono" style="font-size:11px;color:#828aa3">Private blueprints are not listed here</span>
+      </span>
+    </div>
+
+    <!-- pinned -->
+    <sc-if value="{{ pinned }}" hint-placeholder-val="{{ true }}">
+    <section style="margin-top:40px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px">
+        <h2 class="disp" style="margin:0;display:flex;align-items:center;gap:10px;font-size:20px;font-weight:600;color:#e9ebf5"><span style="width:8px;height:8px;border-radius:999px;background:#38bdf8"></span>Pinned<span class="mono" style="font-size:14px;font-weight:400;color:#828aa3">2</span></h2>
+        <span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#34d399">✓ counted</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <article style="display:flex;flex-direction:column;gap:12px;border:1px solid #333a54;background:rgba(15,18,30,.7);border-radius:12px;padding:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <span class="mono" style="padding-right:32px;font-size:11px;color:#828aa3">sol-antczak / <span style="color:#38bdf8">guarded-merge-bot</span></span>
+            <span class="mono" style="font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid #222739;color:#828aa3">Public</span>
+          </div>
+          <h3 class="disp" style="margin:0;font-size:18px;font-weight:600;line-height:1.35;color:#e9ebf5">Guarded Merge Bot</h3>
+          <p style="margin:0;font-size:14px;line-height:1.45;color:#9aa1ba">An agent line triages the PR and drafts the review, iterating with the test runner until the suite is green. A maintainer approves before the merge lands.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#code-review</span>
+            <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#CI</span>
+            <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#human-in-loop</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;border-top:1px solid #222739;padding-top:12px" class="mono">
+            <span style="font-size:11px;color:#9aa1ba">Conditional</span>
+            <span style="font-size:11px;color:#a78bfa">⏸ 1 node waits for a person</span>
+            <span style="margin-left:auto"><span class="mono" style="display:inline-flex;align-items:center;gap:6px;border:1px solid #222739;background:#0a0c16;border-radius:8px;padding:2px 10px;font-size:11px;color:#9aa1ba"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.47 5.006 5.53.804-4 3.9.944 5.507L12 16.9l-4.944 2.6.944-5.507-4-3.9 5.53-.804L12 3.5z"/></svg>54<span style="color:#ffb020" aria-hidden="true">◐</span></span></span>
+          </div>
+        </article>
+        <article style="display:flex;flex-direction:column;gap:12px;border:1px solid #333a54;background:rgba(15,18,30,.7);border-radius:12px;padding:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <span style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid #222739;background:#0f121e;padding:2px 10px;font-size:11px;font-weight:500;color:#9aa1ba"><span style="width:6px;height:6px;border-radius:999px;background:#ffb020"></span>Verifier</span>
+            <span class="mono" style="font-size:11px;color:#828aa3">criteria-judge@2.1.0</span>
+          </div>
+          <h3 class="disp" style="margin:0;font-size:18px;font-weight:600;line-height:1.35;color:#e9ebf5">Acceptance criteria judge</h3>
+          <p style="margin:0;font-size:14px;line-height:1.45;color:#9aa1ba">Reads the acceptance criteria out of band and scores the diff against each one, refusing to see the implementation prompt.</p>
+          <div style="display:flex;align-items:center;gap:14px;border-top:1px solid #222739;padding-top:12px" class="mono">
+            <span style="font-size:11px;color:#828aa3">used in 6 blueprints</span>
+            <span style="margin-left:auto"><span class="mono" style="display:inline-flex;align-items:center;gap:6px;border:1px solid #222739;background:#0a0c16;border-radius:8px;padding:2px 10px;font-size:11px;color:#9aa1ba"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.47 5.006 5.53.804-4 3.9.944 5.507L12 16.9l-4.944 2.6.944-5.507-4-3.9 5.53-.804L12 3.5z"/></svg>31<span style="color:#ffb020" aria-hidden="true">◐</span></span></span>
+          </div>
+        </article>
+      </div>
+    </section>
+    </sc-if>
+
+    <!-- counted / seeded -->
+    <section aria-label="Profile summary" style="margin-top:40px;display:grid;grid-template-columns:1.2fr .8fr;gap:20px">
+      <article style="border:1px solid #222739;background:#0f121e;border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #222739;padding-bottom:16px">
+          <h2 class="sc-lead" style="margin:0">Published here</h2>
+          <span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#34d399">✓ counted</span>
+        </div>
+        <div style="margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+          <div style="display:flex;flex-direction:column;gap:4px"><span class="disp" style="font-size:36px;font-weight:600;font-variant-numeric:tabular-nums;color:#38bdf8">15</span><span class="sc-label">Total</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px"><span class="disp" style="font-size:36px;font-weight:600;font-variant-numeric:tabular-nums;color:#38bdf8">3</span><span class="sc-label">Blueprints</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px"><span class="disp" style="font-size:36px;font-weight:600;font-variant-numeric:tabular-nums;color:#ff8a4d">12</span><span class="sc-label">Node cards</span></div>
+        </div>
+        <p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#828aa3">Counted from the versioned archive at build time.</p>
+      </article>
+      <article style="border:1px solid rgba(255,176,32,.25);background:rgba(255,176,32,.05);border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,176,32,.2);padding-bottom:16px">
+          <h2 class="sc-lead" style="margin:0">Preview signals</h2>
+          <span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#ffb020">◐ seeded</span>
+        </div>
+        <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div style="display:flex;flex-direction:column;gap:4px"><span class="disp" style="font-size:36px;font-weight:600;font-variant-numeric:tabular-nums;color:#34d399">9.4k</span><span class="sc-label">Downloads</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px"><span class="disp" style="font-size:36px;font-weight:600;font-variant-numeric:tabular-nums;color:#a78bfa">6.2k</span><span class="sc-label">Reputation</span></div>
+        </div>
+        <p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#828aa3">Illustrative index rows. No telemetry, ballot, or accruing reputation is connected.</p>
+      </article>
+    </section>
+
+    <!-- blueprints -->
+    <section style="margin-top:56px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <h2 class="disp" style="margin:0;display:flex;align-items:center;gap:10px;font-size:20px;font-weight:600;color:#e9ebf5"><span style="width:8px;height:8px;border-radius:999px;background:#38bdf8"></span>Blueprints<span class="mono" style="font-size:14px;font-weight:400;color:#828aa3">3</span></h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="mono" style="font-size:11px;color:#828aa3">Sort</span>
+          <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:8px;padding:4px 10px;color:#9aa1ba">Recently updated ▾</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+
+        <article style="position:relative;display:flex;flex-direction:column;overflow:hidden;border:1px solid #222739;background:#0a0c16;border-radius:12px">
+          <div style="display:flex;flex-direction:column;gap:6px;padding:16px 16px 12px">
+            <span class="mono" style="padding-right:32px;font-size:11px;color:#828aa3">sol-antczak / guarded-merge-bot</span>
+            <h3 class="disp" style="margin:0;padding-right:32px;font-size:18px;font-weight:600;line-height:1.35;color:#e9ebf5">Guarded Merge Bot</h3>
+            <p style="margin:0;padding-right:32px;font-size:14px;line-height:1.45;color:#9aa1ba">An agent line triages the PR and drafts the review, iterating with the test runner until the suite is green.</p>
+          </div>
+          <span style="position:absolute;right:8px;top:10px;z-index:20;display:inline-flex;align-items:center;justify-content:center;border:1px solid #222739;background:rgba(15,18,30,.9);border-radius:999px;padding:6px;color:#828aa3"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M6.75 4.75A1.75 1.75 0 0 1 8.5 3h7a1.75 1.75 0 0 1 1.75 1.75V21L12 17.65 6.75 21V4.75z"/></svg></span>
+          <div class="bpgrid" style="position:relative;height:112px;overflow:hidden;border-top:1px solid #222739;border-bottom:1px solid #222739;background:rgba(6,28,82,.4)">
+            <svg viewBox="11 -39 898 198" role="img" aria-label="Pipeline graph preview" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;opacity:.9"><g fill="none" stroke-width="1.6"><path d="M 82.5 60 C 152.3 60, 167.8 60, 237.5 60" stroke="#74b4ff" stroke-opacity=".7"/><path d="M 282.5 60 C 352.3 60, 367.8 60, 437.5 60" stroke="#74b4ff" stroke-opacity=".7"/><path d="M 482.5 60 C 552.3 60, 567.8 10, 637.5 10" stroke="#74b4ff" stroke-opacity=".7"/><path d="M 482.5 60 C 552.3 60, 567.8 110, 637.5 110" stroke="#74b4ff" stroke-opacity=".7"/><path d="M 682.5 10 C 752.3 10, 767.8 60, 837.5 60" stroke="#74b4ff" stroke-opacity=".7"/><path d="M 682.5 110 C 752.3 110, 767.8 60, 837.5 60" stroke="#74b4ff" stroke-opacity=".7"/></g><g><path d="M 237.5 60 L 229.5 56.4 L 229.5 63.6 Z" fill="#74b4ff" fill-opacity=".9"/><path d="M 437.5 60 L 429.5 56.4 L 429.5 63.6 Z" fill="#74b4ff" fill-opacity=".9"/><path d="M 637.5 10 L 629.5 6.4 L 629.5 13.6 Z" fill="#74b4ff" fill-opacity=".9"/><path d="M 637.5 110 L 629.5 106.4 L 629.5 113.6 Z" fill="#74b4ff" fill-opacity=".9"/><path d="M 837.5 60 L 829.5 56.4 L 829.5 63.6 Z" fill="#74b4ff" fill-opacity=".9"/><path d="M 837.5 60 L 829.5 56.4 L 829.5 63.6 Z" fill="#74b4ff" fill-opacity=".9"/></g><g><g transform="translate(60 60)"><circle r="23" fill="#7dd3fc" fill-opacity=".12"/><circle r="13" fill="#7dd3fc" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#7dd3fc" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(260 60)"><circle r="23" fill="#38bdf8" fill-opacity=".12"/><circle r="13" fill="#38bdf8" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#38bdf8" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(460 60)"><circle r="23" fill="#34d399" fill-opacity=".12"/><circle r="13" fill="#34d399" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#34d399" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(660 10)"><circle r="23" fill="#7dd3fc" fill-opacity=".12"/><circle r="13" fill="#7dd3fc" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#7dd3fc" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(660 110)"><circle r="23" fill="#ff5470" fill-opacity=".12"/><circle r="13" fill="#ff5470" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#ff5470" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(860 60)"><circle r="23" fill="#34d399" fill-opacity=".12"/><circle r="13" fill="#34d399" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#34d399" stroke-opacity=".5" stroke-width="1"/></g></g></svg>
+            <div style="position:absolute;inset-inline:0;bottom:0;height:24px;background:linear-gradient(to top,#0a0c16,transparent);pointer-events:none"></div>
+          </div>
+          <div style="display:flex;flex:1;flex-direction:column;gap:12px;padding:16px">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px">
+              <span style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid #222739;background:#0f121e;padding:2px 10px;font-size:11px;font-weight:500;color:#9aa1ba"><span style="width:6px;height:6px;border-radius:999px;background:#38bdf8"></span>Blueprint</span>
+              <span class="mono" style="font-size:11px;color:#9aa1ba">Conditional</span>
+            </div>
+            <div style="display:flex;flex:1;flex-wrap:wrap;align-content:flex-start;gap:6px">
+              <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#code-review</span>
+              <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#CI</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #222739;padding-top:12px;margin-top:4px">
+              <span class="mono" style="font-size:11px;color:#828aa3">v1.3.0 · Jun 20</span>
+              <span class="mono" style="font-size:11px;color:#34d399">✓ resolved · 4 tools</span>
+            </div>
+          </div>
+        </article>
+
+        <article style="position:relative;display:flex;flex-direction:column;overflow:hidden;border:1px solid #222739;background:#0a0c16;border-radius:12px">
+          <div style="display:flex;flex-direction:column;gap:6px;padding:16px 16px 12px">
+            <span class="mono" style="padding-right:32px;font-size:11px;color:#828aa3">sol-antczak / adversarial-consensus-line</span>
+            <h3 class="disp" style="margin:0;padding-right:32px;font-size:18px;font-weight:600;line-height:1.35;color:#e9ebf5">Adversarial Consensus Line</h3>
+            <p style="margin:0;padding-right:32px;font-size:14px;line-height:1.45;color:#9aa1ba">Two planners argue a proposal to a shared verdict, and a judge that never sees either prompt scores the result.</p>
+          </div>
+          <span style="position:absolute;right:8px;top:10px;z-index:20;display:inline-flex;align-items:center;justify-content:center;border:1px solid #222739;background:rgba(15,18,30,.9);border-radius:999px;padding:6px;color:#ffb020"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M6.75 4.75A1.75 1.75 0 0 1 8.5 3h7a1.75 1.75 0 0 1 1.75 1.75V21L12 17.65 6.75 21V4.75z"/></svg></span>
+          <div class="bpgrid" style="position:relative;height:112px;overflow:hidden;border-top:1px solid #222739;border-bottom:1px solid #222739;background:rgba(6,28,82,.4)">
+            <svg viewBox="11 -39 898 198" role="img" aria-label="Pipeline graph preview" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;opacity:.9"><g fill="none" stroke-width="1.6"><path d="M 82.5 60 C 152.3 60, 167.8 60, 237.5 60" stroke="#74b4ff" stroke-opacity=".7"/><path d="M 282.5 60 C 352.3 60, 367.8 10, 437.5 10" stroke="#a78bfa" stroke-opacity=".7" stroke-dasharray="5 4"/><path d="M 282.5 60 C 352.3 60, 367.8 110, 437.5 110" stroke="#a78bfa" stroke-opacity=".7" stroke-dasharray="5 4"/><path d="M 482.5 10 C 552.3 10, 567.8 60, 637.5 60" stroke="#74b4ff" stroke-opacity=".7"/><path d="M 482.5 110 C 552.3 110, 567.8 60, 637.5 60" stroke="#74b4ff" stroke-opacity=".7"/><path d="M 682.5 60 C 752.3 60, 767.8 60, 837.5 60" stroke="#74b4ff" stroke-opacity=".7"/></g><g><path d="M 237.5 60 L 229.5 56.4 L 229.5 63.6 Z" fill="#74b4ff" fill-opacity=".9"/><path d="M 437.5 10 L 429.5 6.4 L 429.5 13.6 Z" fill="#a78bfa" fill-opacity=".9"/><path d="M 437.5 110 L 429.5 106.4 L 429.5 113.6 Z" fill="#a78bfa" fill-opacity=".9"/><path d="M 637.5 60 L 629.5 56.4 L 629.5 63.6 Z" fill="#74b4ff" fill-opacity=".9"/><path d="M 637.5 60 L 629.5 56.4 L 629.5 63.6 Z" fill="#74b4ff" fill-opacity=".9"/><path d="M 837.5 60 L 829.5 56.4 L 829.5 63.6 Z" fill="#74b4ff" fill-opacity=".9"/></g><g><g transform="translate(60 60)"><circle r="23" fill="#7dd3fc" fill-opacity=".12"/><circle r="13" fill="#7dd3fc" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#7dd3fc" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(260 60)"><circle r="23" fill="#a78bfa" fill-opacity=".12"/><circle r="13" fill="#a78bfa" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#a78bfa" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(460 10)"><circle r="23" fill="#38bdf8" fill-opacity=".12"/><circle r="13" fill="#38bdf8" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#38bdf8" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(460 110)"><circle r="23" fill="#38bdf8" fill-opacity=".12"/><circle r="13" fill="#38bdf8" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#38bdf8" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(660 60)"><circle r="23" fill="#7dd3fc" fill-opacity=".12"/><circle r="13" fill="#7dd3fc" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#7dd3fc" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(860 60)"><circle r="23" fill="#34d399" fill-opacity=".12"/><circle r="13" fill="#34d399" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#34d399" stroke-opacity=".5" stroke-width="1"/></g></g></svg>
+            <div style="position:absolute;inset-inline:0;bottom:0;height:24px;background:linear-gradient(to top,#0a0c16,transparent);pointer-events:none"></div>
+          </div>
+          <div style="display:flex;flex:1;flex-direction:column;gap:12px;padding:16px">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px">
+              <span style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid #222739;background:#0f121e;padding:2px 10px;font-size:11px;font-weight:500;color:#9aa1ba"><span style="width:6px;height:6px;border-radius:999px;background:#38bdf8"></span>Blueprint</span>
+              <span class="mono" style="font-size:11px;color:#9aa1ba">Closed-loop</span>
+            </div>
+            <div style="display:flex;flex:1;flex-wrap:wrap;align-content:flex-start;gap:6px">
+              <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#consensus</span>
+              <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#eval</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #222739;padding-top:12px;margin-top:4px">
+              <span class="mono" style="font-size:11px;color:#828aa3">v2.0.1 · May 08</span>
+              <span class="mono" style="font-size:11px;color:#34d399">✓ resolved · 3 tools</span>
+            </div>
+          </div>
+        </article>
+
+        <article style="position:relative;display:flex;flex-direction:column;overflow:hidden;border:1px solid #222739;background:#0a0c16;border-radius:12px">
+          <div style="display:flex;flex-direction:column;gap:6px;padding:16px 16px 12px">
+            <span class="mono" style="padding-right:32px;font-size:11px;color:#828aa3">sol-antczak / schema-forge-etl</span>
+            <h3 class="disp" style="margin:0;padding-right:32px;font-size:18px;font-weight:600;line-height:1.35;color:#e9ebf5">Schema Forge ETL</h3>
+            <p style="margin:0;padding-right:32px;font-size:14px;line-height:1.45;color:#9aa1ba">Infers a target schema from sampled rows, migrates the load, and rolls back on a type violation without asking.</p>
+          </div>
+          <span style="position:absolute;right:8px;top:10px;z-index:20;display:inline-flex;align-items:center;justify-content:center;border:1px solid #222739;background:rgba(15,18,30,.9);border-radius:999px;padding:6px;color:#828aa3"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M6.75 4.75A1.75 1.75 0 0 1 8.5 3h7a1.75 1.75 0 0 1 1.75 1.75V21L12 17.65 6.75 21V4.75z"/></svg></span>
+          <div class="bpgrid" style="position:relative;height:112px;overflow:hidden;border-top:1px solid #222739;border-bottom:1px solid #222739;background:rgba(6,28,82,.4)">
+            <svg viewBox="11 -9 898 248" role="img" aria-label="Pipeline graph preview" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;opacity:.9"><g fill="none" stroke-width="1.6"><path d="M 82.5 40 C 152.3 40, 167.8 40, 237.5 40" stroke="#74b4ff" stroke-opacity=".7"/><path d="M 282.5 40 C 352.3 40, 367.8 40, 437.5 40" stroke="#74b4ff" stroke-opacity=".7"/><path d="M 482.5 40 C 552.3 40, 567.8 40, 637.5 40" stroke="#74b4ff" stroke-opacity=".7"/><path d="M 682.5 40 C 752.3 40, 767.8 40, 837.5 40" stroke="#74b4ff" stroke-opacity=".7"/><path d="M 482.5 40 C 512.5 40, 507.5 190, 537.5 190" stroke="#ffb020" stroke-opacity=".7" stroke-dasharray="5 4"/><path d="M 582.5 190 C 612.5 190, 607.5 40, 637.5 40" stroke="#ffb020" stroke-opacity=".7" stroke-dasharray="5 4"/></g><g><path d="M 237.5 40 L 229.5 36.4 L 229.5 43.6 Z" fill="#74b4ff" fill-opacity=".9"/><path d="M 437.5 40 L 429.5 36.4 L 429.5 43.6 Z" fill="#74b4ff" fill-opacity=".9"/><path d="M 637.5 40 L 629.5 36.4 L 629.5 43.6 Z" fill="#74b4ff" fill-opacity=".9"/><path d="M 837.5 40 L 829.5 36.4 L 829.5 43.6 Z" fill="#74b4ff" fill-opacity=".9"/><path d="M 537.5 190 L 529.5 186.4 L 529.5 193.6 Z" fill="#ffb020" fill-opacity=".9"/><path d="M 637.5 40 L 629.5 36.4 L 629.5 43.6 Z" fill="#ffb020" fill-opacity=".9"/></g><g><g transform="translate(60 40)"><circle r="23" fill="#7dd3fc" fill-opacity=".12"/><circle r="13" fill="#7dd3fc" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#7dd3fc" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(260 40)"><circle r="23" fill="#38bdf8" fill-opacity=".12"/><circle r="13" fill="#38bdf8" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#38bdf8" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(460 40)"><circle r="23" fill="#34d399" fill-opacity=".12"/><circle r="13" fill="#34d399" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#34d399" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(660 40)"><circle r="23" fill="#7dd3fc" fill-opacity=".12"/><circle r="13" fill="#7dd3fc" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#7dd3fc" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(860 40)"><circle r="23" fill="#34d399" fill-opacity=".12"/><circle r="13" fill="#34d399" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#34d399" stroke-opacity=".5" stroke-width="1"/></g><g transform="translate(560 190)"><circle r="23" fill="#ffb020" fill-opacity=".12"/><circle r="13" fill="#ffb020" fill-opacity=".9"/><circle r="16.5" fill="none" stroke="#ffb020" stroke-opacity=".5" stroke-width="1"/></g></g></svg>
+            <div style="position:absolute;inset-inline:0;bottom:0;height:24px;background:linear-gradient(to top,#0a0c16,transparent);pointer-events:none"></div>
+          </div>
+          <div style="display:flex;flex:1;flex-direction:column;gap:12px;padding:16px">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px">
+              <span style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid #222739;background:#0f121e;padding:2px 10px;font-size:11px;font-weight:500;color:#9aa1ba"><span style="width:6px;height:6px;border-radius:999px;background:#38bdf8"></span>Blueprint</span>
+              <span class="mono" style="font-size:11px;color:#9aa1ba">Closed-loop</span>
+            </div>
+            <div style="display:flex;flex:1;flex-wrap:wrap;align-content:flex-start;gap:6px">
+              <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#data</span>
+              <span class="mono" style="font-size:11px;border:1px solid #222739;border-radius:999px;padding:1px 10px;color:#9aa1ba">#ETL</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #222739;padding-top:12px;margin-top:4px">
+              <span class="mono" style="font-size:11px;color:#828aa3">v1.0.4 · Apr 30</span>
+              <span class="mono" style="font-size:11px;color:#34d399">✓ resolved · 5 tools</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- node cards -->
+    <section style="margin-top:56px;display:flex;flex-direction:column;gap:20px">
+      <h2 class="disp" style="margin:0;display:flex;align-items:center;gap:10px;font-size:20px;font-weight:600;color:#e9ebf5"><span style="width:8px;height:8px;border-radius:999px;background:#ffb020"></span>Node cards<span class="mono" style="font-size:14px;font-weight:400;color:#828aa3">12</span></h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+        <sc-for list="{{ cards }}" as="c" hint-placeholder-count="3">
+          <a href="#1" style="display:flex;flex-direction:column;gap:12px;border-radius:12px;border:1px solid #222739;background:#0a0c16;padding:16px;text-decoration:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <span style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid #222739;background:#0f121e;padding:2px 10px;font-size:11px;font-weight:500;color:#9aa1ba"><span style="width:6px;height:6px;border-radius:999px;background:#ffb020"></span>{{ c.type }}</span>
+              <span class="mono" style="font-size:11px;color:#828aa3">{{ c.ref }}</span>
+            </div>
+            <h3 class="disp" style="margin:0;font-size:16px;font-weight:600;line-height:1.35;color:#e9ebf5">{{ c.name }}</h3>
+            <p style="margin:0;flex:1;font-size:14px;line-height:1.45;color:#9aa1ba">{{ c.action }}</p>
+            <div style="display:flex;align-items:center;gap:12px;border-top:1px solid #222739;padding-top:12px" class="mono">
+              <span style="font-size:11px;color:#828aa3">{{ c.used }}</span>
+              <span class="mono" style="display:inline-flex;align-items:center;gap:6px;border:1px solid #222739;background:#0a0c16;border-radius:8px;padding:2px 10px;font-size:11px;color:#9aa1ba" aria-label="{{ c.stars }} community stars, seeded"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.47 5.006 5.53.804-4 3.9.944 5.507L12 16.9l-4.944 2.6.944-5.507-4-3.9 5.53-.804L12 3.5z"/></svg>{{ c.stars }}<span style="color:#ffb020" aria-hidden="true">◐</span></span>
+            </div>
+          </a>
+        </sc-for>
+      </div>
+      <a href="#1" class="mono" style="align-self:flex-start;font-size:13px;color:#38bdf8;text-decoration:underline;text-decoration-color:rgba(56,189,248,.4);text-underline-offset:4px">See all 12 cards →</a>
+    </section>
+
+  </div>
+</div>
+</section>
+
+<!-- ═══════════ SCREEN 2 — own profile ═══════════ -->
+<section style="padding:44px 44px 40px;border-bottom:1px solid rgba(34,39,57,.6)">
+<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:20px">
+<span class="mono" style="font-size:10px;font-weight:600;padding:3px 7px;background:#e9ebf5;color:#05060d;border-radius:4px">02</span>
+<span class="disp" style="font-size:14px;font-weight:600;color:#e9ebf5">Your own account · <span class="mono" style="font-size:13px;font-weight:400;color:#828aa3">/u/mara-veil</span></span>
+<span style="font-size:12px;color:rgba(233,235,245,.45)">Signed in as the owner: public and private bundles in one list, visibility, owner chrome</span>
+</div>
+
+<div style="width:1280px;border:1px solid #222739;border-radius:12px;overflow:hidden;background:#05060d">
+
+  <div style="border-bottom:1px solid rgba(34,39,57,.7);background:rgba(5,6,13,.88)">
+    <div style="width:100%;max-width:1200px;margin-inline:auto;padding-inline:24px;display:flex;height:64px;align-items:center;gap:12px">
+      <a href="#2" class="disp" style="margin-right:auto;font-size:18px;font-weight:600;letter-spacing:-.01em"><span style="color:#e9ebf5">Dark</span><span style="color:#38bdf8">Print</span></a>
+      <nav style="display:flex;align-items:center;gap:4px">
+        <a href="#2" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Blueprints</a>
+        <a href="#2" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Cards</a>
+        <a href="#2" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Create</a>
+        <a href="#2" style="display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid #333a54;font-size:14px;color:#e9ebf5">Publish</a>
+        <a href="#2" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">MCP</a>
+        <span style="width:1px;height:20px;background:#222739;margin:0 8px"></span>
+        <span style="display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Learn <span style="color:#828aa3;font-size:11px">▾</span></span>
+      </nav>
+      <span style="width:1px;height:20px;background:#222739;margin:0 4px"></span>
+      <span style="display:inline-flex;align-items:center;gap:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;background:linear-gradient(135deg,hsl(268 70% 72%),hsl(308 60% 66%));color:#05060d;font-size:11px;font-weight:600;box-shadow:0 0 0 2px #05060d,0 0 0 4px rgba(56,189,248,.7)">MV</span>
+        <span style="color:#38bdf8;font-size:11px">▾</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- open account menu, GitHub-style -->
+  <div style="width:100%;max-width:1200px;margin-inline:auto;padding:20px 24px;box-sizing:border-box;display:flex;align-items:flex-start;justify-content:flex-end;gap:20px;border-bottom:1px solid #222739;background:rgba(15,18,30,.35)">
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding-top:8px">
+      <span class="sc-label">Account menu, opened</span>
+      <p style="margin:0;max-width:44ch;font-size:12px;line-height:1.6;color:#828aa3">Shown beside the header rather than over it. In the live product this hangs from the avatar above and is the only route to Settings and to your own blueprints.</p>
+    </div>
+    <div style="flex:none;width:280px;border:1px solid #333a54;background:#0f121e;border-radius:12px;box-shadow:0 16px 40px -12px rgba(0,0,0,.85);overflow:hidden">
+      <div style="display:flex;gap:12px;align-items:center;padding:16px;border-bottom:1px solid #222739">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;background:linear-gradient(135deg,hsl(268 70% 72%),hsl(308 60% 66%));color:#05060d;font-size:11px;font-weight:600">MV</span>
+        <span style="display:flex;flex-direction:column"><span style="font-size:14px;color:#e9ebf5">Mara Veiga</span><span class="mono" style="font-size:11px;color:#828aa3">@mara-veil</span></span>
+      </div>
+      <div style="display:flex;flex-direction:column;padding:8px 0">
+        <a href="#2" style="padding:8px 16px;font-size:14px;color:#38bdf8">Your profile</a>
+        <a href="#2" style="padding:8px 16px;font-size:14px;color:#9aa1ba">Your blueprints</a>
+        <a href="#2" style="padding:8px 16px;font-size:14px;color:#9aa1ba">Your cards</a>
+        <a href="#2" style="padding:8px 16px;font-size:14px;color:#9aa1ba">Saved</a>
+        <span style="height:1px;background:#222739;margin:8px 0"></span>
+        <a href="#3" style="padding:8px 16px;font-size:14px;color:#9aa1ba">Settings</a>
+        <a href="#2" style="padding:8px 16px;font-size:14px;color:#9aa1ba">Sign out</a>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid #222739;background:rgba(15,18,30,.5);padding:12px 16px">
+        <span class="mono" style="align-self:flex-start;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#ffb020">◐ still seeded</span>
+        <p style="margin:0;font-size:12px;line-height:1.5;color:#9aa1ba">Downloads, reputation and the three community metrics stay seeded — there is still no telemetry and no ballot.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="width:100%;max-width:1200px;margin-inline:auto;padding:40px 24px 56px">
+
+    <sc-if value="{{ honest }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;align-items:flex-start;gap:16px;border:1px solid #222739;background:rgba(15,18,30,.5);border-radius:12px;padding:16px 20px;margin-bottom:20px">
+      <span class="mono" style="flex:none;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#828aa3">What is real here</span>
+      <p style="margin:0;font-size:13px;line-height:1.6;color:#9aa1ba">Accounts, blueprints and their visibility are being built. What stays seeded is what still has no source: <span style="color:#e9ebf5">downloads, reputation and the three community metrics</span> — there is no runner and no ballot, and every figure that comes from one is labelled where it renders.</p>
+    </div>
+    </sc-if>
+
+    <header style="position:relative;overflow:hidden;border:1px solid #222739;background:#0a0c16;border-radius:12px;padding:32px">
+      <div class="techgrid" aria-hidden="true" style="position:absolute;inset:0;opacity:.4;pointer-events:none"></div>
+      <div style="position:relative;display:flex;gap:20px;align-items:flex-start">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;flex:none;border-radius:999px;background:linear-gradient(135deg,hsl(268 70% 72%),hsl(308 60% 66%));color:#05060d;font-size:23px;font-weight:600;box-shadow:0 0 0 2px #05060d,0 0 0 4px rgba(56,189,248,.7)">MV</span>
+        <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:0">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+            <h1 class="disp" style="margin:0;font-size:30px;font-weight:600;letter-spacing:-.02em;color:#e9ebf5">Mara Veiga</h1>
+            <span style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid rgba(56,189,248,.4);background:rgba(56,189,248,.1);padding:2px 10px;font-size:11px;font-weight:500;color:#38bdf8"><span style="width:6px;height:6px;border-radius:999px;background:#38bdf8"></span>✦ Validator</span>
+            <span class="mono" style="border:1px solid #222739;background:#0f121e;border-radius:999px;padding:2px 10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#828aa3">This is you</span>
+          </div>
+          <span class="mono" style="font-size:14px;color:#9aa1ba">@mara-veil</span>
+          <p style="margin:4px 0 0;max-width:36rem;font-size:14px;line-height:1.6;color:#9aa1ba">Orchestration researcher. Builds closed-loop agent lines and breaks them for a living.</p>
+        </div>
+        <div style="position:relative;display:flex;gap:8px;flex:none">
+          <a href="#3" style="display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:8px;border:1px solid #333a54;color:#e9ebf5;font-size:14px">Edit profile</a>
+          <a href="#3" style="display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:8px;background:#38bdf8;color:#05060d;font-size:14px;font-weight:500;box-shadow:0 6px 16px -8px #38bdf8">New blueprint</a>
+        </div>
+      </div>
+    </header>
+
+    <div style="margin-top:20px;border-bottom:1px solid #222739;display:flex;gap:4px;align-items:flex-end">
+      <a href="#2" style="display:inline-flex;align-items:center;gap:8px;padding:12px 14px;font-size:14px;color:#9aa1ba;border-bottom:2px solid transparent;margin-bottom:-1px">Overview</a>
+      <a href="#2" style="display:inline-flex;align-items:center;gap:8px;padding:12px 14px;font-size:14px;color:#38bdf8;border-bottom:2px solid #38bdf8;margin-bottom:-1px">Blueprints <span class="mono" style="font-size:11px;padding:1px 6px;border-radius:999px;border:1px solid rgba(56,189,248,.4);background:rgba(56,189,248,.1);color:#38bdf8">5</span></a>
+      <a href="#2" style="display:inline-flex;align-items:center;gap:8px;padding:12px 14px;font-size:14px;color:#9aa1ba;border-bottom:2px solid transparent;margin-bottom:-1px">Cards <span class="mono" style="font-size:11px;padding:1px 6px;border-radius:999px;border:1px solid #222739;color:#828aa3">9</span></a>
+      <a href="#2" style="display:inline-flex;align-items:center;gap:8px;padding:12px 14px;font-size:14px;color:#9aa1ba;border-bottom:2px solid transparent;margin-bottom:-1px">Saved <span class="mono" style="font-size:11px;padding:1px 6px;border-radius:999px;border:1px solid #222739;color:#828aa3">17</span></a>
+      <a href="#2" style="display:inline-flex;align-items:center;gap:8px;padding:12px 14px;font-size:14px;color:#9aa1ba;border-bottom:2px solid transparent;margin-bottom:-1px">Vocabulary terms <span class="mono" style="font-size:11px;padding:1px 6px;border-radius:999px;border:1px solid #222739;color:#828aa3">2</span></a>
+    </div>
+
+    <!-- fork toolbar -->
+    <div style="margin-top:40px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:280px;border:1px solid #222739;background:#0a0c16;border-radius:8px;height:40px;padding:0 12px">
+        <span style="color:#828aa3;font-size:13px">⌕</span>
+        <span style="font-size:14px;color:#828aa3">Find a blueprint&hellip;</span>
+      </div>
+      <span class="mono" style="display:inline-flex;align-items:center;height:40px;padding:0 12px;border:1px solid #222739;border-radius:8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9aa1ba">Visibility: all ▾</span>
+      <span class="mono" style="display:inline-flex;align-items:center;height:40px;padding:0 12px;border:1px solid #222739;border-radius:8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9aa1ba">Sort: updated ▾</span>
+      <a href="#4" style="display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:8px;border:1px solid #333a54;color:#e9ebf5;font-size:14px">New blueprint</a>
+    </div>
+
+    <!-- blueprint rows: public and private in one list; some happen to be forks -->
+    <div style="margin-top:20px;border:1px solid #222739;border-radius:12px;overflow:hidden;background:#0a0c16">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #222739;background:#0f121e">
+        <span class="sc-lead">Your blueprints</span>
+        <span class="mono" style="font-size:11px;color:#828aa3">2 public · 3 private</span>
+      </div>
+
+      <sc-for list="{{ forks }}" as="f" hint-placeholder-count="4">
+        <div style="display:flex;gap:20px;align-items:flex-start;padding:20px;border-bottom:1px solid #222739">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+              <a href="#4" class="disp" style="font-size:18px;font-weight:600;letter-spacing:-.01em;color:#38bdf8">{{ f.name }}</a>
+              <span class="mono" style="border:1px solid #222739;background:#0f121e;border-radius:999px;padding:1px 10px;font-size:11px;color:#9aa1ba">{{ f.visibility }}</span>
+              <span class="mono" style="border:1px solid #222739;border-radius:999px;padding:1px 10px;font-size:11px;color:#828aa3">{{ f.version }}</span>
+            </div>
+            <sc-if value="{{ f.isFork }}">
+              <p class="mono" style="margin:0;font-size:11px;color:#828aa3">forked from <a href="#1" style="color:#9aa1ba">{{ f.upstream }}</a></p>
+            </sc-if>
+            <p style="margin:0;max-width:52ch;font-size:14px;line-height:1.5;color:#9aa1ba">{{ f.note }}</p>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px" class="mono">
+              <span style="font-size:11px;color:#9aa1ba">{{ f.autonomy }}</span>
+              <span style="font-size:11px;color:#828aa3">{{ f.digest }}</span>
+              <span style="font-size:11px;color:#828aa3">edited {{ f.edited }}</span>
+              <span style="font-size:11px;color:#34d399">{{ f.drift }}</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex:none;width:200px">
+            <div style="display:flex;gap:8px">
+              <sc-if value="{{ f.isPrivate }}">
+                <span style="display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid #333a54;color:#e9ebf5;font-size:14px">Publish</span>
+              </sc-if>
+              <span style="display:inline-flex;align-items:center;justify-content:center;height:32px;width:32px;border-radius:8px;border:1px solid #333a54;color:#9aa1ba;font-size:14px">⋯</span>
+            </div>
+            <sc-if value="{{ f.isPrivate }}">
+              <span class="mono" style="font-size:11px;color:#828aa3">only you can see this</span>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+
+      <div style="display:flex;align-items:flex-start;gap:16px;padding:20px;background:rgba(15,18,30,.5);border-top:1px solid #222739">
+        <span class="mono" style="flex:none;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#828aa3">The model</span>
+        <p style="margin:0;font-size:13px;line-height:1.6;color:#9aa1ba">A blueprint belongs to an account and is public or private; some of them started as a copy of somebody else&rsquo;s, and those keep a pointer at what they came from so the registry can say when the upstream repins a card. Being a fork is a fact about a bundle, not a kind of bundle.</p>
+      </div>
+    </div>
+
+    <!-- starred -->
+    <section style="margin-top:56px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <h2 class="disp" style="margin:0;display:flex;align-items:center;gap:10px;font-size:20px;font-weight:600;color:#e9ebf5"><span style="width:8px;height:8px;border-radius:999px;background:#ffb020"></span>Saved<span class="mono" style="font-size:14px;font-weight:400;color:#828aa3">17</span></h2>
+        <span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#34d399">✓ on your account</span>
+      </div>
+      <div style="border:1px solid #222739;border-radius:12px;overflow:hidden;background:#0a0c16">
+        <sc-for list="{{ stars }}" as="s" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid #222739">
+            <span style="flex:none;color:#ffb020"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M6.75 4.75A1.75 1.75 0 0 1 8.5 3h7a1.75 1.75 0 0 1 1.75 1.75V21L12 17.65 6.75 21V4.75z"/></svg></span>
+            <a href="#1" class="mono" style="font-size:13px;color:#38bdf8">{{ s.path }}</a>
+            <span style="flex:1;min-width:0;font-size:13px;color:#9aa1ba;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.summary }}</span>
+            <span class="mono" style="flex:none;font-size:11px;color:#828aa3">{{ s.kind }}</span>
+            <span style="flex:none;display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 10px;border-radius:8px;border:1px solid #222739;font-size:12px;color:#9aa1ba">Remove</span>
+          </div>
+        </sc-for>
+        <p style="margin:0;padding:14px 20px;font-size:12px;line-height:1.6;color:#828aa3">A save is a bookmark, and it is yours: it follows your account between machines and nobody else can see it. It is not the star count beside a blueprint — that is community support, it is seeded, and no scorecard reads either of them.</p>
+      </div>
+    </section>
+
+  </div>
+</div>
+</section>
+
+<!-- ═══════════ SCREEN 3 — settings ═══════════ -->
+<section style="padding:44px 44px 40px;border-bottom:1px solid rgba(34,39,57,.6)">
+<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:20px">
+<span class="mono" style="font-size:10px;font-weight:600;padding:3px 7px;background:#e9ebf5;color:#05060d;border-radius:4px">03</span>
+<span class="disp" style="font-size:14px;font-weight:600;color:#e9ebf5">Settings · <span class="mono" style="font-size:13px;font-weight:400;color:#828aa3">/settings</span></span>
+<span style="font-size:12px;color:rgba(233,235,245,.45)">Left rail in the Learn-page register; seven sections, two of which do not save</span>
+</div>
+
+<div style="width:1280px;border:1px solid #222739;border-radius:12px;overflow:hidden;background:#05060d">
+
+  <div style="border-bottom:1px solid rgba(34,39,57,.7);background:rgba(5,6,13,.88)">
+    <div style="width:100%;max-width:1200px;margin-inline:auto;padding-inline:24px;display:flex;height:64px;align-items:center;gap:12px">
+      <a href="#3" class="disp" style="margin-right:auto;font-size:18px;font-weight:600;letter-spacing:-.01em"><span style="color:#e9ebf5">Dark</span><span style="color:#38bdf8">Print</span></a>
+      <nav style="display:flex;align-items:center;gap:4px">
+        <a href="#3" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Blueprints</a>
+        <a href="#3" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Cards</a>
+        <a href="#3" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Create</a>
+        <a href="#3" style="display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid #333a54;font-size:14px;color:#e9ebf5">Publish</a>
+        <a href="#3" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">MCP</a>
+        <span style="width:1px;height:20px;background:#222739;margin:0 8px"></span>
+        <span style="display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Learn <span style="color:#828aa3;font-size:11px">▾</span></span>
+      </nav>
+      <span style="width:1px;height:20px;background:#222739;margin:0 4px"></span>
+      <span style="display:inline-flex;align-items:center;gap:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;background:linear-gradient(135deg,hsl(268 70% 72%),hsl(308 60% 66%));color:#05060d;font-size:11px;font-weight:600">MV</span>
+        <span style="color:#828aa3;font-size:11px">▾</span>
+      </span>
+    </div>
+  </div>
+
+  <div style="width:100%;max-width:1200px;margin-inline:auto;padding:0 24px 56px;display:grid;grid-template-columns:256px minmax(0,1fr);gap:0;align-items:start">
+
+    <!-- rail -->
+    <div style="border-right:1px solid #222739;background:rgba(10,12,22,.25);padding:24px 16px;align-self:stretch"><nav aria-label="Settings sections" style="display:flex;flex-direction:column;gap:4px;position:relative">
+      <div style="border-bottom:1px solid #222739;padding:0 12px 16px;margin-bottom:12px"><p class="sc-lead" style="margin:0">Settings</p></div>
+      <a href="#3" style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#e9ebf5;background:rgba(56,189,248,.05);border-left:2px solid #38bdf8"><span class="mono" style="font-size:10px;color:#38bdf8">01</span>Public profile</a>
+      <a href="#3" style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">02</span>Account &amp; handle</a>
+      <a href="#3" style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">03</span>Email &amp; notifications</a>
+      <a href="#3" style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">04</span>Default visibility</a>
+      <a href="#3" style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">05</span>Validator status</a>
+      <a href="#3" style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">06</span>Appearance</a>
+      <a href="#3" style="display:flex;gap:12px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#ff5470;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">07</span>Danger zone</a>
+      <span style="height:1px;background:#222739;margin:12px 12px"></span>
+      <a href="#2" class="mono" style="padding:0 12px;font-size:11px;color:#828aa3">← Back to your profile</a>
+    </nav></div>
+
+    <div style="display:flex;flex-direction:column;gap:40px;min-width:0;padding:40px 0 0 40px">
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <span class="sc-eyebrow">Account</span>
+        <h1 class="disp" style="margin:0;font-size:36px;font-weight:600;line-height:1.05;letter-spacing:-.02em;color:#e9ebf5">Settings</h1>
+        <p style="margin:0;font-size:20px;line-height:1.6;color:#9aa1ba">What the registry knows about you, and what it will never keep. Every control below is drawn to the same rule the rest of the site follows: it says which half is real.</p>
+      </div>
+
+      <sc-if value="{{ honest }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;align-items:flex-start;gap:16px;border:1px solid #222739;background:rgba(15,18,30,.5);border-radius:12px;padding:16px 20px">
+        <span class="mono" style="flex:none;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#828aa3">What saves</span>
+        <p style="margin:0;font-size:13px;line-height:1.6;color:#9aa1ba">Every field here writes to the account. The two that do not are marked in place: <span style="color:#e9ebf5">validator status</span>, which needs a ballot nobody has built, and <span style="color:#e9ebf5">appearance</span>, which stays in this browser.</p>
+      </div>
+      </sc-if>
+
+      <!-- 01 public profile -->
+      <section style="border:1px solid #333a54;background:rgba(15,18,30,.7);border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #222739;padding-bottom:16px">
+          <h2 class="sc-lead" style="margin:0">01 · Public profile</h2>
+          <span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#828aa3">visible to everyone</span>
+        </div>
+        <div style="margin-top:20px;display:grid;grid-template-columns:1fr 260px;gap:40px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <label style="display:flex;flex-direction:column;gap:8px">
+              <span class="sc-label">Display name</span>
+              <input type="text" value="Mara Veiga" style="height:40px;border-radius:8px;border:1px solid #222739;background:#05060d;padding:0 12px;font-family:Geist,sans-serif;font-size:14px;color:#e9ebf5" />
+            </label>
+            <label style="display:flex;flex-direction:column;gap:8px">
+              <span class="sc-label">Bio</span>
+              <textarea rows="3" style="border-radius:8px;border:1px solid #222739;background:#05060d;padding:10px 12px;font-family:Geist,sans-serif;font-size:14px;line-height:1.6;color:#e9ebf5;resize:vertical">Orchestration researcher. Builds closed-loop agent lines and breaks them for a living.</textarea>
+              <span class="mono" style="font-size:11px;color:#828aa3">94 / 160 · one sentence is enough; it renders under your name and on every card you publish</span>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:8px">
+              <span class="sc-label">Avatar hue</span>
+              <input type="range" min="0" max="359" value="268" style="accent-color:#38bdf8;width:100%" />
+              <span class="mono" style="font-size:11px;color:#828aa3">268° · avatars are generated from one number, so no image is ever uploaded or stored</span>
+            </label>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;align-items:center;border:1px solid #222739;background:#0a0c16;border-radius:12px;padding:20px">
+            <span class="sc-label">Preview</span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:999px;background:linear-gradient(135deg,hsl(268 70% 72%),hsl(308 60% 66%));color:#05060d;font-size:23px;font-weight:600;box-shadow:0 0 0 2px #0a0c16,0 0 0 4px rgba(56,189,248,.7)">MV</span>
+            <span class="disp" style="font-size:16px;font-weight:600;color:#e9ebf5">Mara Veiga</span>
+            <span class="mono" style="font-size:11px;color:#828aa3">@mara-veil</span>
+            <span class="mono" style="font-size:11px;color:#38bdf8">✦ validator ring</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 02 account -->
+      <section style="border:1px solid #222739;background:#0a0c16;border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #222739;padding-bottom:16px">
+          <h2 class="sc-lead" style="margin:0">02 · Account &amp; handle</h2>
+          <span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#828aa3">identity</span>
+        </div>
+        <div style="margin-top:20px;display:flex;flex-direction:column;gap:20px">
+          <label style="display:flex;flex-direction:column;gap:8px;max-width:36rem">
+            <span class="sc-label">Handle</span>
+            <span style="display:flex;align-items:center;height:40px;border-radius:8px;border:1px solid #222739;background:#05060d;overflow:hidden">
+              <span class="mono" style="padding:0 4px 0 12px;font-size:14px;color:#828aa3">darkprint.io/u/</span>
+              <input type="text" value="mara-veil" style="flex:1;min-width:0;height:100%;border:0;background:transparent;font-family:'JetBrains Mono',monospace;font-size:14px;color:#e9ebf5;outline:none" />
+            </span>
+            <span class="mono" style="font-size:11px;color:#828aa3">Your handle is the author field on every card you publish. Changing it would leave every pinned <code style="color:#ff8a4d">author:</code> line pointing at a name nobody owns, so a rename keeps the old handle reserved.</span>
+          </label>
+          <div style="display:flex;flex-direction:column;gap:12px;border:1px solid #222739;border-radius:8px;background:#0f121e;padding:16px">
+            <span class="sc-label">Authored under this handle</span>
+            <div style="display:flex;gap:32px" class="mono">
+              <span style="font-size:13px;color:#9aa1ba">2 blueprints</span>
+              <span style="font-size:13px;color:#9aa1ba">9 node cards</span>
+              <span style="font-size:13px;color:#9aa1ba">2 ontology terms</span>
+              <span style="font-size:13px;color:#a78bfa">1 namespace · <code>lupo/</code></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 03 notifications -->
+      <section style="border:1px solid #222739;background:#0a0c16;border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #222739;padding-bottom:16px">
+          <h2 class="sc-lead" style="margin:0">03 · Email &amp; notifications</h2>
+          <span class="mono" style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#ffb020">◐ nothing sends</span>
+        </div>
+        <div style="margin-top:20px;display:flex;flex-direction:column;gap:16px">
+          <label style="display:flex;flex-direction:column;gap:8px;max-width:36rem">
+            <span class="sc-label">Email</span>
+            <input type="text" value="mara@veiga.dev" style="height:40px;border-radius:8px;border:1px solid #222739;background:#05060d;padding:0 12px;font-family:'JetBrains Mono',monospace;font-size:14px;color:#e9ebf5" />
+            <span class="mono" style="font-size:11px;color:#828aa3">Never shown on your profile. It is the only field here a reader could not already see.</span>
+          </label>
+          <div style="display:flex;flex-direction:column;border:1px solid #222739;border-radius:8px;overflow:hidden">
+            <sc-for list="{{ notifications }}" as="n" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:16px;padding:14px 16px;border-bottom:1px solid #222739">
+                <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <span style="font-size:14px;color:#e9ebf5">{{ n.title }}</span>
+                  <span style="font-size:12px;line-height:1.5;color:#828aa3">{{ n.note }}</span>
+                </span>
+                <span style="flex:none;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#828aa3">{{ n.state }}</span>
+                <span style="flex:none;width:40px;height:22px;border-radius:999px;border:1px solid #333a54;background:{{ n.trackBg }};position:relative">
+                  <span style="position:absolute;top:2px;left:{{ n.knobLeft }};width:16px;height:16px;border-radius:999px;background:{{ n.knobBg }}"></span>
+                </span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <!-- 04 fork visibility -->
+      <section style="border:1px solid #222739;background:#0a0c16;border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #222739;padding-bottom:16px">
+          <h2 class="sc-lead" style="margin:0">04 · Default visibility for new blueprints</h2>
+          <span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#828aa3">per bundle, overridable</span>
+        </div>
+        <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div style="display:flex;flex-direction:column;gap:8px;border:1px solid rgba(56,189,248,.5);background:rgba(56,189,248,.06);border-radius:8px;padding:16px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="width:14px;height:14px;border-radius:999px;border:1px solid #38bdf8;display:inline-flex;align-items:center;justify-content:center"><span style="width:7px;height:7px;border-radius:999px;background:#38bdf8"></span></span>
+              <span style="font-size:14px;font-weight:500;color:#e9ebf5">Private</span>
+              <span class="mono" style="margin-left:auto;font-size:11px;color:#38bdf8">recommended</span>
+            </div>
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#9aa1ba">A new bundle is yours until you decide otherwise. It is listed on your profile for you alone, and if you started it from somebody else&rsquo;s, that author is not told it exists.</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;border:1px solid #222739;border-radius:8px;padding:16px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="width:14px;height:14px;border-radius:999px;border:1px solid #333a54"></span>
+              <span style="font-size:14px;font-weight:500;color:#e9ebf5">Public</span>
+            </div>
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#9aa1ba">Every new bundle is listed on your profile the moment you make it — and if it came from somebody else&rsquo;s, on theirs too, with the lineage stated.</p>
+          </div>
+        </div>
+        <p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#828aa3">Visibility is a property of every bundle, and a published one is a blueprint like any other: statically checked, scored from its own graph, and pinned to the card versions it actually carries. Whether it started as a copy is a fact recorded on it, not a different kind of thing.</p>
+      </section>
+
+      <!-- 05 validator -->
+      <section style="border:1px solid rgba(255,176,32,.25);background:rgba(255,176,32,.05);border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,176,32,.2);padding-bottom:16px">
+          <h2 class="sc-lead" style="margin:0">05 · Validator status</h2>
+          <span class="mono" style="border:1px solid rgba(255,176,32,.4);background:rgba(255,176,32,.1);border-radius:999px;padding:2px 10px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#ffb020">Coming soon</span>
+        </div>
+        <div style="margin-top:20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <span style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid rgba(56,189,248,.4);background:rgba(56,189,248,.1);padding:2px 10px;font-size:11px;font-weight:500;color:#38bdf8"><span style="width:6px;height:6px;border-radius:999px;background:#38bdf8"></span>✦ Validator</span>
+          <span class="mono" style="font-size:11px;color:#828aa3">granted Mar 2026 · weight ×3 on community metrics</span>
+        </div>
+        <p style="margin:16px 0 0;max-width:36rem;font-size:13px;line-height:1.6;color:#9aa1ba">The badge is a preview. Validator voting is not built, so the three community metrics on every scorecard are seeded and nothing here carries weight over anyone else&rsquo;s reading.</p>
+      </section>
+
+      <!-- 06 appearance -->
+      <section style="border:1px solid #222739;background:#0a0c16;border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #222739;padding-bottom:16px">
+          <h2 class="sc-lead" style="margin:0">06 · Appearance</h2>
+          <span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#828aa3">this browser only</span>
+        </div>
+        <div style="margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+          <div style="display:flex;flex-direction:column;gap:10px;border:1px solid rgba(56,189,248,.5);border-radius:8px;padding:12px;background:rgba(56,189,248,.06)">
+            <div class="techgrid" style="height:60px;border-radius:5px;border:1px solid #222739;background:#05060d"></div>
+            <span style="font-size:14px;color:#e9ebf5">Dark · factory</span>
+            <span class="mono" style="font-size:11px;color:#38bdf8">current</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;border:1px solid #222739;border-radius:8px;padding:12px">
+            <div class="bpgrid" style="height:60px;border-radius:5px;border:1px solid #222739;background:#061c52"></div>
+            <span style="font-size:14px;color:#e9ebf5">Blueprint · cyanotype</span>
+            <span class="mono" style="font-size:11px;color:#828aa3">sections opt in locally</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;border:1px solid #222739;border-radius:8px;padding:12px">
+            <div style="height:60px;border-radius:5px;border:1px solid #222739;background:#0a0c16;display:flex;align-items:center;justify-content:center"><span class="mono" style="font-size:11px;color:#828aa3">Aa 15px</span></div>
+            <span style="font-size:14px;color:#e9ebf5">Reduce motion</span>
+            <span class="mono" style="font-size:11px;color:#828aa3">follows your system</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 07 danger -->
+      <section style="border:1px solid rgba(255,84,112,.35);background:rgba(255,84,112,.04);border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,84,112,.25);padding-bottom:16px">
+          <h2 class="sc-lead" style="margin:0;color:#ff5470">07 · Danger zone</h2>
+          <span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#ff5470">irreversible</span>
+        </div>
+        <div style="margin-top:20px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;border:1px solid #222739;border-radius:8px;background:#0a0c16;padding:16px">
+            <span style="flex:1;min-width:280px;display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:14px;color:#e9ebf5">Delete account</span>
+              <span style="font-size:13px;line-height:1.6;color:#9aa1ba">Your handle is reserved, your private bundles are destroyed, and everything you published stays. A pinned card cannot be withdrawn: nine bundles would stop resolving.</span>
+            </span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:8px;border:1px solid rgba(255,84,112,.5);color:#ff5470;font-size:14px">Delete account</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;border:1px solid #222739;border-radius:8px;background:#0a0c16;padding:16px">
+            <span style="flex:1;min-width:280px;display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:14px;color:#e9ebf5">Transfer a blueprint</span>
+              <span style="font-size:13px;line-height:1.6;color:#9aa1ba">Hand ownership to another handle. The digest does not change — the bundle is the same bytes — only the author line moves.</span>
+            </span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:8px;border:1px solid #333a54;color:#e9ebf5;font-size:14px">Transfer</span>
+          </div>
+        </div>
+      </section>
+
+      <div style="display:flex;align-items:center;gap:12px;border-top:1px solid #222739;padding-top:20px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:8px;background:#38bdf8;color:#05060d;font-size:14px;font-weight:500;box-shadow:0 6px 16px -8px #38bdf8">Save changes</span>
+        <span style="display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:8px;color:#9aa1ba;font-size:14px">Discard</span>
+        <span class="mono" style="margin-left:auto;font-size:11px;color:#828aa3">Changes apply to your account, not to anything you have published.</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════ SCREEN 4 — fork as owned repo ═══════════ -->
+<section style="padding:44px 44px 56px">
+<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:20px">
+<span class="mono" style="font-size:10px;font-weight:600;padding:3px 7px;background:#e9ebf5;color:#05060d;border-radius:4px">04</span>
+<span class="disp" style="font-size:14px;font-weight:600;color:#e9ebf5">Your fork, handled as a repository · <span class="mono" style="font-size:13px;font-weight:400;color:#828aa3">/u/mara-veil/guarded-merge-bot-hardened</span></span>
+<span style="font-size:12px;color:rgba(233,235,245,.45)">Breadcrumb, lineage, version selector, file tree, history</span>
+</div>
+
+<div style="width:1280px;border:1px solid #222739;border-radius:12px;overflow:hidden;background:#05060d">
+
+  <div style="border-bottom:1px solid rgba(34,39,57,.7);background:rgba(5,6,13,.88)">
+    <div style="width:100%;max-width:1200px;margin-inline:auto;padding-inline:24px;display:flex;height:64px;align-items:center;gap:12px">
+      <a href="#4" class="disp" style="margin-right:auto;font-size:18px;font-weight:600;letter-spacing:-.01em"><span style="color:#e9ebf5">Dark</span><span style="color:#38bdf8">Print</span></a>
+      <nav style="display:flex;align-items:center;gap:4px">
+        <a href="#4" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Blueprints</a>
+        <a href="#4" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Cards</a>
+        <a href="#4" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Create</a>
+        <a href="#4" style="display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid #333a54;font-size:14px;color:#e9ebf5">Publish</a>
+        <a href="#4" style="border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">MCP</a>
+        <span style="width:1px;height:20px;background:#222739;margin:0 8px"></span>
+        <span style="display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:8px 12px;font-size:14px;color:#9aa1ba">Learn <span style="color:#828aa3;font-size:11px">▾</span></span>
+      </nav>
+      <span style="width:1px;height:20px;background:#222739;margin:0 4px"></span>
+      <span style="display:inline-flex;align-items:center;gap:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;background:linear-gradient(135deg,hsl(268 70% 72%),hsl(308 60% 66%));color:#05060d;font-size:11px;font-weight:600">MV</span>
+        <span style="color:#828aa3;font-size:11px">▾</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- repo header band -->
+  <div style="border-bottom:1px solid #222739;background:#0a0c16">
+    <div style="width:100%;max-width:1200px;margin-inline:auto;padding:20px 24px 0">
+      <div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap">
+        <div style="flex:1;min-width:320px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,hsl(268 70% 72%),hsl(308 60% 66%));color:#05060d;font-size:11px;font-weight:600">MV</span>
+            <a href="#2" class="disp" style="font-size:20px;font-weight:500;color:#38bdf8">mara-veil</a>
+            <span class="disp" style="font-size:20px;color:#3b4058">/</span>
+            <a href="#4" class="disp" style="font-size:20px;font-weight:600;letter-spacing:-.01em;color:#e9ebf5">guarded-merge-bot-hardened</a>
+            <sc-if value="{{ priv }}" hint-placeholder-val="{{ true }}">
+              <span class="mono" style="border:1px solid #333a54;background:#0f121e;border-radius:999px;padding:2px 10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9aa1ba">Private</span>
+            </sc-if>
+            <sc-if value="{{ pub }}">
+              <span class="mono" style="border:1px solid rgba(52,211,153,.4);background:rgba(52,211,153,.1);border-radius:999px;padding:2px 10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#34d399">Public</span>
+            </sc-if>
+            <span class="mono" style="border:1px solid #222739;border-radius:999px;padding:2px 10px;font-size:11px;color:#828aa3">forked</span>
+          </div>
+          <p class="mono" style="margin:0;font-size:11px;color:#828aa3">forked from <a href="#1" style="color:#9aa1ba">sol-antczak / guarded-merge-bot</a> at <span style="color:#9aa1ba">v1.3.0</span> · <span style="color:#ffb020">upstream repinned 1 card since</span></p>
+          <p style="margin:4px 0 0;max-width:56ch;font-size:14px;line-height:1.6;color:#9aa1ba">Your copy: the maintainer gate replaced with a second judge, and the merge step scoped to one repository.</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+            <span style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:8px;border:1px solid #333a54;color:#e9ebf5;font-size:14px">Watch <span class="mono" style="font-size:11px;color:#828aa3">1</span></span>
+            <span style="display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 12px;border-radius:8px;border:1px solid #222739;background:rgba(15,18,30,.9);color:#828aa3;font-size:14px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><path d="M6.75 4.75A1.75 1.75 0 0 1 8.5 3h7a1.75 1.75 0 0 1 1.75 1.75V21L12 17.65 6.75 21V4.75z"/></svg>Save</span>
+            <span style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:8px;border:1px solid #333a54;color:#e9ebf5;font-size:14px">Fork <span class="mono" style="font-size:11px;color:#828aa3">0</span></span>
+            <span style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:8px;background:#38bdf8;color:#05060d;font-size:14px;font-weight:500;box-shadow:0 6px 16px -8px #38bdf8">Get the folder <span style="font-size:11px">▾</span></span>
+          </div>
+          <span class="mono" style="font-size:11px;color:#828aa3">a snapshot over HTTP, not a clone</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="width:100%;max-width:1200px;margin-inline:auto;padding:0 24px 56px;display:grid;grid-template-columns:256px minmax(0,1fr) 320px;gap:0;align-items:start">
+
+    <div style="border-right:1px solid #222739;background:rgba(10,12,22,.25);padding:24px 16px;align-self:stretch"><nav aria-label="On this blueprint" style="display:flex;flex-direction:column;gap:4px">
+      <div style="border-bottom:1px solid #222739;padding:0 12px 16px;margin-bottom:12px"><p class="sc-lead" style="margin:0">On this blueprint</p><p class="mono" style="margin:8px 0 0;font-size:11px;color:#828aa3">yours · 8 sections</p></div>
+      <a href="#4" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">01</span>Overview</a>
+      <a href="#4" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#e9ebf5;background:rgba(56,189,248,.05);border-left:2px solid #38bdf8"><span class="mono" style="font-size:10px;color:#38bdf8">02</span>Files</a>
+      <a href="#4" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">03</span>Graph and cards</a>
+      <a href="#4" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">04</span>Evidence</a>
+      <a href="#4" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">05</span>History</a>
+      <a href="#4" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">06</span>Use this release</a>
+      <a href="#4" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">07</span>Source</a>
+      <span style="height:1px;background:#222739;margin:10px 12px"></span>
+      <span class="mono" style="padding:0 12px 6px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#828aa3">Owner</span>
+      <a href="#4" style="display:flex;gap:10px;align-items:baseline;border-radius:8px;padding:10px 12px;font-size:13px;color:#9aa1ba;border-left:2px solid transparent"><span class="mono" style="font-size:10px;color:#828aa3">08</span>Settings</a>
+    </nav></div>
+
+
+    <div style="display:flex;flex-direction:column;gap:20px;min-width:0;padding:40px 0 0 40px">
+
+      <!-- version selector row -->
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:8px;border:1px solid #333a54;color:#e9ebf5;font-size:14px"><span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#828aa3">version</span> v1.4.0-hardened <span style="font-size:11px;color:#828aa3">▾</span></span>
+        <span class="mono" style="font-size:11px;color:#828aa3">3 versions · 6 changes</span>
+        <span style="margin-left:auto;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:8px;border:1px solid #333a54;color:#e9ebf5;font-size:14px">Compare with upstream</span>
+      </div>
+
+      <!-- file tree -->
+      <div style="border:1px solid #222739;border-radius:12px;overflow:hidden;background:#0a0c16">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #222739;background:#0f121e;flex-wrap:wrap">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,hsl(268 70% 72%),hsl(308 60% 66%));color:#05060d;font-size:11px;font-weight:600">MV</span>
+          <span class="mono" style="font-size:11px;color:#9aa1ba">mara-veil</span>
+          <span style="font-size:13px;color:#e9ebf5">replace the maintainer gate with a second judge</span>
+          <span style="margin-left:auto;display:flex;gap:14px" class="mono">
+            <span style="font-size:11px;color:#828aa3">sha256:4f1c9a</span>
+            <span style="font-size:11px;color:#828aa3">2 days ago</span>
+          </span>
+        </div>
+        <sc-for list="{{ files }}" as="f" hint-placeholder-count="7">
+          <div style="display:flex;align-items:center;gap:16px;padding:11px 16px;border-bottom:1px solid #222739">
+            <span style="flex:none;width:16px;text-align:center;font-size:12px;color:{{ f.iconColor }}">{{ f.icon }}</span>
+            <a href="#4" class="mono" style="flex:none;min-width:220px;font-size:13px;color:#e9ebf5">{{ f.name }}</a>
+            <span style="flex:1;min-width:0;font-size:13px;color:#828aa3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.change }}</span>
+            <span class="mono" style="flex:none;font-size:11px;color:{{ f.stateColor }}">{{ f.state }}</span>
+            <span class="mono" style="flex:none;box-sizing:border-box;width:88px;text-align:right;font-size:11px;color:#828aa3">{{ f.when }}</span>
+          </div>
+        </sc-for>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#0f121e">
+          <span class="mono" style="font-size:11px;color:#828aa3">7 entries · 12 pinned cards inside <code style="color:#ff8a4d">cards/</code></span>
+          <span style="margin-left:auto;display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:8px;border:1px solid #222739;font-size:12px;color:#9aa1ba">Open README</span>
+        </div>
+      </div>
+
+      <!-- history as commits -->
+      <div style="border:1px solid #222739;border-radius:12px;overflow:hidden;background:#0a0c16">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #222739;background:#0f121e">
+          <span class="sc-lead">History</span>
+          <span class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#828aa3">a version is a digest, not a commit</span>
+        </div>
+        <sc-for list="{{ history }}" as="h" hint-placeholder-count="4">
+          <div style="display:flex;gap:16px;align-items:flex-start;padding:16px 20px;border-bottom:1px solid #222739">
+            <span style="flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:2px">
+              <span style="width:9px;height:9px;border-radius:999px;border:1.5px solid {{ h.dot }};background:#0a0c16"></span>
+              <span style="width:1px;height:28px;background:#222739"></span>
+            </span>
+            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+              <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span class="mono" style="font-size:13px;color:#e9ebf5">{{ h.version }}</span>
+                <span class="mono" style="border:1px solid #222739;border-radius:999px;padding:1px 8px;font-size:11px;color:#828aa3">{{ h.digest }}</span>
+                <span class="mono" style="font-size:11px;color:{{ h.tagColor }}">{{ h.tag }}</span>
+              </span>
+              <span style="font-size:13px;line-height:1.5;color:#9aa1ba">{{ h.message }}</span>
+              <span class="mono" style="font-size:11px;color:#828aa3">{{ h.who }} · {{ h.when }}</span>
+            </span>
+            <span style="flex:none;display:flex;gap:8px">
+              <span style="display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 10px;border-radius:8px;border:1px solid #222739;font-size:12px;color:#9aa1ba">Diff</span>
+              <span style="display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 10px;border-radius:8px;border:1px solid #222739;font-size:12px;color:#9aa1ba">Take</span>
+            </span>
+          </div>
+        </sc-for>
+        <p style="margin:0;padding:14px 20px;font-size:12px;line-height:1.6;color:#828aa3">There is no repository behind a bundle. Each row is a published snapshot addressed by its own digest, so &ldquo;history&rdquo; is a list of identities rather than a chain of patches — and nothing here can be pulled.</p>
+      </div>
+    </div>
+
+    <!-- sidebar -->
+    <aside style="display:flex;flex-direction:column;gap:12px;padding:40px 0 0 40px">
+
+      <sc-if value="{{ honest }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:8px;border:1px solid #222739;background:rgba(15,18,30,.5);border-radius:12px;padding:16px">
+        <span class="mono" style="align-self:flex-start;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#828aa3">What this page does not hold</span>
+        <p style="margin:0;font-size:12px;line-height:1.6;color:#9aa1ba">What the registry stores is this bundle and who owns it. What it still does not: a run, a key, or any telemetry about either. Execution stays on your machine.</p>
+      </div>
+      </sc-if>
+
+      <!-- visibility -->
+      <section style="border:1px solid #222739;background:#0a0c16;border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+          <span class="sc-label">Visibility</span>
+          <span class="mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#828aa3">owner only</span>
+        </div>
+        <div style="display:flex;padding:3px;border:1px solid #222739;border-radius:8px;background:#05060d">
+          <sc-if value="{{ priv }}" hint-placeholder-val="{{ true }}">
+            <span style="flex:1;text-align:center;padding:7px 0;border-radius:5px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#828aa3">Public</span>
+            <span style="flex:1;text-align:center;padding:7px 0;border-radius:5px;background:rgba(56,189,248,.14);border:1px solid rgba(56,189,248,.45);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#38bdf8">Private</span>
+          </sc-if>
+          <sc-if value="{{ pub }}">
+            <span style="flex:1;text-align:center;padding:7px 0;border-radius:5px;background:rgba(52,211,153,.14);border:1px solid rgba(52,211,153,.45);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#34d399">Public</span>
+            <span style="flex:1;text-align:center;padding:7px 0;border-radius:5px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#828aa3">Private</span>
+          </sc-if>
+        </div>
+        <p style="margin:12px 0 0;font-size:12px;line-height:1.6;color:#828aa3">Publishing runs the validator over your graph and gives the fork a scorecard of its own. It does not change the upstream, and the lineage line stays.</p>
+      </section>
+
+      <!-- bundle digest, recreated -->
+      <section style="border:1px solid #222739;background:rgba(10,12,22,.92);border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span class="sc-label">Bundle</span>
+          <span class="mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#828aa3">content-addressed</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <code class="mono" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:5px;border:1px solid #222739;background:#0f121e;padding:4px 8px;font-size:11px;color:#e9ebf5">sha256:4f1c9a2e…8b07</code>
+          <span class="mono" style="flex:none;border-radius:5px;border:1px solid #222739;padding:4px 8px;font-size:11px;color:#9aa1ba">copy</span>
+        </div>
+        <p style="margin:8px 0 0;font-size:12px;line-height:1.45;color:#828aa3">Hashed over the DOT source and every card version below. Change one byte of either and this is a different bundle.</p>
+        <dl style="margin:16px 0 0;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #222739"><dt style="font-size:14px;color:#9aa1ba">Nodes</dt><dd class="mono" style="margin:0;font-size:14px;font-variant-numeric:tabular-nums;color:#e9ebf5">7</dd></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #222739"><dt style="font-size:14px;color:#9aa1ba">Pinned cards</dt><dd class="mono" style="margin:0;font-size:14px;font-variant-numeric:tabular-nums;color:#e9ebf5">12</dd></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #222739"><dt style="font-size:14px;color:#9aa1ba">Ontology declared</dt><dd class="mono" style="margin:0;font-size:14px;font-variant-numeric:tabular-nums;color:#a78bfa">v0.1.0</dd></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #222739"><dt style="font-size:14px;color:#9aa1ba">Scores computed under</dt><dd class="mono" style="margin:0;font-size:14px;font-variant-numeric:tabular-nums;color:#a78bfa">v0.1.0</dd></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #222739"><dt style="font-size:14px;color:#9aa1ba">Autonomy</dt><dd class="mono" style="margin:0;font-size:14px;color:#e9ebf5">Closed-loop</dd></div>
+        </dl>
+        <p style="margin:8px 0 0;font-size:12px;line-height:1.45;color:#828aa3">Two scores from different ontology versions are not comparable.</p>
+      </section>
+
+      <!-- upstream drift -->
+      <section style="border:1px solid rgba(255,176,32,.3);border-inline-start:2px solid rgba(255,176,32,.7);background:rgba(255,176,32,.05);border-radius:12px;padding:20px">
+        <span class="mono" style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#ffb020">Upstream moved</span>
+        <p style="margin:8px 0 0;font-size:13px;line-height:1.6;color:#9aa1ba"><a href="#1" style="color:#e9ebf5">sol-antczak/guarded-merge-bot</a> repinned <code class="mono" style="color:#ff8a4d">criteria-judge@2.1.0</code> → <code class="mono" style="color:#ff8a4d">2.2.0</code> on Jul 04. Your fork still carries 2.1.0, so the two bundles hash differently and their Security readings are not the same measurement.</p>
+        <span style="margin-top:12px;display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,176,32,.45);font-size:12px;color:#ffb020">Review the change</span>
+      </section>
+
+      <!-- releases -->
+      <section style="border:1px solid #222739;background:#0a0c16;border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+          <span class="sc-label">Releases</span>
+          <span class="mono" style="font-size:11px;color:#828aa3">3</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="display:flex;align-items:center;gap:8px"><span class="mono" style="font-size:13px;color:#38bdf8">v1.4.0-hardened</span><span class="mono" style="border:1px solid rgba(52,211,153,.4);background:rgba(52,211,153,.1);border-radius:999px;padding:1px 8px;font-size:11px;color:#34d399">latest</span></span>
+            <span class="mono" style="font-size:11px;color:#828aa3">2 days ago · 24 files · 41 kB</span>
+          </div>
+          <div style="height:1px;background:#222739"></div>
+          <span class="mono" style="font-size:11px;color:#828aa3">v1.3.1-hardened · Jul 12</span>
+          <span class="mono" style="font-size:11px;color:#828aa3">v1.3.0-hardened · Jun 28</span>
+        </div>
+        <p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#828aa3">A release is the folder as it stood, kept at its digest. Old ones stay fetchable so a pin you took never disappears.</p>
+      </section>
+    </aside>
+  </div>
+
+  <!-- footer -->
+  <div style="border-top:1px solid #222739;background:rgba(10,12,22,.4)">
+    <div style="width:100%;max-width:1200px;margin-inline:auto;padding:40px 24px;display:grid;grid-template-columns:1fr repeat(3,auto);gap:40px">
+      <div>
+        <span class="disp" style="font-size:18px;font-weight:600;letter-spacing:-.01em"><span style="color:#e9ebf5">Dark</span><span style="color:#38bdf8">Print</span></span>
+        <p style="margin:12px 0 0;max-width:20rem;font-size:14px;line-height:1.6;color:#828aa3">Reusable, inspectable blueprints for agent workflows.</p>
+        <p class="mono" style="margin:12px 0 0;max-width:20rem;font-size:11px;line-height:1.6;color:#828aa3">The registry publishes files. Your machine runs them.</p>
+      </div>
+      <div><h3 class="sc-label" style="margin:0">Explore</h3><div style="margin-top:12px;display:flex;flex-direction:column;gap:8px"><a href="#4" style="font-size:14px;color:#9aa1ba">Blueprints</a><a href="#4" style="font-size:14px;color:#9aa1ba">Cards</a></div></div>
+      <div><h3 class="sc-label" style="margin:0">Create and use</h3><div style="margin-top:12px;display:flex;flex-direction:column;gap:8px"><a href="#4" style="font-size:14px;color:#9aa1ba">Create</a><a href="#4" style="font-size:14px;color:#9aa1ba">Publish</a><a href="#4" style="font-size:14px;color:#9aa1ba">MCP</a></div></div>
+      <div><h3 class="sc-label" style="margin:0">Account</h3><div style="margin-top:12px;display:flex;flex-direction:column;gap:8px"><a href="#2" style="font-size:14px;color:#9aa1ba">Your profile</a><a href="#3" style="font-size:14px;color:#9aa1ba">Settings</a><span class="mono" style="font-size:11px;color:#ffb020">◐ not built</span></div></div>
+    </div>
+    <div style="border-top:1px solid rgba(34,39,57,.6)">
+      <div style="width:100%;max-width:1200px;margin-inline:auto;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#828aa3">
+        <span>© 2026 DarkPrint · darkprint.io</span>
+        <span class="mono">version-pinned · statically checked · locally run</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:1000},&quot;showHonestyMarkers&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Mockup&quot;},&quot;showPinned&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Mockup&quot;},&quot;forkPrivate&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Mockup&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const priv = this.props.forkPrivate ?? true;
+    const on = { trackBg: "rgba(56,189,248,.25)", knobLeft: "20px", knobBg: "#38bdf8", state: "on" };
+    const off = { trackBg: "#05060d", knobLeft: "2px", knobBg: "#828aa3", state: "off" };
+    return {
+      honest: this.props.showHonestyMarkers ?? true,
+      pinned: this.props.showPinned ?? true,
+      priv,
+      pub: !priv,
+      cards: [
+        { type: "Verifier", ref: "criteria-judge@2.1.0", name: "Acceptance criteria judge", action: "Scores the diff against each acceptance criterion, out of band from the implementation prompt.", used: "used in 6 blueprints", stars: 31 },
+        { type: "Executor", ref: "test-runner@1.4.2", name: "Suite runner", action: "Runs the project's own test command and returns the failing set, never a summary of it.", used: "used in 5 blueprints", stars: 22 },
+        { type: "Router", ref: "risk-router@1.0.0", name: "Risk router", action: "Sends a diff that touches auth or migrations down the reviewed path and everything else straight on.", used: "used in 3 blueprints", stars: 14 }
+      ],
+      forks: [
+        { name: "closed-loop-release-line", visibility: "Public", isFork: false, isPrivate: false, version: "v2.1.0", upstream: "", note: "Published Feb 2026. Five phases, nobody in the loop; the line the profile is known for.", autonomy: "Closed-loop", digest: "sha256:b30ee7", edited: "Jul 30", drift: "212 stars ◐ · 7 forks" },
+        { name: "guarded-merge-bot-hardened", visibility: "Private", isFork: true, isPrivate: true, version: "v1.4.0-hardened", upstream: "sol-antczak / guarded-merge-bot", note: "Maintainer gate replaced with a second judge; merge scoped to one repository.", autonomy: "Closed-loop", digest: "sha256:4f1c9a", edited: "2 days ago", drift: "▲ upstream repinned 1 card" },
+        { name: "frontline-triage-eu", visibility: "Private", isFork: true, isPrivate: true, version: "v0.3.0", upstream: "k0bra / frontline-triage", note: "PII handling swapped for the local lupo/ vocabulary; one node waits for a person.", autonomy: "Conditional", digest: "sha256:9c02de", edited: "Jul 28", drift: "✓ in step with upstream" },
+        { name: "schema-forge-eu", visibility: "Public", isFork: true, isPrivate: false, version: "v1.2.0", upstream: "sol-antczak / schema-forge-etl", note: "Published fork: the rollback threshold lowered and the retry node given a budget.", autonomy: "Closed-loop", digest: "sha256:1a7f45", edited: "Jul 09", drift: "18 stars ◐ · listed on the upstream" },
+        { name: "incident-commander-draft", visibility: "Private", isFork: true, isPrivate: true, version: "v0.1.0", upstream: "orin / incident-commander", note: "Unfinished: two nodes have no card in the bundle, so it will not publish.", autonomy: "Assisted", digest: "sha256:not resolvable", edited: "Jun 30", drift: "▲ 2 nodes undescribed" }
+      ],
+      stars: [
+        { path: "sol-antczak / guarded-merge-bot", summary: "Agents review the PR; a maintainer makes the merge call.", kind: "blueprint" },
+        { path: "lupo / pii-handling", summary: "Risk marker for a node that may see personal data.", kind: "ontology term" },
+        { path: "hachi / retry-with-budget@2.0.0", summary: "Retries with a spend ceiling instead of a count.", kind: "node card" }
+      ],
+      notifications: [
+        Object.assign({ title: "A card you pinned publishes a new version", note: "The one notification a version-pinned registry genuinely needs." }, on),
+        Object.assign({ title: "Someone forks a blueprint you published", note: "Public forks only. A private fork is never announced to the upstream author." }, on),
+        Object.assign({ title: "A term you authored is deprecated in the core ontology", note: "Comes with the pointer to whatever supersedes it." }, on),
+        Object.assign({ title: "Weekly digest of new blueprints", note: "Off by default. The registry is small enough to browse." }, off)
+      ],
+      files: [
+        { icon: "◈", iconColor: "#74b4ff", name: "blueprint.dot", change: "gate node replaced with judge-b; two edges retyped", state: "changed", stateColor: "#ffb020", when: "2 days ago" },
+        { icon: "◈", iconColor: "#74b4ff", name: "factory.dot", change: "regenerated from blueprint.dot with every card's spec inlined", state: "generated", stateColor: "#828aa3", when: "2 days ago" },
+        { icon: "▤", iconColor: "#ff8a4d", name: "cards/", change: "12 pinned cards · 1 replaced, 11 verbatim from upstream", state: "1 changed", stateColor: "#ffb020", when: "2 days ago" },
+        { icon: "▤", iconColor: "#a78bfa", name: "ontology/extensions.yaml", change: "declares lupo/pii-handling, used by two cards", state: "verbatim", stateColor: "#34d399", when: "Jun 28" },
+        { icon: "≡", iconColor: "#828aa3", name: "README.md", change: "identity, digest, the command, and what DarkPrint does not do", state: "generated", stateColor: "#828aa3", when: "2 days ago" },
+        { icon: "≡", iconColor: "#828aa3", name: "AGENTS.md", change: "how to fit this pattern into a codebase", state: "generated", stateColor: "#828aa3", when: "2 days ago" },
+        { icon: "≡", iconColor: "#828aa3", name: "NOTES.md", change: "your own note — never published with the bundle", state: "local", stateColor: "#828aa3", when: "yesterday" }
+      ],
+      metrics: [
+        { name: "Autonomy", source: "auto", color: "#38bdf8", value: "Conditional", bar: "0%", noBar: true, hasBar: false, detail: "Five of the six nodes run unattended. The sixth is a named maintainer who makes the merge call." },
+        { name: "Security", source: "auto", color: "#38bdf8", value: "3.00 of 4", bar: "75%", noBar: false, hasBar: true, detail: "4 − 1.00, after 2 risk markers on this graph." },
+        { name: "Cost / time", source: "reported", color: "#34d399", value: "—", bar: "58%", noBar: false, hasBar: true, detail: "Seeded. No runner exists, so nothing has been reported." },
+        { name: "Efficacy", source: "voted", color: "#a78bfa", value: "—", bar: "82%", noBar: false, hasBar: true, detail: "Seeded. There is no ballot." },
+        { name: "Reliability", source: "voted", color: "#a78bfa", value: "—", bar: "74%", noBar: false, hasBar: true, detail: "Seeded. There is no ballot." },
+        { name: "Transparency", source: "voted", color: "#a78bfa", value: "—", bar: "90%", noBar: false, hasBar: true, detail: "Seeded. There is no ballot." }
+      ],
+      publicFiles: [
+        { icon: "◈", iconColor: "#74b4ff", name: "blueprint.dot", change: "the topology, with the card pin on every node", state: "source", stateColor: "#828aa3", when: "Jun 20" },
+        { icon: "◈", iconColor: "#74b4ff", name: "factory.dot", change: "runnable by Attractor; every node carries its card's spec", state: "generated", stateColor: "#828aa3", when: "Jun 20" },
+        { icon: "▤", iconColor: "#ff8a4d", name: "cards/", change: "12 pinned cards, verbatim from the archive", state: "pinned", stateColor: "#34d399", when: "Jun 20" },
+        { icon: "▤", iconColor: "#a78bfa", name: "ontology/extensions.yaml", change: "one local term, declared by two cards", state: "v0.1.0", stateColor: "#a78bfa", when: "Jun 20" },
+        { icon: "≡", iconColor: "#828aa3", name: "README.md", change: "identity, digest, the command, and what DarkPrint does not do", state: "generated", stateColor: "#828aa3", when: "Jun 20" },
+        { icon: "≡", iconColor: "#828aa3", name: "AGENTS.md", change: "how to fit this pattern into a codebase", state: "generated", stateColor: "#828aa3", when: "Jun 20" }
+      ],
+      publicHistory: [
+        { version: "v1.3.0", digest: "sha256:77b1ae", tag: "latest", tagColor: "#34d399", dot: "#38bdf8", message: "Repin the test runner to 1.4.2 and give the review draft the diff rather than the file list.", who: "sol-antczak", when: "Jun 20" },
+        { version: "v1.2.0", digest: "sha256:0d94c1", tag: "", tagColor: "#828aa3", dot: "#333a54", message: "Name the maintainer gate. The class does not move; the graph now says who holds it.", who: "sol-antczak", when: "Apr 02" },
+        { version: "v1.1.0", digest: "sha256:e51b88", tag: "", tagColor: "#828aa3", dot: "#333a54", message: "Add the retry loop between the runner and the review draft.", who: "sol-antczak", when: "Mar 11" },
+        { version: "v1.0.0", digest: "sha256:aa3f70", tag: "first release", tagColor: "#a78bfa", dot: "#a78bfa", message: "First published bundle. Six nodes, four tool scopes.", who: "sol-antczak", when: "Feb 17" }
+      ],
+      history: [
+        { version: "v1.4.0-hardened", digest: "sha256:4f1c9a", tag: "latest", tagColor: "#34d399", dot: "#38bdf8", message: "Replace the maintainer gate with a second judge. The graph now covers all five phases with no node waiting for a person, so the class moves from Conditional to Closed-loop.", who: "mara-veil", when: "2 days ago" },
+        { version: "v1.3.1-hardened", digest: "sha256:c8e310", tag: "", tagColor: "#828aa3", dot: "#333a54", message: "Scope the merge tool to one repository. Security reading gains a point; nothing else moves.", who: "mara-veil", when: "Jul 12" },
+        { version: "v1.3.0-hardened", digest: "sha256:77b1ae", tag: "fork point", tagColor: "#a78bfa", dot: "#a78bfa", message: "Forked from sol-antczak/guarded-merge-bot v1.3.0, byte for byte. Same digest as upstream at this point.", who: "mara-veil", when: "Jun 28" },
+        { version: "upstream v1.3.0", digest: "sha256:77b1ae", tag: "upstream", tagColor: "#828aa3", dot: "#222739", message: "Guarded Merge Bot, as published by sol-antczak. Everything above is yours.", who: "sol-antczak", when: "Jun 20" }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

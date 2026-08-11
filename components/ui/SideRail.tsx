@@ -175,20 +175,33 @@ export function SideRail({
   compact?: boolean;
 }) {
   return (
-    /* The rail and the page it belongs to are one object, centred together.
+    /* The rail and the page it belongs to are one object, and the PAGE is what gets centred.
        ------------------------------------------------------------
-       The grid used to be `[16rem_minmax(0,1fr)]` across the whole viewport, and the page
-       inside the right column is a `.container-page` — max 1200px with `margin-inline:
-       auto`. On a 2044px window that left the column 1788 wide, the container centred
-       inside it, and the reading began **318px** to the right of the rail's own rule. A
-       reader following a row across to the section it names had a third of a screen of
-       nothing to cross.
+       Two things were wrong here, one after the other, and the second is the reason the
+       margin below is arithmetic rather than `auto`.
 
-       Capping the whole shell at `16rem + 75rem` — the rail plus `container-page`'s own
-       max-width — is what closes it: the container now fills its column exactly, its 1.5rem
-       padding is the entire gap, and the pair sits centred in the window as one block
-       rather than as a pinned rail with a floating page beside it. */
-    <div className="mx-auto min-w-0 xl:grid xl:max-w-[calc(16rem+75rem)] xl:grid-cols-[16rem_minmax(0,1fr)]">
+       **The gap inside the shell.** The grid used to be `[16rem_minmax(0,1fr)]` across the
+       whole viewport, and the page inside the right column is a `.container-page` — max
+       1200px with `margin-inline: auto`. On a 2044px window that left the column 1788 wide,
+       the container centred inside it, and the reading began **318px** to the right of the
+       rail's own rule. Capping the shell at `16rem + 75rem`, the rail plus
+       `container-page`'s own max-width, closed it: the container fills its column exactly
+       and its 1.5rem padding is the entire gap.
+
+       **The gap outside it.** That left the shell centred as one block, which centres the
+       RAIL AND THE PAGE TOGETHER and therefore centres neither. The reading column came out
+       8rem right of the window's middle and the rail sat 8rem further from the left edge
+       than it needed to, so a reader crossing from a rail row to the section it names
+       started their sweep from the wrong side of the screen. What a reader is actually
+       reading is the page; the rail is furniture hanging off its left edge.
+
+       So the left margin is computed rather than auto: `(100% - 75rem)/2` is where a
+       centred page begins, and `- 16rem` steps back over the rail to find where the shell
+       has to start for the page to land there. `max(0rem, …)` is the narrow case, where the
+       expression goes negative and the shell simply hugs the left edge; `mr-auto` takes
+       whatever is left over. Below `xl` the rail is not rendered at all and `mx-auto`
+       centres the page directly. */
+    <div className="mx-auto min-w-0 xl:mr-auto xl:ml-[max(0rem,calc(50%-53.5rem))] xl:grid xl:max-w-[calc(16rem+75rem)] xl:grid-cols-[16rem_minmax(0,1fr)]">
       <aside className="hidden border-r border-line bg-surface/25 xl:block">
         {/* `RailScrollSpy` marks the row a reader is actually in, by scroll position. It
             replaced the `:target` marks the three anchor rails carried: `:target` lights
