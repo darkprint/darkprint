@@ -620,15 +620,62 @@ function LevelRow({ level }: { level: Level }) {
   );
 }
 
+/* ============================================================
+   Three bands, since 2026-08-11, where this was one flowing section.
+
+   The route was a single `bg-surface` column carrying the ladder, the gap and the sources
+   one after another, with the only seams inside it: a rounded card around the gap and a
+   `border-t` above the sources. `/spec/ontology` had already set the pattern the rest of
+   this nav group uses — full-bleed bands, a hairline seam at every edge, and the ground
+   alternating between `--color-void` and `--color-surface` so a reader can see where one
+   subject stops without reading to find out.
+
+   So the three parts become those three bands and nothing inside them moves: the four level
+   rows, their scenes, the gap's card and the two sources are the same markup they were. The
+   author compared these figures against a single consolidated matrix (option 3a of the mock)
+   and chose to keep them, so this pass is the page's spine and not its content.
+
+   ── The last band is shared with the pager ──
+   `app/towards-a-dark-factory/page.tsx` closes on `SpecPager`, and 4a puts the sources and
+   that pager on one ground. The seam between them is therefore drawn by neither: this file
+   ends its own band without a bottom rule and the page's pager band carries no `border-t`,
+   so the two read as one. It is the only coupling between the two files and it is written
+   down at both ends.
+   ============================================================ */
 export function SectionLevels() {
   return (
-    <section id="levels" className="scroll-mt-24 bg-surface py-20 sm:py-28">
+    <>
+      <section
+        id="levels"
+        aria-labelledby="levels-heading"
+        className="scroll-mt-24 border-t border-line bg-surface py-16 sm:py-20"
+      >
       <div className="container-page">
-        <SectionHeading
-          eyebrow="Where you are today"
-          title="Most teams are at level 2"
-          lead="Before the rest of this makes sense, find yourself on the list. It describes how far along a team is with agents, and where you land decides which problem you actually have."
-        />
+        {/* The two-line band header the other bands on this route use: a `.label-lead` over
+            the `h2`, rather than `SectionHeading`'s cyan `.eyebrow`.
+
+            `.eyebrow` names a page or a full-bleed band and is rationed to one of each, and
+            this route's `h1` has spent it; `.label-lead` titles a block, which is what this
+            is. It also puts the ladder's header in the same register as `/spec/ontology`'s
+            three bands, which is the pattern 4a is copying.
+
+            `SectionHeading` still draws the title and the lead, because its `h2` step is
+            exactly the size that page hand-rolls as `BAND_H2` — the same four declarations,
+            one of them a component that already exists. */}
+        <div className="flex flex-col gap-3">
+          <span className="label-lead">Where you are today</span>
+          <SectionHeading
+            as="h2"
+            title={<span id="levels-heading">Most teams are at level 2</span>}
+            /* Two sentences where there were three clauses. It read "Before the rest of this
+               makes sense, find yourself on the list. It describes how far along a team is
+               with agents, and where you land decides which problem you actually have" — and
+               the middle clause described the list a reader is looking at, which the four
+               rows under it do better than a sentence can. What is left is the instruction
+               and the reason for it. */
+            lead="Find yourself on the ladder before the rest of this makes sense. Where you land decides which problem you actually have."
+          />
+        </div>
 
         <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 border-y border-line py-3 font-mono text-[10px] uppercase tracking-[0.12em] text-dim">
           <span className="inline-flex items-center gap-2">
@@ -650,14 +697,27 @@ export function SectionLevels() {
           ))}
         </ol>
 
-        {/* Doc 2 §1's hook. The one sentence that does the positioning, and addressable
-            since 2026-08-11: `sequence.ts` lists it as this stop's second section, so the
-            Learn rail can put a reader on it. `scroll-mt-24` on the same tag as the id, the
-            way `anchors.test.ts` requires, and the same offset `#levels` uses so a fragment
-            never lands under the sticky header. */}
+      </div>
+      </section>
+
+      {/* ---------- the gap ----------
+          Doc 2 §1's hook, and a band of its own on `--color-void` since 2026-08-11. The one
+          sentence that does the positioning, addressable since the rail listed it as this
+          stop's second section, and now separated from the ladder by a ground rather than by
+          40px of margin: it is the conclusion the four rows above are for, and it was reading
+          as a fifth thing in the list.
+
+          `scroll-mt-24` on the same tag as the id, the way `anchors.test.ts` requires, and
+          the same offset `#levels` uses so a fragment never lands under the sticky header.
+          The card keeps its own frame — a cyan-bordered panel on the void is the one figure
+          on this route that is a claim rather than a drawing. */}
+      <section
+        id="the-gap"
+        className="scroll-mt-24 border-t border-line bg-void py-16 sm:py-20"
+      >
+      <div className="container-page">
         <div
-          id="the-gap"
-          className="mt-14 scroll-mt-24 rounded-lg border border-cyan/30 bg-cyan/5 p-6 sm:p-8"
+          className="rounded-lg border border-cyan/30 bg-cyan/5 p-6 sm:p-8"
         >
           <p className="max-w-3xl font-display text-xl leading-snug text-fg sm:text-2xl">
             The gap between level 2 and level 4 is architectural and organisational.
@@ -692,11 +752,21 @@ export function SectionLevels() {
             `components/home/levels.test.ts` held two assertions on this copy and now
             holds them on the deck instead. */}
 
-        {/* ---------- sources ----------
-            Headed since it was written and addressable since 2026-08-11. The `h3` was
-            already the label the rail now uses; all it lacked was an id to point the row
-            at. */}
-        <div id="sources" className="mt-10 scroll-mt-24 border-t border-line pt-6">
+      </div>
+      </section>
+
+      {/* ---------- sources ----------
+          Headed since it was written and addressable since 2026-08-11. The `h3` was already
+          the label the rail uses; all it lacked was an id to point the row at.
+
+          Its own band on `--color-surface` now, and the last one on the route: the page's
+          `SpecPager` sits on the same ground with no rule between them, so the two read as
+          one closing band. That is why this section draws no bottom edge of its own. */}
+      <section
+        id="sources"
+        className="scroll-mt-24 border-t border-line bg-surface py-16 sm:py-20"
+      >
+        <div className="container-page">
           <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
             Where this framing comes from
           </h3>
@@ -722,7 +792,7 @@ export function SectionLevels() {
             ))}
           </ul>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }

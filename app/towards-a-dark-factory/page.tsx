@@ -250,7 +250,12 @@ export default function TowardsPage() {
           `/blueprints` are still not offered here — the header carries them from every page,
           and this route's own next step is the scorecard, because the ladder above measures
           autonomy and `/reading-the-radar` is where that reading is explained. */}
-      <section className="border-t border-line bg-surface pb-20 pt-16">
+      {/* No `border-t`, and the same ground as the band above it, since 2026-08-11.
+          `SectionLevels` ends on the sources band on `--color-surface`, and 4a puts the
+          sources and this pager on one ground with no seam between them — they are the
+          route's one closing block, not two. The band above draws its own top edge and
+          spends its own bottom padding, so this one only has to close the page. */}
+      <section className="bg-surface pb-20">
         <div className="container-page">
           {/* The pager is back with the route's place in the sequence. It is the last stop
               of the practice run, so it draws a PREVIOUS and no NEXT — which is what the
