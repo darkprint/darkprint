@@ -12,12 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Vendored third-party skills — `content-reorg` since `impeccable` was deleted on
-    // 2026-08-11. Their source is not this project's and each ships its own lint config;
-    // running ours over it reports warnings nobody here can act on. The glob stays as long
-    // as anything is vendored under it, which `skills-lock.json` and the AGENTS.md note
-    // above it both depend on.
-    ".claude/skills/**",
+    // `.claude/skills/**` was ignored here while two third-party skills were vendored in
+    // it, on the grounds that somebody else's source ships its own lint config and running
+    // ours over it reports warnings nobody here can act on. Both were deleted on
+    // 2026-08-11 and the directory with them, so the glob had nothing left to match. If a
+    // skill is ever vendored under `.claude/` again it wants this line back, and the
+    // AGENTS.md note on `skills-lock.json` says what else has to come back with it.
     // The design hand-offs: a prototype HTML file each, plus the runtime they ship with.
     // Their own READMEs say they are design references "not production code to copy", and
     // they are vendored verbatim so the rendered result can be compared against what gets

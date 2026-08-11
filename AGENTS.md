@@ -4,29 +4,38 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# `skills-lock.json` is not generated cruft — do not delete it
+# `skills-lock.json` is inert now, and this is the trap it used to guard
+
+Nothing under `.claude/skills/` any more. `impeccable` and `content-reorg` were both
+deleted on 2026-08-11 and the directory went with them, so this section is a record of a
+hazard rather than a live warning. Read it before vendoring anything under `.claude/`
+again, because the hazard comes back with the first skill that lands there.
 
 The repository ships one skill of its own, `skills/darkprint/`, and the documented way to
 get it is `npx skills@latest add Brotherhood94/darkprint`. That command does a shallow git
 clone and then searches the clone for skills, and `.claude/skills/` is one of the
-directories it searches. One third-party skill, `content-reorg`, is vendored there and
-tracked in git.
+directories it searches — so anything vendored there is offered to strangers as though it
+were ours. `skills-lock.json` is what suppressed them: the CLI hides any skill under an
+agent project directory whose name is a key in the repo's lock file.
 
-`skills-lock.json` at the repository root is what suppresses it: the CLI hides any skill
-under an agent project directory whose name is a key in the repo's lock file. Re-measured
-2026-08-11, after `impeccable` was deleted, by cloning this tree and running
-`npx skills@latest add <clone> -l` from an empty directory with and without the file —
+Measured three times on this tree, by running `npx skills@latest add <tree> -l` from an
+empty directory with and without the file:
 
-- with it:    `Found 1 skill`  → `darkprint`
-- without it: `Found 2 skills` → `darkprint`, `content-reorg`
+| state of `.claude/skills/` | with the lock file | without it |
+| --- | --- | --- |
+| `impeccable` + `content-reorg` | `Found 1 skill` → `darkprint` | `Found 3 skills` |
+| `content-reorg` only | `Found 1 skill` → `darkprint` | `Found 2 skills` |
+| empty, as now | `Found 1 skill` → `darkprint` | `Found 1 skill` |
 
-so removing it silently starts offering strangers a skill that is not this project's to
-distribute, and nothing in `npx tsc --noEmit`, `npm run lint` or the test suite notices.
-It looks like a lock file a package manager would regenerate. Nothing regenerates it.
+The third row is why the file is now inert: it changes nothing in either direction. It is
+also unable to bring the deleted skills back — `npx skills@latest experimental_install`
+reads its two remaining keys, reports `Restoring 2 skills`, and then stops on
+`Local path does not exist`, because both entries are `sourceType: local` pointing at
+paths that are gone. So the file is harmless in both directions and safe to delete.
 
-The file still carries a key for `impeccable`, which was deleted on 2026-08-11 along with
-the two `.claude/settings.local.json` hooks that ran it. The key is inert — the `with it`
-count above was measured with it still in place — and it is left alone on purpose: the
-only job this file has is suppressing `content-reorg`, and editing it to tidy one dead
-line is not worth the chance of breaking that. Delete the key only alongside the vendored
-skill it names, and re-run the two counts above afterwards.
+It is kept anyway, along with its two dead keys, because it is the cheapest place for the
+rule to live: **vendor a third-party skill under `.claude/` and it needs a key here, or the
+next person to run the documented install command hands it out under this project's name.**
+Nothing in `npx tsc --noEmit`, `npm run lint` or the test suite notices if that goes wrong.
+The `.claude/skills/**` entry in `eslint.config.mjs` was removed for the same reason and
+its comment says so; both want restoring together.
