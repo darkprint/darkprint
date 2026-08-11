@@ -3,7 +3,6 @@ import { Fragment } from "react";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import {
   FLOW,
-  FlowEdge,
   FlowScene,
   Sheet,
   VIZ,
@@ -11,6 +10,7 @@ import {
   VIZ_KNOCKOUT,
   VIZ_LINE,
   VIZ_TONE,
+  flowRun,
   ringRadius,
 } from "@/components/viz";
 import { cx } from "@/lib/format";
@@ -66,17 +66,32 @@ import { BeatCaption } from "./BeatCaption";
    one goal end up somewhere different every time, and divergence is carried by the edges
    and the endpoints alone. The nodes were detail in support of an absence.
 
-   The endpoints stay `FlowNode`s rather than the bare circles the mock draws. The mock has
-   no access to the component; the register's node is the register's node, and a score
-   hanging off a plain dot would be the one glyph on the landing that is not one.
+   The endpoints are bare discs and the routes are raw paths, so this panel uses neither
+   `FlowNode` nor `FlowEdge`. Both were in the hand-off's reuse list and both are off it by
+   the author's decision, twice given: the register's node is a lit core inside a ring inside
+   three halo shells, a glyph whose whole job is to say something happens here, and nothing
+   happens at the end of an improvised run. A run stops there. What a reader is meant to
+   read is the number beside it, so the mark is the smallest thing that can hold a position,
+   which is what the mock draws and why. `FlowEdge` goes for a narrower reason recorded at
+   the call site: its base line carries no `pathLength`, and without one there is no way to
+   draw a curve on. The geometry still comes from `flowRun`, so what is given up is the
+   component and not the arithmetic.
 
-   ── Nothing here is revealed by an animation ──
-   The mock draws each run in turn on a 7.2s loop, with the nodes appearing as the stroke
-   reaches them. Spec §0 and `components/home/beats.test.ts` do not allow it: the server
-   renders the finished thing, and animation may only move what is already there. A reveal
-   that starts from nothing is a beat whose content is missing for the reader with no
-   JavaScript, with reduced motion, and in the first frame for everyone else. All three runs
-   are drawn, and the eye reads them as three because they are three.
+   ── The routes draw themselves, on the mock's loop ──
+   Each run strokes on over the first quarter of a 7.2s cycle, its ending and score arrive a
+   beat behind it, the three hold together, and the set clears and begins again, with the
+   runs entered 0.8s apart. That is `dpRun` and `dpHold` out of the mock, and it is here
+   because the author asked for the mock's behaviour rather than for an entrance.
+
+   It is worth being exact about why this does not cost what a reveal usually costs. The
+   rule lives inside `prefers-reduced-motion: no-preference`, and nothing on the elements
+   themselves is a `from` state: the path's `stroke-dashoffset` rests at 0, which is a whole
+   curve, and the group's opacity rests at 1. So the server's markup is the finished figure,
+   and so is what a reader with no JavaScript sees, and so is what a reader who asked for
+   less motion sees. The loop plays over a complete drawing or it does not play. That is the
+   line spec §0 actually draws — animation may only move what is already there — and a
+   loop satisfies it exactly as well as a one-shot does, which the earlier fade did not
+   need to be replaced to prove.
 
    ── The honesty line this beat runs along, and where it now stands ──
    `components/site/honesty.test.ts` pins, in the open, that nothing on this site measures a
@@ -148,6 +163,25 @@ const SCORE_SIZE = 17;
  * the curve stops off the dot rather than under it.
  */
 const DOT_R = 5;
+
+/**
+ * The route's weight and opacity, both read off the mock and neither off `FLOW.edge`.
+ *
+ * `FLOW.edge.line` is 1.1 at `lineOpacity` 0.42, and that pair is calibrated for an edge
+ * whose subject is the pulse travelling it: the curve is structure, the light is the point,
+ * so the curve gets out of the way. These three routes carry no pulse and no arrowhead. The
+ * curve IS the subject — the whole panel is three lines going three different places — and
+ * at the register's default they paint as grey hints of themselves.
+ *
+ * 1.8 is the mock's number. The opacity is not: the mock strokes `#4a5170` flat, which is
+ * not a token this theme has, and `--color-faint` is both darker than it and annotated in
+ * `globals.css` as decorative-only. So the tone stays `dim` and the opacity is what puts
+ * `--color-dim` on the mock's colour over this sheet — `#828aa3` at 0.55 over the blueprint
+ * surface resolves within a couple of points of `#4a5170` per channel. Reproducing the
+ * drawing rather than the hex is the whole reason this file has tokens in it.
+ */
+const ROUTE_WEIGHT = 1.8;
+const ROUTE_OPACITY = 0.55;
 
 /**
  * Three runs of one goal, each ending on its own number.
@@ -418,8 +452,20 @@ export function SectionSameRun() {
                  was the last thing making these two read as a matched pair when they are
                  supposed to read as a contrast. */
               border="var(--color-line)"
-              title="same prompt · three routes · nothing to credit"
-              bodyClassName="relative px-5 pt-5"
+              title={
+                /* Grey, not the sheet's ink. `Sheet` sets `color` to the register's ink on
+                   the whole element, which would put this strip in blueprint ink under a
+                   frame that deliberately is not blueprint. The mock reads `--color-dim`
+                   here and it is the same argument the border is making: this panel is the
+                   one without a specification, so it does not get spoken about in the
+                   colour the specification is drawn in. */
+                <span className="text-dim">same prompt · three routes · nothing to credit</span>
+              }
+              /* `pb-3.5` is the mock's 14px under the drawing. It is invisible while this
+                 sheet is the shorter of the two and the subgrid is feeding it 70px of slack
+                 anyway, and it is the difference between a drawing that sits on the title
+                 block and one that clears it the day the left panel is the taller one. */
+              bodyClassName="relative px-5 pt-5 pb-3.5"
             >
               <FlowScene
                 width={SCENE.width}
@@ -427,61 +473,90 @@ export function SectionSameRun() {
                 label="One goal run three times from a prompt"
                 description="A goal on the left, and three runs that leave it for three different endings, each with a score of its own: 0.62, 0.81 and 0.55."
               >
-                {IMPROVISED.map((run, i) => (
-                  /* Each run arrives on its own, and the score after its route.
-                     ------------------------------------------------------------
-                     `--run` is the index and `globals.css` does the rest: two classes, one
-                     delay expression, three routes. The keyframes live inside
-                     `prefers-reduced-motion: no-preference` and fill `backwards`, so the
-                     resting style of every element is the finished one and a reader who
-                     asked for less motion never has the `from` state applied. That is what
-                     lets this satisfy the author's ask without breaking spec §0 or the
-                     `opacity-0` check in `beats.test.ts`: the server renders the finished
-                     figure and the animation only plays on top of it. */
-                  <g
-                    key={run.score}
-                    className="anim-run-in"
-                    style={{ "--run": i } as React.CSSProperties}
-                  >
-                    {/* No pulse and no arrowhead. A travelling light says "this is the
-                        path" and an arrow says "and it goes this way", and the panel's claim
-                        is that nobody chose either. Both radii are handed over rather than
-                        typed, so `FlowEdge` trims the curve off the goal's ring at one end
-                        and off the endpoint dot at the other. */}
-                    <FlowEdge
-                      from={GOAL}
-                      to={run.end}
-                      bend={run.bend}
-                      fromRadius={FLOW.node.r}
-                      toRadius={DOT_R}
-                      tone="dim"
-                      arrow={false}
-                      pulse={false}
-                    />
-                    {/* A flat disc, not a `FlowNode`. The hand-off asked for the component
-                        on the grounds that the register's node is the register's node, and
-                        the author's answer to the build was that it does not look like the
-                        design. It does not: `FlowNode` draws a lit core inside a ring inside
-                        three halo shells, which is a glyph that says "something happens
-                        here". Nothing happens at these points. They are where three runs
-                        stopped, and what a reader is meant to read is the number beside
-                        them, so the mark is the smallest thing that can hold a position. */}
-                    <circle cx={run.end[0]} cy={run.end[1]} r={DOT_R} fill={VIZ_TONE.dim} />
-                    <text
-                      data-viz="label"
-                      className="anim-run-score"
-                      style={{ "--run": i } as React.CSSProperties}
-                      x={run.end[0] + DOT_R + FLOW.label.gap - 2}
-                      y={run.end[1]}
-                      dominantBaseline="middle"
-                      textAnchor="start"
-                      fontSize={SCORE_SIZE}
-                      fill={VIZ_TONE.muted}
-                    >
-                      {run.score}
-                    </text>
-                  </g>
-                ))}
+                {IMPROVISED.map((run, i) => {
+                  /* The curve, from the register's own geometry rather than from the mock's
+                     typed `d`. `flowRun` is what `FlowEdge` calls, so the run leaves the
+                     goal's ring at `ringRadius(r) + FLOW.edge.gap` and stops the same
+                     clearance off its endpoint dot, and the one thing this file must never
+                     do — write a trimmed coordinate down — stays undone. The mock's own
+                     paths start at x=64 against this arithmetic's 68; four units in a
+                     400-unit frame is not a difference a reader can see, and a hand-typed
+                     endpoint is a number that goes stale the first time a radius moves. */
+                  const route = flowRun(GOAL, run.end, {
+                    bend: run.bend,
+                    fromRadius: FLOW.node.r,
+                    toRadius: DOT_R,
+                  });
+                  return (
+                    <Fragment key={run.score}>
+                      {/* The route drawing itself, on the mock's loop.
+                          ------------------------------------------------------------
+                          A raw `<path>` and not `FlowEdge`, and the reason is one
+                          attribute: `pathLength="1"` puts the dasharray in normalised
+                          space, so `1` is one dash exactly as long as the curve and the
+                          offset animating 1 to 0 draws it. `FlowEdge` will not carry that
+                          on its base line — the attribute is on its pulse, because the two
+                          paths exist precisely so a dasharray can mean different things on
+                          each — so the choice is this or no draw. `stroke-dashoffset`
+                          initialises to 0, which makes the resting path the finished one;
+                          `globals.css` holds the rest of that argument.
+
+                          No pulse and no arrowhead, which is why losing `FlowEdge` costs
+                          this panel nothing. A travelling light says "this is the path" and
+                          an arrow says "and it goes this way", and the panel's claim is
+                          that nobody chose either. */}
+                      <path
+                        data-viz="flow-line"
+                        className="anim-route-draw"
+                        style={{ "--run": i } as React.CSSProperties}
+                        d={route.d}
+                        pathLength={1}
+                        strokeDasharray={1}
+                        stroke={VIZ_TONE.dim}
+                        strokeWidth={ROUTE_WEIGHT}
+                        /* `stroke-opacity` and not `opacity`, and the two are not
+                           interchangeable here. `route-draw` animates `opacity` 0 to 1, so
+                           an `opacity` of 0.55 on the element would be overridden the whole
+                           time the keyframes are running and the routes would paint
+                           brighter while drawing than they do at rest — a flicker on every
+                           cycle, and invisible to every test in the suite. The two
+                           properties multiply, so the tone lives on one and the animation
+                           on the other. */
+                        strokeOpacity={ROUTE_OPACITY}
+                        fill="none"
+                      />
+                      {/* The ending and its score, held together because they arrive
+                          together and mean nothing apart: a dot with no number is a place
+                          nobody asked about, and a number with no dot is not attached to a
+                          run. The mock groups them for the same reason and gives the pair
+                          its own keyframes, a beat behind the route that reaches them. */}
+                      <g
+                        className="anim-route-hold"
+                        style={{ "--run": i } as React.CSSProperties}
+                      >
+                        {/* A flat disc, not a `FlowNode`. `FlowNode` draws a lit core inside
+                            a ring inside three halo shells, a glyph that says "something
+                            happens here". Nothing happens at these points. They are where
+                            three runs stopped, and what a reader is meant to read is the
+                            number beside them, so the mark is the smallest thing that can
+                            hold a position. The mock draws `<circle r="5">` and it is
+                            right. */}
+                        <circle cx={run.end[0]} cy={run.end[1]} r={DOT_R} fill={VIZ_TONE.dim} />
+                        <text
+                          data-viz="label"
+                          x={run.end[0] + DOT_R + FLOW.label.gap - 2}
+                          y={run.end[1]}
+                          dominantBaseline="middle"
+                          textAnchor="start"
+                          fontSize={SCORE_SIZE}
+                          fill={VIZ_TONE.muted}
+                        >
+                          {run.score}
+                        </text>
+                      </g>
+                    </Fragment>
+                  );
+                })}
 
                 {/* The goal, drawn last so the three curves pass under it. A filled core and
                     one ring, which is `FlowNode`'s schematic mark with the halo shells left
@@ -527,11 +602,17 @@ export function SectionSameRun() {
           <figure className="flex min-w-0 flex-col gap-3 lg:row-span-3 lg:grid lg:grid-rows-subgrid">
             <PanelHead title="from a blueprint" rail="you define the steps, then tune them" />
             <Sheet
-              /* Cyan, where the left sheet's strip is the sheet's own ink. The two strips
-                 are not the same kind of remark: the left one names what the panel shows
-                 and the right one states the property the ledger above it depends on, which
-                 is the same claim the line under the route makes and the same colour. */
-              title={<span className="text-cyan">one step changed per iteration · everything else held</span>}
+              /* The sheet's own drawing colour, where the left strip is grey. The two are
+                 not the same kind of remark: the left one names what an unspecified panel
+                 shows and is reported in the neutral tone that panel is drawn in, and this
+                 one states the property the ledger above it depends on, which is the same
+                 claim the line under the route makes and gets the same colour for it. Both
+                 values are the mock's. */
+              title={
+                <span className="text-blueprint-line">
+                  one step changed per iteration · everything else held
+                </span>
+              }
               bodyClassName="relative overflow-x-auto px-6 pt-6"
             >
               {/* ---------- the route, once ----------
@@ -539,7 +620,7 @@ export function SectionSameRun() {
                   change". Stating the route once and then listing what moved is the same
                   information with the repetition taken out, and it puts the thing a reader
                   is meant to read — the tuning — in a block of its own. */}
-              <div className="flex flex-col items-center gap-2 pb-4">
+              <div className="flex flex-col items-center gap-3.5 pb-[22px]">
                 <div className="flex items-center gap-0">
                   {STEPS.map((step, i) => (
                     <Fragment key={step}>
@@ -548,11 +629,22 @@ export function SectionSameRun() {
                     </Fragment>
                   ))}
                 </div>
-                {/* Cyan, which is this site's interactive colour everywhere else, and the
-                    one place it is spent on a statement instead: the sentence is what makes
-                    the three boxes above it a ROUTE rather than three named things, and it
-                    is the claim the whole right panel rests on. */}
-                <p className="label text-cyan">this route runs every time, in this order</p>
+                {/* Not `.label`, and the class was wrong here rather than merely different.
+                    `.label` heads a column or tags a value, so it uppercases at 0.18em; this
+                    is a sentence, and a sentence in caps at that tracking is a sign rather
+                    than a remark. The mock sets 11px at 0.06em in the sheet's own drawing
+                    colour, which is exactly `Sheet`'s title strip, and that is the right
+                    register for it: the strip along the bottom names what the sheet shows
+                    and this names what the three boxes above it ARE. Two remarks on one
+                    sheet, in one voice.
+
+                    `--color-blueprint-line` and not `--color-cyan`. Cyan is the site's
+                    interactive colour and nothing here is interactive; inside a blueprint
+                    sheet the line that draws the drawing is the colour a remark about the
+                    drawing gets. */}
+                <p className="font-mono text-[11px] tracking-[0.06em] text-blueprint-line">
+                  this route runs every time, in this order
+                </p>
               </div>
 
               {/* A rule across the whole sheet, not across the table. The route above and
