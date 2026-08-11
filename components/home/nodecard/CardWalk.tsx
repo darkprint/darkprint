@@ -145,11 +145,34 @@ const PAD_Y = 2;
 /**
  * How far down the shared cell the card face sits, in CSS pixels.
  *
- * The cell is the LISTING's height — 613px — and the card is 271, so 342px of slack has to
- * go somewhere. Centring split it 171/171 and the author asked the card closer to its own
- * deck ("it is too distant"): those 171 pixels sit between the lead and the card before the
- * pin engages and read as a gap rather than as air. 71 above and 271 below measures 87px
- * from the deck at 1440 x 950, against 211 centred.
+ * The cell is the LISTING's height and the face is shorter, so the difference has to go
+ * somewhere. Centring split it in half and the author asked the card closer to its own deck
+ * ("it is too distant"): centred, those pixels sit between the lead and the face before the
+ * pin engages and read as a gap rather than as air. 71 above measured 87px from the deck at
+ * 1440 x 950, against 211 centred.
+ *
+ * ── Re-measured 2026-08-12, when the face became the node strip and the plate ──
+ * `CardStackFigure`'s `stage` layout is a different drawing now — five discs over a
+ * two-column plate rather than a stack of cards — so the arithmetic this constant sits in
+ * was measured again rather than assumed. At 1440 x 950, with the walk running:
+ *
+ *   strip        108.0   the node row, at its declared 640 x 108 ratio
+ *   gap            6.0   `mt-1.5`, the only space the tether has to cross
+ *   plate        256.3
+ *   FACE         370.3   against 271 before, so the face grew by 99
+ *   cell         634.5   unchanged: the LISTING is the taller layer and sets it
+ *   face layer   441.3   = FACE_TOP + FACE
+ *   slack below  193.2   was 292
+ *
+ * **So this constant does not move, and neither does `GROUP`.** The face grew into slack
+ * that was already there — 441 still clears the 634 cell — and `GROUP` is the heading plus
+ * the cell, which the listing owns. Measured 715.3 against the 715 declared above.
+ *
+ * It does not move for a second reason worth stating, because the obvious edit is to lower
+ * it. 71 places the FIGURE, and the figure now opens on the node strip: the first thing
+ * under the heading is the row of discs, which is what the beat's claim starts with. The
+ * plate sits 114px further down than the old card did, and that is the strip and its tether
+ * occupying the distance rather than a gap reopening.
  *
  * This is the ONLY term that was allowed to move. The sticky offset below also places the
  * card — a pinned card lands at `top + FACE_TOP` — and spending 100px of it here was tried

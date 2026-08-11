@@ -8,7 +8,13 @@ import {
   FlowNode,
   FlowScene,
   HumanFlowNode,
+  VIZ,
+  VIZ_LINE,
+  VIZ_TONE,
+  flowRun,
   labelOffset,
+  ringRadius,
+  schematicHaloRadius,
   type FlowTone,
   type Point,
 } from "@/components/viz";
@@ -438,6 +444,205 @@ function Field({
 }
 
 /**
+ * The strip above the plate: the graph's nodes in a row, one of them lit and tethered to
+ * the card underneath.
+ *
+ * This is the beat's own claim, drawn. "Every node is a card" was a sentence over a picture
+ * of a card; the strip is the other half of it, and it replaces the three ghost rectangles
+ * that used to stand behind the plate — those said "there are other nodes" without saying
+ * how many or which, and a reader could not tell whether the deck was three cards or a
+ * thick border.
+ *
+ * ── Every radius and every opacity is `FLOW`'s ──
+ * Not a `FlowNode`, and the reason is one colour. The lit node is `--color-copper-line`,
+ * which is the SECTION's register — `globals.css` reserves copper for the node card as a
+ * subject, and the heading over this figure and the walk's own step numbers already wear it.
+ * `FlowTone` has no copper member and must not gain one: that union is `Exclude<VizTone,
+ * "human">` precisely so a scene cannot paint a disc a colour whose meaning lives outside
+ * the node vocabulary, and adding copper would let any figure on the site light a node in
+ * the card's register.
+ *
+ * So the glyph is drawn here and every number in it is read off `FLOW`, which is the half of
+ * `FlowNode` worth carrying across: `schematicHaloRadius` and `ringRadius` off `FLOW.node.r`,
+ * the halo's own opacity times `litBoost` when lit, `FLOW.node.ring` for the ring's weight,
+ * `ringOpacity`/`litRingOpacity`, `FLOW.node.core`, and `labelOffset` for the drop of the
+ * id. Nothing here types 12.38, 11.9 or 7.
+ *
+ * The unlit discs take `--color-dim` rather than `--color-faint`. The mock's `#4a5170` sits
+ * between the two, and `flow.ts` has already ruled on that choice for the same kind of mark:
+ * `FLOW_ABSENT_TONE` records `faint` measuring 1.78:1 on a sheet and being rejected for a
+ * graphical object a reader needs, with `dim` taking its place. These read a shade brighter
+ * than the mock draws them, which is the register being right rather than the mock.
+ *
+ * No pulse and no arrowheads. This is an identity figure, not a run: a travelling light says
+ * "something moves along here" and the strip's claim is only that these are the same five
+ * things the graph has.
+ */
+const STRIP = {
+  /** Matches the plate, so the two align and the tether lands on the card's own edge. */
+  width: 640,
+  height: 108,
+  /** Left margin. Half the widest id has to fit inside it. */
+  padX: 72,
+  /**
+   * Distance between two disc centres, and the strip is LEFT-weighted rather than spread.
+   *
+   * An even distribution across the full frame was tried first and is wrong for this
+   * drawing: it pushes the last disc to 568 and the lit one to 196, which drags "is this
+   * card" toward the middle and leaves the tether hanging under the centre of the plate. The
+   * mock runs the discs from 72 to 488 and leaves the right end open, so the lit node sits
+   * left of centre with the phrase beside it in clear space. The frame stays 640 to match
+   * the plate; what changes is that the row does not have to fill it.
+   *
+   * Falls back to an even spread if a graph ever has enough nodes to overrun the frame at
+   * this pitch, which is nine.
+   */
+  gap: 104,
+  /** The row's centre. Everything else falls out of `FLOW` and the label under it. */
+  cy: 26,
+} as const;
+
+/**
+ * The route's weight and opacity, read off the mock and not off `FLOW.edge`.
+ *
+ * `VIZ.stroke.base` is the mock's 1.4 exactly, and it is the weight this vocabulary spends
+ * on a line that is structural rather than decorative. `FLOW.edge.line`'s 1.1 at
+ * `lineOpacity` 0.42 is calibrated for an edge whose subject is the pulse travelling it —
+ * the curve gets out of the way so the light can be read — and these carry no pulse. The
+ * opacity is the mock's own number: the strip is context under the figure's subject, so its
+ * connections are present and quiet rather than either structural or subordinate.
+ */
+const STRIP_EDGE_OPACITY = 0.55;
+
+function NodeStrip({ count, litId }: { count: number; litId: string }) {
+  const n = Math.max(1, count);
+  /* Which disc is lit is COMPOSITION, not topology, and saying so matters. The strip is a
+     row; the starter graph is two rows with a return run, so no disc's position here is a
+     claim about where anything sits in it. What the figure claims is that one of these five
+     is the card below, and the id under the lit disc is what says which — that value is
+     `card.id`, so the two cannot drift.
+
+     Second from the left because the tether hangs off it and "is this card" is set to the
+     right of the tether; lighting the first would put that phrase over the strip's own left
+     margin, and lighting the last would put it off the frame. Clamped so a one-node graph
+     lights the only disc it has. */
+  const lit = Math.min(1, n - 1);
+  const spread = STRIP.padX * 2 + (n - 1) * STRIP.gap;
+  const gap =
+    n > 1 && spread > STRIP.width
+      ? (STRIP.width - STRIP.padX * 2) / (n - 1)
+      : STRIP.gap;
+  const cx = (i: number) => STRIP.padX + i * gap;
+
+  const halo = schematicHaloRadius(FLOW.node.r);
+  const ring = ringRadius(FLOW.node.r);
+  const drop = labelOffset(FLOW.node.r);
+
+  return (
+    <FlowScene
+      width={STRIP.width}
+      height={STRIP.height}
+      label={`The blueprint's ${n} nodes in a row, with ${litId} lit and tethered to the card below it`}
+      description={`One of the ${n} nodes is ${litId}, and the card under this strip is the card that node pins.`}
+    >
+      {/* Runs first, so a disc is drawn over the ends of its own. `flowRun` trims both ends
+          back to `ringRadius(r) + FLOW.edge.gap`, which is the same clearance every other
+          figure on the site leaves, so no coordinate is written down here. */}
+      {Array.from({ length: n - 1 }, (_, i) => (
+        <path
+          key={`run-${i}`}
+          data-viz="flow-line"
+          d={
+            flowRun([cx(i), STRIP.cy], [cx(i + 1), STRIP.cy], {
+              fromRadius: FLOW.node.r,
+              toRadius: FLOW.node.r,
+            }).d
+          }
+          stroke={VIZ_LINE}
+          strokeWidth={VIZ.stroke.base}
+          opacity={STRIP_EDGE_OPACITY}
+          fill="none"
+        />
+      ))}
+
+      {Array.from({ length: n }, (_, i) => {
+        const on = i === lit;
+        const tone = on ? "var(--color-copper-line)" : VIZ_TONE.dim;
+        return (
+          <g key={`node-${i}`}>
+            <circle
+              cx={cx(i)}
+              cy={STRIP.cy}
+              r={halo}
+              fill={tone}
+              opacity={FLOW.halo.schematic.opacity * (on ? FLOW.node.litBoost : 1)}
+            />
+            <circle
+              cx={cx(i)}
+              cy={STRIP.cy}
+              r={ring}
+              fill="none"
+              stroke={tone}
+              strokeWidth={FLOW.node.ring}
+              opacity={on ? FLOW.node.litRingOpacity : FLOW.node.ringOpacity}
+            />
+            <circle
+              cx={cx(i)}
+              cy={STRIP.cy}
+              r={FLOW.node.r}
+              fill={tone}
+              opacity={FLOW.node.core}
+            />
+          </g>
+        );
+      })}
+
+      {/* The id, in the card's own register. `--color-copper-ink` is the pole's ink against
+          `--color-copper-line`'s draw, the same pairing the blueprint pole uses. */}
+      <text
+        data-viz="label"
+        x={cx(lit)}
+        y={STRIP.cy + drop}
+        textAnchor="middle"
+        fontSize={FLOW.label.size}
+        fill="var(--color-copper-ink)"
+      >
+        {litId}
+      </text>
+
+      {/* The tether, and it is a LEADER: `VIZ.dash.leader` is the vocabulary's own dash for
+          a line running from an annotation to the thing it annotates, which is exactly this.
+          Not `VIZ.dash.absent` — that one means "a run that is not there" everywhere on the
+          site, and this run is the most present relation the beat has. */}
+      <path
+        d={`M ${cx(lit)} ${STRIP.cy + drop + 10} V ${STRIP.height - 12}`}
+        stroke="var(--color-copper-line)"
+        strokeWidth={VIZ.stroke.thin}
+        strokeDasharray={VIZ.dash.leader}
+        opacity={0.7}
+        fill="none"
+      />
+      {/* `textAnchor="start"` stated rather than left to inherit. `FlowScene` centres text by
+          default, which is right for a label under a disc and wrong for a phrase set BESIDE
+          a line: centred on the tether's own x it straddles the dashes, and the first two
+          words render behind them. Measured: the string is 90 units wide, so centring put
+          `is t` on the left of the tether and `his card` on the right. */}
+      <text
+        data-viz="label"
+        x={cx(lit) + 18}
+        y={STRIP.height - 20}
+        textAnchor="start"
+        fontSize={11}
+        letterSpacing="0.08em"
+        fill={VIZ_TONE.dim}
+      >
+        is this card
+      </text>
+    </FlowScene>
+  );
+}
+
+/**
  * One status row on the stage plate: a dot, and the term it stands for.
  *
  * The dot is the whole of the distinction and it carries no colour of its own beyond
@@ -731,7 +936,15 @@ export function CardStackFigure({
         />
       ))}
       {stage ? (
-        <StagePlate card={card} />
+        <div className="relative flex flex-col">
+          {/* The strip and the plate are one object: the tether leaves the strip's foot and
+              arrives on the plate's top edge, so the 6px between them is the mock's and is
+              the only gap the tether has to cross. */}
+          <NodeStrip count={nodes} litId={card.id} />
+          <div className="mt-1.5">
+            <StagePlate card={card} />
+          </div>
+        </div>
       ) : (
         <>
       {/* The inline card takes the CYANOTYPE register, on the author's instruction, and it
