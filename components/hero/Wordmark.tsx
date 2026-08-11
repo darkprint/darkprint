@@ -62,7 +62,6 @@
    further down the page.
    ============================================================ */
 
-import Link from "next/link";
 import {
   animate,
   createScope,
@@ -76,13 +75,9 @@ import {
 
 import { Logo } from "@/components/site/Logo";
 import { ButtonLink } from "@/components/ui/Button";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { FLOW, FLOW_SELECTOR, FlowEdge } from "@/components/viz";
 import { EASE_OUT } from "@/components/viz/easing";
 import { useIsomorphicLayoutEffect, useReveal } from "@/components/viz/useReveal";
-import { cx } from "@/lib/format";
-import { MCP_CONNECT_COMMAND, MCP_ROUTE } from "@/lib/mcp";
-import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
 
 import { WORDMARK_LETTER_PATHS } from "./wordmark-paths";
 
@@ -246,7 +241,6 @@ export function Wordmark() {
       const eyebrow = root.querySelectorAll<HTMLElement>(handle("eyebrow"));
       const claim = root.querySelectorAll<HTMLElement>(handle("claim"));
       const cta = root.querySelectorAll<HTMLElement>(handle("cta"));
-      const cli = root.querySelectorAll<HTMLElement>(handle("cli"));
       const aura = root.querySelectorAll<HTMLElement>(handle("aura"));
       /* The mark rises WITH the light rather than on a beat of its own.
          ------------------------------------------------------------
@@ -280,7 +274,7 @@ export function Wordmark() {
       utils.set(rule, { draw: "0 0" });
       utils.set(traceDrawable, { draw: "0 0" });
       utils.set(travelling, { opacity: 0 });
-      utils.set([...eyebrow, ...claim, ...cta, ...cli], { opacity: 0, translateY: 10 });
+      utils.set([...eyebrow, ...claim, ...cta], { opacity: 0, translateY: 10 });
 
       createTimeline({ defaults: { ease: EASE_OUT } })
         .add(rising, { opacity: 1, scale: 1, duration: 1400, ease: "outCubic" }, 0)
@@ -349,8 +343,7 @@ export function Wordmark() {
         )
         .add(claim, { opacity: 1, translateY: 0, duration: 700 }, AT.claim)
         .add(travelling, { opacity: 1, duration: 420 }, AT.claim)
-        .add(cta, { opacity: 1, translateY: 0, duration: 700 }, AT.cta)
-        .add(cli, { opacity: 1, translateY: 0, duration: 700 }, AT.cta + 180);
+        .add(cta, { opacity: 1, translateY: 0, duration: 700 }, AT.cta);
 
       /* The one thing that keeps moving after the entrance, and it is the register's
          signature rather than decoration: `pathLength="1"` on the pulse puts the dash
@@ -537,51 +530,12 @@ export function Wordmark() {
         </ButtonLink>
       </div>
 
-      <div className="mx-auto mt-12 flex w-fit max-w-full flex-col gap-3">
-        {[
-          {
-            key: "skill",
-            label: "Design your blueprint",
-            command: SKILL_INSTALL_COMMAND,
-            href: SKILL_ROUTE,
-            built: true,
-          },
-          {
-            key: "mcp",
-            label: "Connect via MCP",
-            command: MCP_CONNECT_COMMAND,
-            href: MCP_ROUTE,
-            built: false,
-          },
-        ].map((setup) => (
-          <Link
-            key={setup.key}
-            data-mark="cli"
-            href={setup.href}
-            className={cx(
-              "group flex max-w-full flex-col items-start gap-1 rounded-md border bg-surface-2/80 px-3 py-2 text-left transition-[transform,scale,color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97]",
-              setup.built
-                ? "border-emerald/50 hoverable:hover:border-emerald/75"
-                : "border-line hoverable:hover:border-line-bright",
-            )}
-          >
-            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="label">{setup.label}</span>
-              {!setup.built && <ComingSoonBadge />}
-            </span>
-            <span
-              className={cx(
-                "max-w-full font-mono text-xs transition-colors",
-                setup.built
-                  ? "text-emerald hoverable:group-hover:text-fg"
-                  : "text-muted",
-              )}
-            >
-              {`$ ${setup.command}`}
-            </span>
-          </Link>
-        ))}
-      </div>
+      {/* The two setup chips stood here, last in the entrance at 1.26s. They are
+          `components/hero/SetupChips.tsx` now, in the section's top-left corner and outside
+          the timeline entirely, on the author's instruction that the command a returning
+          reader comes to copy should be readable the moment the page paints. That file
+          carries the reasoning; what it means here is that this component is the lockup and
+          nothing else, and `AT` no longer has a beat with nothing on it. */}
     </div>
   );
 }

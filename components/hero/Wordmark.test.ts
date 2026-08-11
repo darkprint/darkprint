@@ -2,29 +2,31 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { SetupChips } from "@/components/hero/SetupChips";
 import { Wordmark } from "@/components/hero/Wordmark";
 import { plainText } from "@/components/ui/visible-text";
 import { MCP_CONNECT_COMMAND, MCP_ROUTE } from "@/lib/mcp";
 import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
 
 const render = () => renderToStaticMarkup(createElement(Wordmark));
+const renderChips = () => renderToStaticMarkup(createElement(SetupChips));
 
 /**
- * The setup chip for `href`, matched by its own mark rather than by its destination.
+ * The setup chip for `href`, matched by its own attribute rather than by its destination.
  *
  * It used to match the first `<a href="…">` on the page, and that stopped being unique on
  * 2026-08-10: the `/build` split pointed the hero's "Create a blueprint" button at `/skill`,
  * which is also where the skill chip goes, so the CTA matched first and the assertions below
  * were reading a six-word button for an install command.
  *
- * `data-mark="cli"` is what actually distinguishes the two, and `Wordmark` puts it on the
- * chips and on nothing else. Anchoring on it means a second link to the same route is no
- * longer a false match, and a chip that loses its mark fails by name here rather than
- * silently matching a button.
+ * The anchor was `data-mark="cli"` until the chips left `Wordmark` on 2026-08-11. `data-mark`
+ * means "the timeline touches this" in that file, and these no longer animate, so carrying
+ * one purely to be found by a test would have been the attribute lying about itself.
+ * `data-setup` is theirs, and it says what it is.
  */
 const setupCard = (html: string, href: string) => {
   const match = html.match(
-    new RegExp(`<a[^>]*data-mark="cli"[^>]*href="${href}"[\\s\\S]*?</a>`),
+    new RegExp(`<a[^>]*data-setup="[^"]*"[^>]*href="${href}"[\\s\\S]*?</a>`),
   );
   if (match === null) throw new Error(`the hero has no setup card for ${href}`);
   return match[0];
@@ -51,8 +53,26 @@ describe("Wordmark", () => {
     expect(html).not.toContain("dp-char");
   });
 
+  /**
+   * The chips are outside the entrance, which is the whole reason they are their own file.
+   *
+   * `Wordmark`'s timeline hides every element it owns in a layout effect and brings it back
+   * over 1.4 seconds. Anything rendered inside that component acquires a beat by proximity,
+   * and these carry the one line a returning reader arrives to copy. Rendered from their own
+   * component there is no timeline to join, and nothing here can put them back on one
+   * without this case saying so: no `data-mark`, and no opacity or transform to start from.
+   */
+  it("paints the setup commands immediately, outside the entrance", () => {
+    const html = renderChips();
+    expect(html).not.toContain("data-mark");
+    expect(html).not.toContain("opacity-0");
+    expect(html).not.toContain("translate-y");
+    // And `Wordmark` no longer draws them, so there is exactly one copy on the page.
+    expect(render()).not.toContain("data-setup");
+  });
+
   it("links both setup commands to their corresponding detail pages", () => {
-    const html = render();
+    const html = renderChips();
     const skill = plainText(setupCard(html, SKILL_ROUTE));
     const mcp = plainText(setupCard(html, MCP_ROUTE));
     expect(skill).toContain(SKILL_INSTALL_COMMAND);
