@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import type { OntologyTerm } from "@/lib/core";
+import type { OntologyTerm, TermKind } from "@/lib/core";
 import { CORE_PHASE_IDS, partitionTerms } from "@/lib/core";
 import { bundleVocabulary, getOntologyView } from "@/lib/content";
 import { CheckLegend, CheckTable } from "@/components/spec/CheckTable";
@@ -82,6 +82,96 @@ const LOCAL_VOCAB_SLUG = "frontline-triage";
 const BAND_H2 =
   "font-display text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] text-fg sm:text-[32px]";
 
+/**
+ * The five kinds, in the order the vocabulary band lists them.
+ *
+ * The author's note was that the page is confusing, and this is the first of the three
+ * causes: the five kinds were named inside a sentence of counts, so a reader met
+ * "{n} node types, {n} data types, {n} tool capabilities" with nothing anywhere saying what
+ * a tool capability IS or how it differs from a risk marker. A count is not a definition.
+ * The table gives each kind a line of its own and puts the count in a column beside it,
+ * which is the same information a reader can now scan by kind rather than parse by comma.
+ *
+ * ── Two of the four columns are engine-derived and the other two are copy ──
+ * `names` is written here because the engine has no prose about a KIND — it holds terms,
+ * not a description of the categories they fall into. The count and the example are read
+ * off `view` at build time and never typed: `coreOf` counts the kind, and `example` is a
+ * lookup key rather than a printed string, resolved through `view.get` so the chip renders
+ * the term's own id and disappears rather than lying if that term is ever renamed away.
+ *
+ * Which term illustrates a kind is a judgement nothing in the data encodes — the first or
+ * the alphabetically-least term of each kind is `ci` for tools, which teaches a reader
+ * nothing — so the choice is the hand-off's and only the choice is written down.
+ */
+const KINDS = [
+  {
+    kind: "phase",
+    label: "phase",
+    names: "where in the lifecycle a node sits",
+    example: "planning",
+  },
+  {
+    kind: "node-type",
+    label: "node type",
+    names: "what kind of actor a node is",
+    example: "human-gate",
+  },
+  {
+    kind: "data-type",
+    label: "data type",
+    names: "what travels along an edge, and what may not",
+    example: "acceptance-criteria",
+  },
+  {
+    kind: "tool",
+    label: "tool capability",
+    names: "what a node is allowed to reach for",
+    example: "git",
+  },
+  {
+    kind: "risk-marker",
+    label: "risk marker",
+    names: "what makes a node dangerous, and what that costs it",
+    example: "isolation-breach",
+  },
+] as const satisfies readonly {
+  kind: TermKind;
+  label: string;
+  names: string;
+  example: string;
+}[];
+
+/**
+ * The overlay's four rules, which were four paragraphs of policy.
+ *
+ * Third of the author's three causes. Every one of these is doc 3 §7 stated as a rule, and
+ * the band keeps the opening CLAIM as prose above them — anyone may add a term, in their own
+ * namespace — because that is the argument and these are its consequences. A reader who
+ * wants the rule can read the label; a reader who wants the reason reads the paragraph.
+ *
+ * `weight` and `broader` were sentences with the archive's own numbers in them and are
+ * general statements now. The specific values stay where they are read off the term itself,
+ * in the paragraph above and in the file beside it, so nothing here goes stale on a reweight.
+ */
+const OVERLAY_RULES = [
+  {
+    label: "namespace",
+    rule: "keeps the term visibly one archive's decision, so the shared count stays shared",
+  },
+  {
+    label: "broader",
+    rule: "every local term names a core parent, so an analyzer that knows only the core can still place it",
+  },
+  {
+    label: "weight",
+    rule: "a marker prices itself, and one that names no weight counts zero and moves no score",
+  },
+  {
+    label: "travels",
+    rule: "there is no registry to ask at resolve time, so the file ships inside any bundle whose cards name the term",
+  },
+] as const;
+
 export default function SpecOntologyPage() {
   const { page } = specNeighbours(HERE);
   const view = getOntologyView();
@@ -123,7 +213,13 @@ export default function SpecOntologyPage() {
             as="h1"
             eyebrow={page.eyebrow}
             title={page.title}
-            lead="One versioned list of identifiers, and the subsumption relation between them. It is what lets an analyzer reason about a graph it has never seen, and it is where every term the graph and the cards use is finally defined."
+            /* The lead names the two layers that reach into this one rather than the
+               relation between its entries. It read "One versioned list of identifiers, and
+               the subsumption relation between them", which put the page's hardest word in
+               its first sentence and left a reader who had just come off the card page
+               without the connection to what they had been reading. Naming which layer
+               contributes which kind is the same information a beat earlier. */
+            lead="One versioned list of the words a blueprint may use, and how they relate. The graph names phases and node types; the cards name data types, tools and risk markers. This is where all of them are finally defined."
           />
         </div>
       </header>
@@ -142,8 +238,13 @@ export default function SpecOntologyPage() {
         <div className="container-page flex flex-col gap-10">
           <div className="flex flex-col gap-3">
             <span className="label-lead">The vocabulary</span>
+            {/* The heading names the five kinds instead of counting the terms. The count is
+                still the band's headline fact and it is in the paragraph under this and in
+                a column of the table, where it is one of five counts rather than the only
+                one — which is the point of the change: "{n} curated terms" is a size, and a
+                reader who does not yet know what a term IS cannot use a size. */}
             <h2 id="vocabulary-heading" className={`${BAND_H2} scroll-mt-24`}>
-              {core.length} curated terms, versioned as a whole
+              Five kinds of term, versioned as one list
             </h2>
           </div>
           {/* NO `.prose-lane` HERE, ON PURPOSE — do not "fix" this back.
@@ -164,34 +265,140 @@ export default function SpecOntologyPage() {
               exception stays legible as an exception rather than becoming the new
               default. */}
           <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
-            <p>
-              Every structural field on the two layers above is a reference into
-              one vocabulary of {core.length} curated terms, versioned at{" "}
-              <Id>{`v${version}`}</Id>. That is what stops two authors from
-              naming the same thing twice. Five kinds of term: {phases.length}{" "}
-              phases, {coreOf("node-type")} node types, {coreOf("data-type")}{" "}
-              data types, {coreOf("tool")} tool capabilities and{" "}
-              {coreOf("risk-marker")} risk markers.
+            <p className="max-w-[820px]">
+              Every structural field on the two layers above is a reference into this list,
+              versioned as a whole at <Id>{`v${version}`}</Id>. One list of {core.length}{" "}
+              curated terms is what stops two authors from naming the same thing twice.
             </p>
-            <p>
-              The phases are closed and stay in lifecycle order: {phases.map((phase, i) => (
+          </div>
+
+          {/* The five kinds, explained before they are counted.
+              ------------------------------------------------------------
+              A real `<table>`: five kinds against four facts is a grid of related values
+              with headers on both axes, and a reader compares `terms` down the column and
+              `what it names` across the row. `CheckTable` is not reused for it — that
+              component takes `CheckRow`s and draws a severity column, and bending it into a
+              generic table would make one component answer two questions.
+
+              It scrolls inside its own box rather than folding, and carries the three
+              attributes that keeps reachable by keyboard: `SourcePanel` and `CheckTable`
+              both solved this exact case in this repo and this is the same fix. */}
+          <div
+            tabIndex={0}
+            role="group"
+            aria-label="The five kinds of term, scrollable"
+            className="overflow-x-auto rounded-lg border border-line"
+          >
+            <table className="w-full min-w-[40rem] border-collapse text-left">
+              <caption className="sr-only">
+                The five kinds of term: what each one names, how many the core defines, and
+                one example of each.
+              </caption>
+              <thead>
+                <tr className="border-b border-line">
+                  <th scope="col" className="label px-5 py-3 font-normal">
+                    Kind
+                  </th>
+                  <th scope="col" className="label px-5 py-3 font-normal">
+                    What it names
+                  </th>
+                  <th scope="col" className="label px-5 py-3 text-right font-normal">
+                    Terms
+                  </th>
+                  <th scope="col" className="label px-5 py-3 font-normal">
+                    For example
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {KINDS.map((entry) => {
+                  /* Resolved rather than printed. `example` is a lookup key chosen for what
+                     it teaches, and what reaches the page is the term's own id, so a rename
+                     in the core arrives here on the next build and a removal leaves the cell
+                     empty instead of naming a term that no longer exists. */
+                  const example = view.get(entry.example);
+                  return (
+                    <tr key={entry.kind} className="border-b border-line last:border-b-0">
+                      <th
+                        scope="row"
+                        className="whitespace-nowrap px-5 py-3.5 font-mono text-[13px] font-normal text-fg"
+                      >
+                        {entry.label}
+                      </th>
+                      <td className="px-5 py-3.5 text-[15px] leading-relaxed text-muted">
+                        {entry.names}
+                      </td>
+                      <td className="px-5 py-3.5 text-right font-mono text-[15px] tabular-nums text-fg">
+                        {coreOf(entry.kind)}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {example !== undefined && <Id>{example.id}</Id>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {/* The strip the mock draws under the table, and it is not decoration: every
+                number in the column above it and every id beside them is read off the engine
+                at build time, which is the difference between this page and the site quoting
+                itself. Saying so under the table is cheaper than a reader wondering. */}
+            <p className="border-t border-line px-5 py-2.5 font-mono text-[11px] tracking-[0.06em] text-dim">
+              every count and every id on this page is read off the engine at build time
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
+            <p className="max-w-[820px]">
+              {/* A comma where the mock writes a pause dash. `app/spec/ontology/page.tsx` is
+                  walked by `workspace.test.ts`'s route check and `APP_EXEMPT` covers
+                  `app/nodes`, `app/ontology`, `app/upload`, `app/blueprints/[slug]` and
+                  `app/u` — not this one. */}
+              The phases are closed: nobody may add one, and they stay in lifecycle order,{" "}
+              {phases.map((phase, i) => (
                 <span key={phase.id}>
-                  {i > 0 && ", "}
+                  {i > 0 && " "}
                   <Id>{phase.id}</Id>
                 </span>
-              ))}. This archive reads its bundles against the core plus{" "}
-              {local.length === 1
-                ? "one term of its own"
-                : `${local.length} terms of its own`}
-              . Local node types and risk markers must resolve to a core parent;
-              their definitions travel with the bundle, while phases remain closed.
+              ))}
+              . The other four kinds are open, under the rules in the next section.
+            </p>
+          </div>
+
+          {/* The door to the listing, at the end of the band it answers.
+              ------------------------------------------------------------
+              It stood in a band of its own between the vocabulary and the overlay, which
+              made a full-bleed section out of one link and put a ground change either side
+              of it. Here it is the answer to the table above: the table says what the five
+              kinds ARE and how many of each there is, and this is where to read them.
+
+              `components/ontology/canonical-route.test.ts` asserts that this page contains
+              `href="/ontology"` and does not mount the catalog component, which is the split
+              it holds: the browser enumerates, the spec page specifies and links across.
+              Moving the box inside a band changes neither, and the test passes untouched.
+
+              That assertion greps this file's SOURCE, comments included, so it may not be
+              quoted here with its opening angle bracket. It caught this comment doing
+              exactly that on the first run of the pass, which is the check working. */}
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-6">
+            <RouteBoxLink
+              href="/ontology"
+              label={
+                <>
+                  Every term <span aria-hidden>&rarr;</span>
+                </>
+              }
+              title={`All ${terms.length} terms: the ${core.length} core plus this archive's own, with parents and usage counts`}
+            />
+            <p className="text-sm leading-relaxed text-dim lg:max-w-[18rem]">
+              This page is the format; that one is the words.
             </p>
           </div>
         </div>
       </section>
 
-      {/* The term listing left this page in the accounts pass, and this is the door to
-          where it went.
+      {/* The term listing left this page in the accounts pass, and the door to where it went
+          is now the last thing in the vocabulary band above rather than a band of its own.
           ------------------------------------------------------------
           `OntologyCatalog` — the five kinds, every term in each of them, the governance
           model — stood here because `/ontology` had been 308'd away and the vocabulary had
@@ -207,27 +414,12 @@ export default function SpecOntologyPage() {
           stays here is everything that is specification — the five kinds explained, the
           overlay rules, the validator checks — and what left is the enumeration.
 
-          `components/ontology/canonical-route.test.ts` holds both routes to their halves so
-          neither can quietly absorb the other again. `OntologyCatalog` itself is unchanged
-          and unmounted; it is the shape a future "browse by kind" view would start from. */}
-      <section className="border-t border-line bg-surface/40 py-16 sm:py-20">
-        <div className="container-page">
-          <RouteBoxLink
-            href="/ontology"
-            label={
-              <>
-                Every term <span aria-hidden>&rarr;</span>
-              </>
-            }
-            title={`Browse all ${terms.length} terms`}
-          />
-          <p className="prose-lane mt-4 text-sm leading-relaxed text-muted">
-            The vocabulary browser lists every term with its kind, its parent, what a risk
-            marker costs, and how many cards in the archive name it. This page is the
-            format; that one is the words.
-          </p>
-        </div>
-      </section>
+          What changed on 2026-08-11 is only where the door hangs. One link does not need a
+          full-bleed section and a ground change on either side of it, and where it sits now
+          it is the answer to the table it follows. `components/ontology/canonical-route.
+          test.ts` holds both routes to their halves so neither can quietly absorb the other
+          again; it asserts the href and the absence of the catalog, both of which survive
+          the move untouched. */}
 
       {/* ---------- the one term this archive coined for itself ----------
           Rewritten this pass, because the old copy could not be read in one go. It
@@ -252,10 +444,13 @@ export default function SpecOntologyPage() {
           <div className="container-page flex flex-col gap-10">
             <div className="flex flex-col gap-3">
               <span className="label-lead">The overlay</span>
+              {/* The heading states the RULE rather than counting this archive's use of it.
+                  "The one term this archive added for itself" is a fact about this archive;
+                  what a reader on a specification page needs is that the mechanism exists
+                  and is open to them. The count is still in the paragraph under it, read off
+                  the overlay. */}
               <h2 id="overlay-heading" className={`${BAND_H2} scroll-mt-24`}>
-                {overlayTerm === undefined
-                  ? `The ${local.length} terms this archive added for itself`
-                  : "The one term this archive added for itself"}
+                Anyone can add a term, in a namespace of their own
               </h2>
             </div>
             {/* Prose first at full width, the file under it, since 2026-08-08.
@@ -276,64 +471,91 @@ export default function SpecOntologyPage() {
                 consequences of it. Full width at `lg`, so four short paragraphs read as four
                 sentences rather than as a narrow column of twelve lines, and the file sits
                 under them as the evidence rather than beside them as a competitor. */}
+            {/* The claim as prose, the policy as rules.
+                ------------------------------------------------------------
+                It was four paragraphs and each one carried a rule inside an argument, so a
+                reader who wanted to know what a namespaced term must declare had to read
+                the whole band to find the sentence that said it. The opening claim stays
+                prose, because it IS the argument and the rest are its consequences; the
+                four consequences are labelled rules a reader can scan, in the register the
+                landing and `/mcp` now use for exactly this.
+
+                The specific values stay in the prose, where they are read off the term. A
+                rule saying "prices itself at 0.5" would be this archive's number stated as
+                policy; the rule says a marker prices itself, and the paragraph above says
+                what this one chose.
+
+                The last sentence of the band is deleted rather than reworded: "The full
+                vocabulary above lists every term" was a live contradiction. The listing is
+                not above — it moved to `/ontology` in the accounts pass — and the door to it
+                is now at the end of the vocabulary band, which is where that sentence was
+                trying to point. */}
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
                 {overlayTerm === undefined ? (
-                  <p>
-                    The {core.length} terms above are the curated core, and nobody but this
-                    project can change them. Anyone can add their own: this archive carries{" "}
-                    {local.length === 1 ? "one term" : `${local.length} terms`} of its own, in
-                    a namespace, outside that count. The file below is the whole of them.
+                  <p className="max-w-[820px]">
+                    The {core.length} terms above are the curated core and nobody but this
+                    project can change them. Adding to that set would move a number two
+                    strangers hold each other to. So additions go in a namespace instead:
+                    this archive carries {local.length === 1 ? "one term" : `${local.length} terms`}{" "}
+                    of its own, outside that count, and the file below is the whole of them.
                   </p>
                 ) : (
-                  <>
-                    <p>
-                      The {core.length} terms above are the curated core, and nobody but this
-                      project can change them. Anyone can add their own, and this archive did:
-                      it needed a way to mark a node that handles personal data, so it defined{" "}
-                      <Id>{overlayTerm.id}</Id> in a namespace of its own. Its definition,
-                      quoted from the file below, is
-                      &ldquo;{overlayTerm.description}&rdquo;
-                    </p>
-                    <p>
-                      The namespace is the point rather than a formality. A term added to the
-                      core would grow the set two authors hold each other to, and no single
-                      archive gets to do that. A namespaced one stays visibly somebody&apos;s
-                      local decision, and the {core.length} above stay the number everybody
-                      shares.
-                    </p>
-                    <p>
-                      It still has to say what it is. It declares{" "}
-                      <Id>{overlayTerm.broader ?? "a core term"}</Id> as its{" "}
-                      <Id>broader</Id>, so an analyzer that knows only the core can place it
-                      {overlayTerm.defaultWeight === undefined
-                        ? ", and it declares no weight, so it counts zero and moves no score"
-                        : `, and it prices itself at ${overlayTerm.defaultWeight}. A local marker that named no weight would count zero and move no score`}
-                      .
-                    </p>
-                    <p>
-                      And it travels with the work. There is no registry to ask at resolve
-                      time, so any bundle whose cards name the term ships this file in its own
-                      folder, as the{" "}
-                      <SpecLink href={`/blueprints/${LOCAL_VOCAB_SLUG}`}>
-                        {LOCAL_VOCAB_SLUG}
-                      </SpecLink>{" "}
-                      bundle does. The card resolves wherever the folder is opened.
-                    </p>
-                  </>
+                  <p className="max-w-[820px]">
+                    The {core.length} terms above are the curated core and nobody but this
+                    project can change them. Adding to that set would move a number two
+                    strangers hold each other to. So additions go in a namespace instead:
+                    this archive needed to mark a node that handles personal data, and
+                    defined <Id>{overlayTerm.id}</Id> for itself, rooted at{" "}
+                    <Id>{overlayTerm.broader ?? "a core term"}</Id>
+                    {overlayTerm.defaultWeight === undefined
+                      ? " and declaring no weight of its own"
+                      : ` and priced at ${overlayTerm.defaultWeight}`}
+                    . Its definition, quoted from the file below, is
+                    &ldquo;{overlayTerm.description}&rdquo;
+                  </p>
                 )}
-                <p className="text-sm">
-                  The full vocabulary above lists every term, its subsumption tree, and
-                  which cards use it.
-                </p>
               </div>
 
-              <SourcePanel
-                source={vocabulary.text}
-                language="YAML"
-                title={vocabulary.file}
-                downloadName="extensions.yaml"
-              />
+              {/* The rules beside the file rather than above it, which is the mock's and is
+                  the right pairing: each rule is a line of policy and the YAML is the one
+                  place all four are visible at once in a real term. Stacked below `lg`,
+                  where two columns would put a 40-character rule beside a code pane. */}
+              <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+                <ul className="flex min-w-0 flex-col border-t border-line">
+                  {OVERLAY_RULES.map((entry) => (
+                    <li
+                      key={entry.label}
+                      className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1 border-b border-line py-3.5 sm:grid-cols-[120px_minmax(0,1fr)] sm:gap-5"
+                    >
+                      <span className="font-mono text-[12px] leading-relaxed tracking-[0.06em] text-blueprint-ink">
+                        {entry.label}
+                      </span>
+                      <span className="min-w-0 text-[15px] leading-relaxed text-muted">
+                        {entry.rule}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <SourcePanel
+                  source={vocabulary.text}
+                  language="YAML"
+                  title={vocabulary.file}
+                  downloadName="extensions.yaml"
+                />
+              </div>
+
+              {/* The bundle that carries the file, which was the fourth paragraph's own
+                  evidence and is the one thing in it that is not a general rule. */}
+              <p className="max-w-[820px] text-[15px] leading-relaxed text-muted">
+                The{" "}
+                <SpecLink href={`/blueprints/${LOCAL_VOCAB_SLUG}`}>
+                  {LOCAL_VOCAB_SLUG}
+                </SpecLink>{" "}
+                bundle ships this file in its own folder, so its cards resolve wherever the
+                folder is opened.
+              </p>
             </div>
           </div>
         </section>
@@ -350,8 +572,12 @@ export default function SpecOntologyPage() {
         <div className="container-page flex flex-col gap-10">
           <div className="flex flex-col gap-3">
             <span className="label-lead">The checks</span>
+            {/* "holds ... to" rather than "checks about", which is the mock's and is the
+                stronger verb: the rows below are refusals, not observations. `CheckLegend`,
+                `CheckTable` and `ONTOLOGY_ROWS` are untouched — §B says the three rows drawn
+                in the mock are placeholders and the mock's own footer strip says so. */}
             <h2 id="ontology-checks-heading" className={`${BAND_H2} scroll-mt-24`}>
-              What the engine checks about the ontology
+              What the engine holds the vocabulary to
             </h2>
           </div>
           <div className="flex flex-col gap-4">

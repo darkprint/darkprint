@@ -297,9 +297,25 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
     eyebrow: "Layer 03 of 03",
     title: "Ontology",
     question: "Which identifiers the first two are allowed to use.",
+    /* Three entries, one per band, since 2026-08-11.
+       ------------------------------------------------------------
+       A fourth stood here — `{ id: "phases", label: "Term catalog" }` — and it had pointed
+       at nothing on this route since the accounts pass. `id="phases"` is declared in
+       `components/ontology/OntologyCatalog.tsx`, which mounts on `/ontology` and not here,
+       so the rail rendered `/spec/ontology#phases` and clicking it scrolled nowhere.
+
+       `components/site/anchors.test.ts` could not catch it and still cannot: it walks the
+       whole tree for a declaring `id="…"` and finds this one, on the other route. Its own
+       docblock is about links written in a table rather than in JSX, which is the shape
+       these are, so the entry was invisible to it twice over. Worth knowing before adding
+       an anchor here again — a cross-route fragment passes that guard whichever way it is
+       written.
+
+       Nothing is lost with the entry. The catalog it named is `/ontology`, which this page
+       links to with a `.route-box` at the end of the vocabulary band, and the three bands
+       the rail lists are now exactly the three the page has. */
     sections: [
       { id: "vocabulary-heading", label: "Core vocabulary" },
-      { id: "phases", label: "Term catalog" },
       { id: "overlay-heading", label: "Local overlay" },
       { id: "ontology-checks-heading", label: "Validator checks" },
     ],
