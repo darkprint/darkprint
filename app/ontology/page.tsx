@@ -4,6 +4,7 @@ import { getOntologyView, getRegistry } from "@/lib/content";
 import { partitionTerms } from "@/lib/core";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ButtonLink } from "@/components/ui/Button";
+import { SideRail, type SideRailItem } from "@/components/ui/SideRail";
 import { markerWeight, termUsageIndex } from "@/components/ontology/TermTable";
 import { OntologyCatalog } from "@/components/ontology/OntologyCatalog";
 import {
@@ -37,6 +38,35 @@ export const metadata: Metadata = {
   description:
     "Every term a blueprint and a node card are allowed to use: node types, data types, tools, risk markers and the five phases, with what each one costs and how many cards name it.",
 };
+
+/**
+ * The rail's rows: the catalog's five kinds, then the governance band under them.
+ *
+ * A module constant rather than something derived from the ontology, because these are the
+ * CATALOG's sections and not the vocabulary's: the five kinds are what `OntologyCatalog`
+ * draws panels for, in the order it draws them, and a build where the archive gained a
+ * sixth kind would need the panel before it needed the row.
+ *
+ * ── What the rail maps, and what it does not ──
+ * These fragments exist while the catalog is on screen, which is whenever nothing is
+ * filtered. Set a search or a kind and `VocabularyBrowser` swaps the catalog for its flat
+ * results, so the sections a row points at are not on the page and the row goes nowhere.
+ * That is stated in the rail's own footer rather than hidden: it is the honest half of a
+ * page that deliberately shows one enumeration at a time, and the alternative — a rail that
+ * disappears when a reader types — is a chrome that moves under them.
+ *
+ * No `active`. `SideRail` reads that as "no row is the page you are on", which is the truth
+ * here: every row is an anchor into the page a reader is already reading, and
+ * `RailScrollSpy` lights whichever one they have scrolled into.
+ */
+const VOCABULARY_SECTIONS: readonly SideRailItem[] = [
+  { href: "#phases", label: "Phases", step: "01" },
+  { href: "#node-types", label: "Node types", step: "02" },
+  { href: "#risk-markers", label: "Risk markers", step: "03" },
+  { href: "#data-types", label: "Data types", step: "04" },
+  { href: "#tools", label: "Tool capabilities", step: "05" },
+  { href: "#governance", label: "Core and local", step: "06" },
+];
 
 export default function Page() {
   const view = getOntologyView();
@@ -72,6 +102,18 @@ export default function Page() {
   });
 
   return (
+    <SideRail
+      label="The vocabulary"
+      meta={`${VOCABULARY_SECTIONS.length} sections`}
+      items={VOCABULARY_SECTIONS}
+      ariaLabel="On this page"
+      footer={
+        <p className="text-[11px] leading-relaxed text-dim">
+          These are the catalog&rsquo;s sections. Searching or filtering replaces the catalog
+          with the matching terms, and there is nothing to jump to until you clear it.
+        </p>
+      }
+    >
     <div className="container-page flex flex-col gap-10 py-10 lg:py-12">
       <SectionHeading
         as="h1"
@@ -102,5 +144,6 @@ export default function Page() {
         <OntologyCatalog />
       </VocabularyBrowser>
     </div>
+    </SideRail>
   );
 }

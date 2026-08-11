@@ -54,21 +54,50 @@ export function RailScrollSpy() {
     /* Every row that points at a fragment, paired with the element it points at. Rows that
        point at another route are skipped: the rail already marks the current page through
        `active`, and a route is not a position on this one. `/spec/card#reach` counts —
-       Learn's indented section links carry the path as well as the fragment. */
-    const targets: { link: HTMLElement; el: HTMLElement }[] = [];
-    for (const link of nav.querySelectorAll<HTMLAnchorElement>("a[href*='#']")) {
-      const id = link.getAttribute("href")?.split("#")[1];
-      if (id === undefined || id === "") continue;
-      const el = document.getElementById(id);
-      if (el !== null) targets.push({ link, el });
-    }
-    if (targets.length === 0) return;
+       Learn's indented section links carry the path as well as the fragment.
+
+       ── Resolved every pass, not once at mount ──
+       It was resolved once, with an early return when nothing matched, and that is a race
+       on any page whose sections can come and go. `/ontology` is the first: its catalog is
+       the browser's unfiltered view, so arriving at `?kind=risk-marker` server-renders the
+       catalog (a static page has no search params at SSR), hydrates, and only then removes
+       it. Two client components hydrate in an order nobody promises. Lose the race and the
+       rail lights a row whose section is no longer in the document; win it the other way
+       round and the rail tracks nothing on a page that has sections after all.
+
+       Re-reading is six `getElementById` calls against a live map, on a frame that is
+       already doing layout work for the scroll. The bail is gone with it: an empty pass is
+       a real answer now, and it clears the mark rather than freezing it. This codebase's
+       own rule, from the blueprint page's rail: a rail that claims a position it is not
+       tracking is worse than a rail that claims none. */
+    const resolve = (): { link: HTMLElement; el: HTMLElement }[] => {
+      const found: { link: HTMLElement; el: HTMLElement }[] = [];
+      for (const link of nav.querySelectorAll<HTMLAnchorElement>("a[href*='#']")) {
+        const id = link.getAttribute("href")?.split("#")[1];
+        if (id === undefined || id === "") continue;
+        const el = document.getElementById(id);
+        if (el !== null) found.push({ link, el });
+      }
+      return found;
+    };
 
     let current: HTMLElement | null = null;
     let queued = false;
 
+    const mark = (link: HTMLElement | null) => {
+      if (link === current) return;
+      current?.removeAttribute(`data-${ACTIVE}`);
+      link?.setAttribute(`data-${ACTIVE}`, "true");
+      current = link;
+    };
+
     const apply = () => {
       queued = false;
+      const targets = resolve();
+      if (targets.length === 0) {
+        mark(null);
+        return;
+      }
       /* The last section whose top has passed under the header, or the first one when the
          reader is still above all of them — a rail that lights nothing at the top of a page
          reads as broken rather than as accurate. */
@@ -76,10 +105,7 @@ export function RailScrollSpy() {
       for (const target of targets) {
         if (target.el.getBoundingClientRect().top - THRESHOLD <= 0) found = target;
       }
-      if (found.link === current) return;
-      current?.removeAttribute(`data-${ACTIVE}`);
-      found.link.setAttribute(`data-${ACTIVE}`, "true");
-      current = found.link;
+      mark(found.link);
     };
 
     const onScroll = () => {
@@ -89,12 +115,17 @@ export function RailScrollSpy() {
     };
 
     apply();
+    /* One more pass on the next frame, which is the other half of the fix above. Nothing
+       scrolls or resizes when a sibling component finishes hydrating and rewrites the page
+       under this one, so without a second look the first answer is the only answer. */
+    const settle = requestAnimationFrame(apply);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll, { passive: true });
     return () => {
+      cancelAnimationFrame(settle);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
-      current?.removeAttribute(`data-${ACTIVE}`);
+      mark(null);
     };
   }, []);
 

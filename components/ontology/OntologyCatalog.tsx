@@ -512,7 +512,16 @@ export function OntologyCatalog() {
       {/* One section tier of air above the rule and one below it, rather than the 48 + 48
           this stacked as `pt-12` on the divider and `mt-12` on the section inside it. */}
       <div className="mt-16 border-t border-line pt-16">
-      <section className="flex flex-col gap-5" aria-labelledby="governance-heading">
+      {/* `id` and `scroll-mt-24` on the section, added 2026-08-11 with the rail. The band
+          was headed and unaddressable: `governance-heading` names the `h2` for the
+          `aria-labelledby` and is not a scroll target anybody could link. `anchors.test.ts`
+          wants the offset on the same tag as the id, which is why both are here rather than
+          the id on the heading and the offset on the wrapper. */}
+      <section
+        id="governance"
+        className="flex scroll-mt-24 flex-col gap-5"
+        aria-labelledby="governance-heading"
+      >
         <div className="flex flex-col gap-3">
           <h2
             id="governance-heading"
