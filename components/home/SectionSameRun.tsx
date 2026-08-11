@@ -316,6 +316,39 @@ const STEPS = ["retrieve", "rank", "draft"] as const;
  */
 const RULE = "color-mix(in oklab, var(--color-blueprint-line) 15%, transparent)";
 
+/** The score's type size in the ledger, which is the same 17 the left panel spends. */
+const SCORE_CELL = 17;
+
+/**
+ * The ledger's four tracks, which are the mock's grid translated to a fixed table layout.
+ *
+ * The mock lays the ledger out as `grid-template-columns: 40px 1fr auto 64px` at
+ * `column-gap: 16px`, and a table left to size itself does NOT reproduce that. Auto layout
+ * hands surplus width to every column that can take it, so measured against a running build
+ * at a 551.2px body: `iter` came out 98.2px against the mock's 40 and pushed `what changed`
+ * 42.2px to the right, and the score column's right edge landed at 487.2 where the mock puts
+ * it at 471.2. The table was the right element and the wrong geometry.
+ *
+ * `table-fixed` plus these widths reproduces the grid to the pixel on the two edges that
+ * carry the figure — the score column's right edge and the delta column's — and costs the
+ * ledger nothing that matters. It is still a `<table>` with `scope` on both axes, an
+ * `sr-only` caption and tabular figures, which §3 of the hand-off asks for by name and which
+ * the mock's own markup, four `<span>`s per row in a CSS grid, does not have at all.
+ *
+ * Each track carries its 16px gap as cell padding on ONE side, so a boundary is spent once:
+ * `iter` pads right, `what changed` pads neither, `score` and `delta` pad left. The score
+ * track is the mock's `auto`, which is four tabular mono figures at `SCORE_CELL` — 0.62em
+ * per character is the advance `components/viz/label-boxes.ts` publishes as `ADVANCE`, the
+ * top of the range any mono face this site has landed on, so the track is derived from the
+ * type rather than measured off a screenshot.
+ */
+const LEDGER_GAP = 16;
+const LEDGER = {
+  iter: 40 + LEDGER_GAP,
+  score: Math.ceil(4 * 0.62 * SCORE_CELL) + LEDGER_GAP,
+  delta: 64 + LEDGER_GAP,
+} as const;
+
 /**
  * The ledger's column heads.
  *
@@ -327,7 +360,7 @@ const RULE = "color-mix(in oklab, var(--color-blueprint-line) 15%, transparent)"
  * and `--color-faint` is annotated in `globals.css` as decorative separators only.
  */
 const HEAD =
-  "py-2.5 pr-4 font-mono text-[10px] font-normal uppercase tracking-[0.16em] text-dim";
+  "py-2.5 font-mono text-[10px] font-normal uppercase tracking-[0.16em] text-dim";
 
 /**
  * One step of the route, 128 by 42, which is the mock's own box and not `VIZ.node`'s.
@@ -728,23 +761,31 @@ export function SectionSameRun() {
                   of `--color-blueprint-line` at 15% is the drafting sheet's own ruling, and
                   it does what the old `border-spacing` could not: it lines the four scores up
                   under a header that is attached to them. */}
-              <table className="mt-1.5 mb-4 w-full border-collapse text-left">
+              <table className="mt-1.5 mb-4 w-full table-fixed border-collapse text-left">
                 <caption className="sr-only">
                   Four runs of one blueprint, numbered 01 to 04. Each row names the one step
                   it changed and reports the score and the change from the run before it.
                 </caption>
+                {/* The mock's `40px 1fr auto 64px`. `LEDGER` says why it is stated rather
+                    than left to the table to work out. */}
+                <colgroup>
+                  <col style={{ width: LEDGER.iter }} />
+                  <col />
+                  <col style={{ width: LEDGER.score }} />
+                  <col style={{ width: LEDGER.delta }} />
+                </colgroup>
                 <thead>
                   <tr className="border-b" style={{ borderColor: RULE }}>
-                    <th scope="col" className={HEAD}>
+                    <th scope="col" className={cx(HEAD, "pr-4")}>
                       iter
                     </th>
                     <th scope="col" className={HEAD}>
                       what changed
                     </th>
-                    <th scope="col" className={cx(HEAD, "text-right")}>
+                    <th scope="col" className={cx(HEAD, "pl-4 text-right")}>
                       score
                     </th>
-                    <th scope="col" className={cx(HEAD, "text-right")}>
+                    <th scope="col" className={cx(HEAD, "pl-4 text-right")}>
                       delta
                     </th>
                   </tr>
@@ -766,7 +807,7 @@ export function SectionSameRun() {
                           happened to it is the predicate and reads under. A cell entirely in
                           one tone would make "rank" and "removed" equally loud, and the
                           column a reader scans is the one naming the steps. */}
-                      <td className="py-[13px] pr-4 font-mono text-[13px] text-dim">
+                      <td className="py-[13px] font-mono text-[13px] text-dim">
                         {iteration.changed === null ? (
                           "baseline"
                         ) : (
@@ -781,12 +822,15 @@ export function SectionSameRun() {
                       {/* Fixed columns, right-aligned, tabular figures. The vertical read
                           down these two is the figure's whole argument, and a proportional
                           digit or a column that sizes to its content breaks it. */}
-                      <td className="py-[13px] pl-4 text-right font-mono text-[17px] tabular-nums text-fg">
+                      <td
+                        className="py-[13px] pl-4 text-right font-mono tabular-nums text-fg"
+                        style={{ fontSize: SCORE_CELL }}
+                      >
                         {iteration.score}
                       </td>
                       <td
                         className={cx(
-                          "w-[64px] py-[13px] pl-4 text-right font-mono text-[12px] tabular-nums",
+                          "py-[13px] pl-4 text-right font-mono text-[12px] tabular-nums",
                           iteration.delta === undefined
                             ? "text-faint"
                             : iteration.delta.gain
