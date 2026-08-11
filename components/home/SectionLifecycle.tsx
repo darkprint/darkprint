@@ -96,10 +96,21 @@ export function SectionLifecycle() {
           The mask is the Hero's, turned inside out. There it closes an ellipse around the
           wordmark; here it fades top and bottom so the ruling arrives out of the border
           above and leaves before the footer, which is what keeps a full-bleed graticule from
-          reading as a texture swatch with two hard edges. */}
+          reading as a texture swatch with two hard edges.
+
+          ── The ground under it is blueprint, not void ──
+          `.bp-grid` rules in `--color-blueprint-line` at 12% and 5%, and 12% of a light blue
+          over `--color-void` is a grey whisper: the graticule was there and read as dust.
+          Every other surface that draws it puts a cyanotype ground underneath first —
+          `ContentCard` uses `bg-blueprint-deep/40`, `RunSystemMap` and `RunLayers` use /60 —
+          because the paper is what makes the ruling blue. It was mounted here over the void
+          and inherited none of that, so the ground comes with it now, on the author's word
+          that this band should read blue. Same wash `ContentCard` uses, under the same mask,
+          so the section fades up out of the border above it into a sheet and back down
+          before the footer rather than switching colour at an edge. */}
       <div
         aria-hidden
-        className="bp-grid pointer-events-none absolute inset-0"
+        className="bp-grid pointer-events-none absolute inset-0 bg-blueprint-deep/40"
         style={{
           maskImage: "linear-gradient(to bottom, transparent, black 18%, black 82%, transparent)",
           WebkitMaskImage:
