@@ -46,6 +46,70 @@ const ACTIVE = "rail-active";
  */
 const THRESHOLD = 96;
 
+/**
+ * How close to the end of the scroll counts as the end of it.
+ *
+ * Sub-pixel layout and browser zoom leave `scrollY + innerHeight` a fraction under
+ * `scrollHeight` at the true bottom, so an exact comparison is a rule that never fires at
+ * some zoom levels and fires at others.
+ */
+const BOTTOM_SLACK = 2;
+
+/** Where the reader is, in the terms the rule below needs. All in CSS pixels. */
+export interface RailPosition {
+  /** `RailScrollSpy`'s own `THRESHOLD`: how far under the viewport top a section is reached. */
+  threshold: number;
+  /** Viewport height, for deciding whether a section is on screen at all. */
+  viewport: number;
+  /** Whether the scroll has run out, within `BOTTOM_SLACK`. */
+  atBottom: boolean;
+}
+
+/**
+ * Which rail row to light, from each section's distance above or below the viewport top.
+ *
+ * A pure function, and pulled out of the effect for the reason `components/viz/useReveal.ts`
+ * pulls `revealPhase` out of its hook: this repository has no jsdom and no testing-library,
+ * so a decision left inside an effect is a decision nothing can assert on. The arithmetic is
+ * the part that was wrong, so the arithmetic is the part that gets a test.
+ *
+ * ── The rule, and the case it used to miss ──
+ * Normally the answer is the last section whose top has passed under the header, or the
+ * first when the reader is still above all of them, because a rail that lights nothing at
+ * the top of a page reads as broken rather than accurate.
+ *
+ * That rule cannot reach the last section on a page whose final section is shorter than the
+ * viewport. Measured on `/ontology` at 1456x1160 before this fix: at maximum scroll
+ * (`scrollY` 5266 of 5266) `#governance` sits 307px below the viewport top and needs to
+ * reach 96, so it wants 211px of scroll the document does not have. The whole section and
+ * the footer under it are on screen, the reader is plainly in it, and the rail lit
+ * `05 Tool capabilities` — whose content had left the screen entirely.
+ *
+ * Generalised: any section beginning within `viewport - threshold` of the document bottom is
+ * unreachable, which is most last sections and no others. So when the scroll has run out,
+ * the answer is the last section that is on screen at all, and `atBottom` is the only new
+ * input that needs. It never picks EARLIER than the normal rule — a page whose last section
+ * has genuinely scrolled off the top behind a tall footer keeps the ordinary answer.
+ */
+export function activeRailIndex(
+  tops: readonly number[],
+  { threshold, viewport, atBottom }: RailPosition,
+): number | null {
+  if (tops.length === 0) return null;
+
+  let passed = 0;
+  for (let i = 0; i < tops.length; i += 1) {
+    if (tops[i] - threshold <= 0) passed = i;
+  }
+  if (!atBottom) return passed;
+
+  let onScreen = -1;
+  for (let i = 0; i < tops.length; i += 1) {
+    if (tops[i] < viewport) onScreen = i;
+  }
+  return onScreen > passed ? onScreen : passed;
+}
+
 export function RailScrollSpy() {
   useEffect(() => {
     const nav = document.getElementById(RAIL_NAV_ID);
@@ -94,18 +158,20 @@ export function RailScrollSpy() {
     const apply = () => {
       queued = false;
       const targets = resolve();
-      if (targets.length === 0) {
-        mark(null);
-        return;
-      }
-      /* The last section whose top has passed under the header, or the first one when the
-         reader is still above all of them — a rail that lights nothing at the top of a page
-         reads as broken rather than as accurate. */
-      let found = targets[0];
-      for (const target of targets) {
-        if (target.el.getBoundingClientRect().top - THRESHOLD <= 0) found = target;
-      }
-      mark(found.link);
+      /* The rule is `activeRailIndex`, which is where its reasoning lives and the only part
+         of this component a test can reach. Everything here is measurement: one pass for the
+         tops, and whether the scroll has run out. */
+      const index = activeRailIndex(
+        targets.map((target) => target.el.getBoundingClientRect().top),
+        {
+          threshold: THRESHOLD,
+          viewport: window.innerHeight,
+          atBottom:
+            window.scrollY + window.innerHeight >=
+            document.documentElement.scrollHeight - BOTTOM_SLACK,
+        },
+      );
+      mark(index === null ? null : targets[index].link);
     };
 
     const onScroll = () => {
