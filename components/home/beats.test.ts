@@ -62,12 +62,22 @@ describe("the blueprint-first landing", () => {
     expect(text).toContain("The harness picks the steps, and picks differently each time.");
     expect(text).toContain("The steps are yours, so a rerun is the same run.");
 
-    /* Held on the `<svg>` tag rather than on the whole document.
-       `expect(html).not.toContain('data-viz-labels="hover"')` looks equivalent and is not:
+    /* Matched on `data-viz-labels`, not on `<svg`, and the difference is new.
+       ------------------------------------------------------------
+       This counted every `<svg>` tag and asserted one, which was true while the only SVG in
+       the beat was the left panel's scene. The 4a revision draws the route's two arrows as
+       inline SVG — `FlowEdge` emits into a `FlowScene`'s coordinate space and these sit
+       between three HTML pills — so the tag count is three and says nothing. `FlowScene` is
+       the thing being counted, and it is the thing that carries the attribute.
+
+       Held on the tag rather than on the whole document, too:
+       `expect(html).not.toContain('data-viz-labels="hover"')` looks equivalent and is not.
        `FlowScene` renders `FLOW_CSS` in a `<style>`, and that stylesheet SPELLS the hover
        selector in order to define it. The naive assertion therefore fails against a scene
        that is correctly set to `always`, which is what it did when this case was written. */
-    const scenes = html.match(/<svg[^>]*>/g) ?? [];
+    const scenes = (html.match(/<svg[^>]*>/g) ?? []).filter((tag) =>
+      tag.includes("data-viz-labels"),
+    );
     expect(scenes, "the left panel should draw one scene").toHaveLength(1);
     for (const scene of scenes) {
       expect(scene).toContain('data-viz-labels="always"');
