@@ -81,7 +81,18 @@ export function Sheet({
   return (
     <div
       ref={ref}
-      className={cx("relative isolate overflow-hidden rounded-lg border", className)}
+      /* A flex column, so that a sheet which is TALLER than its contents can say where the
+         slack goes. Nothing stretched a sheet until beat 2 put two of them in a subgrid row;
+         a block sheet stacks body then title block and leaves the surplus underneath, which
+         floats the title block 70 to 120px off the bottom edge and reads as an unfinished
+         frame. The strip below takes `mt-auto` and the slack falls above it instead.
+
+         A no-op at the other four call sites, checked in the browser and not only reasoned
+         about: with no free space `margin-top: auto` resolves to zero, and every child here
+         is a full-width block with no vertical margin, so a column flex box lays them out
+         exactly as block flow did. Beat 2's left sheet is the only one that reports a
+         non-zero top margin on the strip. */
+      className={cx("relative isolate flex flex-col overflow-hidden rounded-lg border", className)}
       style={style}
     >
       <div aria-hidden className={cx("pointer-events-none absolute inset-0", paper.grid)} />
@@ -117,7 +128,7 @@ export function Sheet({
              guessed, and 20 is the canonical spacing tier — 24 is not one, and the next tier
              up (40) would put the note a quarter of the way into the sheet. If a tick ever
              grows past 12px, this has to move with it. */
-          className="relative flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t px-5 py-2.5"
+          className="relative mt-auto flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t px-5 py-2.5"
           style={rule}
         >
           <span className="font-mono text-[11px] tracking-[0.06em]">{title}</span>

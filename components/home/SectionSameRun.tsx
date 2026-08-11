@@ -102,10 +102,16 @@ import { BeatCaption } from "./BeatCaption";
  * Scene units, which are viewBox units.
  *
  * 236 tall rather than the 210 this shipped at, which is the hand-off's own alternative and
- * the one the labels decide. `FlowNode` sets a score under its endpoint, not beside it, so
- * the lowest run's label sits about 18 units below y=180; at 210 that lands within a few
- * units of the frame and `components/viz/scene-labels.test.ts` fails a clipped label. 236
- * gives it room, and it is also the closer of the two to the right-hand panel's height.
+ * the mock's number. It is a spacing decision and no longer a clipping one: the scores are
+ * set beside their endpoints rather than under them, so the lowest of them is centred on
+ * y=180 and reaches about 188 at `SCORE_SIZE`, which clears either frame comfortably and
+ * leaves `components/viz/scene-labels.test.ts` nothing to catch at 210 either.
+ *
+ * What it decides now is how much of the left sheet is drawing. The scene is `w-full` at a
+ * declared ratio, so the height follows the column: at 1440 the left body is 480.79px wide
+ * and 236 makes the drawing 283.7px tall against 210's 252.4. Both sheets are stretched to
+ * the same height by the subgrid row regardless, so the 34px is not a height saved, it is
+ * 34px of blank sheet that would otherwise open between the drawing and the title block.
  */
 const SCENE = { width: 400, height: 236 } as const;
 
@@ -234,7 +240,16 @@ const HEAD =
   "py-2.5 pr-4 font-mono text-[10px] font-normal uppercase tracking-[0.16em] text-dim";
 
 /**
- * One step of the route, at `VIZ.node`'s own 132:46 aspect scaled down to 112 by 39.
+ * One step of the route, 128 by 42, which is the mock's own box and not `VIZ.node`'s.
+ *
+ * Worth saying which, because the two are close enough to be mistaken for each other and
+ * they are not the same: `VIZ.node` is 132 by 46, a ratio of 2.87, and this is 3.05. The
+ * node token sizes a `NodeBox` inside a scene's coordinate space, where it is measured
+ * against edges and radii in the same units. These three are HTML boxes in a row on a
+ * sheet, sized against the sheet's body rather than against a viewBox, and 128 is what
+ * makes three of them plus two arrows land at 444 — see the breakpoint arithmetic above,
+ * which that number is load-bearing for. The border is `VIZ.stroke.base` and the radius
+ * `VIZ.node.radius`, so the drawing weight is still the register's.
  *
  * One treatment now, where there were three. The pill was drawn twelve times, once per step
  * per iteration, so it needed a pinned version, an amber changed version and a dashed hole
@@ -242,15 +257,23 @@ const HEAD =
  * moved in words, so the only pill left is the pinned one and the other two branches are
  * deleted rather than kept for a caller that no longer exists.
  *
- * `box-sizing` is the default and the border is `VIZ.stroke.base`, so the three pills are
- * the same box: a border that grew the element would make the route's three steps three
- * different widths for no reason a reader could name.
+ * `box-sizing` is `border-box` from preflight, which is what the mock sets on these
+ * explicitly, so the three pills are the same box: a border that grew the element would make
+ * the route's three steps three different widths for no reason a reader could name.
  */
+const PILL = { width: 128, height: 42 } as const;
+
 function Pill({ label }: { label: string }) {
   return (
     <span
-      className="flex h-[42px] w-[128px] items-center justify-center rounded border border-blueprint-line text-center font-mono text-[13px] text-blueprint-ink"
-      style={{ borderWidth: VIZ.stroke.base, background: VIZ_KNOCKOUT }}
+      className="flex shrink-0 items-center justify-center border border-blueprint-line text-center font-mono text-[13px] text-blueprint-ink"
+      style={{
+        width: PILL.width,
+        height: PILL.height,
+        borderWidth: VIZ.stroke.base,
+        borderRadius: VIZ.node.radius,
+        background: VIZ_KNOCKOUT,
+      }}
     >
       {label}
     </span>
@@ -348,12 +371,24 @@ export function SectionSameRun() {
             pixels and not at `lg`.
 
             The 4a panel is narrower and the widest thing in it is no longer the table. The
-            route block is three 112px pills and two 30px arrows, 396px; the ledger's own
-            min-content is 271px, so the panel's minimum is 396px. At `lg` a 1024px viewport
-            gives `container-page` 976px of content, two columns with a 24px gap give each
-            476px, and `Sheet`'s `p-4` leaves 444px of body. Measured: 442, the two pixels
-            being the grid resolving a half. 442 against 396 is 46px of slack, so the split
-            can come down a breakpoint and the figure never has to be dragged sideways.
+            route block is three 128px pills and two 30px arrows, so 444px flat; the ledger's
+            own min-content measures 236px, which means the route is what the panel has to
+            fit and the ledger never binds.
+
+            At `lg`, worst case, a 1024px viewport with a classic scrollbar: 1013px reaches
+            `container-page`, whose `padding-inline: 1.5rem` leaves 965px of content. The
+            columns are `1fr 1.15fr` over a 28px gap, so 937px splits 435.81 / 501.18. The
+            right sheet spends 1px of border each side and `px-6` on its body, and 501.18
+            less 2 less 48 is 451.18px for the route to stand in. 451.18 against 444 is
+            7.18px of slack. On a platform with overlay scrollbars the same viewport gives
+            976px of content and 457.07px of body, so 13.07px. Measured, both.
+
+            Seven pixels is thin and it is the number that matters, because it is the one
+            that goes negative first: a fourth step in the route, or a pill past 130px, and
+            this comes back to `xl`. From 1240px up `container-page` is capped at 1200 and
+            the body settles at 551.20px, which is 107px of slack, so 1280 and 1440 are not
+            where the risk is. Below `lg` the grid is one column and the route has the full
+            width of the page.
 
             ── Equal heights, by subgrid ──
             Three rows shared by both figures: the panel head, the sheet, the caption block.
@@ -363,7 +398,15 @@ export function SectionSameRun() {
             have the same number of children, which is why the amber qualifier and the
             right-hand caption are wrapped as one cell: they are one block of text under one
             sheet, and the alternative is a fourth row that the left column would have to
-            leave empty. */}
+            leave empty.
+
+            A stretched sheet then has to be told where the surplus goes, which is why
+            `Sheet` is a flex column with `mt-auto` on its title block. The left sheet is the
+            shorter of the two by its own content and this row makes it match, so without
+            that the strip sat 70px off the bottom edge at 1440 and 121px at 1024, with the
+            frame continuing under it. The slack belongs between the drawing and the strip.
+            The mock does the same thing and says so in the one declaration it spends on it,
+            `margin: auto -20px 0`. */}
         <div className="mt-12 grid gap-7 lg:grid-cols-[1fr_1.15fr] lg:grid-rows-[auto_1fr_auto] lg:gap-y-3.5">
           {/* ---------- three runs, three sets of steps ---------- */}
           <figure className="flex min-w-0 flex-col gap-3 lg:row-span-3 lg:grid lg:grid-rows-subgrid">
