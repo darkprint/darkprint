@@ -231,6 +231,11 @@ export function OntologyCatalog() {
         <ReachList
           label="Five lists, five fields"
           caption="Where a card reaches into the vocabulary."
+          /* No entrance here, on the author's instruction. This figure is the index to
+             fifty terms and the first thing under the heading, so a reader who arrived
+             holding a word watched five rows draw in one at a time before they could look
+             for it. `ReachList`'s own prop records the rule the other three callers keep. */
+          still
           footnote={
             <>
               Two fields on a card are deliberately not in here:{" "}

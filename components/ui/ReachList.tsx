@@ -28,7 +28,11 @@ import { cx } from "@/lib/format";
    Motion is `anim-strip-in`, whose resting style is the finished
    one and which only runs under `prefers-reduced-motion:
    no-preference`. The stagger is applied here rather than at every
-   call site, so a caller cannot forget it or number it wrongly.
+   call site, so a caller cannot forget it or number it wrongly —
+   and `still` turns the whole entrance off for a figure that is a
+   way in rather than the content, which `/ontology` is. See that
+   prop for the argument; it is a list-level switch for the same
+   reason the stagger is.
    Server component: no hooks, no client bundle.
    ============================================================ */
 
@@ -80,6 +84,8 @@ export interface ReachRowProps {
   hrefLabel?: string;
   /** Set by `ReachList`; a caller passing it is overridden. */
   index?: number;
+  /** Set by `ReachList` from its own `still`. A caller passing it is overridden. */
+  still?: boolean;
 }
 
 /**
@@ -97,6 +103,7 @@ export function ReachRow({
   href,
   hrefLabel,
   index = 0,
+  still = false,
 }: ReachRowProps) {
   const name = (
     <>
@@ -128,9 +135,17 @@ export function ReachRow({
        three parts are a name, a pointing and a gloss: on one phone-width line the
        pointing has nowhere to point, and the gloss is the part that has to stay
        readable. */
+    /* `still` drops the entrance and the delay with it. The class and the inline
+       `animationDelay` are one mechanism, so a row that keeps the delay without the class
+       carries a style property nothing reads, and a row that keeps the class without the
+       delay draws the whole figure at once — which is the flicker the stagger exists to
+       avoid. Both or neither. */
     <li
-      className="anim-strip-in grid grid-cols-1 items-start gap-1.5 sm:grid-cols-[minmax(0,10.5rem)_auto_minmax(0,1fr)] sm:gap-3"
-      style={{ animationDelay: `${index * STEP}ms` }}
+      className={cx(
+        "grid grid-cols-1 items-start gap-1.5 sm:grid-cols-[minmax(0,10.5rem)_auto_minmax(0,1fr)] sm:gap-3",
+        still ? undefined : "anim-strip-in",
+      )}
+      style={still ? undefined : { animationDelay: `${index * STEP}ms` }}
     >
       {href === undefined ? (
         <span className={NAME_CELL}>{name}</span>
@@ -225,6 +240,7 @@ export function ReachList({
   caption,
   footnote,
   frame = true,
+  still = false,
   className,
   children,
 }: {
@@ -242,13 +258,32 @@ export function ReachList({
    * is holding them.
    */
   frame?: boolean;
+  /**
+   * Draw the rows already there, with no entrance.
+   *
+   * `anim-strip-in` is a staggered draw whose resting style is the finished one, so it
+   * costs a reader nothing and is off under `prefers-reduced-motion`. That is why it is the
+   * default, and why `ConceptFigures` — the other importer, on `/spec/card` and
+   * `/what-a-blueprint-is` — keeps it: there the figure IS the content, and the rows
+   * arriving in order is the reading order being drawn.
+   *
+   * `/ontology` is the exception, on the author's instruction. That figure is the index to
+   * a page of fifty terms and the first thing under the heading, so a reader who arrived
+   * holding a word watched five rows draw in one at a time before they could look for it.
+   * An entrance is worth its 450ms when the figure is the content; it is not when the
+   * figure is a way in.
+   *
+   * A prop on the list rather than on each row, for the same reason the stagger is: a
+   * caller cannot half-apply it.
+   */
+  still?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
   let i = 0;
   const rows = Children.map(children, (child) =>
     isValidElement<ReachRowProps>(child)
-      ? cloneElement(child, { index: i++ })
+      ? cloneElement(child, { index: i++, still })
       : child,
   );
 
