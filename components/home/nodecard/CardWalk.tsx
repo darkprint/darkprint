@@ -112,33 +112,44 @@ import { tokenizeYaml } from "./yaml";
  * `NC.rows` whole rows, and nothing else. The arithmetic, because it has gone wrong
  * three times in the same place:
  *
- *   window   24 × NC.line = 528px of YAML, whole rows only
+ *   window   NC.rows × NC.line = NC.window of YAML, whole rows only
  *   chrome   PAD_Y = 2, the 1px border on each side and NOTHING MORE
- *   declared 528 + 2 = 530px, which `box-sizing: border-box` resolves to a 528px
+ *   declared NC.window + 2, which `box-sizing: border-box` resolves to an NC.window
  *            padding box — and the padding box is where `overflow: hidden` clips
  *
  * The trap, and it is not the obvious one. PAD_Y was 16 and counted `py-2` at both ends;
  * raising it to 18 to cover the border is still wrong, and measurement says so: with
- * `padding: 8px 0` the rows start 8px down and the clip is 544px, so 536px of window
- * holds 24 rows and the top eight pixels of a twenty-fifth. **A scroll container's
- * bottom padding does not hold a blank strip open at the bottom of the window.** It sits
- * after the last line of the file, 1160px down, and the space it appeared to reserve at
- * the visible edge is filled by the next row of content.
+ * `padding: 8px 0` the rows start 8px down, so the window holds its whole rows plus the
+ * top eight pixels of one more. **A scroll container's bottom padding does not hold a
+ * blank strip open at the bottom of the window.** It sits after the last line of the
+ * file, off the end of the reel, and the space it appeared to reserve at the visible edge
+ * is filled by the next row of content.
  *
  * The same argument runs at the top the moment the reel moves. Every shift `reelShift`
- * returns is a whole multiple of `NC.line`, so with the padding gone the window shows 24
- * whole rows in every state it can be in, and with 8px of padding it shows the bottom
- * 8px of one row, 23 whole ones, and the top 14px of another — in every state except the
- * first. Hence `lg:py-0`: the padding is right on a phone, where the listing stands at
- * its own height and has no window to align to, and wrong the instant there is one.
+ * returns is a whole multiple of `NC.line`, so with the padding gone the window shows
+ * `NC.rows` whole rows in every state it can be in, and with 8px of padding it shows the
+ * bottom 8px of one row, `NC.rows - 2` whole ones, and the top 14px of another — in every
+ * state except the first. Hence `lg:py-0`: the padding is right on a phone, where the
+ * listing stands at its own height and has no window to align to, and wrong the instant
+ * there is one.
+ *
+ * Written against `NC` rather than against the pixel counts it had when this was first
+ * measured (24 rows, a 528px window). The numbers moved twice without the argument moving
+ * once, and both times they were left behind here.
  */
 /**
- * The pinned box, head to foot, in CSS pixels: the heading and the 613px figure.
+ * The pinned box, head to foot, in CSS pixels: the heading and the 459px figure.
  *
  * Measured on the built page at 1440 x 950. The centring offset below is half of it, so it
  * moves whenever the heading gains a line or `NC.rows` changes.
+ *
+ * 571 since 2026-08-12, down from 715, and both terms of that moved for the same reason:
+ * the author asked this figure to be the blueprint beat's size, `NC.rows` went 25 → 17 to
+ * give it, and the heading narrowed with `max-w-5xl` on the wrapper without gaining a line.
+ * Re-measured rather than subtracted — 715 − 176 predicts 539 and the built page says 571,
+ * because the narrower column also changed the lead's wrap.
  */
-const GROUP = 715;
+const GROUP = 571;
 
 const PAD_Y = 2;
 
@@ -151,28 +162,29 @@ const PAD_Y = 2;
  * pin engages and read as a gap rather than as air. 71 above measured 87px from the deck at
  * 1440 x 950, against 211 centred.
  *
- * ── Re-measured 2026-08-12, when the face became the node strip and the plate ──
- * `CardStackFigure`'s `stage` layout is a different drawing now — five discs over a
- * two-column plate rather than a stack of cards — so the arithmetic this constant sits in
- * was measured again rather than assumed. At 1440 x 950, with the walk running:
+ * ── Re-measured 2026-08-12, twice, and it survived both ──
+ * The face became the node strip over a two-column plate, and then the whole beat came down
+ * to the blueprint beat's scale on the author's "this is way too big". Measured on the built
+ * page at 1440 x 950, with the walk running:
  *
- *   strip        108.0   the node row, at its declared 640 x 108 ratio
- *   gap            6.0   `mt-1.5`, the only space the tether has to cross
- *   plate        256.3
- *   FACE         370.3   against 271 before, so the face grew by 99
- *   cell         634.5   unchanged: the LISTING is the taller layer and sets it
- *   face layer   441.3   = FACE_TOP + FACE
- *   slack below  193.2   was 292
+ *   strip         95   the node row at its 640 x 108 ratio, drawn 560 wide
+ *   gap            6   `mt-1.5`, the only space the tether has to cross
+ *   plate        236
+ *   FACE         337   against 271 before the strip and 370 before the resize
+ *   cell         459   the LISTING is the taller layer and still sets it
+ *   face layer   408   = FACE_TOP + FACE
+ *   slack below   51
  *
- * **So this constant does not move, and neither does `GROUP`.** The face grew into slack
- * that was already there — 441 still clears the 634 cell — and `GROUP` is the heading plus
- * the cell, which the listing owns. Measured 715.3 against the 715 declared above.
+ * **So this constant does not move.** It survived the strip because the face grew into slack
+ * that was already there, and it survives the resize because the face came down with the
+ * cell: 51px under the face against the blueprint beat's own 55 under its graph, which is
+ * the figure this one is now being matched to. `GROUP` did move, and its own note says why.
  *
  * It does not move for a second reason worth stating, because the obvious edit is to lower
- * it. 71 places the FIGURE, and the figure now opens on the node strip: the first thing
- * under the heading is the row of discs, which is what the beat's claim starts with. The
- * plate sits 114px further down than the old card did, and that is the strip and its tether
- * occupying the distance rather than a gap reopening.
+ * it. 71 places the FIGURE, and the figure opens on the node strip: the first thing under
+ * the heading is the row of discs, which is what the beat's claim starts with. The plate
+ * sitting further down than the old card did is the strip and its tether occupying the
+ * distance rather than a gap reopening.
  *
  * This is the ONLY term that was allowed to move. The sticky offset below also places the
  * card — a pinned card lands at `top + FACE_TOP` — and spending 100px of it here was tried
@@ -203,11 +215,17 @@ const FACE_TOP = 71;
  * Keyed by `AnnotationSpec.id`, and anything unkeyed falls back to the long body, so a
  * new part appears here in full rather than not at all.
  *
- * Measured while the reference bodies were still rendered in this layout: the notes column
- * is 433px at `lg`, one body is open at a time, and the nine heads plus the longest of the
- * long bodies came to 470px against the listing's 530px window beside them. So the
- * figure's height — and therefore the sticky half-height below — is the listing's, and the
- * short wording has margin to spare rather than a budget of its own.
+ * The invariant this wording is written to keep: **the LISTING is the taller of the two
+ * columns**, so the figure's height — and therefore `GROUP` and the sticky half-height
+ * below — is the listing's, and the notes have margin rather than a budget.
+ *
+ * It stopped being true for one commit and was put back. Re-measured 2026-08-12 at `lg`,
+ * after `NC.rows` came down to match the blueprint beat: the notes column is 382px wide,
+ * every body sets to three lines at that measure, one body is open at a time, and the nine
+ * heads plus the open body come to 365px against the listing's 376px window. 11px, which is
+ * why the row padding beside `<li>` is spelled out rather than left at a comfortable value.
+ * A tenth line of note, or a body that reaches four lines here, takes the figure back off
+ * the blueprint's size — check it rather than assume it.
  */
 const WALK_BODY: Record<string, string> = {
   identity:
@@ -369,50 +387,45 @@ export function CardWalk({
       : undefined;
 
   return (
-    <div ref={ref} className={cx(motion && "lg:h-[190vh]")}>
-      {/* Centred while pinned, not tucked under the header.
+    /* `mx-auto max-w-5xl`, which is `BlueprintWalk`'s wrapper verbatim.
+       ------------------------------------------------------------
+       The author asked this figure to be the size of the blueprint beat's, and half the
+       difference was width: the walk one section up caps itself at 64rem and this one took
+       whatever `container-page` gave it, so the same landing drew one listing at 1024 and
+       the next at 1152. The heading rides inside the cap for the same reason it does there —
+       one box, so the title and the figure it names cannot come apart. */
+    <div ref={ref} className={cx("mx-auto max-w-5xl", motion && "lg:h-[190vh]")}>
+      {/* Pinned CENTRED: half a screen, less half the group.
           ------------------------------------------------------------
-          The author: it "should start scrolling the list of fields when it is in the
-          middle of the page and not when it is high". `top-24` pinned the figure 96px
-          down, so the walk began with it against the top edge.
+          The author: it "should start scrolling the list of fields when it is in the middle
+          of the page and not when it is high". `top-24` pinned the figure 96px down, so the
+          walk began with it against the top edge. `GROUP` is the heading plus the cell, 571
+          on the built page at 1440 x 950; half of it locks the box with its middle on the
+          screen's middle. `SourceSwap` takes the same correction one beat up.
 
-          `calc(50vh - 19.83rem)` is half a viewport less half the figure, which centres
-          the LISTING at any height — 317.25px is half of the 634.5px it measures at `lg`
-          (552 of window, 24 of `sm:p-6` at each end, 16 of `gap-4`, 18.5 of figcaption).
-          It was 19.25rem against a 528px window; `NC.rows` gained a row so the overlay
-          scrollbar stops sitting on the file's last line, and this number moved with it
-          because the two are one measurement written twice. It also
-          buys the settle for free: the figure locks when the track's top reaches this
+          It buys the settle for free: the box locks when the track's top reaches this
           offset, and `scrollProgress` only starts counting once the top passes zero, so it
           sits still for those pixels before step 2 arrives.
 
-          THE LISTING and not the card, deliberately, and the two cannot both be centred.
-          `top` places the cell and `FACE_TOP` places the card inside it, so a pinned card
-          lands at their sum; the listing lands at `top` alone. Moving 100px from one term to
-          the other was tried and reverted — it centred the card at 473 and pushed the
-          listing's middle to 573, a hundred pixels low. The listing is on screen for the
-          last 86% of the pin and the card for the first 14%, so the offset belongs to the
-          listing and the card takes the 102px of rise that leaves it. It is arriving at that
-          point rather than being read.
+          THE LISTING and not the card is what ends up centred, deliberately, and the two
+          cannot both be. `top` places the cell and `FACE_TOP` places the card inside it, so
+          a pinned card lands at their sum; the listing lands at `top` alone. Moving 100px
+          from one term to the other was tried and reverted — it centred the card and pushed
+          the listing's middle a hundred pixels low. The listing is on screen for the last
+          86% of the pin and the card for the first 14%, so the offset belongs to the listing
+          and the card takes the rise that leaves it. It is arriving at that point rather
+          than being read.
 
           What closed the author's "it is too distant" is `FACE_TOP` alone, which is slack
           inside the cell rather than a term in this offset: 171px of it above the card
           became 71, and the gap between the deck and the card went 211 → 87 at 1440 x 950
           with nothing here changing.
 
-          `max(4rem, …)` is the floor. Half the figure is 317px, so `50vh - 19.83rem` turns
-          negative below a 635px viewport and would pin the figcaption under the 4rem sticky
-          header. A window that short cannot hold the whole figure either way; what the floor
-          decides is which end gets cut, and the top is where the card names itself. */}
-      {/* Pinned CENTRED: half a screen, less half the group.
-          ------------------------------------------------------------
-          Same correction as `SourceSwap`'s, one beat down, and the same measurement: this
-          box is the heading plus the 613px cell, 715px on the built page at 1440 x 950.
-          Half is 357, so it locks with its middle on the screen's middle.
-
-          `max(5rem, …)` is the floor. Half of 715 is more than half of a 950px viewport
-          less the header, so this expression turns negative below a 794px window and the
-          floor is doing real work here rather than guarding an edge case. */}
+          `max(5rem, …)` is the floor, and it does less work than it used to. Half of 715 was
+          more than half of a 950px viewport less the header, so the expression turned
+          negative below a 794px window; at 571 it holds down to about 650. What the floor
+          decides is which end gets cut on a window too short for the box either way, and the
+          top is where the card names itself. */}
       <div
         className={cx(motion && "lg:sticky")}
         style={motion ? { top: `max(5rem, calc(50vh - ${GROUP / 2}px))` } : undefined}
@@ -428,30 +441,32 @@ export function CardWalk({
         {/* The card, before it is a file. Same shell, same grid cell, so the sticky box
             reserves the listing's height — which is the taller of the two and the height
             every number in the comment above is derived from. */}
-        {/* `CardStackFigure`, the shape `/what-a-blueprint-is` draws, on the author's
-            instruction: a card with ghosts stacked behind it for the other nodes in the
-            graph, its id and version in the header, and six fields under a rule with
-            `cannot` in the alarm colour. It replaced a face written for this beat alone —
-            one figure for one idea, drawn the same way wherever the idea appears.
+        {/* `CardStackFigure` at `size="stage"`, the shape `/what-a-blueprint-is` draws at
+            `size="inline"`: the blueprint's nodes in a row with this one lit and tethered,
+            over a plate carrying the card's identity, what it does, its interface and the
+            one thing that may never arrive. One figure for one idea, drawn the same way
+            wherever the idea appears.
 
             Centred, because the listing it becomes is full width and the card is not. */}
         {/* Where the card sits in the cell, and why it is a number rather than an alignment.
             ------------------------------------------------------------
-            The layer must not be the grid's default `stretch`: `CardStackFigure`'s ghosts
-            are absolutely positioned to its wrapper, so a layer stretched to the LISTING's
-            613px drew them as three outlines running 350px past the bottom of the card. Both
-            `items-start` on the grid and `items-center` here solve that; what they disagree
-            about is the 342px of slack, and the author has now ruled on both ends of it.
+            The layer must not be the grid's default `stretch`. It was set that way while
+            the face was a stack with absolutely-positioned ghosts behind it, which a
+            stretched layer drew running hundreds of pixels past the bottom of the card; the
+            ghosts are gone from `stage` and the rule survives them, because the face is
+            shorter than the listing and stretching it would put the plate's bottom edge
+            wherever the listing happens to end.
 
-            `items-start` put the whole 342 under the card. Centring split it, 171 above and
-            171 below — which centres the card on screen while pinned, and is why the author
-            then asked for it closer to the heading: before the pin engages, those 171 pixels
-            sit between the deck and the card and read as a gap rather than as air.
+            Both `items-start` on the grid and `items-center` here solve that; what they
+            disagree about is the slack, and the author has ruled on both ends of it.
+            `items-start` put all of it under the card. Centring split it evenly — which
+            centres the card on screen while pinned, and is why the author then asked for it
+            closer to the heading: before the pin engages, that half sits between the deck
+            and the card and reads as a gap rather than as air.
 
-            `FACE_TOP` is the third answer: 71 above and 271 below. It takes 100px straight
-            out of the pre-pin gap, and it is the only term here that may — the sticky offset
-            also places the card, but it is what centres the LISTING, and the listing is on
-            screen for the last 86% of the pin against the card's first 14%. */}
+            `FACE_TOP` is the third answer, and the only term here that may move: the sticky
+            offset also places the card, but it is what centres the LISTING, and the listing
+            is on screen for the last 86% of the pin against the card's first 14%. */}
         <div
           className="flex items-start justify-center"
           style={{
@@ -570,7 +585,29 @@ export function CardWalk({
                 return (
                   <li
                     key={note.id}
-                    className="border-t border-line/70 py-2.5 first:border-t-0 first:pt-0"
+                    /* `py-1.5`, down from `py-2.5`, and it is the notes column that pays for
+                       the figure matching the blueprint beat's.
+                       ------------------------------------------------------------
+                       This figure is `max(listing, notes)` plus 83px of chrome. Cutting the
+                       listing to 17 rows put the listing at 376 and left the notes at 433,
+                       so the notes became the taller column and the figure stopped at 516
+                       instead of the 460 that was the point. Nine heads is not negotiable —
+                       the column exists to say how many parts a card has before the walk has
+                       reached any of them — so the eight pixels come off each row's padding:
+
+                         closed row  10 + 10 + 1 + 21  → 6 + 6 + 1 + 21   42 → 34
+                         open row    + 6 mt + 63 body                     tallest is 372
+
+                       372 against the listing's 376, so the listing is the taller column
+                       again and the figure is its height, which is the invariant the note at
+                       `WALK_BODY` depends on. Measured, not budgeted: every body is three
+                       lines at this column width, so the tallest state is the one where the
+                       open row is not the first (which has no top padding to lose).
+
+                       34 is also what the beat above already draws — `DotBreakdown`'s rows
+                       measure 28 for a one-line head — so the two columns are now the same
+                       rhythm rather than this one being looser for no stated reason. */
+                    className="border-t border-line/70 py-1.5 first:border-t-0 first:pt-0"
                   >
                     <div className="flex items-baseline gap-3">
                       <span

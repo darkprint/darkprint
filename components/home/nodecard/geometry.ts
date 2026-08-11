@@ -50,19 +50,46 @@ export const NC = {
    * Twenty-four rather than eighteen because the figure is pinned and centred, and at
    * eighteen it stood 495px tall inside a 900px viewport with void above and below it.
    *
-   * Twenty-FIVE since 2026-08-08, and the extra row is not for a line of the file. The
+   * Twenty-FIVE from 2026-08-08, and the extra row was not for a line of the file. The
    * author: the card's last line "is not visible, need to extend a little bit the height of
    * the panel." The listing carries `overflow-x: auto`, macOS draws that scrollbar as an
    * overlay rather than in the layout, and it lands on the bottom row of the window — so
    * the last line of a file whose reel has hit its clamp is struck through by a scrollbar
    * that owes the box no space. One whole row is the fix, because a partial row is exactly
-   * what `window` exists to forbid.
+   * what `window` exists to forbid. That spare row survives every change below.
    *
-   * At twenty-five the figure measures 634.5px. `CardWalk`'s sticky offset is half that
-   * height, written in rem because CSS cannot ask, and it has to move whenever this number
-   * does — 19.83rem now, and `nodecard.test.ts` holds `window` to `rows * line`.
+   * ── SEVENTEEN since 2026-08-12, and the reason is the beat above ──
+   * The author asked for "the dimension of the yaml card for the node, the same of the card
+   * for the blueprint reported above". Measured on the built page at 1440 x 950, those two
+   * figures were not close: the blueprint's DOT listing is 1024 x 460 and this one was
+   * 1152 x 635. Two beats of the same landing, one of them half again as tall as the other,
+   * each one pinned and centred on its own screen.
+   *
+   * Width was a wrapper (`CardWalk` now takes `BlueprintWalk`'s `max-w-5xl`). Height is this
+   * number, and only this number: the figure is chrome plus `window`, so
+   *
+   *   635 − 460 = 175px to lose → 175 / 22 = 7.95 rows → 25 − 8 = 17 → 17 × 22 = 374
+   *
+   * which lands the figure at 459 against the blueprint's 460. One pixel, and it is the
+   * remainder of a row height that cannot be spent in halves.
+   *
+   * What this costs: the window holds 16 lines of the file plus the scrollbar's row where it
+   * held 24, so the reel now slides for most of the walk instead of sitting still for the
+   * first two thirds. That is what `reelShift` is for, and `nodecard.test.ts` checks every
+   * annotated run still lands inside the window at this size. What it is worth: the two
+   * beats are the same figure at the same scale, which is what the reader actually compares.
+   *
+   * An earlier note here recorded eighteen being rejected — "at eighteen it stood 495px tall
+   * inside a 900px viewport with void above and below it". That was measured against a
+   * figure standing alone. The blueprint beat has since been built at 460 and pinned the
+   * same way, so the void that argument was about is a solved problem and the size it
+   * rejected is the size its neighbour ships.
+   *
+   * `CardWalk`'s sticky offset is half the figure's height, written in rem because CSS
+   * cannot ask, and it has to move whenever this number does — 14.34rem now, and
+   * `nodecard.test.ts` holds `window` to `rows * line`.
    */
-  rows: 25,
+  rows: 17,
   /**
    * Height of the window the listing scrolls inside while the reel is running.
    *
@@ -72,15 +99,20 @@ export const NC = {
    * scroll container's bottom padding does not hold a blank strip open at the visible
    * edge — it sits after the last line of the file, 1160px down.
    */
-  window: 550,
+  window: 374,
   /**
    * Lines of head-room kept above the run being annotated, so the reader sees what comes
    * before it rather than the run arriving at the top edge.
    *
    * Three, which is `CardWalk`'s number and not the stage's six. The stage parked six
-   * rows above a 504px window; this window is 550px and the walk reads better with the
-   * run higher in it, because there is no leader line drawing the eye to a particular
-   * band and the annotated run has to be the thing at the top of the window.
+   * rows above a 504px window, and the walk reads better with the run higher in it, because
+   * there is no leader line drawing the eye to a particular band and the annotated run has
+   * to be the thing at the top of the window.
+   *
+   * It stays three at the 374px window, and three is the most it could stay. Park is
+   * head-room spent out of `rows`, so it leaves 14 rows for the run being read where it left
+   * 22; a fourth would take the walk's longest annotated span past the bottom edge, which is
+   * the case `nodecard.test.ts` checks run by run against the real card.
    */
   park: 3,
 } as const;

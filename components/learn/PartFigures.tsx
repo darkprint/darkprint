@@ -729,7 +729,20 @@ function StagePlate({ card }: { card: NodeCard }) {
 
   return (
     <div
-      className="relative grid rounded-lg border border-blueprint-line/55 sm:grid-cols-[216px_minmax(0,1fr)]"
+      /* `@lg` and not `sm`, and this was a real defect rather than a preference.
+         ------------------------------------------------------------
+         `sm:grid-cols-…` asks the VIEWPORT how wide it is, and this plate is a fixed box
+         inside a `max-w` wrapper — it is 560px whatever the window does. The two questions
+         come apart at both ends, and the author hit the bad end: on a window narrower than
+         Tailwind's 40rem `sm` (which is 40 × the reader's own root font size, so a larger
+         default type size moves it up past 900px) the plate stacked into one column AND took
+         the full width of the page, which is the "way too big" they reported. Nothing about
+         the plate had changed; the query was just asking the wrong element.
+
+         A container query asks the plate. `@lg` is 32rem, so the split happens whenever
+         there are 512 pixels to split — true at the 560 this figure is drawn at, false on a
+         390px phone, and true or false for the right reason in both cases. */
+      className="relative grid rounded-lg border border-blueprint-line/55 @lg:grid-cols-[184px_minmax(0,1fr)]"
       style={{
         /* The mock's `color-mix(#061c52 60%, #0a0c16)`. A mix and not `bg-blueprint-deep/60`,
            which is the same blue at 60% ALPHA and therefore takes whatever is behind the
@@ -741,8 +754,8 @@ function StagePlate({ card }: { card: NodeCard }) {
       }}
     >
       {/* ---------- left: who this card is ---------- */}
-      <div className="flex flex-col gap-3.5 border-b border-blueprint-line/45 p-5 sm:border-b-0 sm:border-r">
-        <span className="font-mono text-[16px] text-blueprint-ink">{card.id}</span>
+      <div className="flex flex-col gap-3 border-b border-blueprint-line/45 p-4 @lg:border-b-0 @lg:border-r">
+        <span className="font-mono text-[15px] text-blueprint-ink">{card.id}</span>
         <span className="font-mono text-[12px] text-blueprint-line">
           v{card.version}
           {card.author !== undefined && ` · by ${card.author}`}
@@ -763,10 +776,10 @@ function StagePlate({ card }: { card: NodeCard }) {
             row. It is the one field on a card written for a person rather than for the
             resolver — nothing in the engine reads it — so it is the one field set in the
             body face. */}
-        <p className="border-b border-blueprint-line/45 px-5 pb-4 pt-5 text-[15px] leading-relaxed text-fg">
+        <p className="border-b border-blueprint-line/45 px-4 pb-3.5 pt-4 text-[14px] leading-relaxed text-fg">
           {card.action}
         </p>
-        <div className="grid grid-cols-[48px_minmax(0,1fr)] items-baseline gap-x-[18px] gap-y-3 px-5 py-4">
+        <div className="grid grid-cols-[44px_minmax(0,1fr)] items-baseline gap-x-[16px] gap-y-2.5 px-4 py-3.5">
           {input !== undefined && (
             <>
               <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim">
@@ -802,7 +815,7 @@ function StagePlate({ card }: { card: NodeCard }) {
           the pair. So the sentence takes `min-w-0 flex-1` and wraps inside itself, and the
           term stays `shrink-0` on the end. */}
       {plain !== undefined && (
-        <div className="col-span-full flex items-center gap-3 rounded-b-lg border-t border-signal/30 bg-signal/5 px-5 py-3.5">
+        <div className="col-span-full flex items-center gap-3 rounded-b-lg border-t border-signal/30 bg-signal/5 px-4 py-3">
           {/* The same mark every absence on this site wears. `Glyphs.tsx` and
               `FlowGlyphs.tsx` write the character too, and it is typed rather than imported
               because the one named constant for it is private to `FlowAbsence` — every other
@@ -811,7 +824,7 @@ function StagePlate({ card }: { card: NodeCard }) {
           <span aria-hidden className="shrink-0 font-mono text-[15px] text-signal">
             ◌
           </span>
-          <span className="min-w-0 flex-1 text-[15px] leading-snug text-fg">
+          <span className="min-w-0 flex-1 text-[14px] leading-snug text-fg">
             Must never arrive: <span className="text-signal">{plain}</span>
           </span>
           {term !== undefined && (
@@ -900,9 +913,20 @@ export function CardStackFigure({
     <div
       className={cx(
         "relative w-full",
-        /* 40rem is the mock's 640px. The stack's `pt`/`pl` offset went with the ghosts:
-           it existed to leave room for the deck behind the card, and there is no deck. */
-        stage ? "max-w-[40rem]" : "max-w-[19rem] pt-3 pl-3",
+        /* 35rem, down from the mock's own 40, on the author's "this is way too big".
+           ------------------------------------------------------------
+           The mock draws the plate at 640 and the build matched it; what the mock could not
+           show is the figure against the beat above it, and that is where it was wrong. The
+           blueprint beat one section up puts a 405px face in a 460px cell — so the card beat
+           reads as oversized not because the plate is badly proportioned but because the
+           whole beat was drawn at a scale its neighbour is not. 560 with the type down a
+           step, and the cell it sits in comes down to the blueprint's 460 in `geometry.ts`.
+
+           `@container` makes this box the thing `StagePlate`'s column split measures itself
+           against. Without it that split reads the viewport, which is a different number and
+           was the bug. The stack's `pt`/`pl` offset went with the ghosts: it existed to leave
+           room for the deck behind the card, and there is no deck. */
+        stage ? "@container max-w-[35rem]" : "max-w-[19rem] pt-3 pl-3",
       )}
     >
       {/* The bloom. Behind everything including the ghosts, hence `-z-10` on a padded box
