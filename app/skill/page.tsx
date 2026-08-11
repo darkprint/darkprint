@@ -180,7 +180,7 @@ export default function SkillPage() {
           <h2 className="font-display text-2xl font-semibold text-fg">Not built yet</h2>
           <ComingSoonBadge />
         </div>
-        <p className="max-w-[820px] text-[15px] leading-relaxed text-muted">
+        <p className="text-[15px] leading-relaxed text-muted">
           The DarkPrint skill installs today and three things around it do not, so nothing
           below this line is a control. Not built yet: an account of your own, a blueprint
           kept private while it is under construction, publishing one to the registry, and
@@ -192,7 +192,7 @@ export default function SkillPage() {
             something that does not exist, and three of them under one badge is exactly
             that. 200px is the mock's track, since "publish from the editor" needs more than
             step 2's 148; below `sm` the pair stacks, as there too. */}
-        <ul className="flex min-w-0 max-w-[860px] flex-col border-t border-line">
+        <ul className="flex min-w-0 flex-col border-t border-line">
           {UNBUILT.map((item) => (
             <li
               key={item.label}

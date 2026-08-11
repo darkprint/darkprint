@@ -365,13 +365,13 @@ export function SkillSetup({ className }: { className?: string }) {
                 "Five things". The count was carried by the bullets and nothing else, and a
                 labelled table is scanned rather than read through, so the number a reader
                 is committing to now has to be in the sentence. */}
-            <p className="max-w-[820px] text-[15px] leading-relaxed text-muted">
+            <p className="text-[15px] leading-relaxed text-muted">
               An interview, not a generator. Ask it for a blueprint and it asks you what the
               work is first, because a graph nobody described is a graph nobody can check.
               Five things, all of which you would have had to decide anyway.
             </p>
 
-            <div className="flex min-w-0 max-w-[860px] flex-col gap-3">
+            <div className="flex min-w-0 flex-col gap-3">
               {/* A hairline table, not a bullet list.
                   ------------------------------------------------------------
                   It was five `<li>` of up to eighteen words at `gap-2.5`, and the gap was

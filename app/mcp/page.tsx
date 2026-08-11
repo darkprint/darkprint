@@ -199,7 +199,7 @@ export default function McpPage() {
         <h2 id="connect-title" className="font-display text-2xl font-semibold text-fg">
           1. Connect a client
         </h2>
-        <p className="max-w-[820px] text-[15px] leading-relaxed text-muted">
+        <p className="text-[15px] leading-relaxed text-muted">
           The shape of the configuration, so the proposal can be read against a real host.
           The package does not exist: running this adds a server that is not there.
         </p>
@@ -231,7 +231,7 @@ export default function McpPage() {
             The sentence about there being no function signatures is gone with it. That was
             an argument for how the table is written rather than something a reader needs
             in front of the table; the header keeps it. */}
-        <p className="max-w-[820px] text-[15px] leading-relaxed text-muted">
+        <p className="text-[15px] leading-relaxed text-muted">
           Four operations. Each returns facts about an artifact and no judgement of it: what
           it is, who wrote it, and the digest it was published under.
         </p>
@@ -313,7 +313,7 @@ export default function McpPage() {
           </table>
         </div>
 
-        <p className="max-w-[820px] text-[15px] leading-relaxed text-muted">
+        <p className="text-[15px] leading-relaxed text-muted">
           The digest is the load-bearing part. Fetch by slug and you get whatever the
           registry holds today; fetch by digest and you get the bytes you tested against.
         </p>
@@ -331,7 +331,7 @@ export default function McpPage() {
         >
           3. Still to decide
         </h2>
-        <p className="max-w-[820px] text-[15px] leading-relaxed text-muted">
+        <p className="text-[15px] leading-relaxed text-muted">
           Four open questions, all product policy rather than implementation. They are why
           the contract above returns no ranking.
         </p>
@@ -344,7 +344,7 @@ export default function McpPage() {
             `<ol>` because these are four of one kind and the page numbers its sections; the
             label is the item's own name rather than a header over a column, so no `<table>`
             is claimed. */}
-        <ol className="flex min-w-0 max-w-[900px] flex-col border-t border-line">
+        <ol className="flex min-w-0 flex-col border-t border-line">
           {OPEN.map((item) => (
             <li
               key={item.label}
@@ -384,7 +384,7 @@ export default function McpPage() {
         className="mt-11 flex scroll-mt-24 flex-col gap-3 border-t border-line pt-10"
       >
         <span className="label">What exists today instead</span>
-        <p className="max-w-[820px] text-[15px] leading-relaxed text-muted">
+        <p className="text-[15px] leading-relaxed text-muted">
           Everything this contract would return is already here, addressed by hand: the
           bundles in{" "}
           <Link

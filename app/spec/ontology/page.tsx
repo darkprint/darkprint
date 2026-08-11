@@ -247,25 +247,27 @@ export default function SpecOntologyPage() {
               Five kinds of term, versioned as one list
             </h2>
           </div>
-          {/* NO `.prose-lane` HERE, ON PURPOSE — do not "fix" this back.
+          {/* NO measure on any text on this page, and it is not an exception any more.
               --------------------------------------------------------
-              Every other body column on this route is held to the 36rem measure, and
-              this one band is the exception the author asked for. The reason is what
-              these four paragraphs are: not running prose but the vocabulary's own
-              inventory, five counts and five phase ids read off the engine, half of it
-              set in `<Id>` chips. A chip is an atom the reader lands on and reads whole,
-              so the eye is not tracking a line to its end the way it does in argument
-              prose, and the measure that protects argument prose was instead breaking
-              the lists across three and four lines each — the phase enumeration, which
-              is the one thing here a reader scans rather than reads, wrapped mid-list at
-              36rem and reads as one row at container width.
+              This comment used to argue the band as the one place `.prose-lane` came off,
+              on the grounds that its paragraphs are the vocabulary's own inventory rather
+              than running prose — counts and phase ids set in `<Id>` chips, which the eye
+              lands on whole rather than tracking to the end of a line, so the 36rem measure
+              was breaking a list a reader scans into three and four lines.
 
-              The band therefore runs to `container-page` (1152px). It is the only text
-              column on the page that does. Its neighbours below keep the lane, so the
-              exception stays legible as an exception rather than becoming the new
-              default. */}
+              The argument was right and the scope was wrong. The author's ruling, given
+              again on 2026-08-11 and twice before it: text occupies the full horizontal
+              space. `components/ui/SectionHeading.tsx` records the earlier two against its
+              own lead — "the subdescription of the title should occupy the full horizontal
+              span … the text should reach the right" — and this pass had reintroduced caps
+              across four files by copying `max-width: 820px` out of the mocks, which is
+              exactly the drift that ruling exists to stop. Every one of them is gone.
+
+              So the band runs to `container-page` because everything on this page does. If
+              a measure ever comes back it comes back as a decision somebody argues for, not
+              as a default a mock happened to carry. */}
           <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
-            <p className="max-w-[820px]">
+            <p>
               Every structural field on the two layers above is a reference into this list,
               versioned as a whole at <Id>{`v${version}`}</Id>. One list of {core.length}{" "}
               curated terms is what stops two authors from naming the same thing twice.
@@ -349,7 +351,7 @@ export default function SpecOntologyPage() {
           </div>
 
           <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
-            <p className="max-w-[820px]">
+            <p>
               {/* A comma where the mock writes a pause dash. `app/spec/ontology/page.tsx` is
                   walked by `workspace.test.ts`'s route check and `APP_EXEMPT` covers
                   `app/nodes`, `app/ontology`, `app/upload`, `app/blueprints/[slug]` and
@@ -390,7 +392,7 @@ export default function SpecOntologyPage() {
               }
               title={`All ${terms.length} terms: the ${core.length} core plus this archive's own, with parents and usage counts`}
             />
-            <p className="text-sm leading-relaxed text-dim lg:max-w-[18rem]">
+            <p className="text-sm leading-relaxed text-dim">
               This page is the format; that one is the words.
             </p>
           </div>
@@ -493,7 +495,7 @@ export default function SpecOntologyPage() {
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
                 {overlayTerm === undefined ? (
-                  <p className="max-w-[820px]">
+                  <p>
                     The {core.length} terms above are the curated core and nobody but this
                     project can change them. Adding to that set would move a number two
                     strangers hold each other to. So additions go in a namespace instead:
@@ -501,7 +503,7 @@ export default function SpecOntologyPage() {
                     of its own, outside that count, and the file below is the whole of them.
                   </p>
                 ) : (
-                  <p className="max-w-[820px]">
+                  <p>
                     The {core.length} terms above are the curated core and nobody but this
                     project can change them. Adding to that set would move a number two
                     strangers hold each other to. So additions go in a namespace instead:
@@ -548,7 +550,7 @@ export default function SpecOntologyPage() {
 
               {/* The bundle that carries the file, which was the fourth paragraph's own
                   evidence and is the one thing in it that is not a general rule. */}
-              <p className="max-w-[820px] text-[15px] leading-relaxed text-muted">
+              <p className="text-[15px] leading-relaxed text-muted">
                 The{" "}
                 <SpecLink href={`/blueprints/${LOCAL_VOCAB_SLUG}`}>
                   {LOCAL_VOCAB_SLUG}

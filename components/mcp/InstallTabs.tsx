@@ -169,7 +169,7 @@ export function InstallTabs({ className }: { className?: string } = {}) {
           />
         </div>
         <div className="flex flex-wrap items-start justify-between gap-3 text-sm leading-relaxed text-dim">
-          <p className="max-w-xl">{current.note}</p>
+          <p>{current.note}</p>
           {current.docsHref !== undefined && (
             <Link
               href={current.docsHref}
