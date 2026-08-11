@@ -74,6 +74,7 @@ import {
   utils,
 } from "animejs";
 
+import { Logo } from "@/components/site/Logo";
 import { ButtonLink } from "@/components/ui/Button";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { FLOW, FLOW_SELECTOR, FlowEdge } from "@/components/viz";
@@ -247,6 +248,14 @@ export function Wordmark() {
       const cta = root.querySelectorAll<HTMLElement>(handle("cta"));
       const cli = root.querySelectorAll<HTMLElement>(handle("cli"));
       const aura = root.querySelectorAll<HTMLElement>(handle("aura"));
+      /* The mark rises WITH the light rather than on a beat of its own.
+         ------------------------------------------------------------
+         One target list, one tween, so the two cannot drift apart: the aura is the light the
+         name sits in and the mark is the thing that light is falling on, and giving the mark
+         its own entry in `AT` would be inviting a later edit to move one and not the other.
+         `outCubic` over 1400ms from 0 means the mark has resolved under the letters by the
+         time they finish drawing, which is the order the hand-off asks for. */
+      const rising = [...aura, ...root.querySelectorAll<HTMLElement>(handle("logo"))];
       const rule = svg.createDrawable(root.querySelectorAll(FLOW_SELECTOR.line));
       const travelling = root.querySelectorAll<SVGPathElement>(FLOW_SELECTOR.pulse);
 
@@ -267,14 +276,14 @@ export function Wordmark() {
       // simply wait, invisible, for the trace overlay to draw and then cross-fade
       // into them.
       utils.set(letters, { opacity: 0 });
-      utils.set(aura, { opacity: 0, scale: 0.62 });
+      utils.set(rising, { opacity: 0, scale: 0.62 });
       utils.set(rule, { draw: "0 0" });
       utils.set(traceDrawable, { draw: "0 0" });
       utils.set(travelling, { opacity: 0 });
       utils.set([...eyebrow, ...claim, ...cta, ...cli], { opacity: 0, translateY: 10 });
 
       createTimeline({ defaults: { ease: EASE_OUT } })
-        .add(aura, { opacity: 1, scale: 1, duration: 1400, ease: "outCubic" }, 0)
+        .add(rising, { opacity: 1, scale: 1, duration: 1400, ease: "outCubic" }, 0)
         .add(eyebrow, { opacity: 1, translateY: 0, duration: 520 }, AT.eyebrow)
         /* The wiring-draw entrance (Task 6): the trace overlay fades in, each letter's
            outline draws in from the centre out — like a circuit trace being sketched,
@@ -382,6 +391,29 @@ export function Wordmark() {
             "radial-gradient(closest-side, color-mix(in oklab, var(--color-cyan) 16%, transparent), transparent)",
         }}
       />
+
+      {/* The mark, crowning the stack.
+          ------------------------------------------------------------
+          Above the eyebrow rather than beside the name, which is the hand-off's own call and
+          the right one: at the hero's 112px type a mark next to the `D` competes with it and
+          pushes the word off centre, and the wordmark is already doing brand duty here. As an
+          emblem over the column it reads as the thing the name belongs to.
+
+          `aria-hidden` comes from `Logo` itself, which omits the accessible name unless it is
+          given a `title`. The `h1` directly below says "DarkPrint"; a mark that announced the
+          brand as well would say it twice to a screen reader, in a row.
+
+          88px draws the 64 rung, which is the full three-node mark with its halos, rings and
+          perforation. `Logo` resolves that through `rungFor` rather than through a fifth row
+          in its ladder table: see `LogoRung` for why 88 is a size and not a rung.
+
+          No `opacity-0` in the markup. The server, a reader with JS off and a reader who
+          asked for reduced motion all get the finished mark, and `useReveal`'s `static` phase
+          means the timeline below never runs for any of them. The entrance sets the hidden
+          state in a layout effect instead, so it exists only where it can be undone. */}
+      <div data-mark="logo" className="mb-5">
+        <Logo size={88} />
+      </div>
 
       <p data-mark="eyebrow" className="eyebrow">
         Blueprint registry

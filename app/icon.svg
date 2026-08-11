@@ -1,23 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="16" height="16">
+  <title>DarkPrint</title>
   <!--
     The 16px rung of components/site/Logo.tsx, as a standalone file.
 
-    THE ONE PLACE ON THIS SITE THAT WRITES A HEX ON PURPOSE. Everything else reads
-    `var(--color-…)`, and Logo.tsx says why in as many words. A favicon has no page
-    behind it: the browser fetches this file on its own, with no stylesheet and no
-    :root, so a custom property here resolves to nothing and the mark paints blank.
+    THE ONE PLACE ON THIS SITE THAT WRITES A HEX ON PURPOSE. Everything else reads a theme
+    variable, and Logo.tsx says why in as many words. A favicon has no page behind it: the
+    browser fetches this file on its own, with no stylesheet and no :root, so a custom
+    property here resolves to nothing and the mark paints blank.
 
-    So the four values below are copies, and a copy that can drift silently is exactly
-    what the rule exists to prevent. `components/site/logo.test.ts` reads this file and
+    So the four values below are copies, and a copy that can drift silently is exactly what
+    the rule exists to prevent. components/site/logo.test.ts reads this file and
     app/globals.css and fails if they stop agreeing.
 
-      #061c52  --color-blueprint-deep   the flap
-      #74b4ff  --color-blueprint-line   the folder's edge and the graph edge
-      #7dd3fc  --color-cyan-bright      the trigger node
-      #34d399  --color-emerald          the ship node
+      #061c52  color-blueprint-deep   the flap
+      #74b4ff  color-blueprint-line   the folder edge and the graph edge
+      #7dd3fc  color-cyan-bright      the trigger node
+      #34d399  color-emerald          the ship node
+
+    The token names above are written WITHOUT their leading pair of hyphens, and that is
+    not a typo. XML forbids a double hyphen inside a comment, and this file shipped with
+    four of them: it parsed as text, served with the right content type, and failed in
+    every browser that tried to draw it, which meant the tab quietly fell back to the
+    other icon in the head. It is a comment, so nothing type-checked it and no test that
+    read the file as a string could see it. logo.test.ts parses it as XML now.
 
     No back plate and no tab at this rung: at 16px they are two grey pixels. Two solid
-    discs and one edge, per the reduction ladder — the mark sheds nodes rather than
+    discs and one edge, per the reduction ladder. The mark sheds nodes rather than
     shrinking them.
   -->
   <path d="M8 26h46a4 4 0 0 1 4 4v22a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V28a2 2 0 0 1 2-2z" fill="#061c52" stroke="#74b4ff" stroke-width="4.5" stroke-linejoin="round"/>

@@ -116,6 +116,64 @@ describe("the mark stands on the wordmark's baseline", () => {
   });
 });
 
+describe("the favicon is a document a browser can draw", () => {
+  /**
+   * It parses as XML, and for one pass it did not.
+   *
+   * `app/icon.svg` shipped with a comment naming its four tokens by their CSS spellings,
+   * `--color-blueprint-deep` and three more. XML forbids a double hyphen inside a comment,
+   * so the file was malformed: it served with status 200 and `image/svg+xml`, every test
+   * that read it as a string passed, and no browser drew it. The tab fell back to the other
+   * icon in the head and the mark was simply absent, which is the quietest way a deliverable
+   * can fail to ship.
+   *
+   * A parse is the only check that catches this class of defect, and it catches the rest of
+   * the class too: an unclosed tag, a stray ampersand, a missing quote.
+   */
+  it("keeps XML's one rule about comments", () => {
+    const icon = read("app/icon.svg");
+    // A comment is `<!-- … -->`, and the body between those delimiters may not contain `--`.
+    // That is the whole rule, and it is what this file broke: the tokens were written in
+    // their CSS spelling, leading dashes and all.
+    for (const [, body] of icon.matchAll(/<!--([\s\S]*?)-->/g)) {
+      expect(
+        body.includes("--"),
+        "XML forbids a double hyphen inside a comment, so a browser refuses to draw the file",
+      ).toBe(false);
+    }
+  });
+
+  /**
+   * Every element opens and closes.
+   *
+   * The environment is `node` (`vitest.config.ts` says why), so there is no `DOMParser` and
+   * `fast-xml-parser` would be a dependency bought for one assertion. A stack over the tags
+   * catches the rest of the malformed-document class — an unclosed `<g>`, a `</svg>` that
+   * arrives while something is still open — which with the case above is the coverage this
+   * file actually needed.
+   */
+  it("balances every tag", () => {
+    const source = read("app/icon.svg").replace(/<!--[\s\S]*?-->/g, "");
+    const open: string[] = [];
+    const errors: string[] = [];
+    for (const [tag, closing, name] of source.matchAll(/<(\/?)([a-zA-Z][\w:.-]*)[^>]*>/g)) {
+      if (tag.endsWith("/>")) continue;
+      if (closing === "/") {
+        if (open.pop() !== name) errors.push(`</${name}> closes nothing`);
+      } else {
+        open.push(name);
+      }
+    }
+    expect(errors).toEqual([]);
+    expect(open, "left open at the end of the file").toEqual([]);
+  });
+
+  /** And it says the brand, because a favicon is the one place the mark stands alone. */
+  it("carries an accessible name, unlike the mark beside the wordmark", () => {
+    expect(read("app/icon.svg")).toContain("<title>DarkPrint</title>");
+  });
+});
+
 describe("the favicon and the theme agree", () => {
   const icon = read("app/icon.svg");
   const globals = read("app/globals.css");

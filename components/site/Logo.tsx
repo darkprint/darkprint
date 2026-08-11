@@ -42,12 +42,29 @@
    floor, so the third node leaves instead of becoming a smudge. Stroke weight rises as the
    size falls, so the folder holds its shape instead of thinning to a hairline. The tab and
    back plate go at 16, where they are two grey pixels.
+
+   The ladder only goes down. It is a list of the sizes at which the DRAWING changes, and
+   nothing changes above 64: the hero draws the full three-node mark at 88px through
+   `rungFor`, which is a lookup and not a fifth entry in the table. Keeping 88 out of `RUNGS`
+   is the point — an entry there would be a copy of the row above it, and a copy is free to
+   drift from the thing it copies. See `LogoRung`.
    ============================================================ */
 
 import { cx } from "@/lib/format";
 
-/** The four rungs. A size not on the ladder is not a size this mark has. */
-export type LogoSize = 64 | 32 | 24 | 16;
+/**
+ * The four rungs.
+ *
+ * A rung is a DRAWING, not a width. It says how many discs there are, whether they are lit,
+ * whether the back plate is there and how heavy the stroke is; the `size` prop says how many
+ * CSS pixels to draw that in. The two were one number for a pass and the landing is what
+ * separated them: the hero wants the full three-node mark at 88px, and 88 is not a rung and
+ * should never become one — nothing about the drawing changes between 64 and 88, so an entry
+ * in `RUNGS` for it would be a copy of the one above it, free to drift.
+ *
+ * A drawing not on this ladder is not a drawing this mark has. A size is just a size.
+ */
+export type LogoRung = 64 | 32 | 24 | 16;
 
 /**
  * Which pole the mark is standing on.
@@ -119,7 +136,7 @@ interface Rung {
  * plus a gap. At 64 that is the ring (3.8) plus 1.2; below it, where the discs are solid,
  * it is the core plus 1. Two numbers, and the edges fall out of them.
  */
-const RUNGS: Record<LogoSize, Rung> = {
+const RUNGS: Record<LogoRung, Rung> = {
   64: {
     nodes: [
       { x: 21, y: 40, tone: "trigger" },
@@ -168,6 +185,21 @@ const RUNGS: Record<LogoSize, Rung> = {
   },
 };
 
+/** The ladder, largest first, so `rungFor` can take the first rung a size can carry. */
+const LADDER: readonly LogoRung[] = [64, 32, 24, 16];
+
+/**
+ * Which drawing a rendered size gets: the largest rung it is not smaller than.
+ *
+ * The ladder sheds nodes going DOWN and nothing going up, so anything at or above 64 is the
+ * full three-node mark drawn larger, and the hero's 88 resolves here rather than in a table.
+ * Below 16 the smallest drawing is still the smallest drawing; there is no rung under it to
+ * fall to, and a mark that small is a decision to revisit rather than a case to handle.
+ */
+export function rungFor(size: number): LogoRung {
+  return LADDER.find((rung) => size >= rung) ?? 16;
+}
+
 /**
  * The empty band under the drawing at one rung, in CSS pixels.
  *
@@ -179,8 +211,8 @@ const RUNGS: Record<LogoSize, Rung> = {
  * Exported so `components/site/logo.test.ts` can hold it against the geometry rather than
  * against a number somebody measured off a screenshot once.
  */
-export function inkFloorInset(size: LogoSize): number {
-  return ((64 - (FLAP_FLOOR + RUNGS[size].stroke / 2)) / 64) * size;
+export function inkFloorInset(size: number): number {
+  return ((64 - (FLAP_FLOOR + RUNGS[rungFor(size)].stroke / 2)) / 64) * size;
 }
 
 /** The accent each node spends, per pole. On the sheet there is one ink. */
@@ -247,7 +279,8 @@ export function Logo({
   className,
   title,
 }: {
-  size?: LogoSize;
+  /** Rendered width and height in CSS pixels. `rungFor` picks which drawing that gets. */
+  size?: number;
   ground?: LogoGround;
   /** See `LogoAlign`. `box` unless the mark is standing next to type. */
   align?: LogoAlign;
@@ -260,7 +293,7 @@ export function Logo({
    */
   title?: string;
 }) {
-  const rung = RUNGS[size];
+  const rung = RUNGS[rungFor(size)];
   const pole = GROUNDS[ground];
   const tones = TONES[ground];
 
@@ -306,7 +339,12 @@ export function Logo({
         strokeLinejoin="round"
       />
 
-      {rung.plate && size === 64 && (
+      {/* `rung.lit` and not `size === 64`. The perforation belongs to the top DRAWING, and
+          the top drawing is now rendered at 88px in the hero as well as at 64: keyed off the
+          pixel width, four dots that are the mark's one piece of drafting vocabulary would
+          have silently left the largest instance of it on the site. `lit` is the field that
+          says "this is the rung that can carry detail", and the dots are detail. */}
+      {rung.plate && rung.lit !== undefined && (
         <g fill={pole.ink} opacity={pole.dotAlpha}>
           {PERFORATION.map((y) => (
             <circle key={y} cx={12} cy={y} r={0.9} />

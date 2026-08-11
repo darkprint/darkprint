@@ -61,6 +61,32 @@ describe("Wordmark", () => {
     expect(mcp.toLowerCase()).toContain("coming soon");
   });
 
+  /**
+   * The mark is in the static frame, and it is silent.
+   *
+   * Two claims, both of which fail silently if they break. **Visible with no JS**: the
+   * entrance sets the hidden state in a layout effect, which never runs in `useReveal`'s
+   * `static` phase, so a mark that arrived with `opacity-0` in the markup would simply be
+   * missing for the server, for JS-off and for reduced-motion, and every one of those
+   * renders would still look like a page. **Silent**: the `h1` two lines below says
+   * "DarkPrint", so a mark carrying an accessible name announces the brand twice in a row
+   * to a screen reader and to nobody else.
+   */
+  it("renders the brand mark visible and unnamed in the static frame", () => {
+    const html = render();
+    /* The wrapper and its subtree, not the rest of the document: the mark holds one `<svg>`
+       and no nested `<div>`, so the first close is its own, and scoping the assertions here
+       stops an unrelated `aria-label` further down the hero from deciding this case. */
+    const mark = html.match(/<div[^>]*data-mark="logo"[^>]*>[\s\S]*?<\/div>/)?.[0];
+    expect(mark, "the hero has no brand mark").toBeDefined();
+    expect(mark).not.toContain("opacity-0");
+    expect(mark).toContain("aria-hidden");
+    expect(mark).not.toContain("aria-label");
+    // The 64 rung, drawn at 88: three discs, and the perforation only the top rung carries.
+    expect(mark).toMatch(/<svg[^>]*width="88"[^>]*height="88"/);
+    expect([...mark!.matchAll(/<circle/g)].length).toBeGreaterThanOrEqual(3 + 4);
+  });
+
   it("keeps archive counters out of the first viewport", () => {
     const text = plainText(render()).toLowerCase();
     expect(text).not.toMatch(/\d+\s+blueprints/);
