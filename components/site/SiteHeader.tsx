@@ -82,8 +82,15 @@ export const NAV = [
 const BROWSE = NAV.filter((item) => item.group === "browse");
 
 /**
- * The Build menu: the three ways to make a blueprint, each with the line that tells them
- * apart. Publishing is deliberately not among them — see the panel's own footer.
+ * The Design menu: the ways to make a blueprint, each with the line that tells them apart.
+ *
+ * Publishing is deliberately not among them. It is the button beside this menu, and a
+ * paragraph at the foot of the panel used to explain that at length — three lines about the
+ * validator, the tab it runs in and the backend that does not exist. The author asked it out
+ * on 2026-08-11 and it is not moved elsewhere, because it was not carrying anything this
+ * chrome owes a reader: `/upload` says all three things in the open, above its own dropzone,
+ * where `components/site/honesty.test.ts` holds them. A dropdown explaining why a control is
+ * not in it is a menu apologising for its own contents.
  */
 const BUILD = NAV.filter((item) => item.group === "build");
 
@@ -123,7 +130,7 @@ export const ACCOUNT_MENU = [
  */
 const MOBILE_GROUPS = [
   { id: "browse", title: "Browse" },
-  { id: "build", title: "Build" },
+  { id: "build", title: "Design" },
   { id: "learn", title: "Learn" },
   { id: "you", title: "You" },
 ] as const;
@@ -256,7 +263,7 @@ export function SiteHeader() {
                   : "text-muted hoverable:hover:text-fg",
               )}
             >
-              Build
+              Design
               <Caret />
             </summary>
             <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-line-bright bg-surface-2 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.85)]">
@@ -284,11 +291,6 @@ export function SiteHeader() {
                   </Link>
                 ))}
               </div>
-              <p className="border-t border-line px-4 py-3 text-xs leading-relaxed text-dim">
-                Publishing is the button rather than a row here. It opens the validator,
-                which runs in your own tab: there is no backend to publish to, and that page
-                says so above the dropzone.
-              </p>
             </div>
           </details>
 

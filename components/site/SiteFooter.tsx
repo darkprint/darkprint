@@ -40,11 +40,15 @@ function learnColumn(run: SpecRun) {
   };
 }
 
-/* The Browse and Build titles match the header's groups exactly, which is what the accounts
+/* The Browse and Design titles match the header's groups exactly, which is what the accounts
    pass asked of the collapsed menu and is worth the footer having too: a reader who learns
-   "Browse / Build" at the top of the page should not meet a different set of words at the
+   "Browse / Design" at the top of the page should not meet a different set of words at the
    bottom of it. Every label inside them is held to the header's by
-   `components/site/nav.test.ts`. */
+   `components/site/nav.test.ts`.
+
+   The second was "Build" until 2026-08-11, renamed with the header menu on the author's
+   instruction. It moves in both places or it moves in neither: the whole reason this comment
+   exists is that the two surfaces name the same group. */
 export const COLS = [
   {
     title: "Browse",
@@ -58,7 +62,7 @@ export const COLS = [
     ],
   },
   {
-    title: "Build",
+    title: "Design",
     links: [
       /* One row for `/skill`, not two.
 

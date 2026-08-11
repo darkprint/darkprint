@@ -41,6 +41,7 @@
    vouches for them.
    ============================================================ */
 
+import { GridSpotlight } from "./GridSpotlight";
 import { SetupChips } from "./SetupChips";
 import { Wordmark } from "./Wordmark";
 
@@ -55,6 +56,13 @@ export function Hero() {
         className="pointer-events-none absolute inset-0 tech-grid"
         style={{ maskImage: GRID_MASK, WebkitMaskImage: GRID_MASK }}
       />
+
+      {/* The same graph paper again, masked to a circle that follows the pointer, so the
+          ruling brightens where the cursor is and is untouched everywhere else. It is the
+          one client component in this section besides the wordmark, and it renders a single
+          `aria-hidden` layer: see its own file for why it reveals the grid rather than
+          adding a glow, and why it never runs on a touchscreen. */}
+      <GridSpotlight />
 
       {/* Two columns, and no lift between them.
           ------------------------------------------------------------
