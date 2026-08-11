@@ -438,21 +438,216 @@ function Field({
 }
 
 /**
- * A stack, because the sentence beside it is "one versioned card per node".
+ * One status row on the stage plate: a dot, and the term it stands for.
  *
- * The count of ghosts behind the open card is the count of nodes in the blueprint minus
- * the one on top, so the drawing states the same fact the prose does and cannot drift from
- * it. The open card shows the interface: what arrives, what leaves, and what is forbidden.
- * `cannot` is in `--color-signal` because it is the half of a card nothing else on this
- * page shows, and it is the field the graph figure's dashed absent run is drawn from.
+ * The dot is the whole of the distinction and it carries no colour of its own beyond
+ * filled-or-hollow. `type` is what the node IS, so its dot is solid in the sheet's line
+ * colour and its word takes the sheet's ink; `phase` and `model` are where it sits and what
+ * runs it, so they are outlined and their words step back to `--color-muted`. Three rows of
+ * identical weight was the defect this replaces — six `Field` rows at one size, in which
+ * `cannot` read exactly like `model`.
  *
- * The word was "crossed" until the graph went luminous. That figure used to hang a ✕ in a
- * circle on the prohibited run, in `--color-signal`, and `FlowAbsence` withholds both: the
- * alarm colour would say a defect had been found, and an absent edge in the starter
- * blueprint is the design working. The absence is now four withheld things — no halo, no
- * travelling light, a dash, a neutral tone — so the only red left on this page is here, on
- * the field the prohibition is written in. That is the right place for it: a card states
- * the rule, and the drawing shows the run obeying it.
+ * `--color-dim` at 60% is the mock's `#4a5170`, which is not a token this theme has:
+ * `--color-faint` is darker and annotated in `globals.css` as decorative-only, `--color-dim`
+ * is lighter, and the mix lands between them. The same resolution the landing's beat 2 made
+ * for the same hex.
+ */
+function StatusRow({ filled, children }: { filled?: boolean; children: React.ReactNode }) {
+  return (
+    <span
+      className={cx(
+        "inline-flex items-center gap-2 font-mono text-[12px]",
+        filled === true ? "text-blueprint-ink" : "text-muted",
+      )}
+    >
+      <span
+        aria-hidden
+        className={cx(
+          "h-2 w-2 shrink-0 rounded-full border",
+          filled === true ? "border-blueprint-line bg-blueprint-line" : "border-dim/60",
+        )}
+      />
+      {children}
+    </span>
+  );
+}
+
+/**
+ * The card as a plate: identity on the left, what it does and what crosses its edge on the
+ * right, and the one thing that may never arrive across the foot.
+ *
+ * ── What this replaces, and why ──
+ * Six `Field` rows of `name value` at equal weight. Three faults, and the plate answers all
+ * three. `cannot` — the one field no other figure on the landing shows, and the field the
+ * graph's dashed absent run is drawn from — read exactly like `model`; the card's BOUNDARY,
+ * which is the thing that makes it a card rather than a description, was two text rows
+ * rather than something drawn; and the interface was two more rows in the same column as
+ * the metadata, so what arrives and what leaves had no more weight than which model runs it.
+ *
+ * Now the boundary is drawn twice over: the plate is divided, so identity and behaviour are
+ * visibly two halves of one object, and the prohibition is a band across the foot in the
+ * alarm colour with the absence glyph at its head. `--color-signal` at 30% on the rule and
+ * 5% on the ground, which is the least that reads as a different kind of statement without
+ * becoming a warning about a defect — an absent edge in the starter blueprint is the design
+ * working, which is why `FlowAbsence` withholds the colour and the card, which states the
+ * rule rather than reporting a breach, is allowed it.
+ *
+ * ── Every value is the card's ──
+ * Nothing here is authored except four labels: `IN`, `OUT`, `Must never arrive:` and the
+ * glyph. Id, version, author, type, phase, model, the first input and output with their
+ * types, and both `cannot` entries are read off the `card` prop, which the caller reads off
+ * `content/cards/`. A picture with an invented field in it is the one thing this beat cannot
+ * afford, because three seconds later it turns into the file it is a picture of.
+ */
+function StagePlate({ card }: { card: NodeCard }) {
+  const input = card.inputs[0];
+  const output = card.outputs[0];
+  /* The prohibition, in the plainest wording THE CARD ITSELF carries.
+     ------------------------------------------------------------
+     The author: "a new user could not understand the meaning of the field `cannot:
+     acceptance-criteria` so I suggested to use a more evocative name instead of
+     `acceptance-criteria` but ONLY for the home page."
+
+     `cannot` is a list, and this archive writes it as a pair: the ontology term the resolver
+     enforces, then the same rule in words. `code-builder@1.0.0` has `acceptance-criteria`
+     and "read the checks the work will be run against". So the band prints the SECOND entry
+     and nothing is invented — the evocative name was already in the file, one line down from
+     the technical one.
+
+     That is the whole reason the term is not simply rewritten. It names a data type in the
+     ontology, and drawing a different word would have this figure disagree with the file it
+     turns into three seconds later, on the beat whose one claim is that the two are the same
+     thing. The term stays visible at the right end of the band, so the plate shows both
+     halves of the pair rather than choosing between them. */
+  const plain = card.cannot[1] ?? card.cannot[0];
+  const term = card.cannot[0];
+
+  return (
+    <div
+      className="relative grid rounded-lg border border-blueprint-line/55 sm:grid-cols-[216px_minmax(0,1fr)]"
+      style={{
+        /* The mock's `color-mix(#061c52 60%, #0a0c16)`. A mix and not `bg-blueprint-deep/60`,
+           which is the same blue at 60% ALPHA and therefore takes whatever is behind the
+           figure — here the section's `bg-surface`, but the walk turns this card over and the
+           ground behind it during the turn is not the ground behind it at rest. Mixing to a
+           known second colour makes the plate one flat value in every frame of the flip. */
+        background:
+          "color-mix(in oklab, var(--color-blueprint-deep) 60%, var(--color-surface))",
+      }}
+    >
+      {/* ---------- left: who this card is ---------- */}
+      <div className="flex flex-col gap-3.5 border-b border-blueprint-line/45 p-5 sm:border-b-0 sm:border-r">
+        <span className="font-mono text-[16px] text-blueprint-ink">{card.id}</span>
+        <span className="font-mono text-[12px] text-blueprint-line">
+          v{card.version}
+          {card.author !== undefined && ` · by ${card.author}`}
+        </span>
+        <div className="mt-1 flex flex-col gap-2">
+          <StatusRow filled>{card.type}</StatusRow>
+          {/* `phases` is a list and may legitimately be empty — doc 3 §2 makes coverage
+              descriptive, and an intake or a memory store sits in none of the five. The row
+              is dropped rather than printed blank. */}
+          {card.phases.length > 0 && <StatusRow>{card.phases.join(", ")}</StatusRow>}
+          <StatusRow>{card.model ?? "inherits"}</StatusRow>
+        </div>
+      </div>
+
+      {/* ---------- right: what it does, and what crosses its edge ---------- */}
+      <div className="min-w-0">
+        {/* The action as a real sentence at reading size, where it was a mono value in a
+            row. It is the one field on a card written for a person rather than for the
+            resolver — nothing in the engine reads it — so it is the one field set in the
+            body face. */}
+        <p className="border-b border-blueprint-line/45 px-5 pb-4 pt-5 text-[15px] leading-relaxed text-fg">
+          {card.action}
+        </p>
+        <div className="grid grid-cols-[48px_minmax(0,1fr)] items-baseline gap-x-[18px] gap-y-3 px-5 py-4">
+          {input !== undefined && (
+            <>
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim">
+                in
+              </span>
+              {/* The name in the sheet's ink and the type in its line colour, which is the
+                  pole's own ink/label pair. A port is one fact in two parts — what it is
+                  called and what travels — and the colour is what tells them apart without a
+                  second row. */}
+              <span className="min-w-0 truncate font-mono text-[13px] text-blueprint-ink">
+                {input.name} <span className="text-blueprint-line">: {input.type}</span>
+              </span>
+            </>
+          )}
+          {output !== undefined && (
+            <>
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim">
+                out
+              </span>
+              <span className="min-w-0 truncate font-mono text-[13px] text-blueprint-ink">
+                {output.name} <span className="text-blueprint-line">: {output.type}</span>
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ---------- foot: the one thing that may never arrive ----------
+          No `flex-wrap` on the row. The sentence is long enough to run to two lines inside
+          the plate and the mock lets it, with the term held at the right end and vertically
+          centred against both; wrapping the ROW instead drops the term onto a third line
+          under the sentence, where it reads as a footnote rather than as the other half of
+          the pair. So the sentence takes `min-w-0 flex-1` and wraps inside itself, and the
+          term stays `shrink-0` on the end. */}
+      {plain !== undefined && (
+        <div className="col-span-full flex items-center gap-3 rounded-b-lg border-t border-signal/30 bg-signal/5 px-5 py-3.5">
+          {/* The same mark every absence on this site wears. `Glyphs.tsx` and
+              `FlowGlyphs.tsx` write the character too, and it is typed rather than imported
+              because the one named constant for it is private to `FlowAbsence` — every other
+              surface that draws an absence types it. `aria-hidden`: the sentence beside it
+              says what it means. */}
+          <span aria-hidden className="shrink-0 font-mono text-[15px] text-signal">
+            ◌
+          </span>
+          <span className="min-w-0 flex-1 text-[15px] leading-snug text-fg">
+            Must never arrive: <span className="text-signal">{plain}</span>
+          </span>
+          {term !== undefined && (
+            /* The ontology term, kept beside its plain-words twin rather than replaced by
+               it. `--color-muted` and mono: it is the machine's half of the pair, and it is
+               what the YAML this card turns into actually says. */
+            <span className="ms-auto shrink-0 font-mono text-[11px] text-muted">
+              cannot: {term}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The card figure, at two sizes that are now two layouts.
+ *
+ * ── `inline`: a stack, because the sentence beside it is "one versioned card per node" ──
+ * The count of ghosts behind the open card is the count of nodes in the blueprint minus the
+ * one on top, so the drawing states the same fact the prose does and cannot drift from it.
+ * The open card shows the interface as `Field` rows: what arrives, what leaves, and what is
+ * forbidden, with `cannot` in `--color-signal` because it is the half of a card nothing else
+ * on that page shows.
+ *
+ * ── `stage`: a plate, and the deck is gone from it ──
+ * The landing draws the same card with a whole pinned stage to itself, and 2026-08-11
+ * replaced the scaled-up stack with `StagePlate`. The ghosts went with it: three empty
+ * rectangles behind the card said "there are other nodes" without saying which, or how many
+ * that is, and the node strip above the plate says both — five discs, one of them lit and
+ * named, tethered to the card underneath. The claim moves from a decoration to a drawing of
+ * the actual graph. (Part 2 of the hand-off builds that strip; between the two commits the
+ * claim is made by neither, which is the one thing this split costs.)
+ *
+ * ── One component, two layouts, and the docblock's old argument still holds ──
+ * That argument was about REGISTER: "one figure, one look, both mounts", written when the
+ * author asked for the inline card to move onto the cyanotype sheet with the stage one. It
+ * is unchanged — both are blueprint-deep under a blueprint-line hairline, and neither is
+ * copper, because copper is the SECTION's colour and this is the card as an object in a
+ * graph. What diverges is layout, which is what a size prop is for.
  */
 export function CardStackFigure({
   card,
@@ -490,17 +685,19 @@ export function CardStackFigure({
 }) {
   const input = card.inputs[0];
   const output = card.outputs[0];
-  const ghosts = Math.max(0, Math.min(nodes - 1, 3));
   const stage = size === "stage";
-  /* How far each ghost is offset, and therefore how deep the deck reads. Scaled with the
-     card rather than fixed: 6px behind a 19rem card is a visible step, and behind a 38rem
-     one it is a thick border. */
-  const step = stage ? 10 : 6;
+  /* The deck is `inline`'s alone now. `nodes` still sizes it there; on `stage` the same
+     number will be the length of the node strip, which is the drawing that replaced it. */
+  const ghosts = stage ? 0 : Math.max(0, Math.min(nodes - 1, 3));
+  /* How far each ghost is offset, and therefore how deep the deck reads. */
+  const step = 6;
   return (
     <div
       className={cx(
         "relative w-full",
-        stage ? "max-w-[38rem] pt-5 pl-5" : "max-w-[19rem] pt-3 pl-3",
+        /* 40rem is the mock's 640px. The stack's `pt`/`pl` offset went with the ghosts:
+           it existed to leave room for the deck behind the card, and there is no deck. */
+        stage ? "max-w-[40rem]" : "max-w-[19rem] pt-3 pl-3",
       )}
     >
       {/* The bloom. Behind everything including the ghosts, hence `-z-10` on a padded box
@@ -533,7 +730,11 @@ export function CardStackFigure({
           }}
         />
       ))}
-      {/* The stage card takes the CYANOTYPE register, on the author's instruction, and it
+      {stage ? (
+        <StagePlate card={card} />
+      ) : (
+        <>
+      {/* The inline card takes the CYANOTYPE register, on the author's instruction, and it
           took two passes to understand which way the instruction pointed.
 
           They asked twice for this figure and the little `CardNode` glyph in `RunLayers` to
@@ -544,85 +745,39 @@ export function CardStackFigure({
           is. The big one moves to the small one's register, not the other way round: a card
           drawn on the graph's own paper says it belongs to the graph.
 
-          BOTH SIZES, since 2026-08-08. I kept `inline` on `bg-surface` and argued it: on
-          `/what-a-blueprint-is` the figure sits beside prose on a neutral band "with no graph
-          anywhere near it". The author asked for the same update there, and the argument
-          does not survive looking at the page — the band directly above that one draws the
-          starter graph on the same cyanotype sheet, so there IS a graph near it, and one card
-          in two registers on one page is the drift this whole component exists to prevent.
-          One figure, one look, both mounts. */}
-      <div
-        className={cx(
-          "relative rounded-lg border border-blueprint-line/55 bg-blueprint-deep/60",
-          stage ? "px-6 py-5" : "px-4 py-3",
-        )}
-      >
-        <div
-          className={cx(
-            "flex items-baseline justify-between gap-2 border-b border-blueprint-line/45",
-            stage ? "pb-3" : "pb-2",
-          )}
-        >
-          <span
-            className={cx(
-              "truncate font-mono text-blueprint-ink",
-              stage ? "text-sm sm:text-base" : "text-xs",
-            )}
-          >
-            {card.id}
-          </span>
-          <span
-            className={cx(
-              "shrink-0 font-mono text-blueprint-line",
-              stage ? "text-[13px]" : "text-[11px]",
-            )}
-          >
+          BOTH SIZES, since 2026-08-08, and still both: `StagePlate` above is the same
+          blueprint-deep ground under the same blueprint-line hairline. The register is what
+          that instruction was about and it is unchanged; only the layout forked. */}
+      <div className="relative rounded-lg border border-blueprint-line/55 bg-blueprint-deep/60 px-4 py-3">
+        <div className="flex items-baseline justify-between gap-2 border-b border-blueprint-line/45 pb-2">
+          <span className="truncate font-mono text-xs text-blueprint-ink">{card.id}</span>
+          <span className="shrink-0 font-mono text-[11px] text-blueprint-line">
             v{card.version}
           </span>
         </div>
-        <div className={cx(stage ? "pt-3" : "pt-2")}>
-          <Field name="type" value={card.type} stage={stage} />
-          <Field name="phase" value={card.phases.join(", ")} stage={stage} />
-          <Field name="model" value={card.model ?? "inherits"} stage={stage} />
+        <div className="pt-2">
+          <Field name="type" value={card.type} />
+          <Field name="phase" value={card.phases.join(", ")} />
+          <Field name="model" value={card.model ?? "inherits"} />
           {input !== undefined && (
-            <Field name="in" value={`${input.name} : ${input.type}`} stage={stage} />
+            <Field name="in" value={`${input.name} : ${input.type}`} />
           )}
           {output !== undefined && (
-            <Field name="out" value={`${output.name} : ${output.type}`} stage={stage} />
+            <Field name="out" value={`${output.name} : ${output.type}`} />
           )}
-          {/* The prohibition, in the plainest wording the CARD ITSELF carries.
-              ------------------------------------------------------------
-              The author: "a new user could not understand the meaning of the field
-              `cannot: acceptance-criteria` so I suggested to use a more evocative name
-              instead of `acceptance-criteria` but ONLY for the home page."
-
-              `cannot` is a list, and this archive writes it as a pair: the ontology term
-              the resolver enforces, then the same rule in words. `code-builder@1.0.0` has
-              `acceptance-criteria` and "read the checks the work will be run against". So
-              the stage card prints the SECOND entry, and nothing is invented — the evocative
-              name was already in the file, one line down from the technical one.
-
-              That is the whole reason the term is not simply rewritten here. It names a data
-              type in the ontology, and drawing a different word would have this figure
-              disagree with the file it turns into three seconds later, on the beat whose one
-              claim is that the two are the same thing. Printing the card's own second line
-              keeps the picture true AND readable, and the term is still right there in the
-              YAML the card becomes.
-
-              `inline` keeps the term. `/what-a-blueprint-is` spends a whole part on this
-              field in prose beside the figure, so there the term is the thing being
-              explained rather than a word a reader has to decode alone. */}
+          {/* `inline` keeps the ontology TERM where the stage plate prints the plain-words
+              twin beside it. `/what-a-blueprint-is` spends a whole part on this field in
+              prose beside the figure, so here the term is the thing being explained rather
+              than a word a reader has to decode alone. */}
           <Field
             name="cannot"
-            value={
-              (stage ? (card.cannot[1] ?? card.cannot[0]) : card.cannot[0]) ??
-              "nothing declared"
-            }
+            value={card.cannot[0] ?? "nothing declared"}
             tone="signal"
-            stage={stage}
           />
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
