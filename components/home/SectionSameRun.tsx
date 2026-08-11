@@ -2,7 +2,6 @@ import { Fragment } from "react";
 
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import {
-  ABSENT_GLYPH,
   FLOW,
   FlowScene,
   Sheet,
@@ -50,10 +49,24 @@ import { BeatCaption } from "./BeatCaption";
 
    Both panels now show runs, and the difference between them is the thing the beat is
    about. Left: three runs of one goal, diverging to three scores that cannot be compared.
-   Right: four runs of one blueprint, one step touched per run, and a column of deltas that
-   reads down the page. The vertical read of that column IS the figure — the whole point is
-   that each number belongs to one move — which is why the score and the delta sit in fixed
-   columns rather than flowing.
+   Right: the route stated once, and a ledger of what each change to it was worth. The
+   vertical read down the score and delta columns IS the right-hand figure — the whole point
+   is that each number belongs to one move — which is why those two sit in fixed columns
+   rather than flowing.
+
+   ── What the right panel stopped repeating ──
+   The route was drawn on every row: three pills per iteration, twelve in all, of which the
+   eleven unchanged ones existed to say "these did not change". That is the route stated four
+   times to carry three facts, and the tuning — the thing a reader is actually meant to read —
+   was the smallest part of the picture. It is one route block above a rule now, and a row
+   says only what it moved.
+
+   `ITERATIONS` collapsed with the drawing rather than keeping its shape. It was a `Step` per
+   column and every row spelled out all three; a row is `{ n, changed, score, delta }` now,
+   because a type that still carried two unchanged versions per row would be inviting the
+   next reader to diff them by eye. `Pill`'s amber and dashed branches went with it, and
+   `ABSENT_GLYPH` lost its last importer: it is no longer exported from `components/viz`,
+   and it is not deleted, because `FlowAbsence` still draws with it.
 
    ── What the left panel draws, and what it stopped drawing ──
    Three edges to three scored endpoints, and nothing in between.
@@ -242,14 +255,20 @@ const IMPROVISED: readonly { end: Point; score: string; bend: number }[] = [
 
 /* --------------------- the right panel --------------------- */
 
-/** What a cell in an iteration row is: a pinned version, the changed one, or a hole. */
-type Step = { at: string; changed?: true } | { removed: true };
+/**
+ * What one iteration moved, or `null` for the baseline, which moved nothing.
+ *
+ * This was three `Step` fields, one per column, and every row spelled out all three so the
+ * table could redraw the whole route on each of them. The route is stated once above the
+ * ledger now, so a row only has to say what it CHANGED, and the type says that instead of
+ * carrying two unchanged versions per row for a reader to diff by eye.
+ */
+type Change = { step: string; to: string } | { step: string; removed: true };
 
 interface Iteration {
-  n: number;
-  retrieve: Step;
-  rank: Step;
-  draft: Step;
+  /** Two digits, as the ledger prints them. */
+  n: string;
+  changed: Change | null;
   score: string;
   /** `undefined` on the baseline, which has nothing to be a delta against. */
   delta?: { text: string; gain: boolean };
@@ -263,87 +282,137 @@ interface Iteration {
  * a tool that always improves things, which is not what an instrument is for.
  */
 const ITERATIONS: readonly Iteration[] = [
+  { n: "01", changed: null, score: "0.62" },
   {
-    n: 1,
-    retrieve: { at: "@v1" },
-    rank: { at: "@v1" },
-    draft: { at: "@v1" },
-    score: "0.62",
-  },
-  {
-    n: 2,
-    retrieve: { at: "@v2", changed: true },
-    rank: { at: "@v1" },
-    draft: { at: "@v1" },
+    n: "02",
+    changed: { step: "retrieve", to: "v2" },
     score: "0.71",
     delta: { text: "+0.09", gain: true },
   },
   {
-    n: 3,
-    retrieve: { at: "@v2" },
-    rank: { removed: true },
-    draft: { at: "@v1" },
+    n: "03",
+    changed: { step: "rank", removed: true },
     score: "0.66",
     delta: { text: "−0.05", gain: false },
   },
   {
-    n: 4,
-    retrieve: { at: "@v2" },
-    rank: { at: "@v1" },
-    draft: { at: "@v2", changed: true },
+    n: "04",
+    changed: { step: "draft", to: "v2" },
     score: "0.86",
     delta: { text: "+0.15", gain: true },
   },
 ];
 
-/** The three steps, in the order the graph runs them. Column heads and pill names at once. */
+/** The three steps, in the order the graph runs them. */
 const STEPS = ["retrieve", "rank", "draft"] as const;
 
 /**
- * One pill, at `VIZ.node`'s own 132:46 aspect scaled to fit four columns.
+ * The ledger's hairlines: the drafting sheet's own ink, at the alpha a rule wants.
  *
- * `box-sizing` is the default here and the border is `VIZ.stroke.base`, so a changed pill
- * and an unchanged one are the same size: a 1.4px border that grew the box would make the
- * amber row wider than the rows it is being compared with, and every column in this figure
- * exists to be compared down the page.
+ * A `color-mix` rather than a Tailwind `/15` because it is set through `borderColor` on the
+ * row, and a class would have to be spelled out for the scanner in two places (the header
+ * row and every body row) for one value that is the same in both. The mock draws `#16213f`,
+ * which is `--color-blueprint-line` at about this alpha over the sheet.
  */
-function Pill({ step }: { step: Step }) {
-  const box = "flex h-[39px] w-[112px] flex-col items-center justify-center gap-0.5 rounded-sm border text-center";
+const RULE = "color-mix(in oklab, var(--color-blueprint-line) 15%, transparent)";
 
-  if ("removed" in step) {
-    /* The slot is kept, not closed. A row of two pills where the others have three would
-       say the step moved; a dashed hole says it was taken out, which is the move being
-       attributed. `ABSENT_GLYPH` and `VIZ.dash.absent` are the same mark and the same dash
-       the tables and the ledger already use for an absent row. */
-    return (
-      <span
-        className={cx(box, "border-dim/60 text-dim")}
-        style={{ borderStyle: "dashed", borderWidth: VIZ.stroke.base, borderSpacing: 0 }}
-      >
-        <span aria-hidden className="font-mono text-[13px] leading-none">
-          {ABSENT_GLYPH}
-        </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.12em]">removed</span>
-      </span>
-    );
-  }
+/**
+ * The ledger's column heads.
+ *
+ * `.label` is 11px at 0.18em and this is 10 at 0.16, which is the mock's own step down: four
+ * heads over a four-row table are a legend rather than a section label, and at `.label`'s
+ * size they compete with the 13px cell text under them. The colour does not move — the tier
+ * exists at `--color-dim` because a head is meaning-bearing, and this keeps that. The mock
+ * was caught in review at 2.41:1 here; `--color-dim` is the floor these four have to clear
+ * and `--color-faint` is annotated in `globals.css` as decorative separators only.
+ */
+const HEAD =
+  "py-2.5 pr-4 font-mono text-[10px] font-normal uppercase tracking-[0.16em] text-dim";
 
-  const changed = step.changed === true;
+/**
+ * One step of the route, 128 by 42, which is the mock's own box and not `VIZ.node`'s.
+ *
+ * Worth saying which, because the two are close enough to be mistaken for each other and
+ * they are not the same: `VIZ.node` is 132 by 46, a ratio of 2.87, and this is 3.05. The
+ * node token sizes a `NodeBox` inside a scene's coordinate space, where it is measured
+ * against edges and radii in the same units. These three are HTML boxes in a row on a sheet,
+ * sized against the sheet's body rather than against a viewBox, and 128 is what makes three
+ * of them plus two arrows land at 444 — see the breakpoint arithmetic below, which that
+ * number is load-bearing for. The border is `VIZ.stroke.base` and the radius
+ * `VIZ.node.radius`, so the drawing weight is still the register's.
+ *
+ * One treatment now, where there were three. The pill was drawn twelve times, once per step
+ * per iteration, so it needed a pinned version, an amber changed version and a dashed hole
+ * for a removed one. The route is stated once above the ledger and the ledger says what
+ * moved in words, so the only pill left is the pinned one and the other two branches are
+ * deleted rather than kept for a caller that no longer exists.
+ *
+ * `box-sizing` is `border-box` from preflight, which is what the mock sets on these
+ * explicitly, so the three pills are the same box: a border that grew the element would make
+ * the route's three steps three different widths for no reason a reader could name.
+ */
+const PILL = { width: 128, height: 42 } as const;
+
+function Pill({ label }: { label: string }) {
   return (
     <span
-      className={cx(
-        box,
-        changed ? "border-amber text-amber-bright" : "border-blueprint-line/55 text-blueprint-ink",
-      )}
+      className="flex shrink-0 items-center justify-center border border-blueprint-line text-center font-mono text-[13px] text-blueprint-ink"
       style={{
+        width: PILL.width,
+        height: PILL.height,
         borderWidth: VIZ.stroke.base,
-        background: changed
-          ? "color-mix(in oklab, var(--color-amber) 8%, transparent)"
-          : VIZ_KNOCKOUT,
+        borderRadius: VIZ.node.radius,
+        background: VIZ_KNOCKOUT,
       }}
     >
-      <span className="font-mono text-[12px] leading-none">{step.at}</span>
+      {label}
     </span>
+  );
+}
+
+/**
+ * The arrow between two pills, drawn from `VIZ`'s own arrow and stroke.
+ *
+ * `FlowEdge` is the register's edge and it cannot be used here for a reason of kind rather
+ * than of taste: it emits SVG into a `FlowScene`'s coordinate space, and these are three
+ * HTML boxes in a row on a sheet. So this is the same arrowhead the scenes draw, at
+ * `VIZ.arrow`'s length and spread and `VIZ.stroke.base`, in `VIZ_LINE` — the geometry comes
+ * from the tokens rather than from a shape typed to look about right, which is the part of
+ * `FlowEdge` worth carrying across. 30 by 10 is the mock's box.
+ */
+const ARROW = { width: 30, height: 10 } as const;
+
+function RouteArrow() {
+  const midY = ARROW.height / 2;
+  const tip = ARROW.width;
+  const back = tip - VIZ.arrow.length;
+  return (
+    <svg
+      aria-hidden
+      width={ARROW.width}
+      height={ARROW.height}
+      viewBox={`0 0 ${ARROW.width} ${ARROW.height}`}
+      fill="none"
+      className="shrink-0"
+    >
+      <line
+        x1={0}
+        y1={midY}
+        x2={back}
+        y2={midY}
+        stroke={VIZ_LINE}
+        strokeWidth={VIZ.stroke.base}
+        opacity={FLOW.edge.arrowOpacity}
+      />
+      <path
+        d={`M${back} ${midY - VIZ.arrow.spread}L${tip} ${midY}L${back} ${midY + VIZ.arrow.spread}`}
+        stroke={VIZ_LINE}
+        strokeWidth={VIZ.stroke.base}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={FLOW.edge.arrowOpacity}
+      />
+    </svg>
   );
 }
 
@@ -555,79 +624,146 @@ export function SectionSameRun() {
           {/* ---------- four runs, one step touched each ---------- */}
           <figure className="flex min-w-0 flex-col gap-3">
             <PanelHead title="from a blueprint" rail="you define the steps, then tune them" />
-            <Sheet bodyClassName="relative overflow-x-auto p-4">
-              {/* A table, and not a scene. The three pills across a row are a chain and the
-                  four scores down a column are the argument, which is a grid of related
-                  values with headers on both axes: that is what a table is, and drawing it
-                  in SVG would spend the accessibility of one on the appearance of the
-                  other. `scope` on both axes, so a reader arriving on a cell is told which
-                  iteration and which step it belongs to. */}
-              {/* `border-spacing-x-1` and `p-4` on the sheet, not the `-x-2` and `sm:p-6`
-                  this started with. Measured at 2044px: the table wanted 565px inside a
-                  514px column and scrolled sideways in a figure whose entire argument is a
-                  vertical read. Four pixels between cells and sixteen at the sheet's edge
-                  buy 36 of the 51, and the row header buys the rest by saying `1` under a
-                  column head that already says `run` rather than repeating `iter` down the
-                  page. Nothing about the pills moved: 112x39 is `VIZ.node`'s 132:46 aspect
-                  and it is what the figure is drawn to. */}
-              <table className="w-full min-w-[30rem] border-separate border-spacing-x-1 border-spacing-y-2 text-left">
+            <Sheet
+              /* The sheet's own drawing colour, where the left strip is grey. The two are
+                 not the same kind of remark: the left one names what an unspecified panel
+                 shows and is reported in the neutral tone that panel is drawn in, and this
+                 one states the property the ledger above it depends on, which is the same
+                 claim the line under the route makes and gets the same colour for it. Both
+                 values are the mock's. */
+              title={
+                <span className="text-blueprint-line">
+                  one step changed per iteration · everything else held
+                </span>
+              }
+              bodyClassName="relative overflow-x-auto px-6 pt-6"
+            >
+              {/* ---------- the route, once ----------
+                  Eleven of the old table's twelve pills existed to say "these did not
+                  change". Stating the route once and then listing what moved is the same
+                  information with the repetition taken out, and it puts the thing a reader
+                  is meant to read — the tuning — in a block of its own. */}
+              <div className="flex flex-col items-center gap-3.5 pb-[22px]">
+                <div className="flex items-center gap-0">
+                  {STEPS.map((step, i) => (
+                    <Fragment key={step}>
+                      {i > 0 && <RouteArrow />}
+                      <Pill label={step} />
+                    </Fragment>
+                  ))}
+                </div>
+                {/* Not `.label`, and the class was wrong here rather than merely different.
+                    `.label` heads a column or tags a value, so it uppercases at 0.18em; this
+                    is a sentence, and a sentence in caps at that tracking is a sign rather
+                    than a remark. The mock sets 11px at 0.06em in the sheet's own drawing
+                    colour, which is exactly `Sheet`'s title strip, and that is the right
+                    register for it: the strip along the bottom names what the sheet shows
+                    and this names what the three boxes above it ARE. Two remarks on one
+                    sheet, in one voice.
+
+                    `--color-blueprint-line` and not `--color-cyan`. Cyan is the site's
+                    interactive colour and nothing here is interactive; inside a blueprint
+                    sheet the line that draws the drawing is the colour a remark about the
+                    drawing gets. */}
+                <p className="font-mono text-[11px] tracking-[0.06em] text-blueprint-line">
+                  this route runs every time, in this order
+                </p>
+              </div>
+
+              {/* A rule across the whole sheet, not across the table. The route above and
+                  the ledger below are two blocks rather than a heading and its content, and
+                  a rule inset by the body's own padding reads as a table border with a
+                  paragraph sitting on top of it. `-mx-6` is that padding, spent back, which
+                  is the mock's `margin: 22px -24px 0`. */}
+              <div className="-mx-6 border-t" style={{ borderColor: RULE }} />
+
+              {/* ---------- the ledger ----------
+                  Still a table, and for the reason it always was: four scores and three
+                  deltas read DOWN, and a grid of related values with headers on both axes is
+                  what a table is. The mock draws it as a CSS grid of `<span>`s, which is the
+                  same picture with none of the semantics. `scope` on both axes, so a reader
+                  arriving on a cell is told which iteration and which column it belongs to.
+
+                  Rules rather than gaps between the rows. `border-collapse` with a hairline
+                  of `--color-blueprint-line` at 15% is the drafting sheet's own ruling, and
+                  it does what the old `border-spacing` could not: it lines the four scores up
+                  under a header that is attached to them. */}
+              <table className="mt-1.5 mb-4 w-full border-collapse text-left">
                 <caption className="sr-only">
-                  Four runs of one blueprint, numbered 1 to 4. Each row changes one step and
-                  reports the score and the change from the run before it.
+                  Four runs of one blueprint, numbered 01 to 04. Each row names the one step
+                  it changed and reports the score and the change from the run before it.
                 </caption>
                 <thead>
-                  <tr>
-                    <th scope="col" className="label px-1 pb-1 font-normal">
-                      run
+                  <tr className="border-b" style={{ borderColor: RULE }}>
+                    <th scope="col" className={HEAD}>
+                      iter
                     </th>
-                    {STEPS.map((step) => (
-                      <th
-                        key={step}
-                        scope="col"
-                        className="label px-1 pb-1 text-center font-normal"
-                      >
-                        {step}
-                      </th>
-                    ))}
-                    <th scope="col" className="label px-1 pb-1 text-right font-normal">
+                    <th scope="col" className={HEAD}>
+                      what changed
+                    </th>
+                    <th scope="col" className={cx(HEAD, "text-right")}>
                       score
                     </th>
-                    <th scope="col" className="label px-1 pb-1 text-right font-normal">
+                    <th scope="col" className={cx(HEAD, "text-right")}>
                       delta
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {ITERATIONS.map((iteration) => (
-                    <tr key={iteration.n}>
+                    <tr
+                      key={iteration.n}
+                      className="border-b last:border-b-0"
+                      style={{ borderColor: RULE }}
+                    >
                       <th
                         scope="row"
-                        className="whitespace-nowrap px-1 font-mono text-[11px] font-normal text-dim"
+                        className="whitespace-nowrap py-[13px] pr-4 font-mono text-[12px] font-normal text-dim"
                       >
                         {iteration.n}
                       </th>
-                      {STEPS.map((step) => (
-                        <td key={step} className="px-1">
-                          <Pill step={iteration[step]} />
-                        </td>
-                      ))}
+                      {/* The step is the subject of the row and reads at full strength; what
+                          happened to it is the predicate and reads under. A cell entirely in
+                          one tone would make "rank" and "removed" equally loud, and the
+                          column a reader scans is the one naming the steps. */}
+                      <td className="py-[13px] pr-4 font-mono text-[13px] text-dim">
+                        {iteration.changed === null ? (
+                          "baseline"
+                        ) : (
+                          <>
+                            <span className="text-blueprint-ink">{iteration.changed.step}</span>{" "}
+                            {"removed" in iteration.changed
+                              ? "removed"
+                              : `→ ${iteration.changed.to}`}
+                          </>
+                        )}
+                      </td>
                       {/* Fixed columns, right-aligned, tabular figures. The vertical read
                           down these two is the figure's whole argument, and a proportional
                           digit or a column that sizes to its content breaks it. */}
-                      <td className="w-[44px] px-1 text-right font-mono text-[13px] tabular-nums text-fg">
+                      <td className="py-[13px] pl-4 text-right font-mono text-[17px] tabular-nums text-fg">
                         {iteration.score}
                       </td>
                       <td
                         className={cx(
-                          "w-[40px] px-1 text-right font-mono text-[12px] tabular-nums",
+                          "w-[64px] py-[13px] pl-4 text-right font-mono text-[12px] tabular-nums",
                           iteration.delta === undefined
-                            ? "text-dim"
+                            ? "text-faint"
                             : iteration.delta.gain
                               ? "text-emerald"
                               : "text-signal",
                         )}
                       >
-                        {iteration.delta?.text ?? "base"}
+                        {/* The baseline has no delta, and the em dash saying so is a
+                            typographic placeholder rather than a value. `aria-hidden` keeps
+                            it out of the cell's announcement, which is then correctly empty,
+                            and it is the one run of `--color-faint` this beat is allowed:
+                            the token is decorative-only and this is decoration. */}
+                        {iteration.delta === undefined ? (
+                          <span aria-hidden>&mdash;</span>
+                        ) : (
+                          iteration.delta.text
+                        )}
                       </td>
                     </tr>
                   ))}
