@@ -201,8 +201,14 @@ export function SiteHeader() {
             `scripts/generate-wordmark-paths.ts` traces it out of Space Grotesk SemiBold,
             which `@theme inline` maps to `--font-display`, so one set of letterforms is
             drawn as outlines there and set as live type here. */}
-        <Link href="/" className="mr-auto flex items-center gap-2.5">
-          <Logo size={24} />
+        {/* `items-baseline`, not `items-center`. A lockup is a mark standing on the
+            wordmark's baseline, and centring aligns the mark's BOX against the type's LINE
+            BOX instead: the box carries empty room under the drawing, the line box carries
+            the font's descent under the baseline, and the mark ends up hanging below the
+            word by the difference between them. Measured here before the change: 3.6px.
+            `align="baseline"` is the mark's half of it, and `Logo.tsx` says what it does. */}
+        <Link href="/" className="mr-auto flex items-baseline gap-2.5">
+          <Logo size={24} align="baseline" />
           <span className="font-display text-lg font-semibold tracking-tight">
             <span className="text-fg">Dark</span>
             <span className="text-cyan">Print</span>

@@ -44,6 +44,8 @@
    back plate go at 16, where they are two grey pixels.
    ============================================================ */
 
+import { cx } from "@/lib/format";
+
 /** The four rungs. A size not on the ladder is not a size this mark has. */
 export type LogoSize = 64 | 32 | 24 | 16;
 
@@ -63,6 +65,25 @@ const BACK_PLATE =
 /** The front flap, radii 2/4/4/4. */
 const FRONT_FLAP =
   "M8 26h46a4 4 0 0 1 4 4v22a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V28a2 2 0 0 1 2-2z";
+
+/** Where the flap's own path bottoms out in the 64 box. Read off `FRONT_FLAP` above. */
+const FLAP_FLOOR = 56;
+
+/**
+ * How the mark meets whatever is beside it.
+ *
+ * `box` is the mark placed on its own: the 64-square is the thing being positioned, which
+ * is right for a favicon, an avatar slot, or anything that reserves a square.
+ *
+ * `baseline` is a lockup. The mark stands ON the baseline of the type next to it, which is
+ * what `SiteHeader` needs and what `items-center` cannot give: centring puts the mark's
+ * BOX against the type's LINE BOX, and neither of those is the edge a reader sees. The box
+ * has empty room under the drawing and the line box has the font's descent under the
+ * baseline, so a mark that is centred by the arithmetic hangs below the word by the
+ * difference. Measured on this header before the fix: 3.6px low.
+ */
+export type LogoAlign = "box" | "baseline";
+
 
 /** Sheet perforation down the left edge: the one piece of drafting vocabulary the mark
     carries for free. Dropped below 64, where four 0.9-unit dots are sub-pixel. */
@@ -147,6 +168,21 @@ const RUNGS: Record<LogoSize, Rung> = {
   },
 };
 
+/**
+ * The empty band under the drawing at one rung, in CSS pixels.
+ *
+ * The mark does not fill its 64 box: the flap bottoms out at `FLAP_FLOOR` and the stroke on
+ * it is centred, so the lowest ink is at `FLAP_FLOOR + stroke/2` and everything below that
+ * is air. This is how much air, at the rung's own size, and it is exactly how far the
+ * drawing has to be pushed down for its floor to land where CSS put the box's bottom edge.
+ *
+ * Exported so `components/site/logo.test.ts` can hold it against the geometry rather than
+ * against a number somebody measured off a screenshot once.
+ */
+export function inkFloorInset(size: LogoSize): number {
+  return ((64 - (FLAP_FLOOR + RUNGS[size].stroke / 2)) / 64) * size;
+}
+
 /** The accent each node spends, per pole. On the sheet there is one ink. */
 const TONES: Record<LogoGround, Record<Node["tone"], string>> = {
   dark: {
@@ -207,11 +243,14 @@ export function edge(a: Node, b: Node, port: number): string {
 export function Logo({
   size = 24,
   ground = "dark",
+  align = "box",
   className,
   title,
 }: {
   size?: LogoSize;
   ground?: LogoGround;
+  /** See `LogoAlign`. `box` unless the mark is standing next to type. */
+  align?: LogoAlign;
   className?: string;
   /**
    * An accessible name, when the mark stands alone.
@@ -230,7 +269,28 @@ export function Logo({
       viewBox="0 0 64 64"
       width={size}
       height={size}
-      className={className}
+      /* Two halves of one instruction, and neither works without the other.
+         ------------------------------------------------------------------
+         The container sets `items-baseline`, which puts the BOX's bottom edge on the type's
+         baseline: a replaced element's baseline is its bottom border edge, so that is what
+         CSS has to work with. `translateY` then moves the drawing down by its own empty
+         band, which lands the floor of the ink on the baseline rather than the floor of the
+         box. It is a transform rather than a margin because a transform does not vote on
+         layout, and the box has to stay where the baseline put it.
+
+         `-mt-4` is the mark abstaining from the line's height. Baseline alignment sizes the
+         line from the tallest thing above the baseline, and a 24px mark is taller than an
+         18px cap, so the line would grow and carry the wordmark down with it: measured, 2px
+         below the nav row it is supposed to sit level with. The margin is not a nudge and
+         not tuned, it is a release. Any value that takes the mark's contribution under the
+         type's own ascent gives the identical result, which is why it is a round -1rem and
+         not the 4px that happens to be the exact difference today. */
+      className={cx(align === "baseline" && "-mt-4", className)}
+      style={
+        align === "baseline"
+          ? { transform: `translateY(${inkFloorInset(size)}px)` }
+          : undefined
+      }
       {...(title === undefined
         ? { "aria-hidden": true }
         : { role: "img", "aria-label": title })}

@@ -25,7 +25,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { edge } from "./Logo";
+import { edge, inkFloorInset } from "./Logo";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
@@ -64,6 +64,55 @@ describe("the edges are computed, not typed", () => {
     expect(path).toBe("M30 41L36 41");
     // Both ends moved inward by the port, so the drawn length is |d| - 2·port.
     expect(36 - 30).toBe(Math.hypot(b.x - a.x, b.y - a.y) - 12);
+  });
+});
+
+describe("the mark stands on the wordmark's baseline", () => {
+  /**
+   * The lockup is two halves and one of them is easy to lose.
+   *
+   * `SiteHeader` sets `items-baseline`, which puts the mark's BOX bottom on the type's
+   * baseline; `align="baseline"` then pushes the drawing down by its own empty band so the
+   * INK lands there instead. Drop either half and the mark hangs low again, silently: the
+   * header still renders, nothing throws, and the defect is 3.6px that nobody measures
+   * twice. So both halves are asserted against the source.
+   */
+  it("keeps both halves of the lockup in the header", () => {
+    const header = read("components/site/SiteHeader.tsx");
+    expect(header).toContain("items-baseline");
+    expect(header).toContain('<Logo size={24} align="baseline" />');
+  });
+
+  /**
+   * The inset is the air under the drawing, derived rather than measured.
+   *
+   * `FRONT_FLAP` bottoms out at 56 in the 64 box and its stroke is centred on the path, so
+   * the lowest ink sits at `56 + stroke/2` and the rest of the box is empty. At the 24 rung
+   * the stroke is 3, which puts the floor at 57.5 and leaves 6.5 of the 64 empty: 2.4375px
+   * once the box is 24 across. That number is what the transform spends, and it is here so
+   * a change to the flap or to a rung's stroke fails against the drawing rather than
+   * shifting the header by a pixel nobody notices.
+   */
+  it("computes the inset from the flap and the stroke, at every rung", () => {
+    const floor = (stroke: number) => 56 + stroke / 2;
+    const expected = (size: number, stroke: number) => ((64 - floor(stroke)) / 64) * size;
+
+    expect(inkFloorInset(24)).toBeCloseTo(2.4375, 6);
+    expect(inkFloorInset(24)).toBeCloseTo(expected(24, 3), 6);
+    expect(inkFloorInset(64)).toBeCloseTo(expected(64, 1.8), 6);
+    expect(inkFloorInset(32)).toBeCloseTo(expected(32, 2.4), 6);
+    // The 16 rung strokes hardest, so it leaves the least air under the drawing.
+    expect(inkFloorInset(16)).toBeCloseTo(expected(16, 4.5), 6);
+  });
+
+  /** And the flap the arithmetic reads still bottoms out where it says it does. */
+  it("reads the floor off the flap the component actually draws", () => {
+    const logo = read("components/site/Logo.tsx");
+    const flap = /const FRONT_FLAP =\s*\n?\s*"([^"]+)"/.exec(logo)?.[1];
+    // "…v22a4 4 0 0 1-4 4…": 26 down to 26+4+22 = 52, then the corner arc adds the last 4.
+    expect(flap).toContain("V28");
+    expect(flap).toContain("v22a4 4 0 0 1-4 4");
+    expect(26 + 4 + 22 + 4).toBe(56);
   });
 });
 
