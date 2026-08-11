@@ -460,17 +460,57 @@ export function SectionSameRun() {
           className="mx-auto"
         />
 
-        {/* `xl` and not `lg`, and the breakpoint is arithmetic rather than taste. The right
-            panel's table is 530px wide: three 112px pills, the score and delta columns, the
-            row header and the gaps between them. Two columns of a 1152px container with a
-            24px gap give each panel 564px and its sheet 532px of body, so the split fits at
-            `xl` with two pixels to spare and does not at `lg`, where a 1024px viewport
-            leaves 444px and the figure scrolls sideways. A figure whose whole argument is a
-            vertical read down a column is the last one that should be asking a reader to
-            drag it horizontally, so it stays stacked until both panels fit side by side. */}
-        <div className="mt-12 grid gap-6 xl:grid-cols-2">
+        {/* `lg`, and the arithmetic is new because the right panel is.
+            ------------------------------------------------------------
+            It said `xl`, and the measurement it gave was honest for the figure it was
+            written against: the old table was 530px of pills and columns, two columns of a
+            1152px container leave each sheet 532px of body, and that fits at `xl` by two
+            pixels and not at `lg`.
+
+            The 4a panel is narrower and the widest thing in it is no longer the table. The
+            route block is three 128px pills and two 30px arrows, so 444px flat, measured at
+            1440; the ledger's own min-content is well under that, which means the route is
+            what the panel has to fit and the ledger never binds.
+
+            At `lg`, worst case, a 1024px window with a classic scrollbar: 1013px reaches
+            `container-page`, whose `padding-inline: 1.5rem` leaves 965px of content. The
+            columns are `1fr 1.15fr` over a 28px gap, so 937px splits 435.81 / 501.18. The
+            right sheet spends 1px of border each side and `px-6` on its body, and 501.18
+            less 2 less 48 is 451.18px for a 444px route to stand in. That is 7.18px of
+            slack. On a platform with overlay scrollbars the same window gives a 1024px
+            viewport, 976px of content and 457.06px of body, so 13.06px.
+
+            All of it measured rather than derived, in a 1024-wide frame against a running
+            build: the scrollbar this was measured behind is 11px, and a 16px one would take
+            the first figure to about 4.5px. Seven pixels is thin and it is the number that
+            matters, because it is the one that goes negative first: a fourth step in the
+            route, or a pill past 130px, and this comes back to `xl`. From 1248px up
+            `container-page` is capped at 1200 and the body settles at 551.20px, which is
+            107.20px of slack, so 1280 and 1440 measure identically and are not where the
+            risk is. At 1023 the grid is one column, the route stands in 914px of body, and
+            nothing scrolls sideways at any of the four.
+
+            ── Equal heights, by subgrid ──
+            Three rows shared by both figures: the panel head, the sheet, the caption block.
+            The sheet's row is `1fr`, so the two sheets are the same height whichever has
+            more in it, and the heads and the captions sit on the same lines across the gap
+            rather than each column packing its own way. That needs the two figures to have
+            the same number of children, which is why the amber qualifier and the right-hand
+            caption are wrapped as one cell: they are one block of text under one sheet, and
+            the alternative is a fourth row the left column would have to leave empty.
+
+            A stretched sheet then has to be told where the surplus goes, which is why
+            `Sheet` is a flex column with `mt-auto` on its title block. The left sheet is the
+            shorter of the two by its own content and this row makes it match, so without
+            that the strip floats 69.84px off the bottom edge at 1440 with the frame
+            continuing under it — measured by zeroing the margin against a running build.
+            The slack belongs between the drawing and the strip, which is where it goes: the
+            gap under the scene reads 82.84px stretched against `pb-3.5`'s 14 unstretched.
+            The mock does the same thing and says so in the one declaration it spends on it,
+            `margin: auto -20px 0`. */}
+        <div className="mt-12 grid gap-7 lg:grid-cols-[1fr_1.15fr] lg:grid-rows-[auto_1fr_auto] lg:gap-y-3.5">
           {/* ---------- three runs, three sets of steps ---------- */}
-          <figure className="flex min-w-0 flex-col gap-3">
+          <figure className="flex min-w-0 flex-col gap-3 lg:row-span-3 lg:grid lg:grid-rows-subgrid">
             <PanelHead title="from a prompt" rail="you do not control the path" />
             <Sheet
               /* `--color-line`, not the blueprint register's own frame. Both panels are
@@ -622,7 +662,7 @@ export function SectionSameRun() {
           </figure>
 
           {/* ---------- four runs, one step touched each ---------- */}
-          <figure className="flex min-w-0 flex-col gap-3">
+          <figure className="flex min-w-0 flex-col gap-3 lg:row-span-3 lg:grid lg:grid-rows-subgrid">
             <PanelHead title="from a blueprint" rail="you define the steps, then tune them" />
             <Sheet
               /* The sheet's own drawing colour, where the left strip is grey. The two are
@@ -770,20 +810,26 @@ export function SectionSameRun() {
                 </tbody>
               </table>
             </Sheet>
-            {/* The qualifier, beside the thing it qualifies. `honesty.test.ts` holds it:
-                DarkPrint does not run anybody's graph, so these numbers are a worked example
-                and a figure shaped like a readout has to say so where it is read. */}
-            <p className="label text-amber">
-              illustrative: DarkPrint does not run your graph
-            </p>
-            {/* The negative result is no longer explained here. It is in the table, which
-                is where it reads: a row that loses 0.05 beside three that gain says what a
-                sentence about it would say, and says it in the column a reader is already
-                comparing down. The docblock keeps the reason that row exists at all. */}
-            <figcaption className="text-sm leading-relaxed text-muted">
-              The steps are yours, so a rerun is the same run. Change one, read the score, and
-              the difference belongs to the thing you moved.
-            </figcaption>
+            {/* One cell, two paragraphs. The subgrid row above gives each figure three
+                children and this column would otherwise have four, which would either open a
+                fourth row the left column has to leave empty or push this figure's rows out
+                of step with its neighbour's. They are one block of text under one sheet
+                anyway. */}
+            <div className="flex flex-col gap-3">
+              {/* The qualifier, beside the thing it qualifies. `honesty.test.ts` holds it:
+                  DarkPrint does not run anybody's graph, so these numbers are a worked
+                  example and a figure shaped like a readout has to say so where it is
+                  read. */}
+              <p className="label text-amber">illustrative: DarkPrint does not run your graph</p>
+              {/* The negative result is no longer explained here. It is in the ledger, which
+                  is where it reads: a row that loses 0.05 beside three that gain says what a
+                  sentence about it would say, and says it in the column a reader is already
+                  comparing down. The docblock keeps the reason that row exists at all. */}
+              <figcaption className="text-sm leading-relaxed text-muted">
+                The steps are yours, so a rerun is the same run. Change one, read the score,
+                and the difference belongs to the thing you moved.
+              </figcaption>
+            </div>
           </figure>
         </div>
 
