@@ -79,8 +79,35 @@ const ACTIONS = [
 
 export function SectionLifecycle() {
   return (
-    <section id="lifecycle" className="scroll-mt-24 border-t border-line bg-void py-20 sm:py-28">
-      <div className="container-page">
+    <section
+      id="lifecycle"
+      className="relative scroll-mt-24 overflow-hidden border-t border-line bg-void py-20 sm:py-28"
+    >
+      {/* The drafting sheet, under the section that names both loops.
+          ------------------------------------------------------------
+          `.bp-grid` and not `.tech-grid`, on the author's instruction: the two graticules
+          are not interchangeable. `tech-grid` is one 48px cyan rule and it means *technical
+          surface*; `bp-grid` is the blueprint's own paper, a 96px major over a 16px minor in
+          `--color-blueprint-line`, and it is what `ContentCard`, `Sheet` and every figure
+          under `components/explain` draw a blueprint on. This section is the one that says
+          what a blueprint is for, so it stands on the paper the rest of the site draws them
+          on rather than on a generic technical ground.
+
+          The mask is the Hero's, turned inside out. There it closes an ellipse around the
+          wordmark; here it fades top and bottom so the ruling arrives out of the border
+          above and leaves before the footer, which is what keeps a full-bleed graticule from
+          reading as a texture swatch with two hard edges. */}
+      <div
+        aria-hidden
+        className="bp-grid pointer-events-none absolute inset-0"
+        style={{
+          maskImage: "linear-gradient(to bottom, transparent, black 18%, black 82%, transparent)",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, transparent, black 18%, black 82%, transparent)",
+        }}
+      />
+
+      <div className="container-page relative">
         <SectionHeading
           eyebrow="One registry, two loops"
           title="Find and reuse, or create and publish"

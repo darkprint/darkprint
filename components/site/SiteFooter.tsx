@@ -1,11 +1,49 @@
 import Link from "next/link";
 
-import { SANDBOX } from "@/components/spec/sequence";
+import { RUNS, SPEC_SEQUENCE, type SpecRun } from "@/components/spec/sequence";
 
-/* The three column titles match the header's three groups exactly, which is what the
-   accounts pass asked of the collapsed menu and is worth the footer having too: a reader
-   who learns "Browse / Build / Learn" at the top of the page should not meet a different
-   set of words at the bottom of it. Every label inside them is held to the header's by
+/* ============================================================
+   Learn is two columns, because the sequence is two runs.
+
+   It was one column of seven rows, which is the only place in the chrome that flattened
+   the split every other surface draws: the rail groups them, the crumb names the run a
+   reader is in, and the pager says which run it is stepping into. Seven links under one
+   heading also asked a reader to hold an unstructured list at exactly the moment they are
+   scanning for the one page they half-remember.
+
+   The two headings are `RUNS`, the same constant the rail and the pager read, rather than
+   words typed here. `nav.test.ts` forbids one route answering to two names, and the same
+   argument covers a run: a reader who learns "In practice" from the rail should not meet
+   "Practice" in the footer.
+
+   ── The rows are the sequence, the wording is the footer's ──
+   Which stop belongs to which run is read off `SPEC_SEQUENCE`, so a page that changes run
+   changes column on the next build and cannot be left behind in the wrong one. The labels
+   stay the footer's own: a footer row is met cold, with no crumb and no rail above it, so
+   `Blueprint file (DOT)` earns its parenthesis where the rail can afford `Topology`.
+   ============================================================ */
+
+/** The footer's wording for a Learn stop, where it says more than the nav's short form. */
+const LEARN_LABELS: Record<string, string> = {
+  "/spec/topology": "Blueprint file (DOT)",
+  "/spec/card": "Node card (YAML)",
+  "/reading-the-radar": "How a blueprint is graded",
+};
+
+function learnColumn(run: SpecRun) {
+  return {
+    title: RUNS[run],
+    links: SPEC_SEQUENCE.filter((page) => page.run === run).map((page) => ({
+      href: page.href,
+      label: LEARN_LABELS[page.href] ?? page.nav,
+    })),
+  };
+}
+
+/* The Browse and Build titles match the header's groups exactly, which is what the accounts
+   pass asked of the collapsed menu and is worth the footer having too: a reader who learns
+   "Browse / Build" at the top of the page should not meet a different set of words at the
+   bottom of it. Every label inside them is held to the header's by
    `components/site/nav.test.ts`. */
 export const COLS = [
   {
@@ -37,35 +75,23 @@ export const COLS = [
       { href: "/upload", label: "Publish" },
     ],
   },
-  {
-    title: "Learn",
-    links: [
-      { href: "/what-a-blueprint-is", label: "What a blueprint is" },
-      { href: "/spec/topology", label: "Blueprint file (DOT)" },
-      { href: "/spec/card", label: "Node card (YAML)" },
-      { href: "/spec/ontology", label: "Ontology" },
-      /* Read off the sequence, not typed. One route, one name, in three tables. */
-      { href: SANDBOX.href, label: SANDBOX.nav },
-      { href: "/reading-the-radar", label: "How a blueprint is graded" },
-      { href: "/towards-a-dark-factory", label: "Towards a Dark Factory" },
-    ],
-  },
-] as const;
+  learnColumn("specification"),
+  learnColumn("practice"),
+];
 
 export function SiteFooter() {
   return (
     <footer className="border-t border-line bg-surface/40">
-      <div className="container-page grid grid-cols-2 gap-8 py-12 sm:grid-cols-3 lg:grid-cols-4">
-        <div className="col-span-2 sm:col-span-3 lg:col-span-1">
+      {/* Four link columns now rather than three, so the brand block stops spanning three
+          of four and the columns get a row of their own until there is width for five. */}
+      <div className="container-page grid grid-cols-2 gap-8 py-12 sm:grid-cols-4 lg:grid-cols-5">
+        <div className="col-span-2 sm:col-span-4 lg:col-span-1">
           <Link href="/" className="font-display text-lg font-semibold tracking-tight">
             <span className="text-fg">Dark</span>
             <span className="text-cyan">Print</span>
           </Link>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-dim">
             Reusable, inspectable blueprints for agent workflows.
-          </p>
-          <p className="mt-3 max-w-xs font-mono text-[11px] leading-relaxed text-dim">
-            The registry publishes files. Your machine runs them.
           </p>
         </div>
         {COLS.map((column) => (
