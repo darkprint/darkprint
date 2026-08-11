@@ -35,17 +35,14 @@ describe("the blueprint-first landing", () => {
   it("argues the blueprint against the prompt, in that order", () => {
     const html = render(SectionSameRun);
     const text = plainText(html);
-    expect(text).toContain("Reproducible runs, improvable steps");
-    /* Claim A: the harness invents the route, so a score off one run is a one-off. Both
+    expect(text).toContain("The same run twice");
+    /* Claim A: a prompt does not model the steps, so a score off one is a one-off. Both
        halves, because the first on its own is a statement about control that nobody asked
        for and the second on its own does not say why. */
-    expect(text).toContain("A prompt lets the harness invent the route");
-    expect(text).toContain("every score a one-off");
-    /* Claim B, the payoff, and it is the title's second half as well as the lead's. The
-       2026-08-11 revision moved this from the closing caption to the top of the beat: it is
-       what reproducibility is FOR, and a beat that argues the price without naming the
-       purchase is arguing for bookkeeping. */
-    expect(text).toContain("raise the score on purpose");
+    expect(text).toContain("A prompt does not model the steps.");
+    expect(text).toContain("every score it earns is a one-off");
+    // Claim B, the payoff: fixing the steps is what makes the number mean something.
+    expect(text).toContain("turns a score into an instrument you can act on");
     expect(html).toContain('href="/what-a-blueprint-is#run"');
   });
 
@@ -53,31 +50,21 @@ describe("the blueprint-first landing", () => {
     const html = render(SectionSameRun);
     const text = plainText(html);
     expect(text).toContain("from a prompt");
-    expect(text).toContain("from a blueprint");
+    expect(text).toContain("from a blueprint, run by a harness");
     /* The captions too, since 2026-08-11. The panel count used to carry this: two `<svg>`
        tags meant two panels, and one side is a table now, so a side that stopped rendering
        would take its `<figure>` with it and leave the count of scenes at one either way.
        The captions are what each panel MEANS, so holding them is the stronger claim the
        count was standing in for. */
-    expect(text).toContain("The harness picks the steps, and picks differently each time.");
-    expect(text).toContain("The steps are yours, so a rerun is the same run.");
+    expect(text).toContain("Three runs of one goal.");
+    expect(text).toContain("Four runs of one blueprint.");
 
-    /* Matched on `data-viz-labels`, not on `<svg`, and the difference is new.
-       ------------------------------------------------------------
-       This counted every `<svg>` tag and asserted one, which was true while the only SVG in
-       the beat was the left panel's scene. The 4a revision draws the route's two arrows as
-       inline SVG — `FlowEdge` emits into a `FlowScene`'s coordinate space and these sit
-       between three HTML pills — so the tag count is three and says nothing. `FlowScene` is
-       the thing being counted, and it is the thing that carries the attribute.
-
-       Held on the tag rather than on the whole document, too:
-       `expect(html).not.toContain('data-viz-labels="hover"')` looks equivalent and is not.
+    /* Held on the `<svg>` tag rather than on the whole document.
+       `expect(html).not.toContain('data-viz-labels="hover"')` looks equivalent and is not:
        `FlowScene` renders `FLOW_CSS` in a `<style>`, and that stylesheet SPELLS the hover
        selector in order to define it. The naive assertion therefore fails against a scene
        that is correctly set to `always`, which is what it did when this case was written. */
-    const scenes = (html.match(/<svg[^>]*>/g) ?? []).filter((tag) =>
-      tag.includes("data-viz-labels"),
-    );
+    const scenes = html.match(/<svg[^>]*>/g) ?? [];
     expect(scenes, "the left panel should draw one scene").toHaveLength(1);
     for (const scene of scenes) {
       expect(scene).toContain('data-viz-labels="always"');
@@ -105,12 +92,11 @@ describe("the blueprint-first landing", () => {
      fails here, which is the point at which it also needs a limit statement and a ledger row. */
   it("claims no measurement of its own", () => {
     const text = plainText(render(SectionSameRun)).toLowerCase();
-    /* The running is the reader's harness, and the beat reads a score rather than producing
-       one. The sentences carrying that have moved twice now and the claim has not: the verb
-       is still `attribute` in substance, the improving is still something the reader does to
-       their own system, and the word for a graded run still never appears. */
+    /* The running is the reader's harness, and the beat reads a score rather than
+       producing one. Both sentences moved in the 2026-08-11 rewrite and both claims are
+       the same ones: nothing here measures anything. */
+    expect(text).toContain("a harness can only tell you what a change did");
     expect(text).toContain("the difference belongs to the thing you moved");
-    expect(text).toContain("improve on purpose rather than by luck");
     for (const promise of ["eval", "we measure", "we score", "measure if"]) {
       expect(text, `the beat promises \`${promise}\``).not.toContain(promise);
     }

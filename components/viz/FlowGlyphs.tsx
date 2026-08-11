@@ -88,12 +88,7 @@ function r3(value: number): number {
  * Named here rather than typed inline so the tables, the ledger and this drawing keep
  * spelling the absence the same way. `Glyphs.tsx` writes the same character.
  */
-/* Not exported, and it was for one afternoon. `SectionSameRun` drew a dashed hole where an
-   iteration had removed a step and reached for this so the mark would be the site's own; the
-   4a revision states the route once and says what moved in words, so that pill is gone and
-   the only caller left is `FlowAbsence` below. An export with no importer is an invitation to
-   spell the absence a second way somewhere else. */
-const ABSENT_GLYPH = "◌";
+export const ABSENT_GLYPH = "◌";
 
 /* ==================== the stylesheet and the scene ==================== */
 

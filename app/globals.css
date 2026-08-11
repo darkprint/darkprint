@@ -618,59 +618,6 @@ body {
     to { opacity: 1; transform: translateY(0); }
   }
   .anim-strip-in { animation: strip-in 480ms ease-out backwards; }
-
-  /* Beat 2's left panel, on the mock's own loop: each route draws itself, holds with its
-     score, and the set clears so the next cycle can say it again.
-     ------------------------------------------------------------
-     `DarkPrint Same Run.dc.html` option 4a spends three keyframe sets and two of them are
-     these, at 7.2s `infinite` with the runs entered 0.8s apart. It is not an entrance. The
-     panel's claim is that a prompt improvises the route and improvises it DIFFERENTLY every
-     time, and a figure that draws itself once and stops has said "here are three routes";
-     one that keeps redrawing says "and it will do this again", which is the sentence under
-     it. The author asked for the mock's behaviour twice, so this is the mock's behaviour.
-
-     ── What the resting style is, and why the loop can be this literal ──
-     Same contract as `strip-in` above, and it survives a loop for a reason worth stating.
-     The route carries `pathLength="1"`, so `stroke-dasharray: 1` is one dash the exact
-     length of the curve and `stroke-dashoffset` is normalised: 1 is undrawn, 0 is whole.
-     0 is also `stroke-dashoffset`'s initial value, so the resting path is the finished one
-     and the resting group is opaque. Everything below lives inside `no-preference` and
-     nothing anywhere sets a `from` state on the element itself, which means the server's
-     markup, a reader with no JavaScript, and a reader who asked for less motion all get the
-     completed drawing. The loop plays on top of that or it does not play.
-
-     `pathLength` is what the earlier fade could not have: `FlowEdge`'s base line
-     deliberately does not carry one, because that attribute belongs to its pulse and the
-     two paths exist so a dasharray can mean different things on each. These three routes
-     are drawn as raw paths for exactly this reason, and `flowRun` still supplies the
-     geometry, so nothing here types a trimmed coordinate.
-
-     `--run` is the run's index, set per element, so three routes come out of one rule.
-
-     The percentages are the mock's, read off `dpRun` and `dpHold`. The route draws over the
-     first quarter of the cycle on the mock's own easing, the score arrives a beat behind it
-     rather than with it, both hold to 88%, and the clear is quick because a slow fade out
-     reads as a mistake rather than as a reset. */
-  @keyframes route-draw {
-    0%        { stroke-dashoffset: 1; opacity: 0; }
-    4%        { opacity: 1; }
-    25%       { stroke-dashoffset: 0; }
-    88%       { stroke-dashoffset: 0; opacity: 1; }
-    97%, 100% { stroke-dashoffset: 0; opacity: 0; }
-  }
-  @keyframes route-hold {
-    0%, 20%   { opacity: 0; }
-    28%, 88%  { opacity: 1; }
-    97%, 100% { opacity: 0; }
-  }
-  .anim-route-draw {
-    animation: route-draw 7.2s cubic-bezier(0.23, 1, 0.32, 1) infinite;
-    animation-delay: calc(var(--run, 0) * 800ms);
-  }
-  .anim-route-hold {
-    animation: route-hold 7.2s linear infinite;
-    animation-delay: calc(var(--run, 0) * 800ms);
-  }
 }
 
 /* React Flow theming overrides (blueprint schematic look) */
