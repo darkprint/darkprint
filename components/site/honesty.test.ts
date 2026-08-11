@@ -36,6 +36,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import SpecCardPage from "@/app/spec/card/page";
+import McpPage, { metadata as mcpMetadata } from "@/app/mcp/page";
 import SkillPage, { metadata as skillMetadata } from "@/app/skill/page";
 import UploadPage from "@/app/upload/page";
 import { allBlueprints } from "@/lib/content";
@@ -98,6 +99,25 @@ const SKILL_PAGE = renderToStaticMarkup(createElement(SkillPage as never));
  * looks runnable and is not.
  */
 const SKILL_METADATA_DESCRIPTION = skillMetadata.description ?? "";
+
+/**
+ * `/mcp`, whole, and its description — the rows this file's own header claimed and never had.
+ *
+ * The header has said since the `/install` split that `/mcp` "refuses the server in three
+ * registers", and for that entire time the ledger held none of them. The page was shaped
+ * like a setup page while it said so: a numbered "1. Configure your client" step, a
+ * `McpJourney` component whose connect button set local state and whose search button
+ * revealed three real blueprints as though retrieved, and a `<head>` description promising
+ * a reader could "connect an agent client to DarkPrint, test the connection, search by
+ * task, inspect provenance, and fetch an exact blueprint release." Five capabilities, in
+ * the present tense, none of them built.
+ *
+ * The 2026-08-11 rewrite re-registers the route as the design proposal it is and deletes
+ * the journey. These rows are what stops it drifting back: an eyebrow and a badge are
+ * presentation and a length pass can take either, where a sentence has to be argued out.
+ */
+const MCP_PAGE = renderToStaticMarkup(createElement(McpPage as never));
+const MCP_METADATA_DESCRIPTION = mcpMetadata.description ?? "";
 /**
  * `/upload`, whole — the one route where a reader hands the site a file.
  *
@@ -366,6 +386,34 @@ const CLAIMS: Claim[] = [
     says: "not built yet: accounts and publishing",
     where: "open",
     html: SKILL_METADATA_DESCRIPTION,
+  },
+
+  /* ---- /mcp ----
+     Three registers, which is what this file's header has always said this route needs and
+     what it did not check: the description a reader meets before the page, the lead they
+     meet on it, and the status beside every operation in the contract table. The badge
+     beside the `h1` is deliberately NOT one of them — a badge is a glyph and a glyph is not
+     a sentence, and every other route in this ledger is held to words for the same reason. */
+  {
+    surface: "/mcp · metadata.description",
+    why: "the one description on the site where a shared link's preview card is all that stands between a reader and a command that looks runnable. It read \"Connect an agent client to DarkPrint, test the connection, search by task, inspect provenance, and fetch an exact blueprint release\" until 2026-08-11: five capabilities in the present tense, on a route `lib/mcp.ts` opens by saying has no server behind it. A reader who never opens the page has to be told anyway",
+    says: "there is no mcp server behind the registry yet",
+    where: "open",
+    html: MCP_METADATA_DESCRIPTION,
+  },
+  {
+    surface: "/mcp · the lead under the h1",
+    why: "the page prints real client configuration in its first section, because that is where a reader looks for it, and a snippet that is correct in every respect except the server it points at is the most convincing thing on the route. The sentence that qualifies it has to be above it and in the reader's path, not beside the snippet where it reads as a caveat about one client",
+    says: "there is no server behind this page, so what follows is the contract being proposed rather than one you can call",
+    where: "open",
+    html: MCP_PAGE,
+  },
+  {
+    surface: "/mcp · the status column of the contract table",
+    why: "four operations with what each takes and returns is the shape of documentation for something that exists. The status is repeated per row rather than stated once above the table, because a four-row table under one caption is read as four built operations and a caption about something else",
+    says: "not built",
+    where: "open",
+    html: MCP_PAGE,
   },
 
   /* ---- /upload ----
