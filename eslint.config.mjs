@@ -12,9 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Vendored by `npx impeccable install`. It is a third-party skill's own source,
-    // not this project's, and it ships its own lint config; running ours over it
-    // reports warnings nobody here can act on.
+    // Vendored third-party skills — `content-reorg` since `impeccable` was deleted on
+    // 2026-08-11. Their source is not this project's and each ships its own lint config;
+    // running ours over it reports warnings nobody here can act on. The glob stays as long
+    // as anything is vendored under it, which `skills-lock.json` and the AGENTS.md note
+    // above it both depend on.
     ".claude/skills/**",
     // The design hand-offs: a prototype HTML file each, plus the runtime they ship with.
     // Their own READMEs say they are design references "not production code to copy", and
