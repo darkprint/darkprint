@@ -129,13 +129,20 @@ const ROSTER: readonly SceneEntry[] = [
     frames: 2,
     render: () => framesOf(createElement(SectionBlueprint)),
   },
-  /* Beat 2's two panels. `frames: 2` is the claim that both are still drawn: the argument
-     is a comparison, so a panel that stopped rendering would leave a figure that reads as
-     a statement about prompts, or one about blueprints, and not as the contrast that is
-     the only thing either panel means on its own. */
+  /* Beat 2's left panel, and only its left panel.
+     ------------------------------------------------------------
+     `frames: 2` stood here while both sides were scenes. The 2026-08-11 rewrite made the
+     right-hand side a table: three pills across a row are a chain and four scores down a
+     column are the argument, which is a grid of related values with headers on both axes,
+     and drawing that in SVG spends the accessibility of a table on the appearance of a
+     figure. So one frame is the correct count now rather than a regression.
+
+     The comparison the old note was protecting is still protected, and by a stronger check:
+     `beats.test.ts` holds both panel titles and both captions as text, so a side that
+     stopped rendering fails by name there instead of by a count here. */
   {
     files: ["components/home/SectionSameRun.tsx"],
-    frames: 2,
+    frames: 1,
     render: () => framesOf(createElement(SectionSameRun)),
   },
   // `components/home/SectionNodeIsCard.tsx` had an entry here and the file draws no

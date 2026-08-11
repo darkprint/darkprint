@@ -88,7 +88,7 @@ function r3(value: number): number {
  * Named here rather than typed inline so the tables, the ledger and this drawing keep
  * spelling the absence the same way. `Glyphs.tsx` writes the same character.
  */
-const ABSENT_GLYPH = "◌";
+export const ABSENT_GLYPH = "◌";
 
 /* ==================== the stylesheet and the scene ==================== */
 

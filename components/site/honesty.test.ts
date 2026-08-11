@@ -47,6 +47,7 @@ import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
 import { CloneMenu } from "@/components/blueprint/CloneMenu";
 import { AgentHandoff } from "@/components/build/AgentHandoff";
 import { SectionLifecycle } from "@/components/home/SectionLifecycle";
+import { SectionSameRun } from "@/components/home/SectionSameRun";
 import { DownloadStep } from "@/components/build/DownloadStep";
 import { DEFAULT_CHOICES } from "@/components/build/choices";
 import { buildState } from "@/components/build/state";
@@ -219,6 +220,9 @@ const AGENT_HANDOFF = renderToStaticMarkup(createElement(AgentHandoff));
  */
 const LIFECYCLE = renderToStaticMarkup(createElement(SectionLifecycle));
 
+/** Beat 2, whole. The one place on the site that prints a per-run score. */
+const LANDING_SAME_RUN = renderToStaticMarkup(createElement(SectionSameRun));
+
 /**
  * The starter is the one bundle whose criteria walk stops at a judge
  * (`analysis/criteria-relayed-through-judge`), so it is the only page carrying the
@@ -386,6 +390,25 @@ const CLAIMS: Claim[] = [
     says: "not built yet: accounts and publishing",
     where: "open",
     html: SKILL_METADATA_DESCRIPTION,
+  },
+
+  /* ---- the landing, beat 2 ----
+     The one figure on this site that prints a per-run number, and the product produces no
+     such number anywhere. It was two panels of routes until 2026-08-11 and claimed nothing
+     numeric; the rewrite argues that pinning the steps is what makes a score an instrument,
+     which needs a score on the page to be worth reading, and `0.62 → 0.86` is therefore a
+     worked example sitting in something shaped exactly like a readout.
+
+     The rule this file exists for is that a claim and its qualifier travel together, so the
+     line is under the panel that draws the numbers rather than at the foot of the section
+     or in a comment. `beats.test.ts` holds it too, one assertion, for the cheap catch; this
+     row is the one that says why it is there. */
+  {
+    surface: "/ (beat 2) · the scores in the right-hand panel",
+    why: "the panel draws four runs, four scores and three deltas in a fixed column, which is the shape of a readout off a real harness. DarkPrint runs nobody's graph: there is no per-run performance figure in the product, no runner and no endpoint, and `/reading-the-radar` says so. A figure that looks like an instrument has to say it is an example where it is read, not below the fold",
+    says: "illustrative: darkprint does not run your graph",
+    where: "open",
+    html: LANDING_SAME_RUN,
   },
 
   /* ---- /mcp ----

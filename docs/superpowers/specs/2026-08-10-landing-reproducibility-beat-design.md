@@ -178,6 +178,34 @@ honesty work. **If the caption is ever rewritten to promise a measurement, a com
 a score, it needs a limit statement beside it and a ledger row**, per the repository's own
 rule that a claim and its qualifier travel together.
 
+### 4.1 · Superseded 2026-08-11: the beat now prints scores
+
+That last paragraph was the condition, and the rewrite met it. The beat argues that pinning
+the steps is what turns a score into an instrument, and an argument about scores is not
+worth reading without one on the page: the right-hand panel now draws four runs, four
+scores and three deltas.
+
+Two things changed with it, exactly as the paragraph above required.
+
+1. **A limit statement, beside the panel that draws the numbers.** A `.label`-tier line
+   under the right-hand figure: *"illustrative: DarkPrint does not run your graph"*. Under
+   the panel and not at the foot of the section, because the rule is that a claim and its
+   qualifier travel together and the claim is the column of deltas.
+2. **A ledger row**, `/ (beat 2) · the scores in the right-hand panel`, `where: "open"`,
+   in `components/site/honesty.test.ts`. `beats.test.ts` holds the same string, which is
+   the cheap catch; the ledger row is the one that records why it is there.
+
+The three wordings of §4 that keep the beat off the wrong side of the line are unchanged in
+substance and moved in phrasing. The running is still the reader's harness (*"A harness can
+only tell you what a change did if everything else held still"*), the beat still attributes
+rather than measures (*"the difference belongs to the thing you moved"*), and the word for a
+graded run still never appears. `beats.test.ts` asserts all three against the new sentences.
+
+Also true and worth writing down: the footer line this section leaned on — *"The registry
+publishes files. Your machine runs them."* — was removed on the author's instruction on
+2026-08-11. The site-wide refusal it carried is no longer on every page, which is a second,
+independent reason this beat needed a qualifier of its own rather than inheriting one.
+
 ---
 
 ## 5. Guards
@@ -186,11 +214,18 @@ Nothing here relaxes a guard. Two are extended because the site gained a drawing
 
 | Guard | What it requires | How this satisfies it |
 |---|---|---|
-| `components/home/beats.test.ts` | no `<table>`, no `<pre>`, no YAML-shaped `key:` runs on any beat | the beat renders prose and one SVG |
-| `components/home/beats.test.ts` | no `opacity-0` in the prerendered HTML, so the finished state is what a reader without JS gets | figure is static; `phase="static"` covers the server, JS-off and reduced-motion readers alike |
-| `components/viz/scene-labels.test.ts` | every file containing `<FlowScene` has a ROSTER entry | **adds one entry** |
+| `components/home/beats.test.ts` | no `opacity-0` in the prerendered HTML, so the finished state is what a reader without JS gets | figure is static; `phase="static"` covers the server, JS-off and reduced-motion readers alike. The 2026-08-11 mock animates each run in on a 7.2s loop and that reveal is **not** built, for this reason |
+| `components/viz/scene-labels.test.ts` | every file containing `<FlowScene` has a ROSTER entry | one entry, `frames: 1` since 2026-08-11 — the right-hand panel is a table now, so the beat draws one scene rather than two |
 | landing a11y case | `data-viz-labels="always"`, never `hover` | both panel labels are real DOM text |
-| em-dash rule (`components/build/path.test.ts`) | `components/home` is a guarded tree; no em dash as a pause in new copy | the copy in §3 uses none |
+| em-dash rule (`components/build/workspace.test.ts`) | `components/home` is a guarded tree; no em dash as a pause in new copy | the hand-off writes the lead and the right-hand caption with a pause dash; both ship as a comma |
+
+A row stood here reading *"no `<table>`, no `<pre>`, no YAML-shaped `key:` runs on any
+beat"*, attributed to `beats.test.ts`. No such assertion exists in that file or anywhere
+else in the suite, and it was checked before the 2026-08-11 rewrite put a real `<table>` in
+the beat: three pills across a row are a chain and four scores down a column are the
+argument, which is a grid of related values with headers on both axes. That is what a table
+is, and drawing it in SVG would spend the accessibility of one on the appearance of the
+other.
 | `components/site/anchors.test.ts` | a linked fragment must be rendered by its destination | `/what-a-blueprint-is#run` exists today and is already in the Learn rail |
 
 ---
@@ -213,4 +248,5 @@ Nothing here relaxes a guard. Two are extended because the site gained a drawing
 - The landing renders six beats, with the new one between the wordmark and the blueprint
   walk, verified in a browser at 1440px rather than only in the markup.
 - Both claims and both panel labels are present in the prerendered HTML with no script.
-- No ledger row added, removed or edited.
+- ~~No ledger row added, removed or edited.~~ Superseded 2026-08-11: see §4.1. One row
+  added, `/ (beat 2) · the scores in the right-hand panel`.

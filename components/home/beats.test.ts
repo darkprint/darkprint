@@ -36,12 +36,13 @@ describe("the blueprint-first landing", () => {
     const html = render(SectionSameRun);
     const text = plainText(html);
     expect(text).toContain("The same run twice");
-    // Claim A: the harness is handed a route, not a goal.
-    expect(text).toContain(
-      "A prompt gives your harness a goal and lets it invent the route.",
-    );
-    // Claim B, the payoff.
-    expect(text).toContain("two runs differ only where you changed the blueprint");
+    /* Claim A: a prompt does not model the steps, so a score off one is a one-off. Both
+       halves, because the first on its own is a statement about control that nobody asked
+       for and the second on its own does not say why. */
+    expect(text).toContain("A prompt does not model the steps.");
+    expect(text).toContain("every score it earns is a one-off");
+    // Claim B, the payoff: fixing the steps is what makes the number mean something.
+    expect(text).toContain("turns a score into an instrument you can act on");
     expect(html).toContain('href="/what-a-blueprint-is#run"');
   });
 
@@ -49,15 +50,22 @@ describe("the blueprint-first landing", () => {
     const html = render(SectionSameRun);
     const text = plainText(html);
     expect(text).toContain("from a prompt");
-    expect(text).toContain("from a blueprint");
+    expect(text).toContain("from a blueprint, run by a harness");
+    /* The captions too, since 2026-08-11. The panel count used to carry this: two `<svg>`
+       tags meant two panels, and one side is a table now, so a side that stopped rendering
+       would take its `<figure>` with it and leave the count of scenes at one either way.
+       The captions are what each panel MEANS, so holding them is the stronger claim the
+       count was standing in for. */
+    expect(text).toContain("Three runs of one goal.");
+    expect(text).toContain("Four runs of one blueprint.");
 
-    /* Held on the `<svg>` tags rather than on the whole document.
+    /* Held on the `<svg>` tag rather than on the whole document.
        `expect(html).not.toContain('data-viz-labels="hover"')` looks equivalent and is not:
        `FlowScene` renders `FLOW_CSS` in a `<style>`, and that stylesheet SPELLS the hover
        selector in order to define it. The naive assertion therefore fails against a scene
        that is correctly set to `always`, which is what it did when this case was written. */
     const scenes = html.match(/<svg[^>]*>/g) ?? [];
-    expect(scenes, "the beat should draw two panels").toHaveLength(2);
+    expect(scenes, "the left panel should draw one scene").toHaveLength(1);
     for (const scene of scenes) {
       expect(scene).toContain('data-viz-labels="always"');
       expect(scene).not.toContain('data-viz-labels="hover"');
@@ -84,11 +92,26 @@ describe("the blueprint-first landing", () => {
      fails here, which is the point at which it also needs a limit statement and a ledger row. */
   it("claims no measurement of its own", () => {
     const text = plainText(render(SectionSameRun)).toLowerCase();
-    expect(text).toContain("run it again in your own harness");
-    expect(text).toContain("attribute the difference to the swap");
+    /* The running is the reader's harness, and the beat reads a score rather than
+       producing one. Both sentences moved in the 2026-08-11 rewrite and both claims are
+       the same ones: nothing here measures anything. */
+    expect(text).toContain("a harness can only tell you what a change did");
+    expect(text).toContain("the difference belongs to the thing you moved");
     for (const promise of ["eval", "we measure", "we score", "measure if"]) {
       expect(text, `the beat promises \`${promise}\``).not.toContain(promise);
     }
+  });
+
+  /* The rewrite put numbers on the page and the numbers are a worked example.
+
+     `0.62 → 0.86` is illustrative: DarkPrint does not run anybody's graph, so there is no
+     per-run figure anywhere in the product, and the right-hand panel is shaped exactly like
+     a readout. The qualifier is beside the panel rather than in a comment, and
+     `components/site/honesty.test.ts` carries the ledger row. This case is the cheap half:
+     a length pass that takes the line fails here first. */
+  it("says the scores are illustrative, beside the panel that draws them", () => {
+    const text = plainText(render(SectionSameRun));
+    expect(text).toContain("illustrative: DarkPrint does not run your graph");
   });
 
   /* Beats 3 and 4 are the drawings restored from `main`, and these two tests are `main`'s
