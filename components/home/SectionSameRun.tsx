@@ -24,13 +24,19 @@ import { BeatCaption } from "./BeatCaption";
       the agents spawning, but the harness decides how to reach the goal. There is no
       blueprint."
 
-   The argument runs in three moves and the figures are the second and third of them:
+   The argument runs in three moves:
 
      1. a prompt does not model the steps, so every run is a different run and every score
         it earns is a one-off;
      2. a blueprint fixes the steps, which makes a rerun the same run;
-     3. that is what makes a score an instrument. Test a step, swap it for another version,
-        or take it out, and the change in the number belongs to the thing you moved.
+     3. that is what lets you study the system a part at a time and raise the score on
+        purpose.
+
+   Move 3 is the point and the other two are what buy it, which is a change of emphasis
+   rather than of argument: it used to be the closing caption under two figures that argued
+   moves 1 and 2, and it is the title and the lead now. Reproducibility is not the thing a
+   reader wants. Being able to improve something on purpose is, and reproducibility is the
+   price of admission.
 
    ── What this beat used to draw, and why the drawing changed ──
    Two panels of routes: three curves on the left, one on the right. The claim was right and
@@ -39,16 +45,28 @@ import { BeatCaption } from "./BeatCaption";
    comparison was between a busy picture and an empty one; and the colour did the arguing,
    dim against cyan, which is a mood rather than a finding.
 
-   Both panels now show runs, and the difference between them is the thing the beat is
-   about. Left: three runs of one goal, each through steps nobody chose, each ending on a
-   number that cannot be compared with the other two. Right: four runs of one blueprint,
-   one step touched per run, and a column of deltas that reads down the page. The vertical
-   read of that column IS the figure — the whole point is that each number belongs to one
-   move — which is why the score and the delta sit in fixed columns rather than flowing.
+   Both panels show runs, and the difference between them is the thing the beat is about.
+   Left: three runs of one goal, diverging to three scores that cannot be compared. Right:
+   the route stated once, and a ledger of what each change to it was worth. The vertical
+   read down the score and delta columns IS the right-hand figure — the whole point is that
+   each number belongs to one move — which is why those two sit in fixed columns rather
+   than flowing.
 
-   ── The intermediate nodes on the left are deliberately unnamed ──
-   That is the panel. The steps are not modelled, so there is nothing to label, and a
-   drawing that labelled them would be showing the reader the thing it says does not exist.
+   ── What the left panel draws, and what it stopped drawing ──
+   Three edges to three scored endpoints, and nothing in between.
+
+   It used to draw two unnamed intermediate nodes per run, and the paragraph here argued
+   that they WERE the panel: the steps are not modelled, so there is nothing to label, and
+   labelling them would show the reader the thing the panel says does not exist. That
+   argument is still true and it was answering the wrong question. Nothing was labelling
+   them; the question is whether they need to be drawn at all, and nine nodes and six edges
+   is a lot of ink to spend on a negative. What a reader has to see is that three runs of
+   one goal end up somewhere different every time, and divergence is carried by the edges
+   and the endpoints alone. The nodes were detail in support of an absence.
+
+   The endpoints stay `FlowNode`s rather than the bare circles the mock draws. The mock has
+   no access to the component; the register's node is the register's node, and a score
+   hanging off a plain dot would be the one glyph on the landing that is not one.
 
    ── Nothing here is revealed by an animation ──
    The mock draws each run in turn on a 7.2s loop, with the nodes appearing as the stroke
@@ -78,8 +96,16 @@ import { BeatCaption } from "./BeatCaption";
 
 /* --------------------- the left panel --------------------- */
 
-/** Scene units, which are viewBox units. */
-const SCENE = { width: 400, height: 210 } as const;
+/**
+ * Scene units, which are viewBox units.
+ *
+ * 236 tall rather than the 210 this shipped at, which is the hand-off's own alternative and
+ * the one the labels decide. `FlowNode` sets a score under its endpoint, not beside it, so
+ * the lowest run's label sits about 18 units below y=180; at 210 that lands within a few
+ * units of the frame and `components/viz/scene-labels.test.ts` fails a clipped label. 236
+ * gives it room, and it is also the closer of the two to the right-hand panel's height.
+ */
+const SCENE = { width: 400, height: 236 } as const;
 
 /**
  * Every position here is a `Point`, which this register spells `[x, y]` and not `{x, y}`.
@@ -93,20 +119,23 @@ const SCENE = { width: 400, height: 210 } as const;
 type Point = readonly [number, number];
 
 /** Where all three runs start. One goal, and it is the only thing they share. */
-const GOAL: Point = [58, 40];
+const GOAL: Point = [56, 118];
 
 /**
- * Three runs, each through two steps nobody specified, each ending on its own number.
+ * Three runs of one goal, each ending on its own number.
  *
- * Deliberately irregular. Three lanes at even spacing read as a designed fan, which is the
- * opposite of the claim: nothing chose these shapes, and a drawing where something clearly
- * did would be arguing the other side. The scores are the hand-off's and they are
- * illustrative, which the line under the right panel says in the open.
+ * One edge each, and the endpoints are not evenly spaced: 58, 118 and 180 puts the middle
+ * run 60 from the first and 62 from the last. Three lanes at an even pitch read as a
+ * designed fan, which is the opposite of the claim — nothing chose these shapes, and a
+ * drawing where something visibly did would be arguing the other side.
+ *
+ * The scores are the hand-off's and they are illustrative, which the line under the right
+ * panel says in the open.
  */
-const IMPROVISED: readonly { steps: readonly Point[]; end: Point; score: string }[] = [
-  { steps: [[150, 48], [248, 34]], end: [344, 56], score: "0.62" },
-  { steps: [[142, 110], [240, 126]], end: [342, 112], score: "0.81" },
-  { steps: [[134, 170], [246, 178]], end: [340, 166], score: "0.55" },
+const IMPROVISED: readonly { end: Point; score: string }[] = [
+  { end: [288, 58], score: "0.62" },
+  { end: [288, 118], score: "0.81" },
+  { end: [288, 180], score: "0.55" },
 ];
 
 /* --------------------- the right panel --------------------- */
@@ -243,8 +272,8 @@ export function SectionSameRun() {
              The title stays `text-fg` while beats 3 and 4 colour theirs. Each of those IS
              one of the two artifacts and names its pole; this beat is the argument about
              both, so it claims neither. */
-          title="The same run twice"
-          lead="A prompt does not model the steps. Your harness invents them, so every run is a different run and every score it earns is a one-off. A blueprint fixes the steps, which makes a rerun the same run, and that is what turns a score into an instrument you can act on."
+          title="Reproducible runs, improvable steps"
+          lead="A prompt lets the harness invent the route, so every run is a different run and every score a one-off. A blueprint fixes the steps, so you can study them one at a time and raise the score on purpose."
           align="center"
           className="mx-auto"
         />
@@ -260,10 +289,7 @@ export function SectionSameRun() {
         <div className="mt-12 grid gap-6 xl:grid-cols-2">
           {/* ---------- three runs, three sets of steps ---------- */}
           <figure className="flex min-w-0 flex-col gap-3">
-            <PanelHead
-              title="from a prompt"
-              rail="the steps are not yours to choose · three scores, nothing to credit"
-            />
+            <PanelHead title="from a prompt" rail="you do not control the path" />
             <Sheet>
               <FlowScene
                 width={SCENE.width}
@@ -280,58 +306,35 @@ export function SectionSameRun() {
                   reveal="always"
                   mark="schematic"
                 />
-                {IMPROVISED.map((run) => {
-                  const points: readonly Point[] = [GOAL, ...run.steps, run.end];
-                  return (
-                    <Fragment key={run.score}>
-                      {points.slice(0, -1).map((from, i) => (
-                        /* No pulse. A travelling light says "this is the path", and the
-                           panel's claim is that there is no path anybody chose. */
-                        <FlowEdge
-                          key={`${run.score}-${i}`}
-                          from={from}
-                          to={points[i + 1]}
-                          tone="dim"
-                          pulse={false}
-                        />
-                      ))}
-                      {run.steps.map((step) => (
-                        /* Unlabelled, which is the panel. See the header. */
-                        <FlowNode
-                          key={`${run.score}-${step[0]}`}
-                          x={step[0]}
-                          y={step[1]}
-                          r={FLOW.node.r}
-                          tone="dim"
-                          mark="schematic"
-                        />
-                      ))}
-                      <FlowNode
-                        x={run.end[0]}
-                        y={run.end[1]}
-                        r={FLOW.node.r}
-                        tone="dim"
-                        label={run.score}
-                        reveal="always"
-                        mark="schematic"
-                      />
-                    </Fragment>
-                  );
-                })}
+                {IMPROVISED.map((run) => (
+                  <Fragment key={run.score}>
+                    {/* No pulse. A travelling light says "this is the path", and the panel's
+                        claim is that there is no path anybody chose. `FlowEdge` trims both
+                        ends off the node radius plus `FLOW.edge.gap` itself, so neither
+                        endpoint is typed here. */}
+                    <FlowEdge from={GOAL} to={run.end} tone="dim" pulse={false} />
+                    <FlowNode
+                      x={run.end[0]}
+                      y={run.end[1]}
+                      r={FLOW.node.r}
+                      tone="dim"
+                      label={run.score}
+                      reveal="always"
+                      mark="schematic"
+                    />
+                  </Fragment>
+                ))}
               </FlowScene>
             </Sheet>
             <figcaption className="text-sm leading-relaxed text-muted">
-              Three runs of one goal. Different steps each time, so the three numbers cannot
-              be compared to each other and none of them can be traced to a decision.
+              The harness picks the steps, and picks differently each time. Three scores, and
+              no two of them are measuring the same thing.
             </figcaption>
           </figure>
 
           {/* ---------- four runs, one step touched each ---------- */}
           <figure className="flex min-w-0 flex-col gap-3">
-            <PanelHead
-              title="from a blueprint, run by a harness"
-              rail="one step touched per run · the harness runs the rest identically"
-            />
+            <PanelHead title="from a blueprint" rail="you define the steps, then tune them" />
             <Sheet bodyClassName="relative overflow-x-auto p-4">
               {/* A table, and not a scene. The three pills across a row are a chain and the
                   four scores down a column are the argument, which is a grid of related
@@ -417,20 +420,20 @@ export function SectionSameRun() {
             <p className="label text-amber">
               illustrative: DarkPrint does not run your graph
             </p>
+            {/* The negative result is no longer explained here. It is in the ledger, which
+                is where it reads: a row that loses 0.05 beside three that gain says what a
+                sentence about it would say, and says it in the column a reader is already
+                comparing down. The docblock keeps the reason that row exists at all. */}
             <figcaption className="text-sm leading-relaxed text-muted">
-              Four runs of one blueprint. Swap a step for a new version, or take a step out:
-              the rest is byte-identical, so each move owns its delta. Iteration 3 dropped{" "}
-              <span className="font-mono text-[13px] text-fg">rank</span> and lost 0.05,
-              which is why it stays in, because a negative result is attributable too.
+              The steps are yours, so a rerun is the same run. Change one, read the score, and
+              the difference belongs to the thing you moved.
             </figcaption>
           </figure>
         </div>
 
         <BeatCaption href="/what-a-blueprint-is#run" cta="What surrounds a run">
-          A harness can only tell you what a change did if everything else held still.
-          Pinning the steps is what buys that: you can test one step on its own, replace it,
-          or remove it, and read the score afterwards knowing the difference belongs to the
-          thing you moved.
+          That is what reproducibility buys: a system you can study a part at a time, and
+          improve on purpose rather than by luck.
         </BeatCaption>
       </div>
     </section>
