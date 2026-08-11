@@ -217,9 +217,20 @@ describe("the blueprint-first landing", () => {
   });
 
   /* `SectionDoors` had a case here — "closes on the same two loops without placeholder
-     status copy" — and the component is deleted. The claim it protected is not lost: the
-     two loops are named by the section above, whose eyebrow still reads "One registry, two
-     loops", and the placeholder-copy half is covered site-wide by
-     `components/site/honesty.test.ts`. Recorded rather than dropped silently, because a
-     test disappearing with its subject is exactly the shape of an accidental deletion. */
+     status copy" — and the component is deleted. Recorded rather than dropped silently,
+     because a test disappearing with its subject is exactly the shape of an accidental
+     deletion.
+
+     Where the two halves of that claim live now, re-checked 2026-08-11 when the eyebrow this
+     note used to point at was removed:
+
+       · the two loops. This said they were "named by the section above, whose eyebrow still
+         reads One registry, two loops". That string is gone with the whole heading block,
+         and nothing on the landing says `two loops` any more. What names them is the grid
+         itself — Find and Create are two of the five panels, each with a picture, a sentence
+         and a link — which the case above asserts by title, so the claim is still held and
+         by a stronger assertion than an eyebrow. The pair at the foot names the two
+         INTERFACES, human and agent, and is asserted there too.
+       · the placeholder copy. Unchanged: covered site-wide by
+         `components/site/honesty.test.ts`. */
 });

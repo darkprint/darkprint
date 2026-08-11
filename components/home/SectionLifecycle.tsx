@@ -31,16 +31,51 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
    ── The pair at the foot stays ──
    The human-interface / agent-interface line is the one thing here that no panel says: the
    same registry answers a person through the website and an agent through MCP, with the
-   same provenance and the same version pins.
+   same provenance and the same version pins. Its rule went with the heading block, not the
+   pair: five bordered cards against two lines of prose are already two different things.
+
+   ── What the section stopped saying about itself ──
+   An eyebrow, a title and a two-line lead stood over the grid and all three are gone, on
+   the 2026-08-11 hand-off. They said the same thing three times in three registers: the
+   eyebrow named the two loops, the title named them again as a sentence, and the lead
+   promised that both end on the same artifact — which is the landing's own argument and is
+   made three beats earlier by the beat about what a blueprint pins.
+
+   One `h2` replaces them, and it is a question rather than a claim: the five panels are the
+   answer, so the heading only has to ask. `.eyebrow` is rationed to one per page and the
+   hero has spent it, which is the same reason beat 2 and beat 3 gave theirs up.
+
+   One thing genuinely went with the eyebrow rather than moving. `beats.test.ts` recorded
+   that `SectionDoors`' deleted case was safe because "the two loops are named by the section
+   above, whose eyebrow still reads One registry, two loops". No string on this page says
+   `two loops` now. What names them is the grid itself — Find and Create are two of the five,
+   each with a picture, a sentence and a link — and the pair at the foot, which says the two
+   INTERFACES. That note is rewritten where it lives rather than left describing a string
+   that is gone.
    ============================================================ */
 
+/**
+ * The five stages, and the one sentence each of them gets.
+ *
+ * ── The sentences were rewritten to be parallel, 2026-08-11 ──
+ * They had drifted into five different grammars. Three were instructions in the imperative
+ * ("Search by task…", "Take exact plain files…", "Validate a bundle and…"), one was an
+ * invitation ("See how graphs, cards…"), and one was a description with the mechanism in it
+ * ("…with the authoring skill"). Five panels in a row read as one list, and a list whose
+ * items are not the same part of speech reads as five unrelated notes.
+ *
+ * Each is now what the stage IS rather than what a reader should do about it, one idea per
+ * sentence, because the link under each panel is already the instruction and saying it twice
+ * puts the verb in the weaker of the two places. Hrefs, labels, titles and images are
+ * untouched; only `text` moved.
+ */
 const ACTIONS = [
   {
     index: "00",
     href: "/what-a-blueprint-is",
     label: "What a blueprint is",
     title: "Learn",
-    text: "See how graphs, cards, and a shared vocabulary make workflows inspectable before they run.",
+    text: "What a blueprint is: a graph, a card per node, and one vocabulary they are all written in.",
     image: "/home/lifecycle/learn.webp",
   },
   {
@@ -48,7 +83,7 @@ const ACTIONS = [
     href: "/blueprints",
     label: "Search blueprints",
     title: "Find",
-    text: "Search by task, then narrow by shape, human checkpoints, tools, and evidence.",
+    text: "Search the registry by task, then narrow by shape, checkpoints, tools, and evidence.",
     image: "/home/lifecycle/find.webp",
   },
   {
@@ -56,7 +91,7 @@ const ACTIONS = [
     href: "/skill",
     label: "Assisted Design",
     title: "Create",
-    text: "Turn a goal into a typed graph and version-pinned cards with the authoring skill.",
+    text: "An interview turns your goal into a typed graph and a version-pinned card per node.",
     image: "/home/lifecycle/create.webp",
   },
   {
@@ -64,7 +99,7 @@ const ACTIONS = [
     href: "/blueprints/starter-software-factory#use-this-blueprint",
     label: "Take the starter",
     title: "Use",
-    text: "Take exact plain files, then adapt and run them inside your own harness.",
+    text: "Plain files you can read: download a release, adapt it, run it in your own harness.",
     image: "/home/lifecycle/use.webp",
   },
   {
@@ -72,7 +107,7 @@ const ACTIONS = [
     href: "/upload",
     label: "Validate and publish",
     title: "Publish",
-    text: "Validate a bundle and release one exact version for people and agents to retrieve.",
+    text: "Validation checks the bundle, then one exact version goes back for others to fetch.",
     image: "/home/lifecycle/publish.webp",
   },
 ] as const;
@@ -119,11 +154,30 @@ export function SectionLifecycle() {
       />
 
       <div className="container-page relative">
-        <SectionHeading
-          eyebrow="One registry, two loops"
-          title="Find and reuse, or create and publish"
-          lead="Both paths meet on the same blueprint page and leave you holding the same thing: a reproducible, version-pinned specification you can inspect before your own harness runs it."
-        />
+        {/* One `h2`, where there were an eyebrow, a title and a two-line lead.
+            ------------------------------------------------------------
+            A subtraction rather than a rewrite: the five panels, their images, their links
+            and the pair at the foot are untouched, and the heading block that stood over
+            them is one line the author picked from five candidates.
+
+            What the three lost strings were doing, and where it went:
+
+              · the eyebrow `One registry, two loops` named the two halves. The panels name
+                them better — Find and Create are two of the five, with a picture and a
+                sentence each — and `.eyebrow` is rationed to one per page, which the hero
+                has spent. `beats.test.ts` carries a note that leaned on this eyebrow; it is
+                rewritten there rather than left describing a string that is gone.
+              · the title `Find and reuse, or create and publish` was those same two halves
+                again, in sentence form, immediately under the eyebrow saying them.
+              · the lead promised "the same thing" at the end of both paths, which is the
+                landing's own argument and is made three beats earlier, at length, by the
+                beat about what a blueprint pins.
+
+            "What the registry is for" is the question the five panels answer, so the heading
+            asks it and stops. `SectionHeading` with a `title` and nothing else rather than a
+            bare `<h2>`: the component owns the display step, and 32px at `sm` is what the
+            mock draws. The 40px under it is the grid's own `mt-10`. */}
+        <SectionHeading title="What the registry is for" />
 
         <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           {ACTIONS.map((action) => (
@@ -160,7 +214,11 @@ export function SectionLifecycle() {
           ))}
         </div>
 
-        <div className="mt-8 grid gap-4 border-t border-line pt-8 md:grid-cols-2">
+        {/* The rule above this pair is gone with the heading block. It was separating the
+            five panels from the two sentences, and five bordered cards against two lines of
+            prose are already two different things — the hairline was drawing a seam where
+            the panels' own edges had drawn one. `mt-8` alone is the mock's 32px. */}
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
           <p className="text-sm leading-relaxed text-muted">
             <span className="font-mono text-cyan">Human interface:</span> search, inspect,
             compare, download, validate, and publish through the website.
