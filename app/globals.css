@@ -618,6 +618,38 @@ body {
     to { opacity: 1; transform: translateY(0); }
   }
   .anim-strip-in { animation: strip-in 480ms ease-out backwards; }
+
+  /* One run of beat 2's left panel arriving: the route draws, then its score fades on.
+     ------------------------------------------------------------
+     Same contract as `strip-in` above and the same reason for living inside
+     `no-preference` rather than being cancelled in `reduce`: the resting style of both
+     elements is the finished one, `backwards` means the `from` state exists only while the
+     animation is pending, and a reader who asked for less motion never has it applied. The
+     figure is complete in the markup either way, which is what `beats.test.ts` and spec §0
+     require and what a scroll-triggered reveal could not promise.
+
+     `--run` is the run's index, set per element, so the three routes arrive in turn out of
+     one rule rather than three.
+
+     A fade and not a stroke draw, which was the first build. `svg.createDrawable`'s trick
+     needs `pathLength="1"` on the path so a dasharray of 1 means the whole curve, and
+     `FlowEdge`'s base line deliberately does not carry one — that attribute is on the pulse,
+     because the two paths exist precisely so the dasharray can mean different things on
+     each. Inheriting a dasharray onto the line from a wrapping `<g>` would set it in user
+     units against a curve whose length nothing here knows. A fade says the same thing about
+     arrival and does not need a number the component does not publish. */
+  @keyframes run-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .anim-run-in {
+    animation: run-in 420ms ease-out backwards;
+    animation-delay: calc(var(--run, 0) * 640ms);
+  }
+  .anim-run-score {
+    animation: run-in 300ms ease-out backwards;
+    animation-delay: calc(var(--run, 0) * 640ms + 300ms);
+  }
 }
 
 /* React Flow theming overrides (blueprint schematic look) */

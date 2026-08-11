@@ -8,6 +8,7 @@ import {
   FlowScene,
   Sheet,
   VIZ,
+  VIZ_INK,
   VIZ_KNOCKOUT,
   VIZ_LINE,
 } from "@/components/viz";
@@ -122,6 +123,17 @@ type Point = readonly [number, number];
 const GOAL: Point = [56, 118];
 
 /**
+ * The score's type size in scene units, against `FLOW.label.size`'s 13 for the goal.
+ *
+ * The two are not the same kind of text. "goal" is a caption on a node, which is what
+ * `FLOW.label.size` is calibrated for; the three scores are the panel's payload, and the
+ * whole claim is that they are different from each other and cannot be compared. Set at a
+ * caption's size they read as annotations on dots. It clears `FLOW.frame.legible`, the
+ * 10-unit floor this scene's own frame publishes, by a wide margin.
+ */
+const SCORE_SIZE = 19;
+
+/**
  * Three runs of one goal, each ending on its own number.
  *
  * One edge each, and the endpoints are not evenly spaced: 58, 118 and 180 puts the middle
@@ -132,10 +144,10 @@ const GOAL: Point = [56, 118];
  * The scores are the hand-off's and they are illustrative, which the line under the right
  * panel says in the open.
  */
-const IMPROVISED: readonly { end: Point; score: string }[] = [
-  { end: [288, 58], score: "0.62" },
-  { end: [288, 118], score: "0.81" },
-  { end: [288, 180], score: "0.55" },
+const IMPROVISED: readonly { end: Point; score: string; bend: number }[] = [
+  { end: [288, 58], score: "0.62", bend: -14 },
+  { end: [288, 118], score: "0.81", bend: 0 },
+  { end: [288, 180], score: "0.55", bend: 12 },
 ];
 
 /* --------------------- the right panel --------------------- */
@@ -269,9 +281,14 @@ function RouteArrow() {
  */
 function PanelHead({ title, rail }: { title: string; rail: string }) {
   return (
-    <figcaption className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+    /* Stacked, not spread. The two were on one line with the rail pushed to the right edge,
+       which put the panel's name and the sentence telling you how to read it at opposite
+       ends of a 560px row with nothing between them: at that distance they read as two
+       unrelated labels rather than as a title and its subtitle. Under it, left-aligned, the
+       rail is the second line of one heading. */
+    <figcaption className="flex flex-col gap-1">
       <span className="label-lead">{title}</span>
-      <span className="label">{rail}</span>
+      <span className="text-sm leading-snug text-muted">{rail}</span>
     </figcaption>
   );
 }
@@ -321,39 +338,88 @@ export function SectionSameRun() {
           {/* ---------- three runs, three sets of steps ---------- */}
           <figure className="flex min-w-0 flex-col gap-3 lg:row-span-3 lg:grid lg:grid-rows-subgrid">
             <PanelHead title="from a prompt" rail="you do not control the path" />
-            <Sheet>
+            <Sheet title="same prompt · three routes · nothing to credit">
               <FlowScene
                 width={SCENE.width}
                 height={SCENE.height}
                 label="One goal run three times from a prompt"
-                description="A goal on the left, and three runs that each pass through two steps of their own before ending on a score of their own: 0.62, 0.81 and 0.55."
+                description="A goal on the left, and three runs that leave it for three different endings, each with a score of its own: 0.62, 0.81 and 0.55."
               >
                 <FlowNode
                   x={GOAL[0]}
                   y={GOAL[1]}
                   r={FLOW.node.r}
                   lit
-                  label="goal"
-                  reveal="always"
                   mark="schematic"
                 />
-                {IMPROVISED.map((run) => (
-                  <Fragment key={run.score}>
-                    {/* No pulse. A travelling light says "this is the path", and the panel's
-                        claim is that there is no path anybody chose. `FlowEdge` trims both
-                        ends off the node radius plus `FLOW.edge.gap` itself, so neither
-                        endpoint is typed here. */}
-                    <FlowEdge from={GOAL} to={run.end} tone="dim" pulse={false} />
+                {/* "goal" above the node rather than through `FlowNode`'s own `label`, which
+                    sets it underneath. Under is right for a node in a chain, where the space
+                    below is empty; here the space below the goal is where the bottom run
+                    leaves, and a caption sitting in it reads as that run's label. Every
+                    `<text>` in a scene is measured by `components/viz/label-boxes.ts`
+                    whoever wrote it, so this is held to the same collision and clipping
+                    rules as a label the component draws. */}
+                <text
+                  data-viz="label"
+                  x={GOAL[0]}
+                  y={GOAL[1] - FLOW.node.r - FLOW.label.gap}
+                  textAnchor="middle"
+                  fontSize={FLOW.label.size}
+                  fill={VIZ_INK}
+                >
+                  goal
+                </text>
+                {IMPROVISED.map((run, i) => (
+                  /* Each run arrives on its own, and the score after its route.
+                     ------------------------------------------------------------
+                     `--run` is the index and `globals.css` does the rest: two classes, one
+                     delay expression, three routes. The keyframes live inside
+                     `prefers-reduced-motion: no-preference` and fill `backwards`, so the
+                     resting style of both elements is the finished one and a reader who
+                     asked for less motion never has the `from` state applied. That is what
+                     lets this satisfy the author's ask without breaking spec §0 or the
+                     `opacity-0` check in `beats.test.ts`: the server renders the finished
+                     figure, and the animation only plays on top of it. */
+                  <g
+                    key={run.score}
+                    className="anim-run-in"
+                    style={{ "--run": i } as React.CSSProperties}
+                  >
+                    {/* No pulse and no arrowhead. A travelling light says "this is the
+                        path" and an arrow says "and it goes this way", and the panel's
+                        claim is that nobody chose either. `FlowEdge` trims both ends off
+                        the node radius plus `FLOW.edge.gap` itself, so no endpoint is
+                        typed here; `bend` is what keeps the three from reading as a fan
+                        somebody laid out. */}
+                    <FlowEdge
+                      from={GOAL}
+                      to={run.end}
+                      bend={run.bend}
+                      tone="dim"
+                      arrow={false}
+                      pulse={false}
+                    />
                     <FlowNode
                       x={run.end[0]}
                       y={run.end[1]}
                       r={FLOW.node.r}
                       tone="dim"
-                      label={run.score}
-                      reveal="always"
                       mark="schematic"
                     />
-                  </Fragment>
+                    <text
+                      data-viz="label"
+                      className="anim-run-score"
+                      style={{ "--run": i } as React.CSSProperties}
+                      x={run.end[0] + FLOW.node.r + FLOW.label.gap}
+                      y={run.end[1]}
+                      dominantBaseline="middle"
+                      textAnchor="start"
+                      fontSize={SCORE_SIZE}
+                      fill={VIZ_INK}
+                    >
+                      {run.score}
+                    </text>
+                  </g>
                 ))}
               </FlowScene>
             </Sheet>
@@ -366,7 +432,14 @@ export function SectionSameRun() {
           {/* ---------- four runs, one step touched each ---------- */}
           <figure className="flex min-w-0 flex-col gap-3 lg:row-span-3 lg:grid lg:grid-rows-subgrid">
             <PanelHead title="from a blueprint" rail="you define the steps, then tune them" />
-            <Sheet bodyClassName="relative overflow-x-auto p-4">
+            <Sheet
+              /* Cyan, where the left sheet's strip is the sheet's own ink. The two strips
+                 are not the same kind of remark: the left one names what the panel shows
+                 and the right one states the property the ledger above it depends on, which
+                 is the same claim the line under the route makes and the same colour. */
+              title={<span className="text-cyan">one step changed per iteration · everything else held</span>}
+              bodyClassName="relative overflow-x-auto p-4"
+            >
               {/* ---------- the route, once ----------
                   Eleven of the old table's twelve pills existed to say "these did not
                   change". Stating the route once and then listing what moved is the same
@@ -388,6 +461,12 @@ export function SectionSameRun() {
                 <p className="label text-cyan">this route runs every time, in this order</p>
               </div>
 
+              {/* A rule across the whole sheet, not across the table. The route above and
+                  the ledger below are two blocks rather than a heading and its content, and
+                  a rule inset by the body's own padding reads as a table border with a
+                  paragraph sitting on top of it. `-mx-4` is that padding, spent back. */}
+              <div className="-mx-4 border-t" style={{ borderColor: RULE }} />
+
               {/* ---------- the ledger ----------
                   Still a table, and for the reason it always was: four scores and three
                   deltas read DOWN, and a grid of related values with headers on both axes is
@@ -398,7 +477,7 @@ export function SectionSameRun() {
                   of `--color-blueprint-line` at 15% is the drafting sheet's own ruling, and
                   it does what the old `border-spacing` could not: it lines the four scores up
                   under a header that is attached to them. */}
-              <table className="w-full border-collapse text-left">
+              <table className="mt-1 w-full border-collapse text-left">
                 <caption className="sr-only">
                   Four runs of one blueprint, numbered 01 to 04. Each row names the one step
                   it changed and reports the score and the change from the run before it.
@@ -409,16 +488,16 @@ export function SectionSameRun() {
                       column of numbers — and `--color-faint` is annotated in `globals.css`
                       as decorative separators only, never live text. */}
                   <tr className="border-b" style={{ borderColor: RULE }}>
-                    <th scope="col" className="label py-2 pr-3 font-normal">
+                    <th scope="col" className="label py-3 pr-3 font-normal">
                       iter
                     </th>
-                    <th scope="col" className="label py-2 pr-3 font-normal">
+                    <th scope="col" className="label py-3 pr-3 font-normal">
                       what changed
                     </th>
-                    <th scope="col" className="label py-2 pl-3 text-right font-normal">
+                    <th scope="col" className="label py-3 pl-3 text-right font-normal">
                       score
                     </th>
-                    <th scope="col" className="label py-2 pl-3 text-right font-normal">
+                    <th scope="col" className="label py-3 pl-3 text-right font-normal">
                       delta
                     </th>
                   </tr>
@@ -432,7 +511,7 @@ export function SectionSameRun() {
                     >
                       <th
                         scope="row"
-                        className="whitespace-nowrap py-2.5 pr-3 font-mono text-[11px] font-normal text-dim"
+                        className="whitespace-nowrap py-3.5 pr-3 font-mono text-[12px] font-normal text-dim"
                       >
                         {iteration.n}
                       </th>
@@ -440,7 +519,7 @@ export function SectionSameRun() {
                           happened to it is the predicate and reads under. A cell entirely in
                           one tone would make "rank" and "removed" equally loud, and the
                           column a reader scans is the one naming the steps. */}
-                      <td className="py-2.5 pr-3 font-mono text-[12px] text-dim">
+                      <td className="py-3.5 pr-3 font-mono text-[13px] text-dim">
                         {iteration.changed === null ? (
                           "baseline"
                         ) : (
@@ -455,12 +534,12 @@ export function SectionSameRun() {
                       {/* Fixed columns, right-aligned, tabular figures. The vertical read
                           down these two is the figure's whole argument, and a proportional
                           digit or a column that sizes to its content breaks it. */}
-                      <td className="w-[52px] py-2.5 pl-3 text-right font-mono text-[14px] tabular-nums text-fg">
+                      <td className="w-[56px] py-3.5 pl-3 text-right font-mono text-[17px] tabular-nums text-fg">
                         {iteration.score}
                       </td>
                       <td
                         className={cx(
-                          "w-[52px] py-2.5 pl-3 text-right font-mono text-[12px] tabular-nums",
+                          "w-[56px] py-3.5 pl-3 text-right font-mono text-[12px] tabular-nums",
                           iteration.delta === undefined
                             ? "text-faint"
                             : iteration.delta.gain
