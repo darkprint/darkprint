@@ -18,7 +18,16 @@ export function SectionHeading({
   as: Title = "h2",
   className,
 }: {
-  eyebrow?: string;
+  /**
+   * `React.ReactNode` and not `string` since 2026-08-11, which is strictly more permissive
+   * and changes nothing for the callers passing a string.
+   *
+   * `/mcp` needs a `ComingSoonBadge` beside its eyebrow rather than beside its `h1`: the
+   * badge is the first correction that page owes a reader, and on the eyebrow row it is
+   * read before the title instead of after it. The badge sets its own font, size, tracking
+   * and colour, so it survives sitting inside `.eyebrow`.
+   */
+  eyebrow?: React.ReactNode;
   title: React.ReactNode;
   lead?: React.ReactNode;
   align?: "left" | "center";
