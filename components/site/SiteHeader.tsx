@@ -66,7 +66,16 @@ export const NAV = [
   { href: "/spec/card", label: "Node card (YAML)", group: "docs" },
   { href: "/spec/ontology", label: "Ontology", group: "docs" },
   { href: "/reading-the-radar", label: "How a blueprint is graded", group: "docs" },
-  { href: "/towards-a-dark-factory", label: "Towards a Dark Factory", group: "guides" },
+  /* `/towards-a-dark-factory` stood here as `group: "guides"` and was deleted 2026-08-11.
+     `guides` is not one of the groups this file renders (`browse`, `build`, `action`,
+     `docs`) nor one of `MOBILE_GROUPS`, so the row drew nothing on any surface: it was a
+     table entry describing a control that does not exist. The route reaches the header
+     through `LEARN`, as stop 06 of the sequence, and Learn is its only home.
+
+     What the row was silently doing was supplying the route's entry in `nav.test.ts`'s
+     `HEADER_LABELS`. That map is built from this table, so two of that file's assertions
+     read the route's label out of a row nobody could click; both read it from `LEARN` now,
+     which is the surface that actually names it. */
 ] as const;
 
 /** The three rows that stand in the bar itself. */

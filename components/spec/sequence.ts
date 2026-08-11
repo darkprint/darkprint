@@ -385,11 +385,21 @@ export const LEARN_PRACTICE: readonly SpecPage[] = [
     eyebrow: "The route",
     title: "Towards a Dark Factory",
     question: "Decide which work can run unattended inside a deliberate harness.",
-    /* Empty on purpose, and the reason `sections` is required rather than optional. This
-       page is one argument from the ladder to the two sources under it, with no headed
-       sections to jump between and no `PageContents` panel to move: it never had one. The
-       rail gives it a row and no children, which is what a reader should see. */
-    sections: [],
+    /* Empty until 2026-08-11, on the reading that this page is one argument with no headed
+       sections to jump between. Two of the three below were already headed and simply had
+       no id: the sources block carries an `h3`, and the cyan panel carries doc 2 §1's hook,
+       the loudest sentence on the page and the one a reader comes back for. A section a
+       reader can see and cannot address is not an unsectioned page, it is an unaddressable
+       one, and this is the only stop in either run whose rail row went nowhere.
+
+       Still no `PageContents` panel. The rail's indented list is the whole deliverable and
+       this page never had a panel; adding one would put a second table of contents above
+       the fold of the one page in the sequence that reads as a single argument. */
+    sections: [
+      { id: "levels", label: "The ladder" },
+      { id: "the-gap", label: "The gap" },
+      { id: "sources", label: "Where this framing comes from" },
+    ],
   },
 ];
 

@@ -267,9 +267,15 @@ describe("the task groups use distinct, descriptive labels", () => {
    * saying the shorter one, and the two pages have nothing in common.
    */
   it("has no label containing another label of the same group", () => {
-    const learn = NAV.filter((item) => item.group === "guides").map(
+    /* `docs`, not `guides`. `guides` held one row and lost it on 2026-08-11 when the dead
+       `/towards-a-dark-factory` entry was deleted, which would have left this walking a
+       list of one and passing for the reason a vacuous test passes. `docs` is where the
+       labels this rule is about actually live: seven Learn destinations, named in full,
+       and the footer prints the same seven under one another. */
+    const learn = NAV.filter((item) => item.group === "docs").map(
       (item) => item.label as string,
     );
+    expect(learn.length, "the docs group is empty; this would pass vacuously").toBeGreaterThan(1);
     const contained: string[] = [];
     for (const a of learn) {
       for (const b of learn) {
@@ -288,9 +294,16 @@ describe("the task groups use distinct, descriptive labels", () => {
    * item wants to see what they clicked at the top of what loads.
    */
   it("labels the route page with the heading a reader lands on", () => {
+    /* Off `LEARN` rather than `HEADER_LABELS`. The route's `NAV` row was deleted on
+       2026-08-11 for drawing nothing, and `HEADER_LABELS` is built from that table, so this
+       was about to hold the page's title against `undefined` and pass on the string
+       "undefined" appearing nowhere. The Learn dropdown is the header surface that names
+       this route, so it is the one the page's own heading has to agree with. */
+    const label = LEARN.find((item) => item.href === "/towards-a-dark-factory")?.label;
+    expect(label, "the Learn dropdown no longer names /towards-a-dark-factory").toBeDefined();
     const source = read("app/towards-a-dark-factory/page.tsx");
     expect(source).toContain('as="h1"');
-    expect(source).toContain(`title="${HEADER_LABELS.get("/towards-a-dark-factory")}"`);
+    expect(source).toContain(`title="${label}"`);
   });
 });
 

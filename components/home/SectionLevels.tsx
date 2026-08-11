@@ -650,8 +650,15 @@ export function SectionLevels() {
           ))}
         </ol>
 
-        {/* Doc 2 §1's hook. The one sentence that does the positioning. */}
-        <div className="mt-14 rounded-lg border border-cyan/30 bg-cyan/5 p-6 sm:p-8">
+        {/* Doc 2 §1's hook. The one sentence that does the positioning, and addressable
+            since 2026-08-11: `sequence.ts` lists it as this stop's second section, so the
+            Learn rail can put a reader on it. `scroll-mt-24` on the same tag as the id, the
+            way `anchors.test.ts` requires, and the same offset `#levels` uses so a fragment
+            never lands under the sticky header. */}
+        <div
+          id="the-gap"
+          className="mt-14 scroll-mt-24 rounded-lg border border-cyan/30 bg-cyan/5 p-6 sm:p-8"
+        >
           <p className="max-w-3xl font-display text-xl leading-snug text-fg sm:text-2xl">
             The gap between level 2 and level 4 is architectural and organisational.
           </p>
@@ -685,8 +692,11 @@ export function SectionLevels() {
             `components/home/levels.test.ts` held two assertions on this copy and now
             holds them on the deck instead. */}
 
-        {/* ---------- sources ---------- */}
-        <div className="mt-10 border-t border-line pt-6">
+        {/* ---------- sources ----------
+            Headed since it was written and addressable since 2026-08-11. The `h3` was
+            already the label the rail now uses; all it lacked was an id to point the row
+            at. */}
+        <div id="sources" className="mt-10 scroll-mt-24 border-t border-line pt-6">
           <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
             Where this framing comes from
           </h3>
