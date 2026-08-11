@@ -11,7 +11,6 @@ import { RouteBoxLink } from "@/components/ui/RouteBoxLink";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SourcePanel } from "@/components/ui/SourcePanel";
-import { OntologyCatalog } from "@/components/ontology/OntologyCatalog";
 
 /* ============================================================
    /spec/ontology — layer 3, and the answer to the author's
@@ -191,10 +190,43 @@ export default function SpecOntologyPage() {
         </div>
       </section>
 
-      {/* The former `/ontology` index now lives here: the five kinds, every term and the
-          governance model are part of the same Learn stop as the motivation above. */}
-      <section className="border-t border-line bg-surface/40">
-        <OntologyCatalog showHeading={false} />
+      {/* The term listing left this page in the accounts pass, and this is the door to
+          where it went.
+          ------------------------------------------------------------
+          `OntologyCatalog` — the five kinds, every term in each of them, the governance
+          model — stood here because `/ontology` had been 308'd away and the vocabulary had
+          nowhere else to live. It has somewhere now: the registry's third shelf has a row
+          in the chrome and a browser of its own, on the same filter bar `/blueprints` and
+          `/nodes` use, with search, a kind filter, a core-or-local filter and a usage count
+          per term that this listing never had.
+
+          Keeping both would have left two exhaustive term listings on one site, which is
+          the duplication this codebase deletes rather than accumulates — the same argument
+          that merged `/spec/scoring` into `/reading-the-radar`. So the split is by
+          question: this page specifies the format, and `/ontology` lists the words. What
+          stays here is everything that is specification — the five kinds explained, the
+          overlay rules, the validator checks — and what left is the enumeration.
+
+          `components/ontology/canonical-route.test.ts` holds both routes to their halves so
+          neither can quietly absorb the other again. `OntologyCatalog` itself is unchanged
+          and unmounted; it is the shape a future "browse by kind" view would start from. */}
+      <section className="border-t border-line bg-surface/40 py-16 sm:py-20">
+        <div className="container-page">
+          <RouteBoxLink
+            href="/ontology"
+            label={
+              <>
+                Every term <span aria-hidden>&rarr;</span>
+              </>
+            }
+            title={`Browse all ${terms.length} terms`}
+          />
+          <p className="prose-lane mt-4 text-sm leading-relaxed text-muted">
+            The vocabulary browser lists every term with its kind, its parent, what a risk
+            marker costs, and how many cards in the archive name it. This page is the
+            format; that one is the words.
+          </p>
+        </div>
       </section>
 
       {/* ---------- the one term this archive coined for itself ----------
@@ -366,25 +398,13 @@ export default function SpecOntologyPage() {
               lines at every width instead of sharing one baseline and one wrap. */}
           <SpecPager
             href={HERE}
-            after={
-              <RouteBoxLink
-                href="/build"
-                /* "Next", not "Design". It sits on the pager's own row, where the other
-                   box says PREVIOUS, and a row whose two ends read PREVIOUS and DESIGN is
-                   two vocabularies for one gesture. The title under it already says what
-                   the destination is. */
-                label={
-                  <>
-                    Next <span aria-hidden>&rarr;</span>
-                  </>
-                }
-                /* The destination is unchanged — `/build` is still stop 04 — but its
-                   subject narrowed when the page split, so the box says what is actually
-                   there. "Design your blueprint" described the authoring half, which is on
-                   `/skill` now. */
-                title="Customize the starter blueprint"
-              />
-            }
+            /* No `after`. This page passed a third signpost — a hand-built NEXT box at
+               `/build` — because it used to END the sequence and the row's right side was
+               empty. It does not end it any more: the sandbox is the stop directly after it
+               now, so the pager draws that arrow itself and the extra box was the same
+               destination twice on one row, two inches apart. The `after` slot stays on
+               `SpecPager` for a page that genuinely has a spare end; this one no longer
+               does. */
           />
         </div>
       </section>

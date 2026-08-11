@@ -44,7 +44,7 @@ import { describe, expect, it } from "vitest";
 import nextConfig from "../../next.config";
 import { SPEC_SEQUENCE } from "@/components/spec/sequence";
 
-import { LEARN, NAV } from "./SiteHeader";
+import { ACCOUNT_MENU, LEARN, NAV } from "./SiteHeader";
 import { COLS } from "./SiteFooter";
 
 /** Repo root: this file is `<root>/components/site/`. */
@@ -304,12 +304,32 @@ describe("the nav is a complete map of the routes", () => {
    * block of this file now reads its controls out of the header source and holds them to
    * the footer's wording, which is the check every other route gets for free by being a
    * `NAV` row.
+   *
+   * `settings` was exempt for one pass and is not any more. It is reached from the account
+   * menu hanging off the header's avatar, which is a header control rather than a `NAV`
+   * row — so `ACCOUNT_MENU` joined `HEADER_ROUTES` below, exactly the way `LEARN` did when
+   * `/build` left `NAV`, and the exemption came out in the same change. The fix was to the
+   * definition of "in the header", not to what the assertion demands, which is the whole
+   * argument the entry made while it stood.
    */
   const ELSEWHERE = new Set(["upload"]);
 
-  it("keeps the canonical ontology Learn page reachable from the header", () => {
+  /**
+   * Decision 1 of the accounts pass, held from both ends.
+   *
+   * This used to assert that `/ontology` was NOT in the header at all, which was true and
+   * was the defect: the vocabulary browser is one of the three things the registry holds
+   * and the only route to it in the chrome was the Learn menu's row for the spec document
+   * ABOUT it. The browser now has its own row, and the two routes keep two names — the
+   * rule this file's first block enforces is one label per route, and calling both of them
+   * "Ontology" is exactly what that forbids.
+   *
+   * So the claim is stronger than it was: both routes are in the header, and they are
+   * called different things on purpose.
+   */
+  it("names the vocabulary browser and its spec page differently", () => {
     expect(HEADER_LABELS.get("/spec/ontology")).toBe("Ontology");
-    expect(HEADER_LABELS.has("/ontology")).toBe(false);
+    expect(HEADER_LABELS.get("/ontology")).toBe("Vocabulary");
   });
 
   it("uses the shared 00–06 sequence for the Learn dropdown", () => {
@@ -340,6 +360,7 @@ describe("the nav is a complete map of the routes", () => {
   const HEADER_ROUTES = new Set<string>([
     ...HEADER_LABELS.keys(),
     ...LEARN.map((item) => item.href as string),
+    ...ACCOUNT_MENU.map((item) => item.href as string),
   ]);
 
   it("lists every top-level route in the header", () => {
@@ -459,9 +480,15 @@ describe("the collapsed menu stays usable", () => {
     const groups = [...SOURCE.matchAll(/\{ id: "(\w+)", title: "([^"]+)" \}/g)].map((m) => m[1]);
     expect(groups.length).toBeGreaterThan(0);
     for (const group of groups) {
-      const count = group === "learn"
-        ? LEARN.length
-        : NAV.filter((item) => item.group === group).length;
+      /* Two groups are not filtered out of `NAV`: `learn` comes from `SPEC_SEQUENCE` and
+         `you` from `ACCOUNT_MENU`, because neither is a row in the primary table. Every
+         other group is. */
+      const count =
+        group === "learn"
+          ? LEARN.length
+          : group === "you"
+            ? ACCOUNT_MENU.length
+            : NAV.filter((item) => item.group === group).length;
       expect(
         count,
         `group "${group}" has no items`,
@@ -470,9 +497,24 @@ describe("the collapsed menu stays usable", () => {
     /* A group missing from `GROUPS` is only a defect if nothing else renders its items.
        `home` is deliberately outside that list: a section headed "Home" holding one link
        called "Home" says the word twice, so the panel draws it above the groups with no
-       heading. What still has to hold is that every item reaches the panel somehow, so
-       the check is against the rendered hrefs rather than against the group list. */
-    const learnHrefs = new Set(LEARN.map((item) => item.href));
+       heading. What still has to hold is that every item reaches the panel somehow, so the
+       check is against the rendered hrefs rather than against the group list.
+
+       Two hrefs reach a reader by another route entirely, and both are asserted below
+       rather than waved through:
+
+       - `/upload` is the Publish button in the wide row and an explicit row at the foot of
+         the panel's Build group. It is not a `NAV`-driven row in either place, so the scan
+         below cannot see it and the check on the source can.
+       - `/towards-a-dark-factory` is stop 06 of the Learn sequence, so the dropdown and the
+         phone panel both carry it through `LEARN`. It needs no exemption; the entry is kept
+         here because the route has been in and out of that list twice and the next reader
+         should find the answer rather than the history. */
+    const ELSEWHERE_THAN_THE_PANEL = new Set(["/upload"]);
+    const learnHrefs = new Set([
+      ...LEARN.map((item) => item.href as string),
+      ...ACCOUNT_MENU.map((item) => item.href as string),
+    ]);
     const rendered = new Set(
       [...SOURCE.matchAll(/href=\{item\.href\}/g)].length > 0
         ? NAV.filter(
@@ -480,11 +522,22 @@ describe("the collapsed menu stays usable", () => {
               groups.includes(item.group) ||
               UNGROUPED.includes(item.group) ||
               learnHrefs.has(item.href),
-          ).map((item) => item.href)
+          ).map((item) => item.href as string)
         : [],
     );
-    const stray = NAV.filter((item) => !rendered.has(item.href)).map((item) => item.href);
+    const stray = NAV.map((item) => item.href as string).filter(
+      (href) => !rendered.has(href) && !ELSEWHERE_THAN_THE_PANEL.has(href),
+    );
     expect(stray, "an item the collapsed panel never renders").toEqual([]);
+
+    // The one exemption, held to the way in it claims.
+    expect(SOURCE, "the phone panel dropped its Publish row").toContain('href="/upload"');
+    // And the essay reaches a reader through the sequence and the footer both.
+    expect(LEARN.map((item) => item.href)).toContain("/towards-a-dark-factory");
+    expect(
+      FOOTER.map((link) => link.href),
+      "the footer stopped carrying the essay",
+    ).toContain("/towards-a-dark-factory");
   });
 
   it("caps the panel below the header and lets it scroll", () => {

@@ -25,4 +25,3 @@ export { SectionSameRun } from "./SectionSameRun";
 export { SectionBlueprint } from "./SectionBlueprint";
 export { SectionNodeIsCard } from "./SectionNodeIsCard";
 export { SectionLifecycle } from "./SectionLifecycle";
-export { SectionDoors } from "./SectionDoors";

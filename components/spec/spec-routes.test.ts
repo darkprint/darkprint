@@ -54,8 +54,11 @@ import { describe, expect, it } from "vitest";
 import {
   SPEC_LAYERS,
   LEARN_PRACTICE,
+  RUNS,
+  SANDBOX,
   SPEC_OVERVIEW,
   SPEC_SEQUENCE,
+  runPosition,
   specNeighbours,
 } from "./sequence";
 import { SpecPager } from "./SpecPager";
@@ -106,12 +109,89 @@ describe("the sequence and the filesystem agree", () => {
     ]);
   });
 
-  it("continues through the three practice pages as stops 04 to 06", () => {
-    expect(LEARN_PRACTICE.map(({ step, href, nav }) => ({ step, href, nav }))).toEqual([
-      { step: "04", href: "/build", nav: "Customize the starter blueprint" },
-      { step: "05", href: "/reading-the-radar", nav: "How a blueprint is graded" },
-      { step: "06", href: "/towards-a-dark-factory", nav: "Towards a Dark Factory" },
+  /**
+   * The sequence is two named runs over one list, and this is the shape of both.
+   *
+   * It used to assert three practice stops numbered 04 to 06. Two of them left in the
+   * accounts pass and neither is a deletion of a route: the sandbox moved into the
+   * specification run as an unnumbered worked example under stop 03, and the essay left the
+   * sequence altogether while its page stayed exactly where it was.
+   */
+  it("runs the specification, then the practice, over one list", () => {
+    expect(
+      SPEC_SEQUENCE.map(({ step, href, run }) => ({ step, href, run })),
+    ).toEqual([
+      { step: "00", href: "/what-a-blueprint-is", run: "specification" },
+      { step: "01", href: "/spec/topology", run: "specification" },
+      { step: "02", href: "/spec/card", run: "specification" },
+      { step: "03", href: "/spec/ontology", run: "specification" },
+      { step: "04", href: "/build", run: "practice" },
+      { step: "05", href: "/reading-the-radar", run: "practice" },
+      { step: "06", href: "/towards-a-dark-factory", run: "practice" },
     ]);
+    expect(LEARN_PRACTICE.map((page) => page.href)).toEqual([
+      "/build",
+      "/reading-the-radar",
+      "/towards-a-dark-factory",
+    ]);
+  });
+
+  /**
+   * The sandbox is a stop of its own, and it keeps the word that says what kind.
+   *
+   * It spent one pass unnumbered and indented under stop 03, on the argument that an
+   * optional stop is not a stop; the author asked for it back as a row in its own right. So
+   * it has a number and no indent, and `meta` survives the change — the tag is the part of
+   * the old treatment worth keeping, because a number cannot say "worked example".
+   *
+   * It opens the practice run: the specification says what the three files are, and this is
+   * the first stop that does something with them.
+   */
+  it("draws the sandbox as stop 04, opening the practice run", () => {
+    expect(SANDBOX.step).toBe("04");
+    expect(SANDBOX.indent).toBeUndefined();
+    expect(SANDBOX.meta).toBe("worked example");
+    expect(SANDBOX.run).toBe("practice");
+    expect(SPEC_SEQUENCE[SPEC_SEQUENCE.indexOf(SANDBOX) - 1]).toBe(SPEC_LAYERS[2]);
+    expect(runPosition(SANDBOX.href)).toEqual({ run: "practice", position: 1, total: 3 });
+  });
+
+  /**
+   * The essay is the last stop of the practice run.
+   *
+   * It left the sequence for one pass, on the hand-off's decision 3, and the author asked
+   * for it back: a reader who has been through the specification and the scorecard is
+   * exactly the reader who then asks which work belongs to an agent at all. Both halves are
+   * asserted, because the round trip broke each of them in turn — the page has to be in the
+   * list AND to draw the pager the list gives it.
+   */
+  it("closes the practice run with the essay", () => {
+    expect(SPEC_SEQUENCE.at(-1)?.href).toBe("/towards-a-dark-factory");
+    expect(specNeighbours("/towards-a-dark-factory").next).toBeUndefined();
+    expect(specNeighbours("/towards-a-dark-factory").previous?.href).toBe(
+      "/reading-the-radar",
+    );
+    const essay = readFileSync(
+      join(ROOT, "app/towards-a-dark-factory/page.tsx"),
+      "utf8",
+    );
+    expect(essay).toMatch(/from "@\/components\/spec\/SpecPager"/);
+    expect(essay).toContain("<SpecPager href={HERE} />");
+  });
+
+  /** The position a reader is shown is the position inside their own run. */
+  it("counts a stop against its own run, not across both", () => {
+    expect(runPosition("/spec/card")).toEqual({
+      run: "specification",
+      position: 3,
+      total: 4,
+    });
+    expect(runPosition("/reading-the-radar")).toEqual({
+      run: "practice",
+      position: 2,
+      total: 3,
+    });
+    expect(Object.keys(RUNS).sort()).toEqual(["practice", "specification"]);
   });
 
   it("names stop 03 Ontology everywhere", () => {
@@ -119,6 +199,8 @@ describe("the sequence and the filesystem agree", () => {
   });
 
   it("gives every page a distinct step, route and title", () => {
+    // `step` included: exactly one stop may lack a number, so a second `undefined` in the
+    // column collapses the set and fails here rather than drawing two `└` rows.
     for (const key of ["href", "step", "title", "nav"] as const) {
       const values = SPEC_SEQUENCE.map((page) => page[key]);
       expect(new Set(values).size, `two pages share a ${key}`).toBe(
@@ -292,7 +374,9 @@ describe("the pager's aria-label names the true count", () => {
     (href, step, nav) => {
       const html = renderToStaticMarkup(createElement(SpecPager, { href }));
       expect(html.match(/aria-current="page"/g)).toHaveLength(1);
-      expect(html).toContain(`aria-current="page" class="text-cyan">${step} ${nav}</span>`);
+      expect(html).toContain(
+        `aria-current="page" class="text-cyan">${step ?? "└"} ${nav}</span>`,
+      );
     },
   );
 });

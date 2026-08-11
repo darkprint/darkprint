@@ -7,15 +7,29 @@ export function compact(n: number): string {
   return (n / 1_000_000).toFixed(1) + "M";
 }
 
+const MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
 /** "2026-03-14" -> "Mar 14, 2026". Pure, no Date.now needed. */
 export function prettyDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
-  const months = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-  ];
   if (!y || !m || !d) return iso;
-  return `${months[m - 1]} ${d}, ${y}`;
+  return `${MONTHS[m - 1]} ${d}, ${y}`;
+}
+
+/**
+ * "2026-03-04" -> "Mar 2026". The same date, at the resolution an account fact has.
+ *
+ * A membership date and a badge grant are month-accurate claims: nobody needs the day
+ * somebody joined, and printing one implies a precision the seeded row does not carry.
+ * Same input shape as `prettyDate` so one stored value serves both.
+ */
+export function monthYear(iso: string): string {
+  const [y, m] = iso.split("-").map(Number);
+  if (!y || !m) return iso;
+  return `${MONTHS[m - 1]} ${y}`;
 }
 
 /**

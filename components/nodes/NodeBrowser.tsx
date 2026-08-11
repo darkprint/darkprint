@@ -3,6 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { cx } from "@/lib/format";
 import { useQueryState } from "@/components/ui/useQueryState";
+import {
+  CONTROL_CLASS,
+  RegistryFilterBar,
+  SearchField,
+} from "@/components/ui/RegistryFilterBar";
 import { PHASE_ORDER } from "@/components/ui/PhaseCoverage";
 import { NodeCardSummary, type NodeSummary } from "./NodeCardSummary";
 
@@ -23,8 +28,11 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 /** Grouping only happens under this one, so it is also what the page opens on. */
 const DEFAULT_SORT: SortKey = "type";
 
-const controlClass =
-  "w-full rounded-md border border-line bg-surface-2 px-3 py-2 font-mono text-xs text-fg outline-none transition-colors focus:border-line-bright sm:w-auto";
+/* The shape moved to `components/ui/RegistryFilterBar.tsx` with the disclosure below it:
+   this file and the gallery each carried a copy, and they had already drifted — the
+   placeholder-contrast fix was made here and never brought across. Aliased because
+   `controlClass` is this file's own word for it. */
+const controlClass = CONTROL_CLASS;
 
 /** Code-unit order, so the grid reads the same wherever it is rendered. */
 function byText(a: string, b: string): number {
@@ -256,7 +264,6 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
   }, [draft, setParam]);
 
   /** Open on mobile, where the panel is behind a disclosure. Ignored from `sm` up. */
-  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const filters: Filters = useMemo(
     () => ({ q: search, type, phase, human: humanOnly, risk: riskOnly }),
@@ -436,81 +443,23 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* The mobile disclosure.
-          ------------------------------------------------------------
-          At 378px the control panel is 282px tall and the first card began at y=715,
-          one pixel past a 714px viewport: a reader who asked for a library met a form
-          and had to scroll to learn the library existed. The panel is also `static`, so
-          changing a filter after scrolling into the 24-card Tool group meant scrolling
-          6000px back up.
-
-          One panel, not two. A second copy behind a media query would duplicate every
-          input, every id and every tab stop, which is worse for a screen reader than
-          the problem it solves. So the body below is hidden by state on small screens
-          and forced visible from `sm` up, and this button — which only exists below
-          `sm` — toggles it and carries the count of what is currently on. */}
-      {/* `z-40` — page chrome on the site's one z ladder (header 50 · page chrome 40 ·
-          section chrome 30 · card furniture 20 · a card's stretched hit target 10).
-          It was `z-20`, which is the tier a card's own furniture sits on, and a card
-          `<article>` is `relative` with `z-index: auto` — so it opens no stacking
-          context and its `z-20` children compete with this bar directly, winning on DOM
-          order because they come later. Measured: a `FavoriteStar` covering the `/53` of
-          the result count, and an author avatar punching through this bar's lower
-          border. The bar a reader steers by cannot be the thing the grid scrolls over. */}
-      <div className="sticky top-16 z-40 -mx-1 bg-void/95 px-1 py-2 backdrop-blur-sm sm:hidden">
-        <button
-          type="button"
-          onClick={() => setFiltersOpen((v) => !v)}
-          aria-expanded={filtersOpen}
-          aria-controls="node-filters"
-          className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-line bg-surface-2 px-3 py-2.5 font-mono text-xs text-fg transition-colors hover:border-line-bright"
-        >
-          <span className="flex items-center gap-2">
-            <span aria-hidden className="text-cyan">
-              {filtersOpen ? "▾" : "▸"}
-            </span>
-            Filter
-            {activeCount > 0 && (
-              <span className="rounded-full bg-cyan/15 px-2 py-0.5 tabular-nums text-cyan">
-                {activeCount}
-              </span>
-            )}
-          </span>
-          <span className="tabular-nums text-dim">
-            {results.length}/{nodes.length}
-          </span>
-        </button>
-      </div>
-
-      {/* control bar. `role="search"` because it is one: without it the landmark list
-          on this page was HEADER / NAV / MAIN / FOOTER, and the thing the page is for
-          had no name in it. */}
-      <div
+      {/* The disclosure, the panel and the control shape all live in
+          `components/ui/RegistryFilterBar.tsx` now. What stays here is what only this
+          browser knows: which filters exist and how they narrow the library. */}
+      <RegistryFilterBar
         id="node-filters"
-        role="search"
-        aria-label="Filter node cards"
-        className={cx("panel flex-col gap-4 p-4 sm:flex", filtersOpen ? "flex" : "hidden")}
+        label="Filter node cards"
+        results={results.length}
+        total={nodes.length}
+        active={activeCount}
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <span
-              aria-hidden
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-sm text-dim"
-            >
-              /
-            </span>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="Search ids, names, actions, tools…"
-              aria-label="Search node cards"
-              /* `text-dim` is the readable token (5.4:1 on surface-2); `text-faint` is
-                 for decorative separators and would put the only hint of what this
-                 field accepts at 1.8:1. */
-              className="w-full rounded-md border border-line bg-surface-2 py-2 pl-8 pr-3 text-sm text-fg placeholder:text-dim outline-none transition-colors focus:border-line-bright"
-            />
-          </div>
+          <SearchField
+            value={search}
+            onChange={setDraft}
+            placeholder="Search ids, names, actions, tools…"
+            ariaLabel="Search node cards"
+          />
 
           <label className="flex items-center gap-2">
             <span className="sr-only">Filter by card type</span>
@@ -592,7 +541,7 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
             onClick={() => setParam("risk", riskOnly ? null : "1")}
           />
         </div>
-      </div>
+      </RegistryFilterBar>
 
       {/* result count + reset.
           `role="status"` so the number is announced when it changes. Every filter on

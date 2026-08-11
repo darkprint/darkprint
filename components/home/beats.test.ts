@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 
 import { Wordmark } from "@/components/hero/Wordmark";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
-import { SectionDoors } from "@/components/home/SectionDoors";
 import { SectionLifecycle } from "@/components/home/SectionLifecycle";
 import { SectionNodeIsCard } from "@/components/home/SectionNodeIsCard";
 import { SectionSameRun } from "@/components/home/SectionSameRun";
@@ -139,24 +138,51 @@ describe("the blueprint-first landing", () => {
     expect(html).toContain('href="/spec/card"');
   });
 
-  it("starts with learning, then names the finder and creator lifecycle", () => {
+  /**
+   * The five steps, the pair at the foot, and **no links at all**.
+   *
+   * This section is the landing's ending now, so its five links are load-bearing rather
+   * than duplicative.
+   *
+   * The page used to close twice: five panels here, each with a CTA, and then
+   * `SectionDoors` asking "find one, or create one" with two buttons — a choice already
+   * inside these five. One of the two had to go, and the author cut the doors: five ways in
+   * with a picture and a sentence each beats two cards, and Learn, Use and Publish are
+   * three doors the band never had.
+   *
+   * So the case holds every panel to a link, which is the property that made cutting the
+   * doors safe. Losing one silently would leave the landing with no way out of the beat it
+   * ends on.
+   */
+  it("ends the landing with a way into each of the five", () => {
     const html = render(SectionLifecycle);
     const text = plainText(html);
     for (const step of ["Learn", "Find", "Create", "Use", "Publish"]) {
       expect(text).toContain(step);
     }
     expect(text).toContain("00");
-    expect(html).toContain('href="/what-a-blueprint-is"');
     expect(html).not.toMatch(/<h3[^>]*>Validate<\/h3>/);
+
+    // One link per panel, and every one of them a route this site has.
+    for (const href of [
+      "/what-a-blueprint-is",
+      "/blueprints",
+      "/skill",
+      "/blueprints/starter-software-factory#use-this-blueprint",
+      "/upload",
+    ]) {
+      expect(html, `the ${href} panel lost its link`).toContain(`href="${href}"`);
+    }
+    expect([...html.matchAll(/<a\b/g)]).toHaveLength(5);
+
     expect(text).toContain("Human interface");
     expect(text).toContain("Agent interface");
-    expect(html).toContain('href="/blueprints/starter-software-factory#use-this-blueprint"');
   });
 
-  it("closes on the same two loops without placeholder status copy", () => {
-    const text = plainText(render(SectionDoors));
-    expect(text).toContain("Find and reuse");
-    expect(text).toContain("Create and publish");
-    expect(text.toLowerCase()).not.toContain("coming soon");
-  });
+  /* `SectionDoors` had a case here — "closes on the same two loops without placeholder
+     status copy" — and the component is deleted. The claim it protected is not lost: the
+     two loops are named by the section above, whose eyebrow still reads "One registry, two
+     loops", and the placeholder-copy half is covered site-wide by
+     `components/site/honesty.test.ts`. Recorded rather than dropped silently, because a
+     test disappearing with its subject is exactly the shape of an accidental deletion. */
 });

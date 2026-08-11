@@ -50,8 +50,14 @@ export const metadata: Metadata = {
 
      The description keeps "Not built yet: accounts and publishing" verbatim and in the
      open: `components/site/honesty.test.ts` pins that string to this surface, and a retitle
-     is not a reason for it to move. */
-  title: "Create",
+     is not a reason for it to move.
+
+     Renamed from "Create" on 2026-08-11, on the author's instruction, in all three places
+     one route's name lives: this `<title>`, the `h1` below, and the `NAV` row that sends a
+     reader here. "Create" named the verb; "Assisted Design" names what actually happens on
+     the other side of the command, which is your own agent interviewing you into a bundle
+     rather than you writing one. */
+  title: "Assisted Design",
   description:
     "Start from your goal: one command puts a blueprint-writing skill in your own agent, and it interviews you into a folder of blueprint.dot, one card per node, README.md and AGENTS.md. Read it back on this site with nothing sent anywhere. Not built yet: accounts and publishing.",
 };
@@ -62,7 +68,7 @@ export default function SkillPage() {
       <SectionHeading
         as="h1"
         eyebrow="Setup"
-        title="Create"
+        title="Assisted Design"
         lead="One command puts a blueprint-writing skill in your own agent, and it works today. It asks your agent to ask you: what the work is, who does which part of it, and what must never reach whom. What it leaves behind is a bundle the registry stores."
       />
 

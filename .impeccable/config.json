@@ -11,6 +11,15 @@
         ],
         "createdAt": "2026-08-07T06:37:51.403Z",
         "reason": "Author-confirmed: .bp-grid is the cyanotype graticule for blueprint sheets, the rule's own carve-out for blueprint/measurement surfaces. Load-bearing per architecture/website.md."
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "components/ui/SideRail.tsx"
+        ],
+        "createdAt": "2026-08-11T00:00:00.000Z",
+        "reason": "Author-confirmed. The 2px leading edge on a rail row is this project's documented navigation idiom, not a coloured tab on a card: app/globals.css specifies the rows as `grid items-baseline gap-2 rounded-md border-l-2 px-3 py-2.5` with active as `border-cyan bg-cyan/5 text-fg`, and the accounts hand-off restates it under \"Components to reuse (do not rebuild)\". Four surfaces draw it - Learn, /blueprints/[slug], /nodes/[...id], /settings and the owned-bundle page. Scoped to this file only, so the rule still fires on a card anywhere else."
       }
     ]
   }

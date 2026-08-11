@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useQueryState } from "@/components/ui/useQueryState";
+import { publicForksOf } from "@/lib/data/bundles";
+import {
+  CONTROL_CLASS,
+  RegistryFilterBar,
+  SearchField,
+} from "@/components/ui/RegistryFilterBar";
 import type { AutonomyClass, Blueprint } from "@/lib/types";
 import { cx } from "@/lib/format";
 import { ContentCard } from "@/components/ui/ContentCard";
@@ -56,12 +63,11 @@ import { PHASE_ORDER, phaseLabel } from "@/components/ui/PhaseCoverage";
  * that both browsers and a future `/ontology` one mount. It is deliberately NOT extracted
  * here: that refactor has to move both files at once, and this pass owns only one of them.
  */
-const fieldClass =
-  "h-10 rounded-md border border-line bg-surface-2 px-3 font-mono text-xs text-fg transition-colors focus:border-cyan";
-
-/** The shape plus the responsive width. The search box takes `fieldClass` and stays
-    full-width at every size, because it lives in the row's `flex-1` cell. */
-const controlClass = `${fieldClass} w-full sm:w-auto`;
+/* `fieldClass` is gone with the input it dressed: `SearchField` owns that shape now, in
+   `components/ui/RegistryFilterBar.tsx`, which is where the note below has said it belongs
+   since before there was a third consumer. `controlClass` stays as an alias because it is
+   this file's own word for the shape its selects take. */
+const controlClass = CONTROL_CLASS;
 
 /**
  * The blueprint the landing draws, the folder every download link on the site points at,
@@ -117,7 +123,6 @@ export function GalleryBrowser({
   const [narrowOpen, setNarrowOpen] = useState(false);
 
   /** Open on mobile, where the whole panel is behind a disclosure. Ignored from `sm` up. */
-  const [filtersOpen, setFiltersOpen] = useState(false);
 
   /*
    * Doc 2 §1.1 — autonomy as a way in, and never as a league table. The list offers only
@@ -165,6 +170,36 @@ export function GalleryBrowser({
     return PHASE_ORDER.filter((id) => covered.has(id));
   }, [blueprints]);
 
+  /* The fork stance.
+     ------------------------------------------------------------
+     `rolled` is the default and the design's: a fork does not take its own tile, it lists
+     under the bundle it came from. One graph, one entry. `all` gives each published fork a
+     tile of its own carrying its lineage line, and `originals` hides them.
+
+     In the URL like every other filter on this page (`useQueryState`), never mirrored into
+     React state, so Back cannot disagree with the shelf.
+
+     **It never sorts.** Doc 2 §1.1 keeps league tables off this shelf — the same rule that
+     took autonomy out of `SortKey` — so the fork count states a fact on a tile and orders
+     nothing. There is no "most forked" and there must not be one. */
+  const forkStance = params.get("forks") ?? "rolled";
+
+  /** Published forks per upstream slug. Empty in this build; see `publicForksOf`. */
+  const forksBySlug = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof publicForksOf>>();
+    for (const bp of blueprints) {
+      const forks = publicForksOf(bp.slug);
+      if (forks.length > 0) map.set(bp.slug, forks);
+    }
+    return map;
+  }, [blueprints]);
+
+  /** Slugs that are themselves a published fork of something else on this shelf. */
+  const forkSlugs = useMemo(
+    () => new Set([...forksBySlug.values()].flat().map((fork) => fork.slug)),
+    [forksBySlug],
+  );
+
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
 
@@ -192,14 +227,20 @@ export function GalleryBrowser({
       return true;
     });
 
-    const sorted = [...filtered];
+    /* `rolled` and `originals` both take a fork off the shelf; they differ in whether it
+       reappears under its upstream, which is the grid's business rather than this filter's.
+       `all` leaves every tile standing. */
+    const stanced =
+      forkStance === "all" ? filtered : filtered.filter((bp) => !forkSlugs.has(bp.slug));
+
+    const sorted = [...stanced];
     sorted.sort((a, b) => {
       const at = a.updatedAt || a.createdAt;
       const bt = b.updatedAt || b.createdAt;
       return bt.localeCompare(at) || a.title.localeCompare(b.title);
     });
     return sorted;
-  }, [blueprints, search, tag, category, phase, autonomy, darkFactory]);
+  }, [blueprints, search, tag, category, phase, autonomy, darkFactory, forkStance, forkSlugs]);
 
   /** How many of the filters behind the disclosure are set. Printed on the summary. */
   const narrowCount =
@@ -263,108 +304,25 @@ export function GalleryBrowser({
        scale at all — it was the one number between the panel, the count row and the grid
        that nobody had chosen. */
     <div className="flex flex-col gap-5">
-      {/* The mobile disclosure.
-          ------------------------------------------------------------
-          Ported from the twin bar in `components/nodes/NodeBrowser.tsx`, which grew it
-          and never had it brought across. At 390px this panel is 117px of static form
-          standing between a reader and the shelf they came for, and it is `static`, so
-          changing a filter after scrolling nine tiles meant scrolling all the way back.
-
-          One panel, not two. A second copy behind a media query would duplicate every
-          input, every label and every tab stop, which is worse for a screen reader than
-          the problem it solves. So the panel below is hidden by state under `sm` and
-          forced visible from `sm` up, and this button — which only exists under `sm` —
-          toggles it and carries both counts: how many filters are on, and how much of
-          the shelf is left.
-
-          `z-40` is the page-chrome rung of the site's z ladder (header 50 · page chrome
-          40 · section chrome 30 · card furniture 20 · card hit target 10). */}
-      <div className="sticky top-16 z-40 -mx-1 bg-void/95 px-1 py-2 backdrop-blur-sm sm:hidden">
-        <button
-          type="button"
-          onClick={() => setFiltersOpen((v) => !v)}
-          aria-expanded={filtersOpen}
-          aria-controls="blueprint-filters"
-          /* `scale-[0.99]`, the >200px band: this bar runs the full width of the phone,
-             and 0.97 on a 342px element travels 10px sideways, which reads as a wobble
-             rather than as a press. `scale` is named in the property list beside
-             `transform` because Tailwind v4 compiles `scale-[…]` to the standalone
-             `scale` property, and a list naming only `transform` leaves the press
-             untransitioned. */
-          className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-line bg-surface-2 px-3 py-2.5 font-mono text-xs text-fg transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-line-bright hoverable:active:scale-[0.99]"
-        >
-          <span className="flex items-center gap-2">
-            <span aria-hidden className="text-cyan">
-              {filtersOpen ? "▾" : "▸"}
-            </span>
-            Filter
-            {activeFilters.length > 0 && (
-              <span className="rounded-full bg-cyan/15 px-2 py-0.5 tabular-nums text-cyan">
-                {activeFilters.length}
-              </span>
-            )}
-          </span>
-          <span className="tabular-nums text-dim">
-            {results.length}/{blueprints.length}
-          </span>
-        </button>
-      </div>
-
-      {/* ---------------- control bar ----------------
-
-          It carried **37 interactive controls before the first of 9 blueprints**, 30 of
-          them tag pills. Measured against the archive: 24 of those 30 tags match exactly
-          one blueprint and none matches more than two, so four fifths of the row was a
-          one-item lookup wearing a facet's clothes. A shelf of nine does not need
-          faceting sized for thousands, and the reader arriving from the landing's
-          argument met a wall instead of the work.
-
-          Three controls stay in the open, because they are the three questions somebody
-          browsing nine things actually asks: what is it called, what kind is it, what
-          order do I want them in. Everything else moves behind one disclosure that says
-          how many filters are active, so nothing is hidden and nothing is lost.
-
-          `role="search"`, because it is one: without it the landmark list on this page
-          was HEADER / NAV / MAIN / FOOTER, and the thing the page is for had no name in
-          it. The sibling browser already carried this; it was never brought across.
-
-          `px-4 py-3`, not `p-4`: the horizontal padding is the element tier and the
-          vertical is the tight tier, because what sits inside is one row of 40px
-          controls, not a paragraph. */}
-      <div
+      {/* The disclosure, the panel and the two shapes above all live in
+          `components/ui/RegistryFilterBar.tsx` now. What stays here is what only this
+          browser knows: which filters exist, what they are called, and how they narrow the
+          shelf. The component's own docblock carries the measurements that produced the
+          disclosure. */}
+      <RegistryFilterBar
         id="blueprint-filters"
-        role="search"
-        aria-label="Filter blueprints"
-        className={cx(
-          "panel flex-col gap-4 px-4 py-3 sm:flex",
-          filtersOpen ? "flex" : "hidden",
-        )}
+        label="Filter blueprints"
+        results={results.length}
+        total={blueprints.length}
+        active={activeFilters.length}
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative min-w-[14rem] flex-1">
-            <span
-              aria-hidden
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-sm text-dim"
-            >
-              /
-            </span>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="Describe a task, tool, input, or constraint…"
-              aria-label="Search blueprints"
-              /* `text-dim` (5.43:1), not `text-faint` (1.83:1). The twin control in
-                 `components/nodes/NodeBrowser.tsx` already carried this fix and a comment
-                 explaining it; it was never applied to this file. A placeholder is the
-                 only hint of what the field accepts.
-
-                 One shape with the selects beside it — see `controlClass` — plus `pl-8`,
-                 which is the only thing that differs, and only because this field has a
-                 `/` glyph standing in its left gutter. */
-              className={cx(fieldClass, "w-full pl-8 placeholder:text-dim")}
-            />
-          </div>
+          <SearchField
+            value={search}
+            onChange={setDraft}
+            placeholder="Describe a task, tool, input, or constraint…"
+            ariaLabel="Search blueprints"
+          />
 
           <label className="flex items-center gap-2">
             <span className="sr-only">Filter by category</span>
@@ -383,7 +341,33 @@ export function GalleryBrowser({
             </select>
           </label>
 
+          <label className="flex items-center gap-2">
+            <span className="sr-only">How to show forks</span>
+            <select
+              value={forkStance}
+              onChange={(e) => setParam("forks", e.target.value === "rolled" ? null : e.target.value)}
+              aria-label="How to show forks"
+              className={controlClass}
+            >
+              <option value="rolled">Forks: rolled up</option>
+              <option value="all">Forks: all</option>
+              <option value="originals">Forks: originals</option>
+            </select>
+          </label>
+
         </div>
+
+        {/* The control is real and the set it works over is empty, so it says so rather
+            than leaving a reader to wonder why three settings show one shelf. Every fork
+            in `lib/data/bundles.ts` is private by the rule in that file's header, and a
+            private fork is never announced on its upstream — which is the promise, not the
+            gap. */}
+        {forksBySlug.size === 0 && (
+          <p className="font-mono text-[11px] text-dim">
+            No published fork exists yet, so all three settings show the same shelf. A
+            private fork is never listed here.
+          </p>
+        )}
 
         {/* Controlled rather than a bare `<details>`: `TagFromQuery` can set a tag from a
             deep link, and a filter the reader did not choose and cannot see is worse than
@@ -500,7 +484,7 @@ export function GalleryBrowser({
             )}
           </div>
         </details>
-      </div>
+      </RegistryFilterBar>
 
       {/* result count + reset.
           `role="status"` so the number is announced when it changes. Every filter here
@@ -561,9 +545,36 @@ export function GalleryBrowser({
               <ContentCard item={leadBlueprint} className="flex-1" />
             </div>
           )}
-          {gridBlueprints.map((bp) => (
-            <ContentCard key={bp.slug} item={bp} />
-          ))}
+          {gridBlueprints.map((bp) => {
+            const forks = forksBySlug.get(bp.slug) ?? [];
+            /* Rolled up: the parent keeps its tile and its published forks list under it,
+                so one graph is one entry on the shelf. Under `all` each of them has a tile
+                of its own above, and under `originals` they are not on the page at all —
+                either way there is nothing to attach here. */
+            const rolled = forkStance === "rolled" ? forks : [];
+            return (
+              <div key={bp.slug} className="flex flex-col gap-2">
+                <ContentCard item={bp} forks={forks.length} />
+                {rolled.length > 0 && (
+                  <ul className="flex flex-col gap-1.5 rounded-md border border-line bg-surface-2/50 px-3 py-2.5">
+                    {rolled.map((fork) => (
+                      <li key={fork.slug} className="flex flex-col gap-0.5">
+                        <Link
+                          href={`/u/${fork.owner}/${fork.slug}`}
+                          className="font-mono text-[11px] text-cyan transition-colors hoverable:hover:text-cyan-bright"
+                        >
+                          {fork.owner} / {fork.slug}
+                        </Link>
+                        <span className="text-xs leading-snug text-dim">
+                          {fork.draft?.summary ?? ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="panel flex flex-col items-center gap-3 px-6 py-16 text-center">

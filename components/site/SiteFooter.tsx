@@ -1,15 +1,26 @@
 import Link from "next/link";
 
+import { SANDBOX } from "@/components/spec/sequence";
+
+/* The three column titles match the header's three groups exactly, which is what the
+   accounts pass asked of the collapsed menu and is worth the footer having too: a reader
+   who learns "Browse / Build / Learn" at the top of the page should not meet a different
+   set of words at the bottom of it. Every label inside them is held to the header's by
+   `components/site/nav.test.ts`. */
 export const COLS = [
   {
-    title: "Explore",
+    title: "Browse",
     links: [
       { href: "/blueprints", label: "Blueprints" },
       { href: "/nodes", label: "Cards" },
+      /* The third thing the registry holds. It had no row in either the header or the
+         footer until this pass; see `SiteHeader`'s decision 1 for why the browser is
+         "Vocabulary" here and the spec document about it stays "Ontology" below. */
+      { href: "/ontology", label: "Vocabulary" },
     ],
   },
   {
-    title: "Create and use",
+    title: "Build",
     links: [
       /* One row for `/skill`, not two.
 
@@ -18,9 +29,12 @@ export const COLS = [
          them: the authoring half is on `/skill` now, so the row that sent people to it and
          the row that named the tool are the same destination, and the header's label wins
          (`nav.test.ts`: a route is called the same thing everywhere). */
-      { href: "/skill", label: "Create" },
-      { href: "/upload", label: "Publish" },
+      /* The author's order: the protocol, then the skill, then the ask. Publishing is last
+         because it is the thing you do once you have made something, which is the order the
+         other two put you in. */
       { href: "/mcp", label: "MCP" },
+      { href: "/skill", label: "Assisted Design" },
+      { href: "/upload", label: "Publish" },
     ],
   },
   {
@@ -30,7 +44,8 @@ export const COLS = [
       { href: "/spec/topology", label: "Blueprint file (DOT)" },
       { href: "/spec/card", label: "Node card (YAML)" },
       { href: "/spec/ontology", label: "Ontology" },
-      { href: "/build", label: "Customize the starter blueprint" },
+      /* Read off the sequence, not typed. One route, one name, in three tables. */
+      { href: SANDBOX.href, label: SANDBOX.nav },
       { href: "/reading-the-radar", label: "How a blueprint is graded" },
       { href: "/towards-a-dark-factory", label: "Towards a Dark Factory" },
     ],

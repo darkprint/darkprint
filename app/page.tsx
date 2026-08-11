@@ -31,7 +31,8 @@
      rung 5  what it isn't      SectionNotSkill   /what-it-isnt, folded into
                                                   SectionSkillVsFactory and
                                                   SectionIsolationRule
-     rung 6  two doors          SectionDoors      beat 5, kept here
+     rung 6  two doors          SectionDoors      was beat 5; deleted, see
+                                                  below
 
    Redesign spec §3 sent three more sections the same way: the
    annotated node card to `/spec/card`, the five roles and the
@@ -52,10 +53,23 @@
    the new beat may say about forking and uploading; `SectionLifecycle`
    carries the reasoning, not this table.
 
-   Two rungs never left. Rung 1 is the site's claim and rung 6 is the
-   two doors, and those are the only two whose subject is the site
-   itself; every other rung is about a blueprint, a card or a
-   ladder, and each of those still has its own page.
+   ── Rung 6 has left too, and the page still ends on it ──
+   `SectionDoors` was two cards asking a reader to find a blueprint
+   or create one. The section above it already listed both of those
+   destinations, among five, with a sentence and a picture each — so
+   the page closed by asking the same two-way question twice, one
+   section apart, with seven calls to action between them.
+   The author cut the doors rather than the panels: "remove the
+   section Start with the job in front of you and substitute it with
+   the content of One registry, two loops, adding a link to the
+   correct section to each panel." So the lifecycle beat is the
+   ending now, and its five panels carry the links the doors used to
+   duplicate. Rung 6's job is done by the row that was already doing
+   it; what went is the second statement of it.
+
+   Rung 1 is still here and still the site's claim. It is the only
+   rung whose subject is the site itself and the only one with no
+   page of its own to move to.
 
    ── What the six beats are ──
    Beat 2 is the newest and the only one that argues rather than
@@ -102,7 +116,6 @@ import {
   SectionBlueprint,
   SectionNodeIsCard,
   SectionLifecycle,
-  SectionDoors,
 } from "@/components/home";
 
 export default function HomePage() {
@@ -113,7 +126,6 @@ export default function HomePage() {
       <SectionBlueprint />
       <SectionNodeIsCard />
       <SectionLifecycle />
-      <SectionDoors />
     </>
   );
 }

@@ -16,7 +16,7 @@ import {
   bundleHref,
   cardFilePath,
 } from "@/lib/content/bundle-export";
-import { parseCardRef } from "@/lib/core";
+import { parseCardRef, shortDigest } from "@/lib/core";
 import {
   CRITERIA_OUT_OF_BAND_CODE,
   CRITERIA_RELAYED_CODE,
@@ -24,10 +24,8 @@ import {
   CRITERIA_UNANCHORED_CODE,
 } from "@/lib/criteria-state";
 import { prettyDate } from "@/lib/format";
-import { AuthorChip } from "@/components/ui/Avatar";
 import { KindBadge } from "@/components/ui/Badge";
 import { AutonomyMeter } from "@/components/ui/AutonomyMeter";
-import { FavoriteStar } from "@/components/ui/FavoriteStar";
 import { TagPill } from "@/components/ui/TagPill";
 import { ScoreRadar } from "@/components/ui/ScoreRadar";
 import { MetricBars } from "@/components/ui/MetricBars";
@@ -39,6 +37,13 @@ import { buildPaneModel, type PaneNodeInput } from "@/components/panes/build";
 import { DotBreakdown } from "@/components/panes/DotBreakdown";
 import { SynchronisedPanes } from "@/components/panes/SynchronisedPanes";
 import { BundlePanel, type BundleNode } from "@/components/blueprint/BundlePanel";
+import { BundleHeader } from "@/components/bundle/BundleHeader";
+import { FileTree } from "@/components/bundle/FileTree";
+import { History } from "@/components/bundle/History";
+import { Forks, Releases } from "@/components/bundle/Aside";
+import { publishedBundleSections } from "@/components/bundle/load";
+import { OWNED_BUNDLES } from "@/lib/data/bundles";
+import { profileFor } from "@/lib/data/profiles";
 import { DownloadPanel, type DownloadCard } from "@/components/blueprint/DownloadPanel";
 import { Comments } from "@/components/blueprint/Comments";
 import { ForkAction } from "@/components/blueprint/ForkAction";
@@ -83,11 +88,13 @@ export async function generateMetadata({
  */
 const BLUEPRINT_SECTIONS: readonly SideRailItem[] = [
   { href: "#overview", label: "Overview", step: "01" },
-  { href: "#blueprint-workspace", label: "Graph and cards", step: "02" },
-  { href: "#evidence", label: "Evidence", step: "03" },
-  { href: "#use-this-blueprint", label: "Use this release", step: "04" },
-  { href: "#blueprint-source", label: "Source", step: "05" },
-  { href: "#community-notes", label: "Community notes", step: "06" },
+  { href: "#files", label: "Files", step: "02" },
+  { href: "#blueprint-workspace", label: "Graph and cards", step: "03" },
+  { href: "#evidence", label: "Evidence", step: "04" },
+  { href: "#history", label: "History", step: "05" },
+  { href: "#use-this-blueprint", label: "Use this release", step: "06" },
+  { href: "#blueprint-source", label: "Source", step: "07" },
+  { href: "#community-notes", label: "Community notes", step: "08" },
 ];
 
 /** Small mono heading for the in-page panels. */
@@ -141,6 +148,28 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
     command: cloneCommand,
     cliCommand: `darkprint clone ${bp.slug}`,
   };
+
+
+  /* The band's two figures, and one of them is a promise being kept.
+     ------------------------------------------------------------
+     `publicForks` is computed over PUBLIC rows only. A private fork is never announced on
+     the upstream's page and its author is not told it exists, which is exactly what
+     `/settings` §04 tells a reader when it recommends Private for a new bundle. Every fork
+     in `lib/data/bundles.ts` is private today — `guarded-merge-bot` has one — so this list
+     is empty on all nine blueprints, and it has to stay empty rather than being quietly
+     widened to "all forks" the day somebody wants the panel to have rows in it. */
+  const publicForks = OWNED_BUNDLES.filter(
+    (b) => b.forkedFrom?.slug === bp.slug && b.visibility === "public",
+  ).map((b) => ({
+    owner: b.owner,
+    slug: b.slug,
+    note: b.draft?.summary ?? "",
+  }));
+  const watchers = profileFor(bp.author.username).watchers;
+
+  // The file listing, the history and the releases, from the same function the owner's view
+  // of a bundle reads, so the two pages cannot describe one folder differently.
+  const sections = publishedBundleSections(bp, bp.author.username);
 
   // The index row, for the two facts the view model does not carry: the vocabulary
   // version the manifest was written against, and how many distinct cards are pinned.
@@ -207,10 +236,43 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
   const otherNotes = notes.filter((d) => !explainedCodes.has(d.code));
 
   return (
-    <SideRail label="On this blueprint" items={BLUEPRINT_SECTIONS} ariaLabel="On this blueprint">
-    <div className="container-page py-10 lg:py-12">
-      {/* ---------- Header ---------- */}
-      <header className="flex flex-col gap-5">
+    /* The rail wraps everything, band included.
+       ------------------------------------------------------------
+       The band was outside it for one pass, full-bleed above the rail the way the hand-off
+       draws it — and the result was a left column that began 310px down the page with the
+       band's own full-width rule cutting across the top of it, so the vertical line a
+       reader follows was broken into two pieces. The author read it as fragmentation and
+       asked for the node page's treatment, where the rail runs from the header to the
+       footer in one unbroken column and the page's own header sits in the right-hand one.
+
+       So the band keeps its `border-b bg-surface` and now spans the right column rather
+       than the viewport. Nothing else about it moves. */
+    <SideRail label="On this blueprint" meta="8 sections" items={BLUEPRINT_SECTIONS} ariaLabel="On this blueprint">
+    {/* ---------- The band, shared with `/u/<owner>/<slug>` ----------
+        Owner and name, the visibility pill, the four actions and the version line, in the
+        same component the owner's view of a bundle mounts. That is the whole restructure:
+        a published blueprint and a bundle somebody holds privately are one kind of thing
+        seen from two sides, and until this pass the two pages disagreed about what a
+        bundle even looks like at the top.
+
+        What did NOT move is the argument below it. The six sections keep their scroll
+        order and are not tabs: they are one reading top to bottom, and tabbing them would
+        put the explainability panel — the thing that makes a score checkable — behind a
+        click. */}
+    <BundleHeader
+      owner={bp.author}
+      slug={bp.slug}
+      visibility="public"
+      validator={bp.author.validator}
+      title={bp.title}
+      summary={bp.summary}
+      watchers={watchers}
+      forks={publicForks.length}
+      saveId={`blueprint:${bp.slug}`}
+      support={bp.votes}
+      clone={clone}
+      note="support and fork counts are seeded · a snapshot over HTTP, not a clone"
+      breadcrumb={
         <nav className="font-mono text-xs text-dim" aria-label="Breadcrumb">
           <Link href="/blueprints" className="transition-colors hover:text-cyan">
             ← Blueprints
@@ -218,30 +280,14 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           <span className="mx-2 text-faint">/</span>
           <span className="text-muted">{bp.category}</span>
         </nav>
-
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
-              {bp.title}
-            </h1>
-            <FavoriteStar id={`blueprint:${bp.slug}`} count={bp.votes} seeded />
-          </div>
-
-          {/* Provenance and the two actions, directly under the title rather than below
-              the summary and the collapsed description. Who made this, when, and how to
-              take it are what a reader looks for first on a registry entry; leaving them
-              at the foot of the header put three paragraphs between the name and the
-              answer. The row itself is unchanged — only where it sits. */}
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-            <AuthorChip author={bp.author} />
-            <span className="font-mono text-xs text-dim">
-              {prettyDate(bp.createdAt)}
-            </span>
-            <span className="font-mono text-xs text-dim" title={bp.digest}>
-              exact digest {bp.digest.slice(0, 12)}…
-            </span>
-          </div>
-
+      }
+      below={
+        <span className="font-mono text-[11px] text-dim">
+          version <span className="text-fg">{shortDigest(bp.digest)}</span> · 1 version
+        </span>
+      }
+    >
+      <div className="mt-2 flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <KindBadge kind={bp.kind} />
             {/* The per-node reading goes with the class, the way it does on the gallery
@@ -257,34 +303,6 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               contributions={bp.analysis.autonomy.contributions}
             />
           </div>
-          {/* Full width: same ask as `SectionHeading`'s lead. */}
-          <p className="text-lg leading-relaxed text-muted">
-            {bp.summary}
-          </p>
-        </div>
-
-        {/* Long description, collapsed by default. PROJECT.md §3.1 first moved this
-            above the four panes; a later pass moved it into the header itself so it
-            reads as more of the same claim rather than a separate body section below the
-            schematic. It now closes the header — the author/date/actions row moved up
-            under the title — which suits it: it is the last thing a reader needs before
-            the schematic, and the only part of the header that is optional.
-            `More` is a native `<details>` (already used by `DownloadPanel` and the
-            disclosures further down), which keeps the prose in the prerendered HTML
-            regardless of `open`. */}
-        {paragraphs.length > 0 && (
-          <More summary="Read more" bare>
-            {paragraphs.map((p, i) => (
-              <p
-                key={`${i}-${p.slice(0, 16)}`}
-                className="text-[15px] leading-relaxed text-muted"
-              >
-                {p}
-              </p>
-            ))}
-          </More>
-        )}
-
         {bp.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {bp.tags.map((t) => (
@@ -296,8 +314,31 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             ))}
           </div>
         )}
+      </div>
+    </BundleHeader>
 
-      </header>
+    <div className="container-page py-10 lg:py-12">
+      {/* Long description, collapsed by default. PROJECT.md §3.1 first moved this above
+          the four panes; a later pass moved it into the header. The band took the title,
+          the summary and the badges with it, and this stayed here rather than going up
+          with them: it is the only optional part of what the header used to be, and a
+          disclosure inside an identity band would put four paragraphs between the name of
+          the thing and the first section about it.
+          `More` is a native `<details>` (already used by `DownloadPanel` and the
+          disclosures further down), which keeps the prose in the prerendered HTML
+          regardless of `open`. */}
+      {paragraphs.length > 0 && (
+        <More summary="Read more" bare>
+          {paragraphs.map((p, i) => (
+            <p
+              key={`${i}-${p.slice(0, 16)}`}
+              className="text-[15px] leading-relaxed text-muted"
+            >
+              {p}
+            </p>
+          ))}
+        </More>
+      )}
 
       <section id="overview" aria-labelledby="fit-title" className="mt-10 scroll-mt-24">
         <article className="panel p-5">
@@ -322,9 +363,34 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               <dt className="text-dim">Release</dt>
               <dd className="mt-1 font-mono text-[12px] text-fg">{bp.digest.slice(0, 12)}…</dd>
             </div>
+            {/* Where the author/date row used to be. The band above carries who published
+                this and the version line carries the digest, so what was left of that row
+                was one date, and a date belongs in the panel of facts rather than on a row
+                of its own between the name and the summary. */}
+            <div>
+              <dt className="text-dim">Published</dt>
+              <dd className="mt-1 text-fg">{prettyDate(bp.createdAt)}</dd>
+            </div>
           </dl>
         </article>
       </section>
+
+      {/* ---------- Files ----------
+          The folder, before the drawing. A bundle is a folder before it is a page, and a
+          reader who has just read what this is asks what they would get. Same component
+          the owner's view mounts, over the same array `bundleDownloadCommand` builds its
+          URLs from, so the listing here, the command in `Get the folder` and the files on
+          disk are three renderings of one list. */}
+      <div className="mt-10">
+        <FileTree
+          files={sections.files}
+          lastChange={sections.lastChange}
+          author={bp.author}
+          hrefFor={sections.hrefFor}
+          readmeHref={sections.readmeHref}
+          footnote={sections.fileFootnote}
+        />
+      </div>
 
       {/* ---------- Body ---------- */}
       {/* Panel reorg spec §A2, revised three times: the Score card rode in
@@ -503,6 +569,15 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               explainedNotes={explainedNotes}
             />
           </div>
+
+          {/* Two panels the accounts pass adds to the aside, both about the bundle as a
+              thing somebody owns rather than as a reading. They sit after Bundle for the
+              same reason Bundle sits after Score: the page argues from the graph outward,
+              and who has copied this is the last question, not the first. */}
+          <div className="order-1 flex min-w-0 flex-col gap-8 lg:order-none">
+            <Forks forks={publicForks} />
+            <Releases releases={sections.releases} fetchable />
+          </div>
         </aside>
 
         <div className="flex min-w-0 flex-col gap-8 lg:col-span-2">
@@ -553,6 +628,8 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           "stay like now", per the author. */}
       <div className="mt-8 flex flex-col gap-8">
         <EvidenceLayers blueprint={bp} />
+
+        <History entries={sections.history} />
 
         <details
           id="use-this-blueprint"

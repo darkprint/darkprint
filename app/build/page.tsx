@@ -17,7 +17,7 @@ export const metadata: Metadata = {
      Both strings are read off `components/spec/sequence.ts` below rather than typed, except
      this one: `metadata` is a module constant and cannot call `specNeighbours`. It is the
      one place the title is spelled twice, and `spec-routes.test.ts` holds the pair. */
-  title: "Customize the starter blueprint",
+  title: "Customize the starter",
   description:
     "A sandbox for one five-node software workflow. Change its output, release gate, and retry cap, and watch the graph, the cards, the vocabulary and the static reading move together.",
 };
@@ -182,7 +182,7 @@ export default function BuildPage() {
           ------------------------------------------------------------
           `CreateEntry` stood above this, under an `h1` reading "Create a blueprint from
           your goal", and the section below it repeated that heading one type-step down as
-          "Customize the starter blueprint" with `Eyebrow`, an `h2` and a paragraph. The
+          "Customize the starter" with `Eyebrow`, an `h2` and a paragraph. The
           author asked the two halves apart, so the skill half is at `/skill` and what was
           the sub-heading is now the page's own name.
 

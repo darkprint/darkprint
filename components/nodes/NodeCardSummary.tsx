@@ -227,6 +227,30 @@ export function NodeCardSummary({
           paragraph that had visibly run out of room and the row below it. The slack
           belongs at the tag row — see `ContentCard`, which had the same argument. */}
       <div>
+        {/* One identity per card, at the top, the way `ContentCard` carries it since the
+            accounts pass. A shelf of 53 tiles that named 53 people in their last row and
+            named the card's own id in small print told a reader who made it before it told
+            them what it is called. `owner / id` is how a registry addresses a thing.
+
+            `relative z-20` for the reason `FavoriteStar` carries it: the tile's stretched
+            `<Link>` sits at `z-10` over everything in plain flow, so a nested link with no
+            stacking context of its own is covered and the click opens the card instead.
+            `w-fit` keeps the target on the handle. */}
+        {node.author !== undefined && (
+          <span className="relative z-20 mb-1.5 flex w-fit items-center gap-2 pr-8 font-mono text-xs">
+            <Avatar author={node.author} size="sm" link />
+            <Link
+              href={`/u/${node.author.username}`}
+              className="text-muted transition-colors hoverable:hover:text-fg"
+            >
+              {node.author.username}
+            </Link>
+            <span aria-hidden className="text-faint">
+              /
+            </span>
+            <span className="min-w-0 truncate text-cyan">{node.id}</span>
+          </span>
+        )}
         {/* `h2`: the grid sits directly under the `/nodes` page title, so a tile is a
             level down from it — the outline must not skip a level. */}
         {/* `h3`, under the group heading `NodeBrowser` now prints per node type. It was
@@ -265,26 +289,11 @@ export function NodeCardSummary({
         )}
       </div>
 
-      {/* Who published it, linked to their profile (author's request, 2026-07-29). Its
-          own row above the counts: the row below is a wrapping mono strip of three
-          independent facts, and a name inside it reads as a fourth one.
-
-          `relative z-20` for the same reason `FavoriteStar` carries it — the tile's
-          stretched `<Link>` sits at `z-10` over everything in plain flow, so a nested
-          link without its own stacking context is covered and the click opens the node
-          instead. `w-fit` keeps the target on the name. */}
-      {node.author !== undefined && (
-        <Link
-          href={`/u/${node.author.username}`}
-          className="group/author relative z-20 flex w-fit items-center gap-2"
-        >
-          <Avatar author={node.author} size="sm" />
-          <span className="text-xs text-muted group-hover/author:text-fg">
-            {node.author.displayName}
-          </span>
-        </Link>
-      )}
-
+      {/* The author chip stood here and moved to the top of the tile with the accounts
+          pass: one identity per card, above the name rather than under the drawing. The
+          argument for its old position — "its own row above the counts, because a name
+          inside a wrapping mono strip reads as a fourth fact" — is answered by the move
+          rather than lost: it is not in that strip now either. */}
       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-line pt-3 font-mono text-[11px] text-dim">
         <span>
           used in {node.usedIn} blueprint{node.usedIn === 1 ? "" : "s"}

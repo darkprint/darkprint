@@ -3,47 +3,76 @@ import Link from "next/link";
 
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
+/* ============================================================
+   The landing's ending: five things the registry does, each one a way in.
+
+   ── The page used to end twice ──
+   This section sat immediately above `SectionDoors`, which asked "find a blueprint, or
+   create one" with two buttons — and both of those destinations were already here, among
+   five, with a sentence and a picture each. Seven calls to action closed the page, and two
+   of them restated a choice the reader had just been offered.
+
+   One of the two had to go. The links came off these panels first; the author reversed
+   that and cut the doors instead: "remove the section Start with the job in front of you
+   and substitute it with the content of One registry, two loops, adding a link to the
+   correct section to each panel." That is the better half to keep. The doors offered two
+   ways in; this offers five, each with the picture and the sentence that say what it is —
+   and Learn, Use and Publish are three doors the two-card band never had.
+
+   So the links are back and the section is the ending. `SectionDoors` is deleted.
+
+   ── What each panel points at, and why it is that route ──
+   Every href here is a real page and the label names it the way its own header does. Two
+   are worth knowing: Create points at `/skill`, not `/build`, because the sentence beside
+   it promises the interview and the interview is the authoring skill; and Use points at
+   the starter's release section rather than at the shelf, because "take exact plain files"
+   is a thing you do to one bundle.
+
+   ── The pair at the foot stays ──
+   The human-interface / agent-interface line is the one thing here that no panel says: the
+   same registry answers a person through the website and an agent through MCP, with the
+   same provenance and the same version pins.
+   ============================================================ */
+
 const ACTIONS = [
   {
     index: "00",
-    title: "Learn",
-    text: "See how graphs, cards, and a shared vocabulary make workflows inspectable before they run.",
     href: "/what-a-blueprint-is",
     label: "What a blueprint is",
+    title: "Learn",
+    text: "See how graphs, cards, and a shared vocabulary make workflows inspectable before they run.",
     image: "/home/lifecycle/learn.webp",
   },
   {
     index: "01",
-    title: "Find",
-    text: "Search by task, then narrow by shape, human checkpoints, tools, and evidence.",
     href: "/blueprints",
     label: "Search blueprints",
+    title: "Find",
+    text: "Search by task, then narrow by shape, human checkpoints, tools, and evidence.",
     image: "/home/lifecycle/find.webp",
   },
   {
     index: "02",
+    href: "/skill",
+    label: "Assisted Design",
     title: "Create",
     text: "Turn a goal into a typed graph and version-pinned cards with the authoring skill.",
-    /* The sentence beside it names the authoring skill, and since the `/build` split that
-       is `/skill`. The panel was pointing at the sandbox while promising the interview. */
-    href: "/skill",
-    label: "Create a blueprint",
     image: "/home/lifecycle/create.webp",
   },
   {
     index: "03",
-    title: "Use",
-    text: "Take exact plain files, then adapt and run them inside your own harness.",
     href: "/blueprints/starter-software-factory#use-this-blueprint",
     label: "Take the starter",
+    title: "Use",
+    text: "Take exact plain files, then adapt and run them inside your own harness.",
     image: "/home/lifecycle/use.webp",
   },
   {
     index: "04",
-    title: "Publish",
-    text: "Validate a bundle and release one exact version for people and agents to retrieve.",
     href: "/upload",
     label: "Validate and publish",
+    title: "Publish",
+    text: "Validate a bundle and release one exact version for people and agents to retrieve.",
     image: "/home/lifecycle/publish.webp",
   },
 ] as const;
@@ -80,9 +109,11 @@ export function SectionLifecycle() {
                   <h3 className="font-display text-xl font-semibold text-fg">{action.title}</h3>
                 </div>
                 <p className="mt-3 text-sm leading-relaxed text-muted">{action.text}</p>
+                {/* `mt-auto` so the five links sit on one line across the row however long
+                    the sentence above each of them runs. */}
                 <Link
                   href={action.href}
-                  className="mt-auto pt-5 font-mono text-[12px] text-cyan underline decoration-cyan/40 underline-offset-4"
+                  className="mt-auto pt-5 font-mono text-[12px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:text-cyan-bright"
                 >
                   {action.label} →
                 </Link>

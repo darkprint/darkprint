@@ -872,37 +872,31 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
       href: "#specification",
       label: "Specification",
       meta: `${specWords} words`,
-      mark: "[body:has(#specification:target)_&]:border-l-cyan",
     },
     {
       href: "#interfaces",
       label: "Interfaces",
       meta: `${card.inputs.length} in · ${card.outputs.length} out`,
-      mark: "[body:has(#interfaces:target)_&]:border-l-cyan",
     },
     {
       href: "#prohibitions",
       label: "Cannot receive",
       meta: prohibitions.length === 0 ? "none" : `${prohibitions.length} declared`,
-      mark: "[body:has(#prohibitions:target)_&]:border-l-cyan",
     },
     {
       href: "#fields",
       label: "Every field",
       meta: `${declared} declared`,
-      mark: "[body:has(#fields:target)_&]:border-l-cyan",
     },
     {
       href: "#version-history",
       label: "Version history",
       meta: `${versions.length} version${versions.length === 1 ? "" : "s"}`,
-      mark: "[body:has(#version-history:target)_&]:border-l-cyan",
     },
     {
       href: "#card-source",
       label: "Card source",
       meta: source === undefined ? "digest only" : "yaml",
-      mark: "[body:has(#card-source:target)_&]:border-l-cyan",
     },
   ];
 

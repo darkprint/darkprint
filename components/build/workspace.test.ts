@@ -377,6 +377,17 @@ const COPY_TREES = [
   // guarded tree into an unguarded one is how a rule quietly stops applying.
   "components/skill",
   "components/mcp",
+  // Added with `/settings`, whole rather than file by file, for the same reason
+  // `components/skill` went in whole: the directory is new, so there is no pre-existing
+  // punctuation to grandfather, and a tree covers whatever the account pass writes into
+  // it next. Every string in it is product copy — section heads, field hints, the words
+  // beside a switch — which is exactly the material §2.5 is about.
+  "components/settings",
+  // `components/profile` is older but its copy is not: the accounts pass rewrote every
+  // string in it and added six files, and a check confirmed the tree carries no pause dash
+  // in visible text today. `app/u/` stays in `APP_EXEMPT` below — the route files are a
+  // separate question and were not part of that check.
+  "components/profile",
 ];
 
 /**

@@ -252,6 +252,9 @@ export default function TowardsPage() {
           autonomy and `/reading-the-radar` is where that reading is explained. */}
       <section className="border-t border-line bg-surface pb-20 pt-16">
         <div className="container-page">
+          {/* The pager is back with the route's place in the sequence. It is the last stop
+              of the practice run, so it draws a PREVIOUS and no NEXT — which is what the
+              hand-built signpost that stood here for one pass was standing in for. */}
           <SpecPager href={HERE} />
         </div>
       </section>

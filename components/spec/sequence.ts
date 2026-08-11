@@ -66,12 +66,47 @@ export interface SpecSection {
   label: string;
 }
 
+/**
+ * Which of the two runs a stop belongs to.
+ *
+ * The rail was one flat list of seven and the reader saw one course. Stops 00–03 are a
+ * specification — what the three files are and what the validator does with them — and
+ * what follows is a reading OF that specification. `LEARN_PRACTICE` has been its own
+ * constant in this file since before the split, so the code already knew; the reader did
+ * not, and was told they were two-sevenths through a course when they had come for DOT
+ * syntax.
+ *
+ * The grouping is PRESENTATIONAL. There is still one list, one `specNeighbours()` walk and
+ * one pager, and a reader stepping from 03 to 04 crosses the boundary in the ordinary way —
+ * the pager just names the run they are stepping into.
+ */
+export type SpecRun = "specification" | "practice";
+
+/** What each run is called, wherever one is named. One string, two surfaces. */
+export const RUNS: Record<SpecRun, string> = {
+  specification: "Specification",
+  practice: "In practice",
+};
+
 /** What every page in the sequence carries. */
 export interface SpecPage {
   /** The route. Also the identity of the entry. */
   href: string;
-  /** Two digits, shown in the crumb and on the door. */
-  step: string;
+  /**
+   * Two digits, shown in the crumb, on the door and in the rail.
+   *
+   * Optional since the sandbox stopped being a stop. An optional worked example is not a
+   * step in a sequence: numbering it told a reader they had four of six done when they had
+   * finished the specification entire, and offered them a detour as though it were the
+   * road. It keeps its place in the reading order and loses the number.
+   */
+  step?: string;
+  /** Which run this stop belongs to. */
+  run: SpecRun;
+  /** A word at the rail row's right end. The sandbox says what kind of stop it is. */
+  meta?: string;
+  /** Drawn indented under the stop above it, with a `└` where the number would be. */
+  indent?: boolean;
   /** Short label, for the pager and the crumb. */
   nav: string;
   /** The mono line above the page's own `h1`. */
@@ -184,6 +219,7 @@ export interface SpecLayerPage extends SpecPage {
 export const SPEC_OVERVIEW: SpecPage = {
   href: "/what-a-blueprint-is",
   step: "00",
+  run: "specification",
   nav: "What a blueprint is",
   eyebrow: "What a blueprint is",
   title: "What a blueprint is",
@@ -219,6 +255,7 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
   {
     href: "/spec/topology",
     step: "01",
+    run: "specification",
     nav: "Topology",
     eyebrow: "Layer 01 of 03",
     title: "The blueprint file (DOT)",
@@ -236,6 +273,7 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
   {
     href: "/spec/card",
     step: "02",
+    run: "specification",
     nav: "Node card",
     eyebrow: "Layer 02 of 03",
     title: "The node card (YAML)",
@@ -254,6 +292,7 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
   {
     href: "/spec/ontology",
     step: "03",
+    run: "specification",
     nav: "Ontology",
     eyebrow: "Layer 03 of 03",
     title: "Ontology",
@@ -272,45 +311,61 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
   },
 ];
 
-/** The three application pages that follow the file-format reference. */
+/**
+ * The worked example, and it is a stop of its own again.
+ *
+ * It spent one pass unnumbered and indented under stop 03, on the argument that an optional
+ * stop is not a stop. The author asked for it back as a row in its own right: a reader
+ * looking at the rail should be able to see it is one of the places to go, not a footnote
+ * hanging off the one above it. So it takes 04 and everything after it moves down a rung.
+ *
+ * It keeps `meta` and loses `indent`. The tag still says what kind of stop it is — a worked
+ * example rather than another document a blueprint is written in — which is the part of the
+ * old treatment worth keeping, and the part a number cannot say on its own.
+ *
+ * It sits in the practice run because that is what it is: three dials on one real graph,
+ * with every reading moving as they turn. The specification says what the three files are;
+ * this is the first stop that does something with them.
+ *
+ * It is exported by name because two other surfaces need it and neither should type its
+ * label a second time: `SiteFooter`'s Learn column and the pager box on `/spec/ontology`
+ * both print it, which is how one route keeps one name across three tables.
+ */
+export const SANDBOX: SpecPage = {
+  href: "/build",
+  step: "04",
+  run: "practice",
+  nav: "Customize the starter",
+  eyebrow: "Optional worked example",
+  title: "Customize the starter",
+  question: "Turn three dials on one worked graph and watch every reading move with them.",
+  meta: "worked example",
+  sections: [{ id: "workspace-heading", label: "Blueprint workspace" }],
+};
+
+/**
+ * The second run: what a reading of the specification looks like.
+ *
+ * Three pages, opening with the sandbox: the specification says what the three files are,
+ * and this run is what a reader does with them — turn the dials, read the grade, decide
+ * whether the work belonged to an agent at all.
+ *
+ * **"Towards a Dark Factory" is here and stays here.** It left for one pass, on the
+ * hand-off's decision 3, and the author asked for it back: a reader who has been through
+ * the specification and the scorecard is exactly the reader who then asks which work
+ * belongs to an agent at all, and that question is the second run's subject as much as
+ * grading is. The landing keeps its own link to it under the two doors — a page can be
+ * reached twice.
+ *
+ * `LEARN_PRACTICE` stays a constant rather than being inlined: it is what the second run
+ * IS, and the rail's grouping reads it.
+ */
 export const LEARN_PRACTICE: readonly SpecPage[] = [
-  /**
-   * The sandbox, and it used to be half of a page called "Create".
-   *
-   * `/build` carried two things: `CreateEntry`, which installs the authoring skill and
-   * writes you a brief, and `BuildWorkspace`, which lets you turn three dials on one
-   * five-node graph and watch the reading move. The author asked them apart: "split the
-   * page /build into two pages. One containing the skill part and listed on the navbar and
-   * the `Customize the starter blueprint` move only among the Learn pages."
-   *
-   * So the skill half went to `/skill`, which was already the page about the skill and was
-   * reachable from the footer alone, and it took the navbar's "Create" with it. What is left
-   * here is the worked example, and it is renamed to what it is. Two things follow from
-   * that and both are load-bearing:
-   *
-   * 1. The label had to change. `components/site/nav.test.ts` forbids one label on two
-   *    routes, and "Create" now belongs to `/skill`. Calling this "Create" as well would be
-   *    two names for two pages that a reader would read as one.
-   * 2. `title` matches `nav` matches the `h2` the section already carried, per this site's
-   *    "one route, one name" doctrine: the words on the rail are the words at the top of
-   *    what loads.
-   *
-   * It stays at `/build` and stays step 04. Moving the path would have broken every inbound
-   * link for a rename, and the sequence position is about where the sandbox sits in the
-   * reading order, which the split did not change.
-   */
-  {
-    href: "/build",
-    step: "04",
-    nav: "Customize the starter blueprint",
-    eyebrow: "Optional worked example",
-    title: "Customize the starter blueprint",
-    question: "Turn three dials on one worked graph and watch every reading move with them.",
-    sections: [{ id: "workspace-heading", label: "Blueprint workspace" }],
-  },
+  SANDBOX,
   {
     href: "/reading-the-radar",
     step: "05",
+    run: "practice",
     nav: "How a blueprint is graded",
     eyebrow: "The scorecard",
     title: "How a blueprint is graded",
@@ -325,12 +380,13 @@ export const LEARN_PRACTICE: readonly SpecPage[] = [
   {
     href: "/towards-a-dark-factory",
     step: "06",
+    run: "practice",
     nav: "Towards a Dark Factory",
     eyebrow: "The route",
     title: "Towards a Dark Factory",
     question: "Decide which work can run unattended inside a deliberate harness.",
-    /* Empty on purpose, and it is the reason `sections` is required rather than optional.
-       This page is one argument from the ladder to the two sources under it, with no headed
+    /* Empty on purpose, and the reason `sections` is required rather than optional. This
+       page is one argument from the ladder to the two sources under it, with no headed
        sections to jump between and no `PageContents` panel to move: it never had one. The
        rail gives it a row and no children, which is what a reader should see. */
     sections: [],
@@ -357,6 +413,31 @@ export const SPEC_SEQUENCE: readonly SpecPage[] = [
   ...SPEC_LAYERS,
   ...LEARN_PRACTICE,
 ];
+
+/**
+ * Where a stop sits inside its own run, counting only the numbered ones.
+ *
+ * The rail's meta line reads "Specification · 3 of 4", which is the question a reader who
+ * came for DOT syntax is actually asking: how much of THIS is left. The sandbox is excluded
+ * from both halves, because a stop with no number is not one of four.
+ *
+ * Returns `undefined` for the sandbox itself: it has no position to print, and the rail
+ * falls back to naming the run alone.
+ */
+export function runPosition(
+  href: string,
+): { run: SpecRun; position: number; total: number } | undefined {
+  const page = SPEC_SEQUENCE.find((entry) => entry.href === href);
+  if (page === undefined || page.step === undefined) return undefined;
+  const numbered = SPEC_SEQUENCE.filter(
+    (entry) => entry.run === page.run && entry.step !== undefined,
+  );
+  return {
+    run: page.run,
+    position: numbered.indexOf(page) + 1,
+    total: numbered.length,
+  };
+}
 
 /** Where a page sits in the sequence, and what stands on either side of it. */
 export interface SpecNeighbours {

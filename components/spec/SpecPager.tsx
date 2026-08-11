@@ -41,7 +41,7 @@ import Link from "next/link";
 import { cx } from "@/lib/format";
 import { RouteBoxLink } from "@/components/ui/RouteBoxLink";
 
-import { SPEC_OVERVIEW, SPEC_SEQUENCE, specNeighbours, type SpecPage } from "./sequence";
+import { RUNS, SPEC_OVERVIEW, SPEC_SEQUENCE, runPosition, specNeighbours, type SpecPage } from "./sequence";
 
 /**
  * The crumb at the top of a child page.
@@ -56,7 +56,7 @@ import { SPEC_OVERVIEW, SPEC_SEQUENCE, specNeighbours, type SpecPage } from "./s
  * old page's name on them is exactly the drift `sequence.ts` exists to make impossible.
  */
 export function SpecCrumb({ href }: { href: string }) {
-  const { position, total } = specNeighbours(href);
+  const at = runPosition(href);
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       {/* `.label` is the site's 11px/0.18em mono tier and it lives in
@@ -66,9 +66,14 @@ export function SpecCrumb({ href }: { href: string }) {
         <span aria-hidden>← </span>
         {SPEC_OVERVIEW.title}
       </Link>
-      <span className="font-mono text-[11px] text-dim">
-        {position} of {total}
-      </span>
+      {/* The position inside the run, not across both. A reader on stop 02 is three
+          quarters of the way through the specification and one of two runs into Learn, and
+          only the first of those answers "how much of this is left". */}
+      {at !== undefined && (
+        <span className="font-mono text-[11px] text-dim">
+          {RUNS[at.run]} · {at.position} of {at.total}
+        </span>
+      )}
     </div>
   );
 }
@@ -105,6 +110,11 @@ export function SpecCrumb({ href }: { href: string }) {
  */
 function PagerLink({ page, side }: { page: SpecPage; side: "previous" | "next" }) {
   const isNext = side === "next";
+  /* The run and the step, so a reader stepping out of the specification is told they are
+     leaving it. "Next · In practice 04 →" reads differently from "Next →", and the
+     difference is the whole point of grouping the rail: a boundary nobody is told about is
+     not a boundary. The sandbox has no number, so it names its run alone. */
+  const where = [RUNS[page.run], page.step].filter(Boolean).join(" ");
   return (
     <RouteBoxLink
       href={page.href}
@@ -117,11 +127,11 @@ function PagerLink({ page, side }: { page: SpecPage; side: "previous" | "next" }
       label={
         isNext ? (
           <>
-            Next <span aria-hidden>→</span>
+            Next · {where} <span aria-hidden>→</span>
           </>
         ) : (
           <>
-            <span aria-hidden>←</span> Previous
+            <span aria-hidden>←</span> Previous · {where}
           </>
         )
       }
@@ -186,14 +196,14 @@ export function SpecPager({
             )}
             {page.href === href ? (
               <span aria-current="page" className="text-cyan">
-                {page.step} {page.nav}
+                {page.step ?? "└"} {page.nav}
               </span>
             ) : (
               <Link
                 href={page.href}
                 className="text-dim transition-colors hover:text-fg"
               >
-                {page.step} {page.nav}
+                {page.step ?? "└"} {page.nav}
               </Link>
             )}
           </li>

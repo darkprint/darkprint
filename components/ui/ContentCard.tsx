@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { AnyContent } from "@/lib/types";
-import { cx } from "@/lib/format";
+import { cx, prettyDate } from "@/lib/format";
 import { contentHref } from "@/lib/href";
 import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
 import { Avatar } from "./Avatar";
@@ -19,12 +19,42 @@ import { TagPill } from "./TagPill";
  * blueprint scorecard already use for exactly this class of number, and the glyph carries
  * a word beside it for a reader who cannot separate amber from dim.
  */
+/* ============================================================
+   The tile, and where identity sits on it.
+
+   One identity per card, at the top. The author used to be a chip in the footer, under the
+   drawing, which meant a shelf of nine tiles named nine people in the last row of each and
+   named the bundle nowhere — a reader could not tell `guarded-merge-bot` from
+   `guarded-merge-bot-hardened` without opening both. The owner line is how a registry
+   addresses a thing: `owner / slug`, in mono, above the name it is called.
+
+   `pr-8` on the line for the same reason the heading has it: the bookmark is `absolute
+   right-2 top-2` and now sits on this row.
+
+   The footer keeps `✓ resolved · N tools` and takes what the author chip left: when the
+   bundle was last touched, and how many published forks it has. Neither is a version —
+   there is no version field on a blueprint and the archive holds one snapshot per bundle,
+   so a `v1.3.0` here would be a number nothing produced.
+   ============================================================ */
+
 /** Gallery / profile card for one blueprint: schematic, kind, autonomy and signals. */
 export function ContentCard({
   item,
+  forks = 0,
+  lineage,
   className,
 }: {
   item: AnyContent;
+  /**
+   * Published forks of this bundle. Counted by the caller over the only population that
+   * can hold one, and public only: a private fork is never announced on its upstream.
+   *
+   * Doc 2 §1.1 keeps league tables off this shelf, so the count states a fact on a tile and
+   * never orders the page. There is no `forks` sort and there must not be one.
+   */
+  forks?: number;
+  /** Where this bundle came from, when it came from somewhere. Drawn as a line, not a type. */
+  lineage?: { owner: string; slug: string };
   className?: string;
 }) {
   return (
@@ -78,6 +108,32 @@ export function ContentCard({
           top-2`, so it now sits on this row, and padding the whole block would move the
           drawing's left edge off the card's grid as well. */}
       <div className="flex flex-col gap-1.5 px-4 pb-3 pt-4">
+        {/* `relative z-20` for the reason the bookmark has it: the card's stretched `<Link>`
+            sits at `z-10` over everything in plain flow, so the avatar's own link would be
+            covered by it and the whole tile would navigate to the blueprint instead. */}
+        <span className="relative z-20 flex w-fit items-center gap-2 pr-8 font-mono text-xs">
+          <Avatar author={item.author} size="sm" link />
+          <Link
+            href={`/u/${item.author.username}`}
+            className="text-muted transition-colors hoverable:hover:text-fg"
+          >
+            {item.author.username}
+          </Link>
+          <span aria-hidden className="text-faint">
+            /
+          </span>
+          <span className="min-w-0 truncate text-cyan">{item.slug}</span>
+          {lineage !== undefined && (
+            <span className="shrink-0 rounded-full border border-line px-2 py-0.5 text-[11px] text-dim">
+              forked
+            </span>
+          )}
+        </span>
+        {lineage !== undefined && (
+          <span className="pr-8 font-mono text-[11px] text-dim">
+            forked from {lineage.owner} / {lineage.slug}
+          </span>
+        )}
         <h3 className="pr-8 font-display text-lg font-semibold leading-snug text-fg transition-colors duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:group-hover:text-cyan">
           {item.title}
         </h3>
@@ -165,23 +221,21 @@ export function ContentCard({
           ))}
         </div>
 
-        <div className="mt-1 flex items-center justify-between border-t border-line pt-3">
-          {/* The author row reaches its own profile (author's request, 2026-07-29).
-              `relative z-20` for the same reason `FavoriteStar` has it: the card's
-              stretched `<Link>` sits at `z-10` over everything in plain flow, so a
-              nested link without a stacking context of its own is covered by it and
-              the whole tile navigates to the blueprint instead. `w-fit` keeps the hit
-              area on the name rather than across the empty half of the row. */}
-          <Link
-            href={`/u/${item.author.username}`}
-            className="group/author relative z-20 flex w-fit items-center gap-2"
-          >
-            <Avatar author={item.author} size="sm" />
-            <span className="text-xs text-muted group-hover/author:text-fg">
-              {item.author.displayName}
-            </span>
-          </Link>
-          <span className="font-mono text-[11px] text-emerald">
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-line pt-3 font-mono text-[11px]">
+          {/* The author chip left this row for the owner line at the top: one identity per
+              card, and the shelf now names the bundle rather than nine people. What moved
+              in is what a reader asks next — when it last changed, and whether anybody has
+              built on it. */}
+          <span className="text-dim">
+            {prettyDate(item.updatedAt)}
+            {forks > 0 && (
+              <>
+                {" · "}
+                {forks} fork{forks === 1 ? "" : "s"}
+              </>
+            )}
+          </span>
+          <span className="text-emerald">
             ✓ resolved · {item.requiredTools.length} tool{item.requiredTools.length === 1 ? "" : "s"}
           </span>
         </div>
