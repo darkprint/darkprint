@@ -116,17 +116,22 @@ describe("the blueprint-first landing", () => {
     }
   });
 
-  /* The rewrite put numbers on the page and the numbers are a worked example.
+  /* A case stood here — "says the scores are illustrative, beside the panel that draws
+     them" — asserting the amber line "illustrative: DarkPrint does not run your graph". The
+     author asked that line off the page on 2026-08-11 after being shown what it was pinned
+     to, so the case comes out with it rather than being softened into something that still
+     passes. Its twin in `components/site/honesty.test.ts` went in the same commit, which is
+     what that file's header asks of a deliberate removal.
 
-     `0.62 → 0.86` is illustrative: DarkPrint does not run anybody's graph, so there is no
-     per-run figure anywhere in the product, and the right-hand panel is shaped exactly like
-     a readout. The qualifier is beside the panel rather than in a comment, and
-     `components/site/honesty.test.ts` carries the ledger row. This case is the cheap half:
-     a length pass that takes the line fails here first. */
-  it("says the scores are illustrative, beside the panel that draws them", () => {
-    const text = plainText(render(SectionSameRun));
-    expect(text).toContain("illustrative: DarkPrint does not run your graph");
-  });
+     What it was for, kept here because the page no longer says it: `0.62 → 0.86` is a
+     worked example. DarkPrint runs nobody's graph — no per-run figure anywhere in the
+     product, no runner, no endpoint — and the right-hand panel draws four runs, four scores
+     and three deltas in fixed tabular columns, which is the shape of a readout.
+
+     What still guards the page is the case below, and it is the weaker half: it fails on a
+     PROMISE of measurement (`eval`, `we measure`, `we score`, `measure if`) and cannot fail
+     on a reader taking the four numbers for readings. If the qualifier ever comes back, this
+     case comes back with it. */
 
   /* Beats 3 and 4 are the drawings restored from `main`, and these two tests are `main`'s
      own assertions about them rather than new ones: the roles as readable text, the absent

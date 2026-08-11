@@ -47,7 +47,6 @@ import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
 import { CloneMenu } from "@/components/blueprint/CloneMenu";
 import { AgentHandoff } from "@/components/build/AgentHandoff";
 import { SectionLifecycle } from "@/components/home/SectionLifecycle";
-import { SectionSameRun } from "@/components/home/SectionSameRun";
 import { DownloadStep } from "@/components/build/DownloadStep";
 import { DEFAULT_CHOICES } from "@/components/build/choices";
 import { buildState } from "@/components/build/state";
@@ -220,8 +219,14 @@ const AGENT_HANDOFF = renderToStaticMarkup(createElement(AgentHandoff));
  */
 const LIFECYCLE = renderToStaticMarkup(createElement(SectionLifecycle));
 
-/** Beat 2, whole. The one place on the site that prints a per-run score. */
-const LANDING_SAME_RUN = renderToStaticMarkup(createElement(SectionSameRun));
+/* `LANDING_SAME_RUN` stood here — beat 2, whole, "the one place on the site that prints a
+   per-run score" — and it is gone with the only row that read it, on 2026-08-11. The
+   reasoning is filed with that row, under the landing's entry below.
+
+   The import goes with it rather than being left unused. Beat 2 is still the one place on
+   this site that prints a per-run score; what changed is that this file no longer asserts
+   anything about it. `components/home/beats.test.ts` renders the beat and holds its copy,
+   including the four promises of measurement it may not make. */
 
 /**
  * The starter is the one bundle whose criteria walk stops at a judge
@@ -392,24 +397,28 @@ const CLAIMS: Claim[] = [
     html: SKILL_METADATA_DESCRIPTION,
   },
 
-  /* ---- the landing, beat 2 ----
-     The one figure on this site that prints a per-run number, and the product produces no
-     such number anywhere. It was two panels of routes until 2026-08-11 and claimed nothing
-     numeric; the rewrite argues that pinning the steps is what makes a score an instrument,
-     which needs a score on the page to be worth reading, and `0.62 → 0.86` is therefore a
-     worked example sitting in something shaped exactly like a readout.
+  /* ---- the landing, beat 2 — removed 2026-08-11, on the author's instruction ----
+     The row held "illustrative: darkprint does not run your graph", `open`, over
+     `SectionSameRun`. The author asked that line off the page, having been shown this row
+     and `beats.test.ts`'s assertion first, so both come out in the same commit with the
+     reason in the message — which is what this file's header asks of a deliberate removal,
+     and the alternative was a row passing over a string nobody prints.
 
-     The rule this file exists for is that a claim and its qualifier travel together, so the
-     line is under the panel that draws the numbers rather than at the foot of the section
-     or in a comment. `beats.test.ts` holds it too, one assertion, for the cheap catch; this
-     row is the one that says why it is there. */
-  {
-    surface: "/ (beat 2) · the scores in the right-hand panel",
-    why: "the panel draws four runs, four scores and three deltas in a fixed column, which is the shape of a readout off a real harness. DarkPrint runs nobody's graph: there is no per-run performance figure in the product, no runner and no endpoint, and `/reading-the-radar` says so. A figure that looks like an instrument has to say it is an example where it is read, not below the fold",
-    says: "illustrative: darkprint does not run your graph",
-    where: "open",
-    html: LANDING_SAME_RUN,
-  },
+     This is NOT the reason an entry is normally allowed to leave. The rule stated at
+     `/what-it-isnt` above is that a row comes out when the thing it qualified has left the
+     site. That is not the case here: beat 2 still draws four runs, four scores and three
+     deltas in fixed tabular columns, which is the shape of a readout off a real harness, and
+     DarkPrint still runs nobody's graph — no per-run figure in the product, no runner, no
+     endpoint, and `/reading-the-radar` still says so in the open. The claim is intact and
+     the qualifier is gone, which is the one combination this file was written to prevent,
+     and it is recorded here rather than in a commit message alone for exactly that reason.
+
+     What survives, and it is weaker: `beats.test.ts` still fails on a PROMISE of measurement
+     — `eval`, `we measure`, `we score`, `measure if` — and on the beat losing the sentences
+     that keep the running the reader's. None of that catches a reader who takes 0.62 → 0.86
+     for readings off this site.
+
+     If the line comes back, this row comes back with it, and `LANDING_SAME_RUN` with both. */
 
   /* ---- /mcp ----
      Three registers, which is what this file's header has always said this route needs and

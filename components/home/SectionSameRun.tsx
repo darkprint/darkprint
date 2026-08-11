@@ -133,11 +133,26 @@ import { BeatCaption } from "./BeatCaption";
    running is the reader's, the verb is `attribute`, and the word for a scored run never
    appears, because `RunLayers` defines it precisely and a landing beat would use it loosely.
 
-   The rewrite raises the stakes, and the qualifier is new because of it. `0.62 → 0.86` is a
-   worked example: DarkPrint does not run anybody's graph, so there is no per-run number
-   anywhere in the product, and a figure shaped like a readout has to say so beside itself
-   rather than in a comment. The line under the right panel is that sentence and
-   `honesty.test.ts` holds it.
+   ── The qualifier this beat carried, and what its removal costs ──
+   An amber line under the right panel read "illustrative: DarkPrint does not run your
+   graph". The author asked it off the page on 2026-08-11, having been shown what it was
+   pinned to, and it is gone from all three places it lived: this file, `beats.test.ts`, and
+   the row in `components/site/honesty.test.ts` — which that file's own header requires to
+   come out in the same commit, with the reason, rather than be left passing over an empty
+   string.
+
+   The reason it was written is unchanged and is worth keeping here, because nothing on the
+   page says it any more. `0.62 → 0.86` is a worked example. DarkPrint runs nobody's graph:
+   there is no per-run number anywhere in the product, no runner and no endpoint, and
+   `/reading-the-radar` states that in the open. The right panel draws four runs, four scores
+   and three deltas in fixed tabular columns, which is the shape of a readout off a real
+   harness, and the qualifier was the one thing on the landing saying it is not one.
+
+   What still holds the line, and it is weaker than a sentence beside the numbers: the beat
+   never uses the word for a graded run, the verb stays `attribute`, the improving is
+   something the reader does to their own system, and `beats.test.ts` still fails on `eval`,
+   `we measure`, `we score` and `measure if`. A rewrite that promises a measurement is still
+   caught. A reader who takes the four scores for readings is not.
 
    ── The pause dash, which this copy no longer has to be edited for ──
    `components/home` is in `workspace.test.ts`'s `COPY_TREES`, the rule that keeps the pause
@@ -244,8 +259,8 @@ const LABEL_ABOVE_DROP = 0.4;
  * t=0.5, and the mock's three cubics leave theirs by 9.06, 1.68 and 10.06 units, which is
  * `gentle`'s 18 twice over and a middle run that is straight to within two units.
  *
- * The scores are the hand-off's and they are illustrative, which the line under the right
- * panel says in the open.
+ * The scores are the hand-off's and they are a worked example. The line that said so under
+ * the right panel was removed on 2026-08-11; the header records what went with it.
  */
 const IMPROVISED: readonly { end: Point; score: string; bend: number }[] = [
   { end: [288, 58], score: "0.62", bend: -FLOW.edge.bend.gentle },
@@ -882,26 +897,20 @@ export function SectionSameRun() {
                 </tbody>
               </table>
             </Sheet>
-            {/* One cell, two paragraphs. The subgrid row above gives each figure three
-                children and this column would otherwise have four, which would either open a
-                fourth row the left column has to leave empty or push this figure's rows out
-                of step with its neighbour's. They are one block of text under one sheet
-                anyway. */}
-            <div className="flex flex-col gap-3">
-              {/* The qualifier, beside the thing it qualifies. `honesty.test.ts` holds it:
-                  DarkPrint does not run anybody's graph, so these numbers are a worked
-                  example and a figure shaped like a readout has to say so where it is
-                  read. */}
-              <p className="label text-amber">illustrative: DarkPrint does not run your graph</p>
-              {/* The negative result is no longer explained here. It is in the ledger, which
-                  is where it reads: a row that loses 0.05 beside three that gain says what a
-                  sentence about it would say, and says it in the column a reader is already
-                  comparing down. The docblock keeps the reason that row exists at all. */}
-              <figcaption className="text-sm leading-relaxed text-muted">
-                The steps are yours, so a rerun is the same run. Change one, read the score,
-                and the difference belongs to the thing you moved.
-              </figcaption>
-            </div>
+            {/* The amber qualifier stood above this caption and is gone, on the author's
+                instruction 2026-08-11. The header records what it said and what its removal
+                costs; this is the note for anyone wondering why the two columns still line
+                up without it. The subgrid row gives each figure three children, and this one
+                still has three — the wrapper that held the qualifier and the caption together
+                is gone with it, and the caption is the third child on its own. */}
+            {/* The negative result is no longer explained here. It is in the ledger, which
+                is where it reads: a row that loses 0.05 beside three that gain says what a
+                sentence about it would say, and says it in the column a reader is already
+                comparing down. The docblock keeps the reason that row exists at all. */}
+            <figcaption className="text-sm leading-relaxed text-muted">
+              The steps are yours, so a rerun is the same run. Change one, read the score,
+              and the difference belongs to the thing you moved.
+            </figcaption>
           </figure>
         </div>
 
