@@ -342,6 +342,25 @@ const SCORE_CELL = 17;
  * top of the range any mono face this site has landed on, so the track is derived from the
  * type rather than measured off a screenshot.
  */
+/**
+ * The paper both sheets are drawn on, which is not the blueprint register's.
+ *
+ * `SHEET_REGISTER.blueprint` mixes `--color-blueprint-deep` 62% into the void and lays a
+ * graticule and four corner ticks over it. The mock mixes the same two colours at 34% and
+ * lays nothing over them: `color-mix(in oklab, #061c52 34%, #05060d)` is what both of its
+ * panels are filled with, and those are this theme's `--color-blueprint-deep` and
+ * `--color-void` exactly, so the value is the mock's arithmetic on our tokens rather than a
+ * colour picked to look near it.
+ *
+ * The graticule and the ticks go with the lighter fill, through `Sheet`'s `paper` opt-out.
+ * They are the two marks that say "a sheet from a set", and neither of these figures is a
+ * drawing OF a blueprint: the left is a divergence and the right is a readout. Ruling them
+ * like drafting paper was the last thing making the beat look like it was arguing in the
+ * blueprint's own voice on both sides of a contrast. Every other `Sheet` on the site keeps
+ * its paper — this is a prop these two pass, not a change to the register.
+ */
+const PAPER = "color-mix(in oklab, var(--color-blueprint-deep) 34%, var(--color-void))";
+
 const LEDGER_GAP = 16;
 const LEDGER = {
   iter: 40 + LEDGER_GAP,
@@ -553,6 +572,10 @@ export function SectionSameRun() {
                  supposed to read as a contrast. The mock frames them `#222739` and `#0b2f7a`
                  for that reason, which is this token and the register's own. */
               border="var(--color-line)"
+              /* No graticule and no corner ticks, on the mock's flatter fill. `PAPER` argues
+                 it, and it applies to both panels equally. */
+              surface={PAPER}
+              paper={false}
               /* The strip along the bottom edge, which this sheet did not have. It is the
                  mock's own line rather than invented copy, and it names what the drawing
                  shows in the same voice the right sheet will use for what its ledger shows.
@@ -698,6 +721,11 @@ export function SectionSameRun() {
           <figure className="flex min-w-0 flex-col gap-3 lg:row-span-3 lg:grid lg:grid-rows-subgrid">
             <PanelHead title="from a blueprint" rail="you define the steps, then tune them" />
             <Sheet
+              /* Same paper as the left panel. Only the frame and the strip differ, which is
+                 the whole of what separates a blueprint from what a harness did without
+                 one. */
+              surface={PAPER}
+              paper={false}
               /* The sheet's own drawing colour, where the left strip is grey. The two are
                  not the same kind of remark: the left one names what an unspecified panel
                  shows and is reported in the neutral tone that panel is drawn in, and this

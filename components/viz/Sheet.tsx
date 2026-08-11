@@ -9,6 +9,13 @@
    ontology page, which is the point — a scene drawn on a Sheet
    sits in the same visual family as the pages around it.
 
+   Three of those are the register and one of them is the paper.
+   `border` and `surface` repaint the frame and the fill; `paper`
+   turns off the graticule and the ticks together, for a figure that
+   wants this component's structure without being a sheet from a
+   set. All three default to the register, all three are opt-in at
+   the call site, and beat 2 is the only caller of the last two.
+
    `Scene` is the `<svg>` itself, and it exists so that no scene
    author has to remember the four attributes that keep spec §1
    true: a `viewBox` and a matching `aspect-ratio` so the box is
@@ -30,6 +37,8 @@ export function Sheet({
   children,
   register = "blueprint",
   border,
+  surface,
+  paper: onPaper = true,
   label,
   title,
   note,
@@ -47,10 +56,33 @@ export function Sheet({
    * `style` here and inline wins. Added 2026-08-11 for beat 2, where the two sheets are the
    * same drafting paper and only one of them is a blueprint: the left panel draws what a
    * harness did without one, and framing it in `--color-blueprint` puts the site's word for
-   * a specification around the figure that says there isn't one. The surface and the
-   * graticule stay the register's, because it is still the same sheet of paper.
+   * a specification around the figure that says there isn't one.
    */
   border?: string;
+  /**
+   * The paper's colour, when it should differ from the register's own.
+   *
+   * Same reason as `border`: it is set through `style` here, so inline wins and a class
+   * cannot reach it.
+   */
+  surface?: string;
+  /**
+   * Whether this is drawn on drafting paper. True everywhere unless a call site says not.
+   *
+   * The graticule and the corner ticks are the two marks that say "this is a sheet from a
+   * set" rather than "this is a panel", and they are what `Sheet` was written to put on the
+   * page — the author's note on the class is that the graticule "is the part they said they
+   * liked". Turning them off is therefore an opt-out per call site and never a new default:
+   * `components/viz/ssr.test.ts` holds `bp-grid` on a `Sheet` rendered with no props, and
+   * four of the six call sites want the paper.
+   *
+   * Beat 2 is the exception and the author's, 2026-08-11, on seeing both panels drawn on the
+   * graticule: "why are u keeping the look of a blueprint?" That beat's two figures are a
+   * readout and a divergence, neither of which is a drawing OF a blueprint, and the mock
+   * gives them a flat surface with no rules and no ticks. So both take `paper={false}` and a
+   * darker `surface`, and every other sheet on the site is untouched.
+   */
+  paper?: boolean;
   /** Mono caption along the top edge. The drawing's number or subject. */
   label?: React.ReactNode;
   /** Title block, left. What the drawing is of. */
@@ -69,7 +101,7 @@ export function Sheet({
      The cast is the standard one: `CSSProperties` has no index signature for custom
      properties. */
   const style = {
-    background: paper.surface,
+    background: surface ?? paper.surface,
     borderColor: border ?? paper.border,
     color: paper.ink,
     "--viz-ink": paper.ink,
@@ -95,10 +127,14 @@ export function Sheet({
       className={cx("relative isolate flex flex-col overflow-hidden rounded-lg border", className)}
       style={style}
     >
-      <div aria-hidden className={cx("pointer-events-none absolute inset-0", paper.grid)} />
-      {/* `.tick-frame` hangs its ticks a pixel outside the element, so it goes on an inset
-          overlay rather than on the sheet, where `overflow-hidden` would shave them. */}
-      <div aria-hidden className="tick-frame pointer-events-none absolute inset-2" />
+      {onPaper && (
+        <>
+          <div aria-hidden className={cx("pointer-events-none absolute inset-0", paper.grid)} />
+          {/* `.tick-frame` hangs its ticks a pixel outside the element, so it goes on an inset
+              overlay rather than on the sheet, where `overflow-hidden` would shave them. */}
+          <div aria-hidden className="tick-frame pointer-events-none absolute inset-2" />
+        </>
+      )}
 
       {label !== undefined && (
         <div className="relative border-b px-4 py-2.5" style={rule}>
