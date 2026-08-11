@@ -29,6 +29,7 @@ import { SHEET_REGISTER, VIZ, type SheetRegister } from "./tokens";
 export function Sheet({
   children,
   register = "blueprint",
+  border,
   label,
   title,
   note,
@@ -39,6 +40,17 @@ export function Sheet({
   children: React.ReactNode;
   /** Which pole the sheet is drawn on. Blueprint by default. */
   register?: SheetRegister;
+  /**
+   * The frame's colour, when it should differ from the register's own.
+   *
+   * A prop rather than something `className` can do, because the border is set through
+   * `style` here and inline wins. Added 2026-08-11 for beat 2, where the two sheets are the
+   * same drafting paper and only one of them is a blueprint: the left panel draws what a
+   * harness did without one, and framing it in `--color-blueprint` would put the site's word
+   * for a specification around the figure that says there isn't one. The surface and the
+   * graticule stay the register's, because it is still the same sheet of paper.
+   */
+  border?: string;
   /** Mono caption along the top edge. The drawing's number or subject. */
   label?: React.ReactNode;
   /** Title block, left. What the drawing is of. */
@@ -58,13 +70,13 @@ export function Sheet({
      properties. */
   const style = {
     background: paper.surface,
-    borderColor: paper.border,
+    borderColor: border ?? paper.border,
     color: paper.ink,
     "--viz-ink": paper.ink,
     "--viz-line": paper.line,
   } as React.CSSProperties;
 
-  const rule = { borderColor: paper.border };
+  const rule = { borderColor: border ?? paper.border };
 
   return (
     <div

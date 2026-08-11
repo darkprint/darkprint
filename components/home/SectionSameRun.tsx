@@ -4,13 +4,14 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import {
   FLOW,
   FlowEdge,
-  FlowNode,
   FlowScene,
   Sheet,
   VIZ,
   VIZ_INK,
   VIZ_KNOCKOUT,
   VIZ_LINE,
+  VIZ_TONE,
+  ringRadius,
 } from "@/components/viz";
 import { cx } from "@/lib/format";
 
@@ -131,7 +132,16 @@ const GOAL: Point = [56, 118];
  * caption's size they read as annotations on dots. It clears `FLOW.frame.legible`, the
  * 10-unit floor this scene's own frame publishes, by a wide margin.
  */
-const SCORE_SIZE = 19;
+const SCORE_SIZE = 17;
+
+/**
+ * The endpoint dot, against `FLOW.node.r`'s 7 for the goal.
+ *
+ * Smaller on purpose and not only to match the mock: the goal is a node in the register's
+ * sense and the three endings are positions. `FlowEdge` is handed this as its `toRadius`, so
+ * the curve stops off the dot rather than under it.
+ */
+const DOT_R = 5;
 
 /**
  * Three runs of one goal, each ending on its own number.
@@ -213,6 +223,17 @@ const STEPS = ["retrieve", "rank", "draft"] as const;
 const RULE = "color-mix(in oklab, var(--color-blueprint-line) 15%, transparent)";
 
 /**
+ * The ledger's column heads.
+ *
+ * `.label` is 11px at 0.18em and this is 10 at 0.16, which is the mock's own step down: four
+ * heads over a four-row table are a legend rather than a section label, and at `.label`'s
+ * size they compete with the 13px cell text under them. The colour does not move — the tier
+ * exists at `--color-dim` because a head is meaning-bearing, and this keeps that.
+ */
+const HEAD =
+  "py-2.5 pr-4 font-mono text-[10px] font-normal uppercase tracking-[0.16em] text-dim";
+
+/**
  * One step of the route, at `VIZ.node`'s own 132:46 aspect scaled down to 112 by 39.
  *
  * One treatment now, where there were three. The pill was drawn twelve times, once per step
@@ -228,7 +249,7 @@ const RULE = "color-mix(in oklab, var(--color-blueprint-line) 15%, transparent)"
 function Pill({ label }: { label: string }) {
   return (
     <span
-      className="flex h-[39px] w-[112px] items-center justify-center rounded-sm border border-blueprint-line/55 text-center font-mono text-[12px] text-blueprint-ink"
+      className="flex h-[42px] w-[128px] items-center justify-center rounded border border-blueprint-line text-center font-mono text-[13px] text-blueprint-ink"
       style={{ borderWidth: VIZ.stroke.base, background: VIZ_KNOCKOUT }}
     >
       {label}
@@ -245,7 +266,7 @@ function Pill({ label }: { label: string }) {
  * in `VIZ_LINE` — the geometry comes from the tokens rather than from a shape typed to look
  * about right, which is the part of `FlowEdge` worth carrying across.
  */
-const ARROW = { width: 30, height: 12 } as const;
+const ARROW = { width: 30, height: 10 } as const;
 
 function RouteArrow() {
   const midY = ARROW.height / 2;
@@ -260,13 +281,22 @@ function RouteArrow() {
       fill="none"
       className="shrink-0"
     >
-      <line x1={0} y1={midY} x2={back} y2={midY} stroke={VIZ_LINE} strokeWidth={VIZ.stroke.base} />
+      <line
+        x1={0}
+        y1={midY}
+        x2={back}
+        y2={midY}
+        stroke={VIZ_LINE}
+        strokeWidth={VIZ.stroke.base}
+        opacity={FLOW.edge.arrowOpacity}
+      />
       <path
         d={`M${back} ${midY - VIZ.arrow.spread}L${tip} ${midY}L${back} ${midY + VIZ.arrow.spread}`}
         stroke={VIZ_LINE}
         strokeWidth={VIZ.stroke.base}
         strokeLinecap="round"
         strokeLinejoin="round"
+        opacity={FLOW.edge.arrowOpacity}
       />
     </svg>
   );
@@ -334,23 +364,96 @@ export function SectionSameRun() {
             right-hand caption are wrapped as one cell: they are one block of text under one
             sheet, and the alternative is a fourth row that the left column would have to
             leave empty. */}
-        <div className="mt-12 grid gap-6 lg:grid-cols-2 lg:grid-rows-[auto_1fr_auto] lg:gap-y-3">
+        <div className="mt-12 grid gap-7 lg:grid-cols-[1fr_1.15fr] lg:grid-rows-[auto_1fr_auto] lg:gap-y-3.5">
           {/* ---------- three runs, three sets of steps ---------- */}
           <figure className="flex min-w-0 flex-col gap-3 lg:row-span-3 lg:grid lg:grid-rows-subgrid">
             <PanelHead title="from a prompt" rail="you do not control the path" />
-            <Sheet title="same prompt · three routes · nothing to credit">
+            <Sheet
+              /* `--color-line`, not the blueprint register's own frame. Both panels are
+                 drawn on the same paper and only one of them is a blueprint: putting the
+                 site's word for a specification around the figure that says there isn't one
+                 was the last thing making these two read as a matched pair when they are
+                 supposed to read as a contrast. */
+              border="var(--color-line)"
+              title="same prompt · three routes · nothing to credit"
+              bodyClassName="relative px-5 pt-5"
+            >
               <FlowScene
                 width={SCENE.width}
                 height={SCENE.height}
                 label="One goal run three times from a prompt"
                 description="A goal on the left, and three runs that leave it for three different endings, each with a score of its own: 0.62, 0.81 and 0.55."
               >
-                <FlowNode
-                  x={GOAL[0]}
-                  y={GOAL[1]}
-                  r={FLOW.node.r}
-                  lit
-                  mark="schematic"
+                {IMPROVISED.map((run, i) => (
+                  /* Each run arrives on its own, and the score after its route.
+                     ------------------------------------------------------------
+                     `--run` is the index and `globals.css` does the rest: two classes, one
+                     delay expression, three routes. The keyframes live inside
+                     `prefers-reduced-motion: no-preference` and fill `backwards`, so the
+                     resting style of every element is the finished one and a reader who
+                     asked for less motion never has the `from` state applied. That is what
+                     lets this satisfy the author's ask without breaking spec §0 or the
+                     `opacity-0` check in `beats.test.ts`: the server renders the finished
+                     figure and the animation only plays on top of it. */
+                  <g
+                    key={run.score}
+                    className="anim-run-in"
+                    style={{ "--run": i } as React.CSSProperties}
+                  >
+                    {/* No pulse and no arrowhead. A travelling light says "this is the
+                        path" and an arrow says "and it goes this way", and the panel's claim
+                        is that nobody chose either. Both radii are handed over rather than
+                        typed, so `FlowEdge` trims the curve off the goal's ring at one end
+                        and off the endpoint dot at the other. */}
+                    <FlowEdge
+                      from={GOAL}
+                      to={run.end}
+                      bend={run.bend}
+                      fromRadius={FLOW.node.r}
+                      toRadius={DOT_R}
+                      tone="dim"
+                      arrow={false}
+                      pulse={false}
+                    />
+                    {/* A flat disc, not a `FlowNode`. The hand-off asked for the component
+                        on the grounds that the register's node is the register's node, and
+                        the author's answer to the build was that it does not look like the
+                        design. It does not: `FlowNode` draws a lit core inside a ring inside
+                        three halo shells, which is a glyph that says "something happens
+                        here". Nothing happens at these points. They are where three runs
+                        stopped, and what a reader is meant to read is the number beside
+                        them, so the mark is the smallest thing that can hold a position. */}
+                    <circle cx={run.end[0]} cy={run.end[1]} r={DOT_R} fill={VIZ_TONE.dim} />
+                    <text
+                      data-viz="label"
+                      className="anim-run-score"
+                      style={{ "--run": i } as React.CSSProperties}
+                      x={run.end[0] + DOT_R + FLOW.label.gap - 2}
+                      y={run.end[1]}
+                      dominantBaseline="middle"
+                      textAnchor="start"
+                      fontSize={SCORE_SIZE}
+                      fill={VIZ_TONE.muted}
+                    >
+                      {run.score}
+                    </text>
+                  </g>
+                ))}
+
+                {/* The goal, drawn last so the three curves pass under it. A filled core and
+                    one ring, which is `FlowNode`'s schematic mark with the halo shells left
+                    off: this node IS a place where something happens, so it keeps the ring
+                    the endpoints do not get, and the shells are light the panel does not
+                    need to spend on the one thing every run shares. */}
+                <circle cx={GOAL[0]} cy={GOAL[1]} r={FLOW.node.r} fill={VIZ_LINE} />
+                <circle
+                  cx={GOAL[0]}
+                  cy={GOAL[1]}
+                  r={ringRadius(FLOW.node.r)}
+                  fill="none"
+                  stroke={VIZ_LINE}
+                  strokeWidth={FLOW.node.ring}
+                  opacity={FLOW.node.ringOpacity}
                 />
                 {/* "goal" above the node rather than through `FlowNode`'s own `label`, which
                     sets it underneath. Under is right for a node in a chain, where the space
@@ -362,65 +465,13 @@ export function SectionSameRun() {
                 <text
                   data-viz="label"
                   x={GOAL[0]}
-                  y={GOAL[1] - FLOW.node.r - FLOW.label.gap}
+                  y={GOAL[1] - ringRadius(FLOW.node.r) - FLOW.label.gap + 5}
                   textAnchor="middle"
                   fontSize={FLOW.label.size}
                   fill={VIZ_INK}
                 >
                   goal
                 </text>
-                {IMPROVISED.map((run, i) => (
-                  /* Each run arrives on its own, and the score after its route.
-                     ------------------------------------------------------------
-                     `--run` is the index and `globals.css` does the rest: two classes, one
-                     delay expression, three routes. The keyframes live inside
-                     `prefers-reduced-motion: no-preference` and fill `backwards`, so the
-                     resting style of both elements is the finished one and a reader who
-                     asked for less motion never has the `from` state applied. That is what
-                     lets this satisfy the author's ask without breaking spec §0 or the
-                     `opacity-0` check in `beats.test.ts`: the server renders the finished
-                     figure, and the animation only plays on top of it. */
-                  <g
-                    key={run.score}
-                    className="anim-run-in"
-                    style={{ "--run": i } as React.CSSProperties}
-                  >
-                    {/* No pulse and no arrowhead. A travelling light says "this is the
-                        path" and an arrow says "and it goes this way", and the panel's
-                        claim is that nobody chose either. `FlowEdge` trims both ends off
-                        the node radius plus `FLOW.edge.gap` itself, so no endpoint is
-                        typed here; `bend` is what keeps the three from reading as a fan
-                        somebody laid out. */}
-                    <FlowEdge
-                      from={GOAL}
-                      to={run.end}
-                      bend={run.bend}
-                      tone="dim"
-                      arrow={false}
-                      pulse={false}
-                    />
-                    <FlowNode
-                      x={run.end[0]}
-                      y={run.end[1]}
-                      r={FLOW.node.r}
-                      tone="dim"
-                      mark="schematic"
-                    />
-                    <text
-                      data-viz="label"
-                      className="anim-run-score"
-                      style={{ "--run": i } as React.CSSProperties}
-                      x={run.end[0] + FLOW.node.r + FLOW.label.gap}
-                      y={run.end[1]}
-                      dominantBaseline="middle"
-                      textAnchor="start"
-                      fontSize={SCORE_SIZE}
-                      fill={VIZ_INK}
-                    >
-                      {run.score}
-                    </text>
-                  </g>
-                ))}
               </FlowScene>
             </Sheet>
             <figcaption className="text-sm leading-relaxed text-muted">
@@ -438,7 +489,7 @@ export function SectionSameRun() {
                  and the right one states the property the ledger above it depends on, which
                  is the same claim the line under the route makes and the same colour. */
               title={<span className="text-cyan">one step changed per iteration · everything else held</span>}
-              bodyClassName="relative overflow-x-auto p-4"
+              bodyClassName="relative overflow-x-auto px-6 pt-6"
             >
               {/* ---------- the route, once ----------
                   Eleven of the old table's twelve pills existed to say "these did not
@@ -465,7 +516,7 @@ export function SectionSameRun() {
                   the ledger below are two blocks rather than a heading and its content, and
                   a rule inset by the body's own padding reads as a table border with a
                   paragraph sitting on top of it. `-mx-4` is that padding, spent back. */}
-              <div className="-mx-4 border-t" style={{ borderColor: RULE }} />
+              <div className="-mx-6 border-t" style={{ borderColor: RULE }} />
 
               {/* ---------- the ledger ----------
                   Still a table, and for the reason it always was: four scores and three
@@ -477,7 +528,7 @@ export function SectionSameRun() {
                   of `--color-blueprint-line` at 15% is the drafting sheet's own ruling, and
                   it does what the old `border-spacing` could not: it lines the four scores up
                   under a header that is attached to them. */}
-              <table className="mt-1 w-full border-collapse text-left">
+              <table className="mt-1.5 mb-4 w-full border-collapse text-left">
                 <caption className="sr-only">
                   Four runs of one blueprint, numbered 01 to 04. Each row names the one step
                   it changed and reports the score and the change from the run before it.
@@ -488,16 +539,16 @@ export function SectionSameRun() {
                       column of numbers — and `--color-faint` is annotated in `globals.css`
                       as decorative separators only, never live text. */}
                   <tr className="border-b" style={{ borderColor: RULE }}>
-                    <th scope="col" className="label py-3 pr-3 font-normal">
+                    <th scope="col" className={HEAD}>
                       iter
                     </th>
-                    <th scope="col" className="label py-3 pr-3 font-normal">
+                    <th scope="col" className={HEAD}>
                       what changed
                     </th>
-                    <th scope="col" className="label py-3 pl-3 text-right font-normal">
+                    <th scope="col" className={cx(HEAD, "text-right")}>
                       score
                     </th>
-                    <th scope="col" className="label py-3 pl-3 text-right font-normal">
+                    <th scope="col" className={cx(HEAD, "text-right")}>
                       delta
                     </th>
                   </tr>
@@ -511,7 +562,7 @@ export function SectionSameRun() {
                     >
                       <th
                         scope="row"
-                        className="whitespace-nowrap py-3.5 pr-3 font-mono text-[12px] font-normal text-dim"
+                        className="whitespace-nowrap py-[13px] pr-4 font-mono text-[12px] font-normal text-dim"
                       >
                         {iteration.n}
                       </th>
@@ -519,12 +570,12 @@ export function SectionSameRun() {
                           happened to it is the predicate and reads under. A cell entirely in
                           one tone would make "rank" and "removed" equally loud, and the
                           column a reader scans is the one naming the steps. */}
-                      <td className="py-3.5 pr-3 font-mono text-[13px] text-dim">
+                      <td className="py-[13px] pr-4 font-mono text-[13px] text-dim">
                         {iteration.changed === null ? (
                           "baseline"
                         ) : (
                           <>
-                            <span className="text-fg">{iteration.changed.step}</span>{" "}
+                            <span className="text-blueprint-ink">{iteration.changed.step}</span>{" "}
                             {"removed" in iteration.changed
                               ? "removed"
                               : `\u2192 ${iteration.changed.to}`}
@@ -534,12 +585,12 @@ export function SectionSameRun() {
                       {/* Fixed columns, right-aligned, tabular figures. The vertical read
                           down these two is the figure's whole argument, and a proportional
                           digit or a column that sizes to its content breaks it. */}
-                      <td className="w-[56px] py-3.5 pl-3 text-right font-mono text-[17px] tabular-nums text-fg">
+                      <td className="py-[13px] pl-4 text-right font-mono text-[17px] tabular-nums text-fg">
                         {iteration.score}
                       </td>
                       <td
                         className={cx(
-                          "w-[56px] py-3.5 pl-3 text-right font-mono text-[12px] tabular-nums",
+                          "w-[64px] py-[13px] pl-4 text-right font-mono text-[12px] tabular-nums",
                           iteration.delta === undefined
                             ? "text-faint"
                             : iteration.delta.gain
