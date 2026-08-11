@@ -71,30 +71,41 @@ export async function generateMetadata({
  *
  * This was a `PageContents` panel at the foot of the header, and the author asked it into a
  * rail: "In each blueprint we have `On this blueprint` as a panel. Make it on the left as
- * you did for the pages in Learn." Same six destinations, same order; what changes is that
- * a reader four screens down can still see where they are, which is the whole reason the
+ * you did for the pages in Learn." Same destinations, same order; what changes is that a
+ * reader four screens down can still see where they are, which is the whole reason the
  * Learn pages have one.
  *
- * A module constant rather than something derived per bundle, because these six sections
- * are the page's own structure and not the blueprint's: every slug renders all six, and the
- * two that live outside this file — `#evidence` in `EvidenceLayers` and `#community-notes`
- * in `Comments` — are mounted unconditionally alongside the four declared here. A bundle
- * with no comments still draws the section that says so.
+ * A module constant rather than something derived per bundle, because these are the page's
+ * own structure and not the blueprint's: every slug renders all of them, and the two that
+ * live outside this file — `#evidence` in `EvidenceLayers` and `#community-notes` in
+ * `Comments` — are mounted unconditionally alongside the ones declared here. A bundle with
+ * no comments still draws the section that says so.
+ *
+ * The count in the rail's own meta is read off `.length` rather than typed beside it. It
+ * was typed, and it was wrong within one edit: `At a glance` left on 2026-08-11 and the
+ * heading went on claiming eight sections over seven rows.
  *
  * No `active`. `SideRail` reads that as "no row is the page you are on", which is the truth
- * here: all six are anchors into the page a reader is already reading. Lighting one would
- * need a scroll-spy, and a rail that claims a position it is not tracking is worse than a
- * rail that claims none.
+ * here: every row is an anchor into the page a reader is already reading. Lighting one
+ * would need a scroll-spy, and a rail that claims a position it is not tracking is worse
+ * than a rail that claims none.
  */
 const BLUEPRINT_SECTIONS: readonly SideRailItem[] = [
-  { href: "#overview", label: "Overview", step: "01" },
-  { href: "#files", label: "Files", step: "02" },
-  { href: "#blueprint-workspace", label: "Graph and cards", step: "03" },
-  { href: "#evidence", label: "Evidence", step: "04" },
-  { href: "#history", label: "History", step: "05" },
-  { href: "#use-this-blueprint", label: "Use this release", step: "06" },
-  { href: "#blueprint-source", label: "Source", step: "07" },
-  { href: "#community-notes", label: "Community notes", step: "08" },
+  /* `#overview` stood here, first. It was a four-cell definition list of the domain, the
+     node and handoff counts, the tool-scope count, the digest and the date, and the author
+     removed it on 2026-08-11 as not informative enough to open the page with. It was not:
+     every one of those facts is already drawn somewhere a reader is going anyway. The
+     domain and the date are in the header band, the digest is in the version line and in
+     `Use this release`, the shape is the graph two sections down, and the tool-scope count
+     is a number over a list `Requirements` prints in full. A panel of pointers at other
+     panels is what a page has instead of a first section, not one. */
+  { href: "#files", label: "Files", step: "01" },
+  { href: "#blueprint-workspace", label: "Graph and cards", step: "02" },
+  { href: "#evidence", label: "Evidence", step: "03" },
+  { href: "#history", label: "History", step: "04" },
+  { href: "#use-this-blueprint", label: "Use this release", step: "05" },
+  { href: "#blueprint-source", label: "Source", step: "06" },
+  { href: "#community-notes", label: "Community notes", step: "07" },
 ];
 
 /** Small mono heading for the in-page panels. */
@@ -247,7 +258,12 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
 
        So the band keeps its `border-b bg-surface` and now spans the right column rather
        than the viewport. Nothing else about it moves. */
-    <SideRail label="On this blueprint" meta="8 sections" items={BLUEPRINT_SECTIONS} ariaLabel="On this blueprint">
+    <SideRail
+      label="On this blueprint"
+      meta={`${BLUEPRINT_SECTIONS.length} sections`}
+      items={BLUEPRINT_SECTIONS}
+      ariaLabel="On this blueprint"
+    >
     {/* ---------- The band, shared with `/u/<owner>/<slug>` ----------
         Owner and name, the visibility pill, the four actions and the version line, in the
         same component the owner's view of a bundle mounts. That is the whole restructure:
@@ -255,7 +271,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
         seen from two sides, and until this pass the two pages disagreed about what a
         bundle even looks like at the top.
 
-        What did NOT move is the argument below it. The six sections keep their scroll
+        What did NOT move is the argument below it. The sections keep their scroll
         order and are not tabs: they are one reading top to bottom, and tabbing them would
         put the explainability panel — the thing that makes a score checkable — behind a
         click. */}
@@ -282,8 +298,14 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
         </nav>
       }
       below={
+        /* The date joins the version line rather than being lost with `At a glance`.
+           Everything else that panel carried is drawn somewhere a reader is going anyway,
+           and this was the exception: nothing else on the page says when the bundle was
+           published. It belongs beside the digest, which is the other half of the same
+           question, how old is what I am about to take. */
         <span className="font-mono text-[11px] text-dim">
-          version <span className="text-fg">{shortDigest(bp.digest)}</span> · 1 version
+          version <span className="text-fg">{shortDigest(bp.digest)}</span> · 1 version ·
+          published {prettyDate(bp.createdAt)}
         </span>
       }
     >
@@ -340,40 +362,10 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
         </More>
       )}
 
-      <section id="overview" aria-labelledby="fit-title" className="mt-10 scroll-mt-24">
-        <article className="panel p-5">
-          <PanelLabel>Overview</PanelLabel>
-          <h2 id="fit-title" className="mt-2 font-display text-xl font-semibold text-fg">
-            At a glance
-          </h2>
-          <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3 text-sm sm:grid-cols-4">
-            <div>
-              <dt className="text-dim">Domain</dt>
-              <dd className="mt-1 text-fg">{bp.category}</dd>
-            </div>
-            <div>
-              <dt className="text-dim">Shape</dt>
-              <dd className="mt-1 text-fg">{bp.graph.nodes.length} nodes · {bp.graph.edges.length} handoffs</dd>
-            </div>
-            <div>
-              <dt className="text-dim">Tool scopes</dt>
-              <dd className="mt-1 text-fg">{bp.requiredTools.length}</dd>
-            </div>
-            <div>
-              <dt className="text-dim">Release</dt>
-              <dd className="mt-1 font-mono text-[12px] text-fg">{bp.digest.slice(0, 12)}…</dd>
-            </div>
-            {/* Where the author/date row used to be. The band above carries who published
-                this and the version line carries the digest, so what was left of that row
-                was one date, and a date belongs in the panel of facts rather than on a row
-                of its own between the name and the summary. */}
-            <div>
-              <dt className="text-dim">Published</dt>
-              <dd className="mt-1 text-fg">{prettyDate(bp.createdAt)}</dd>
-            </div>
-          </dl>
-        </article>
-      </section>
+      {/* `At a glance` stood here and is gone; `BLUEPRINT_SECTIONS` above records why. One
+          fact it carried is not drawn anywhere else on this page: the publication date. It
+          moves onto the version line rather than being lost, which is where a reader is
+          already reading a digest and asking how old it is. */}
 
       {/* ---------- Files ----------
           The folder, before the drawing. A bundle is a folder before it is a page, and a
