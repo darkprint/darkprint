@@ -55,7 +55,19 @@ const SETUPS = [
 
 export function SetupChips() {
   return (
-    <div className="flex w-fit max-w-full flex-col gap-3">
+    /* Side by side, and wrapping rather than breaking at a named width.
+       ------------------------------------------------------------
+       The two commands are 47 and 49 characters, which is about 745px of chip and gap
+       together: they fit beside each other in the 1152px column and they do not fit on a
+       phone. `flex-wrap` is what decides that, per width, instead of a `sm:` or `lg:` that
+       has to be re-guessed every time the copy changes. `max-w-full` caps each chip at the
+       column so a long command wraps inside its own box rather than off the screen.
+
+       No `items-start`. The default stretch is what makes the two boxes the same height,
+       and they are not the same content: the MCP chip carries a `ComingSoonBadge` on its
+       label line and the skill chip does not. Stacked, that difference was invisible.
+       Side by side it would be two panels of different heights sharing one top edge. */
+    <div className="flex max-w-full flex-wrap gap-3">
       {SETUPS.map((setup) => (
         <Link
           key={setup.key}
