@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/site/Logo";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { PanelHeading } from "@/components/ui/SectionHeading";
 import { cx } from "@/lib/format";
@@ -138,13 +139,25 @@ function CommandLine({ command, ariaLabel }: { command: string; ariaLabel: strin
   );
 }
 
-/** A step's ordinal and its title on one row. The ordinal is a `.label`, never a heading. */
-function StepHeading({ index, title }: { index: string; title: string }) {
+/**
+ * A step's ordinal and its title, as one heading.
+ *
+ * It was two elements on a row: a `.label` carrying "01" beside an `h3`. The ordinal is in
+ * the heading now, which is the hand-off's call and closes a real gap. The three panels are
+ * this page's own top-level sections, so they are `h2` in the outline a screen reader walks
+ * — and under the old shape the number was not in the heading at all, so that outline read
+ * "Install it, Answer its questions, See what you end up holding" with nothing saying they
+ * were a sequence. A reader looking at the page could see it from the numbers; a reader
+ * listening to it could not.
+ *
+ * `PanelHeading` and not `SectionHeading`, so the level goes up and the size does not: four
+ * things at 28px on one page is what a second `SectionHeading` here would produce.
+ */
+function StepHeading({ index, title }: { index: number; title: string }) {
   return (
-    <div className="flex items-baseline gap-3">
-      <span className="label shrink-0">{index}</span>
-      <PanelHeading as="h3">{title}</PanelHeading>
-    </div>
+    <PanelHeading as="h2">
+      <span className="text-dim">{index}.</span> {title}
+    </PanelHeading>
   );
 }
 
@@ -217,7 +230,7 @@ export function SkillSetup({ className }: { className?: string }) {
     <div className={cx("flex flex-col gap-5", className)}>
       {/* ---------- 01 · install ---------- */}
       <article className="panel flex min-w-0 flex-col gap-4 p-5">
-        <StepHeading index="01" title="Install it" />
+        <StepHeading index={1} title="Install it" />
 
         {/* Centred and capped, with the sentence UNDER it, since 2026-08-08. The author:
             "align central the box containing npx skills@latest add … and place below the
@@ -257,7 +270,7 @@ export function SkillSetup({ className }: { className?: string }) {
 
       {/* ---------- 02 · the interview ---------- */}
       <article className="panel flex min-w-0 flex-col gap-4 p-5">
-        <StepHeading index="02" title="Answer its questions" />
+        <StepHeading index={2} title="Answer its questions" />
 
         {/* One column, not two, and the file listing at the foot rather than beside the
             questions. The author: put "What it writes" at the bottom of the panel and "use
@@ -310,19 +323,12 @@ export function SkillSetup({ className }: { className?: string }) {
           </div>
 
           <div className="flex min-w-0 flex-col gap-3">
-            <div className="flex min-w-0 flex-col gap-2">
-              <span className="label">What it writes</span>
-              <FileListing
-                lines={[
-                  [TOPOLOGY_DOT, "the graph: who is wired to whom"],
-                  [`${BUNDLE_CARDS_DIR}/<node>.yaml`, "one card per node the graph pins"],
-                  [
-                    `${BUNDLE_README} · ${BUNDLE_AGENTS}`,
-                    "one for you, one for the next agent",
-                  ],
-                ]}
-              />
-            </div>
+            {/* `What it writes` and its `FileListing` stood here, at the foot of the
+                interview panel. They are step 3 now: the hand-off asks that step to be
+                what a reader ends up holding, and the folder IS that. Naming the output
+                inside the panel about the questions answered step 3 before a reader got
+                there, and left the last step with nothing of its own to show but a
+                pointer at another route. */}
 
             {/* Three paragraphs stood here and under "What it asks", and the author took
                 all three out on 2026-08-07: the one saying the interview can decline to
@@ -353,7 +359,7 @@ export function SkillSetup({ className }: { className?: string }) {
 
       {/* ---------- 03 · read it back ---------- */}
       <article className="panel flex min-w-0 flex-col gap-4 p-5">
-        <StepHeading index="03" title="See what it wrote" />
+        <StepHeading index={3} title="See what you end up holding" />
 
         {/* The panel centred, its sentence under it, since 2026-08-08. The author: "align
             central the left part with the right part … instead place the text Drop the
@@ -368,6 +374,37 @@ export function SkillSetup({ className }: { className?: string }) {
             `max-w-2xl mx-auto` on both, which is what step 01 does with its command and its
             sentence — the same shape, one panel up, for the same reason. */}
         <div className="flex flex-col gap-5">
+          {/* The folder, drawn as the mark that means one.
+              ------------------------------------------------------------
+              This is the one place on the site where the logo is also a diagram. The mark
+              is a folder holding a graph, and the four rows beside it are the files that
+              folder actually contains: the graph, one card per node, and the two documents.
+              It is the same drawing as the header and the hero, at the 64 rung, with no
+              glow and nothing added — a figure rather than a badge, which is the only way
+              a brand mark earns a place inside a tutorial step.
+
+              `aria-hidden`, because the list beside it says everything it says and a mark
+              with an accessible name here would announce the brand in the middle of a
+              procedure. The names come from `bundle-export.ts`, which is what writes them
+              into every folder under `public/bundles/`, so the figure and the disk cannot
+              disagree. */}
+          <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start sm:gap-8">
+            <Logo size={192} className="shrink-0" />
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <span className="label">What it writes</span>
+              <FileListing
+                lines={[
+                  [TOPOLOGY_DOT, "the graph: who is wired to whom"],
+                  [`${BUNDLE_CARDS_DIR}/<node>.yaml`, "one card per node the graph pins"],
+                  [
+                    `${BUNDLE_README} · ${BUNDLE_AGENTS}`,
+                    "one for you, one for the next agent",
+                  ],
+                ]}
+              />
+            </div>
+          </div>
+
           <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-2">
             <span className="label">What that page does with it</span>
             <InOut

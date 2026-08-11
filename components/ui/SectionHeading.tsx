@@ -108,7 +108,17 @@ export function PanelHeading({
   children,
   className,
 }: {
-  as?: "h3" | "h4";
+  /**
+   * `h2` was added 2026-08-11 for `/skill`'s numbered spine.
+   *
+   * The size does not change with it, and that is the point of allowing it here rather
+   * than reaching for `SectionHeading`: those three panels are the page's own top-level
+   * sections and want to be `h2` in the outline a screen reader walks, but they are panel
+   * titles on the screen and drawing them at `SectionHeading`'s 28/32px would put four
+   * things at that size on one page. Level and size are separate questions, and this
+   * component has always answered the second one.
+   */
+  as?: "h2" | "h3" | "h4";
   children: React.ReactNode;
   className?: string;
 }) {
@@ -116,7 +126,7 @@ export function PanelHeading({
     <Tag
       className={cx(
         "font-display font-semibold leading-snug tracking-[-0.01em] text-fg",
-        Tag === "h3" ? "text-xl" : "text-base",
+        Tag === "h4" ? "text-base" : "text-xl",
         className,
       )}
     >

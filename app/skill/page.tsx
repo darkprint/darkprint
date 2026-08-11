@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CreateEntry } from "@/components/build/CreateEntry";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { PanelHeading, SectionHeading } from "@/components/ui/SectionHeading";
 import { SkillSetup } from "@/components/skill/SkillSetup";
@@ -72,23 +71,21 @@ export default function SkillPage() {
         lead="One command puts a blueprint-writing skill in your own agent, and it works today. It asks your agent to ask you: what the work is, who does which part of it, and what must never reach whom. What it leaves behind is a bundle the registry stores."
       />
 
-      {/* ---------- the goal box, moved here from `/build` on 2026-08-10 ----------
-          The author asked `/build` apart: "split the page /build into two pages. One
-          containing the skill part and listed on the navbar and the `Customize the starter
-          blueprint` move only among the Learn pages."
+      {/* `CreateEntry` stood here, above the steps: a goal field, a textarea that wrote a
+          brief in the browser, and a copy of the install command. The author asked it off
+          the route on 2026-08-11 and the component is deleted rather than left mounted
+          nowhere.
 
-          This is the skill part, and this is the page about the skill, so it comes here
-          rather than to a third route. It sits ABOVE `SkillSetup` because it is the reason
-          a reader installs anything: name the outcome you want, take the brief, and the
-          three numbered steps below are then what to do with the tool you just decided you
-          need. Install-then-motive is the order the page had when the motive was on another
-          route entirely.
+          Nothing a reader can run is lost with it. Its command was `SKILL_INSTALL_COMMAND`,
+          which is step 1 below and always was, so the page printed the same line twice with
+          a form between the copies; and the brief it composed was a prompt for the skill
+          the same step installs, written before the reader had it. What the page has
+          instead is one spine, install first, which is the order every other setup page on
+          this site uses.
 
-          Nothing about the component changed. It still writes the brief in the browser from
-          an uncontrolled goal field, and it still carries `#create-entry-title`, which is
-          the anchor `components/spec/sequence.ts` used to list under `/build`. */}
-      <CreateEntry className="mt-10" />
-
+          `#create-entry-title` went with it. It was a live anchor `components/spec/
+          sequence.ts` listed under `/build` before the split, and nothing has pointed at it
+          since; grep before assuming that is still true. */}
       <SkillSetup className="mt-10" />
 
       {/* 40px above the rule and 40px under it: one block tier on each side, so this reads
