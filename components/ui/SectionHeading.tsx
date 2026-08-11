@@ -103,22 +103,44 @@ export function SectionHeading({
  * which becomes `<span className="label">` and stops claiming an outline position it
  * never earned. Use `as="h4"` only where an `h3` already sits above it in the document.
  */
+const PANEL_HEADING_SIZE = {
+  base: "text-base",
+  xl: "text-xl",
+  "2xl": "text-2xl",
+} as const;
+
 export function PanelHeading({
   as: Tag = "h3",
+  size,
   children,
   className,
 }: {
   /**
    * `h2` was added 2026-08-11 for `/skill`'s numbered spine.
    *
-   * The size does not change with it, and that is the point of allowing it here rather
-   * than reaching for `SectionHeading`: those three panels are the page's own top-level
+   * The size does not follow from it, and that is the point of allowing it here rather
+   * than reaching for `SectionHeading`: those three steps are the page's own top-level
    * sections and want to be `h2` in the outline a screen reader walks, but they are panel
    * titles on the screen and drawing them at `SectionHeading`'s 28/32px would put four
    * things at that size on one page. Level and size are separate questions, and this
-   * component has always answered the second one.
+   * component answers them separately.
    */
   as?: "h2" | "h3" | "h4";
+  /**
+   * The type size, when the level's default is not the one wanted.
+   *
+   * A prop rather than a `className`, which is what it was tried as first and does not
+   * work: `text-2xl` passed through `className` loses to the `text-xl` below it, because
+   * both are font-size utilities at the same specificity and the winner is whichever
+   * Tailwind emits later — not whichever the caller wrote last. Measured in the browser at
+   * 20px, which is how the assumption was caught.
+   *
+   * Added 2026-08-11 for `/skill`, whose steps stopped being `.panel` cards: off the
+   * chrome the step headings are the only thing separating one step from the next, and the
+   * mock draws them at 24. Every other caller omits this and gets exactly what it got
+   * before.
+   */
+  size?: keyof typeof PANEL_HEADING_SIZE;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -126,7 +148,7 @@ export function PanelHeading({
     <Tag
       className={cx(
         "font-display font-semibold leading-snug tracking-[-0.01em] text-fg",
-        Tag === "h4" ? "text-base" : "text-xl",
+        PANEL_HEADING_SIZE[size ?? (Tag === "h4" ? "base" : "xl")],
         className,
       )}
     >

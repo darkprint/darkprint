@@ -117,22 +117,23 @@ function CommandLine({ command, ariaLabel }: { command: string; ariaLabel: strin
           rest of the repository name behind a scroll nobody looks for, on the one string
           this page exists to hand over. `break-words` and not `break-all`: the longest
           token here is 23 characters and fits, so the break lands between words. */}
-      {/* `border-emerald/50` rather than `border-line`, on the author's instruction
-          2026-08-07, and the colour is already argued: the landing's hero paints this exact
-          string in emerald and `components/hero/Wordmark.tsx` records why — emerald is the
-          engine's own register, "something the machine produces or accepts", extended there
-          to mean a command that genuinely reaches it. This is the same command on the page
-          that explains it, so the two surfaces now frame it the same way.
+      {/* The emerald moved from the frame to the ink, 2026-08-11, and the swap is the mock's.
+          ------------------------------------------------------------
+          It was `border-emerald/50` around `text-fg`, on the author's instruction
+          2026-08-07, and that instruction's reasoning is intact and now satisfied better:
+          emerald is the engine's own register — `components/hero/Wordmark.tsx` argues it as
+          "something the machine produces or accepts" — and the landing's hero paints this
+          exact string in it. What was arguable was WHICH element carried the colour. A 50%
+          emerald hairline at 3.22:1 is a frame a reader has to notice to read the register
+          off; the command set in emerald on `--color-surface-2` IS the register, at roughly
+          10:1, and it is the same treatment the hero gives the same string.
 
-          50% is the rung, measured rather than picked: over `bg-void` it lands at 3.22:1,
-          past the 3:1 floor WCAG 1.4.11 sets for a graphical object, where 40% would be
-          2.43:1. The ink inside stays `text-fg` — the frame carries the register and the
-          command stays maximally legible. */}
-      <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-words rounded-md border border-emerald/50 bg-void px-3 py-2 font-mono text-xs leading-relaxed text-fg">
-        <code>
-          <span className="select-none text-dim">$ </span>
-          {command}
-        </code>
+          So the frame drops back to `--color-line`, which is what every other box on this
+          page is drawn in, and the box stops competing with the one line inside it. The
+          `$ ` prompt goes with it: the mock has none, and a `select-none` glyph saying
+          "this is a shell" is doing work the emerald and the panel already do. */}
+      <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-words rounded-lg border border-line bg-surface-2 px-3.5 py-3 font-mono text-xs leading-relaxed text-emerald">
+        <code>{command}</code>
       </pre>
       <CopyButton text={command} ariaLabel={ariaLabel} />
     </div>
@@ -155,8 +156,21 @@ function CommandLine({ command, ariaLabel }: { command: string; ariaLabel: strin
  */
 function StepHeading({ index, title }: { index: number; title: string }) {
   return (
-    <PanelHeading as="h2">
-      <span className="text-dim">{index}.</span> {title}
+    /* One tone and one size, both the mock's, since 2026-08-11.
+       ------------------------------------------------------------
+       The ordinal was `text-dim`, which made sense while each step was a `.panel`: the
+       number was a marker ON a card and the card was the thing. Off the chrome, the numeral
+       is the only thing carrying the sequence and dimming it is dimming the sequence. It
+       reads as one heading now, which is what it is.
+
+       `size="2xl"` is the mock's 24px against `PanelHeading`'s own 20, and it is a PROP
+       rather than a `className`: passing `text-2xl` through `className` loses to the
+       component's `text-xl`, because both are font-size utilities at equal specificity and
+       the winner is whichever Tailwind emits later, not whichever the caller wrote last.
+       That was tried first and measured at 20px in the browser. Every other caller of
+       `PanelHeading` omits the prop and is unchanged. */
+    <PanelHeading as="h2" size="2xl">
+      {index}. {title}
     </PanelHeading>
   );
 }
@@ -165,50 +179,47 @@ function StepHeading({ index, title }: { index: number; title: string }) {
  * A file listing, in the register `components/home/SectionLifecycle.tsx` uses for the
  * folder a reader takes away. Two columns of mono: the path, and what is in it.
  *
- * Not `truncate` here, unlike that one. Its lines sit in a 342px grid track on a phone and
- * had to ellipsis; these sit in a panel that owns the full column, and a path a reader is
- * about to look for on their own disk is the wrong string to cut short. `break-all` on the
- * path instead, so the longest of them wraps rather than widening the page.
+ * Across rather than stacked, and unboxed, since 2026-08-11. It was a bordered `<ul>` with
+ * each description under its own path, which is the right shape inside a 342px grid track
+ * and the wrong one here: step 3 is a card of its own now and this list sits in the wider
+ * half of it, so the three descriptions line up in a column a reader reads down instead of
+ * interleaving with the paths. The box went because the card around it is the box.
+ *
+ * Not `truncate`, unlike the lifecycle's. A path a reader is about to look for on their own
+ * disk is the wrong string to cut short, so the column is fixed at the mock's 176px from
+ * `sm` up and the pair stacks below it, where 176 plus a description does not fit.
  */
 function FileListing({ lines }: { lines: readonly (readonly [string, string])[] }) {
   return (
-    <ul className="flex flex-col gap-2 rounded-lg border border-line bg-surface-2/60 px-3 py-3">
+    <ul className="flex min-w-0 flex-col gap-2.5">
       {lines.map(([path, what]) => (
-        <li key={path} className="flex flex-col gap-0.5">
-          <span className="break-all font-mono text-xs text-fg">{path}</span>
-          <span className="font-mono text-[11px] leading-relaxed text-dim">{what}</span>
+        <li
+          key={path}
+          className="flex min-w-0 flex-col gap-0.5 font-mono text-xs leading-relaxed sm:flex-row sm:items-baseline sm:gap-4"
+        >
+          <span className="break-all text-fg sm:w-44 sm:shrink-0">{path}</span>
+          <span className="min-w-0 text-muted">{what}</span>
         </li>
       ))}
     </ul>
   );
 }
 
-/**
- * The same box with the key inline, for a figure whose left-hand column is a direction
- * rather than a path. `components/home/SectionLifecycle.tsx`'s `Artefact` is where this
- * register comes from, and beat 4's own Upload panel is where a reader will have met it.
- *
- * It carries what step 03's prose deliberately stops short of listing. Saying "it draws
- * the graph, the scorecard and every diagnostic" in a sentence AND printing the same three
- * things in a box beside it is one description of one thing twice, which is the
- * duplication this site's spec names; the sentence says what happens and where, and the
- * figure says what goes in and what comes back.
- */
-function InOut({ lines }: { lines: readonly (readonly [string, string])[] }) {
-  return (
-    <div className="rounded-lg border border-line bg-surface-2/60 px-3 py-2.5">
-      {lines.map(([key, value]) => (
-        <div
-          key={key + value}
-          className="flex items-baseline gap-3 font-mono text-[11px] leading-[1.9]"
-        >
-          <span className="w-6 shrink-0 text-dim">{key}</span>
-          <span className="min-w-0 text-fg">{value}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
+/* `InOut` stood here and step 3 mounted it as "What that page does with it": four mono rows
+   reading `in blueprint.dot · cards/*.yaml`, `out the graph, drawn`, `out the scorecard,
+   computed`, `out every diagnostic the resolver raised`.
+
+   It is out with the 2026-08-11 density pass, on the mock, and the argument it was carrying
+   is worth recording rather than leaving for somebody to rediscover. It existed because the
+   prose deliberately stops short of listing those three outputs — saying "it draws the
+   graph, the scorecard and every diagnostic" in a sentence AND printing the same three in a
+   box beside it is one description of one thing twice, so the sentence said what happens and
+   the figure said what goes in and what comes back.
+
+   What is lost is the enumeration, and nothing else: step 3 still names the folder's four
+   files, still links `/upload`, and still says what that page does not do with them. The
+   enumeration is `/upload`'s own to make, with the result in front of the reader — which is
+   the same reasoning that took the `CORE_ONTOLOGY` caveat off this page on 2026-08-08. */
 
 /**
  * What the interview wants out of the reader, in the order it asks, one row per phase of
@@ -257,80 +268,84 @@ const QUESTIONS: readonly { label: string; text: string }[] = [
 
 export function SkillSetup({ className }: { className?: string }) {
   return (
-    <div className={cx("flex flex-col gap-5", className)}>
+    /* An `<ol>` of three bare steps, not three `.panel` articles, since 2026-08-11.
+       ------------------------------------------------------------
+       The panels were doing two jobs and only one of them was real. They grouped each step's
+       parts, which the `gap` inside a step already does, and they drew three cards down a
+       page whose subject is one sequence — so a reader met three boxes and had to infer the
+       order from the numerals inside them. Off the chrome, the ordinals and the 44px between
+       steps carry the sequence on their own, and the two things on the page that ARE boxes,
+       the command and the folder, stop being boxes inside boxes.
+
+       `<ol>` rather than the old `<div>` of `<article>`s, which is what the numbering was
+       always claiming: a screen reader now gets the list semantics the "1." "2." "3." were
+       drawing by hand, and `StepHeading` keeps the visible ordinal because the mock does. */
+    <ol className={cx("flex flex-col gap-11", className)}>
       {/* ---------- 01 · install ---------- */}
-      <article className="panel flex min-w-0 flex-col gap-4 p-5">
+      <li className="flex min-w-0 flex-col gap-4">
         <StepHeading index={1} title="Install it" />
 
-        {/* Centred and capped, with the sentence UNDER it, since 2026-08-08. The author:
-            "align central the box containing npx skills@latest add … and place below the
-            text The skills CLI reads this repository over git…".
+        {/* Command left, sentence right, which reverses the 2026-08-08 centring.
+            ------------------------------------------------------------
+            The author asked then for the box centred with the text below it, and the
+            reasoning was that the command is the page's one instruction and should not read
+            as one of two equal columns. That argument was against the paragraph it had
+            BESIDE it: fifty-five words about the CLI, git and where the document lands, which
+            genuinely did compete.
 
-            It was command left, sentence right, on the argument that an artefact should sit
-            beside the sentence it is evidence for. That argument holds for a FILE LISTING
-            and not for a command: the command is the thing a reader has come to run, and
-            half a panel wide with a paragraph competing for the eye beside it, it read as
-            one of two equal columns rather than as the page's one instruction. Centred at
-            42rem it is the only thing on its line, and the sentence explaining it follows —
-            which is also the order a reader uses them in.
+            The paragraph is fifteen words now and says the two things a reader needs before
+            pasting, so the competition is gone and the centring costs what it was buying —
+            at `max-w-2xl` centred, a 44-character command left 700px of empty panel beside
+            it and pushed step 2 a screen further down. Side by side at `md`, each half is
+            the size of its content. Below `md` they stack, command first, which is the
+            2026-08-08 order restored for the width that asked for it. */}
+        <div className="grid gap-6 md:grid-cols-2 md:items-center">
+          <CommandLine
+            command={SKILL_INSTALL_COMMAND}
+            ariaLabel="Copy the command that installs the DarkPrint skill"
+          />
 
-            `max-w-2xl mx-auto` rather than the panel's full width: a 1152px input holding a
-            44-character command is a field with 700px of nothing in it, which is the shape
-            the author asked off `/build` for the same reason. */}
-        <div className="flex flex-col gap-4">
-          <div className="mx-auto w-full max-w-2xl">
-            <CommandLine
-              command={SKILL_INSTALL_COMMAND}
-              ariaLabel="Copy the command that installs the DarkPrint skill"
-            />
-          </div>
-
-          {/* What the command does, and the three things it does not do. The reader is one
-              paste away from running it, so the account question is answered before it is
-              asked rather than in the block under the rule. */}
-          <p className="mx-auto max-w-2xl text-[15px] leading-relaxed text-muted">
-            The <code className="font-mono text-fg">skills</code>{" "}
-            CLI reads this repository over git and writes the DarkPrint skill into your
-            agent&rsquo;s skills directory. There is no account, no key and nothing fetched
-            from this site: what lands is a document your agent reads, on the machine you
-            ran the command on.
+          {/* What the command does and the two things it does not do, in fifteen words.
+              It was fifty-five: the `skills` CLI reading this repository over git, the
+              agent's skills directory, no account, no key, nothing fetched, and where the
+              document lands. Every clause was true and only two were load-bearing for a
+              reader one paste from running it — nothing leaves the machine, and no account
+              is created — so those two stay in the open beside the command and the
+              mechanism goes. `lib/skill.ts` still carries the git-over-CLI detail. */}
+          <p className="text-[15px] leading-relaxed text-muted">
+            One skill, added to your own agent. Nothing leaves the machine and no account is
+            created.
           </p>
         </div>
-      </article>
+      </li>
 
       {/* ---------- 02 · the interview ---------- */}
-      <article className="panel flex min-w-0 flex-col gap-4 p-5">
+      <li className="flex min-w-0 flex-col gap-4">
         <StepHeading index={2} title="Answer its questions" />
 
-        {/* One column, not two, and the file listing at the foot rather than beside the
-            questions. The author: put "What it writes" at the bottom of the panel and "use
-            full horizontal space" for the interview paragraph and its list.
+        {/* The `What it asks` label is gone with the panel that needed it.
+            ------------------------------------------------------------
+            It captioned the bullet list inside a panel whose heading was three lines above
+            it, past a paragraph, so the list needed something to say what it was. The rows
+            are labelled one by one now and the heading is "Answer its questions", which is
+            the caption. A `.label` reading "What it asks" over five rows of questions is the
+            heading said a third time.
 
-            The two halves were never peers. What a reader is about to ANSWER is five
-            questions of up to eighteen words each, and in a half-width column every one of
-            them wrapped to three lines; what they are HOLDING at the end is three file
-            names. Side by side, the longer half was cramped so the shorter half could have
-            a column it did not need. Down the page, each takes the width it wants and they
-            are in the order a reader meets them: the interview, then its output.
-
-            `gap-6` between the two blocks rather than the panel's `gap-4`: the author asked
-            for "some vertical space between the text in this section as it is very dense",
-            and a five-item list under a paragraph under a heading is the densest block on
-            this page. */}
-        <div className="flex flex-col gap-6">
+            The hand-off's §A2 asks for it to stay; the mock does not draw it and the mock is
+            the spec here. Recorded rather than done quietly, because the two disagree. */}
+        <div className="flex min-w-0 flex-col gap-4">
           <div className="flex min-w-0 flex-col gap-4">
             {/* Tightened with the table below it, and it says one thing more than it did:
                 "Five things". The count was carried by the bullets and nothing else, and a
                 labelled table is scanned rather than read through, so the number a reader
                 is committing to now has to be in the sentence. */}
-            <p className="text-[15px] leading-relaxed text-muted">
+            <p className="max-w-[820px] text-[15px] leading-relaxed text-muted">
               An interview, not a generator. Ask it for a blueprint and it asks you what the
               work is first, because a graph nobody described is a graph nobody can check.
               Five things, all of which you would have had to decide anyway.
             </p>
 
-            <div className="flex min-w-0 flex-col gap-3">
-              <span className="label">What it asks</span>
+            <div className="flex min-w-0 max-w-[860px] flex-col gap-3">
               {/* A hairline table, not a bullet list.
                   ------------------------------------------------------------
                   It was five `<li>` of up to eighteen words at `gap-2.5`, and the gap was
@@ -407,86 +422,96 @@ export function SkillSetup({ className }: { className?: string }) {
                 about a homonym, are notes to a maintainer rather than to that author. */}
           </div>
         </div>
-      </article>
+      </li>
 
       {/* ---------- 03 · read it back ---------- */}
-      <article className="panel flex min-w-0 flex-col gap-4 p-5">
+      <li className="flex min-w-0 flex-col gap-4">
         {/* "Keep the folder", not "See what you end up holding", since 2026-08-11. The old
             title described the reader's posture at the end of a tutorial; this one names the
             thing, which is what the other two headings do — "Install it", "Answer its
             questions". It is also four words against six in a heading a screen reader reads
-            as one of three steps in a sequence, and the panel under it opens on the folder
-            anyway. Nothing inside the step moved with it. */}
+            as one of three steps in a sequence, and the step under it opens on the folder
+            anyway. */}
         <StepHeading index={3} title="Keep the folder" />
 
-        {/* The panel centred, its sentence under it, since 2026-08-08. The author: "align
-            central the left part with the right part … instead place the text Drop the
-            folder on Upload blueprint … below the panel What that page does with it."
+        {/* One card, the mark beside what it holds, which reverses the 2026-08-08 stacking.
+            ------------------------------------------------------------
+            The author asked then for the two halves centred and stacked, because `InOut` was
+            four short mono rows against a forty-word paragraph and side by side one column
+            ran to two lines and the other to four. `InOut` is gone and the paragraph is
+            twenty-five words, so the halves are no longer a short box and a long one: they
+            are a 192px figure and everything the step has to say, which is the one pairing
+            that does want a row.
 
-            The two were never a pair. `InOut` is four short mono rows and the paragraph is
-            forty words, so side by side one column ran to two lines and the other to four,
-            and the halves shared a top edge and nothing else. Down the page each takes the
-            width it wants, and the order is the one a reader uses them in: what the page
-            does, then how to hand it the folder.
-
-            `max-w-2xl mx-auto` on both, which is what step 01 does with its command and its
-            sentence — the same shape, one panel up, for the same reason. */}
-        <div className="flex flex-col gap-5">
+            This is also now the only box in the tutorial, where it used to be a box inside a
+            panel. `--color-surface-2` at `--color-line`, which is the command's frame one
+            step up, so the two things a reader takes away from this page are drawn the same
+            way and nothing else on it is. */}
+        <div className="flex flex-col items-center gap-8 rounded-xl border border-line bg-surface-2 px-6 py-7 sm:flex-row sm:items-center sm:px-8">
           {/* The folder, drawn as the mark that means one.
               ------------------------------------------------------------
               This is the one place on the site where the logo is also a diagram. The mark
-              is a folder holding a graph, and the four rows beside it are the files that
-              folder actually contains: the graph, one card per node, and the two documents.
-              It is the same drawing as the header and the hero, at the 64 rung, with no
-              glow and nothing added — a figure rather than a badge, which is the only way
-              a brand mark earns a place inside a tutorial step.
+              is a folder holding a graph, and the rows beside it are the files that folder
+              actually contains: the graph, one card per node, and the two documents. It is
+              the same drawing as the header and the hero, at the 64 rung, with no glow and
+              nothing added — a figure rather than a badge, which is the only way a brand
+              mark earns a place inside a tutorial step.
 
               `aria-hidden`, because the list beside it says everything it says and a mark
               with an accessible name here would announce the brand in the middle of a
               procedure. The names come from `bundle-export.ts`, which is what writes them
               into every folder under `public/bundles/`, so the figure and the disk cannot
               disagree. */}
-          <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start sm:gap-8">
-            <Logo size={192} className="shrink-0" />
-            <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <span className="label">What it writes</span>
-              <FileListing
-                lines={[
-                  [TOPOLOGY_DOT, "the graph: who is wired to whom"],
-                  [`${BUNDLE_CARDS_DIR}/<node>.yaml`, "one card per node the graph pins"],
-                  [
-                    `${BUNDLE_README} · ${BUNDLE_AGENTS}`,
-                    "one for you, one for the next agent",
-                  ],
-                ]}
-              />
-            </div>
-          </div>
-
-          <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-2">
-            <span className="label">What that page does with it</span>
-            <InOut
+          <Logo size={192} className="shrink-0" />
+          <div className="flex min-w-0 flex-1 flex-col gap-3.5">
+            <span className="label">What it writes</span>
+            <FileListing
               lines={[
-                ["in", `${TOPOLOGY_DOT} · ${BUNDLE_CARDS_DIR}/*.yaml`],
-                ["out", "the graph, drawn"],
-                ["out", "the scorecard, computed"],
-                ["out", "every diagnostic the resolver raised"],
+                [TOPOLOGY_DOT, "the graph: who is wired to whom"],
+                [`${BUNDLE_CARDS_DIR}/<node>.yaml`, "one card per node the graph pins"],
+                [
+                  `${BUNDLE_README} · ${BUNDLE_AGENTS}`,
+                  "one for you, one for the next agent",
+                ],
               ]}
             />
-          </div>
 
-          <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-3">
+            {/* Twenty-five words where there were forty-five, and the two things a reader
+                needs are both still in them: where to check the folder, and that checking it
+                sends nothing anywhere.
+
+                The mock's version stops at "the same four files" and that is the one place
+                this file does not follow it. "Nothing is uploaded and nothing is sent
+                anywhere" is a limit statement — `SkillSetup.test.ts` pins it, the pass that
+                produced this mock is scoped "no change to what either page claims", and this
+                site has twice lost a sentence of exactly this kind to a length pass
+                (`components/site/honesty.test.ts`'s header records both). The clause costs
+                eight words and is the last thing on the page a reader reads before leaving
+                for `/upload`.
+
+                What did go is the mechanism: "the same engine that scored every bundle in
+                the gallery is compiled into that page and runs in your own browser tab" is
+                `/upload`'s own claim to make, with the result in front of the reader.
+
+                A colon, not the mock's em dash. `components/skill` is in
+                `workspace.test.ts`'s `COPY_TREES`, which keeps the pause dash off the
+                rendered site. */}
             <p className="text-[15px] leading-relaxed text-muted">
-              Drop the folder on{" "}
+              Plain text on your disk. Check it on{" "}
               <Link
                 href="/upload"
                 className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
               >
                 Upload blueprint
               </Link>
-              . The same engine that scored every bundle in the gallery is compiled into
-              that page and runs in your own browser tab. Nothing is uploaded and nothing
-              is sent anywhere.
+              , or hold it against the nine published bundles in{" "}
+              <Link
+                href="/blueprints"
+                className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
+              >
+                the gallery
+              </Link>
+              : the same four files. Nothing is uploaded and nothing is sent anywhere.
             </p>
 
             {/* A paragraph stood here about `/upload` resolving against `CORE_ONTOLOGY`, so
@@ -496,8 +521,7 @@ export function SkillSetup({ className }: { className?: string }) {
                 have not opened. */}
           </div>
         </div>
-
-      </article>
-    </div>
+      </li>
+    </ol>
   );
 }
