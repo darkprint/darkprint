@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 
+import Link from "next/link";
+
 import { InstallTabs } from "@/components/mcp/InstallTabs";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
-import { RouteBoxLink } from "@/components/ui/RouteBoxLink";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import {
   BUNDLE_AGENTS,
@@ -359,59 +360,55 @@ export default function McpPage() {
       </section>
 
       {/* ---------- What exists today ----------
-          The page has spent three sections on something unbuilt, and the honest close is
-          the three places a reader can go that are not. `/skill` is the one that runs. */}
+          A closing note, not a fourth section, since 2026-08-11.
+
+          It was an `h2` over three `RouteBoxLink`s. The author approved §B4 and both halves
+          of that go together: with the boxes gone the block is one label and one sentence,
+          which is a note and not a section, so the heading comes down to a `.label` and the
+          `aria-labelledby` goes with it rather than pointing at nothing. Nothing links to
+          `#today`; the id stays for the anchor.
+
+          `components/ui/OnwardRoutes.tsx` records the 2026-08-07 ruling that took
+          route-boxes off `/skill` — "we found such buttons also in the install mcp page. in
+          this page you can just delete them" — and notes that `/mcp` kept them. It does not
+          any more, so that file's count of remaining mounts is stale by one and says so.
+
+          The three routes are still named, in the sentence, which is what the ruling asked
+          for on the other page: every onward move is an inline link inside a clause that
+          gives a reason for it. `/skill` is described as the half of setup a reader can
+          install rather than the half that runs — the skill's behaviour is not covered by
+          this repository's tests, which is `/skill`'s own caveat and not a claim to make
+          louder from here. */}
       <section
         id="today"
-        aria-labelledby="today-title"
-        className="mt-11 flex scroll-mt-24 flex-col gap-5 border-t border-line pt-10"
+        className="mt-11 flex scroll-mt-24 flex-col gap-3 border-t border-line pt-10"
       >
-        <h2 id="today-title" className="font-display text-2xl font-semibold text-fg">
-          What exists today instead
-        </h2>
-        {/* One sentence where there were two. "What is missing is the agent-side door, not
-            the contents" restated the section's own heading, and the three boxes below say
-            where to go better than a clause can.
-
-            The mock goes further and replaces the boxes with this sentence carrying three
-            inline links, which is §B4 of the hand-off and is NOT approved: `/skill` bans
-            route-boxes by an explicit 2026-08-07 ruling and `/mcp` was never covered by
-            it, so this page uses them deliberately as its ending. The paragraph is
-            shortened as asked and the boxes stay until the author says otherwise. No inline
-            links in it for that reason — the three routes are named once, in the boxes,
-            rather than twice. */}
+        <span className="label">What exists today instead</span>
         <p className="max-w-[820px] text-[15px] leading-relaxed text-muted">
-          Everything this contract would return is already here, addressed by hand.
-        </p>
-        <div className="grid gap-4 md:grid-cols-3">
-          <RouteBoxLink
+          Everything this contract would return is already here, addressed by hand: the
+          bundles in{" "}
+          <Link
             href="/blueprints"
-            label={
-              <>
-                Browse <span aria-hidden>&rarr;</span>
-              </>
-            }
-            title="Every published blueprint, with its digest"
-          />
-          <RouteBoxLink
+            className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
+          >
+            the gallery
+          </Link>
+          , every card with its digest in{" "}
+          <Link
             href="/nodes"
-            label={
-              <>
-                Cards <span aria-hidden>&rarr;</span>
-              </>
-            }
-            title="Every node card, by id and version"
-          />
-          <RouteBoxLink
+            className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
+          >
+            the cards index
+          </Link>
+          , and the half of setup you can install today at{" "}
+          <Link
             href="/skill"
-            label={
-              <>
-                Assisted Design <span aria-hidden>&rarr;</span>
-              </>
-            }
-            title="The one command here that runs"
-          />
-        </div>
+            className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
+          >
+            Assisted Design
+          </Link>
+          .
+        </p>
       </section>
     </div>
   );

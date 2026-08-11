@@ -148,7 +148,19 @@ export function InstallTabs({ className }: { className?: string } = {}) {
           key={current.id}
           className="flex min-w-0 items-start gap-3 rounded-lg border border-line bg-surface-2 px-3.5 py-3 transition-opacity duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] starting:opacity-0"
         >
-          <pre className="min-w-0 flex-1 overflow-x-auto font-mono text-xs leading-relaxed text-muted">
+          {/* `--color-blueprint-line`, on the author's instruction, and it is the site's
+              blue rather than A blue. The two candidates are not interchangeable:
+              `app/globals.css` reserves `--color-cyan` for one meaning — "cyan is
+              interactive, and the site does not spend it elsewhere" — and this snippet is
+              text a reader copies, not a control. `--color-blueprint-line` is the
+              cyanotype pole's own line colour, which is what the register this page is
+              drawn in uses for the thing being drawn.
+
+              It is also the counterpart to `/skill`'s emerald command, and the difference
+              between the two is exactly right: emerald is "a figure read off the engine",
+              spent there on a command that genuinely reaches one, and this command reaches
+              nothing. Blueprint blue says drawing, not engine. */}
+          <pre className="min-w-0 flex-1 overflow-x-auto font-mono text-xs leading-relaxed text-blueprint-line">
             <code>{current.snippet}</code>
           </pre>
           <CopyButton

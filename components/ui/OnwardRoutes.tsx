@@ -28,7 +28,15 @@ import { RouteBoxLink } from "./RouteBoxLink";
    on its own paragraph with one inline link to `/blueprints` in it.
    That is a deliberate reversal of the case this file was written
    on, recorded here rather than left standing as a claim the site
-   contradicts. Two mounts remain.
+   contradicts.
+
+   `/mcp` kept its three until 2026-08-11 and has none now, on the
+   author's approval of the 3a hand-off's §B4. That page ends the
+   same way `/skill` does: one sentence naming three routes as
+   inline links, each inside a clause that gives a reason for
+   going. The 2026-08-07 ruling named the install page in as many
+   words and only half of it was carried out at the time, so this is
+   that ruling finishing rather than a new one.
 
    ── Why these are signposts and not panels ──
    The author, same day: "In /build the buttons to the bottom should

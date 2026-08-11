@@ -312,10 +312,36 @@ export function SkillSetup({ className }: { className?: string }) {
               reader one paste from running it — nothing leaves the machine, and no account
               is created — so those two stay in the open beside the command and the
               mechanism goes. `lib/skill.ts` still carries the git-over-CLI detail. */}
-          <p className="text-[15px] leading-relaxed text-muted">
-            One skill, added to your own agent. Nothing leaves the machine and no account is
-            created.
-          </p>
+          <div className="flex flex-col gap-3">
+            <p className="text-[15px] leading-relaxed text-muted">
+              One skill, added to your own agent. Nothing leaves the machine and no account
+              is created.
+            </p>
+            {/* The caveat this page owed and did not print, added 2026-08-11 on the
+                author's own account of where the skill stands: implemented, and not really
+                tested, so not really there.
+
+                This file's header has said the underlying fact since it was written — "the
+                skill's behaviour lives outside this repository's test suite. Nothing in
+                `npx tsc --noEmit` and nothing in the 3500 tests can fail on the day its
+                output stops matching the listing in step 02" — and said it to a maintainer
+                in a comment while the page said nothing to a reader. The three steps below
+                describe an interview and a folder in the present tense, which is the exact
+                shape doc 2 §0.4 warns about: a description of behaviour nobody here checks,
+                read as a guarantee.
+
+                A sentence and not a `ComingSoonBadge`, for two reasons. The badge would be
+                false in the other direction — the command runs and the skill installs, so
+                "coming soon" would be a worse claim than none — and this page's own rule,
+                held by `SkillSetup.test.ts`, is that every amber marker sits below the
+                rule. `honesty.test.ts`'s doctrine is the same one: a badge is a glyph, and
+                the site's limits are carried by words. */}
+            <p className="text-[15px] leading-relaxed text-muted">
+              What it does after that is not tested here. The DarkPrint skill is a document
+              your agent reads and your agent runs, so everything below describes what it
+              asks for and what it leaves behind rather than anything this site checks.
+            </p>
+          </div>
         </div>
       </li>
 
