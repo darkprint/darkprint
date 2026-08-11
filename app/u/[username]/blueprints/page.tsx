@@ -4,7 +4,7 @@ import { AUTHOR_LIST, getAuthor } from "@/lib/data";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { ProfileShell } from "@/components/profile/ProfileShell";
 import { OwnedBundles, type OwnedRow } from "@/components/profile/OwnedBundles";
-import { DeadSearch, EmptyState } from "@/components/profile/parts";
+import { EmptyState, ShelfToolbar } from "@/components/profile/parts";
 import { profileView } from "@/components/profile/load";
 
 /* ============================================================
@@ -78,19 +78,23 @@ export default async function Page({ params }: PageProps<"/u/[username]/blueprin
     <ProfileShell view={view} active="blueprints">
       {owner ? (
         <div className="mt-10 flex flex-col gap-5">
-          <div className="flex flex-wrap items-center gap-3">
-            <DeadSearch placeholder="Find a blueprint…" label="Find a blueprint" />
+          <ShelfToolbar
+            placeholder="Find a blueprint…"
+            label="Find a blueprint"
+            note={
+              <>
+                the search, the visibility filter and the sort are drawn and switched off.
+                This list is {owned.length} row{owned.length === 1 ? "" : "s"} and nothing
+                stores {owned.length === 1 ? "it" : "them"}.
+              </>
+            }
+          >
             <DeadControl>Visibility: all ▾</DeadControl>
             <DeadControl>Sort: updated ▾</DeadControl>
             <ButtonLink href="/build" variant="outline">
               New blueprint
             </ButtonLink>
-          </div>
-          <p className="font-mono text-[11px] text-dim">
-            <span className="text-amber">◐ seeded</span> · the search, the visibility
-            filter and the sort are drawn and switched off. This list is five rows and
-            nothing stores them.
-          </p>
+          </ShelfToolbar>
 
           <OwnedBundles rows={owned} owner />
         </div>
@@ -105,7 +109,21 @@ export default async function Page({ params }: PageProps<"/u/[username]/blueprin
           </EmptyState>
         </div>
       ) : (
-        <div className="mt-10">
+        /* The find box and nothing beside it. Visibility and sort are the owner's, and
+           New blueprint on somebody else's shelf would read as an offer to add one to it. */
+        <div className="mt-10 flex flex-col gap-5">
+          <ShelfToolbar
+            placeholder="Find a blueprint…"
+            label="Find a blueprint"
+            note={
+              <>
+                the search is drawn and switched off. This list is {visitorRows.length}{" "}
+                bundle{visitorRows.length === 1 ? "" : "s"} read off{" "}
+                <span className="text-muted">content/</span> at build time.
+              </>
+            }
+          />
+
           <OwnedBundles rows={visitorRows} owner={false} />
         </div>
       )}

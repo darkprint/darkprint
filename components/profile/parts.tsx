@@ -114,17 +114,13 @@ export function NodeCardTile({
 }
 
 /**
- * The find box on an owner's shelf, drawn and switched off.
- *
- * Both owner lists carry one, so it is one component: the blueprints tab had it inline and
- * the cards tab was asked for the same control, and two copies of a disabled input is two
- * places for the placeholder, the height and the cursor to drift apart.
+ * The find box, drawn and switched off.
  *
  * It is `disabled` rather than live for the reason the whole pass is: nothing here is
- * wired. A note under the toolbar says so in the site's own vocabulary, which is the rule
- * that keeps a drawn control from reading as a broken one.
+ * wired. `ShelfToolbar` is the only caller, so the note that says so travels with it and a
+ * drawn control cannot be shipped without the sentence explaining it.
  */
-export function DeadSearch({ placeholder, label }: { placeholder: string; label: string }) {
+function DeadSearch({ placeholder, label }: { placeholder: string; label: string }) {
   return (
     <span className="flex h-10 min-w-[16rem] flex-1 items-center gap-2 rounded-md border border-line bg-surface px-3">
       <span aria-hidden className="text-[13px] text-dim">
@@ -138,6 +134,45 @@ export function DeadSearch({ placeholder, label }: { placeholder: string; label:
         className="h-full min-w-0 flex-1 cursor-not-allowed bg-transparent text-sm text-fg placeholder:text-dim"
       />
     </span>
+  );
+}
+
+/**
+ * The strip above a shelf: the find box, whatever else that shelf offers, and the note
+ * saying what is switched off.
+ *
+ * All four shelves carry one now, the two the owner sees and the two a visitor sees. That
+ * is the author's call and it is the right one for a reason worth writing down: a control
+ * that appears only on your own copy of a page teaches a reader that finding is an owner's
+ * privilege, which is not a claim this site wants to make about a public registry.
+ *
+ * The note is not optional and not a default. Every one of these boxes is drawn and
+ * disabled, and the pass's own rule is that a switched-off control ships with the sentence
+ * saying so; making the sentence a required prop is how that rule survives the next shelf.
+ */
+export function ShelfToolbar({
+  placeholder,
+  label,
+  note,
+  children,
+}: {
+  placeholder: string;
+  label: string;
+  /** What is switched off here, after the `◐ seeded` marker. */
+  note: React.ReactNode;
+  /** Controls this shelf has beyond the find box. The owner's blueprints have three. */
+  children?: React.ReactNode;
+}) {
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-3">
+        <DeadSearch placeholder={placeholder} label={label} />
+        {children}
+      </div>
+      <p className="font-mono text-[11px] text-dim">
+        <span className="text-amber">◐ seeded</span> · {note}
+      </p>
+    </>
   );
 }
 

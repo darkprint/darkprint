@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { AUTHOR_LIST, getAuthor } from "@/lib/data";
 import { ProfileShell } from "@/components/profile/ProfileShell";
 import { OwnedCards } from "@/components/profile/OwnedCards";
-import { DeadSearch, EmptyState } from "@/components/profile/parts";
+import { EmptyState, ShelfToolbar } from "@/components/profile/parts";
 import { profileView } from "@/components/profile/load";
 
 /**
@@ -51,27 +51,28 @@ export default async function Page({ params }: PageProps<"/u/[username]/cards">)
             {view.author.displayName} has not published a node card so far.
           </EmptyState>
         </div>
-      ) : view.owner ? (
-        <div className="mt-10 flex flex-col gap-5">
-          {/* The find box the blueprints tab has, and nothing else. There is no visibility
-              filter because every card is public and no New card because nothing on this
-              site writes one: a toolbar that mirrors the other tab control for control
-              would be drawing two more affordances whose destinations do not exist. */}
-          <div className="flex flex-wrap items-center gap-3">
-            <DeadSearch placeholder="Find a card…" label="Find a card" />
-          </div>
-          <p className="font-mono text-[11px] text-dim">
-            <span className="text-amber">◐ seeded</span> · the search is drawn and switched
-            off. This list is {view.cards.length} documents read straight off{" "}
-            <span className="text-muted">content/cards/</span> and nothing indexes them
-            here.
-          </p>
-
-          <OwnedCards tiles={view.cards} owner />
-        </div>
       ) : (
-        <div className="mt-10">
-          <OwnedCards tiles={view.cards} owner={false} />
+        /* The find box and nothing else, on both copies of this page. There is no
+           visibility filter because every card is public, and no New card because nothing
+           on this site writes one: a toolbar that mirrored the blueprints tab control for
+           control would be drawing two more affordances whose destinations do not exist.
+           Owner and visitor differ here only in whose documents these are, which is not a
+           difference the toolbar has anything to say about. */
+        <div className="mt-10 flex flex-col gap-5">
+          <ShelfToolbar
+            placeholder="Find a card…"
+            label="Find a card"
+            note={
+              <>
+                the search is drawn and switched off. This list is {view.cards.length}{" "}
+                document{view.cards.length === 1 ? "" : "s"} read straight off{" "}
+                <span className="text-muted">content/cards/</span> and nothing indexes{" "}
+                {view.cards.length === 1 ? "it" : "them"} here.
+              </>
+            }
+          />
+
+          <OwnedCards tiles={view.cards} owner={view.owner} />
         </div>
       )}
     </ProfileShell>
