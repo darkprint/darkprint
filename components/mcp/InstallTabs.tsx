@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useId, useRef, useState, type KeyboardEvent } from "react";
+import { CopyButton } from "@/components/ui/CopyButton";
 import { cx } from "@/lib/format";
 import { MCP_CLIENTS } from "./clients";
 
@@ -38,26 +39,27 @@ export function InstallTabs({ className }: { className?: string } = {}) {
   }
 
   return (
-    /* `border-emerald/50` over `.panel`'s own border, on the author's instruction
-       2026-08-07. Emerald is the engine's register on this site — `app/globals.css` calls
-       it "a figure read off the engine" and the hero extends it to a command that reaches
-       one — and this panel holds six client configurations, which is machine-facing text
-       if anything on the site is.
+    /* No panel and no emerald frame, since 2026-08-11.
+       ------------------------------------------------------------
+       Both were the author's instruction on 2026-08-07: `.panel` with `border-emerald/50`,
+       because emerald is the engine's register — `app/globals.css` calls it "a figure read
+       off the engine" — and this holds six client configurations, which is machine-facing
+       text if anything on the site is. The reasoning was sound and the frame was carrying a
+       tension the comment had to spend a paragraph defusing: green reads as "this works",
+       and nothing here does.
 
-       The tension is worth naming rather than leaving for someone to spot: green normally
-       reads as "this works", and nothing in this panel does. What keeps that from being a
-       lie is that the `ComingSoonBadge` sits INSIDE the frame, beside the snippet, and the
-       page's lead and its `<head>` description both say the server is not built. The frame
-       says what register the text is in; the badge says whether it runs. Those are
-       different claims and the panel makes both. */
-    <div
-      className={cx(
-        "panel min-w-0 max-w-full border-emerald/50 p-4 sm:p-6",
-        className,
-      )}
-    >
+       The 3a mock resolves it by not framing the block at all. The tabs are chips, the
+       snippet is one bordered box, and the register is carried by the section around them —
+       which now opens by saying the package does not exist. A frame that needs a paragraph
+       explaining why it is not a lie is a frame doing too much work. */
+    <div className={cx("flex min-w-0 max-w-full flex-col gap-3", className)}>
+      {/* Chips, not a ruled tab bar. The mock fills the active one in `--color-blueprint-ink`
+          and outlines the rest, at the same padding, in title case rather than the uppercase
+          run this used — six client names at 0.1em tracking read as six section labels, and
+          they are controls. The active chip carries a transparent border so selecting one
+          does not move the row by two pixels. */}
       <div
-        className="flex flex-wrap gap-2 border-b border-line pb-3"
+        className="flex flex-wrap gap-2"
         role="tablist"
         aria-label="MCP client"
         onKeyDown={onTabKeyDown}
@@ -88,8 +90,10 @@ export function InstallTabs({ className }: { className?: string } = {}) {
                 // The unselected tab keeps `text-dim` exactly as it was: unselected is not
                 // disabled, and borrowing the disabled ink would say the other three
                 // clients are unavailable rather than unshown.
-                "rounded-md px-3 py-1.5 font-mono text-xs uppercase tracking-[0.1em] transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97]",
-                isActive ? "bg-surface-2 text-fg" : "text-dim hoverable:hover:text-fg",
+                "rounded-md border px-2.5 py-1.5 font-mono text-xs transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97]",
+                isActive
+                  ? "border-transparent bg-blueprint-ink text-void"
+                  : "border-line text-muted hoverable:hover:text-fg",
               )}
             >
               {client.label}
@@ -98,54 +102,61 @@ export function InstallTabs({ className }: { className?: string } = {}) {
         })}
       </div>
 
-      {/* The panel reserves the tallest client's height instead of shrinking to each one.
-          The snippets run 1 line and 8 lines — 8 × 16px line-height + 24px padding +
-          2px border = 154px against 42px — so switching from Claude Code to Claude Desktop
-          used to shove the paragraph below this panel, and both "Read next" boxes with it,
-          112px down the page in a single frame: the reader clicks a tab and the thing they
-          were reading leaves the screen.
+      {/* The reserved height is gone, and it is the reason this component was opened.
+          ------------------------------------------------------------
+          It was `min-h-[248px]`, and the arithmetic behind it was right: the snippets run
+          1 line and 8 lines, so switching from Claude Code to Claude Desktop shoves
+          everything below this block 112px down the page in a single frame — the reader
+          clicks a tab and the thing they were reading leaves the screen. Reserving the
+          tallest client's height fixed that.
 
-          232 also reserves the one-line client note under the snippet. Narrow
-          enough and the longest label — "Claude Desktop configuration" — wraps to two
-          lines and that row becomes 43px, so the reservation is 205 there.
+          What it cost is what the author saw: the default tab is the ONE-line client, so
+          every reader who never touches a tab meets 200px of empty box under a single
+          command. A fix for an interaction nobody has performed yet, paid for on arrival by
+          everybody. The mock draws the block at the height of its contents and this follows
+          it.
 
-          Re-measured after the label moved to `.label`: the wrap now ends at 449px, not
-          the 480px this comment used to name. The switch stays at 480 regardless, because
-          the two sides of that inequality are not symmetric. Reserving 205 above the wrap
-          costs 16px of slack under the snippet that nobody can see; reserving 189 below it
-          is the tab-switch jump this box exists to prevent. The headroom is also what
-          absorbs a mono face whose advance width is not JetBrains'. Both numbers are
-          heights this panel actually reaches, so nothing below it moves at any width.
-
-          The `mt-4` moved here from the row so that arithmetic stands on its own: as a
-          margin on the row it collapsed up through this box, and a reserved height that
-          depends on a margin collapsing is a height that breaks the day someone adds a
-          padding. */}
+          The jump is therefore back, and it is worth naming rather than leaving to be
+          rediscovered: selecting Claude Desktop, Cursor, VS Code or Gemini CLI grows this
+          box by about 110px and moves the rest of the page down with it. If that becomes
+          the complaint, the fix is not this `min-h` again — it is to stop the growth
+          mattering, by putting the block last in its section or by giving the `<pre>` its
+          own scroll at a fixed height. */}
       <div
         role="tabpanel"
         id={`${tabsId}-panel`}
         aria-labelledby={`${tabsId}-tab-${current.id}`}
-        className="mt-4 min-w-0 min-h-[248px] min-[480px]:min-h-[232px]"
+        className="flex min-w-0 flex-col gap-3"
       >
-        <div className="flex items-center justify-between gap-3">
-          <span className="label">{current.label} configuration</span>
-          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-emerald">
-            configuration
-          </span>
-        </div>
+        {/* The `{label} configuration` heading and the emerald `configuration` chip stood
+            here, one above the snippet and one opposite it, and between them they printed
+            the word twice over a box whose contents are self-evidently configuration. The
+            mock has neither, and §1's own intro carries the claim now: "The shape of the
+            configuration, so the proposal can be read against a real host."
+            `InstallTabs.test.ts` follows that move rather than the wording. */}
 
         {/* `key` remounts the box on a tab change so `starting:opacity-0` has a first style
             to transition from — a 120ms fade that says the text under the cursor was
             replaced, not merely re-rendered. Pure CSS, resting state at full opacity: the
             snippet is readable with no script, and in a browser without `@starting-style`
-            the rule is dropped and the snippet simply appears. */}
-        <pre
+            the rule is dropped and the snippet simply appears.
+
+            The copy control is `CopyButton`, which is what every other command on the site
+            hands its string to, and the mock draws one here. It was absent while this block
+            was framed as a specimen rather than as something to use. */}
+        <div
           key={current.id}
-          className="mt-2 max-w-full overflow-x-auto rounded-md border border-line bg-surface-2 p-3 font-mono text-xs text-fg transition-opacity duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] starting:opacity-0"
+          className="flex min-w-0 items-start gap-3 rounded-lg border border-line bg-surface-2 px-3.5 py-3 transition-opacity duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] starting:opacity-0"
         >
-          <code>{current.snippet}</code>
-        </pre>
-        <div className="mt-3 flex flex-wrap items-start justify-between gap-3 text-xs leading-relaxed text-dim">
+          <pre className="min-w-0 flex-1 overflow-x-auto font-mono text-xs leading-relaxed text-muted">
+            <code>{current.snippet}</code>
+          </pre>
+          <CopyButton
+            text={current.snippet}
+            ariaLabel={`Copy the ${current.label} configuration`}
+          />
+        </div>
+        <div className="flex flex-wrap items-start justify-between gap-3 text-sm leading-relaxed text-dim">
           <p className="max-w-xl">{current.note}</p>
           {current.docsHref !== undefined && (
             <Link
