@@ -603,9 +603,32 @@ function LevelRow({ level }: { level: Level }) {
         <p className="text-sm leading-relaxed text-muted">{level.body}</p>
       </div>
 
+      {/* Off the drafting paper, and the strip moves to the foot. 2026-08-11, from the mock.
+          ------------------------------------------------------------
+          The drawing itself was already right — `SCENE` is 420x116, which is the mock's
+          viewBox to the unit — and every difference a reader could see was `Sheet`'s chrome
+          around it:
+
+            · the blueprint register put a 96px graticule and four corner ticks under four
+              figures whose subject is who ACTS at each phase, not what a blueprint looks
+              like. The mock fills them flat with `--color-surface-2` and frames them in
+              `--color-line`, which is what the level cards on the left are already drawn in,
+              so the row reads as one object rather than as a caption beside a blueprint.
+            · `label` draws a strip along the TOP. The mock has one strip, at the foot,
+              carrying both texts — `title` on the left and `note` on the right — which is
+              what `Sheet`'s title block is for and is the shape every other sheet on the
+              site uses. A top strip made the figure open on its own name before the drawing.
+
+          `border`, `surface` and `paper` are the three opt-ins added to `Sheet` for the
+          landing's beat 2, which took its two panels off the graticule for the same reason:
+          neither figure is a drawing OF a blueprint. This is their second caller and the
+          register still holds everywhere else. */}
       <Sheet
-        label={`level ${level.n} · who acts where`}
-        bodyClassName="p-4 sm:p-5"
+        border="var(--color-line)"
+        surface="var(--color-surface-2)"
+        paper={false}
+        title={`level ${level.n} · who acts where`}
+        bodyClassName="p-5"
         note={drawing.note}
       >
         {/* A `FlowScene` rather than a plain `Scene`, because `FLOW_CSS` is scoped to the
