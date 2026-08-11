@@ -293,17 +293,33 @@ export function SectionSameRun() {
           className="mx-auto"
         />
 
-        {/* `xl` and not `lg`, and the breakpoint is arithmetic rather than taste. The right
-            panel's table is 530px wide: three 112px pills, the score and delta columns, the
-            row header and the gaps between them. Two columns of a 1152px container with a
-            24px gap give each panel 564px and its sheet 532px of body, so the split fits at
-            `xl` with two pixels to spare and does not at `lg`, where a 1024px viewport
-            leaves 444px and the figure scrolls sideways. A figure whose whole argument is a
-            vertical read down a column is the last one that should be asking a reader to
-            drag it horizontally, so it stays stacked until both panels fit side by side. */}
-        <div className="mt-12 grid gap-6 xl:grid-cols-2">
+        {/* `lg`, and the arithmetic is new because the right panel is.
+            ------------------------------------------------------------
+            It said `xl`, and the measurement it gave was honest for the figure it was
+            written against: the old table was 530px of pills and columns, two columns of a
+            1152px container leave each sheet 532px of body, and that fits at `xl` by two
+            pixels and not at `lg`.
+
+            The 4a panel is narrower and the widest thing in it is no longer the table. The
+            route block is three 112px pills and two 30px arrows, 396px; the ledger's own
+            min-content is 271px, so the panel's minimum is 396px. At `lg` a 1024px viewport
+            gives `container-page` 976px of content, two columns with a 24px gap give each
+            476px, and `Sheet`'s `p-4` leaves 444px of body. Measured: 442, the two pixels
+            being the grid resolving a half. 442 against 396 is 46px of slack, so the split
+            can come down a breakpoint and the figure never has to be dragged sideways.
+
+            ── Equal heights, by subgrid ──
+            Three rows shared by both figures: the panel head, the sheet, the caption block.
+            The sheet's row is `1fr`, so the two sheets are the same height whichever has
+            more in it, and the heads and the captions sit on the same lines across the
+            gap rather than each column packing its own way. That needs the two figures to
+            have the same number of children, which is why the amber qualifier and the
+            right-hand caption are wrapped as one cell: they are one block of text under one
+            sheet, and the alternative is a fourth row that the left column would have to
+            leave empty. */}
+        <div className="mt-12 grid gap-6 lg:grid-cols-2 lg:grid-rows-[auto_1fr_auto] lg:gap-y-3">
           {/* ---------- three runs, three sets of steps ---------- */}
-          <figure className="flex min-w-0 flex-col gap-3">
+          <figure className="flex min-w-0 flex-col gap-3 lg:row-span-3 lg:grid lg:grid-rows-subgrid">
             <PanelHead title="from a prompt" rail="you do not control the path" />
             <Sheet>
               <FlowScene
@@ -348,7 +364,7 @@ export function SectionSameRun() {
           </figure>
 
           {/* ---------- four runs, one step touched each ---------- */}
-          <figure className="flex min-w-0 flex-col gap-3">
+          <figure className="flex min-w-0 flex-col gap-3 lg:row-span-3 lg:grid lg:grid-rows-subgrid">
             <PanelHead title="from a blueprint" rail="you define the steps, then tune them" />
             <Sheet bodyClassName="relative overflow-x-auto p-4">
               {/* ---------- the route, once ----------
@@ -468,6 +484,7 @@ export function SectionSameRun() {
                 </tbody>
               </table>
             </Sheet>
+            <div className="flex flex-col gap-3">
             {/* The qualifier, beside the thing it qualifies. `honesty.test.ts` holds it:
                 DarkPrint does not run anybody's graph, so these numbers are a worked example
                 and a figure shaped like a readout has to say so where it is read. */}
@@ -482,6 +499,7 @@ export function SectionSameRun() {
               The steps are yours, so a rerun is the same run. Change one, read the score, and
               the difference belongs to the thing you moved.
             </figcaption>
+            </div>
           </figure>
         </div>
 
