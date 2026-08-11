@@ -113,6 +113,34 @@ export function NodeCardTile({
   );
 }
 
+/**
+ * The find box on an owner's shelf, drawn and switched off.
+ *
+ * Both owner lists carry one, so it is one component: the blueprints tab had it inline and
+ * the cards tab was asked for the same control, and two copies of a disabled input is two
+ * places for the placeholder, the height and the cursor to drift apart.
+ *
+ * It is `disabled` rather than live for the reason the whole pass is: nothing here is
+ * wired. A note under the toolbar says so in the site's own vocabulary, which is the rule
+ * that keeps a drawn control from reading as a broken one.
+ */
+export function DeadSearch({ placeholder, label }: { placeholder: string; label: string }) {
+  return (
+    <span className="flex h-10 min-w-[16rem] flex-1 items-center gap-2 rounded-md border border-line bg-surface px-3">
+      <span aria-hidden className="text-[13px] text-dim">
+        ⌕
+      </span>
+      <input
+        type="text"
+        disabled
+        placeholder={placeholder}
+        aria-label={label}
+        className="h-full min-w-0 flex-1 cursor-not-allowed bg-transparent text-sm text-fg placeholder:text-dim"
+      />
+    </span>
+  );
+}
+
 /** What a section says when it has nothing to list. */
 export function EmptyState({
   title,

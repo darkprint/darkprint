@@ -27,11 +27,24 @@ import { SupportPill } from "./parts";
    Nothing on this site writes a card. `/build` composes a bundle out of cards that already
    exist, so a New card button would be the first control on the profile whose destination
    does not exist at all. The row keeps the overflow affordance the blueprint row has, drawn
-   and disabled with the reason in its title, and that is the whole owner surface.
+   and disabled with the reason in its title, and that is the whole owner surface. A visitor
+   gets no controls column, because these are the owner's affordances over the owner's
+   documents and drawing them switched off on somebody else's shelf offers a reader actions
+   that will never be theirs.
+
+   ── Why the name is copper and the blueprint's is cyan ──
+   The author's instruction was cyan for a blueprint and amber for a card, and the second
+   half lands on `--color-copper-line` rather than on `--color-amber`. That is the same
+   distinction with the site's own token: `app/globals.css` spends amber on exactly two
+   claims, `ComingSoonBadge` ("not built yet") and `.route-box` ("this box leaves the
+   page"), and it declares the copper register for the node card in as many words, because
+   painting the most literally-built thing on the site in the not-built-yet colour is the
+   one lie the figure cannot afford. Copper is orange where amber is gold: the warm-versus-
+   cyan reading the instruction asks for, kept off a reserved word.
    ============================================================ */
 
 /** One authored card, as its owner's row rather than as a gallery tile. */
-function Row({ tile }: { tile: NodeTile }) {
+function Row({ tile, owner }: { tile: NodeTile; owner: boolean }) {
   const { record, typeLabel, usedIn, support } = tile;
   const { card } = record;
 
@@ -41,7 +54,7 @@ function Row({ tile }: { tile: NodeTile }) {
         <div className="flex flex-wrap items-center gap-2.5">
           <Link
             href={nodeHref(record.id)}
-            className="font-display text-lg font-semibold text-cyan transition-colors hoverable:hover:text-cyan-bright"
+            className="font-display text-lg font-semibold text-copper-line transition-colors hoverable:hover:text-copper-ink"
           >
             {card.name}
           </Link>
@@ -77,36 +90,45 @@ function Row({ tile }: { tile: NodeTile }) {
           because a private row is the one thing on that list a reader cannot check; every
           row here is a published document, so a per-row note would be the same eight words
           eight times over a fact the panel's own footer already states once. */}
-      <div className="flex shrink-0 flex-col items-start gap-2 sm:w-[200px] sm:items-end">
-        <Button
-          size="sm"
-          variant="outline"
-          disabled
-          aria-label="More actions"
-          title="Nothing here edits a card. A card is a document in content/cards/, and this build has no write path to one."
-          className="w-8 px-0!"
-        >
-          <span aria-hidden>⋯</span>
-        </Button>
-      </div>
+      {owner && (
+        <div className="flex shrink-0 flex-col items-start gap-2 sm:w-[200px] sm:items-end">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled
+            aria-label="More actions"
+            title="Nothing here edits a card. A card is a document in content/cards/, and this build has no write path to one."
+            className="w-8 px-0!"
+          >
+            <span aria-hidden>⋯</span>
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
 
-export function OwnedCards({ tiles }: { tiles: readonly NodeTile[] }) {
+export function OwnedCards({
+  tiles,
+  owner,
+}: {
+  tiles: readonly NodeTile[];
+  /** Whether the seeded signed-in handle is the one whose shelf this is. */
+  owner: boolean;
+}) {
   const inUse = tiles.filter((tile) => tile.usedIn > 0).length;
 
   return (
     <section className="overflow-hidden rounded-xl border border-line bg-surface">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface-2 px-5 py-4">
-        <h2 className="label-lead">Your cards</h2>
+        <h2 className="label-lead">{owner ? "Your cards" : "Published cards"}</h2>
         <span className="font-mono text-[11px] text-dim">
           {tiles.length} published · {inUse} in use
         </span>
       </div>
 
       {tiles.map((tile) => (
-        <Row key={tile.record.ref} tile={tile} />
+        <Row key={tile.record.ref} tile={tile} owner={owner} />
       ))}
 
       <div className="flex flex-col gap-4 bg-surface-2/50 px-5 py-4 sm:flex-row sm:gap-5">
