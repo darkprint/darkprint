@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Design handoffs. Local working material: mocks, screenshots and the brief that
+# came with them. They are read while a pass is built and never shipped, and the
+# repository has never carried one — see the note this line replaces in git history.
+/design_handoff_*/

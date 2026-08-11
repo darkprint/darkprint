@@ -20,7 +20,7 @@
    reads both files and fails when they stop agreeing.
    ============================================================ */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -171,6 +171,25 @@ describe("the favicon is a document a browser can draw", () => {
   /** And it says the brand, because a favicon is the one place the mark stands alone. */
   it("carries an accessible name, unlike the mark beside the wordmark", () => {
     expect(read("app/icon.svg")).toContain("<title>DarkPrint</title>");
+  });
+
+  /**
+   * It is the only icon, and that is the assertion.
+   *
+   * `app/favicon.ico` sat beside it from the scaffold commit until 2026-08-11: the stock
+   * `create-next-app` Vercel triangle, 25kB of a black triangle on a site with its own mark.
+   * Next emits a `<link>` for both and puts the `.ico` FIRST, so every surface that prefers
+   * one — an older browser, some bookmark and history UIs, a crawler — took the triangle,
+   * and for the whole time the SVG was malformed (see above) that was every surface.
+   *
+   * The file is easy to bring back by accident: it is what a scaffold writes, and it is
+   * what a `git checkout` of an old tree restores. So this is a check rather than a note.
+   */
+  it("is the site's only icon", () => {
+    expect(
+      statSync(join(ROOT, "app/favicon.ico"), { throwIfNoEntry: false }),
+      "app/favicon.ico is back; Next declares it before app/icon.svg, so it wins",
+    ).toBeUndefined();
   });
 });
 
