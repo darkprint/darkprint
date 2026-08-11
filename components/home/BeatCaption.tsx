@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { cx } from "@/lib/format";
+
 /* ============================================================
    The sentence and the one link that close beats 2 and 3.
 
@@ -20,17 +22,41 @@ import Link from "next/link";
    centred column is the mismatch `SectionNodeIsCard`'s own note
    describes, pointing the other way.
 
-   The link is cyan and the sentence is `text-muted`: `app/globals.css`
-   spends cyan on "you can act on this", and this is the only actionable
-   thing in the block. The beats' own poles — `blueprint-line` above,
-   `copper-line` below — stay on the headings, so the caption does not
-   put a third colour under a figure that is already a two-colour scene.
+   The sentence is `text-muted` and the link carries the colour, because
+   `app/globals.css` spends colour on "you can act on this" and the link
+   is the only actionable thing in the block.
+
+   WHICH colour is now the caller's, on the author's instruction
+   (2026-08-12: "use the orange color for the text in the homepage
+   'Card format reference →'"). It was cyan for both beats, on the
+   argument that the poles — `blueprint-line` above, `copper-line`
+   below — belong to the headings and a caption should not put a third
+   colour under a two-colour scene. The author has read the built page
+   and ruled the other way for the card beat, and the reasoning is
+   available: a reader who has just watched a copper figure turn into a
+   copper listing arrives at a cyan link, and the one thing on the site
+   that has an established colour of its own hands off in the site
+   default. Cyan stays the default here, so the blueprint beat is
+   untouched and any future caption gets the general rule.
    ============================================================ */
+
+/**
+ * Which pole the link wears.
+ *
+ * Tailwind classes are written out per tone rather than interpolated: `cx` is not
+ * `tailwind-merge`, so a `text-${tone}` would emit a class the compiler never scanned and
+ * the link would render with no colour at all.
+ */
+const TONE = {
+  cyan: "text-cyan decoration-cyan/40 hoverable:hover:decoration-cyan",
+  copper: "text-copper-line decoration-copper-line/40 hoverable:hover:decoration-copper-line",
+} as const;
 
 export function BeatCaption({
   children,
   href,
   cta,
+  tone = "cyan",
 }: {
   /** The sentence under the drawing. One sentence; the figure has already argued it. */
   children: React.ReactNode;
@@ -38,13 +64,18 @@ export function BeatCaption({
   href: string;
   /** What the link says. Names the destination, never "learn more". */
   cta: string;
+  /** The link's pole. `copper` where the beat above it is the node card's. */
+  tone?: keyof typeof TONE;
 }) {
   return (
     <div className="mx-auto mt-10 max-w-2xl text-center">
       <p className="text-[15px] leading-relaxed text-muted">{children}</p>
       <Link
         href={href}
-        className="mt-5 inline-block font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:decoration-cyan"
+        className={cx(
+          "mt-5 inline-block font-mono text-[13px] underline underline-offset-4 transition-colors",
+          TONE[tone],
+        )}
       >
         {cta} →
       </Link>

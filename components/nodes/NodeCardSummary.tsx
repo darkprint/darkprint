@@ -248,7 +248,15 @@ export function NodeCardSummary({
             <span aria-hidden className="text-faint">
               /
             </span>
-            <span className="min-w-0 truncate text-cyan">{node.id}</span>
+            {/* Copper, on the author's instruction (2026-08-12: "in the node cards gallery
+                adopt the orange for highlighting instead of blue"). It was `text-cyan`, on
+                the general rule that cyan marks what a reader can act on — and every tile on
+                this shelf is actionable, so the rule was picking out nothing. Copper is what
+                `app/globals.css` reserves for the node card AS A SUBJECT, which is what a
+                shelf of 53 of them is; the landing's card beat wears it for the same reason
+                one route away. The tile is still a link and still says so, by being a link
+                and by lifting on hover. */}
+            <span className="min-w-0 truncate text-copper-line">{node.id}</span>
           </span>
         )}
         {/* `h2`: the grid sits directly under the `/nodes` page title, so a tile is a
@@ -260,7 +268,7 @@ export function NodeCardSummary({
             wants a different answer: every mount of this component sits inside a group. */}
         <h3
           id={titleId}
-          className="font-display text-base font-semibold leading-snug text-fg group-hover:text-cyan"
+          className="font-display text-base font-semibold leading-snug text-fg group-hover:text-copper-line"
         >
           {node.name}
         </h3>

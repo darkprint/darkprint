@@ -181,7 +181,11 @@ export function SectionNodeIsCard() {
           />
         </div>
 
-        <BeatCaption href="/spec/card" cta="Card format reference">
+        {/* Copper, on the author's instruction. The whole beat is the card's register —
+            heading, the lit node in the strip, the plate's own tether, the step numbers and
+            line spans down the walk — and the link out of it was the one thing in the block
+            still wearing the site default. */}
+        <BeatCaption href="/spec/card" cta="Card format reference" tone="copper">
           Each node pins an exact card version: its job, interface, tool reach, and
           prohibitions. Reuse the card in another graph.
         </BeatCaption>
