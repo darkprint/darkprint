@@ -5,10 +5,22 @@ import { useEffect, useRef } from "react";
 /* ============================================================
    The graph paper lights up under the pointer.
 
-   A second copy of the section's own `tech-grid`, masked to a circle that follows the
-   cursor. Where the pointer is, the two layers add and the ruling roughly doubles; a few
-   hundred pixels away the mask has fallen to nothing and the background is exactly what it
-   was. Nothing else about the hero moves.
+   Another copy of the section's own `tech-grid`, masked to a circle that follows the cursor.
+   Where the pointer is the layers add and the ruling brightens; a few hundred pixels away
+   the mask has fallen to nothing and the background is exactly what it was. Nothing else
+   about the hero moves.
+
+   ── It used to say "roughly doubles", and that stopped being true ──
+   The section's ground was one layer at 6% and this was the second, so the pointer doubled
+   it. On 2026-08-12 the author asked the registry shelves for the hero's ground, could not
+   see it over a busy page head, and then asked the hero to match what the shelves ended up
+   with: `GridPaper` draws the ruling twice everywhere now. So the base is 12% and this adds
+   a third layer rather than a second — half again, not double.
+
+   The gesture is brighter in absolute terms than it ever was (18% under the cursor against
+   12% before) and a smaller step in relative ones. A fourth layer would restore the ratio
+   and was not taken: three is already where the ruling starts competing with the wordmark,
+   which is the reason `GridPaper` stops at two.
 
    ── Why a second grid rather than a glow ──
    A radial wash of cyan under the cursor would be a light source, and `components/ui/

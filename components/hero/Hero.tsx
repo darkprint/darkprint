@@ -41,6 +41,8 @@
    vouches for them.
    ============================================================ */
 
+import { GridPaper } from "@/components/ui/GridPaper";
+
 import { GridSpotlight } from "./GridSpotlight";
 import { SetupChips } from "./SetupChips";
 import { Wordmark } from "./Wordmark";
@@ -57,11 +59,14 @@ const GRID_MASK = "radial-gradient(ellipse at 34% 50%, black, transparent 74%)";
 export function Hero() {
   return (
     <section className="relative flex min-h-[calc(100svh-4rem)] items-center overflow-hidden bg-void py-16 sm:py-20">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 tech-grid"
-        style={{ maskImage: GRID_MASK, WebkitMaskImage: GRID_MASK }}
-      />
+      {/* `GridPaper` and not a bare `.tech-grid`, on the author's instruction of 2026-08-12:
+          "can u adopt the same level of visibility also for the one in the hero section".
+          The two registry shelves took the doubled ruling when 6% turned out to be
+          invisible over a busy page head, and this is the ground they were copied FROM — so
+          the hero coming out fainter than its own copies is the drift that component exists
+          to stop. Three layers were tried on the built page and rejected: at 18% the ruling
+          starts competing with the wordmark. */}
+      <GridPaper mask={GRID_MASK} className="inset-0" />
 
       {/* The same graph paper again, masked to a circle that follows the pointer, so the
           ruling brightens where the cursor is and is untouched everywhere else. It is the

@@ -1,5 +1,7 @@
 import { cx } from "@/lib/format";
 
+import { GridPaper } from "./GridPaper";
+
 /* ============================================================
    The hero's ground, over the head of a page that is not the hero.
 
@@ -68,31 +70,6 @@ export function GridBand({ className }: { className?: string }) {
        makes the host a scroll container, and `position: sticky` inside one sticks to a box
        that never scrolls. That would silently unpin the filter bar and the spine. The band
        is absolute at a fixed height and overflows nothing, so there is nothing to clip. */
-    <div
-      aria-hidden
-      className={cx(
-        "tech-grid pointer-events-none absolute inset-x-0 top-0 h-[34rem]",
-        className,
-      )}
-      style={{ maskImage: GRID_CLEARING, WebkitMaskImage: GRID_CLEARING }}
-    >
-      {/* The ruling, twice.
-          ------------------------------------------------------------
-          `.tech-grid` is one 48px rule in cyan at 6%, which is calibrated for the hero: a
-          full screen of it, most of it uninterrupted paper. The head of a shelf is 500px
-          with a title, a lead and an opaque filter panel across it, and at 6% a reader looks
-          at that and reports no pattern — which is what happened.
-
-          Two layers at 6% rather than one at 12%, because the doubling is already this
-          site's move rather than a new one: `GridSpotlight` reveals a second copy of the
-          hero's own grid under the pointer, and its docblock says exactly what happens —
-          "the two layers add and the ruling roughly doubles". This is that, held still. The
-          alternative is a second grid class at a second opacity, which is one more number
-          to keep in step with the first for no gain.
-
-          The mask is on the parent, so both layers are clipped by one clearing and the
-          child needs no geometry of its own. */}
-      <span aria-hidden className="tech-grid absolute inset-0 block" />
-    </div>
+    <GridPaper mask={GRID_CLEARING} className={cx("inset-x-0 top-0 h-[34rem]", className)} />
   );
 }
