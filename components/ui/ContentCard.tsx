@@ -37,6 +37,39 @@ import { TagPill } from "./TagPill";
    so a `v1.3.0` here would be a number nothing produced.
    ============================================================ */
 
+/**
+ * The shell every card-like surface takes: the frame, the one hover clock, the press.
+ *
+ * Exported because `./ContentRow.tsx` is the same object at a different aspect and the
+ * reasoning below is what must not fork. A row is a card that happens to be wide — if the
+ * hover clock, the press band or the border story ever differ between the two, the shelf has
+ * two kinds of card on it and nobody decided that.
+ *
+ * ── One clock for one gesture ──
+ * Pointing at a tile used to produce three arrivals: the article transitioned `all` over
+ * 200ms, the title had no transition at all and snapped to cyan in the same frame, and the
+ * drawing scaled over 300ms — so the element the eye is actually on was the one that moved
+ * first and alone. All three now run at `--dur-base` (180ms) on `--ease-out`.
+ *
+ * `transition-all` is also what made the hover expensive: it animates every animatable
+ * property, and the one it did animate is a 40px-blur box-shadow repainted off the GPU on
+ * every frame, on a three-column grid that fires continuously as the pointer crosses the
+ * page. The property list is explicit.
+ *
+ * `hoverable:` gates hover on `(hover: hover) and (pointer: fine)`; without it a tapped tile
+ * on a phone keeps its lit border until the route changes. Press is the >200px band: 0.99.
+ * `:active` matches ancestors of the activated element, so pressing anywhere on the
+ * stretched hit target presses the whole card.
+ *
+ * `scale` is listed alongside `transform` on purpose. Tailwind v4 compiles `scale-[0.99]` to
+ * the individual `scale` property, not to a `transform` function — measured in Chrome, a
+ * list naming only `transform` leaves the press untransitioned and the card snaps between
+ * the two sizes. (v4's own `transition-transform` shorthand expands to `transform,
+ * translate, scale, rotate` for the same reason; this is the explicit spelling of that.)
+ */
+export const CARD_SHELL =
+  "group relative overflow-hidden rounded-lg border border-line bg-surface transition-[border-color,box-shadow,transform,scale] duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-line-bright hoverable:hover:shadow-[0_12px_40px_-24px_var(--color-cyan)] hoverable:active:scale-[0.99]";
+
 /** Gallery / profile card for one blueprint: schematic, kind, autonomy and signals. */
 export function ContentCard({
   item,
@@ -58,34 +91,7 @@ export function ContentCard({
   className?: string;
 }) {
   return (
-    <article
-      className={cx(
-        /* One clock for one gesture. Pointing at a tile used to produce three arrivals:
-           the article transitioned `all` over 200ms, the title had no transition at all
-           and snapped to cyan in the same frame, and the drawing scaled over 300ms — so
-           the element the eye is actually on was the one that moved first and alone. All
-           three now run at `--dur-base` (180ms) on `--ease-out`.
-
-           `transition-all` is also what made the hover expensive: it animates every
-           animatable property, and the one it did animate is a 40px-blur box-shadow
-           repainted off the GPU on every frame, on a three-column grid that fires
-           continuously as the pointer crosses the page. The property list is explicit.
-
-           `hoverable:` gates hover on `(hover: hover) and (pointer: fine)`; without it a
-           tapped tile on a phone keeps its lit border until the route changes. Press is
-           the >200px band: 0.99. `:active` matches ancestors of the activated element, so
-           pressing anywhere on the stretched hit target presses the whole card.
-
-           `scale` is listed alongside `transform` on purpose. Tailwind v4 compiles
-           `scale-[0.99]` to the individual `scale` property, not to a `transform`
-           function — measured in Chrome, a list naming only `transform` leaves the press
-           untransitioned and the card snaps between the two sizes. (v4's own
-           `transition-transform` shorthand expands to `transform, translate, scale,
-           rotate` for the same reason; this is the explicit spelling of that.) */
-        "group relative flex flex-col overflow-hidden rounded-lg border border-line bg-surface transition-[border-color,box-shadow,transform,scale] duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-line-bright hoverable:hover:shadow-[0_12px_40px_-24px_var(--color-cyan)] hoverable:active:scale-[0.99]",
-        className,
-      )}
-    >
+    <article className={cx(CARD_SHELL, "flex flex-col", className)}>
       {/* The whole card's click target. `z-10` and transparent: it sits above the
           plain-flow content below for hit-testing (so clicking anywhere on the card
           navigates), and below the star (`z-20`), which is the one thing on the card

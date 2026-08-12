@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/RegistryFilterBar";
 import type { AutonomyClass, Blueprint } from "@/lib/types";
 import { cx } from "@/lib/format";
-import { ContentCard } from "@/components/ui/ContentCard";
+import { ContentRow } from "@/components/ui/ContentRow";
 import { PHASE_ORDER, phaseLabel } from "@/components/ui/PhaseCoverage";
 
 /**
@@ -507,54 +507,58 @@ export function GalleryBrowser({
         )}
       </div>
 
-      {/* grid / empty state */}
+      {/* rows / empty state */}
       {results.length > 0 ? (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {/* The lead cell.
+        /* A column of rows, `gap-3`, where this was a three-column grid of tiles.
+           ------------------------------------------------------------
+           The shelf offers phase coverage, autonomy class and dark-factory as ways in and no
+           tile showed any of them: a reader filtered on three axes the grid never displayed,
+           then had to open a blueprint to find out what they had just filtered for. A grid
+           of nine posters is for browsing; choosing between nine is a comparison, and a
+           comparison wants rows — each axis reads down a column now.
+
+           `ContentRow` and not `ContentCard` with a prop: that file's own header says why,
+           and the short version is that the two share a frame and almost no composition. */
+        <div className="flex flex-col gap-3">
+          {/* The lead row.
               ------------------------------------------------------------
-              Two columns wide, so the row it opens is not nine equal cells claiming nine
-              equal entry points, and a marker in the site's own panel-title tier —
-              `.label-lead`, which `app/globals.css` defines as "the thing a reader starts
-              at". No new colour and no new shape: cyan is already spent on this page's
-              one `.eyebrow`, and amber is under contract for exactly two jobs
-              (`ComingSoonBadge` and `.route-box`), neither of which this is.
+              A full-width row rather than a two-column cell, and everything the gate's
+              docblock argues still applies — it widens a row instead of a tile now.
 
-              The marker sits above the tile rather than on it. Inside, `ContentCard`
-              stacks a full-bleed `<Link>` at `z-10` and the star at `z-20`, and a badge
-              dropped into that would have to out-rank the card's own hit target to be
-              seen — card furniture is capped at 20 by the z ladder for good reason. A
-              label in normal flow above the card owes nothing to that stack, and a screen
-              reader reaches it immediately before the tile it describes.
+              The marker is the site's own panel-title tier, `.label-lead`, which
+              `app/globals.css` defines as "the thing a reader starts at". No new colour and
+              no new shape: cyan is already spent on this page's one `.eyebrow`, and amber is
+              under contract for exactly two jobs (`ComingSoonBadge` and `.route-box`),
+              neither of which this is.
 
-              What is NOT here, deliberately: a taller preview frame with node names
-              switched on. `ContentCard` owns its own 112px frame and hard-codes
-              `nodeLabels={false}`, and reaching into another component's internals from a
-              `className` — `[&_.h-28]:h-44` and friends — buys a bigger drawing at the
-              price of a silent break the next time that file is touched. It wants a prop
-              on `ContentCard`, which is not this file.
+              It sits ABOVE the row rather than on it. Inside, the row stacks a full-bleed
+              `<Link>` at `z-10` and the star at `z-20`, and a badge dropped into that would
+              have to out-rank the row's own hit target to be seen — card furniture is capped
+              at 20 by the z ladder for good reason. A label in normal flow above owes nothing
+              to that stack, and a screen reader reaches it immediately before the row it
+              describes.
 
-              The arithmetic, seen and accepted: two slots for the lead plus eight tiles is
-              ten, and ten does not divide by three, so the last row on a wide screen
-              carries one tile and two gaps where nine tiles used to close a perfect 3×3.
-              That squareness was an accident of the archive holding exactly nine — the
-              tenth blueprint breaks it either way — and a shelf that ends unevenly is what
-              every shelf does. It is not worth buying back by leaving all nine equal. */}
+              What the grid's version of this note worried about is now moot. It said a
+              taller preview with node names switched on "wants a prop on `ContentCard`,
+              which is not this file", and it recorded the 3x3 arithmetic that two lead slots
+              broke. Rows have no columns to divide by, and the drawing got bigger for every
+              bundle rather than for the lead alone — see `ContentRow`. */}
           {leadBlueprint !== null && (
-            <div className="flex flex-col gap-2 sm:col-span-2">
+            <div className="flex flex-col gap-2">
               <p className="label-lead">Start here</p>
-              <ContentCard item={leadBlueprint} className="flex-1" />
+              <ContentRow item={leadBlueprint} />
             </div>
           )}
           {gridBlueprints.map((bp) => {
             const forks = forksBySlug.get(bp.slug) ?? [];
-            /* Rolled up: the parent keeps its tile and its published forks list under it,
-                so one graph is one entry on the shelf. Under `all` each of them has a tile
+            /* Rolled up: the parent keeps its row and its published forks list under it,
+                so one graph is one entry on the shelf. Under `all` each of them has a row
                 of its own above, and under `originals` they are not on the page at all —
                 either way there is nothing to attach here. */
             const rolled = forkStance === "rolled" ? forks : [];
             return (
               <div key={bp.slug} className="flex flex-col gap-2">
-                <ContentCard item={bp} forks={forks.length} />
+                <ContentRow item={bp} forks={forks.length} />
                 {rolled.length > 0 && (
                   <ul className="flex flex-col gap-1.5 rounded-md border border-line bg-surface-2/50 px-3 py-2.5">
                     {rolled.map((fork) => (
