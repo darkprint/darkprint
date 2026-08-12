@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { GridBand } from "@/components/ui/GridBand";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { NodeBrowser, type NodeTypeTerm } from "@/components/nodes/NodeBrowser";
 import type { NodeSummary } from "@/components/nodes/NodeCardSummary";
@@ -80,7 +81,15 @@ export default function NodesPage() {
   });
 
   return (
-    <div className="container-page py-12 sm:py-16">
+    /* The hero's graph paper over the head of the shelf, on the author's instruction that
+       both registry galleries carry it. The host is full-bleed so the band is: `container-page`
+       is 1200px centred, and an `inset-x-0` layer inside it would stop at the gutters and
+       show two vertical edges the mask never fades. See `GridBand` for why it is a band, why
+       the `GridSpotlight` does not come with it, and why this host may not be
+       `overflow-hidden` — the filter bar and the spine are both sticky inside it. */
+    <div className="relative">
+      <GridBand />
+      <div className="container-page relative py-12 sm:py-16">
       {/* The lead was 45 words: three sentences defining the noun, then three
           properties of the archive. A shelf's job is to say what is on it. */}
       <SectionHeading
@@ -110,6 +119,7 @@ export default function NodesPage() {
           plain history APIs instead, and this page stays static with all 53 cards in
           the markup. */}
       <NodeBrowser nodes={nodes} types={types} />
+      </div>
     </div>
   );
 }

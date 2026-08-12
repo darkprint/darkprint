@@ -41,12 +41,18 @@
    vouches for them.
    ============================================================ */
 
+import { GRID_CLEARING } from "@/components/ui/GridBand";
+
 import { GridSpotlight } from "./GridSpotlight";
 import { SetupChips } from "./SetupChips";
 import { Wordmark } from "./Wordmark";
 
-/** The clearing the grid opens, centred on the lockup rather than on the section. */
-const GRID_MASK = "radial-gradient(ellipse at 34% 50%, black, transparent 74%)";
+/* The clearing the grid opens, centred on the lockup rather than on the section, and it is
+   shared now. `components/ui/GridBand.tsx` puts this same ground over the head of the two
+   registry shelves on the author's instruction; the string was declared here and copying it
+   there would have left the site with two clearings that are meant to be one. The hero's box
+   is a whole screen and a band's is 26rem, so the same percentages land in different places
+   — which is the point of writing the shape once and the box twice. */
 
 export function Hero() {
   return (
@@ -54,7 +60,7 @@ export function Hero() {
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 tech-grid"
-        style={{ maskImage: GRID_MASK, WebkitMaskImage: GRID_MASK }}
+        style={{ maskImage: GRID_CLEARING, WebkitMaskImage: GRID_CLEARING }}
       />
 
       {/* The same graph paper again, masked to a circle that follows the pointer, so the

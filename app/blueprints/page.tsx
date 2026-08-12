@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { GridBand } from "@/components/ui/GridBand";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { GalleryBrowser } from "@/components/gallery/GalleryBrowser";
 import { allBlueprints, getRegistry } from "@/lib/content";
@@ -72,8 +73,16 @@ export default function BlueprintsPage() {
        step (SectionHeading → content), and it is what both siblings already spend. So
        `mb-10` here rather than the `mb-16` the brief reached for: 64px is the `section`
        tier — section↔section — and taking it would have unified nothing, it would have
-       made this page the odd one out in the other direction. */
-    <div className="container-page py-12 sm:py-16">
+       made this page the odd one out in the other direction.
+
+       Still one container. What is new outside it is a full-bleed host for the hero's graph
+       paper, on the author's instruction that both registry galleries carry it — a decorative
+       layer and nothing else, with no padding of its own, so the measurement above is
+       untouched. `inset-x-0` inside `container-page` would have stopped at the 1200px gutters
+       and shown two vertical edges the mask never fades. See `GridBand`. */
+    <div className="relative">
+      <GridBand />
+      <div className="container-page relative py-12 sm:py-16">
       {/* `h1`, which every other index on the site passes and this one did not. It
           mattered less while this page was one heading; the sr-only "The shelf" `h2`
           under it means a page whose outline starts at level two gives a screen reader
@@ -115,6 +124,7 @@ export default function BlueprintsPage() {
           tile's two counts carry it in `ContentCard`. */}
       <h2 className="sr-only">The shelf</h2>
       <GalleryBrowser blueprints={blueprints} categories={categories} />
+      </div>
     </div>
   );
 }
