@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
@@ -6,7 +7,7 @@ import { MCP_CONNECT_COMMAND, MCP_ROUTE } from "@/lib/mcp";
 import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
 
 /* ============================================================
-   The two ways in, in the hero's top-left corner.
+   The two ways in, as a band across the top of the hero.
 
    ── Why they left `Wordmark` ──
    They sat at the foot of the centred column, last in the entrance, arriving at 1.26s
@@ -21,20 +22,33 @@ import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
    **They should be readable immediately.** A reader who arrives knowing what DarkPrint is
    comes for the install line, and the old order made them wait out a 1.4-second entrance to
    see it. Nothing here fades, scales or waits; the server renders it and that is what a
-   reader gets, with JS, without it, and with reduced motion.
+   reader gets, with JS, without it, and with reduced motion. At the top of the page that
+   matters more than it did in a side column, not less — so still no `data-mark`, still no
+   `"use client"`.
 
-   ── Why in flow rather than pinned ──
-   The corner is the ask, and `absolute` is the obvious way to hit it. It is also how the
-   chips end up over the name on a short window: the hero is `min-h` of one viewport, the
-   lockup is around 500px of it, and two out-of-flow chips at the top would cross the
-   letters somewhere under 700px of height. In flow at the top of a column they cannot,
-   and the cost is that the lockup centres in what is left rather than in the whole section.
+   ── From two cards to one band ──
+   They were a column of bordered cards in a 392px track (2a), and before that a wrapping
+   row of chips in the top-left corner. 2b makes them the first thing on the page: a band
+   across the full width, two cells split by a hairline.
+
+   The claim that makes is stronger than a side column's, and it is the decision to weigh
+   rather than the layout. Above the name, two commands say this site is something you
+   install. What the band cannot carry is the sentence per entry the cards had room for —
+   one label line and one command line each is the shape, and those sentences are not to
+   come back in smaller type.
+
+   ── One band split, not two panels ──
+   The divider is a 1px GRID TRACK filled with `--color-line`, not a border on either cell.
+   A border belongs to the box that draws it, and two boxes each drawing their own edge is
+   two panels butted together; a track between them belongs to neither, which is what makes
+   the pair read as one surface with a seam.
    ============================================================ */
 
 /**
- * One row per way in, in the author's order: the thing that works, then the thing that
- * does not yet. `built` decides both the border and whether the badge is drawn, so a
- * command cannot quietly lose the sentence that says it is not connected to anything.
+ * One cell per way in, in the author's order: the thing that works, then the thing that
+ * does not yet. `built` decides three things — the status dot, the command's tone and
+ * whether the badge is drawn — so a command cannot quietly lose the sentence that says it
+ * is not connected to anything.
  */
 const SETUPS = [
   {
@@ -55,44 +69,69 @@ const SETUPS = [
 
 export function SetupChips() {
   return (
-    /* Side by side, and wrapping rather than breaking at a named width.
-       ------------------------------------------------------------
-       The two commands are 47 and 49 characters, which is about 745px of chip and gap
-       together: they fit beside each other in the 1152px column and they do not fit on a
-       phone. `flex-wrap` is what decides that, per width, instead of a `sm:` or `lg:` that
-       has to be re-guessed every time the copy changes. `max-w-full` caps each chip at the
-       column so a long command wraps inside its own box rather than off the screen.
+    /* `grid-cols-[1fr_1px_1fr]` is written for exactly two cells and one divider, which is
+       what `SETUPS` holds. A third entry would need the template to grow with it — stated
+       here because the grid would not error, it would drop the third cell onto a second row
+       with the divider under it.
 
-       No `items-start`. The default stretch is what makes the two boxes the same height,
-       and they are not the same content: the MCP chip carries a `ComingSoonBadge` on its
-       label line and the skill chip does not. Stacked, that difference was invisible.
-       Side by side it would be two panels of different heights sharing one top edge. */
-    <div className="flex max-w-full flex-wrap gap-3">
-      {SETUPS.map((setup) => (
-        <Link
-          key={setup.key}
-          data-setup={setup.key}
-          href={setup.href}
-          className={cx(
-            "group flex max-w-full flex-col items-start gap-1 rounded-md border bg-surface-2/80 px-3 py-2 text-left transition-[transform,scale,color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97]",
-            setup.built
-              ? "border-emerald/50 hoverable:hover:border-emerald/75"
-              : "border-line hoverable:hover:border-line-bright",
-          )}
-        >
-          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="label">{setup.label}</span>
-            {!setup.built && <ComingSoonBadge />}
-          </span>
-          <span
+       One column below `sm`, where two cells of 47- and 49-character commands cannot both
+       fit. The divider goes with the second column (`hidden`, so it takes no row of its own)
+       and the seam becomes a `border-b` on every cell but the last. */
+    <div className="grid grid-cols-1 border-b border-line bg-surface-2/72 sm:grid-cols-[1fr_1px_1fr]">
+      {SETUPS.map((setup, i) => (
+        <Fragment key={setup.key}>
+          {i > 0 && <div aria-hidden className="hidden bg-line sm:block" />}
+          <Link
+            data-setup={setup.key}
+            href={setup.href}
+            /* Hover and press on the CELL, where 2a had them on a card.
+               ------------------------------------------------------------
+               `scale-[0.99]` and not the card's `0.97`, on the ruling `RegistryFilterBar`
+               already wrote down for a full-width control: "0.97 on a 342px element travels
+               10px sideways, which reads as a wobble rather than as a press." A band cell is
+               ~720px at 1440, where 0.97 would travel 21px.
+
+               The brightening is the cell's own ground rather than a border, because the
+               band owns the only border here. More `surface-2` over the band's own 72%
+               reads as the cell lifting out of the strip it is part of. */
             className={cx(
-              "max-w-full font-mono text-xs transition-colors",
-              setup.built ? "text-emerald hoverable:group-hover:text-fg" : "text-muted",
+              "group flex flex-col gap-2 px-10 py-5 transition-[transform,scale,color,background-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:bg-surface-2/60 hoverable:active:scale-[0.99]",
+              i < SETUPS.length - 1 && "border-b border-line sm:border-b-0",
             )}
           >
-            {`$ ${setup.command}`}
-          </span>
-        </Link>
+            <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              {/* The status dot, and it is decorative on purpose.
+                  ------------------------------------------------------------
+                  `--color-faint` is declared for decoration and reads 1.83:1, which would be
+                  a defect on anything a reader has to decode. Nothing here is: the badge
+                  beside it says "coming soon" in words, and the command below it is already
+                  toned. The dot is the same fact a third time, at a glance, for the reader
+                  scanning the band rather than reading it — so `aria-hidden`, and the one
+                  place on the site where faint is the right answer rather than a shortcut. */}
+              <span
+                aria-hidden
+                className={cx(
+                  "h-[7px] w-[7px] shrink-0 rounded-full",
+                  setup.built ? "bg-emerald" : "bg-faint",
+                )}
+              />
+              <span className="label">{setup.label}</span>
+              {!setup.built && <ComingSoonBadge />}
+            </span>
+            {/* Never wrapped. A command broken across two lines is a command a reader
+                cannot select in one gesture, and these are the one thing on the page
+                somebody arrives to copy. `overflow-x-auto` is the fallback if a longer
+                constant ever lands — the cell scrolls, the band does not reflow. */}
+            <span
+              className={cx(
+                "block overflow-x-auto whitespace-nowrap font-mono text-sm transition-colors",
+                setup.built ? "text-emerald hoverable:group-hover:text-fg" : "text-muted hoverable:group-hover:text-fg",
+              )}
+            >
+              {`$ ${setup.command}`}
+            </span>
+          </Link>
+        </Fragment>
       ))}
     </div>
   );
