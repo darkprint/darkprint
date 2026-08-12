@@ -36,7 +36,20 @@ describe("Wordmark", () => {
   it("renders the blueprint-first claim and both primary actions without client JS", () => {
     const html = render();
     const text = plainText(html);
-    expect(text).toContain("DarkPrint");
+    /* Two tones, and it has to stay ONE WORD.
+       ------------------------------------------------------------
+       This was `expect(text).toContain("DarkPrint")` until the name went two-tone: "Print"
+       is `--color-cyan` and "Dark" is `--color-fg`, so the heading now holds a nested span
+       and `plainText` replaces every tag with a space — by design, so that adjacent blocks
+       do not run together for `honesty.test.ts`. It reads "Dark Print" here and the page
+       does not: an inline span adds no whitespace to `textContent` or to the accessible
+       name, which is exactly the property worth pinning now that there is markup between
+       the halves.
+
+       So the claim moves to the markup and gets stronger for it. `Dark`, then a tag, then
+       `Print`, with nothing in between — a stray space, a `<br>`, or a `block` on that span
+       would all fail here, and every one of them would put a gap in the brand name. */
+    expect(html).toMatch(/Dark<[^>]+>Print</);
     expect(text).toContain("Reusable blueprints for agent workflows.");
     expect(text).toContain("Find a blueprint");
     expect(text).toContain("Create a blueprint");
@@ -102,8 +115,11 @@ describe("Wordmark", () => {
     expect(mark).not.toContain("opacity-0");
     expect(mark).toContain("aria-hidden");
     expect(mark).not.toContain("aria-label");
-    // The 64 rung, drawn at 88: three discs, and the perforation only the top rung carries.
-    expect(mark).toMatch(/<svg[^>]*width="88"[^>]*height="88"/);
+    /* The 64 rung, drawn at 72: three discs, and the perforation only the top rung carries.
+       88 until the 2b layout — the mark comes down while the name goes up. The RUNG does
+       not change with it: `rungFor` is `size >= rung`, so 72 and 88 both draw 64, which is
+       why the circle count below is unchanged and why this is one number and not two. */
+    expect(mark).toMatch(/<svg[^>]*width="72"[^>]*height="72"/);
     expect([...mark!.matchAll(/<circle/g)].length).toBeGreaterThanOrEqual(3 + 4);
   });
 

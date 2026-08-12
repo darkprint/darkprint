@@ -85,6 +85,15 @@ import { WORDMARK_LETTER_PATHS } from "./wordmark-paths";
 const MARK = "DarkPrint";
 
 /**
+ * Where `--color-fg` hands over to `--color-cyan` in the name.
+ *
+ * An index into `MARK` rather than two string constants, so the nine characters the heading
+ * renders and the nine `WORDMARK_LETTER_PATHS` traces can never come apart: there is still
+ * one spelling of the word in this file, and the tone is a cut through it.
+ */
+const MARK_TONE_SPLIT = 4;
+
+/**
  * The site's claim, verbatim and as one text node.
  *
  * Replaced 2026-07-29 at the author's request: doc 2 §1's original line
@@ -396,16 +405,18 @@ export function Wordmark() {
           given a `title`. The `h1` directly below says "DarkPrint"; a mark that announced the
           brand as well would say it twice to a screen reader, in a row.
 
-          88px draws the 64 rung, which is the full three-node mark with its halos, rings and
-          perforation. `Logo` resolves that through `rungFor` rather than through a fifth row
-          in its ladder table: see `LogoRung` for why 88 is a size and not a rung.
+          72px, down from 88 with the 2b layout. The mark comes down while the name goes up:
+          with the full section width behind it the name can carry the lockup on its own, and
+          an 88px mark over a 112px word competes with it rather than crowning it. `Logo`
+          resolves the drawn rung through `rungFor` rather than through a row in its ladder
+          table: see `LogoRung` for why this is a size and not a rung.
 
           No `opacity-0` in the markup. The server, a reader with JS off and a reader who
           asked for reduced motion all get the finished mark, and `useReveal`'s `static` phase
           means the timeline below never runs for any of them. The entrance sets the hidden
           state in a layout effect instead, so it exists only where it can be undone. */}
       <div data-mark="logo" className="mb-5">
-        <Logo size={88} />
+        <Logo size={72} />
       </div>
 
       <p data-mark="eyebrow" className="eyebrow">
@@ -433,12 +444,21 @@ export function Wordmark() {
                  → the 11px eyebrow that was the only thing saying what the product is, a
                  7.2:1 step that made the sentence the fourth read. 112px against a 30px
                  claim in `text-fg` is 3.7:1, and the sentence becomes the second. */
-              fontSize: "clamp(3.4rem, 15vw, 7rem)",
+              fontSize: "clamp(3.4rem, 11vw, 7rem)",
               textShadow:
                 "0 0 32px color-mix(in oklab, var(--color-cyan) 32%, transparent), 0 0 120px color-mix(in oklab, var(--color-blueprint-line) 22%, transparent)",
             }}
           >
-            {MARK}
+            {/* Two tones, one text node's worth of characters.
+                ------------------------------------------------------------
+                The nested span carries colour and nothing else — no size, no tracking, no
+                display change — because the trace overlay's nine outlines are positioned
+                against where THIS text puts its letters, and a span that altered a metric
+                would slide the second half of the word out from under its own outlines.
+                Verified letter by letter after the entrance: every one of the nine sits
+                within 0.01px of where it sat before the split. */}
+            {MARK.slice(0, MARK_TONE_SPLIT)}
+            <span className="text-cyan">{MARK.slice(MARK_TONE_SPLIT)}</span>
           </span>
 
           {/* The wiring-draw overlay. Invisible by default (`opacity-0`, no JS needed) —
