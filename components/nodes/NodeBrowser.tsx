@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cx } from "@/lib/format";
 import { useQueryState } from "@/components/ui/useQueryState";
+import { GroupSpine, type GroupSpineItem } from "@/components/ui/GroupSpine";
 import {
   CONTROL_CLASS,
   RegistryFilterBar,
@@ -27,6 +28,31 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 
 /** Grouping only happens under this one, so it is also what the page opens on. */
 const DEFAULT_SORT: SortKey = "type";
+
+/**
+ * How much pinned chrome sits above a panel when the reader lands on one, in CSS pixels.
+ *
+ * Two bars, both measured on the built page at 1440 x 950 rather than reasoned about:
+ *
+ *   page header   65   `position: sticky; top: 0`, and the spine pins to its underside
+ *   the spine     51   `py-3` (24) + a 26px pill + its own 1px bottom rule
+ *   air            8   so the panel's top hairline is not welded to the spine's
+ *
+ * It is one constant with two consumers, which is the only reason it is a constant. It is
+ * the panels' `scrollMarginTop`, so a `#type-tool` jump puts the header under the spine
+ * rather than behind it; and it is the observer's top `rootMargin`, so the group the spine
+ * calls current is the one under that same line rather than the one merely on screen. Split
+ * into a Tailwind class and a number, the two would drift and only the jump would show it.
+ *
+ * A style attribute rather than `scroll-mt-[124px]` for that reason, and it is still
+ * `scroll-margin-top` — the app forbids `scrollIntoView`, not the property that makes a
+ * plain anchor land correctly.
+ *
+ * The spine's 51 holds at every width because it is one line at every width: the pills
+ * scroll sideways rather than wrapping. That is what makes a single number honest here —
+ * see `GroupSpine`'s note on the scroller.
+ */
+const SPINE_CLEARANCE = 124;
 
 /* The shape moved to `components/ui/RegistryFilterBar.tsx` with the disclosure below it:
    this file and the gallery each carried a copy, and they had already drifted — the
@@ -395,10 +421,15 @@ export function NodeBrowser({
     const parts: string[] = [];
     const q = search.trim();
     if (q !== "") parts.push(`the search “${q}”`);
-    if (type !== null) {
+    /* `own !== …` on these two as well, which the docblock always claimed and the code did
+       not need until the spine started calling this. A spine row is a TYPE, and its count
+       is taken with `skip: "type"` — so the type filter cannot be what emptied it, and
+       naming it would send the reader to undo the one control that is not responsible. The
+       two boolean chips never passed "type" or "phase", so this changes nothing they say. */
+    if (own !== "type" && type !== null) {
       parts.push(`the node type “${typeFacets.find((t) => t.id === type)?.label ?? type}”`);
     }
-    if (phase !== null) {
+    if (own !== "phase" && phase !== null) {
       parts.push(
         phase === UNPHASED
           ? "the phase filter “Not in a named phase”"
@@ -474,10 +505,77 @@ export function NodeBrowser({
     return new Map(
       ordered.map((term, i) => [
         term.id,
-        { index: String(i + 1).padStart(2, "0"), description: term.description },
+        {
+          index: String(i + 1).padStart(2, "0"),
+          label: term.label,
+          description: term.description,
+        },
       ]),
     );
   }, [types]);
+
+  /**
+   * Which panel the reader is inside, from one observer over all of them.
+   *
+   * `null` until an observation lands, and the render below falls back to the first group —
+   * so the server's HTML and the first client frame both mark the top of the shelf, which is
+   * where the reader is, rather than marking nothing.
+   *
+   * ── Why a Set and a `find`, rather than the entry with the smallest `boundingClientRect.top` ──
+   * "Topmost intersecting" is a question about DOM order, and `groups` already holds that
+   * order. Reading geometry off the entries would answer it too, and would answer it from a
+   * snapshot taken when the callback was queued rather than when it runs. The set is the
+   * observer's own state; the order is React's.
+   *
+   * ── Why `rootMargin` and not a scroll listener ──
+   * The top of the viewport is not where the shelf starts: 116px of pinned header and spine
+   * sit over it. Shrinking the root by `SPINE_CLEARANCE` asks the question the reader is
+   * actually asking — which panel is under the spine — and asks it without a listener firing
+   * on every frame of a 53-card scroll.
+   *
+   * Keyed on the group ids rather than on `groups`, so typing in the search box re-runs this
+   * only when a whole type appears or disappears. `groups` is a fresh array on every
+   * keystroke; the observed elements are not, because `key={group.id}` keeps them mounted.
+   */
+  const panelRefs = useRef(new Map<string, HTMLElement>());
+  const [observed, setObserved] = useState<string | null>(null);
+  /* The separator below is a NUL, written as the escape and never as the raw byte. I typed
+     the raw one and `source-hygiene.test.ts` caught it, which is what that test is for: a
+     NUL is invisible in every editor and makes git treat the whole file as binary — no
+     diff, no blame, no review. The runtime string is identical either way.
+
+     A NUL and not a space, because this key exists so the effect re-subscribes when the SET
+     of groups changes rather than on every keystroke, and a separator a value could contain
+     would make two different sets look like one. A term id carries a `/` when it is
+     namespaced, and a local overlay may mint ids this file has never seen. */
+  const groupKey = (groups ?? []).map((g) => g.id).join("\u0000");
+
+  useEffect(() => {
+    const ids = groupKey === "" ? [] : groupKey.split("\u0000");
+    /* No `setObserved(null)` here, and the rule that forbade it was right: this effect
+       SUBSCRIBES, and the only place it may write state is the observer's own callback.
+       What that leaves behind is a stale id when a filter empties the shelf — resolved
+       where it belongs, at render, by `activeGroup` checking the id still names a group. */
+    if (ids.length === 0) return;
+    const visible = new Set<string>();
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const id = (entry.target as HTMLElement).dataset.typeId;
+          if (id === undefined) continue;
+          if (entry.isIntersecting) visible.add(id);
+          else visible.delete(id);
+        }
+        setObserved(ids.find((id) => visible.has(id)) ?? null);
+      },
+      { rootMargin: `-${SPINE_CLEARANCE}px 0px 0px 0px` },
+    );
+    for (const id of ids) {
+      const el = panelRefs.current.get(id);
+      if (el !== undefined) io.observe(el);
+    }
+    return () => io.disconnect();
+  }, [groupKey]);
 
   const activeCount =
     (search.trim() !== "" ? 1 : 0) +
@@ -493,6 +591,54 @@ export function NodeBrowser({
     setDraft("");
     clear(["q", "type", "phase", "human", "risk"]);
   }, [clear]);
+
+  /**
+   * The spine's rows: every type the vocabulary defines, in the grid's own order.
+   *
+   * **The order is the grid's and is not negotiable.** `typeChrome` is built by sorting the
+   * prop with the same `byText(label)` that `results` is sorted by and `groups` walks, so a
+   * reader reading the spine left to right is reading the shelf top to bottom. A jump list
+   * ordered by size — the obvious "improvement" — sends somebody looking for the third band
+   * to the sixth.
+   *
+   * All eight, and the three with no cards anywhere in the library are the interesting case.
+   * They come through as dead rows, which is the `<option disabled>` ruling from the type
+   * select applied one surface over: a reader should be able to see that `human-input`
+   * exists and that nothing in the archive is one. What the select does NOT do is offer them
+   * at all, and the two are right to differ — a select is a filter, where an option that can
+   * never match is a dead end, and this is a map of the vocabulary, where a type missing from
+   * the map is a fact the reader cannot recover.
+   *
+   * Counts come from `typeFacets` and from nowhere else, defaulting to 0 for a type the
+   * library has never held. Not memoized: eight rows off two arrays already in hand, and
+   * `deadReason` is rebuilt every render anyway, so a memo would need every filter in its
+   * dependency list to buy nothing.
+   */
+  const spineItems: GroupSpineItem[] = [...typeChrome.entries()].map(([id, chrome]) => ({
+    id,
+    label: chrome.label,
+    count: typeFacets.find((t) => t.id === id)?.count ?? 0,
+    href: `#type-${id}`,
+    deadReason: deadReason("type"),
+  }));
+
+  /**
+   * Which row the spine fills, resolved at render rather than kept in sync by an effect.
+   *
+   * Two jobs in one expression. Before the observer has said anything — on the server, and
+   * on the first client frame — the reader is at the top of the shelf, so the first group is
+   * current; falling back to `null` would put eight rows with no mark on any of them in the
+   * prerendered HTML, which is the state a reader with no script keeps for good.
+   *
+   * And it discards a stale id. When a filter empties a type the observed value can name a
+   * group that is no longer rendered, and the effect may not write state to correct it — see
+   * the note there. Checking membership here is both cheaper and more honest: there is one
+   * answer, computed from what is actually on the page this render.
+   */
+  const activeGroup =
+    (observed !== null && groups?.some((g) => g.id === observed) === true
+      ? observed
+      : groups?.[0]?.id) ?? null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -632,6 +778,32 @@ export function NodeBrowser({
         </p>
       )}
 
+      {/* The spine, and only under the grouping sort.
+          ------------------------------------------------------------
+          `Name A–Z` and `Most used` ask for one ordered run of cards; there are no panels
+          to jump to and the `groups === null` branch below is untouched. It also goes when
+          the shelf is empty, because a jump list over nothing is eight dead rows and a
+          heading that says "No node cards match" two lines under it.
+
+          Placed here rather than inside `RegistryFilterBar` — the reasoning is in
+          `GroupSpine`'s header, and the short version is that this is navigation and that
+          bar is `role="search"` with a phone disclosure labelled "Filter". */}
+      {groups !== null && groups.length > 0 && (
+        <GroupSpine
+          ariaLabel="Jump to a card type"
+          items={spineItems}
+          activeId={activeGroup}
+          results={results.length}
+          total={nodes.length}
+          /* Copper, on the author's instruction and for the reason the tiles took it one
+             commit ago: this shelf's subject is the node card, and `app/globals.css`
+             reserves copper for the node card as a subject. Cyan is the component's default
+             because cyan is the site's "you can act on this", which is the right answer for
+             a shelf with no register of its own. */
+          accent="copper"
+        />
+      )}
+
       {/* grid / empty state */}
       {results.length > 0 ? (
         groups === null ? (
@@ -666,6 +838,30 @@ export function NodeBrowser({
                    than running out through the corner. */
                 <section
                   key={group.id}
+                  /* The anchor the spine jumps to, and it is a real one: `#type-tool` in the
+                     address bar lands here with no script involved, which is what the app's
+                     ban on `scrollIntoView` leaves you with and is the better mechanism
+                     anyway — it survives a shared link, a middle-click and a reader who has
+                     turned JavaScript off. */
+                  id={`type-${group.id}`}
+                  /* Read by the observer's callback off `entry.target`, so the effect never
+                     has to keep a parallel array of ids in the same order as the entries. */
+                  data-type-id={group.id}
+                  /* The cleanup's braces are not style: React 19 types a ref callback's
+                     return as `void | (() => void)`, and `Map.delete` answers `boolean`, so
+                     the concise arrow does not typecheck. */
+                  ref={(el) => {
+                    const refs = panelRefs.current;
+                    if (el === null) return;
+                    refs.set(group.id, el);
+                    return () => {
+                      refs.delete(group.id);
+                    };
+                  }}
+                  /* See `SPINE_CLEARANCE`: the header and the spine are both pinned above
+                     this, and without the margin a jump lands with the panel's own heading
+                     behind them. */
+                  style={{ scrollMarginTop: SPINE_CLEARANCE }}
                   className={cx(
                     "overflow-hidden rounded-xl border border-line",
                     i % 2 === 0 ? "bg-blueprint-deep/22" : "bg-surface-2/55",
