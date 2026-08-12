@@ -15,19 +15,32 @@
    returning reader arrives to copy was the last thing on screen.
    `SetupPanel.tsx` carries the whole argument.
 
-   The section is one ROW, and that is the 2a layout's whole move.
-   The lockup takes the left column and the two ways in take a 392px
-   column beside it, which resolves the compromise the corner
-   placement was: with nothing above the lockup, nothing is pushing
-   down on it, and `items-center` puts it back on the section's own
-   middle with no lever to undo the push. See the note over the row.
+   The section is one COLUMN: the two ways in are a full-width band
+   across the top, and the lockup is centred in what is left.
+
+   That is 2b, and it replaces 2a, which put the lockup in a left
+   column and the ways in in a 392px column beside it. Both layouts
+   solve the same problem — the chips used to sit at the top of a
+   single column and push the lockup off centre — and they solve it
+   differently. 2a took the chips out of the vertical stack
+   altogether. 2b leaves them in it and gives the lockup its own
+   flex cell, so `flex-1` plus `justify-center` centres the name in
+   what remains rather than in the whole section. No spacer, no
+   lever, and no `items-center` on the section itself.
+
+   What the change buys is the name back at the width of the SECTION
+   rather than of a 60%-wide track. At 112px the wordmark no longer
+   has to survive a column that squeezes it, so 2a's `min-w-0`,
+   `shrink-0` and `gap-[4.5rem]` are gone with the row. What it costs
+   is the sentence per entry that 2a's cards had room for: the band
+   is one label line and one command line each, and those sentences
+   are not to come back in smaller type.
 
    The grid stays. It is the one part of the old visual register the
    author kept ("what I like is the pattern on the background"), and
    it is masked to a radial so the name sits in a clearing rather
-   than on graph paper. The clearing moved with the name: the ellipse
-   is at 34% now, not 50%, or the hole in the graph paper opens
-   between the two columns and the name goes back onto the grid.
+   than on graph paper. The clearing follows the name, which is why
+   it moved to 34% for 2a and comes back to the middle here.
 
    Not a client component. The section is markup; only the wordmark
    needs a timeline, and it is the only thing that ships as one.
@@ -53,12 +66,20 @@ import { Wordmark } from "./Wordmark";
    shelves, and it does NOT share this string. That was tried: one constant, two boxes. It
    is the wrong abstraction, and the built page said so — a clearing tuned to a full screen
    with a lockup at 34% opens on a 34rem band with its centre behind the filter panel, where
-   the reader sees none of it. What the two grounds share is a shape, not a geometry. */
-const GRID_MASK = "radial-gradient(ellipse at 34% 50%, black, transparent 74%)";
+   the reader sees none of it. What the two grounds share is a shape, not a geometry.
+
+   `50% 54%` and not `50% 50%`. 34% was 2a's, following the name into the left column, and
+   the horizontal half of that is simply undone. The vertical is new: the entry band takes
+   the top ~92px of the section, so the lockup's own centre sits below the section's, and a
+   clearing at 50% opens partly behind the band — where there is no name to clear. */
+const GRID_MASK = "radial-gradient(ellipse at 50% 54%, black, transparent 74%)";
 
 export function Hero() {
   return (
-    <section className="relative flex min-h-[calc(100svh-4rem)] items-center overflow-hidden bg-void py-16 sm:py-20">
+    /* A column, where 2a was a row. No `py` on the section: the two cells own their own
+       padding, and a section padding would be air the band cannot use and the lockup cell
+       would have to subtract from its own centring. */
+    <section className="relative flex min-h-[calc(100svh-4rem)] flex-col overflow-hidden bg-void">
       {/* `GridPaper` and not a bare `.tech-grid`, on the author's instruction of 2026-08-12:
           "can u adopt the same level of visibility also for the one in the hero section".
           The two registry shelves took the doubled ruling when 6% turned out to be
@@ -75,34 +96,39 @@ export function Hero() {
           adding a glow, and why it never runs on a touchscreen. */}
       <GridSpotlight />
 
-      {/* Two columns, and no lift between them.
+      {/* The band, and it is a SIBLING of the lockup rather than a wrapper around it.
           ------------------------------------------------------------
-          A ~30-line docblock stood here arguing for a `clamp` spacer under the lockup, and
-          the argument was sound for the layout it was written against: the chips sat at the
-          top of a single column, so they pushed the lockup off the section's middle, and a
-          shrinkable spacer under it pushed back. `basis-[clamp(0px,calc(100svh-44rem),
-          calc(16vh+4rem))]` is deleted with this comment, and the lever is not replaced by
-          another lever. There is nothing above the lockup any more, so `items-center` on the
-          section puts it on the middle directly. That is the point of the 2a layout rather
-          than a side effect of it.
+          Worth stating because the mistake is silent in JSX and the mock was built wrong in
+          exactly this way once: nest the lockup inside the band and it becomes a fourth grid
+          item, the name clips at a column edge, and nothing errors. Two children of the
+          section, in order, is the whole structure.
 
-          `min-w-0` on the lockup column. The name is `clamp`ed off the viewport, not off the
-          column, so at a narrow width it asks for more than its track has; a flex item
-          defaults to `min-width: auto` and would push the panel off the row instead of
-          letting the text wrap. The panel is `shrink-0` for the other half of the same rule:
-          392px is a design width and a column that squeezes it is not the design.
+          Full-bleed, so no `container-page` here: the band runs edge to edge and its own two
+          cells carry the gutters. `flex-none` so it keeps its height while the cell below
+          takes the slack. `relative` to clear the two grid layers above it. */}
+      <div className="relative flex-none">
+        <SetupChips />
+      </div>
 
-          The row's own vertical centring is `items-center`, which centres each column
-          independently. That is what the layout wants: the lockup is optically centred in
-          its column and the panel is centred in its own, so the two read as a pair of offers
-          rather than as one block with a heavy side. */}
-      <div className="container-page relative flex items-center gap-[4.5rem]">
-        <div className="min-w-0 flex-1">
-          <Wordmark />
-        </div>
-        <div className="w-[392px] shrink-0">
-          <SetupChips />
-        </div>
+      {/* The lockup, centred in what the band leaves.
+          ------------------------------------------------------------
+          `flex-1` plus `justify-center` is the whole mechanism, and it is why 2a's spacer
+          and 2b's band can coexist with a centred name: the cell is the section minus the
+          band, and the name is centred in the cell. 2a needed `items-center` on the section
+          because nothing sat above the lockup; here something does, and centring against the
+          section would put the name low by half the band's height.
+
+          `pt-18 pb-22` — 72 and 88, the mock's own, and deliberately unequal. The optical
+          centre of this block is the wordmark, not the block's bounding box: the mark and
+          the eyebrow above the name are light, the claim and two buttons below it are heavy.
+          Equal padding centres the box and leaves the name reading high.
+
+          `container-page` for the horizontal, where the mock spells 64px. It is the same
+          order of gutter and it is what every other page on the site uses; the name is
+          `clamp`ed off the viewport rather than off this box, so what the cap actually
+          governs is the claim and the rule, both of which have their own `max-w`. */}
+      <div className="container-page relative flex flex-1 items-center justify-center pb-22 pt-18">
+        <Wordmark />
       </div>
     </section>
   );
