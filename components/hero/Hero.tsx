@@ -103,10 +103,20 @@ export function Hero() {
           item, the name clips at a column edge, and nothing errors. Two children of the
           section, in order, is the whole structure.
 
-          Full-bleed, so no `container-page` here: the band runs edge to edge and its own two
-          cells carry the gutters. `flex-none` so it keeps its height while the cell below
-          takes the slack. `relative` to clear the two grid layers above it. */}
-      <div className="relative flex-none">
+          `container-page`, where the mock runs the band edge to edge. The author read the
+          full-bleed version and asked for it inside the page's margins: "the boxes should
+          start on the left margin and end on the right margin". Those margins are the
+          header's — `SiteHeader` sets its row in the same `container-page`, so the band's
+          left edge now lines up with the wordmark in the nav and its right edge with the
+          Publish button, and the lockup cell below it shares the same two.
+
+          Full-bleed was the mock's own answer and it is the one thing in 2b that could not
+          survive being put on a real page: the mock has no site header above it, so a band
+          running to the viewport edge had nothing to disagree with. Here it did.
+
+          `flex-none` so it keeps its height while the cell below takes the slack. `relative`
+          to clear the two grid layers above it. */}
+      <div className="container-page relative flex-none">
         <SetupChips />
       </div>
 

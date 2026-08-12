@@ -29,7 +29,14 @@ import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
    ── From two cards to one band ──
    They were a column of bordered cards in a 392px track (2a), and before that a wrapping
    row of chips in the top-left corner. 2b makes them the first thing on the page: a band
-   across the full width, two cells split by a hairline.
+   across the top, two cells split by a hairline.
+
+   Across the top of the PAGE'S COLUMN, not of the viewport. The mock draws it full-bleed and
+   `Hero` mounted it that way first; the author read it and asked for the margins back — the
+   band starts where the nav's wordmark starts and ends where its Publish button ends, which
+   is `container-page` on all three. `Hero` owns that wrapper, so nothing in here knows how
+   wide the band is, which is why the cells' `px-10` is padding inside a bounded box rather
+   than a gutter holding content off a screen edge.
 
    The claim that makes is stronger than a side column's, and it is the decision to weigh
    rather than the layout. Above the name, two commands say this site is something you
