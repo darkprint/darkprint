@@ -237,8 +237,14 @@ node collapse onto one digest however their YAML ordered its keys, which is what
 | `displayName` | `string` | req | |
 | `avatarHue` | `number` | req | 0-360, generates a deterministic gradient avatar |
 | `validator` | `boolean` | req | badge. Their votes would carry more weight |
-| `reputation` | `number` | req | seeded; nothing accrues it |
 | `bio` | `string` | opt | |
+
+`reputation` stood here once and was dropped on 2026-08-13 rather than folded into
+`ProfileHeader`'s preview line: nothing on the site ever explained what it measured or how
+it moved. Two figures replaced it, both on the preview line and neither stored on
+`Author`: `stars` (`ProfileShell.tsx`, `blueprints.reduce(votes) + cards.reduce(support)`,
+computed fresh from data that is already a field elsewhere) and `Profile.validated`
+(below, genuinely new and seeded, since nothing else on the account holds that fact).
 
 ### `Account` — the signed-in row
 
@@ -276,6 +282,7 @@ archive can count (`:9-14`).
 | `joinedAt` | `string` | req | ISO date |
 | `watchers` | `number` | req | a shape, not a tally. There is no follow and nothing to notify |
 | `support` | `number` | req | community support for the *person*. No ballot exists |
+| `validated` | `number` | req | how many OTHER accounts' blueprints this handle downloaded, ran, and reported statistics for (SEAM-84), that made it onto that blueprint's own evidence layer. Never asserted by any blueprint's `EvidenceLayers`, which always reads "no verified runs" — see `lib/data/profiles.ts`'s field comment for the full argument |
 | `pinned` | `readonly PinnedRef[]` | req | at most two, which is what the grid holds |
 
 ### `PinnedRef`
@@ -486,6 +493,38 @@ the node-card half of the index.
 **slug**, and `starsFor` derives support from downloads for cards while `CommunitySignals.votes`
 stores it independently for blueprints. Are downloads and support counted per version or
 per id for a card, and are the two entities meant to share one counter table?
+
+### `PrivateCard` — a card's own `OwnedBundle`
+
+`lib/data/cards.ts:32`. Status: `MOCK`. Added 2026-08-13, the card-side counterpart to
+`OwnedBundle`'s private rows, following the same rule that file's header states: a
+private row is always a fixture claim, never a document in `content/cards/` (a card
+there is public by definition, the same way a bundle in `content/blueprints/` is).
+
+| Field | Type | Opt | Notes |
+|---|---|---|---|
+| `owner` | `string` | req | an `Author.username` |
+| `id` | `string` | req | |
+| `version` | `string` | req | |
+| `name` | `string` | req | |
+| `action` | `string` | req | |
+| `type` | `string` | req | `node-type` term id, spelled out rather than resolved through the ontology — this card is not archive-indexed |
+| `typeLabel` | `string` | req | |
+| `phases` | `{ id: string; label: string }[]` | req | |
+| `tools` | `string[]` | req | |
+| `requiresHuman` | `boolean` | req | |
+| `riskMarkers` | `string[]` | req | |
+
+No `usedIn` or `support` field: both are always `0` for a private card (`components/
+profile/load.ts`'s `privateNodeSummaryFor`), because nothing published can pin a ref the
+archive does not carry and nobody but the owner has ever seen the card to star it —
+computed at the read site rather than stored, so there is nowhere for either figure to
+drift from `0`.
+
+The two seeded rows are `mara-veil`'s, for the two nodes `incident-commander-draft`
+(`lib/data/bundles.ts`) says have no card pinned: writing a card privately and pinning it
+into a bundle's `cards/` folder are different acts, which is why the draft still does not
+resolve even though both cards exist.
 
 ### `CardVersionRecord` and `BlueprintRecord` — the query index
 
@@ -878,6 +917,7 @@ erDiagram
     AUTHOR ||--o{ NODE_CARD : "authors (card.author, string)"
     AUTHOR ||--o{ ONTOLOGY_TERM : "namespaces (id prefix, no field)"
     AUTHOR ||--o{ OWNED_BUNDLE : "owns"
+    AUTHOR ||--o{ PRIVATE_CARD : "owns (card's own OWNED_BUNDLE)"
     AUTHOR ||--o{ COMMENT : "writes"
 
     ACCOUNT ||--o{ NOTIFICATION_SETTING : "has 4"
@@ -1018,7 +1058,6 @@ erDiagram
         string displayName
         number avatarHue
         boolean validator
-        number reputation "seeded"
         string bio "optional"
     }
     ACCOUNT {
@@ -1034,6 +1073,17 @@ erDiagram
         string joinedAt
         number watchers "seeded, no follow exists"
         number support "seeded, no ballot exists"
+        number validated "seeded, does not touch any blueprint's evidence"
+    }
+    PRIVATE_CARD {
+        string owner PK "FK to AUTHOR"
+        string id PK
+        string version
+        string name
+        string action
+        string type "node-type term id, unresolved"
+        string typeLabel
+        boolean requiresHuman
     }
     OWNED_BUNDLE {
         string owner PK "also FK to AUTHOR"

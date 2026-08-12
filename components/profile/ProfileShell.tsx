@@ -53,6 +53,18 @@ export function ProfileShell({
   active: ProfileTabId;
   children: React.ReactNode;
 }) {
+  /* Summed here rather than carried on `ProfileView`: it is a fold over the same
+     `blueprints` and `cards` lists every tab already has, not a fact the loader needs to
+     know to answer any other question, and `ProfileHeader` is the one place either is
+     read. Both folds run over the PUBLIC lists only (`view.blueprints`/`view.cards`, not
+     `owned`/`ownedCards`): a private row has never been seen by anyone else, so it
+     contributes no stars by construction — `lib/data/cards.ts` seeds every private card's
+     own support at `0` for exactly this reason, so including it would add nothing anyway. */
+  const downloads = view.blueprints.reduce((n, b) => n + b.downloads, 0);
+  const stars =
+    view.blueprints.reduce((n, b) => n + b.votes, 0) +
+    view.cards.reduce((n, c) => n + c.support, 0);
+
   return (
     <div className="container-page py-10 lg:py-12">
       {view.owner && <OwnerNotice />}
@@ -61,6 +73,9 @@ export function ProfileShell({
         author={view.author}
         blueprints={view.blueprints.length}
         cards={view.cards.length}
+        downloads={downloads}
+        stars={stars}
+        validated={view.profile.validated}
         joinedAt={view.profile.joinedAt}
         watchers={view.profile.watchers}
         support={view.profile.support}
@@ -72,7 +87,7 @@ export function ProfileShell({
         active={active}
         counts={view.counts}
         owner={view.owner}
-        note={view.owner ? undefined : "Private blueprints are not listed here"}
+        note={view.owner ? undefined : "Private blueprints and cards are not listed here"}
       />
 
       {children}

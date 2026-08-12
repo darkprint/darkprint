@@ -70,6 +70,43 @@ import { CoverageStrip } from "./PhaseCoverage";
  */
 const THUMB = { width: 380, height: 132 } as const;
 
+/**
+ * The three-zone grid, exported so a row for something other than a resolved `AnyContent`
+ * (see `DraftRow` in `components/profile/OwnedBundles.tsx`) can sit in the same shelf as
+ * one of these without copying the column widths and gap by hand. One constant, one place
+ * that answers "how wide is a row's zone" — the alternative was two files agreeing on
+ * `380px_minmax(0,1fr)_236px` by coincidence.
+ */
+export const ROW_GRID =
+  "grid grid-cols-1 items-center gap-6 p-[18px] lg:grid-cols-[380px_minmax(0,1fr)_236px]";
+
+/**
+ * Zone 1's frame, exported for the same reason as `ROW_GRID`: a row with nothing to draw
+ * still owns this frame, just with a placeholder inside it instead of a `GraphThumbnail`.
+ * `border` (solid) is what a resolved drawing gets; a caller drawing a placeholder should
+ * pass `border-dashed` instead, which is the site's own register for "nothing lives here
+ * yet" (`components/profile/parts.tsx`'s `EmptyState`, `BundleDropzone`).
+ */
+export function RowThumbFrame({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cx(
+        "relative overflow-hidden rounded-md border border-line bg-blueprint-deep/40 bp-grid",
+        className,
+      )}
+      style={{ height: THUMB.height }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function ContentRow({
   item,
   forks = 0,
@@ -110,7 +147,7 @@ export function ContentRow({
            track defaults to `min-content` as its floor, and a long unbroken word in a title
            would otherwise widen the track past its share. Below `lg` the row stacks — 380 +
            236 + two 24px gaps leaves 76px for identity at 1024, which is not a column. */
-        "grid grid-cols-1 items-center gap-6 p-[18px] lg:grid-cols-[380px_minmax(0,1fr)_236px]",
+        ROW_GRID,
         className,
       )}
     >
@@ -125,17 +162,14 @@ export function ContentRow({
       <FavoriteStar id={`blueprint:${item.slug}`} className="absolute right-2 top-2 z-20" />
 
       {/* ---------- zone 1: the drawing ---------- */}
-      <div
-        className="relative overflow-hidden rounded-md border border-line bg-blueprint-deep/40 bp-grid"
-        style={{ height: THUMB.height }}
-      >
+      <RowThumbFrame>
         <GraphThumbnail
           graph={item.graph}
           nodeLabels={false}
           className="h-full w-full p-2 opacity-90 transition-transform duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:group-hover:scale-[1.03]"
           ariaLabel={`${item.title} pipeline preview`}
         />
-      </div>
+      </RowThumbFrame>
 
       {/* ---------- zone 2: who made it, and what it is for ---------- */}
       <div className="flex min-w-0 flex-col gap-1.5">

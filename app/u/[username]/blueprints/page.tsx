@@ -4,11 +4,13 @@ import { AUTHOR_LIST, getAuthor } from "@/lib/data";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { ProfileShell } from "@/components/profile/ProfileShell";
 import { OwnedBundles, type OwnedRow } from "@/components/profile/OwnedBundles";
+import { VisibilityFilter } from "@/components/profile/VisibilityFilter";
 import { EmptyState, ShelfToolbar } from "@/components/profile/parts";
 import { profileView } from "@/components/profile/load";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-63) (cited at line 64): GET /api/authors/{handle}/bundles?include=private
+// TODO(SEAM-63) (cited at line 66): GET /api/authors/{handle}/bundles?include=private
+// TODO(SEAM-64) (cited at line 99): GET /api/authors/{handle}/bundles?q&visibility&sort
 
 /* ============================================================
    /u/[username]/blueprints — the management list for the owner, the shelf for everyone else.
@@ -21,10 +23,11 @@ import { profileView } from "@/components/profile/load";
    controls and the destination of a row, and `OwnedBundles` takes `owner` for exactly
    those.
 
-   The toolbar is drawn and switched off. Nothing filters five rows and nothing sorts them,
-   and a control that swallows a click is the failure this project has twice shipped and
-   twice had to fix. `New blueprint` is the exception because its destination is real: the
-   workspace at `/build` genuinely hands back a bundle folder.
+   The toolbar carries one live control now. `Visibility` filters the fixture rows this
+   page already has in hand — no server round trip, the same client-side narrowing
+   `GalleryBrowser` and `NodeBrowser` do over their own arrays — so it earned its way off
+   `DeadControl` when the author asked for it. The find box and the sort still have
+   nowhere real to go and stay switched off, with the reason in `title`.
    ============================================================ */
 
 export const dynamicParams = false;
@@ -51,7 +54,7 @@ function DeadControl({ children }: { children: React.ReactNode }) {
     <Button
       variant="outline"
       disabled
-      title="Nothing filters or sorts this list yet: it is five rows in lib/data/bundles.ts."
+      title="Nothing sorts this list yet: it is five rows in lib/data/bundles.ts."
       className="font-mono! text-[11px]! uppercase! tracking-[0.12em]!"
     >
       {children}
@@ -86,13 +89,13 @@ export default async function Page({ params }: PageProps<"/u/[username]/blueprin
             label="Find a blueprint"
             note={
               <>
-                the search, the visibility filter and the sort are drawn and switched off.
-                This list is {owned.length} row{owned.length === 1 ? "" : "s"} and nothing
-                stores {owned.length === 1 ? "it" : "them"}.
+                the search and the sort are drawn and switched off. This list is{" "}
+                {owned.length} row{owned.length === 1 ? "" : "s"} and nothing stores{" "}
+                {owned.length === 1 ? "it" : "them"}.
               </>
             }
           >
-            <DeadControl>Visibility: all ▾</DeadControl>
+            <VisibilityFilter label="Filter blueprints by visibility" />
             <DeadControl>Sort: updated ▾</DeadControl>
             <ButtonLink href="/build" variant="outline">
               New blueprint

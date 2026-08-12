@@ -3,24 +3,31 @@ import { notFound } from "next/navigation";
 import { AUTHOR_LIST, getAuthor } from "@/lib/data";
 import { ProfileShell } from "@/components/profile/ProfileShell";
 import { OwnedCards } from "@/components/profile/OwnedCards";
+import { VisibilityFilter } from "@/components/profile/VisibilityFilter";
 import { EmptyState, ShelfToolbar } from "@/components/profile/parts";
-import { profileView } from "@/components/profile/load";
+import { nodeSummaryFor, profileView } from "@/components/profile/load";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-59): GET /api/authors/{handle}/cards
+// TODO(SEAM-59) (cited at line 48): GET /api/authors/{handle}/cards
+// TODO(SEAM-113) (cited at line 55): GET /api/authors/{handle}/cards?include=private&visibility
 
 /**
- * `/u/[username]/cards` — every node card this handle has authored.
+ * `/u/[username]/cards` — every node card this handle has authored, public and (for the
+ * owner) private together.
  *
- * Counted off `content/cards/` by the `author:` field each card carries in its own bytes,
- * which is the reason `/settings` says a rename keeps the old handle reserved: this list is
- * the join, and it is made of published documents rather than of a table somebody can edit.
+ * A public row is counted off `content/cards/` by the `author:` field each card carries in
+ * its own bytes, which is the reason `/settings` says a rename keeps the old handle
+ * reserved: this list is the join, and it is made of published documents rather than of a
+ * table somebody can edit. A private row is seeded in `lib/data/cards.ts`, the same
+ * arrangement `lib/data/bundles.ts` gives a private blueprint — see that file's docblock
+ * for the rule this follows: a fixture can only ever claim something private, never
+ * something public, because a public claim is a claim about the registry.
  *
- * Both readers get the list, which is the same arrangement the blueprints tab makes: the
- * two things an account holds are the same object at two scales, and a tile grid said the
- * opposite by cropping a card into something to browse past. What differs between owner and
- * visitor is the toolbar, the controls and the heading, so `OwnedCards` takes `owner` for
- * exactly those and the rows themselves are identical.
+ * Both readers get a list, which is the same arrangement the blueprints tab makes: the two
+ * things an account holds are the same object at two scales, and a tile grid said the
+ * opposite by cropping a card into something to browse past. What differs between owner
+ * and visitor is which rows exist to show (a visitor's is always `view.cards`, always
+ * public) and the toolbar's one live control.
  */
 export const dynamicParams = false;
 
@@ -45,7 +52,30 @@ export default async function Page({ params }: PageProps<"/u/[username]/cards">)
 
   return (
     <ProfileShell view={view} active="cards">
-      {view.cards.length === 0 ? (
+      {view.owner ? (
+        /* The owner's list can hold a private card, so it gets the same live Visibility
+           filter the blueprints tab has — no New card beside it, because nothing on this
+           site writes one, and drawing a control whose destination does not exist would
+           be the failure `New blueprint` on this page's sibling was written to avoid. */
+        <div className="mt-10 flex flex-col gap-5">
+          <ShelfToolbar
+            placeholder="Find a card…"
+            label="Find a card"
+            note={
+              <>
+                the search is drawn and switched off. This list is{" "}
+                {view.ownedCards.length} document
+                {view.ownedCards.length === 1 ? "" : "s"} and nothing stores the private
+                ones.
+              </>
+            }
+          >
+            <VisibilityFilter label="Filter cards by visibility" />
+          </ShelfToolbar>
+
+          <OwnedCards cards={view.ownedCards} owner />
+        </div>
+      ) : view.cards.length === 0 ? (
         <div className="mt-10">
           <EmptyState
             title="No node cards"
@@ -55,12 +85,10 @@ export default async function Page({ params }: PageProps<"/u/[username]/cards">)
           </EmptyState>
         </div>
       ) : (
-        /* The find box and nothing else, on both copies of this page. There is no
-           visibility filter because every card is public, and no New card because nothing
-           on this site writes one: a toolbar that mirrored the blueprints tab control for
-           control would be drawing two more affordances whose destinations do not exist.
-           Owner and visitor differ here only in whose documents these are, which is not a
-           difference the toolbar has anything to say about. */
+        /* The find box and nothing else. There is no visibility filter here — every card
+           a visitor's list can hold is public, so every option would answer with the same
+           rows, which is the same reasoning `VisibilityFilter` is withheld from a
+           visitor's Blueprints tab. */
         <div className="mt-10 flex flex-col gap-5">
           <ShelfToolbar
             placeholder="Find a card…"
@@ -75,7 +103,7 @@ export default async function Page({ params }: PageProps<"/u/[username]/cards">)
             }
           />
 
-          <OwnedCards tiles={view.cards} owner={view.owner} />
+          <OwnedCards cards={view.cards.map(nodeSummaryFor)} owner={false} />
         </div>
       )}
     </ProfileShell>

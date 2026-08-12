@@ -1,43 +1,73 @@
+"use client";
+
 import Link from "next/link";
 
 import type { OwnedBundle } from "@/lib/data/bundles";
 import type { Blueprint } from "@/lib/types";
 import { cx, prettyDate } from "@/lib/format";
+import { useQueryState } from "@/components/ui/useQueryState";
 import { Button } from "@/components/ui/Button";
 import { MetaPill } from "@/components/ui/MetaPill";
-import { SupportPill } from "./parts";
+import { CARD_SHELL } from "@/components/ui/ContentCard";
+import { ContentRow, ROW_GRID, RowThumbFrame } from "@/components/ui/ContentRow";
 
 /* ============================================================
-   Your blueprints: one list, public and private together.
+   Your blueprints: one list, public and private together, one row TEMPLATE for all of it.
 
-   The whole argument of the accounts pass is in this component's shape. There is one list,
-   one row type and one model — a blueprint belongs to an account and is public or private.
-   Some of them happen to have an upstream, and when they do the lineage renders as a line
-   under the name. There is no `Forks` section, no fork tab and no second row component,
-   because a fork is a fact about a bundle rather than a kind of bundle.
+   Published rows draw `ContentRow` itself, the same component `/blueprints` draws.
+   `ContentRow` takes `item: AnyContent`, a fully resolved archive entry with a graph and
+   an analysis, which a private row does not have and cannot fabricate — `lib/data/
+   bundles.ts`'s own header states the rule this follows from: **a seeded bundle is always
+   private**, and a public bundle is a claim about the registry a fixture cannot make true.
+   So `blueprint` presence on a row IS the test for which branch it takes, not an
+   incidental fact about today's seed data.
 
-   ── Which half of a row is counted, and which is seeded ──
-   A published row names a bundle in `content/`: its class, its digest and its date are read
-   off the archive at build time and are exactly what `/blueprints/<slug>` prints. A private
-   row is a fixture in `lib/data/bundles.ts` and nothing about it can be checked. The two
-   are not marked row by row — a wall of `◐` would drown the list — but the section head
-   says which is which, and the private rows are the ones that carry a version pill,
-   because the archive has no version to print.
+   `DraftRow` below is what a private row draws instead, and the first pass got this wrong:
+   it drew its own frame (`flex flex-col … sm:flex-row`), so the two published rows on this
+   shelf read as gallery rows and the three private ones read as a leftover list underneath
+   them — the author flagged exactly that ("not every blueprint … has changed the
+   template"). `DraftRow` now imports `ROW_GRID` and `RowThumbFrame` from `ContentRow`
+   itself rather than reconstructing them, so the two components are provably the same
+   three-zone shape (`380px_minmax(0,1fr)_236px`) and cannot drift apart the way two
+   independently-written "looks similar" rows would. What differs is only what each zone
+   is FILLED with:
 
-   ── No version pill on a published row, and that is not an omission ──
-   A published bundle is addressed by the digest of its own bytes. There is no `version`
-   field in `blueprint.yaml`, and there is no chain of releases behind one: the site's own
-   position is that history here is a list of identities rather than a chain of patches. So
-   a published row prints the digest the archive computed, a private row prints the version
-   its fixture claims, and the note at the foot of the list says why they differ.
+   - zone 1: `ContentRow` draws `GraphThumbnail`; `DraftRow` draws the frame with nothing
+     in it but a status word, because a draft's graph genuinely does not exist — there is
+     no digest to hash it into (`Draft.digest` is a sentence, not a hash, on a bundle that
+     does not resolve) and borrowing the upstream's graph for a fork would draw a topology
+     this bundle does not have. `border-dashed` on the frame is the site's existing
+     register for "nothing lives here yet" (`EmptyState`, `BundleDropzone`).
+   - zone 2: the draft's real fields — slug, Private pill, version pill, forked pill and
+     lineage line, summary, autonomy, digest (or the sentence explaining its absence),
+     edited date, drift note. Same typography as `ContentRow`'s zone 2, because a reader
+     comparing rows down a shelf should not have to recalibrate type scale mid-list.
+   - zone 3: `ContentRow` draws the coverage strip and the date/forks/resolved line;
+     `DraftRow` has no coverage to strip (no analysis) and draws the owner controls
+     (`Publish`, overflow) and the "only you can see this" / "will not publish" caption in
+     the same slot instead — the same fields the pre-template row put beside a private
+     entry, just aligned to the shared column rather than to a bespoke one.
 
-   ── One list for both readers ──
-   A visitor gets this list too, on the author's instruction, rather than the tile grid it
-   used to draw. A tile is a browsing surface: it crops the summary, drops the digest and
-   the drift note, and puts three bundles on a row so the eye reads across a set instead of
-   down a shelf. What a profile is for is the shelf. So the rows are identical for both
-   readers and `owner` decides the three things that genuinely differ: where a row points,
-   whether the visibility pill means anything, and whether there are controls at all.
+   A visitor never sees a `DraftRow`: every row `/u/[username]/blueprints` builds for a
+   visitor comes from `allBlueprints()` and always carries a `blueprint`
+   (`components/profile/load.ts`), so `owner` is true on every `DraftRow` this app renders
+   today. The prop stays rather than being inlined to `true`, because "a private row is
+   owner-only" is a fact about the data, not about this component, and asserting it here
+   would be asserting something this file cannot check.
+
+   ── Violet, unconditionally, on the whole row ──
+   `Private` took violet on the author's instruction (`app/globals.css`'s accent comment
+   carries the reasoning). Every `DraftRow` is a private row — the file docblock above
+   already establishes that — so the tint is not an `isPrivate` branch inside this
+   component, it is simply what `DraftRow` always draws.
+
+   ── A client component now, for the visibility filter ──
+   `useQueryState` reads the same `?visibility=` key `VisibilityFilter` writes, with no
+   prop between them — the address bar is the connection, the same shape `GalleryBrowser`
+   and `NodeBrowser` use for their own filters. Filtering runs on both branches: a
+   visitor's rows are always `public`, so the filter is inert there rather than absent,
+   which is simpler than threading `owner` through to suppress it and no less honest — an
+   inert filter still answers correctly, it just never has a second answer to give.
    ============================================================ */
 
 /** One row, with its archive half resolved by the caller when there is one. */
@@ -53,36 +83,51 @@ const DRIFT_TONE = {
   blocked: "text-amber",
 } as const;
 
-function Row({ row, owner }: { row: OwnedRow; owner: boolean }) {
-  const { bundle, blueprint } = row;
+/** A private, unpublished bundle: fixture data only, so it cannot become a `ContentRow`. */
+function DraftRow({ row, owner }: { row: OwnedRow; owner: boolean }) {
+  const { bundle } = row;
   const draft = bundle.draft;
-  const isPrivate = bundle.visibility === "private";
-
-  const summary = blueprint?.summary ?? draft?.summary ?? "";
-  const autonomy = blueprint?.autonomy.label ?? draft?.autonomy ?? "";
-  const digest = blueprint === undefined ? draft?.digest : `${blueprint.digest.slice(0, 13)}…`;
-  const edited = prettyDate(blueprint?.updatedAt ?? draft?.editedAt ?? "");
+  const blocked = bundle.drift?.tone === "blocked";
 
   return (
-    <div className="flex flex-col gap-5 border-b border-line p-5 sm:flex-row sm:items-start">
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
+    <article
+      className={cx(
+        CARD_SHELL,
+        ROW_GRID,
+        /* `!` for the reason `NodeCardSummary` states in full: `cx` does not de-duplicate
+           or order classes by specificity, so overriding `CARD_SHELL`'s own
+           `border-line` needs `!important` rather than append-and-hope. */
+        "border-violet/60! hoverable:hover:border-violet!",
+      )}
+    >
+      {/* ---------- zone 1: no drawing to draw ----------
+          Dashed rather than `ContentRow`'s solid frame: the site's own register for
+          "nothing lives here yet" rather than a graph this bundle cannot produce. */}
+      <RowThumbFrame className="flex items-center justify-center border-dashed">
+        <span className="px-4 text-center font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
+          {blocked ? "does not resolve" : "no graph published"}
+        </span>
+      </RowThumbFrame>
+
+      {/* ---------- zone 2: what the draft claims about itself ---------- */}
+      <div className="flex min-w-0 flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* The owner's row points at the owner's own view of the bundle, published or
-              not. A published one also has a public page, and the owner view links to it
-              from its aside rather than the list offering two destinations for one name.
-              A visitor has no owner view to go to: `/u/<handle>/<slug>` is prerendered
-              only for the bundles the account fixture holds, so a visitor row that pointed
-              there would 404 on every profile but one. */}
+          {/* The owner's row points at the owner's own view of the bundle. A visitor never
+              reaches a `DraftRow` at all — every bundle a visitor's list holds resolves to
+              a `blueprint` and takes the `ContentRow` branch above instead. */}
           <Link
-            href={owner ? `/u/${bundle.owner}/${bundle.slug}` : `/blueprints/${bundle.slug}`}
+            href={`/u/${bundle.owner}/${bundle.slug}`}
             className="font-display text-lg font-semibold text-cyan transition-colors hoverable:hover:text-cyan-bright"
           >
             {bundle.slug}
           </Link>
-          {/* Only on the owner's list, where it tells two kinds of row apart. Every row a
-              visitor can see is public, so the pill would be the same word on every one of
-              them, which is a legend for a distinction that is not being drawn. */}
-          {owner && <MetaPill tone="surface">{isPrivate ? "Private" : "Public"}</MetaPill>}
+          {/* Not `MetaPill`: that component's own docblock is explicit that it keeps to
+              two tones "because a row of five differently-lit pills stops ranking
+              anything," and widening it to a third would break that rule for every
+              other caller to buy this one row a colour. Same shape, spelled out. */}
+          <span className="shrink-0 rounded-full border border-violet/60 px-2.5 py-0.5 font-mono text-[11px] text-violet">
+            Private
+          </span>
           {draft !== undefined && <MetaPill>{draft.version}</MetaPill>}
           {bundle.forkedFrom !== undefined && <MetaPill>forked</MetaPill>}
         </div>
@@ -103,41 +148,37 @@ function Row({ row, owner }: { row: OwnedRow; owner: boolean }) {
           </p>
         )}
 
-        <p className="max-w-[52ch] text-sm leading-relaxed text-muted">{summary}</p>
+        <p className="line-clamp-3 text-sm leading-snug text-muted">{draft?.summary ?? ""}</p>
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 font-mono text-[11px]">
-          <span className="text-muted">{autonomy}</span>
-          <span className="text-dim">{digest}</span>
-          <span className="text-dim">edited {edited}</span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-0.5 font-mono text-[11px] text-dim">
+          <span className="text-muted">{draft?.autonomy ?? ""}</span>
+          <span>{draft?.digest}</span>
+          <span>edited {prettyDate(draft?.editedAt ?? "")}</span>
           {bundle.drift !== undefined && (
             <span className={DRIFT_TONE[bundle.drift.tone]}>{bundle.drift.note}</span>
           )}
-          {blueprint !== undefined && <SupportPill count={blueprint.votes} />}
         </div>
       </div>
 
-      {/* No controls column at all for a visitor, rather than a disabled one: `Publish`
-          and the overflow menu are the owner's affordances, and drawing them switched off
-          on somebody else's shelf would offer a reader actions over a bundle that is not
-          theirs. The honesty markers are for controls that will exist, not for controls
-          that will never belong to this reader. */}
+      {/* ---------- zone 3: no coverage to strip, the owner's controls instead ----------
+          A private row is never rendered for a visitor at all (see the file docblock), so
+          unlike the pre-template row this branch does not need an `owner` guard of its
+          own — it stays on the prop so the fact stays checkable rather than assumed. */}
       {owner && (
-        <div className="flex shrink-0 flex-col items-start gap-2 sm:w-[200px] sm:items-end">
+        <div className="flex flex-col items-start gap-2 sm:items-end">
           <div className="flex items-center gap-2">
-            {isPrivate && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled
-                title={
-                  bundle.drift?.tone === "blocked"
-                    ? "This bundle does not resolve, so it could not publish even with a registry behind it."
-                    : "Nothing publishes yet: there is no account and no registry write path."
-                }
-              >
-                Publish
-              </Button>
-            )}
+            <Button
+              size="sm"
+              variant="outline"
+              disabled
+              title={
+                blocked
+                  ? "This bundle does not resolve, so it could not publish even with a registry behind it."
+                  : "Nothing publishes yet: there is no account and no registry write path."
+              }
+            >
+              Publish
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -149,21 +190,17 @@ function Row({ row, owner }: { row: OwnedRow; owner: boolean }) {
               <span aria-hidden>⋯</span>
             </Button>
           </div>
-          {isPrivate && (
-            <span
-              className={cx(
-                "font-mono text-[11px] sm:text-right",
-                bundle.drift?.tone === "blocked" ? "text-amber" : "text-dim",
-              )}
-            >
-              {bundle.drift?.tone === "blocked"
-                ? "will not publish until it resolves"
-                : "only you can see this"}
-            </span>
-          )}
+          <span
+            className={cx(
+              "font-mono text-[11px] sm:text-right",
+              blocked ? "text-amber" : "text-dim",
+            )}
+          >
+            {blocked ? "will not publish until it resolves" : "only you can see this"}
+          </span>
         </div>
       )}
-    </div>
+    </article>
   );
 }
 
@@ -184,20 +221,45 @@ export function OwnedBundles({
   const publicCount = rows.filter((r) => r.bundle.visibility === "public").length;
   const privateCount = rows.length - publicCount;
 
+  /* The same key `VisibilityFilter` writes, read independently — see the file docblock.
+     `visible` narrows the shelf; `publicCount`/`privateCount` above still describe the
+     full list, because the header states a fact about the account and a filter deciding
+     what's on screen should not also rewrite what the account holds. */
+  const { params } = useQueryState();
+  const visibility = params.get("visibility");
+  const visible =
+    visibility === null ? rows : rows.filter((row) => row.bundle.visibility === visibility);
+
   return (
-    <section className="overflow-hidden rounded-xl border border-line bg-surface">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface-2 px-5 py-4">
+    <section className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="label-lead">{owner ? "Your blueprints" : "Published blueprints"}</h2>
         <span className="font-mono text-[11px] text-dim">
           {owner ? `${publicCount} public · ${privateCount} private` : `${rows.length} in the registry`}
         </span>
       </div>
 
-      {rows.map((row) => (
-        <Row key={row.bundle.slug} row={row} owner={owner} />
-      ))}
+      {visible.length === 0 && (
+        <p className="rounded-lg border border-dashed border-line bg-surface/40 px-5 py-8 text-center font-mono text-[13px] text-dim">
+          No {visibility} rows on this shelf.
+        </p>
+      )}
 
-      <div className="flex flex-col gap-4 bg-surface-2/50 px-5 py-4 sm:flex-row sm:gap-5">
+      <div className="flex flex-col gap-3">
+        {visible.map((row) =>
+          row.blueprint !== undefined ? (
+            <ContentRow
+              key={row.bundle.slug}
+              item={row.blueprint}
+              lineage={row.bundle.forkedFrom}
+            />
+          ) : (
+            <DraftRow key={row.bundle.slug} row={row} owner={owner} />
+          ),
+        )}
+      </div>
+
+      <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface-2/50 px-5 py-4 sm:flex-row sm:gap-5">
         <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
           The model
         </span>
@@ -215,9 +277,9 @@ export function OwnedBundles({
               falsehood on anybody else's. */}
           {owner ? (
             <p>
-              The public rows are read off the archive, digest and all; the star figure
-              beside one is seeded community support, because there is no ballot. The
-              private rows are seeded whole, in{" "}
+              The public rows are the same row{" "}
+              <span className="font-mono text-fg">/blueprints</span> draws, resolved off
+              the archive. The private rows are seeded whole, in{" "}
               <span className="font-mono text-fg">lib/data/bundles.ts</span>, and nothing
               stores them: they carry a version because a fixture claims one, where a
               published bundle is addressed by the digest of its own bytes.
@@ -225,9 +287,9 @@ export function OwnedBundles({
           ) : (
             <p>
               Every row is a bundle in <span className="font-mono text-fg">content/</span>,
-              read off the archive at build time, digest and all. Private bundles are never
-              listed here and no count on this page includes one. The star figure beside a
-              row is seeded community support, because there is no ballot.
+              read off the archive at build time and drawn with the same row{" "}
+              <span className="font-mono text-fg">/blueprints</span> uses. Private bundles
+              are never listed here and no count on this page includes one.
             </p>
           )}
         </div>

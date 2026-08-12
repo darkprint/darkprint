@@ -1,154 +1,101 @@
-import Link from "next/link";
+"use client";
 
-import { HUMAN_PRESENCE_MARK } from "@/lib/format";
-import { nodeHref } from "@/lib/href";
-import { Button } from "@/components/ui/Button";
-import { MetaPill } from "@/components/ui/MetaPill";
-import type { NodeTile } from "./load";
-import { SupportPill } from "./parts";
+import { NodeCardSummary, type NodeSummary } from "@/components/nodes/NodeCardSummary";
+import { useQueryState } from "@/components/ui/useQueryState";
 
 /* ============================================================
-   Your cards: the same panel `OwnedBundles` draws, over the other thing an account holds.
+   Your cards: the same grid `/nodes` draws, over the other thing an account holds.
 
-   The two owner lists on this profile are the same object at two scales, so they are the
-   same shape: one bordered panel, one row per item, a header that says how many and a note
-   at the foot that says which half of a row is counted and which is seeded. A shelf of
-   tiles said the opposite, that a card is something you browse rather than something you
-   own, which is exactly the reading the blueprints tab spent this pass correcting.
+   This used to be its own row list, on the argument that a shelf of tiles reads as "a card
+   is something you browse" rather than "something you own." That argument held only as
+   long as a card had no private half — true when this was written, false now that the
+   author asked for private cards to exist. `lib/data/cards.ts` seeds them the same way
+   `lib/data/bundles.ts` seeds a private bundle, and `NodeCardSummary` itself grew a
+   `visibility` field for exactly this row, so one tile still draws both kinds: a public
+   card takes its usual appearance, a private one gets the violet border and pill that
+   file's own docblock explains.
 
-   ── What this list is made of ──
-   Every row is a document in `content/cards/`, joined to this handle by the `author:`
-   field inside its own bytes. There is no private half: a card is in the archive or it
-   does not exist, which is why the header counts once where the blueprint header counts
-   public and private apart. `/settings` says a rename keeps the old handle reserved for
-   this reason, the join is the published document rather than a table somebody can edit.
+   `cards` arrives pre-resolved as `NodeSummary[]` — the caller (`components/profile/
+   load.ts`) is where a `CardVersionRecord` and a `PrivateCard` fixture both become the one
+   shape this tile draws, so this file does not need to know that two different sources
+   exist behind the list, only that every entry in it says `visibility` for itself.
 
-   ── The one control, and why it is switched off ──
-   Nothing on this site writes a card. `/build` composes a bundle out of cards that already
-   exist, so a New card button would be the first control on the profile whose destination
-   does not exist at all. The row keeps the overflow affordance the blueprint row has, drawn
-   and disabled with the reason in its title, and that is the whole owner surface. A visitor
-   gets no controls column, because these are the owner's affordances over the owner's
-   documents and drawing them switched off on somebody else's shelf offers a reader actions
-   that will never be theirs.
+   ── What is still lost, from the pre-tile row ──
+   The row's owner-only overflow control (`⋯`, disabled, "nothing edits a card") and the
+   per-row `usedIn` phrasing ("no blueprint pins it yet") do not have a slot on the tile.
+   The control was never wired to anything — `/build` composes a bundle out of existing
+   cards, so nothing here was ever going to write one — and `usedIn` is still on the tile as
+   the plain "used in N blueprints" line `/nodes` itself prints (always 0 for a private
+   card, since nothing published can pin a ref the archive does not carry).
 
-   ── Why the name is copper and the blueprint's is cyan ──
-   The author's instruction was cyan for a blueprint and amber for a card, and the second
-   half lands on `--color-copper-line` rather than on `--color-amber`. That is the same
-   distinction with the site's own token: `app/globals.css` spends amber on exactly two
-   claims, `ComingSoonBadge` ("not built yet") and `.route-box` ("this box leaves the
-   page"), and it declares the copper register for the node card in as many words, because
-   painting the most literally-built thing on the site in the not-built-yet colour is the
-   one lie the figure cannot afford. Copper is orange where amber is gold: the warm-versus-
-   cyan reading the instruction asks for, kept off a reserved word.
+   ── The visibility filter ──
+   Same mechanism as `OwnedBundles`: `useQueryState` reads `?visibility=`, written by the
+   same `VisibilityFilter` component, with no prop passed between them.
    ============================================================ */
 
-/** One authored card, as its owner's row rather than as a gallery tile. */
-function Row({ tile, owner }: { tile: NodeTile; owner: boolean }) {
-  const { record, typeLabel, usedIn, support } = tile;
-  const { card } = record;
-
-  return (
-    <div className="flex flex-col gap-5 border-b border-line p-5 sm:flex-row sm:items-start">
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Link
-            href={nodeHref(record.id)}
-            className="font-display text-lg font-semibold text-copper-line transition-colors hoverable:hover:text-copper-ink"
-          >
-            {card.name}
-          </Link>
-          <MetaPill tone="surface">{typeLabel}</MetaPill>
-          <MetaPill>v{record.version}</MetaPill>
-          {/* Violet, from `HUMAN_PRESENCE_MARK`, like every other row on the site that says
-              where a person acts. Doc 2 §1.1: an author's own shelf is the last place a
-              human node should be marked in the colour reserved for defects. */}
-          {card.requiresHuman && (
-            <span className={`font-mono text-[11px] ${HUMAN_PRESENCE_MARK.className}`}>
-              {HUMAN_PRESENCE_MARK.glyph} human in the loop
-            </span>
-          )}
-        </div>
-
-        <p className="max-w-[52ch] text-sm leading-relaxed text-muted">{card.action}</p>
-
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 font-mono text-[11px]">
-          <span className="text-dim">{record.id}</span>
-          {/* The figure the promotion story would read, and the only one on this row that
-              is a fact about the archive rather than about the card: how many blueprints
-              pin this exact version. */}
-          <span className={usedIn > 0 ? "text-emerald" : "text-dim"}>
-            {usedIn > 0
-              ? `used in ${usedIn} blueprint${usedIn === 1 ? "" : "s"}`
-              : "no blueprint pins it yet"}
-          </span>
-          <SupportPill count={support} />
-        </div>
-      </div>
-
-      {/* One control and no caption under it. The blueprint row captions its private rows
-          because a private row is the one thing on that list a reader cannot check; every
-          row here is a published document, so a per-row note would be the same eight words
-          eight times over a fact the panel's own footer already states once. */}
-      {owner && (
-        <div className="flex shrink-0 flex-col items-start gap-2 sm:w-[200px] sm:items-end">
-          <Button
-            size="sm"
-            variant="outline"
-            disabled
-            aria-label="More actions"
-            title="Nothing here edits a card. A card is a document in content/cards/, and this build has no write path to one."
-            className="w-8 px-0!"
-          >
-            <span aria-hidden>⋯</span>
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function OwnedCards({
-  tiles,
+  cards,
   owner,
 }: {
-  tiles: readonly NodeTile[];
+  cards: readonly NodeSummary[];
   /** Whether the seeded signed-in handle is the one whose shelf this is. */
   owner: boolean;
 }) {
-  const inUse = tiles.filter((tile) => tile.usedIn > 0).length;
+  const publicCount = cards.filter((c) => c.visibility !== "private").length;
+  const privateCount = cards.length - publicCount;
+  const inUse = cards.filter((c) => c.usedIn > 0).length;
+
+  const { params } = useQueryState();
+  const visibility = params.get("visibility");
+  const visible =
+    visibility === null
+      ? cards
+      : cards.filter((c) => (c.visibility ?? "public") === visibility);
 
   return (
-    <section className="overflow-hidden rounded-xl border border-line bg-surface">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface-2 px-5 py-4">
+    <section className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="label-lead">{owner ? "Your cards" : "Published cards"}</h2>
         <span className="font-mono text-[11px] text-dim">
-          {tiles.length} published · {inUse} in use
+          {owner
+            ? `${publicCount} public · ${privateCount} private`
+            : `${cards.length} published · ${inUse} in use`}
         </span>
       </div>
 
-      {tiles.map((tile) => (
-        <Row key={tile.record.ref} tile={tile} owner={owner} />
-      ))}
+      {visible.length === 0 && (
+        <p className="rounded-lg border border-dashed border-line bg-surface/40 px-5 py-8 text-center font-mono text-[13px] text-dim">
+          No {visibility} cards on this shelf.
+        </p>
+      )}
 
-      <div className="flex flex-col gap-4 bg-surface-2/50 px-5 py-4 sm:flex-row sm:gap-5">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {visible.map((card) => (
+          <NodeCardSummary key={card.ref} node={card} />
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface-2/50 px-5 py-4 sm:flex-row sm:gap-5">
         <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
           The model
         </span>
         <div className="flex flex-col gap-2 text-[13px] leading-relaxed text-muted">
           <p>
-            A card is a versioned document, not a record in an account. Every row here is a
-            file in <span className="font-mono text-fg">content/cards/</span> that names
-            this handle in its own <span className="font-mono text-fg">author</span> field,
-            which is why there is no private half to this list and no draft: a card is in
-            the archive or it is nowhere.
+            A card belongs to an account and is public or private, the same split a
+            blueprint has. A public one is a file in{" "}
+            <span className="font-mono text-fg">content/cards/</span> that names this
+            handle in its own <span className="font-mono text-fg">author</span> field; a
+            private one is seeded whole, in{" "}
+            <span className="font-mono text-fg">lib/data/cards.ts</span>, and nothing
+            stores it, the same arrangement a private blueprint has in{" "}
+            <span className="font-mono text-fg">lib/data/bundles.ts</span>.
           </p>
           <p>
-            <span className="text-emerald">✓ counted</span> covers the name, the type, the
-            version and the blueprints that pin it, all read off the archive at build time.
-            The star figure beside a row is{" "}
-            <span className="text-amber">◐ seeded</span> community support, because there is
-            no ballot behind it.
+            <span className="text-emerald">✓ counted</span>{" "}covers a public tile&apos;s
+            name, type, version and the blueprints that pin it, all read off the archive
+            at build time. A private tile has no archive row to count: its fields are the
+            fixture&apos;s own, unpinned and unpublished, which is why it always reads
+            &ldquo;used in 0 blueprints&rdquo;.
           </p>
         </div>
       </div>

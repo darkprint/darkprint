@@ -5,16 +5,27 @@ import { Badge } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-57) (cited at line 111): POST /api/authors/{handle}/watch, DELETE …
+// TODO(SEAM-56) (cited at line 135): GET /api/authors/{handle}/signals
+// TODO(SEAM-57) (cited at line 170): POST /api/authors/{handle}/watch, DELETE …
 
 /* ============================================================
    Identity first, then what this account holds, then what you can do about it.
 
-   Three things arrived here with the accounts pass, and two of them are controls that do
-   not work. That is stated rather than styled around:
+   Four things arrived here with the accounts pass, and three of them are seeded or
+   switched off. That is stated rather than styled around:
 
    - the **summary line** counts what the handle has authored. Counted off `content/`, so
      it carries no marker and needs none;
+   - **preview signals** (downloads, stars, validated) used to be their own amber panel
+     below the fold, on `/u/[username]` only. The author asked for it folded into this
+     header instead — the account handle's own panel — so it now renders on every profile
+     tab (`ProfileShell` mounts this header once, above the tab strip) rather than only the
+     overview. `◐ seeded` and the disclaimer travel with the panel unchanged: moving a
+     figure's home does not get to also quiet its disclosure. `reputation` stood here once
+     and was dropped rather than folded in — nothing on the site ever explained what it
+     measured or how it moved, where `stars` and `validated` are each a sum or a count over
+     something else the account holds, so the doc can say in one sentence what the number
+     is;
    - **community support** is the seeded figure `FavoriteStar` prints beside a blueprint,
      in the same bordered pill with the same amber `◐`. There is no ballot;
    - **Watch** would need somewhere to write a follow, and there is nowhere. It renders
@@ -25,12 +36,30 @@ import { Button, ButtonLink } from "@/components/ui/Button";
    `Edit profile` opens `/settings` and `New blueprint` opens the workspace at `/build`,
    which really does hand back a bundle. Neither claims to write to an account, and the
    page says above them that nothing does.
+
+   ── `stars` and `validated`, and why neither contradicts `EvidenceLayers` ──
+   `stars` is `blueprints.reduce(votes) + cards.reduce(support)` (`ProfileShell.tsx`) — a
+   fold over figures that are ALREADY seeded per item, so this is arithmetic on existing
+   fiction rather than a new one.
+
+   `validated` is the harder one: "blueprints of OTHER accounts this one downloaded, ran,
+   and reported statistics for" is a claim about runs, and every blueprint page's `Run
+   evidence` panel (`components/blueprint/EvidenceLayers.tsx`) says "no verified runs" and
+   means it — there is no runner anywhere in this repository (SEAM-86). The two do not
+   disagree: `validated` is seeded in `lib/data/profiles.ts`, under the same `◐` marker as
+   every figure on this line, and it states what an account WOULD have accrued through the
+   run-report pipeline SEAM-84 already declares the shape of and nothing implements. It
+   does not add a run to any blueprint's evidence panel, and it must never be read as
+   having done so.
    ============================================================ */
 
 export function ProfileHeader({
   author,
   blueprints,
   cards,
+  downloads,
+  stars,
+  validated,
   joinedAt,
   watchers,
   support,
@@ -40,6 +69,12 @@ export function ProfileHeader({
   /** Counted off the archive by the caller. */
   blueprints: number;
   cards: number;
+  /** Summed off the caller's own blueprint list; seeded per blueprint, not per account. */
+  downloads: number;
+  /** `blueprints.votes + cards.support`, summed by the caller; seeded per item. */
+  stars: number;
+  /** Seeded per account in `lib/data/profiles.ts`; see the file docblock. */
+  validated: number;
   /** ISO date, rendered at month resolution. */
   joinedAt: string;
   watchers: number;
@@ -95,6 +130,26 @@ export function ProfileHeader({
             <span className="text-fg">{blueprints}</span> blueprint
             {blueprints === 1 ? "" : "s"} · <span className="text-fg">{cards}</span> card
             {cards === 1 ? "" : "s"}
+          </p>
+
+          {/* Preview signals, folded in from the panel that used to sit below the fold on
+              the overview tab alone. `◐` and the amber tone carry the same claim the
+              standalone panel made — illustrative, not measured — onto a line that now
+              shares a paragraph with the counted one above it rather than a bordered card
+              of its own; the marker is what tells the two apart, not the container. */}
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-dim">
+            <span className="text-amber" aria-hidden>
+              ◐
+            </span>
+            <span className="text-fg">{compact(downloads)}</span> downloads
+            <span className="text-faint">·</span>
+            <span className="text-fg">{compact(stars)}</span> stars
+            <span className="text-faint">·</span>
+            <span className="text-fg">{compact(validated)}</span> validated
+          </p>
+          <p className="max-w-xl text-[11px] leading-relaxed text-dim">
+            Illustrative index rows. No telemetry, ballot, or verified run report is
+            connected.
           </p>
         </div>
 

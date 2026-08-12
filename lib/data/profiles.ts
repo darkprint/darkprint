@@ -43,6 +43,18 @@ export interface Profile {
    * a blueprint. There is no ballot; doc 1 §8 keeps that limit on every surface it shows.
    */
   support: number;
+  /**
+   * How many OTHER accounts' blueprints this handle downloaded, ran, and submitted a run
+   * report for (SEAM-84) that made it onto that blueprint's own evidence layer.
+   *
+   * Seeded, same limit as `support` and `watchers`: SEAM-84 has no submission form and no
+   * endpoint, so nothing here was ever actually run. `EvidenceLayers`' "no verified runs"
+   * state is the truth on every blueprint page regardless of what this figure claims about
+   * an account — the two are not in tension, because this is what an account WOULD have
+   * accrued through a run pipeline that does not exist yet, said with the same `◐` marker
+   * as everything else on this account panel.
+   */
+  validated: number;
   /** At most two, which is what the two-column grid holds. */
   pinned: readonly PinnedRef[];
 }
@@ -58,6 +70,7 @@ export const PROFILES: Record<string, Profile> = {
     joinedAt: "2026-02-11",
     watchers: 12,
     support: 214,
+    validated: 6,
     pinned: [
       { kind: "blueprint", slug: "adversarial-consensus-line" },
       { kind: "node", ref: "weighted-vote@1.0.0" },
@@ -67,6 +80,7 @@ export const PROFILES: Record<string, Profile> = {
     joinedAt: "2026-01-19",
     watchers: 3,
     support: 128,
+    validated: 9,
     pinned: [
       { kind: "blueprint", slug: "guarded-merge-bot" },
       { kind: "node", ref: "acceptance-verifier@2.0.0" },
@@ -76,6 +90,7 @@ export const PROFILES: Record<string, Profile> = {
     joinedAt: "2026-03-02",
     watchers: 6,
     support: 97,
+    validated: 2,
     pinned: [
       { kind: "blueprint", slug: "checkpoint-resume-runner" },
       { kind: "node", ref: "bounded-retry@2.0.0" },
@@ -85,6 +100,7 @@ export const PROFILES: Record<string, Profile> = {
     joinedAt: "2026-02-27",
     watchers: 9,
     support: 176,
+    validated: 4,
     pinned: [
       { kind: "blueprint", slug: "starter-software-factory" },
       { kind: "node", ref: "spec-planner@1.0.0" },
@@ -94,6 +110,7 @@ export const PROFILES: Record<string, Profile> = {
     joinedAt: "2026-01-08",
     watchers: 5,
     support: 143,
+    validated: 3,
     pinned: [
       { kind: "blueprint", slug: "schema-forge-etl" },
       { kind: "node", ref: "schema-gate@1.1.0" },
@@ -103,6 +120,7 @@ export const PROFILES: Record<string, Profile> = {
     joinedAt: "2026-04-16",
     watchers: 2,
     support: 61,
+    validated: 1,
     pinned: [
       { kind: "blueprint", slug: "frontline-triage" },
       { kind: "node", ref: "intent-router@2.0.0" },
@@ -113,6 +131,12 @@ export const PROFILES: Record<string, Profile> = {
 /** The row for a handle, or an empty profile — a builder nobody has seeded yet. */
 export function profileFor(username: string): Profile {
   return (
-    PROFILES[username] ?? { joinedAt: "2026-01-01", watchers: 0, support: 0, pinned: [] }
+    PROFILES[username] ?? {
+      joinedAt: "2026-01-01",
+      watchers: 0,
+      support: 0,
+      validated: 0,
+      pinned: [],
+    }
   );
 }

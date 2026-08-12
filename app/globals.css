@@ -94,7 +94,18 @@
   /* --- Accents ---
      Each accent carries one meaning and the site does not spend it elsewhere:
      cyan is interactive, violet is where a person acts, emerald is a figure
-     read off the engine, signal is a defect. */
+     read off the engine, signal is a defect.
+
+     Violet took a second job on 2026-08-13: `Private`, on a bundle row
+     (`DraftRow`) and a node-card tile (`NodeCardSummary`) alike — the pill's
+     text and, on the card that owns it, the tile's own border. `--color-signal`
+     was the alternative and it was rejected: private is a fact about who may
+     read something, not a defect in it, and painting an owner's own row in the
+     alarm colour would say the opposite. Violet was already "where a person
+     acts" and visibility is a decision a person made, so the second meaning
+     extends the first rather than colliding with it — `HUMAN_PRESENCE_MARK`
+     keeps its own violet unchanged; nothing that was `⏸ human in the loop`
+     before this repaints. */
   --color-cyan: #38bdf8;
   --color-cyan-bright: #7dd3fc;
   /* Amber is reserved for exactly two jobs and nothing else: `ComingSoonBadge`

@@ -176,7 +176,6 @@ export interface Author {
   avatarHue: number;
   /** Validator badge — their votes carry more weight. */
   validator: boolean;
-  reputation: number;
   bio?: string;
 }
 

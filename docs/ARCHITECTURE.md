@@ -15,7 +15,7 @@ contract seams](architecture/seams.md), the matching `TODO(SEAM-xx)` comment in 
 the same change. This document does not get updated speculatively or on a schedule — see
 [12 · Maintenance protocol](#12-maintenance-protocol-and-revision-log).
 
-**Last verified against commit `f32267cd6181b36fde5a91600b2afc8d027f231f` on 2026-08-12.**
+**Last verified against commit `d8f1b6a154bed25788f7bf899ce291eec77c5676` on 2026-08-13.**
 
 **Stack summary.** Next.js 16.2.11 (App Router, Turbopack, no Pages Router code), React
 19.2.4, TypeScript 5 (`tsc --noEmit` as the type gate), Tailwind CSS v4 (CSS-first
@@ -544,7 +544,7 @@ Recorded in the code as intentional, not accidental:
   `lib/data/**` file states outright, in its own header comment, that it stands in for a
   table that doesn't exist yet (e.g. `lib/data/community.ts:1-9`).
 - **The read/write split (`docs/architecture/seams.md` §5.2 in Phase 2A's own analysis)
-  means the read plane — 22 of 112 seams — could be built first, behind the same URLs the
+  means the read plane — 22 of 113 seams — could be built first, behind the same URLs the
   pages already consume, without moving a single page component's data shape.**
 
 ### 11.2 · Open `TBD:` questions
@@ -619,3 +619,4 @@ next revision records the divergence; nobody edits the code to match a stale doc
 | Date | Commit | Sections touched |
 |---|---|---|
 | 2026-08-12 | `f32267c` | Initial publication — all sections (0-12), assembled from Phase 2A's `ROUTES.md`, `ENTITIES.md`, `SEAMS.md` (carried over unchanged into §2-4, §8) and a fresh code-derived pass for §1, §5-7, §9-11 |
+| 2026-08-13 | `d8f1b6a` | §4 sitemap (call sites for `ContentRow` / `NodeCardSummary`), §8 seams (SEAM-56 rewritten for stars/validated, SEAM-59 split, SEAM-113 added), §2 glossary and §3 concept model (`stars`, `validated`, card visibility) |

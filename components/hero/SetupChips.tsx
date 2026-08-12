@@ -30,12 +30,25 @@ import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
    row of chips in the top-left corner. 2b makes them the first thing on the page: a band
    across the top, two cells split by a hairline.
 
-   Across the top of the PAGE'S COLUMN, not of the viewport. The mock draws it full-bleed and
-   `Hero` mounted it that way first; the author read it and asked for the margins back — the
-   band starts where the nav's wordmark starts and ends where its Publish button ends, which
-   is `container-page` on all three. `Hero` owns that wrapper, so nothing in here knows how
-   wide the band is, which is why the cells' `px-10` is padding inside a bounded box rather
-   than a gutter holding content off a screen edge.
+   ── The SURFACE reaches the viewport edge; the TEXT stays where it was ──
+   Two rounds of feedback on this, and they are not the same complaint answered twice.
+
+   Round one: the mock drew the band full-bleed and `Hero` mounted it that way first. The
+   author read it and asked for the margins back — "the boxes should start on the left
+   margin and end on the right margin" — because the mock had no site header above it to
+   disagree with a full-bleed edge, and here the band's TEXT ran past where the nav's
+   wordmark and Publish button sat. That put the whole band, surface and text together,
+   inside `container-page`.
+
+   Round two reversed only half of that: "the left margin of the left box should reach the
+   left margin of the screen [and the right box the right]" — the text position was fine,
+   the SURFACE (the border and the background) was not, sitting inside the page margins
+   like a card rather than reading as a band. So the band is now two nested boxes rather
+   than one: an outer div with no width cap carries the border and the background all the
+   way to both viewport edges, and a `container-page` div inside it carries the actual grid
+   of cells, unchanged from round one. `Hero`'s wrapper around this component dropped its
+   own `container-page`, because the cap now lives in here instead of at the mount site —
+   nothing outside this file constrains the band's width any more.
 
    The claim that makes is stronger than a side column's, and it is the decision to weigh
    rather than the layout. Above the name, two commands say this site is something you
@@ -47,7 +60,10 @@ import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
    The divider is a 1px GRID TRACK filled with `--color-line`, not a border on either cell.
    A border belongs to the box that draws it, and two boxes each drawing their own edge is
    two panels butted together; a track between them belongs to neither, which is what makes
-   the pair read as one surface with a seam.
+   the pair read as one surface with a seam. The divider sits at the CENTRE of the inner
+   `container-page` grid, which is also the viewport centre (the outer div is unconstrained
+   and `container-page` itself centres via `margin-inline: auto`), so it lines up with
+   round one's divider position exactly — nothing about where the hairline falls moved.
    ============================================================ */
 
 /**
@@ -108,7 +124,17 @@ const SETUPS = [
 
 export function SetupChips() {
   return (
-    /* `grid-cols-[1fr_1px_1fr]` is written for exactly two cells and one divider, which is
+    /* The band is the grid, and it carries no width cap: the border, the background AND the
+       cells themselves reach both viewport edges.
+
+       The cap moved off the container and onto the two outer PADDINGS instead, which is the
+       whole trick. A `container-page` wrapper would hold the text in the right place, but it
+       would also hold the cells' own boxes there, and a cell that stops 128px short of the
+       screen is visible the moment a pointer lands on it: the hover ground ends in a hard
+       vertical seam with band either side of it. The instruction was that the boxes reach
+       the edges, and a box is what a reader hovers, not just what is painted.
+
+       `grid-cols-[1fr_1px_1fr]` is written for exactly two cells and one divider, which is
        what `SETUPS` holds. A third entry would need the template to grow with it — stated
        here because the grid would not error, it would drop the third cell onto a second row
        with the divider under it.
@@ -116,56 +142,80 @@ export function SetupChips() {
        One column below `sm`, where two cells of 47- and 49-character commands cannot both
        fit. The divider goes with the second column (`hidden`, so it takes no row of its own)
        and the seam becomes a `border-b` on every cell but the last. */
-    <div className="grid grid-cols-1 border-b border-line bg-surface-2/72 sm:grid-cols-[1fr_1px_1fr]">
-      {SETUPS.map((setup, i) => (
-        <Fragment key={setup.key}>
-          {i > 0 && <div aria-hidden className="hidden bg-line sm:block" />}
-          <Link
-            data-setup={setup.key}
-            href={setup.href}
-            /* Hover and press on the CELL, where 2a had them on a card.
-               ------------------------------------------------------------
-               `scale-[0.99]` and not the card's `0.97`, on the ruling `RegistryFilterBar`
-               already wrote down for a full-width control: "0.97 on a 342px element travels
-               10px sideways, which reads as a wobble rather than as a press." A band cell is
-               ~720px at 1440, where 0.97 would travel 21px.
+    <div className="grid grid-cols-1 border-b border-line bg-surface-2/72 sm:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)]">
+        {SETUPS.map((setup, i) => (
+          <Fragment key={setup.key}>
+            {i > 0 && <div aria-hidden className="hidden bg-line sm:block" />}
+            <Link
+              data-setup={setup.key}
+              href={setup.href}
+              /* Hover and press on the CELL, where 2a had them on a card.
+                 ------------------------------------------------------------
+                 `scale-[0.99]` and not the card's `0.97`, on the ruling `RegistryFilterBar`
+                 already wrote down for a full-width control: "0.97 on a 342px element
+                 travels 10px sideways, which reads as a wobble rather than as a press." A
+                 band cell is ~720px at 1440, where 0.97 would travel 21px.
 
-               The brightening is the cell's own ground rather than a border, because the
-               band owns the only border here. More `surface-2` over the band's own 72%
-               reads as the cell lifting out of the strip it is part of. */
-            className={cx(
-              "group flex flex-col gap-2 px-10 py-5 transition-[transform,scale,color,background-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:bg-surface-2/60 hoverable:active:scale-[0.99]",
-              i < SETUPS.length - 1 && "border-b border-line sm:border-b-0",
-            )}
-          >
-            <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-              {/* The status dot, and it is decorative on purpose: `aria-hidden`, because it
-                  says at a glance exactly what the command's own colour says in full, for
-                  the reader scanning the band rather than reading it. It was `--color-faint`
-                  on the MCP cell while that cell carried a badge; with the badge gone a dot
-                  at 1.83:1 would be the only remaining mark on that entry and nearly
-                  invisible, so it takes the cell's register like the other one. */}
-              <span
-                aria-hidden
-                className={cx("h-[7px] w-[7px] shrink-0 rounded-full", TONE[setup.tone].dot)}
-              />
-              <span className="label">{setup.label}</span>
-            </span>
-            {/* Never wrapped. A command broken across two lines is a command a reader
-                cannot select in one gesture, and these are the one thing on the page
-                somebody arrives to copy. `overflow-x-auto` is the fallback if a longer
-                constant ever lands — the cell scrolls, the band does not reflow. */}
-            <span
+                 The brightening is the cell's own ground rather than a border, because the
+                 band owns the only border here. More `surface-2` over the band's own 72%
+                 reads as the cell lifting out of the strip it is part of, all the way to the
+                 screen edge on the side the cell owns.
+
+                 ── The outer padding is `container-page`'s gutter, restated ──
+                 The text has to land where a capped wrapper would have put it: level with
+                 the nav's wordmark on the left and its Publish button on the right, because
+                 `SiteHeader` still sets its row in `container-page`. So the two outer
+                 paddings reproduce that gutter arithmetically — `max-width: 1200px` and
+                 `padding-inline: 1.5rem`, plus the cell's own `2.5rem`, which is the `4rem`
+                 below.
+
+                 The two breakpoints need two forms of it because the percentage resolves
+                 against the CELL, not the page. Stacked, a cell is the full width, so the
+                 gutter is the usual `(100% - 1200px) / 2`. Side by side, a cell is half the
+                 width, so `100%` is already half a page and the same gutter is
+                 `100% - 600px`. Getting this wrong is not a crash, it is two pixels of
+                 drift against the header that nobody notices for a month. */
               className={cx(
-                "block overflow-x-auto whitespace-nowrap font-mono text-sm transition-colors hoverable:group-hover:text-fg",
-                TONE[setup.tone].command,
+                "group flex flex-col gap-2 px-10 py-5 transition-[transform,scale,color,background-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:bg-surface-2/60 hoverable:active:scale-[0.99]",
+                "px-[calc(max((100%-1200px)/2,0px)+4rem)]",
+                i === 0
+                  ? "sm:ps-[calc(max(100%-600px,0px)+4rem)] sm:pe-10"
+                  : "sm:pe-[calc(max(100%-600px,0px)+4rem)] sm:ps-10",
+                i < SETUPS.length - 1 && "border-b border-line sm:border-b-0",
               )}
             >
-              {`$ ${setup.command}`}
-            </span>
-          </Link>
-        </Fragment>
-      ))}
+              <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                {/* The status dot, and it is decorative on purpose: `aria-hidden`, because it
+                    says at a glance exactly what the command's own colour says in full, for
+                    the reader scanning the band rather than reading it. It was
+                    `--color-faint` on the MCP cell while that cell carried a badge; with the
+                    badge gone a dot at 1.83:1 would be the only remaining mark on that entry
+                    and nearly invisible, so it takes the cell's register like the other
+                    one. */}
+                <span
+                  aria-hidden
+                  className={cx(
+                    "h-[7px] w-[7px] shrink-0 rounded-full",
+                    TONE[setup.tone].dot,
+                  )}
+                />
+                <span className="label">{setup.label}</span>
+              </span>
+              {/* Never wrapped. A command broken across two lines is a command a reader
+                  cannot select in one gesture, and these are the one thing on the page
+                  somebody arrives to copy. `overflow-x-auto` is the fallback if a longer
+                  constant ever lands — the cell scrolls, the band does not reflow. */}
+              <span
+                className={cx(
+                  "block overflow-x-auto whitespace-nowrap font-mono text-sm transition-colors hoverable:group-hover:text-fg",
+                  TONE[setup.tone].command,
+                )}
+              >
+                {`$ ${setup.command}`}
+              </span>
+            </Link>
+          </Fragment>
+        ))}
     </div>
   );
 }

@@ -236,10 +236,16 @@ describe("no surface prints a seeded index figure as a fact", () => {
     }
     // The detail header and discovery cards deliberately stopped printing these fixture
     // counters. The remaining social surfaces must still identify seeded values.
+    //
+    // `app/u/[username]/page.tsx` read `.downloads` here until the accounts pass folded
+    // Preview signals into the account header: the sum now happens once in
+    // `ProfileShell.tsx` (every profile tab shares it) rather than in the overview page
+    // alone, so that is the file this list names instead — not a weaker check, the same
+    // read followed to where it moved.
     expect(printers).toEqual(
       expect.arrayContaining([
         "components/blueprint/Comments.tsx",
-        "app/u/[username]/page.tsx",
+        "components/profile/ProfileShell.tsx",
       ]),
     );
   });

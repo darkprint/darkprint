@@ -2,17 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AUTHOR_LIST, getAuthor } from "@/lib/data";
-import { compact } from "@/lib/format";
-import { Stat } from "@/components/ui/Stat";
-import { ContentCard } from "@/components/ui/ContentCard";
 import { ProfileShell } from "@/components/profile/ProfileShell";
 import { Pinned } from "@/components/profile/Pinned";
-import { EmptyState, NodeCardTile, SectionTitle } from "@/components/profile/parts";
+import { EmptyState, SectionTitle } from "@/components/profile/parts";
 import { profileView } from "@/components/profile/load";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-53) (cited at line 44): GET /api/authors/{handle}
-// TODO(SEAM-56) (cited at line 99): GET /api/authors/{handle}/signals
+// TODO(SEAM-53) (cited at line 40): GET /api/authors/{handle}
 
 /* ============================================================
    /u/[username] — the overview tab.
@@ -23,10 +19,24 @@ import { profileView } from "@/components/profile/load";
    and `ProfileShell` says so in the open above the header rather than letting a reader
    conclude they are logged in.
 
-   What the overview holds is the public shape of the profile — what this builder pinned,
-   what the archive counts, and the two grids. The owner's *management* list, with the
-   private bundles and the visibility controls, is the Blueprints tab. Keeping the two apart
-   is what stops the overview from being two different pages depending on who is reading.
+   What the overview holds is what this builder chose to put here: pinned items and local
+   vocabulary terms. It is not a shrunken Blueprints tab or Cards tab any more — those two
+   sections drew a `ContentRow` list and a `NodeCardSummary` grid here until the author
+   asked for them removed, on the grounds that a builder's full archive count already lives
+   in `ProfileHeader`'s summary line and the tab strip's own count pills, so this page
+   restating a slice of either list was a second place for the same fact to drift from the
+   first. The owner's *management* list, with the private bundles, the private cards and
+   the visibility controls, is the Blueprints and Cards tabs. Keeping the two apart is what
+   stops the overview from being two different pages depending on who is reading.
+
+   ── The empty state, after the removal ──
+   It used to gate on `published === 0` (no archive blueprint or card), because those were
+   the two things this page could be empty OF. With both sections gone, `published` is no
+   longer a fact about this page — a handle can have five published blueprints and an
+   overview with nothing on it, if they pinned none and named no local term, and saying
+   "Nothing published yet" to that reader would be false. So the empty state now asks the
+   question this page can actually answer — is there a pin or a term to show — and only
+   falls back to talking about the registry when `published` really is zero too.
    ============================================================ */
 
 /** The author table is a fixed list; an unknown handle is a 404, not an on-demand render. */
@@ -48,9 +58,9 @@ export default async function Page({ params }: PageProps<"/u/[username]">) {
   const view = profileView(username);
   if (view === undefined) notFound();
 
-  const { author, blueprints, cards, pinned, owner, terms } = view;
-  const totalDownloads = blueprints.reduce((n, b) => n + b.downloads, 0);
+  const { author, blueprints, cards, pinned, terms } = view;
   const published = blueprints.length + cards.length;
+  const hasOverviewContent = pinned.length > 0 || terms.length > 0;
 
   return (
     <ProfileShell view={view} active="overview">
@@ -69,137 +79,42 @@ export default async function Page({ params }: PageProps<"/u/[username]">) {
         </section>
       )}
 
-      {/* Counted archive facts and illustrative community signals are different kinds of
-          evidence. They get different panels instead of sharing one undifferentiated row. */}
-      <section
-        aria-label="Profile summary"
-        className="mt-10 grid gap-5 lg:grid-cols-[1.2fr_0.8fr]"
-      >
-        <article className="rounded-xl border border-line bg-surface-2 p-5">
-          <div className="flex items-center justify-between gap-3 border-b border-line pb-4">
-            <h2 className="label-lead">Published here</h2>
-            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-emerald">
-              ✓ counted
-            </span>
-          </div>
-          <div className="mt-5 grid grid-cols-3 gap-5">
-            <Stat value={published} label="Total" />
-            <Stat
-              value={blueprints.length}
-              label="Blueprints"
-              accent="var(--color-cyan)"
-            />
-            <Stat
-              value={cards.length}
-              label="Node cards"
-              accent="var(--color-copper-line)"
-            />
-          </div>
-          <p className="mt-4 text-xs leading-relaxed text-dim">
-            Counted from the versioned archive at build time.
-          </p>
-        </article>
-
-        <article className="rounded-xl border border-amber/25 bg-amber/5 p-5">
-          <div className="flex items-center justify-between gap-3 border-b border-amber/20 pb-4">
-            <h2 className="label-lead">Preview signals</h2>
-            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-amber">
-              ◐ seeded
-            </span>
-          </div>
-          <div className="mt-5 grid grid-cols-2 gap-5">
-            <Stat
-              value={compact(totalDownloads)}
-              label="Downloads"
-              accent="var(--color-emerald)"
-            />
-            <Stat
-              value={compact(author.reputation)}
-              label="Reputation"
-              accent="var(--color-violet)"
-            />
-          </div>
-          <p className="mt-4 text-xs leading-relaxed text-dim">
-            Illustrative index rows. No telemetry, ballot, or accruing reputation is connected.
-          </p>
-        </article>
-      </section>
+      {/* "Published here" (the counted totals) and "Preview signals" (downloads, stars,
+          validated) used to sit here as a two-panel section. Both now live in
+          `ProfileHeader` — the counted totals were already restated there as the
+          blueprint/card summary line, and Preview signals moved up into the same panel
+          on the author's instruction, so nothing on this page states either fact twice. */}
 
       <div className="mt-14 flex flex-col gap-14">
-        {published === 0 ? (
+        {!hasOverviewContent ? (
           <EmptyState
-            title="Nothing published yet"
-            action={{ href: "/blueprints", label: "Browse the registry" }}
+            title={published === 0 ? "Nothing published yet" : "Nothing pinned"}
+            action={
+              published === 0
+                ? { href: "/blueprints", label: "Browse the registry" }
+                : { href: `/u/${author.username}/blueprints`, label: "See what's published" }
+            }
           >
-            {author.displayName} has not shared a blueprint or a node card with the registry
-            so far.
+            {published === 0
+              ? `${author.displayName} has not shared a blueprint or a node card with the registry so far.`
+              : `${author.displayName} has not pinned anything to the overview, and named no local vocabulary term. What is published lives on the Blueprints and Cards tabs.`}
           </EmptyState>
         ) : (
-          <>
-            {blueprints.length > 0 && (
-              <section className="flex flex-col gap-5">
-                <div className="flex items-center justify-between gap-3">
-                  <SectionTitle
-                    label="Blueprints"
-                    dot="var(--color-cyan)"
-                    count={blueprints.length}
-                  />
-                  {owner && (
-                    <Link
-                      href={`/u/${author.username}/blueprints`}
-                      className="font-mono text-[11px] text-cyan transition-colors hoverable:hover:text-cyan-bright"
-                    >
-                      Your private bundles are on the Blueprints tab →
-                    </Link>
-                  )}
-                </div>
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {blueprints.map((bp) => (
-                    <ContentCard key={bp.slug} item={bp} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {cards.length > 0 && (
-              <section className="flex flex-col gap-5">
-                <SectionTitle
-                  label="Node cards"
-                  dot="var(--color-amber)"
-                  count={cards.length}
-                />
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {cards.slice(0, 3).map((tile) => (
-                    <NodeCardTile key={tile.record.ref} {...tile} />
-                  ))}
-                </div>
-                {cards.length > 3 && (
-                  <Link
-                    href={`/u/${author.username}/cards`}
-                    className="self-start font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:text-cyan-bright"
-                  >
-                    See all {cards.length} cards →
-                  </Link>
-                )}
-              </section>
-            )}
-
-            {terms.length > 0 && (
-              <section className="flex flex-col gap-5">
-                <SectionTitle
-                  label="Ontology terms"
-                  dot="var(--color-violet)"
-                  count={terms.length}
-                />
-                <Link
-                  href={`/u/${author.username}/terms`}
-                  className="self-start font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:text-cyan-bright"
-                >
-                  See the {terms.length === 1 ? "term" : "terms"} this handle added →
-                </Link>
-              </section>
-            )}
-          </>
+          terms.length > 0 && (
+            <section className="flex flex-col gap-5">
+              <SectionTitle
+                label="Ontology terms"
+                dot="var(--color-violet)"
+                count={terms.length}
+              />
+              <Link
+                href={`/u/${author.username}/terms`}
+                className="self-start font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:text-cyan-bright"
+              >
+                See the {terms.length === 1 ? "term" : "terms"} this handle added →
+              </Link>
+            </section>
+          )
         )}
       </div>
     </ProfileShell>

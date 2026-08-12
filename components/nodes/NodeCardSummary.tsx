@@ -51,6 +51,14 @@ export interface NodeSummary {
    * an unresolved name would ship a 404 from a grid of 53 tiles.
    */
   author?: Author;
+  /**
+   * Absent everywhere the tile has always meant "public" — `/nodes`, every archive-derived
+   * card on a profile — because every one of those is a document in `content/cards/` and a
+   * card there is public by definition. Only `/u/[username]/cards`'s owner list ever passes
+   * `"private"`, for a card seeded in `lib/data/cards.ts` rather than published: see the
+   * violet border and pill this tile draws for that one case.
+   */
+  visibility?: "public" | "private";
 }
 
 /** How many tool chips fit before the rest collapse into a count. */
@@ -146,11 +154,20 @@ export function NodeCardSummary({
   const risk = node.riskMarkers.length;
   const overflow = node.tools.length - TOOLS_SHOWN;
   const titleId = `node-${node.ref}-title`;
+  const isPrivate = node.visibility === "private";
 
   return (
     <article
       className={cx(
         "group relative flex flex-col gap-3 rounded-lg border border-line bg-surface p-4 transition-all duration-200 hover:border-line-bright hover:shadow-[0_12px_40px_-24px_var(--color-amber)]",
+        /* `!` for the reason `DeadControl` and `DraftRow` both already carry it: `cx` is a
+           plain string join (`lib/format.ts`), not a specificity-aware merge, so appending
+           `border-violet/60` after `border border-line` leaves both classes in the DOM and
+           the winner depends on Tailwind's build-time scan order rather than on this call
+           site. `!important` is the one override this file can guarantee regardless of
+           that order. 60% opacity measures 3.24:1 against `--color-surface`, which clears
+           the 3:1 floor WCAG 1.4.11 sets for a non-text UI boundary. */
+        isPrivate && "border-violet/60! hover:border-violet!",
         className,
       )}
     >
@@ -257,6 +274,15 @@ export function NodeCardSummary({
                 one route away. The tile is still a link and still says so, by being a link
                 and by lifting on hover. */}
             <span className="min-w-0 truncate text-copper-line">{node.id}</span>
+          </span>
+        )}
+        {/* Violet, the same second job the accent takes on `DraftRow`'s `Private` pill —
+            see the note where `--color-violet` is declared in `app/globals.css`. Full
+            opacity text, unlike the border: 7.16:1 against `--color-surface`, well past
+            the 4.5:1 AA floor for text this size. */}
+        {isPrivate && (
+          <span className="relative z-20 mb-1.5 inline-flex w-fit shrink-0 rounded-full border border-violet/60 px-2.5 py-0.5 font-mono text-[11px] text-violet">
+            Private
           </span>
         )}
         {/* `h2`: the grid sits directly under the `/nodes` page title, so a tile is a

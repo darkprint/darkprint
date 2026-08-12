@@ -267,7 +267,6 @@ function authorFor(username: string | undefined): Author {
     displayName: name,
     avatarHue: hue(name),
     validator: false,
-    reputation: 0,
   };
 }
 

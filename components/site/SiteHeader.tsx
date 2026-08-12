@@ -420,8 +420,8 @@ export function SiteHeader() {
                 <p className="text-xs leading-relaxed text-muted">
                   There is no sign-in. This menu always names the handle{" "}
                   <span className="font-mono text-fg">lib/data/account.ts</span> seeds, and
-                  downloads, reputation and the three community metrics behind it stay
-                  seeded: there is no telemetry and no ballot.
+                  downloads, stars, validated and the three community metrics behind it
+                  stay seeded: there is no telemetry, no ballot and no verified run report.
                 </p>
               </div>
             </div>

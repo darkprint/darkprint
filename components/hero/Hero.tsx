@@ -103,20 +103,20 @@ export function Hero() {
           item, the name clips at a column edge, and nothing errors. Two children of the
           section, in order, is the whole structure.
 
-          `container-page`, where the mock runs the band edge to edge. The author read the
-          full-bleed version and asked for it inside the page's margins: "the boxes should
-          start on the left margin and end on the right margin". Those margins are the
-          header's — `SiteHeader` sets its row in the same `container-page`, so the band's
-          left edge now lines up with the wordmark in the nav and its right edge with the
-          Publish button, and the lockup cell below it shares the same two.
+          No `container-page` here any more — `SetupChips` owns its own now, on its inner
+          grid rather than on this wrapper, because the band's SURFACE bleeds to the
+          viewport edge while its TEXT stays capped at the page column. One file needs to
+          know both those widths to keep them coordinated, and that file is `SetupChips`
+          itself; see its own docblock for the two rounds of feedback this answers.
 
-          Full-bleed was the mock's own answer and it is the one thing in 2b that could not
-          survive being put on a real page: the mock has no site header above it, so a band
-          running to the viewport edge had nothing to disagree with. Here it did.
+          Text alignment is unaffected: `SetupChips`' inner `container-page` still lines the
+          band's cells up with the header's — `SiteHeader` sets its row in the same class —
+          so the left cell's label still starts under the nav wordmark and the right cell's
+          content still ends under the Publish button, exactly as before this changed.
 
           `flex-none` so it keeps its height while the cell below takes the slack. `relative`
           to clear the two grid layers above it. */}
-      <div className="container-page relative flex-none">
+      <div className="relative flex-none">
         <SetupChips />
       </div>
 
