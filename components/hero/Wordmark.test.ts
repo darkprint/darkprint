@@ -131,11 +131,12 @@ describe("Wordmark", () => {
     expect(mark).not.toContain("opacity-0");
     expect(mark).toContain("aria-hidden");
     expect(mark).not.toContain("aria-label");
-    /* The 64 rung, drawn at 72: three discs, and the perforation only the top rung carries.
-       88 until the 2b layout — the mark comes down while the name goes up. The RUNG does
-       not change with it: `rungFor` is `size >= rung`, so 72 and 88 both draw 64, which is
-       why the circle count below is unchanged and why this is one number and not two. */
-    expect(mark).toMatch(/<svg[^>]*width="72"[^>]*height="72"/);
+    /* The 64 rung, drawn at 80: three discs, and the perforation only the top rung carries.
+       88 under the 2a row, 72 when 2b brought the mark down under a bigger name, 80 when the
+       author asked the whole lockup up a step. The RUNG has not moved through any of it:
+       `rungFor` is `size >= rung`, so every one of those three draws 64, which is why the
+       circle count below is unchanged and why this is one number and not two. */
+    expect(mark).toMatch(/<svg[^>]*width="80"[^>]*height="80"/);
     expect([...mark!.matchAll(/<circle/g)].length).toBeGreaterThanOrEqual(3 + 4);
   });
 

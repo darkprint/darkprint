@@ -128,16 +128,29 @@ export function Hero() {
           because nothing sat above the lockup; here something does, and centring against the
           section would put the name low by half the band's height.
 
-          `pt-18 pb-22` — 72 and 88, the mock's own, and deliberately unequal. The optical
-          centre of this block is the wordmark, not the block's bounding box: the mark and
-          the eyebrow above the name are light, the claim and two buttons below it are heavy.
-          Equal padding centres the box and leaves the name reading high.
+          `pt-18 pb-[20vh]`, where the mock spells a flat 72 and 88.
+          ------------------------------------------------------------
+          Unequal for the reason the mock's own numbers are: the optical centre of this block
+          is the wordmark, and what sits above it (mark, eyebrow) is lighter than what sits
+          below (claim, buttons, cue). Equal padding centres the bounding box and leaves the
+          name reading low.
+
+          Proportional on the bottom because a fixed 88 cannot do that job at every height.
+          The author read the hero on a tall window — "it does not seem central" — and a
+          fixed pad lifts the block by half its excess whatever the viewport is: 8px, on a
+          screen with 500px of empty paper under the buttons. `20vh` lifts by a share of the
+          slack instead, so the correction grows with the thing it is correcting.
+
+          Measured on the built page, as the name's centre above the middle of the space
+          under the band: 94px of lift at a 950px viewport, 139 at 1400, 194 at 1950. 14vh
+          was tried first and read right at 950 and still low at 1950, which is the height
+          the report was made at.
 
           `container-page` for the horizontal, where the mock spells 64px. It is the same
           order of gutter and it is what every other page on the site uses; the name is
           `clamp`ed off the viewport rather than off this box, so what the cap actually
           governs is the claim and the rule, both of which have their own `max-w`. */}
-      <div className="container-page relative flex flex-1 items-center justify-center pb-22 pt-18">
+      <div className="container-page relative flex flex-1 items-center justify-center pb-[20vh] pt-18">
         <Wordmark />
       </div>
     </section>

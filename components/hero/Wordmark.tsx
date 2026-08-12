@@ -405,18 +405,20 @@ export function Wordmark() {
           given a `title`. The `h1` directly below says "DarkPrint"; a mark that announced the
           brand as well would say it twice to a screen reader, in a row.
 
-          72px, down from 88 with the 2b layout. The mark comes down while the name goes up:
-          with the full section width behind it the name can carry the lockup on its own, and
-          an 88px mark over a 112px word competes with it rather than crowning it. `Logo`
-          resolves the drawn rung through `rungFor` rather than through a row in its ladder
-          table: see `LogoRung` for why this is a size and not a rung.
+          80px. It was 88 under the 2a row and came down to 72 with 2b, on the reasoning that
+          an 88px mark over a 112px word competes with it rather than crowning it. The author
+          then asked the whole lockup up a step ("make it a little bigger"), and this moves
+          with the rest rather than staying behind: at 80 over a 120px name the ratio is
+          still under the 88/112 that argument was made against. `Logo` resolves the drawn
+          rung through `rungFor` rather than through a row in its ladder table: see
+          `LogoRung` for why this is a size and not a rung.
 
           No `opacity-0` in the markup. The server, a reader with JS off and a reader who
           asked for reduced motion all get the finished mark, and `useReveal`'s `static` phase
           means the timeline below never runs for any of them. The entrance sets the hidden
           state in a layout effect instead, so it exists only where it can be undone. */}
       <div data-mark="logo" className="mb-5">
-        <Logo size={72} />
+        <Logo size={80} />
       </div>
 
       <p data-mark="eyebrow" className="eyebrow">
@@ -444,7 +446,7 @@ export function Wordmark() {
                  → the 11px eyebrow that was the only thing saying what the product is, a
                  7.2:1 step that made the sentence the fourth read. 112px against a 30px
                  claim in `text-fg` is 3.7:1, and the sentence becomes the second. */
-              fontSize: "clamp(3.4rem, 11vw, 7rem)",
+              fontSize: "clamp(3.4rem, 11vw, 7.5rem)",
               textShadow:
                 "0 0 32px color-mix(in oklab, var(--color-cyan) 32%, transparent), 0 0 120px color-mix(in oklab, var(--color-blueprint-line) 22%, transparent)",
             }}
@@ -492,7 +494,7 @@ export function Wordmark() {
           aria-hidden
           viewBox={`0 0 ${RULE.width} ${RULE.height}`}
           style={{ aspectRatio: `${RULE.width} / ${RULE.height}` }}
-          className="block h-auto w-[min(100%,34rem)]"
+          className="block h-auto w-[min(100%,38rem)]"
           fill="none"
           strokeLinecap="round"
         >
@@ -509,7 +511,7 @@ export function Wordmark() {
 
         <span
           data-mark="claim"
-          className="block max-w-2xl text-balance font-sans text-xl leading-snug text-fg sm:text-3xl"
+          className="block max-w-2xl text-balance font-sans text-xl leading-snug text-fg sm:text-[2rem]"
         >
           {CLAIM}
         </span>
@@ -526,15 +528,17 @@ export function Wordmark() {
           on the same two choices in the same words, which is the decision architecture the
           page already ends on rather than a second, differently-worded offer.
 
-          `data-mark="cta"` sits on the button row itself. It used to sit on a column
-          wrapper that grouped these buttons with a line of three counts underneath; the
-          counts were removed at the author's request, and a wrapper around one child is a
-          box that only exists to be a timeline target. The mark moved down onto the row so
-          the beat still animates exactly what a reader can act on. */}
-      <div
-        data-mark="cta"
-        className="mt-8 flex flex-wrap items-center justify-center gap-3"
-      >
+          `data-mark="cta"` is a COLUMN again, and the note it replaces is worth keeping
+          straight. It sat on a wrapper grouping these buttons with a line of three counts;
+          the counts were removed, and the mark moved down onto the row itself because "a
+          wrapper around one child is a box that only exists to be a timeline target". There
+          are two children again — the row and the cue under it — so the wrapper is carrying
+          its weight rather than being resurrected. The cue joins this beat rather than
+          taking one of its own: `AT` has no entry for it, so nothing about the timeline's
+          clock moves, and the last thing to arrive is still everything a reader can act on,
+          together. */}
+      <div data-mark="cta" className="mt-8 flex flex-col items-center gap-7">
+      <div className="flex flex-wrap items-center justify-center gap-3">
         <ButtonLink href="/blueprints" variant="primary" size="lg">
           Find a blueprint
         </ButtonLink>
@@ -548,6 +552,36 @@ export function Wordmark() {
         <ButtonLink href="/skill" variant="outline" size="lg">
           Create a blueprint
         </ButtonLink>
+      </div>
+
+        {/* The way down, on the author's instruction: "add also a small arrow pointing down
+            below the buttons".
+
+            A LINK, not a decoration. An arrow under the fold's last element is read as an
+            affordance whether or not it is one, and a cue that answers a click with nothing
+            is worse than no cue — so it goes where it points, `#reproducible`, the first
+            beat under the hero. That section already carries `scroll-mt-24`, so the landing
+            is not left under the site header.
+
+            An `<a href="#…">` rather than anything scripted: the app forbids
+            `scrollIntoView`, and a fragment works before hydration, on a shared link and
+            with JavaScript off — which is the same argument the spine on `/nodes` makes.
+
+            The glyph is `aria-hidden` and the name is `sr-only` text, because "↓" read
+            aloud is a character and not a destination. `hoverable:hover` only, per
+            `globals.css`: a touch pointer has no leave, so a tapped cue would latch. */}
+        <a
+          href="#reproducible"
+          className="group inline-flex flex-col items-center gap-1 text-dim transition-colors hoverable:hover:text-cyan"
+        >
+          <span className="sr-only">Skip to the first section</span>
+          <span
+            aria-hidden
+            className="font-mono text-lg leading-none transition-transform duration-[160ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:group-hover:translate-y-0.5"
+          >
+            ↓
+          </span>
+        </a>
       </div>
 
       {/* The two setup chips stood here, last in the entrance at 1.26s. They are
