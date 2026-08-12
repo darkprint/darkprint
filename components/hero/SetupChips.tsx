@@ -1,7 +1,6 @@
 import { Fragment } from "react";
 import Link from "next/link";
 
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { cx } from "@/lib/format";
 import { MCP_CONNECT_COMMAND, MCP_ROUTE } from "@/lib/mcp";
 import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
@@ -52,10 +51,39 @@ import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
    ============================================================ */
 
 /**
- * One cell per way in, in the author's order: the thing that works, then the thing that
- * does not yet. `built` decides three things — the status dot, the command's tone and
- * whether the badge is drawn — so a command cannot quietly lose the sentence that says it
- * is not connected to anything.
+ * The two registers a cell can be in.
+ *
+ * `emerald` is the site's "this runs" — the same green the skill's own install line wears
+ * wherever it appears. `blueprint` is `--color-blueprint-line`, which is what `/mcp` already
+ * sets its install snippet in, on the author's instruction that the command a reader copies
+ * there be the site's blue. A reader who follows the band to that page meets the same string
+ * in the same colour.
+ *
+ * One field per cell rather than a `built` boolean, because a boolean would now be driving
+ * two dots and two text colours and saying nothing about whether the thing is built — see
+ * the note on the badge below.
+ */
+const TONE = {
+  emerald: { dot: "bg-emerald", command: "text-emerald" },
+  blueprint: { dot: "bg-blueprint-line", command: "text-blueprint-line" },
+} as const;
+
+/**
+ * One cell per way in, in the author's order: the skill, then MCP.
+ *
+ * ── The `COMING SOON` badge came off on 2026-08-12 ──
+ * The author: "remove the coming soon from the mcp as we will implement before sharing the
+ * service with people." So this band no longer says MCP is unbuilt, and the `built` flag
+ * that drew the badge is gone rather than left as a field nothing reads.
+ *
+ * **MCP is still not built, and the site still says so** — one click away, on the route this
+ * cell links to. `/mcp`'s lead, its `metadata.description` and the status column of its
+ * contract table all state it, and `components/site/honesty.test.ts` pins all three
+ * verbatim. That is the disclosure this file used to duplicate; it is not the disclosure
+ * this file was carrying alone, which is what made the badge safe to drop here.
+ *
+ * The two cells are told apart by register now rather than by a badge: green for the command
+ * that runs today, the site's blue for the one that will.
  */
 const SETUPS = [
   {
@@ -63,15 +91,19 @@ const SETUPS = [
     label: "Design your blueprint",
     command: SKILL_INSTALL_COMMAND,
     href: SKILL_ROUTE,
-    built: true,
+    tone: "emerald",
   },
   {
     key: "mcp",
     label: "Connect via MCP",
     command: MCP_CONNECT_COMMAND,
     href: MCP_ROUTE,
-    built: false,
+    tone: "blueprint",
   },
+  /* No `satisfies` clause on this. It was written with one to catch a typo in `tone`, and
+     `satisfies` runs an excess-property check against its target, so the constraint would
+     have had to restate every field of the row to allow the four it does not care about.
+     `TONE[setup.tone]` at the use site already refuses anything that is not a key. */
 ] as const;
 
 export function SetupChips() {
@@ -107,23 +139,17 @@ export function SetupChips() {
             )}
           >
             <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-              {/* The status dot, and it is decorative on purpose.
-                  ------------------------------------------------------------
-                  `--color-faint` is declared for decoration and reads 1.83:1, which would be
-                  a defect on anything a reader has to decode. Nothing here is: the badge
-                  beside it says "coming soon" in words, and the command below it is already
-                  toned. The dot is the same fact a third time, at a glance, for the reader
-                  scanning the band rather than reading it — so `aria-hidden`, and the one
-                  place on the site where faint is the right answer rather than a shortcut. */}
+              {/* The status dot, and it is decorative on purpose: `aria-hidden`, because it
+                  says at a glance exactly what the command's own colour says in full, for
+                  the reader scanning the band rather than reading it. It was `--color-faint`
+                  on the MCP cell while that cell carried a badge; with the badge gone a dot
+                  at 1.83:1 would be the only remaining mark on that entry and nearly
+                  invisible, so it takes the cell's register like the other one. */}
               <span
                 aria-hidden
-                className={cx(
-                  "h-[7px] w-[7px] shrink-0 rounded-full",
-                  setup.built ? "bg-emerald" : "bg-faint",
-                )}
+                className={cx("h-[7px] w-[7px] shrink-0 rounded-full", TONE[setup.tone].dot)}
               />
               <span className="label">{setup.label}</span>
-              {!setup.built && <ComingSoonBadge />}
             </span>
             {/* Never wrapped. A command broken across two lines is a command a reader
                 cannot select in one gesture, and these are the one thing on the page
@@ -131,8 +157,8 @@ export function SetupChips() {
                 constant ever lands — the cell scrolls, the band does not reflow. */}
             <span
               className={cx(
-                "block overflow-x-auto whitespace-nowrap font-mono text-sm transition-colors",
-                setup.built ? "text-emerald hoverable:group-hover:text-fg" : "text-muted hoverable:group-hover:text-fg",
+                "block overflow-x-auto whitespace-nowrap font-mono text-sm transition-colors hoverable:group-hover:text-fg",
+                TONE[setup.tone].command,
               )}
             >
               {`$ ${setup.command}`}

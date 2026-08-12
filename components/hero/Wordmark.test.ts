@@ -84,14 +84,30 @@ describe("Wordmark", () => {
     expect(render()).not.toContain("data-setup");
   });
 
-  it("links both setup commands to their corresponding detail pages", () => {
+  /**
+   * The two commands reach their own pages, and neither cell claims anything else.
+   *
+   * This case asserted `expect(mcp.toLowerCase()).toContain("coming soon")` — the band drew
+   * a `ComingSoonBadge` on the MCP cell and this held it there. The author asked the badge
+   * off on 2026-08-12 ("we will implement before sharing the service with people"), so the
+   * assertion is inverted rather than deleted: what used to be required is now forbidden, on
+   * BOTH cells, which is the strongest form of the same case and catches the badge being
+   * reinstated by an edit that does not read this file.
+   *
+   * **The claim it was protecting has not moved and is not weakened.** MCP is still unbuilt
+   * and the site still says so on `/mcp` — the lead, the `metadata.description` and the
+   * status column of the contract table — and `components/site/honesty.test.ts` pins all
+   * three verbatim. This band was repeating that disclosure, not holding it up alone. The
+   * link asserted below is what puts a reader in front of it.
+   */
+  it("links both setup commands to their detail pages, and neither cell hedges", () => {
     const html = renderChips();
     const skill = plainText(setupCard(html, SKILL_ROUTE));
     const mcp = plainText(setupCard(html, MCP_ROUTE));
     expect(skill).toContain(SKILL_INSTALL_COMMAND);
-    expect(skill.toLowerCase()).not.toContain("coming soon");
     expect(mcp).toContain(MCP_CONNECT_COMMAND);
-    expect(mcp.toLowerCase()).toContain("coming soon");
+    expect(skill.toLowerCase()).not.toContain("coming soon");
+    expect(mcp.toLowerCase()).not.toContain("coming soon");
   });
 
   /**
