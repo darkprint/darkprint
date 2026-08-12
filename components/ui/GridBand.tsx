@@ -30,19 +30,31 @@ import { cx } from "@/lib/format";
    ============================================================ */
 
 /**
- * The clearing the grid opens, shared with `Hero` so there is one of it.
+ * The clearing this band opens, and it is NOT the hero's.
  *
- * `34%` rather than centre because the hero's lockup is left of middle and the ruling should
- * be strongest behind it; both shelves set their title in the same place, at the left of
- * `container-page`. `74%` is where it reaches nothing, which is inside the frame at every
- * width — so the band has no edge of its own to hide.
+ * The hero's string was shared for one commit and the author could not see the result:
+ * "I can't see the pattern on the background of Blueprints Gallery and Node Gallery." Two
+ * reasons, both geometric, both invisible from the source.
+ *
+ * `50%` and not the hero's `34%`. The hero anchors its clearing on the lockup, which is left
+ * of middle with a screen of empty paper around it. A shelf's head has its title hard left
+ * and its whole right side empty, so a clearing at 34% opens over the words and leaves the
+ * one large blank region on the page unlit.
+ *
+ * `30%` and not `50%`. Measured on the built page: with the centre at half of a 26rem band
+ * it landed at y=273, and `RegistryFilterBar`'s panel starts at y=290 and is opaque. The
+ * brightest part of the ground was behind the one element that covers it.
+ *
+ * `88%` and not `74%`, with 34rem rather than 26 above it. Both stretch the fade: a short
+ * band reaches nothing within a couple of grid squares of its centre, so the ruling was one
+ * or two lines rather than a field.
  */
-export const GRID_CLEARING = "radial-gradient(ellipse at 34% 50%, black, transparent 74%)";
+const GRID_CLEARING = "radial-gradient(ellipse at 50% 30%, black, transparent 88%)";
 
 /**
  * @param className height and offsets, for a page whose head is taller or shorter than the
- * default. `h-[26rem]` clears a `SectionHeading` and its `mb-10` at 1440 and still fades out
- * above the first row of tiles.
+ * default. `h-[34rem]` clears a `SectionHeading`, its `mb-10` and the filter bar under it at
+ * 1440, and still fades out above the first row of tiles.
  */
 export function GridBand({ className }: { className?: string }) {
   return (
@@ -59,10 +71,28 @@ export function GridBand({ className }: { className?: string }) {
     <div
       aria-hidden
       className={cx(
-        "tech-grid pointer-events-none absolute inset-x-0 top-0 h-[26rem]",
+        "tech-grid pointer-events-none absolute inset-x-0 top-0 h-[34rem]",
         className,
       )}
       style={{ maskImage: GRID_CLEARING, WebkitMaskImage: GRID_CLEARING }}
-    />
+    >
+      {/* The ruling, twice.
+          ------------------------------------------------------------
+          `.tech-grid` is one 48px rule in cyan at 6%, which is calibrated for the hero: a
+          full screen of it, most of it uninterrupted paper. The head of a shelf is 500px
+          with a title, a lead and an opaque filter panel across it, and at 6% a reader looks
+          at that and reports no pattern — which is what happened.
+
+          Two layers at 6% rather than one at 12%, because the doubling is already this
+          site's move rather than a new one: `GridSpotlight` reveals a second copy of the
+          hero's own grid under the pointer, and its docblock says exactly what happens —
+          "the two layers add and the ruling roughly doubles". This is that, held still. The
+          alternative is a second grid class at a second opacity, which is one more number
+          to keep in step with the first for no gain.
+
+          The mask is on the parent, so both layers are clipped by one clearing and the
+          child needs no geometry of its own. */}
+      <span aria-hidden className="tech-grid absolute inset-0 block" />
+    </div>
   );
 }
