@@ -6,9 +6,9 @@ import { contentHref } from "@/lib/href";
 import type { AnyContent } from "@/lib/types";
 
 import { Avatar } from "./Avatar";
-import { AutonomyMeter } from "./AutonomyMeter";
 import { CARD_SHELL } from "./ContentCard";
 import { FavoriteStar } from "./FavoriteStar";
+import { CoverageStrip } from "./PhaseCoverage";
 
 /* ============================================================
    One blueprint as a row, for the `/blueprints` shelf.
@@ -45,6 +45,19 @@ import { FavoriteStar } from "./FavoriteStar";
 
    `nodeLabels` stays `false`. At 0.24-0.38 an 11-unit label still lands well under the 10px
    floor, which is the same arithmetic that turned it off on the tile.
+
+   ── What came OFF the row, and what was checked before it did ──
+   `KindBadge`: every item on this shelf is typed `kind: "blueprint"` — the literal is in
+   `lib/types.ts`, so the badge printed one word nine times and distinguished nothing. That
+   is a type-level guarantee rather than an observation about today's archive.
+
+   `AutonomyMeter`: the shape line below says what it said, and it was checked against the
+   built shelf rather than against its props. The meter can carry three readings — the class,
+   how many nodes wait for a person, and how many have NO CARD in the bundle (`resolved:
+   false`, which is a different fact from either). Read off all nine rows: seven say "No node
+   waits for a person", two name one gate each, and **not one carries the undescribed
+   clause**. So nothing on this surface is lost — except the human nodes' NAMES, which the
+   meter put in its `title` and which the shape line now puts in its own.
    ============================================================ */
 
 /**
@@ -78,6 +91,16 @@ export function ContentRow({
   lineage?: { owner: string; slug: string };
   className?: string;
 }) {
+  /* Who waits for a person, by name.
+     ------------------------------------------------------------
+     `requiresHuman` and not `total − autonomous`, which is the trap `AutonomyMeter`'s own
+     `partition` documents: a node whose card is missing from the bundle is neither
+     unattended nor staffed (`resolved: false`), and subtracting would print a human gate
+     where nobody is. Read the flag. */
+  const humanNames = item.analysis.autonomy.contributions
+    .filter((c) => c.requiresHuman)
+    .map((c) => c.name);
+
   return (
     <article
       className={cx(
@@ -151,28 +174,41 @@ export function ContentRow({
             lines there — which is the point of the shape. */}
         <p className="line-clamp-3 text-sm leading-snug text-muted">{item.summary}</p>
 
-        {/* The shape line lands here in part 2, and the meter is what it replaces. Kept for
-            now so this commit changes the geometry and drops nothing: the class is named and
-            no number is drawn (doc 2 §1.1), with the engine's own per-node reading.
-            `showDarkFactory={false}` is the author's 2026-07-29 call — the shelf offers the
-            token as a filter and a row carrying it read as one badge more than the shelf
-            needed. */}
-        <div className="pt-0.5">
-          <AutonomyMeter
-            autonomy={item.autonomy}
-            contributions={item.analysis.autonomy.contributions}
-            size="sm"
-            showDarkFactory={false}
-          />
-        </div>
+        {/* The shape line: what the graph IS, in one line, and every part of it derived.
+            ------------------------------------------------------------
+            Nodes and edges off `item.graph`, so the starter's "5 nodes · 5 edges" is the
+            tester–debugger loop showing up rather than a chain of five miscounted as four.
+            The class is `autonomy.label` from the engine's own `AUTONOMY_CLASS_LABELS` — a
+            name, never a level, never a number, never a band (doc 2 §1.1).
+
+            `title` carries the human nodes BY NAME, which is the one thing `AutonomyMeter`
+            said that this line does not. See the note where it was removed. */}
+        <span
+          className="pt-0.5 font-mono text-[11px] text-dim"
+          title={humanNames.length > 0 ? `Waits for a person at ${humanNames.join(", ")}.` : undefined}
+        >
+          {item.graph.nodes.length} node{item.graph.nodes.length === 1 ? "" : "s"}
+          {" · "}
+          {item.graph.edges.length} edge{item.graph.edges.length === 1 ? "" : "s"}
+          {" · "}
+          {humanNames.length === 0
+            ? "no human gate"
+            : `${humanNames.length} human gate${humanNames.length === 1 ? "" : "s"}`}
+          {" · "}
+          {item.autonomy.label}
+        </span>
       </div>
 
-      {/* ---------- zone 3: coverage and the date ---------- */}
-      {/* The coverage strip arrives in part 2 and is the reason the row exists. What is here
-          now is the tile's own footer pair, moved: when it last changed, whether it resolves,
-          and how many published forks it has. */}
-      <div className="flex flex-col gap-2.5 font-mono text-[11px]">
-        <span className="text-dim">
+      {/* ---------- zone 3: what it covers, and when it last moved ---------- */}
+      <div className="flex flex-col gap-2.5">
+        <CoverageStrip
+          covered={item.analysis.phaseCoverage.covered}
+          missing={item.analysis.phaseCoverage.missing}
+        />
+        {/* The tile's own footer pair, moved under the strip: when it last changed, whether
+            it resolves, and how many published forks it has. The fork count states a fact
+            and orders nothing — doc 2 §1.1, and there is no `forks` sort. */}
+        <span className="font-mono text-[11px] text-dim">
           {prettyDate(item.updatedAt)}
           {forks > 0 && (
             <>
@@ -180,8 +216,9 @@ export function ContentRow({
               {forks} fork{forks === 1 ? "" : "s"}
             </>
           )}
+          {" · "}
+          <span className="text-emerald">✓ resolved</span>
         </span>
-        <span className="text-emerald">✓ resolved</span>
       </div>
     </article>
   );

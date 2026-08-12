@@ -38,15 +38,25 @@ import { cx } from "@/lib/format";
  * node kinds: the gallery card is rendered inside a client component, and the engine
  * is not something to ship to a browser to look up five labels.
  *
- * `short` is the strip's cell. Three letters, because `debugging` and `deployment`
- * share an initial and a strip that showed `D D` would be lying about two of the five.
+ * `short` is `PhaseCoverageBadge`'s cell. Three letters, because `debugging` and
+ * `deployment` share an initial and a strip that showed `D D` would be lying about two of
+ * the five.
+ *
+ * `word` is `CoverageStrip`'s label, and the two abbreviations are not redundant. A cell is
+ * a bordered box in a row of five: it wants a fixed width and reads as a code, so three
+ * clipped letters are right and `imp` is legible in context. A strip label sits UNDER a bar
+ * that already carries lit-or-not, so the word has one job — name the phase — and a reader
+ * scanning a column of nine rows should not have to decode it. `plan / build / test / debug
+ * / ship` are the words the rest of the site uses for these five in prose.
+ *
+ * Neither is the full name, and neither has to be: both surfaces put `label` in a `title`.
  */
-const PHASES: readonly { id: string; label: string; short: string }[] = [
-  { id: "planning", label: "Planning", short: "pln" },
-  { id: "implementation", label: "Implementation", short: "imp" },
-  { id: "testing", label: "Testing", short: "tst" },
-  { id: "debugging", label: "Debugging", short: "dbg" },
-  { id: "deployment", label: "Deployment", short: "dep" },
+const PHASES: readonly { id: string; label: string; short: string; word: string }[] = [
+  { id: "planning", label: "Planning", short: "pln", word: "plan" },
+  { id: "implementation", label: "Implementation", short: "imp", word: "build" },
+  { id: "testing", label: "Testing", short: "tst", word: "test" },
+  { id: "debugging", label: "Debugging", short: "dbg", word: "debug" },
+  { id: "deployment", label: "Deployment", short: "dep", word: "ship" },
 ];
 
 /**
@@ -112,7 +122,89 @@ function describe(covered: readonly string[], missing: readonly string[]): strin
   return `Phase coverage. ${has} Nothing in it sits in ${joinLabels(missing)}.`;
 }
 
-/* --------------------- compact: the gallery card --------------------- */
+/* --------------------- the strip: one row of the /blueprints shelf --------------------- */
+
+/**
+ * Five slots, a bar over a word, and the reason the shelf's row exists.
+ *
+ * `GalleryBrowser` offers phase coverage as a way in and nothing on the shelf showed it: a
+ * reader filtered by phase and then had to open a blueprint to see what they had filtered
+ * for. This is that answer, down a column.
+ *
+ * Everything in this file's header governs it. **No count and no completeness reading** — no
+ * "3/5", no percentage, no bar that fills left to right with an empty tail, and nothing that
+ * orders one blueprint above another. `GalleryBrowser`'s own `phases` memo states the rule it
+ * is holding: "a factory covering three phases is three ways into this list, not two short of
+ * anything."
+ *
+ * ── Every slot is labelled, covered or not ──
+ * The bar carries lit-or-unlit; the word only has to be readable. And the word over a DARK
+ * bar is precisely the one a reader needs — it is the phase this factory does not act in,
+ * which is the fact the strip exists to make legible. So the uncovered label is
+ * `--color-dim` (5.68:1) and never `--color-faint`, which `globals.css` declares decorative
+ * and measures at 1.83:1. The hand-off records this being caught twice in review; it is not
+ * a contrast oversight to be tidied back.
+ *
+ * ── 11px, where the mock draws 10 ──
+ * The site's mono floor is 0.6875rem and `app/globals.css` says there are no exceptions to
+ * it. This file already carries the scar: `PhaseCoverageBadge` below "had quietly gone
+ * under" at 9px and was brought back up. Setting a new strip at 10 would repeat that exact
+ * defect three months later. The mock's reason for short labels is width — the strip has to
+ * survive a 236px column — and that is satisfied at 11: five slots and four 6px gaps leave
+ * 42.4px each, where `debug` measures about 33.
+ */
+export function CoverageStrip({
+  covered,
+  missing,
+  className,
+}: {
+  covered: readonly string[];
+  missing: readonly string[];
+  className?: string;
+}) {
+  const present = new Set(covered);
+  const sentence = describe(covered, missing);
+
+  return (
+    <div className={cx("flex flex-col gap-2", className)}>
+      <span aria-hidden className="label">
+        covers
+      </span>
+      {/* `grid-cols-5` and not a flex row: the five slots are one measure divided five ways,
+          so a longer word cannot take room from its neighbours and the bars stay a rhythm
+          rather than five different lengths. */}
+      <div aria-hidden className="grid grid-cols-5 gap-1.5">
+        {PHASES.map((phase) => (
+          /* The full phase name is one hover away on every slot, covered or not — the strip
+             abbreviates, and a reader who does not know which of `build` and `ship` the
+             archive calls `implementation` should not have to guess. */
+          <span key={phase.id} title={phase.label} className="flex flex-col gap-1.5">
+            <span
+              className={cx(
+                "h-1 rounded-full",
+                present.has(phase.id) ? "bg-cyan" : "bg-line-bright",
+              )}
+            />
+            <span
+              className={cx(
+                "font-mono text-[11px] leading-none",
+                present.has(phase.id) ? "text-blueprint-ink" : "text-dim",
+              )}
+            >
+              {phase.word}
+            </span>
+          </span>
+        ))}
+      </div>
+      {/* The whole reading as one sentence, for a reader who meets no bars at all. Shared
+          with `PhaseCoverageBadge` rather than reworded, so the two surfaces cannot come to
+          describe the same coverage differently. */}
+      <span className="sr-only">{sentence}</span>
+    </div>
+  );
+}
+
+/* --------------------- compact: the upload preview --------------------- */
 
 /**
  * 11px, not 9px. The site writes its own mono floor down two rules from here — every
@@ -129,6 +221,11 @@ const CELL =
 
 /**
  * The lifecycle strip, sized for a card footer.
+ *
+ * "the gallery card" in the heading above was true and is not: the card dropped this, and
+ * since 2026-08-12 the shelf draws `CoverageStrip` instead. `components/upload/UploadFlow.tsx`
+ * is the only mount left, which is why the cell shape is still the right one — a preview of a
+ * bundle being validated is a dense panel, not a row with a column to itself.
  *
  * A cell is present or absent, and three things say which: a solid border against a
  * dashed one, a tint against none, and the ink. The border style alone is enough, so
