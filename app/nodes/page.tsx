@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { NodeBrowser } from "@/components/nodes/NodeBrowser";
+import { NodeBrowser, type NodeTypeTerm } from "@/components/nodes/NodeBrowser";
 import type { NodeSummary } from "@/components/nodes/NodeCardSummary";
 import { allNodeCards, getOntologyView, getRegistry } from "@/lib/content";
 import { getAuthor } from "@/lib/data/users";
@@ -47,6 +47,38 @@ export default function NodesPage() {
 
   /* `blueprints` was here, for the count the deck printed until 2026-08-08. */
 
+  /**
+   * The node-type vocabulary, for the shelf's chrome.
+   *
+   * `NodeSummary` carries `type` and `typeLabel` and nothing else, which is everything the
+   * filters and the tiles need and one field short of what a group header needs: the type's
+   * one-line definition. Resolving it in the browser would mean shipping the ontology to the
+   * client to answer eight questions that are settled at build time.
+   *
+   * All eight node types, not the five the card library happens to use, and that is load
+   * bearing rather than generous. The group header prints its type's INDEX, and an index is
+   * a position in a complete list — `Tool` is `07` because it is the seventh of the
+   * vocabulary's eight types in label order, and it would be `04` counted against the five
+   * types that currently have cards. A number that moves when somebody publishes the first
+   * `human-input` card is not an index, it is a rank.
+   *
+   * `byKind` returns them sorted by id; the browser re-sorts by label, next to the rule that
+   * says the grid is ordered that way, so the two orders cannot come apart.
+   *
+   * `description` is dropped rather than blanked when a term carries none — a local overlay
+   * may define a node type with an empty one, and the header draws no line rather than an
+   * empty one. `OntologyTerm.description` is a required string, so this only fires on the
+   * empty case, and it is the reason the prop's field is optional.
+   */
+  const types: NodeTypeTerm[] = ontology.byKind("node-type").map((term) => {
+    const description = term.description.trim();
+    return {
+      id: term.id,
+      label: term.label,
+      ...(description === "" ? {} : { description }),
+    };
+  });
+
   return (
     <div className="container-page py-12 sm:py-16">
       {/* The lead was 45 words: three sentences defining the noun, then three
@@ -77,7 +109,7 @@ export default function NodesPage() {
           that ships no shelf is the worse bug. The browser keeps its URL state using
           plain history APIs instead, and this page stays static with all 53 cards in
           the markup. */}
-      <NodeBrowser nodes={nodes} />
+      <NodeBrowser nodes={nodes} types={types} />
     </div>
   );
 }

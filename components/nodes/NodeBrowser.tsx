@@ -40,6 +40,22 @@ function byText(a: string, b: string): number {
 }
 
 /**
+ * One node type as the vocabulary defines it, which is a different thing from one node type
+ * as the card library uses it.
+ *
+ * `app/nodes/page.tsx` reads these off the ontology view and passes all eight down. The
+ * browser derives its own facet counts from the cards (see `typeFacets`) and takes nothing
+ * but words and order from here — so the two can never disagree about a number, because only
+ * one of them holds numbers.
+ */
+export interface NodeTypeTerm {
+  id: string;
+  label: string;
+  /** The term's own `description`, verbatim. Absent when the term carries none. */
+  description?: string;
+}
+
+/**
  * Where a card sits in the lifecycle sort, in doc 3 §2's order — sorting the grid
  * alphabetically would open the library on debugging and close it on testing, which is
  * not how a factory runs.
@@ -229,7 +245,14 @@ function FilterChip({
  * the full grid narrow to their selection once React hydrates. That is the price of
  * keeping all 53 cards in the static HTML, and it is the right way round.
  */
-export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
+export function NodeBrowser({
+  nodes,
+  types,
+}: {
+  nodes: readonly NodeSummary[];
+  /** The vocabulary's node types, all of them. See `NodeTypeTerm`. */
+  types: readonly NodeTypeTerm[];
+}) {
   const { params, set: setParam, clear } = useQueryState();
 
   /* Every filter is read from the URL rather than mirrored into React state, so there
@@ -273,8 +296,14 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
 
   /* Only the types actually in the library: an option that can never match is a
      dead end, and the vocabulary itself is one click away on /ontology. Counted
-     against every filter but this one — see `passes`. */
-  const types = useMemo(() => {
+     against every filter but this one — see `passes`.
+
+     Renamed from `types` when the `types` PROP arrived, and the two are deliberately
+     different sets. This one is the FILTER's list, and the ruling above is a filter's
+     ruling: offering `evaluative` in a select that would return nothing whatever else the
+     reader does is a dead end. The prop is the vocabulary, which the group header needs for
+     an index and a definition. Counts only ever come from here. */
+  const typeFacets = useMemo(() => {
     const pool = nodes.filter((node) => passes(node, filters, "type"));
     const byId = new Map<string, { id: string; label: string; count: number }>();
     for (const node of nodes) {
@@ -367,7 +396,7 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
     const q = search.trim();
     if (q !== "") parts.push(`the search “${q}”`);
     if (type !== null) {
-      parts.push(`the node type “${types.find((t) => t.id === type)?.label ?? type}”`);
+      parts.push(`the node type “${typeFacets.find((t) => t.id === type)?.label ?? type}”`);
     }
     if (phase !== null) {
       parts.push(
@@ -426,6 +455,30 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
     return out;
   }, [results, sort]);
 
+  /**
+   * Each type's place in the vocabulary and its one-line definition, by id.
+   *
+   * Sorted by label HERE rather than on the server, deliberately: `results` is ordered by
+   * `byText(a.typeLabel, b.typeLabel)` twenty lines up and `groups` walks it in that order,
+   * so the index a header prints and the order the grid draws are the same rule applied to
+   * the same comparator. Sorting the prop in `page.tsx` would put half of that agreement in
+   * another file, where a change to one side would typecheck.
+   *
+   * 1-based and padded to two digits, because it is read as a position in a run of eight
+   * rather than as a quantity. A type the prop does not carry gets no chrome at all — the
+   * header falls back to the label and the count, which is what a card declaring a type
+   * outside the vocabulary would produce, and the validator already refuses those.
+   */
+  const typeChrome = useMemo(() => {
+    const ordered = [...types].sort((a, b) => byText(a.label, b.label));
+    return new Map(
+      ordered.map((term, i) => [
+        term.id,
+        { index: String(i + 1).padStart(2, "0"), description: term.description },
+      ]),
+    );
+  }, [types]);
+
   const activeCount =
     (search.trim() !== "" ? 1 : 0) +
     (type !== null ? 1 : 0) +
@@ -470,7 +523,7 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
               className={controlClass}
             >
               <option value="">All node types</option>
-              {types.map((t) => (
+              {typeFacets.map((t) => (
                 /* Disabled rather than hidden: a reader who has narrowed to one phase
                    should be able to see that `human-gate` exists and simply has nothing
                    left in it, which is a different fact from it not existing. */
@@ -588,59 +641,130 @@ export function NodeBrowser({ nodes }: { nodes: readonly NodeSummary[] }) {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col gap-10">
-            {groups.map((group) => (
-              <section key={group.id} className="flex flex-col gap-4">
-                {/* Sticky, so the answer to "what am I looking at" survives a scroll
-                    through twenty-four tools. `top-15` clears the 65px header exactly;
-                    `top-16` left a 1px sliver of grid above it.
+          /* `gap-5` between panels, where it was `gap-10` between runs of tiles.
+             ------------------------------------------------------------
+             The 40px was doing the dividing on its own and could not: scrolling the Tool
+             group a reader got grid, then text on the page ground, then more grid, with
+             nothing to cross. A panel divides by being a different surface, so the space
+             between two of them only has to say "these are two things" — and 40px of void
+             between two bounded boxes reads as a hole rather than as a boundary. */
+          <div className="flex flex-col gap-5">
+            {groups.map((group, i) => {
+              const chrome = typeChrome.get(group.id);
+              return (
+                /* One bounded panel per type, with its own ground.
+                   ------------------------------------------------------------
+                   Two grounds and no more, alternating by position in the run rather than
+                   by anything about the type — `blueprint-deep` at 22% and `surface-2` at
+                   55%, which is the pair the mock draws. Both are barely there on
+                   `--color-void`, which is the point: what a reader crosses is the hairline
+                   and the change of value, not a colour that means something. Assigning a
+                   ground PER TYPE would be inventing a fifth colour vocabulary on a page
+                   that already has none for node types.
 
-                    `aria-label` carries the pair a reader sees — the human label and the
-                    count — without the raw term id between them, which announced as
-                    "Agent agent 18". The id stays visible, because on a page about a
-                    controlled vocabulary the spelling is worth showing.
-
-                    `z-30` — section chrome, one rung under the page's own filter bar and
-                    above the tier a card's furniture may reach. At `z-10` three star
-                    chips floated over this band mid-scroll through the Tool group. */}
-                <h2
-                  aria-label={`${group.label}, ${group.nodes.length} card${group.nodes.length === 1 ? "" : "s"}`}
-                  className="sticky top-15 z-30 -mx-1 flex items-baseline gap-2.5 bg-void/95 px-1 py-2 backdrop-blur-sm"
-                >
-                  <span className="font-display text-xl font-semibold text-fg">
-                    {group.label}
-                  </span>
-                  <code aria-hidden className="font-mono text-[11px] text-dim">
-                    {group.id}
-                  </code>
-                  <span
-                    aria-hidden
-                    className="ml-auto font-mono text-[11px] tabular-nums text-dim"
-                  >
-                    {group.nodes.length}
-                  </span>
-                </h2>
-                {/* Three columns only when there are more than two cards to put in
-                    them. `Decision` holds 2 and `Human gate` holds 2, and at a fixed
-                    `lg:grid-cols-3` each of those groups drew two tiles and a third of a
-                    row of nothing — an empty column that reads as a card that failed to
-                    load. Two tiles across a wide row is a pair; two tiles in a
-                    three-track grid is a gap. */}
-                <div
+                   `overflow-hidden` so the header's bottom rule stops at the radius rather
+                   than running out through the corner. */
+                <section
+                  key={group.id}
                   className={cx(
-                    "grid gap-5 sm:grid-cols-2",
-                    group.nodes.length > 2 && "lg:grid-cols-3",
+                    "overflow-hidden rounded-xl border border-line",
+                    i % 2 === 0 ? "bg-blueprint-deep/22" : "bg-surface-2/55",
                   )}
                 >
-                  {group.nodes.map((node) => (
-                    /* The type is the heading above this run, so repeating it on all
-                       24 tiles spends the loudest chip on the one fact the reader
-                       already has. */
-                    <NodeCardSummary key={node.id} node={node} showType={false} />
-                  ))}
-                </div>
-              </section>
-            ))}
+                  {/* Still an `h2`, and still carrying the same `aria-label`.
+                      ------------------------------------------------------------
+                      It was `sticky top-15 z-30` on `bg-void/95`, so the answer to "what
+                      am I looking at" survived a scroll through two dozen tools. The spine
+                      above the shelf answers that continuously now, and it answers the
+                      question the pinned heading could not — what ELSE is there, and how
+                      far through am I — so the heading goes back into the flow at the top
+                      of its own panel. What the pinning cost is worth writing down: two
+                      sticky bands in one scroll container, one of them competing with the
+                      filter bar for the same 65px of screen.
+
+                      `top-15` and `z-30` go with it. The 15 cleared the 65px header exactly
+                      where `top-16` left a 1px sliver of grid above it; the 30 was section
+                      chrome, one rung under the page's filter bar and above the tier a
+                      card's furniture reaches, because at `z-10` three star chips floated
+                      over this band mid-scroll. Neither is a live constraint on an element
+                      that does not pin, and the z ladder's section-chrome rung is now spent
+                      on the spine, which does.
+
+                      `aria-label` carries the pair a reader sees — the human label and the
+                      count — without the raw term id between them, which announced as
+                      "Agent agent 18". It matters more here than it did: the header now
+                      also holds an index and a sentence, and the accessible name is what
+                      keeps the heading a heading rather than a paragraph.
+
+                      `flex-wrap` with `gap-y-1`: at 768 the definition cannot share a line
+                      with a 20px label, a code chip and a count, and the row it drops to is
+                      still inside the same band. */}
+                  <h2
+                    aria-label={`${group.label}, ${group.nodes.length} card${group.nodes.length === 1 ? "" : "s"}`}
+                    className="flex flex-wrap items-center gap-x-3.5 gap-y-1 border-b border-line px-5 py-3.5"
+                  >
+                    {chrome !== undefined && (
+                      /* The type's place in the vocabulary, not in the filtered grid. It
+                         does not renumber when a filter empties the group above it —
+                         `Tool` is `07` on a shelf showing all eight types and on a shelf
+                         showing only Tool. `text-dim` and not `text-faint`: an index that
+                         cannot be read is decoration, and this one is a fact. */
+                      <span
+                        aria-hidden
+                        className="shrink-0 font-mono text-[11px] tabular-nums text-dim"
+                      >
+                        {chrome.index}
+                      </span>
+                    )}
+                    <span className="font-display text-xl font-semibold text-fg">
+                      {group.label}
+                    </span>
+                    <code aria-hidden className="font-mono text-[11px] text-dim">
+                      {group.id}
+                    </code>
+                    {/* The ontology term's own `description`, verbatim, and no line at all
+                        when the term carries none. A placeholder here would be the page
+                        inventing vocabulary on the one shelf whose subject is a controlled
+                        one. */}
+                    {chrome?.description !== undefined && (
+                      <span className="min-w-0 text-sm text-muted">{chrome.description}</span>
+                    )}
+                    {/* `ms-auto`, and it needs `flex-wrap`'s permission: on a wrapped row
+                        the count sits at the right end of whichever line it lands on, which
+                        is where a reader looks for it either way. */}
+                    <span
+                      aria-hidden
+                      className="ms-auto shrink-0 font-mono text-[11px] tracking-[0.06em] tabular-nums text-dim"
+                    >
+                      {group.nodes.length} card{group.nodes.length === 1 ? "" : "s"}
+                    </span>
+                  </h2>
+                  {/* Three columns only when there are more than two cards to put in
+                      them. `Decision` holds 2 and `Human gate` holds 2, and at a fixed
+                      `lg:grid-cols-3` each of those groups drew two tiles and a third of a
+                      row of nothing — an empty column that reads as a card that failed to
+                      load. Two tiles across a wide row is a pair; two tiles in a
+                      three-track grid is a gap.
+
+                      Unchanged by the panel, and worth saying so: the tracks are measured
+                      against the panel's inner width now rather than the page's, and the
+                      rule is the same rule. */}
+                  <div
+                    className={cx(
+                      "grid gap-5 p-5 sm:grid-cols-2",
+                      group.nodes.length > 2 && "lg:grid-cols-3",
+                    )}
+                  >
+                    {group.nodes.map((node) => (
+                      /* The type is the heading above this run, so repeating it on all
+                         24 tiles spends the loudest chip on the one fact the reader
+                         already has. */
+                      <NodeCardSummary key={node.id} node={node} showType={false} />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         )
       ) : (
