@@ -7,6 +7,9 @@ import { ProfileShell } from "@/components/profile/ProfileShell";
 import { EmptyState } from "@/components/profile/parts";
 import { profileView } from "@/components/profile/load";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-60) (cited at line 42): GET /api/authors/{handle}/terms
+
 /* ============================================================
    /u/[username]/terms — the vocabulary this handle added.
 

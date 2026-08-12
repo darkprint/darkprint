@@ -16,6 +16,10 @@ import type { OwnedRow } from "./OwnedBundles";
 import type { PinnedItem } from "./Pinned";
 import type { ProfileTabId } from "./tabs";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-54) (cited at line 78): folded into SEAM-42
+// TODO(SEAM-64) (cited at line 81): GET /api/authors/{handle}/bundles?q&visibility&sort
+
 /* ============================================================
    Everything the five profile routes read, assembled once.
 

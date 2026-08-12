@@ -24,6 +24,9 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { compact, cx } from "@/lib/format";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-62) (cited at line 97): POST /api/account/saves, DELETE /api/account/saves/{key}
+
 const STORAGE_KEY = "darkprint:favorites";
 
 /**

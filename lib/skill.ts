@@ -1,3 +1,6 @@
+
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-94) (cited at line 51): n/a — external CLI over git
 /* ============================================================
    The blueprint-writing skill, as one string.
    ------------------------------------------------------------

@@ -4,6 +4,9 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-57) (cited at line 111): POST /api/authors/{handle}/watch, DELETE …
+
 /* ============================================================
    Identity first, then what this account holds, then what you can do about it.
 

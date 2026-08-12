@@ -4,6 +4,9 @@ import { cx } from "@/lib/format";
 import { contentHref } from "@/lib/href";
 import { Ticked } from "@/components/ui/Ticked";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-11) (cited at line 1): folded into SEAM-09
+
 /** One published version of a card, plus the blueprints pinning that exact ref. */
 export interface NodeVersion {
   version: string;

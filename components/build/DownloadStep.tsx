@@ -11,6 +11,9 @@ import {
 } from "@/lib/content/bundle-export";
 import { cx } from "@/lib/format";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-100) (cited at line 65): POST /api/bundles/export (optional server counterpart)
+
 /* ============================================================
    One of the two exits: the factory, as files.
    ------------------------------------------------------------

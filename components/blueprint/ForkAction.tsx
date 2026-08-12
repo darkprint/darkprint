@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/Button";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { announceMenuOpened, useCloseWhenAnotherMenuOpens } from "@/components/ui/menu-group";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-70) (cited at line 45): POST /api/bundles/{owner}/{slug}/fork
+
 /** Which page this action renders on, so its copy names the right thing. */
 type ForkKind = "blueprint" | "node";
 

@@ -2,6 +2,9 @@ import Link from "next/link";
 
 import type { Blueprint } from "@/lib/types";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-06) (cited at line 10): folded into SEAM-03
+
 function EvidenceState({ children, tone = "dim" }: { children: React.ReactNode; tone?: "dim" | "emerald" | "amber" }) {
   const colour = tone === "emerald" ? "text-emerald" : tone === "amber" ? "text-amber" : "text-dim";
   return <span className={`font-mono text-[11px] uppercase tracking-[0.14em] ${colour}`}>{children}</span>;

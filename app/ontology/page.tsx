@@ -12,6 +12,9 @@ import {
   type VocabularyRow,
 } from "@/components/ontology/VocabularyBrowser";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-14) (cited at line 84): GET /api/ontology
+
 /* ============================================================
    /ontology — the ontology, browsable.
 

@@ -35,6 +35,15 @@ import { Ticked } from "@/components/ui/Ticked";
 import { FieldDisclosure } from "@/components/ui/FieldDisclosure";
 import { FIELD_NOTE } from "@/components/panes/field-notes";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-09) (cited at line 53): GET /api/cards/{id}
+// TODO(SEAM-10) (cited at line 841): GET /api/cards/{id}@{version}/source
+// TODO(SEAM-12) (cited at line 839): folded into SEAM-09
+// TODO(SEAM-22) (cited at line 999): GET /cards/{id}@{version}.yaml (static)
+// TODO(SEAM-76) (cited at line 859): POST /api/cards/{id}/star
+// TODO(SEAM-78) (cited at line 858): POST /api/cards/{id}/downloads
+// TODO(SEAM-80) (cited at line 1892): POST /api/cards/{id}/comments
+
 /**
  * An id outside `generateStaticParams` is a 404 at build time rather than a render at
  * request time. The archive reader behind this page walks `content/` off the working

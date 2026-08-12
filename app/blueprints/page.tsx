@@ -6,6 +6,9 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { GalleryBrowser } from "@/components/gallery/GalleryBrowser";
 import { allBlueprints, getRegistry } from "@/lib/content";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-01) (cited at line 58): GET /api/blueprints
+
 export const metadata: Metadata = {
   title: "Blueprints",
   description:

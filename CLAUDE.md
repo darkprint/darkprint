@@ -59,3 +59,35 @@ this repository's own skill.
   in this conversation. Otherwise it is PENDING-OWNER-REVIEW and carries no authority.
 * When an instruction file and the code disagree, the code wins and you report the
   divergence. Never edit the code to match a document.
+
+## Documentation is part of the definition of done
+
+`docs/ARCHITECTURE.md` is the single source of truth for the DarkPrint frontend and the
+specification from which the backend will be built. It must never lag behind the code.
+
+Update it in the **same commit** as the change:
+
+| If you change | Update these sections |
+| --- | --- |
+| add, remove or rename a route | 4 sitemap, and 5 journeys if the route is reachable |
+| add or change a domain concept, a type, or a fixture field | 2 glossary, 3 concept model |
+| add a form, an upload, a button or any interaction needing a server | 8 seams, new SEAM id, plus a TODO(SEAM-xx) in the code |
+| replace a mock with a real call | 8 seams, and flip the status tag from MOCK to LIVE everywhere it appears |
+| add a shared component, a hook, or a folder | 6 architecture: tree and dependency graph |
+| change where state lives or what is persisted | 7 state and data flow |
+| change a design token or an animation convention | 9 design system |
+| change metadata, JSON-LD, breakpoints, error or empty states | 10 cross cutting |
+| make a deliberate shortcut or leave something unfinished | 11 known gaps |
+
+Rules:
+* update the `Last verified against commit <sha> on <date>` line whenever you touch the document
+* add a row to the revision log in section 12
+* if a change makes a diagram wrong, fix the diagram. Never add a note saying it is outdated
+* if you cannot update a section, write a `TBD:` line with the open question. Silence is not allowed
+* status tags are LIVE, MOCK, PLANNED. No other values
+* never invent an endpoint, an entity or a behavior that is not in the code
+
+Commit checklist:
+- [ ] docs/ARCHITECTURE.md updated, or explicitly not affected and why
+- [ ] every touched Mermaid diagram compiles
+- [ ] Last verified line and revision log updated

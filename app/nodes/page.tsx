@@ -6,6 +6,9 @@ import type { NodeSummary } from "@/components/nodes/NodeCardSummary";
 import { allNodeCards, getOntologyView, getRegistry } from "@/lib/content";
 import { getAuthor } from "@/lib/data/users";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-07) (cited at line 19): GET /api/cards
+
 export const metadata: Metadata = {
   title: "Nodes",
   description:

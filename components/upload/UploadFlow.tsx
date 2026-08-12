@@ -32,6 +32,18 @@ import { requiredAgents, requiredTools } from "@/lib/graph-seed";
 import { bundleProgress } from "./progress";
 import { ValidationReport, verdictLine } from "./ValidationReport";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-26): PUT /api/bundles/{owner}/{slug}/agents-md
+// TODO(SEAM-27) (cited at line 769): n/a — File API, then SEAM-30 for the server counterpart
+// TODO(SEAM-28) (cited at line 606): GET /api/blueprints/{slug}/as-upload
+// TODO(SEAM-30) (cited at line 555): POST /api/validate/bundle
+// TODO(SEAM-31) (cited at line 130): folded into SEAM-30
+// TODO(SEAM-32) (cited at line 1040): POST /api/validate/report
+// TODO(SEAM-33) (cited at line 69): POST /api/validate/card, POST /api/validate/ontology
+// TODO(SEAM-34) (cited at line 600): folded into SEAM-27
+// TODO(SEAM-35) (cited at line 720): GET /api/slugs/available?slug=
+// TODO(SEAM-69) (cited at line 1146): POST /api/bundles
+
 /* ------------------------------------------------------------------ */
 /*  Static config                                                      */
 /* ------------------------------------------------------------------ */

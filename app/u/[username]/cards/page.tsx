@@ -6,6 +6,9 @@ import { OwnedCards } from "@/components/profile/OwnedCards";
 import { EmptyState, ShelfToolbar } from "@/components/profile/parts";
 import { profileView } from "@/components/profile/load";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-59): GET /api/authors/{handle}/cards
+
 /**
  * `/u/[username]/cards` — every node card this handle has authored.
  *

@@ -51,6 +51,10 @@ import {
 import { autonomyStatement } from "@/lib/format";
 import { ONTOLOGY_EXTENSIONS_FILE } from "./ontology-file";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-24) (cited at line 57): folded into SEAM-19; server-side compile on publish
+// TODO(SEAM-25) (cited at line 639): folded into SEAM-19; server-side generation on publish
+
 /* --------------------- the layout --------------------- */
 
 /** The Attractor-runnable pipeline. */

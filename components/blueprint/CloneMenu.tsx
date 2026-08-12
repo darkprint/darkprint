@@ -6,6 +6,9 @@ import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { announceMenuOpened, useCloseWhenAnotherMenuOpens } from "@/components/ui/menu-group";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-23): n/a — CLI, unbuilt
+
 /* ============================================================
    Taking the folder from a terminal — GitHub's "Code ▾", honestly.
 

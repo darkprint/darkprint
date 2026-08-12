@@ -21,6 +21,9 @@ import { parseCardRef } from "@/lib/core";
 import { getRegistry } from "@/lib/content";
 import { OWNED_BUNDLES } from "@/lib/data/bundles";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-65) (cited at line 68): GET /api/bundles/{owner}/{slug}
+
 /* ============================================================
    /u/[username]/[slug] — a bundle you own, handled the way a repository is handled.
 

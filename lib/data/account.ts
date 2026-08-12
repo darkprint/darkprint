@@ -30,6 +30,12 @@
 import type { Author } from "@/lib/types";
 import { AUTHORS } from "./users";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-103) (cited at line 87): POST /internal/events/card-published → fan-out
+// TODO(SEAM-104) (cited at line 93): fan-out from SEAM-70
+// TODO(SEAM-105) (cited at line 98): fan-out from an ontology release
+// TODO(SEAM-106) (cited at line 103): scheduled job
+
 /** One row of §03's notification list: what would be sent, and whether it would be. */
 export interface NotificationSetting {
   /** Stable key. Also the `id` the row's label is bound to. */

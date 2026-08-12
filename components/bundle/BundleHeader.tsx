@@ -8,6 +8,9 @@ import { CloneMenu } from "@/components/blueprint/CloneMenu";
 import { FavoriteStar } from "@/components/ui/FavoriteStar";
 import { MetaPill } from "@/components/ui/MetaPill";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-20): folded into SEAM-19
+
 /* ============================================================
    The band a bundle opens with: who owns it, what it is called, where it came from.
 

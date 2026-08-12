@@ -43,6 +43,9 @@ import { compareVersionStrings, formatSemver, parseSemver } from "../version/sem
 import { formatForFilename, parseDocument, type CardFormat } from "./parse";
 import type { JsonValue, NodeCard, Port } from "./schema";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-40) (cited at line 844): POST /api/cards/{id}/check-bump — must run at publish time, since a published version can
+
 /**
  * Deliberate copy of the private regex in `schema.ts`: that one guards
  * `parseCardRef`, this one owns the user-facing `card/bad-id` message. They are

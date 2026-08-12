@@ -6,6 +6,9 @@ import { prettyDate } from "@/lib/format";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-82): GET /api/blueprints/{slug}/comments?after=&limit=10
+
 /**
  * Community notes on a blueprint. Validators are flagged inline — the design gives
  * their votes more weight, so it matters who is talking — but the badge is a seeded

@@ -50,6 +50,14 @@ import { ForkAction } from "@/components/blueprint/ForkAction";
 import { ToolScopes } from "@/components/blueprint/Requirements";
 import { EvidenceLayers } from "@/components/blueprint/EvidenceLayers";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-03) (cited at line 122): GET /api/blueprints/{slug}
+// TODO(SEAM-05) (cited at line 601): folded into SEAM-03
+// TODO(SEAM-19) (cited at line 658): GET /bundles/{slug}/{path} (static) or GET /api/blueprints/{slug}/files/{path}
+// TODO(SEAM-75) (cited at line 289): POST /api/blueprints/{slug}/star, DELETE …
+// TODO(SEAM-79) (cited at line 717): POST /api/blueprints/{slug}/comments
+// TODO(SEAM-110) (cited at line 172): joins SEAM-71 and SEAM-57 into SEAM-03
+
 /** Every slug is known at build time; an unknown one is a 404, not an on-demand render. */
 export const dynamicParams = false;
 

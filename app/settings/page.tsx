@@ -20,6 +20,18 @@ import {
 } from "@/components/settings/controls";
 import { ProfileFields } from "@/components/settings/ProfileFields";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-43) (cited at line 143): GET /api/account
+// TODO(SEAM-45) (cited at line 255): PATCH /api/account/handle
+// TODO(SEAM-46) (cited at line 304): PATCH /api/account/email
+// TODO(SEAM-47) (cited at line 314): PATCH /api/account/notifications
+// TODO(SEAM-48) (cited at line 332): PATCH /api/account/default-visibility
+// TODO(SEAM-49) (cited at line 366): GET /api/account/validator
+// TODO(SEAM-50) (cited at line 421): DELETE /api/account
+// TODO(SEAM-51) (cited at line 430): POST /api/bundles/{owner}/{slug}/transfer
+// TODO(SEAM-52) (cited at line 156): GET /api/authors/{handle}/counts
+// TODO(SEAM-111) (cited at line 156): SEAM-52
+
 /* ============================================================
    /settings — what the registry knows about you.
 

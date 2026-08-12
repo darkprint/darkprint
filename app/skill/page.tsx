@@ -5,6 +5,10 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SkillSetup } from "@/components/skill/SkillSetup";
 import { MCP_ROUTE } from "@/lib/mcp";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-96) (cited at line 29): POST /api/bundles/{owner}/{slug}/releases (SEAM-68) with a CLI/skill client
+// TODO(SEAM-97) (cited at line 32): depends on SEAM-88
+
 /**
  * The three things around the tutorial that do not exist.
  *

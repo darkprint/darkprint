@@ -7,6 +7,9 @@ import { ALL_COMBINATIONS } from "@/components/build/choices";
 import { specNeighbours } from "@/components/spec/sequence";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-102) (cited at line 158): n/a
+
 export const metadata: Metadata = {
   /* This site's doctrine — `components/site/nav.test.ts`'s header, "one route, one name" —
      makes the page's `h1` and its `<title>` follow the label a reader clicks, with nothing

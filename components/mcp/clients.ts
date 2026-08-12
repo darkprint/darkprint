@@ -1,3 +1,6 @@
+
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-87) (cited at line 16): n/a — MCP stdio server, npx -y darkprint mcp
 /* ============================================================
    What each MCP client's config will look like, once the registry
    has a server to point at. Coming-soon content: see doc 2 §0.4 —

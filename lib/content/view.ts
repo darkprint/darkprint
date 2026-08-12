@@ -18,6 +18,9 @@ import { getAuthor } from "@/lib/data/users";
 import type { CommunitySignals } from "@/lib/data/community";
 import { graphForBlueprint, requiredAgents, requiredTools } from "@/lib/graph-seed";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-74) (cited at line 167): POST /api/blueprints/{slug}/votes
+
 /* --------------------- autonomy prose --------------------- */
 
 /**

@@ -1,3 +1,6 @@
+
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-58) (cited at line 39): folded into SEAM-53
 /* ============================================================
    The five tabs on a profile, and the four route segments they cost.
 

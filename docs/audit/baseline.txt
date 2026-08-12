@@ -1,0 +1,151 @@
+=== npm run typecheck ===
+
+> darkprint@0.1.0 typecheck
+> tsc --noEmit
+
+EXIT: 0
+=== npm run lint ===
+
+> darkprint@0.1.0 lint
+> eslint
+
+EXIT: 0
+=== npm run build ===
+
+> darkprint@0.1.0 prebuild
+> node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-bundles.ts
+
+public/bundles/<slug> — 9 bundles
+  adversarial-consensus-line   12 files   30478 bytes  sha256:69bcfb1e…
+  checkpoint-resume-runner     13 files   32476 bytes  sha256:22a71691…
+  frontline-triage             12 files   31388 bytes  sha256:a4c9d09c…
+  grounded-research-desk       12 files   33992 bytes  sha256:3f0c67ee…
+  guarded-merge-bot            10 files   26406 bytes  sha256:3e12918b…
+  incident-commander           11 files   31219 bytes  sha256:b12640e4…
+  nightly-data-janitor         11 files   28769 bytes  sha256:bdc1e438…
+  schema-forge-etl             11 files   28895 bytes  sha256:3e17d775…
+  starter-software-factory      9 files   25505 bytes  sha256:945448e0…
+public/cards — 57 card versions
+
+> darkprint@0.1.0 build
+> next build
+
+▲ Next.js 16.2.11 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.8s
+  Running TypeScript ...
+  Finished TypeScript in 6.0s ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/165) ...
+  Generating static pages using 9 workers (41/165) 
+  Generating static pages using 9 workers (82/165) 
+  Generating static pages using 9 workers (123/165) 
+✓ Generating static pages using 9 workers (165/165) in 906ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /blueprints
+├ ● /blueprints/[slug]
+│ ├ /blueprints/adversarial-consensus-line
+│ ├ /blueprints/checkpoint-resume-runner
+│ ├ /blueprints/frontline-triage
+│ └ [+6 more paths]
+├ ○ /build
+├ ○ /icon.svg
+├ ○ /mcp
+├ ○ /nodes
+├ ● /nodes/[...id]
+│ ├ /nodes/acceptance-tester
+│ ├ /nodes/acceptance-verifier
+│ ├ /nodes/assemble-stage
+│ └ [+50 more paths]
+├ ○ /ontology
+├ ● /ontology/[...term]
+│ ├ /ontology/planning
+│ ├ /ontology/implementation
+│ ├ /ontology/testing
+│ └ [+47 more paths]
+├ ○ /reading-the-radar
+├ ○ /settings
+├ ○ /skill
+├ ○ /spec/card
+├ ○ /spec/ontology
+├ ○ /spec/topology
+├ ○ /towards-a-dark-factory
+├ ● /u/[username]
+│ ├ /u/mara-veil
+│ ├ /u/k0bra
+│ ├ /u/sol-antczak
+│ └ [+3 more paths]
+├ ● /u/[username]/[slug]
+│ ├ /u/mara-veil/adversarial-consensus-line
+│ ├ /u/mara-veil/incident-commander
+│ ├ /u/mara-veil/guarded-merge-bot-hardened
+│ └ [+2 more paths]
+├ ● /u/[username]/blueprints
+│ ├ /u/mara-veil/blueprints
+│ ├ /u/k0bra/blueprints
+│ ├ /u/sol-antczak/blueprints
+│ └ [+3 more paths]
+├ ● /u/[username]/cards
+│ ├ /u/mara-veil/cards
+│ ├ /u/k0bra/cards
+│ ├ /u/sol-antczak/cards
+│ └ [+3 more paths]
+├ ● /u/[username]/saved
+│ ├ /u/mara-veil/saved
+│ ├ /u/k0bra/saved
+│ ├ /u/sol-antczak/saved
+│ └ [+3 more paths]
+├ ● /u/[username]/terms
+│ ├ /u/mara-veil/terms
+│ ├ /u/k0bra/terms
+│ ├ /u/sol-antczak/terms
+│ └ [+3 more paths]
+├ ○ /upload
+└ ○ /what-a-blueprint-is
+
+
+○  (Static)  prerendered as static content
+●  (SSG)     prerendered as static HTML (uses generateStaticParams)
+
+EXIT: 0
+=== tracked file count by extension ===
+ 191 ts
+ 190 yaml
+ 150 tsx
+  43 md
+  28 dot
+   6 svg
+   5 webp
+   3 json
+   2 mjs
+   1 snap
+   1 nvmrc
+   1 gitignore
+   1 css
+=== repo size excluding node_modules and .git ===
+du -sh (macOS, manual exclude)
+38104	total
+=== dependency counts ===
+dependencies: 7
+devDependencies: 12
+=== npm test ===
+
+> darkprint@0.1.0 test
+> vitest run
+
+
+ RUN  v4.1.10 /Users/alessandro/Github/darkprint
+
+
+ Test Files  92 passed (92)
+      Tests  3636 passed (3636)
+   Start at  15:30:17
+   Duration  10.96s (transform 5.72s, setup 0ms, import 16.96s, tests 18.56s, environment 7ms)
+
+EXIT: 0

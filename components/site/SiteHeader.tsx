@@ -11,6 +11,9 @@ import { SPEC_SEQUENCE, SANDBOX } from "@/components/spec/sequence";
 import { ACCOUNT } from "@/lib/data/account";
 import { cx } from "@/lib/format";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-42) (cited at line 373): POST /api/auth/session, DELETE /api/auth/session, GET /api/auth/me
+
 /* ============================================================
    Five targets, not seven.
 

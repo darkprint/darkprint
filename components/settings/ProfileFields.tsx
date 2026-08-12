@@ -6,6 +6,9 @@ import type { Author } from "@/lib/types";
 import { avatarGradient } from "@/lib/format";
 import { Field } from "./controls";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-44) (cited at line 1): PATCH /api/account/profile
+
 /* ============================================================
    The one part of `/settings` that answers a gesture, and the rule that lets it.
 

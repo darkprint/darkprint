@@ -12,6 +12,9 @@ import {
 } from "@/components/ui/RegistryFilterBar";
 import { useQueryState } from "@/components/ui/useQueryState";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-15) (cited at line 116): GET /api/ontology/terms?q&kind&origin
+
 /* ============================================================
    The third registry browser, and the route it needed.
 

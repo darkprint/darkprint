@@ -23,6 +23,9 @@
 
 import { MCP_CLIENTS } from "@/components/mcp/clients";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-21) (cited at line 6): n/a — CLI, wearing ComingSoonBadge
+
 /**
  * The line a Claude Code user would run, once there is a server to run it against.
  *

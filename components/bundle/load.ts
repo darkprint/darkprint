@@ -23,6 +23,9 @@ import { OWNED_BUNDLES } from "@/lib/data/bundles";
 import { getAuthor } from "@/lib/data";
 import { profileFor } from "@/lib/data/profiles";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-66) (cited at line 141): folded into SEAM-65
+
 /* ============================================================
    One bundle page's data, from whichever of the two sources can answer.
 

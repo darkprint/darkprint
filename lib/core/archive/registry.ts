@@ -21,6 +21,10 @@ import { compareVersionStrings } from "../version/semver";
 
 import type { BundleManifest, ResolvedBlueprint } from "../bundle/types";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-13) (cited at line 62): GET /api/cards/duplicates
+// TODO(SEAM-93) (cited at line 329): POST /api/search behind SEAM-88
+
 /** One published version of one card, plus the blueprints that pin it. */
 export interface CardVersionRecord {
   ref: CardRef;

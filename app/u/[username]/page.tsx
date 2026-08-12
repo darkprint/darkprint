@@ -10,6 +10,10 @@ import { Pinned } from "@/components/profile/Pinned";
 import { EmptyState, NodeCardTile, SectionTitle } from "@/components/profile/parts";
 import { profileView } from "@/components/profile/load";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-53) (cited at line 44): GET /api/authors/{handle}
+// TODO(SEAM-56) (cited at line 99): GET /api/authors/{handle}/signals
+
 /* ============================================================
    /u/[username] — the overview tab.
 

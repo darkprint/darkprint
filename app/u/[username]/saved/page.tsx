@@ -6,6 +6,9 @@ import { SavedList } from "@/components/profile/SavedList";
 import { EmptyState, SectionTitle } from "@/components/profile/parts";
 import { profileView } from "@/components/profile/load";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-61) (cited at line 39): GET /api/account/saves
+
 /* ============================================================
    /u/[username]/saved — the owner's bookmark list, and nobody else's.
 

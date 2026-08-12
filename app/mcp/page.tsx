@@ -12,6 +12,13 @@ import {
   TOPOLOGY_DOT,
 } from "@/lib/content/bundle-export";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-88) (cited at line 80): MCP tool
+// TODO(SEAM-89) (cited at line 85): MCP tool
+// TODO(SEAM-90) (cited at line 90): MCP tool
+// TODO(SEAM-91) (cited at line 95): MCP tool
+// TODO(SEAM-92) (cited at line 139): n/a
+
 /* ============================================================
    /mcp — a design proposal, re-registered as one.
 

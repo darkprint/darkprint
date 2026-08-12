@@ -7,6 +7,9 @@ import { OwnedBundles, type OwnedRow } from "@/components/profile/OwnedBundles";
 import { EmptyState, ShelfToolbar } from "@/components/profile/parts";
 import { profileView } from "@/components/profile/load";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-63) (cited at line 64): GET /api/authors/{handle}/bundles?include=private
+
 /* ============================================================
    /u/[username]/blueprints — the management list for the owner, the shelf for everyone else.
 

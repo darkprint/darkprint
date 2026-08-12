@@ -56,6 +56,9 @@ import {
   type StarterPort,
 } from "./cards";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-99) (cited at line 264): n/a — client-side; a server would only duplicate it
+
 export type { StarterApproval, StarterOutput } from "./cards";
 export {
   starterNodes,

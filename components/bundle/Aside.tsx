@@ -6,6 +6,13 @@ import { nodeHref } from "@/lib/href";
 import { Button } from "@/components/ui/Button";
 import { MetaPill } from "@/components/ui/MetaPill";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-67) (cited at line 42): PATCH /api/bundles/{owner}/{slug}/visibility
+// TODO(SEAM-68) (cited at line 328): POST /api/bundles/{owner}/{slug}/releases
+// TODO(SEAM-71) (cited at line 227): GET /api/bundles/{owner}/{slug}/forks
+// TODO(SEAM-72) (cited at line 178): GET /api/bundles/{owner}/{slug}/drift
+// TODO(SEAM-73) (cited at line 22): n/a
+
 /* ============================================================
    The column beside a bundle: what it is not, who can see it, what it hashes to,
    whether the upstream has moved, and what has been released.

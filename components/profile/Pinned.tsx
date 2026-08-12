@@ -9,6 +9,9 @@ import { TagPill } from "@/components/ui/TagPill";
 import { nodeHref } from "@/lib/href";
 import { SupportPill } from "./parts";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-55) (cited at line 64): PUT /api/authors/{handle}/pinned
+
 /* ============================================================
    What a builder chose to put at the top of their page.
 

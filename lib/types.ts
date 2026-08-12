@@ -17,6 +17,11 @@ import type {
    components read, so it is re-exported below rather than restated. */
 import type { AutonomyClass } from "@/lib/core/analysis/autonomy";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-81) (cited at line 178): POST /api/comments/{id}/vote
+// TODO(SEAM-83) (cited at line 167): GET /api/authors/{handle}/validator
+// TODO(SEAM-86) (cited at line 22): n/a — a constraint on the design of SEAM-84
+
 export type { AutonomyClass };
 
 /**

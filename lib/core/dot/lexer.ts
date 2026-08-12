@@ -10,6 +10,9 @@
 import { error, warning } from "../diagnostics";
 import type { Diagnostic, DiagnosticLocation } from "../diagnostics";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-29): POST /api/validate/dot (server counterpart, for publish-time re-validation)
+
 /** Token classes. `id`, `number` and `string` are all "ID" in the DOT grammar. */
 export type TokenKind = "id" | "number" | "string" | "punct" | "edgeop" | "eof";
 

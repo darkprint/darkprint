@@ -19,6 +19,9 @@ import { existsSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-98): n/a — build script
+
 /* --------------------- module resolution --------------------- */
 /* The same hook `scripts/generate-bundles.ts` installs, and for the same reason: the
    engine's sources use the `@/…` alias and extensionless relative imports, and Node's ESM

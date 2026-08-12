@@ -5,6 +5,9 @@ import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { SourcePanel } from "@/components/ui/SourcePanel";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-101): n/a
+
 /* ============================================================
    The second exit: a brief for the reader's own agent.
 

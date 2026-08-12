@@ -54,6 +54,9 @@ import { existsSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-109) (cited at line 11): replaced by SEAM-19 / SEAM-22 served from a store
+
 /* --------------------- module resolution --------------------- */
 
 /**

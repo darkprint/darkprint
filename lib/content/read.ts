@@ -40,6 +40,10 @@ import {
 } from "@/lib/core";
 import { parseOntologyTerms } from "./ontology-file";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-107) (cited at line 213): replaced by SEAM-01/03/07/09 backed by a store
+// TODO(SEAM-108) (cited at line 139): GET /api/ontology (SEAM-14), cached per ontology version
+
 /*
  * The `server-only` package would be the idiomatic guard here, but it is not in the
  * dependency set and the loader is not allowed to add one. This is the same promise

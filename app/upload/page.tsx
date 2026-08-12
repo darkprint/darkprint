@@ -7,6 +7,9 @@ import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { Eyebrow, SectionHeading } from "@/components/ui/SectionHeading";
 import { UploadFlow, type ExampleBundle } from "@/components/upload/UploadFlow";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-95) (cited at line 138): folded into SEAM-27
+
 /**
  * The house style for a link written inside a sentence, copied rather than imported.
  *

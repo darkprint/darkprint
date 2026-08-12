@@ -125,6 +125,9 @@ import type { ResolvedBlueprint, ResolvedNode } from "../bundle/types";
 import type { OntologyView } from "../ontology/resolve";
 import { carriesShingleEvidence, jaccardSimilarity, SHINGLE_WIDTH } from "./similarity";
 
+// Backend contract seams anchored in this file (see docs/architecture/seams.md):
+// TODO(SEAM-37) (cited at line 438): POST /api/analysis/security
+
 /* ------------------------------------------------------------------ */
 /* the model                                                          */
 /* ------------------------------------------------------------------ */
