@@ -27,10 +27,14 @@ import { RUNS, SPEC_SEQUENCE, type SpecRun } from "@/components/spec/sequence";
 const LEARN_LABELS: Record<string, string> = {
   "/spec/topology": "Blueprint file (DOT)",
   "/spec/card": "Node card (YAML)",
-  /* No row for `/spec/ontology`. It carries its long form in `sequence.ts` itself since the
-     Vocabulary → Ontology rename, because the header's Learn dropdown prints `page.nav`
-     directly and would otherwise have shown "Ontology" beside the Browse row of the same
-     name. See the note on that stop. */
+  /* The third spec stop joins its two siblings here. It spent one commit carrying the
+     format in `sequence.ts` instead, and the author asked "(YAML)" off the Learn dropdown
+     and the Learn rail — which is what `page.nav` draws. This table is the footer's own
+     register and always was: a footer row stands alone with no run around it to say what
+     kind of document it is, where a dropdown row sits under "Specification" beside
+     "Topology" and "Node card". `nav` keeps the word "file", which is what holds it apart
+     from the Browse row called "Ontology". */
+  "/spec/ontology": "Ontology file (YAML)",
   "/reading-the-radar": "How a blueprint is graded",
 };
 

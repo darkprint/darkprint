@@ -293,19 +293,25 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
     href: "/spec/ontology",
     step: "03",
     run: "specification",
-    /* "Ontology file (YAML)" since 2026-08-12, where the two stops above keep short forms.
-       `/ontology` — the browser — took the bare word "Ontology" across the whole chrome on
-       the author's instruction, and `nav` is what the header's Learn dropdown, the footer's
-       Learn column, `LearnShell`'s rail and `SpecPager` all print. Leaving it short would
-       have put two rows reading "Ontology" in one header, pointing at two routes.
+    /* "Ontology file", where the two stops above keep one-word forms.
+       ------------------------------------------------------------
+       It was plain "Ontology" until 2026-08-12, when `/ontology` — the browser — took that
+       word across the whole chrome on the author's instruction. `nav` is what the Learn
+       dropdown, `LearnShell`'s rail and `SpecPager` print, so leaving it there would have
+       put two rows reading "Ontology" in one header pointing at two routes.
 
-       The long form is not new wording either: `SiteFooter` already carried
-       "Blueprint file (DOT)" and "Node card (YAML)" as overrides for the two stops above,
-       because the short name is right inside the spec run and thin outside it. This one is
-       now spelled here instead, so the sequence and the chrome say the same thing without
-       an override in between. `title` stays "Ontology" — that is the page's own heading,
-       and the thing the document specifies. */
-    nav: "Ontology file (YAML)",
+       It spent one commit as "Ontology file (YAML)" and the author asked the format off
+       both menus. The parenthetical belongs to the FOOTER's register, where the Learn
+       column spells all three out — "Blueprint file (DOT)", "Node card (YAML)" — because
+       a footer row has no run around it to say what kind of document it is. A dropdown row
+       and a rail row do: they sit under "Specification" among their two siblings, which are
+       "Topology" and "Node card". So the format goes back to `SiteFooter`'s `LEARN_LABELS`,
+       beside the two overrides that were already there for the same reason, and this stays
+       the short name plus the one word that keeps it off the browser's.
+
+       `title` stays "Ontology" — that is the page's own heading, and the thing the document
+       specifies. */
+    nav: "Ontology file",
     eyebrow: "Layer 03 of 03",
     title: "Ontology",
     question: "Which identifiers the first two are allowed to use.",

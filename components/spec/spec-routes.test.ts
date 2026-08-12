@@ -201,16 +201,17 @@ describe("the sequence and the filesystem agree", () => {
      asked the browser at `/ontology` to take the word across the whole site, and `nav` is
      what the header's Learn dropdown, the footer, the rail and the pager print — so the
      short form would have put two "Ontology" rows in one header pointing at two routes.
-     `nav` took the file form its two siblings already wear in the chrome ("Blueprint file
-     (DOT)", "Node card (YAML)"); `title` is the page's own heading, and the thing the page
-     specifies is still the ontology.
+     `nav` took the word "file", which is enough to hold it apart; the format stays in
+     `SiteFooter`'s `LEARN_LABELS` beside its two siblings, on the author's instruction that
+     "(YAML)" come off the Learn dropdown and the Learn rail. `title` is the page's own
+     heading, and the thing the page specifies is still the ontology.
 
      Both halves are still pinned, so the stop cannot drift to a third name in either slot,
      and `nav.test.ts` holds the chrome end of the same rename. */
   it("names stop 03 for the file in the chrome and the concept on the page", () => {
     expect(SPEC_LAYERS[2]).toMatchObject({
       step: "03",
-      nav: "Ontology file (YAML)",
+      nav: "Ontology file",
       title: "Ontology",
     });
   });
