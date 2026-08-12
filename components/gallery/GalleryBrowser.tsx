@@ -117,12 +117,18 @@ export function GalleryBrowser({
      well as an unattended graph. Before that it meant "nobody stands in this graph",
      which the autonomy class beside it already said. */
   const darkFactory = params.get("df") === "1";
-  /* The disclosure below is open when a filter inside it is set, so a reader can never
-     have an active filter they cannot see. `TagFromQuery` sets one from `?tag=`, which is
-     exactly that case. */
-  const [narrowOpen, setNarrowOpen] = useState(false);
+  /* `narrowOpen` stood here, with a note saying the disclosure below "is open when a filter
+     inside it is set, so a reader can never have an active filter they cannot see", and
+     `TagFromQuery` setting one from `?tag=` was the case it named.
+     ------------------------------------------------------------
+     The disclosure is gone and so is the problem it was managing. Phase and autonomy are in
+     the open row now, because the shelf DISPLAYS both — five coverage slots and the class on
+     every row's shape line — and a filter whose answer is on screen should not be behind a
+     toggle. The tag chip is in the open too, so the deep link that made this state necessary
+     lands on something a reader can see and remove without opening anything.
 
-  /** Open on mobile, where the whole panel is behind a disclosure. Ignored from `sm` up. */
+     `narrowCount` went with it: it existed to print "N active" on the summary of a control
+     that no longer exists. Nothing else read either of them. */
 
   /*
    * Doc 2 §1.1 — autonomy as a way in, and never as a league table. The list offers only
@@ -242,13 +248,6 @@ export function GalleryBrowser({
     return sorted;
   }, [blueprints, search, tag, category, phase, autonomy, darkFactory, forkStance, forkSlugs]);
 
-  /** How many of the filters behind the disclosure are set. Printed on the summary. */
-  const narrowCount =
-    (tag !== null ? 1 : 0) +
-    (phase !== null ? 1 : 0) +
-    (autonomy !== null ? 1 : 0) +
-    (darkFactory ? 1 : 0);
-
   const hasFilters =
     search.trim() !== "" ||
     tag !== null ||
@@ -316,6 +315,19 @@ export function GalleryBrowser({
         total={blueprints.length}
         active={activeFilters.length}
       >
+        {/* Row 1: what a reader narrows by. Row 2: how the shelf is assembled.
+            ------------------------------------------------------------
+            Two rows, both open, where this was one row and a `Narrow further` disclosure.
+            Phase and autonomy came up out of it because the shelf now DISPLAYS both — the
+            coverage strip is five slots down every row and the class is on the shape line —
+            and a filter you can see the answer to should not be behind a toggle. What that
+            left behind was forks and dark-factory, and a disclosure over two controls costs
+            a reader more than it saves.
+
+            The split is not arbitrary: row 1 is four questions about the blueprints, row 2
+            is two about the LIST. `Forks: rolled up` does not narrow anything — it decides
+            whether a fork is its own entry or a line under its upstream — and `dark factory`
+            is the one filter whose answer the rows deliberately do not print. */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <SearchField
             value={search}
@@ -342,6 +354,43 @@ export function GalleryBrowser({
           </label>
 
           <label className="flex items-center gap-2">
+            <span className="sr-only">Filter by phase covered</span>
+            <select
+              value={phase ?? ""}
+              onChange={(e) => setParam("phase", e.target.value || null)}
+              aria-label="Filter by phase covered"
+              className={controlClass}
+            >
+              <option value="">All phases</option>
+              {phases.map((id) => (
+                <option key={id} value={id}>
+                  Covers {phaseLabel(id).toLowerCase()}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* Doc 2 §1.1: the class picks a subset, it never orders the page. */}
+          <label className="flex items-center gap-2">
+            <span className="sr-only">Filter by autonomy class</span>
+            <select
+              value={autonomy ?? ""}
+              onChange={(e) => setParam("autonomy", e.target.value || null)}
+              aria-label="Filter by autonomy class"
+              className={controlClass}
+            >
+              <option value="">All autonomy classes</option>
+              {classes.map(([value, { label }]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <label className="flex items-center gap-2">
             <span className="sr-only">How to show forks</span>
             <select
               value={forkStance}
@@ -355,7 +404,62 @@ export function GalleryBrowser({
             </select>
           </label>
 
+          {/* Same 40px shell as the selects it stands beside — it is a control in that row,
+              and a control 6px shorter than its neighbours reads as a mistake rather than as
+              a different kind of thing. */}
+          <label
+            className={cx(
+              "flex h-10 w-full cursor-pointer select-none items-center gap-2 rounded-md border px-3 font-mono text-xs transition-colors sm:w-auto",
+              darkFactory
+                ? "border-line-bright bg-surface-3 text-fg"
+                : "border-line bg-surface-2 text-muted hoverable:hover:text-fg",
+            )}
+          >
+            <input
+              type="checkbox"
+              checked={darkFactory}
+              onChange={(e) => setParam("df", e.target.checked ? "1" : null)}
+              className="h-3.5 w-3.5 accent-cyan"
+            />
+            <span aria-hidden>◼</span>
+            dark factory
+          </label>
         </div>
+
+        {/* One removable chip, not thirty.
+            ------------------------------------------------------------
+            It kept its place when the disclosure around it went, and its remove button with
+            it. The row it replaced rendered every tag in the archive, alphabetically,
+            uncounted: measured against every `blueprint.yaml`, of 30 tags **24 match exactly
+            one blueprint and 6 match two — none matches three**. The best narrowing any chip
+            could deliver was 9 → 2, on a shelf a reader scrolls past in one screen. That is
+            a hyperlink with extra steps, and every one of those hyperlinks is already printed
+            on the row it points at and on the detail page it opens.
+
+            It also cost the most: 308px tall at phone width, thirteen wrapped rows, 43% of a
+            714px viewport. The chips were single-select behaving as thirty `aria-pressed`
+            toggles, so pressing one silently unpressed another with nothing announced.
+
+            What remains is the part that was load-bearing: a deep link from a blueprint
+            detail page stays legible and removable. Tags are still reachable — the search box
+            matches `tags.join(" ")`, and every detail page prints its own.
+
+            It no longer needs a disclosure to auto-open for it, which was the mechanism that
+            put a wall of chips on the busiest road into this page. */}
+        {tag !== null && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[11px] text-dim">Tag</span>
+            <button
+              type="button"
+              onClick={() => setParam("tag", null)}
+              aria-label={`Remove the ${tag} tag filter`}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-cyan/60 bg-cyan/10 px-2.5 py-1 font-mono text-[11px] text-cyan transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-cyan hoverable:active:scale-[0.97]"
+            >
+              #{tag}
+              <span aria-hidden>×</span>
+            </button>
+          </div>
+        )}
 
         {/* The control is real and the set it works over is empty, so it says so rather
             than leaving a reader to wonder why three settings show one shelf. Every fork
@@ -369,121 +473,6 @@ export function GalleryBrowser({
           </p>
         )}
 
-        {/* Controlled rather than a bare `<details>`: `TagFromQuery` can set a tag from a
-            deep link, and a filter the reader did not choose and cannot see is worse than
-            the row this replaced. */}
-        <details
-          open={narrowOpen || narrowCount > 0}
-          onToggle={(e) => setNarrowOpen(e.currentTarget.open)}
-          className="group/narrow border-t border-line pt-3"
-        >
-          <summary className="flex cursor-pointer list-none items-center gap-2 font-mono text-xs text-muted transition-colors hoverable:hover:text-fg">
-            <span aria-hidden className="transition-transform group-open/narrow:rotate-90">
-              ▸
-            </span>
-            Narrow further
-            {narrowCount > 0 && (
-              <span className="rounded-full border border-cyan/50 bg-cyan/10 px-2 py-0.5 text-[11px] text-cyan">
-                {narrowCount} active
-              </span>
-            )}
-          </summary>
-
-          <div className="mt-4 flex flex-col gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              <label className="flex items-center gap-2">
-                <span className="sr-only">Filter by phase covered</span>
-                <select
-                  value={phase ?? ""}
-                  onChange={(e) => setParam("phase", e.target.value || null)}
-                  aria-label="Filter by phase covered"
-                  className={controlClass}
-                >
-                  <option value="">All phases</option>
-                  {phases.map((id) => (
-                    <option key={id} value={id}>
-                      Covers {phaseLabel(id).toLowerCase()}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {/* Doc 2 §1.1: the class picks a subset, it never orders the page. */}
-              <label className="flex items-center gap-2">
-                <span className="sr-only">Filter by autonomy class</span>
-                <select
-                  value={autonomy ?? ""}
-                  onChange={(e) => setParam("autonomy", e.target.value || null)}
-                  aria-label="Filter by autonomy class"
-                  className={controlClass}
-                >
-                  <option value="">All autonomy classes</option>
-                  {classes.map(([value, { label }]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {/* Same 40px shell as the selects it stands beside — it is a control in
-                  that row, and a control 6px shorter than its neighbours reads as a
-                  mistake rather than as a different kind of thing. */}
-              <label
-                className={cx(
-                  "flex h-10 w-full cursor-pointer select-none items-center gap-2 rounded-md border px-3 font-mono text-xs transition-colors sm:w-auto",
-                  darkFactory
-                    ? "border-line-bright bg-surface-3 text-fg"
-                    : "border-line bg-surface-2 text-muted hoverable:hover:text-fg",
-                )}
-              >
-                <input
-                  type="checkbox"
-                  checked={darkFactory}
-                  onChange={(e) => setParam("df", e.target.checked ? "1" : null)}
-                  className="h-3.5 w-3.5 accent-cyan"
-                />
-                <span aria-hidden>◼</span>
-                dark factory
-              </label>
-            </div>
-
-            {/* One removable chip, not thirty.
-                ------------------------------------------------------------
-                The row rendered every tag in the archive, alphabetically, uncounted.
-                Measured against every `blueprint.yaml` in the archive: of 30 tags, **24
-                match exactly one blueprint and 6 match two — none matches three**. The
-                best narrowing any chip could deliver was 9 → 2, on a shelf a reader
-                scrolls past in one screen. That is a hyperlink with extra steps, and
-                every one of those hyperlinks is already printed on the tile it points
-                at and on the detail page it opens.
-
-                It also cost the most: 308px tall at phone width, thirteen wrapped rows,
-                43% of a 714px viewport — and the disclosure auto-opens on the `?tag=`
-                path that every blueprint detail page links through, so the wall sat on
-                the busiest road into this page. The chips were single-select behaving
-                as thirty `aria-pressed` toggles, so pressing one silently unpressed
-                another with nothing announced.
-
-                What remains is the part that was load-bearing: the deep link stays
-                legible and removable. Tags are still reachable — the search box matches
-                `tags.join(" ")`, and every tile prints its own. */}
-            {tag !== null && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-[11px] text-dim">Tag</span>
-                <button
-                  type="button"
-                  onClick={() => setParam("tag", null)}
-                  aria-label={`Remove the ${tag} tag filter`}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-cyan/60 bg-cyan/10 px-2.5 py-1 font-mono text-[11px] text-cyan transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-cyan hoverable:active:scale-[0.97]"
-                >
-                  #{tag}
-                  <span aria-hidden>×</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </details>
       </RegistryFilterBar>
 
       {/* result count + reset.
