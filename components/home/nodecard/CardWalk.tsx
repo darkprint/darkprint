@@ -143,13 +143,18 @@ import { tokenizeYaml } from "./yaml";
  * Measured on the built page at 1440 x 950. The centring offset below is half of it, so it
  * moves whenever the heading gains a line or `NC.rows` changes.
  *
- * 571 since 2026-08-12, down from 715, and both terms of that moved for the same reason:
- * the author asked this figure to be the blueprint beat's size, `NC.rows` went 25 → 17 to
- * give it, and the heading narrowed with `max-w-5xl` on the wrapper without gaining a line.
- * Re-measured rather than subtracted — 715 − 176 predicts 539 and the built page says 571,
- * because the narrower column also changed the lead's wrap.
+ * 715 → 571 → 611 over 2026-08-12, and every step was measured rather than predicted.
+ *
+ *   715   before
+ *   571   `NC.rows` 25 → 17 brought the figure to the blueprint beat's size, and
+ *         `max-w-5xl` narrowed the heading. Subtraction predicts 539; the narrower
+ *         column changed the lead's wrap, so the page said 571.
+ *   611   the cell gained `mt-10`, the air the author asked for above the listing.
+ *
+ * heading 113 + gap 40 + cell 459 = 612, and the box measures 611: the heading block's own
+ * height is fractional. The declared number is the measured one.
  */
-const GROUP = 571;
+const GROUP = 611;
 
 const PAD_Y = 2;
 
@@ -175,26 +180,39 @@ const PAD_Y = 2;
  *   face layer   408   = FACE_TOP + FACE
  *   slack below   51
  *
- * **So this constant does not move.** It survived the strip because the face grew into slack
- * that was already there, and it survives the resize because the face came down with the
- * cell: 51px under the face against the blueprint beat's own 55 under its graph, which is
- * the figure this one is now being matched to. `GROUP` did move, and its own note says why.
+ * It survived both of those: the strip because the face grew into slack that was already
+ * there, and the resize because the face came down with the cell.
  *
- * It does not move for a second reason worth stating, because the obvious edit is to lower
- * it. 71 places the FIGURE, and the figure opens on the node strip: the first thing under
- * the heading is the row of discs, which is what the beat's claim starts with. The plate
- * sitting further down than the old card did is the strip and its tether occupying the
- * distance rather than a gap reopening.
+ * ── 31 since the cell gained its `mt-10`, and the face has not moved at all ──
+ * The author asked for air between the lead and the YAML listing, and the two layers share
+ * one grid cell — so the `mt-10` that opens it pushes the face down by the same 40 it gives
+ * the listing. That is the wrong half of the change: the gap they were complaining about is
+ * above the LISTING, and the distance from the heading to the FACE is the one they had
+ * already tuned ("it is too distant", 171 → 71).
  *
- * This is the ONLY term that was allowed to move. The sticky offset below also places the
- * card — a pinned card lands at `top + FACE_TOP` — and spending 100px of it here was tried
- * and reverted, because `top` is what centres the listing and the listing owns the last 86%
- * of the pin. See that comment.
+ * So the 40 comes straight back out of this term, which is exactly what this term is for —
+ * it places the face inside the cell, independently of where the cell is placed.
+ *
+ *   heading → cell    40   the new `mt-10`
+ *   cell → face       31   this constant
+ *   heading → face    71   unchanged, which is the point
+ *   heading → listing 40   what was asked for, where 0 was
+ *
+ * Slack under the face goes 51 → 91, which the cell has: 31 + 337 is 368 inside 459.
+ *
+ * The reading it protects is unchanged too. 71 places the FIGURE, and the figure opens on
+ * the node strip: the first thing under the heading is the row of discs, which is what the
+ * beat's claim starts with.
+ *
+ * This is the ONLY term that may absorb a change like that. The sticky offset below also
+ * places the card — a pinned card lands at `top + FACE_TOP` — and spending 100px of it there
+ * was tried and reverted, because `top` is what centres the listing and the listing owns the
+ * last 86% of the pin. See that comment.
  *
  * Not a percentage: the two heights are fixed numbers this file already derives everything
  * else from, and a percentage of the cell would drift the moment `NC.rows` changes.
  */
-const FACE_TOP = 71;
+const FACE_TOP = 31;
 
 /**
  * The landing's wording for the nine parts. Roughly 25 words each, against the 45 that
@@ -423,7 +441,7 @@ export function CardWalk({
 
           `max(5rem, …)` is the floor, and it does less work than it used to. Half of 715 was
           more than half of a 950px viewport less the header, so the expression turned
-          negative below a 794px window; at 571 it holds down to about 650. What the floor
+          negative below a 794px window; at 611 it holds down to about 690. What the floor
           decides is which end gets cut on a window too short for the box either way, and the
           top is where the card names itself. */}
       <div
@@ -434,8 +452,24 @@ export function CardWalk({
         {/* Plain ground, one hairline. The author named the graticule as the thing to
             drop, and it is the whole difference between a figure the landing carries and
             a plate that reads as its own page. */}
+        {/* `mt-10`, and it is the caption's own `mt-10` on the other side of the figure.
+            ------------------------------------------------------------
+            The author: "add a little space between the text and the yaml card … the same
+            space there is from the bottom of the card and the text below". Measured before
+            the change: 0px above, 40px below. The lead's last line and the listing's top
+            edge were touching, which read as the figure starting mid-sentence.
+
+            40 and not a number tuned by eye, because the number was already on the page:
+            `BeatCaption` sets `mt-10` under the figure, so the block now sits in equal air
+            top and bottom. Ink to ink it comes out even as well — both the lead above and
+            the caption below are `text-[15px] leading-relaxed`, so each contributes the same
+            ~5px of half-leading inside its own box.
+
+            Unconditional, not `lg:`. The stacked layout a phone and a reduced-motion reader
+            get has the same two sentences either side of the same figure, and the gap is
+            about the reading rather than about the pin. */}
         <div
-          className={cx(motion && "lg:grid lg:items-start")}
+          className={cx("mt-10", motion && "lg:grid lg:items-start")}
           style={motion ? { perspective: "1800px" } : undefined}
         >
         {/* The card, before it is a file. Same shell, same grid cell, so the sticky box
