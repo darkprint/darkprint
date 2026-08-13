@@ -146,7 +146,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | claimed | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | tests-written | 152 blind tests on `test/t025-versioning`, all red on the absent module, no todo; 25 falsifications confirm they discriminate; bound to the block as amended at `e5e232d` |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | tests-written | 157 blind tests on `test/t025-versioning`, all red on the absent module, no todo; 26 falsifications confirm they discriminate; bound to the block as amended at `4b8de07` |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | claimed | — |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -904,6 +904,19 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     bump, while `cardDigests` and therefore the digest did move. The test asserts only the
     floor — not `none` — and pins no level above it, so either ruling passes. Worth settling
     before T100, which will hit it the first time an author pins back to an older card.
+  - 2026-08-14 test author: settled at `4b8de07` — **magnitude, never direction** — and the
+    floor is now an exact level. `bump.ts:460` verified in the tree: `compareSemver(after,
+    before) <= 0` really does return `none`, so the clause names the right line. The rollback
+    test asserts **all three** levels rather than the major alone, since an implementation
+    special-casing the one direction it was shown passes a single-case test, and a fifth test
+    asserts the property itself — repinning a pair either way gives one answer — over five
+    pairs including `1.0.0-rc.1 ↔ 1.0.0`. That last pair is the one that separates the rule
+    from its shortcut: `compareSemver` orders a prerelease *below* its release, so ordering
+    the pair prices it a `patch`, where "major whenever `declaredBump` says `none`" says major.
+    157 tests, all red, no todo. 26 falsifications, all discriminating, and the two new ones
+    catch the rule from opposite sides — keeping the direction prices a major rollback down to
+    a patch (4 red), and the always-major shortcut prices a minor and a patch rollback up (4
+    red, including the prerelease pair that only this one catches).
 
 ### T060, Authorization policy: owner and operator
 
