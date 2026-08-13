@@ -704,6 +704,20 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 - **Owns:** `lib/server/archive/**`
 - **Forbidden:** `lib/db/schema.ts`, `app/**`, `lib/core/**`
 - **Inherited from T000** (recorded by the adversary at T000's PASS, not a defect there): `keyForDigest` throws a plain `Error` quoting its caller's input. **Validate a digest at the edge**, so a bad path parameter is a 404 and not a 500 that echoes what the caller sent.
+- **Published signatures** (checked against `backend` at `8b489a2`; the `bundle`, `release` and `card_version` tables already exist in `lib/db/schema.ts`, and `bundle` already carries a unique index on `(owner_id, slug)`, which is B-09 enforced by the schema rather than by code).
+
+        interface BundleRecord  { id: string; ownerId: string; slug: string; visibility: "public" | "private";
+                                  lineage?: { ownerId: string; slug: string; version: string };
+                                  createdAt: Date; updatedAt: Date }
+        interface ReleaseRecord { id: string; bundleId: string; version: string; digest: string; createdAt: Date }
+
+        createBundle(db: Db, input: { ownerId; slug; visibility; lineage? }): Promise<BundleRecord>
+        getBundle(db: Db, ownerId: string, slug: string): Promise<BundleRecord | undefined>
+        addRelease(db: Db, input: { bundleId; version; digest; dot; cardRefs; vocabulary? }): Promise<ReleaseRecord>
+        getRelease(db: Db, bundleId: string, digest: string): Promise<ReleaseRecord | undefined>
+        listReleases(db: Db, bundleId: string): Promise<ReleaseRecord[]>
+
+  Every function takes an explicit `Db` as its first parameter — no module-scope client, no implicit `DATABASE_URL`. That is D-08's lesson applied before it can recur: a function that reaches for a shared connection cannot be pointed at a test's own database, and the blind suite will need to do exactly that.
 - **Goal:** store and read a bundle record and its append-only releases, with each release's bytes addressed by the digest the engine computes.
 - **Contract:** one record per `(owner, slug)` (B-06, B-09); releases are append-only, each carrying the author's semver, the engine's digest, the DOT source, the pinned card refs and the local vocabulary the bundle uses. Identity is `bundleDigest(dot, sortedCardDigests)` (`lib/core/hash/digest.ts:61`), computed server-side and never accepted from a client; card digests are sorted and **not** deduplicated. Bytes return verbatim. A release carrying an error-severity diagnostic is refused, never stored (`lib/content/read.ts:281-291`). Visibility is a column on the bundle record, defaulting from the account (B-07 for cards is `T020`'s).
 - **Acceptance criteria:** (1) storing a release and reading it back yields byte-identical DOT and card text; (2) the stored digest equals what `lib/core` computes over the same inputs; (3) a bundle pinning one card twice stores a different digest from one pinning it once; (4) appending a release leaves every earlier release readable at its own digest; (5) a store carrying an error diagnostic persists nothing, including bytes; (6) two owners may hold the same slug and their records never collide.
@@ -718,6 +732,15 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 - **Blocks:** T020, T030, T100
 - **Owns:** `lib/server/versioning/**`
 - **Forbidden:** `lib/core/**` (consume, never edit), `lib/db/**`, `app/**`
+- **Published signatures** (checked against `backend` at `8b489a2`). `BumpLevel`, `BumpAnalysis`, `inferBump`, `checkVersionChain`, `parseSemver` and `compareSemver` already exist in `lib/core` for cards and are **consumed, never reimplemented**. This task adds the other two primitives:
+
+        interface BlueprintSnapshot { dot: string; cardRefs: readonly string[] }
+
+        inferBlueprintBump(previous: BlueprintSnapshot, next: BlueprintSnapshot): BumpAnalysis
+        inferOntologyBump(previous: readonly OntologyTerm[], next: readonly OntologyTerm[]): BumpAnalysis
+        checkDeclaredBump(previous: string, declared: string, inferred: BumpAnalysis): Diagnostic[]
+
+  `checkDeclaredBump` returns `[]` when the declared version is at least the inferred level and a diagnostic carrying the engine's own `reasons` when it is not. A blueprint's diff is its DOT plus the set of card refs it pins; nothing else moves a blueprint's version. For an ontology, removing a term or narrowing a `broader` chain is major and adding one is minor.
 - **Goal:** one versioning authority for all three primitives (B-04) — declare a semver, compute a digest, infer the bump the content actually implies, hold a chain to it, and carry deprecation forward.
 - **Contract:** the card half exists and is consumed, not reimplemented: `inferBump(previous, next)` returns `{ level, reasons[] }` comparing everything except `version`, `author` and `provenance` (`lib/core/version/bump.ts`), `checkVersionChain` holds a sorted chain to it (`lib/core/card/validate.ts:847`), and `parseSemver`/`compareSemver` order versions. This task extends the same three operations to **blueprints** (whose diff is the DOT plus the set of pinned card refs) and to **ontology versions** (whose diff is the term set, where removing a term or narrowing a `broader` chain is major and adding a term is minor). Every release therefore carries both a declared semver and a computed digest, and a declared bump smaller than the inferred one is refused with the engine's own reasons.
 - **Acceptance criteria:** (1) a card chain the engine calls major and the author declared minor is refused, naming the reasons; (2) a blueprint release repinning a card to a new major is itself inferred major; (3) a blueprint release changing only the manifest prose is inferred patch; (4) an ontology version removing a term is inferred major; (5) the same two inputs always infer the same level; (6) a deprecated term's successor pointer survives a version bump and a dangling successor is refused.
@@ -732,6 +755,26 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 - **Blocks:** T100, T110, T120, T130, T140, T150, T160, T170, T210
 - **Owns:** `lib/server/policy/**`
 - **Forbidden:** every route file, `lib/db/**`
+- **Published signatures** (checked against `backend` at `8b489a2`). Pure: no I/O, no imports from `lib/db` or `lib/server/http`.
+
+        type Actor =
+          | { kind: "anonymous" }
+          | { kind: "account"; accountId: string; handle: string | null }
+          | { kind: "operator"; accountId: string }
+
+        type Resource =
+          | { kind: "bundle";  ownerId: string; visibility: "public" | "private" }
+          | { kind: "card";    ownerId: string; visibility: "public" | "private" }
+          | { kind: "save";    ownerId: string }
+          | { kind: "note";    authorId: string }
+          | { kind: "account"; accountId: string }
+
+        type Action = "read" | "write" | "delete" | "publish" | "transfer"
+
+        can(actor: Actor, action: Action, resource: Resource): boolean
+        visibleTo(actor: Actor, ownerId: string): "all" | "public"
+
+  `can` returns a boolean and never a `Response`: mapping a denied read to 404 rather than 403 belongs to the caller, and this module may not import the envelope. `visibleTo` is how the counting rule is honoured without every query reinventing it — an owner sees `"all"`, everyone else `"public"`, which is exactly the difference the profile tab strip states in words.
 - **Goal:** one pure module answering whether an actor may perform an action on a resource, so no route re-implements a visibility rule.
 - **Contract:** two subjects only (B-13): the owner of a resource, and a break-glass operator. Four promises are the core cases, each stated on the surface that makes it — a private fork is never announced on its upstream, in fork counts, fork lists or the upstream author's notifications (`lib/data/bundles.ts:508-526`); a save is private and so is its count; an owner's blueprint and card counts include the private half and a visitor's never do (`components/profile/load.ts:192-200`); a private bundle has no resolved graph and therefore no reading. Three read contexts are distinguishable: anonymous, signed-in visitor, owner. A denied read resolves to 404, never 403 (B-03).
 - **Acceptance criteria:** (1) a visitor's fork list over a fixture holding a private fork is empty and the count agrees; (2) owner and visitor counts over one handle differ by exactly the private rows; (3) every action is decided by an exhaustive case list with no default-allow branch; (4) the operator subject can reach any resource and every such decision is auditable; (5) decisions are pure — same actor, action and resource, same answer, no I/O.
