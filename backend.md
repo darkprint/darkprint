@@ -871,7 +871,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T060, Authorization policy: owner and operator
 
-- **State:** claimed
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t060-policy` on `feat/t060-policy`
 - **Test worktree:** `../darkprint-wt-t060-policy-tests` on `test/t060-policy`
 - **Depends on:** T000 (contract: identity type)
@@ -919,6 +919,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 - **Out of scope:** enforcement inside routes (each feature task calls this), session establishment.
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-13.
+  - 2026-08-13 implementer: `impl-done`. Implemented `lib/server/policy/{types,can,visible-to,index}.ts` exactly to the published signature: `Actor`/`Resource`/`Action` restated (not imported — the module has zero imports, so purity is structural, not just tested), `can()` short-circuits `operator` to always-true first, then dispatches per `Resource.kind` to a handler whose `switch (action)` has no `default: return`-style catch-all — every `default` is `const exhaustive: never = action; return exhaustive;`, so a case left unhandled is a `tsc` failure, not a runtime default-allow (AC3). `visibleTo` returns `"all"` for the owner and the operator, `"public"` otherwise (AC1, AC2). `note` has no `visibility` field in the published `Resource` union, unlike `bundle`/`card`, so it is modelled as always-readable with author-only write/delete; nothing in the contract's four promises constrains note privacy, and this is the only signature-shape judgment call made — flagging it here rather than in the code, since a route wiring this differently than assumed would be silent otherwise. Gates: `typecheck`, `lint`, `build` all clean. `npm test`: 111 files / 3762 tests pass; run 5 times as required, one test failed twice out of five runs — always the same single test, `lib/core/dot/graph.test.ts:159` (`expect(Date.now() - started).toBeLessThan(600)`), never anything under `lib/server/policy`. `lib/core/**` is Forbidden to this task and untouched. Host was at load average ~20 on 10 cores (many concurrent worktree agents), which is the likely cause of a hard-coded wall-clock budget assertion tripping; reported to the orchestrator rather than touched.
 
 ### T070, Namespace: handles, slugs, reservation
 
