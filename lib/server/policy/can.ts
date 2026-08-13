@@ -81,6 +81,12 @@ function canOnSave(actor: Actor, action: Action, resource: { ownerId: string }):
  * load. Trusting a partial match is exactly the leak the parent amendment closed for a
  * complete record and left open for an incomplete one (2026-08-14 ruling: a half-loaded
  * parent is not evidence of publicness, or of ownership).
+ *
+ * `ownerId` and `visibility` are each read off `parent` exactly once, into `parentOwnerId`
+ * and `parentVisibility`, and every check below reads the local, never `parent` again — a
+ * validated value is the value used (2026-08-14 ruling). A `parent` backed by a getter that
+ * answers differently on a second read (a lazily-materialised row, for instance) would
+ * otherwise pass the well-formedness check on one read and grant on another.
  */
 function canOnNote(
   actor: Actor,
@@ -89,13 +95,13 @@ function canOnNote(
 ): boolean {
   const author = isOwner(actor, resource.authorId);
   const parent = resource.parent;
+  const isParentObject = typeof parent === "object" && parent !== null;
+  const parentOwnerId = isParentObject ? parent.ownerId : undefined;
+  const parentVisibility = isParentObject ? parent.visibility : undefined;
   const parentWellFormed =
-    typeof parent === "object" &&
-    parent !== null &&
-    isId(parent.ownerId) &&
-    (parent.visibility === "public" || parent.visibility === "private");
-  const parentOwner = parentWellFormed && isOwner(actor, parent.ownerId);
-  const parentPublic = parentWellFormed && parent.visibility === "public";
+    isParentObject && isId(parentOwnerId) && (parentVisibility === "public" || parentVisibility === "private");
+  const parentOwner = parentWellFormed && isOwner(actor, parentOwnerId);
+  const parentPublic = parentWellFormed && parentVisibility === "public";
   switch (action) {
     case "read":
       return parentOwner || parentPublic;
@@ -141,29 +147,36 @@ function canOnAccount(actor: Actor, action: Action, resource: { accountId: strin
  * job (B-03). Never throws — a malformed `actor` or `resource` (not an object, `null`, a
  * `kind` outside either union) is a denial, not an exception (2026-08-14 ruling).
  *
- * The operator check runs first. It requires `isOperator`, not just `actor.kind ===
- * "operator"`: possession of the discriminant is not authority (2026-08-14 ruling) — an
- * actor tagged `operator` with no `accountId` gets an anonymous caller's answer instead,
- * because `isOwner` below only ever grants to `kind === "account"` and so never mistakes an
- * unidentified operator for one. (AC4's audit requirement was withdrawn from this task and
- * belongs to the call site and T240, not to this module.)
+ * The operator grant lives inside each resource-kind case below, not as a blanket check
+ * before the switch: a malformed resource is a denial for everyone, including a genuine
+ * operator (2026-08-14 ruling) — `can(validOperator, "read", null)` and
+ * `can(validOperator, "read", { kind: "unknown" })` both deny, because neither ever reaches
+ * a case that grants anything. An operator's grant is therefore exactly as wide as a
+ * recognized resource, never wider — it is unconditional once `resource.kind` is one of the
+ * five, not before.
+ *
+ * `isOperator`, not just `actor.kind === "operator"`: possession of the discriminant is not
+ * authority (2026-08-14 ruling) — an actor tagged `operator` with no `accountId` gets an
+ * anonymous caller's answer instead, because `isOwner` below only ever grants to `kind ===
+ * "account"` and so never mistakes an unidentified operator for one. (AC4's audit
+ * requirement was withdrawn from this task and belongs to the call site and T240, not to
+ * this module.)
  */
 export function can(actor: Actor, action: Action, resource: Resource): boolean {
   if (typeof actor !== "object" || actor === null) return false;
-  if (isOperator(actor)) return true;
   if (typeof resource !== "object" || resource === null) return false;
 
   switch (resource.kind) {
     case "bundle":
-      return canOnVisibilityScoped(actor, action, resource);
+      return isOperator(actor) || canOnVisibilityScoped(actor, action, resource);
     case "card":
-      return canOnVisibilityScoped(actor, action, resource);
+      return isOperator(actor) || canOnVisibilityScoped(actor, action, resource);
     case "save":
-      return canOnSave(actor, action, resource);
+      return isOperator(actor) || canOnSave(actor, action, resource);
     case "note":
-      return canOnNote(actor, action, resource);
+      return isOperator(actor) || canOnNote(actor, action, resource);
     case "account":
-      return canOnAccount(actor, action, resource);
+      return isOperator(actor) || canOnAccount(actor, action, resource);
     default: {
       assertNever(resource);
       return false;
