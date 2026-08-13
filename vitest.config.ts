@@ -42,5 +42,14 @@ export default defineConfig({
       "tests/**/*.test.ts",
     ],
     environment: "node",
+    /* The default 5s is a liveness guard, and under this repository's own parallel
+       agent runs it started firing as a correctness failure instead. `stage-labels`
+       is 64 real graph-layout assertions taking ~10s together on an idle machine;
+       with nine worktree sessions competing for ten cores, one of them crossed 5s and
+       reported a timeout for a test that was never wrong. 20s keeps the guard — a
+       genuine hang still fails — while leaving four times the headroom that contention
+       actually needs. Raised here rather than per-file so no task inherits a red gate
+       it did not cause. */
+    testTimeout: 20000,
   },
 });
