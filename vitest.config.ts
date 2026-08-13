@@ -32,6 +32,14 @@ export default defineConfig({
       "lib/**/*.test.ts",
       "components/**/*.test.{ts,tsx}",
       "scripts/**/*.test.ts",
+      /* The backend's test tree, and the one glob that is not beside the code it tests.
+         `docs/ORCHESTRATION.md` has the tests for a backend task written blind, in a
+         separate worktree branched before the implementation exists, so they cannot sit
+         next to a file that is not there yet. `tests/server/**` belongs to the test branch
+         alone, which is also what keeps the two branches conflict-free at merge time.
+         Collected here rather than in either branch's own config: a worktree that cannot
+         run its own suite reports zero tests and calls it green. */
+      "tests/**/*.test.ts",
     ],
     environment: "node",
   },
