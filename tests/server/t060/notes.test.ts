@@ -33,7 +33,13 @@ import {
    fixtures would still pass.
 
    Three rules, and they pull in different directions, which is why
-   each has tests of its own:
+   each has tests of its own. All three were read off the amendment
+   and reported as a reading; the 2026-08-14 ruling confirmed them
+   and recorded the consequence in the contract: "read follows the
+   **parent**, not the author, so if a public bundle is later made
+   private, someone who commented on it loses read access to their
+   own note. That is the safe direction ... and it is a decision,
+   not an oversight."
 
      read   — decided by the parent. The note's own author does not
               enter it.

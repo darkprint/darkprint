@@ -12,23 +12,29 @@ import {
   bundle,
   canFn,
   card,
+  countVisibleTo,
   everyResourceOwnedBy,
+  listVisibleTo,
   note,
   noteOnOwnPublicBundle,
   operator,
   save,
   strictly,
+  visibleToFn,
 } from "./contract";
 
 /* ============================================================
    T060 criterion (4) — the break-glass operator
 
-   (4) the operator subject can reach any resource and every such
-       decision is auditable
+   (4) the operator subject can reach any resource [and every such
+       decision is auditable — withdrawn, see below]
 
-   ── the half this file tests ──
+   ── what this file tests ──
    "can reach any resource". Every published resource shape, owned
-   by somebody who is not the operator, private included.
+   by somebody who is not the operator, private included; and, since
+   the 2026-08-14 ruling, the operator's view of a query:
+   `visibleTo` answers `"all"` for it, "matching AC4's 'the operator
+   can reach any resource'".
 
    The matrix test below is written as a *relation* rather than as a
    list of expected trues: for every (action, resource) pair where
@@ -38,21 +44,21 @@ import {
    — whether an operator may `publish` a save, a pair no subject has
    any business being allowed — and a test that invents a decision
    is how a round gets spent reporting a defect that does not exist.
+   The orchestrator declined to rule on those pairs, deliberately,
+   and this relation holds either way.
 
-   ── the half this file does not test, and why ──
-   "and every such decision is auditable" is not observable through
-   the published surface. `can` returns a boolean; there is no
-   handler, no sink, no returned reason, and B-14's audit row is
-   `lib/server/observability/**`, which belongs to T240 and which
-   this module may not import (it is pure). The Published signatures
-   block names nothing for it.
+   ── the half that is gone, and why there is no test for it ──
+   "and every such decision is auditable" was **withdrawn from this
+   task** on 2026-08-14. It was unfalsifiable here: `can` returns a
+   boolean, this module may not import `lib/server/observability`,
+   and an implementation could satisfy every test in this directory
+   and keep no trail at all. Auditing an operator decision belongs
+   to the call site, where B-14's audit row is actually written, and
+   to T240, which owns the sink.
 
-   Per the rule above the block — "Where a signature is left open,
-   the test author reports it rather than resolving it" — this is
-   reported to the orchestrator rather than resolved here. No test
-   in this directory binds an invented name for it, because a
-   candidate list would resolve to whatever happened to exist and
-   report a defect in the wrong place. See the T060 log.
+   So there is deliberately no test for it and deliberately no
+   invented hook. If a later reader misses one here, the criterion
+   is in another task's section, not missing from this one.
    ============================================================ */
 
 describe("T060 (4) the operator reaches any resource", () => {
@@ -133,6 +139,43 @@ describe("T060 (4) the operator reaches any resource", () => {
     expect(strictly(can, operator, "read", card(BERTRAND, "private"))).toBe(true);
     expect(strictly(can, operator, "read", save(ALICE))).toBe(true);
     expect(strictly(can, operator, "read", account(BERTRAND))).toBe(true);
+  });
+
+  it("is given the whole of a query, whoever the query is about", async () => {
+    const visibleTo = await visibleToFn();
+    /* Ruled 2026-08-14: "`visibleTo` returns `"all"` for the operator, matching AC4's 'the
+       operator can reach any resource'." The prose above the block says only "an owner
+       sees all, everyone else public", and an operator reading as "everyone else" would
+       hand back a count with the private half filtered out of it — a break-glass subject
+       that can open any one row and cannot see that the rest exist. */
+    for (const ownerId of [ALICE, BERTRAND, OPERATOR_ACCOUNT, "acct_nobody_has_this"]) {
+      expect(
+        visibleTo(operator, ownerId),
+        `the operator was given the visitor's view of ${ownerId}'s rows`,
+      ).toBe("all");
+    }
+  });
+
+  it("counts the private half of a handle it does not own", async () => {
+    const visibleTo = await visibleToFn();
+    const can = await canFn();
+    /* The same ruling, read as a count rather than as a mode: over a fixture that is half
+       private, the operator's count is the owner's and not the visitor's. */
+    const rows = [
+      { id: "bp-public", resource: bundle(ALICE, "public" as const), visibility: "public" as const },
+      {
+        id: "bp-private",
+        resource: bundle(ALICE, "private" as const),
+        visibility: "private" as const,
+      },
+    ];
+    expect(countVisibleTo(visibleTo, operator, ALICE, rows)).toBe(rows.length);
+    expect(countVisibleTo(visibleTo, operator, ALICE, rows)).toBe(
+      countVisibleTo(visibleTo, alice, ALICE, rows),
+    );
+    expect(listVisibleTo(can, operator, rows), "the operator's list disagrees with its count").toEqual(
+      rows.map((row) => row.id),
+    );
   });
 
   it("answers a boolean for every action over every resource, like every other subject", async () => {

@@ -198,10 +198,11 @@ describe("T060 an empty string is not an identity", () => {
 
   it("does not match an empty id against an empty owner", async () => {
     const can = await canFn();
-    /* Derived from criterion (3) rather than stated in the contract, and flagged as such
-       in the T060 log: `""` is what a half-built session row and an unset column both look
-       like, so an equality test that accepts it hands one anonymous caller ownership of
-       every row whose owner failed to load. */
+    /* Stated in the contract as of 2026-08-14, in its own words: "An empty-string id never
+       matches an empty-string id. `""` is what an unset column and a half-built session row
+       both look like, so treating them as equal is a default-allow wearing a disguise."
+       Written here first as a reading of criterion (3) and reported as derived; it is a
+       ruling now, so this test quotes rather than infers. */
     const idless: Actor = { kind: "account", accountId: "", handle: null };
     expect(
       granted(can, idless, "write", { kind: "bundle", ownerId: "", visibility: "private" }),
