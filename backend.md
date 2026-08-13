@@ -1585,31 +1585,6 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 - **Contract:** the card half exists and is consumed, not reimplemented: `inferBump(previous, next)` returns `{ level, reasons[] }` comparing everything except `version`, `author` and `provenance` (`lib/core/version/bump.ts`), `checkVersionChain` holds a sorted chain to it (`lib/core/card/validate.ts:847`), and `parseSemver`/`compareSemver` order versions. This task extends the same three operations to **blueprints** (whose diff is the DOT plus the set of pinned card refs) and to **ontology versions** (whose diff is the term set, where removing a term or narrowing a `broader` chain is major and adding a term is minor). Every release therefore carries both a declared semver and a computed digest, and a declared bump smaller than the inferred one is refused with the engine's own reasons.
 - **Acceptance criteria:** (1) a card chain the engine calls major and the author declared minor is refused, naming the reasons; (2) a blueprint release repinning a card to a new major is itself inferred major; (3) two identical snapshots infer `none`, not `patch` — a `BlueprintSnapshot` is exactly what identity is computed over, so a change it cannot see is a change that does not move the version, and prose lives in the manifest which the snapshot deliberately excludes; (4) an ontology version removing a term is inferred major; (5) the same two inputs always infer the same level; (6) a deprecated term's successor pointer survives a version bump. **A dangling successor is not refused here** — `ontology/dangling-pointer` is `OntologyView.validate()`'s, per the block above; a second authority on one question is what B-04 exists to prevent.
 - **Out of scope:** storing anything; this is a pure service the three stores call. What version a *forked* bundle starts at is fork behaviour and belongs to T110, not here — this service only infers the bump between two given versions.
-- **Open:** four things the Published signatures block leaves unnamed, reported by the test
-  author rather than resolved in a worktree. The first two need a ruling before the
-  adversary round; the last two are recorded so nobody reads a test as inventing a rule.
-  1. **No module is named.** The block names three functions and one interface and never
-     says where they are published from — the D-01 shape. The tests bind to the barrel
-     `@/lib/server/versioning`, which is the one specifier consistent with both
-     `lib/core/index.ts`'s stated rule ("Deep paths are internal … nothing outside should
-     reach for one") and the two barrels T000 merged at `lib/server/http` and
-     `lib/server/auth`. Not a candidate list: one specifier, bound exactly, red when absent.
-     The contract should say it.
-  2. **AC-6's second half has no signature.** "a dangling successor is refused" names no
-     function that could refuse. `inferOntologyBump` returns a `BumpAnalysis` — a level and
-     reasons, no severity — and `checkDeclaredBump` takes two version strings and an
-     analysis, so no term ever reaches it. Left as an `it.todo` naming the gap; deliberately
-     not resolved. The other half of AC-6 (the successor pointer surviving a bump) is bound
-     and red.
-  3. **AC-3 and `BlueprintSnapshot` read two ways.** The snapshot carries no manifest, so a
-     prose-only release arrives as two *identical* snapshots; AC-3 calls that "inferred
-     patch" while `BumpLevel` also has `none`, which is what `inferBump` returns for two
-     identical cards. Bound to AC-3's literal words. Exactly one test moves if the ruling
-     goes the other way — falsification B3 broke that test and nothing else — and
-     `checkDeclaredBump` accepts a declared patch under either reading.
-  4. **`checkDeclaredBump`'s diagnostic `code` and `severity` are unnamed.** The tests assert
-     `error` severity, derived from "refused" plus B-03 making `hasErrors` the only thing
-     that separates a refusal from a note, and assert nothing at all about the code.
 - **Log:**
   - 2026-08-13 orchestrator: created from B-04.
   - 2026-08-14 test author: 126 tests in `tests/server/t025/**`, at least one per acceptance
@@ -1638,6 +1613,28 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     removed: `tsconfig.json` includes `.next/types/**`, which no build has generated here.
     These tests add exactly one typecheck error, `Cannot find module
     '@/lib/server/versioning'`, and it is the module under test.
+  - 2026-08-14 test author: rebased onto `25dd706`, which settles all four reported gaps, and
+    rebound the suite to the amended block. **The Open line is removed rather than answered
+    in place: the contract is now derivable in full.** 137 tests, all red on the absent
+    module, no todo. What moved: every `checkDeclaredBump` call takes `subject` first; a new
+    block asserts the code mapping the function owns (`card/`, `bundle/`,
+    `ontology/version-bump-too-small`) and that a subject outside the closed union is never a
+    silent acceptance; `error` severity moved from derived to contract-bound; the refusal is
+    now asserted as *exactly one* diagnostic, which the block states and the first round only
+    bounded below; AC-3 moved from `patch` to `none`, one test as predicted; and the AC-6
+    `it.todo` became a test holding this task to **not** refusing a dangling successor, since
+    a second authority on one question is what B-04 exists to prevent. Re-falsified: 20
+    breakages, each red on exactly the property broken, including the four new or moved
+    guards — the code ignoring `subject` (2 red, both non-card subjects), an unknown subject
+    accepted (5), an unmoved blueprint priced `patch` (1), and a dangling successor refused
+    here (1).
+  - 2026-08-14 test author: **one leftover in the contract, reported not edited.** AC-6's
+    acceptance-criteria line still ends "and a dangling successor is refused", which the
+    Published signatures block above it withdraws in as many words. The block is the later
+    and explicit ruling and is what the tests bind to; the criteria line is the orchestrator's
+    to fix. Verified against the tree rather than the amendment note:
+    `lib/core/ontology/resolve.ts:327-336` does emit `ontology/dangling-pointer` at `error`
+    severity for a `deprecated.replacedBy` naming no term, so the withdrawal is right.
 
   **Ruling, round 5: an ambiguous pairing infers the *most* expensive plausible reading, never the cheapest.** `cardRefs` carries no node identity, so when one card id both loses and gains versions there is no fact about which pin moved where — some policy must be chosen and the contract named none. The choice is settled by B-04's purpose and by round 1's sibling ruling, which already went this way: never answer less than you can justify for input you could not read. Refusing an under-declared bump is the whole reason this check exists, so of the readings the data permits, the inference takes the one that demands the largest declared bump. Over-answering costs an author a version number they did not strictly need; under-answering ships a breaking change as a patch, and nothing downstream re-checks it.
 

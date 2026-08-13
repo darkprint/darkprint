@@ -3,24 +3,24 @@
 
    AC-2: "a blueprint release repinning a card to a new major is
    itself inferred major".
-   AC-3: "a blueprint release changing only the manifest prose is
-   inferred patch".
+   AC-3: "two identical snapshots infer `none`, not `patch` — a
+   `BlueprintSnapshot` is exactly what identity is computed over, so
+   a change it cannot see is a change that does not move the version,
+   and prose lives in the manifest which the snapshot deliberately
+   excludes".
 
    Both run against `inferBlueprintBump(previous, next)`, whose
    inputs are the whole of what the contract lets a blueprint's
    version depend on: "A blueprint's diff is its DOT plus the set of
    card refs it pins; nothing else moves a blueprint's version."
 
-   ── the one place this suite reads the contract twice ──
-   `BlueprintSnapshot` carries no manifest, so a release that changed
-   only the manifest prose reaches this function as two *identical*
-   snapshots. AC-3 says that is "inferred patch"; `@/lib/core`'s
-   BumpLevel also has "none", which is what `inferBump` returns for
-   two identical cards. Both readings are defensible and they differ
-   only in the level reported — `checkDeclaredBump` accepts a
-   declared patch either way. The literal words of AC-3 are what is
-   bound below, and the tension is reported to the orchestrator
-   rather than settled here.
+   AC-3 used to read "a blueprint release changing only the manifest
+   prose is inferred patch", and the first round of these tests bound
+   those literal words while reporting that `none` was equally
+   available and that `checkDeclaredBump` would accept a declared
+   patch under either. The ruling went to `none`, which is also what
+   `@/lib/core`'s `inferBump` returns for two identical cards, so the
+   two halves of the engine now agree.
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
@@ -104,19 +104,24 @@ describe("AC-2: repinning a card to a new major is a major blueprint release", (
 });
 
 describe("AC-3: a release that moved neither the DOT nor the pins", () => {
-  it("AC-3 infers patch when only the manifest prose changed, which the snapshot does not carry", async () => {
+  it("AC-3 infers none from two identical snapshots, which is what a prose-only release is here", async () => {
     const fn = await inferBlueprintBump();
-    // Two identical snapshots is exactly what a prose-only release looks like from here.
-    expect(asBumpAnalysis(fn(snapshot(BASE_DOT, BASE_REFS), snapshot(BASE_DOT, BASE_REFS)), WHERE).level).toBe(
-      "patch",
-    );
+    const analysis = asBumpAnalysis(fn(snapshot(BASE_DOT, BASE_REFS), snapshot(BASE_DOT, BASE_REFS)), WHERE);
+
+    expect(analysis.level).toBe("none");
+    // `@/lib/core`'s `inferBump` returns `{ level: "none", reasons: [] }` for two identical
+    // cards. Nothing moved, so there is nothing to give a reason for.
+    expect(analysis.reasons).toEqual([]);
   });
 
-  it("AC-3 never prices a prose-only release above a patch", async () => {
+  it("AC-3 never prices an unmoved snapshot above a patch", async () => {
     const fn = await inferBlueprintBump();
     const { level } = asBumpAnalysis(fn(snapshot(BASE_DOT, BASE_REFS), snapshot(BASE_DOT, BASE_REFS)), WHERE);
 
-    // `bumpSatisfies(a, b)` is "a is at least b", so this reads: a patch is enough.
+    // The weaker companion guard, kept: `bumpSatisfies(a, b)` is "a is at least b", so this
+    // reads as "a patch would be enough". It fails on minor and major independently of
+    // whether the floor is `none` or `patch`, which is what made it worth keeping when the
+    // floor was still open.
     expect(
       bumpSatisfies("patch", level),
       `a release whose DOT and pins are unchanged was priced at ${level}; the contract says ` +

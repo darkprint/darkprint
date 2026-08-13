@@ -10,17 +10,20 @@
    and adding one is minor." Those are the only two majors named, so
    a change that is neither is held to *not* being one.
 
-   ── the half of AC-6 that has no signature ──
-   "a dangling successor is refused" names no function. `BumpAnalysis`
-   cannot refuse anything — it has a level and reasons and no
-   severity — and `checkDeclaredBump` takes two version strings and
-   an analysis, so no term ever reaches it. There is no third export
-   in the block. Reported to the orchestrator rather than resolved
-   here: a candidate list is what cost T000 two rounds, and inventing
-   a name would produce either a red against a function nobody was
-   asked to write or a test that quietly asserts nothing. The half
-   that *is* testable through the published surface — the successor
-   pointer surviving a bump — is bound below.
+   ── the half of AC-6 that was withdrawn ──
+   AC-6's criteria line still ends "and a dangling successor is
+   refused", and the Published signatures block above it withdraws
+   exactly that: "A **dangling successor is not this task's** to
+   refuse: `ontology/dangling-pointer` is already emitted by
+   `OntologyView.validate()` in `lib/core/ontology/resolve.ts`". The
+   block is the later and explicit ruling, so it is what is bound
+   here; the leftover clause in the criteria line is reported.
+   Verified against the tree rather than taken on trust —
+   `resolve.ts:327-336` refuses a `deprecated.replacedBy` naming no
+   term, at `error` severity, with a hint. So this task must not
+   reimplement it, and the test below holds it to *not* refusing.
+   The half that survives — the successor pointer surviving a bump —
+   is bound as before.
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
@@ -216,15 +219,19 @@ describe("AC-6: a deprecated term's successor pointer survives a version bump", 
     expect(asBumpAnalysis(fn(previous, next), WHERE).level).not.toBe("major");
   });
 
-  /**
-   * The other half of AC-6 — "and a dangling successor is refused" — is unreachable
-   * through the Published signatures block. See this file's header. Reported to the
-   * orchestrator; deliberately not resolved here, and deliberately not deleted, so the
-   * gap stays visible in the runner's own output rather than only in a hand-off message.
-   */
-  it.todo(
-    "AC-6 refuses a deprecation whose `replacedBy` names no term — no published signature returns a refusal for a term set",
-  );
+  it("AC-6 does not refuse a dangling successor, which is `@/lib/core`'s to refuse", async () => {
+    const fn = await inferOntologyBump();
+    const dangling = term("solver", { deprecated: { since: "0.2.0", replacedBy: "nobody-defined-this" } });
+    const previous = [term("agent"), term("solver")];
+    const next = [term("agent"), dangling];
+
+    // `OntologyView.validate()` already emits `ontology/dangling-pointer` at error severity
+    // for this exact shape, so a bump inference that threw or reported it would be a second
+    // authority on one question — the thing B-04 exists to prevent. It still has to answer
+    // the question it *was* asked: nothing was removed here.
+    const analysis = asBumpAnalysis(fn(previous, next), WHERE);
+    expect(analysis.level).not.toBe("major");
+  });
 });
 
 describe("inferOntologyBump: unreadable input is never `nothing changed`", () => {
