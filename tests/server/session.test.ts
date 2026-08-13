@@ -1,14 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  BindingError,
+  COOKIE_NAME,
   cookieHeaderFrom,
   isProblemContentType,
   loadAuth,
   pickFn,
   readProblem,
   requestWithCookie,
+  resolveFn,
   RFC9457_MEMBERS,
   tamper,
+  type Bound,
   type UnknownFn,
 } from "./contract";
 
@@ -43,9 +47,18 @@ const GUARD_NAMES = [
   "authenticated",
 ] as const;
 const READ_NAMES = ["readSession", "getSession", "sessionFromRequest", "currentSession"] as const;
+/**
+ * Ordered, and the order is the fix. Every name below the line encodes a session; only
+ * the ones above it hand back a cookie, and the list is read first-match-wins, so a
+ * cookie writer that exists must be reached before an encoder that also exists. The first
+ * pass omitted `sessionCookieHeader` entirely and fell through to `encodeSession`, which
+ * answers with the token that goes *inside* the cookie — see the binding test below.
+ */
 const WRITE_NAMES = [
   "createSessionCookie",
   "sessionCookie",
+  "sessionCookieHeader",
+  "setSessionCookie",
   "sealSession",
   "issueSession",
   "signSession",
@@ -145,23 +158,66 @@ async function callGuard(handler: UnknownFn, cookie?: string): Promise<Response>
 
 /* --------------------- issuing and reading a cookie --------------------- */
 
-async function validCookie(account: { accountId: string; handle: string } = ACCOUNT): Promise<string> {
-  const write = pickFn(await loadAuth(), "a session writer", WRITE_NAMES, "@/lib/server/auth");
+async function sessionWriter(): Promise<Bound<UnknownFn>> {
+  return resolveFn(await loadAuth(), "a session writer", WRITE_NAMES, "@/lib/server/auth");
+}
+
+/** The cookie, carrying the export that produced it so a failure can name the binding. */
+async function issueCookie(
+  account: { accountId: string; handle: string } = ACCOUNT,
+): Promise<Bound<string>> {
+  const { name, value: write } = await sessionWriter();
   const failures: string[] = [];
   for (const args of [[account], [account.accountId, account.handle]]) {
     try {
-      return await cookieHeaderFrom(await write(...args));
+      return { name, value: await cookieHeaderFrom(await write(...args), name) };
     } catch (cause) {
+      /* A binding error means the call answered and the answer was the wrong kind of
+         thing. Another argument order cannot turn the wrong export into the right one,
+         and swallowing it here would bury the one sentence worth reading under a list of
+         attempts. */
+      if (cause instanceof BindingError) throw cause;
       failures.push(`${args.length} arg(s): ${String(cause)}`);
     }
   }
   throw new Error(`No call to the session writer produced a cookie.\n  ${failures.join("\n  ")}`);
 }
 
+async function validCookie(account: { accountId: string; handle: string } = ACCOUNT): Promise<string> {
+  return (await issueCookie(account)).value;
+}
+
 async function readSession(cookie?: string): Promise<unknown> {
   const read = pickFn(await loadAuth(), "a session reader", READ_NAMES, "@/lib/server/auth");
   return await read(requestWithCookie(cookie));
 }
+
+/* --------------------- the bindings themselves --------------------- */
+
+describe("T000 contract binding — the candidate lists resolve to the right kind of thing", () => {
+  it("the session writer writes a cookie, not the token that goes inside one", async () => {
+    /* Stated on its own, ahead of every test that consumes a cookie, because this is the
+       one binding in these files with nothing else standing behind it. The guard has to
+       return a `Response` or resolution fails; the store has to expose put and get; the
+       client has to expose `.query`. A session writer only has to return a string, and
+       both the cookie writer and the token encoder do. So the kind check is explicit
+       here, and a list that binds the wrong one fails as this test rather than as five
+       false reports of a broken round trip elsewhere in this file. */
+    const { value: cookie } = await issueCookie();
+    const eq = cookie.indexOf("=");
+
+    expect(cookie.slice(0, eq)).toMatch(COOKIE_NAME);
+    expect(cookie.slice(eq + 1).length).toBeGreaterThan(0);
+  });
+
+  it("the cookie it writes is one the session reader accepts", async () => {
+    /* The other half of the same check. A writer that produces a well-formed cookie for
+       some other subsystem would satisfy the shape above and still not be the session
+       writer, and the two are only the same export if this round trip closes. */
+    const cookie = await validCookie();
+    await expect(readSession(cookie)).resolves.toBeTruthy();
+  });
+});
 
 /* --------------------- AC3 --------------------- */
 

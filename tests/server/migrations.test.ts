@@ -33,7 +33,7 @@ import {
    has to survive.
    ============================================================ */
 
-/** `backend.md`: "the tables every later task extends". Nine, named by the contract. */
+/** `backend.md`: "the tables every later task extends". Ten, named by the contract. */
 const CONTRACT_TABLES = [
   "account",
   "handle_reservation",
@@ -43,6 +43,10 @@ const CONTRACT_TABLES = [
   "ontology_version",
   "ontology_term",
   "target",
+  /* Added to the contract on 2026-08-13, raised by the implementer: `target` carries the
+     aggregate counters and nothing recorded who acted, so T150's "starring twice yields
+     1" had no idempotency storage to reach for. One row per (target, account, kind). */
+  "target_actor",
   "audit",
 ] as const;
 
@@ -156,7 +160,7 @@ async function rollbackToEmpty(d: Db): Promise<void> {
 /* --------------------- AC1 --------------------- */
 
 describe("T000 AC1 — migrations apply to an empty database and are idempotent on re-run", () => {
-  it("AC1: applying to a database with none of the contract tables creates all nine", async () => {
+  it("AC1: applying to a database with none of the contract tables creates all ten", async () => {
     const d = await db();
     await d.migrate();
     await rollbackToEmpty(d);
@@ -263,7 +267,7 @@ describe("T000 AC2 — rollback returns the schema to the prior state", () => {
 /* --------------------- the schema the contract names --------------------- */
 
 describe("T000 schema — the tables every later task extends", () => {
-  it("each of the nine contract tables exists in the public schema", async () => {
+  it("each of the ten contract tables exists in the public schema", async () => {
     const d = await db();
     await d.migrate();
 

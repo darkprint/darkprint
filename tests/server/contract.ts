@@ -39,6 +39,17 @@
    in `backend.md` carries the lists so the ambiguity sits on the
    record instead of buried in a helper.
 
+   ── and why every list is checked for kind ──
+   A list that resolves to nothing throws a message naming what it
+   looked for. A list that resolves to the *wrong* thing is worse: it
+   reports a defect that does not exist and sends somebody looking
+   for it. So a binding is only usable once the thing it bound to has
+   been shown to be the right kind — a guard that returns a
+   `Response`, a client that exposes `.query`, a store that exposes
+   put and get, a session writer whose output is a cookie rather than
+   the token inside one. That last check is `BindingError`, and it is
+   the one that was missing.
+
    ── why nothing here reads `tests/support/**` ──
    The environment contract in `backend.md` puts that directory on
    the implementation branch, which this worktree cannot see. An
@@ -48,6 +59,30 @@
 
 export type Namespace = Record<string, unknown>;
 export type UnknownFn = (...args: unknown[]) => unknown;
+
+/**
+ * A candidate list that bound to an export of the wrong *kind*. Not a red: a red says the
+ * implementation is wrong, and this says these tests are. It is raised, never caught and
+ * retried, because retrying a different argument shape against the wrong export can only
+ * produce a second wrong answer with a longer message in front of it.
+ *
+ * The list that omitted `sessionCookieHeader` and fell through to `encodeSession` is why
+ * this type exists. It resolved to a real function that returned a real string, so five
+ * tests reported a broken session round trip that direct invocation showed working — a
+ * candidate list resolving to *something* is more dangerous than one resolving to nothing,
+ * because the failure it reports is indistinguishable from a defect until somebody goes
+ * and checks by hand.
+ */
+export class BindingError extends Error {
+  constructor(message: string) {
+    super(
+      `${message}\n` +
+        `  This is a broken test, not a failed acceptance criterion. Fix the candidate ` +
+        `list, not the implementation, and amend the T000 log in backend.md with the name.`,
+    );
+    this.name = "BindingError";
+  }
+}
 
 /* --------------------- the four barrels --------------------- */
 
@@ -91,14 +126,20 @@ function describe(value: unknown): string {
   return typeof value;
 }
 
-export function pick(
+/** What a candidate list bound to, carried with the name so a red can say which export it is. */
+export interface Bound<T> {
+  name: string;
+  value: T;
+}
+
+export function resolve(
   mod: Namespace,
   capability: string,
   candidates: readonly string[],
   source: string,
-): unknown {
+): Bound<unknown> {
   for (const name of candidates) {
-    if (mod[name] !== undefined) return mod[name];
+    if (mod[name] !== undefined) return { name, value: mod[name] };
   }
   const exported = Object.keys(mod).sort().join(", ") || "(nothing)";
   throw new Error(
@@ -111,17 +152,38 @@ export function pick(
   );
 }
 
+export function resolveFn(
+  mod: Namespace,
+  capability: string,
+  candidates: readonly string[],
+  source: string,
+): Bound<UnknownFn> {
+  const bound = resolve(mod, capability, candidates, source);
+  if (typeof bound.value !== "function") {
+    throw new Error(
+      `${source} exports ${capability} as \`${bound.name}\`, which is ${describe(bound.value)}; ` +
+        `expected a function.`,
+    );
+  }
+  return { name: bound.name, value: bound.value as UnknownFn };
+}
+
+export function pick(
+  mod: Namespace,
+  capability: string,
+  candidates: readonly string[],
+  source: string,
+): unknown {
+  return resolve(mod, capability, candidates, source).value;
+}
+
 export function pickFn(
   mod: Namespace,
   capability: string,
   candidates: readonly string[],
   source: string,
 ): UnknownFn {
-  const value = pick(mod, capability, candidates, source);
-  if (typeof value !== "function") {
-    throw new Error(`${source} exports ${capability} as ${describe(value)}; expected a function.`);
-  }
-  return value as UnknownFn;
+  return resolveFn(mod, capability, candidates, source).value;
 }
 
 /** Absent is an answer here: teardown helpers are a convenience, never a contract term. */
@@ -247,6 +309,9 @@ export async function closeDbIfPossible(mod: Namespace): Promise<void> {
 export interface ObjectStore {
   put(content: string): Promise<string>;
   get(digest: string): Promise<unknown>;
+  /** Every key this store has written, so the suite can take back what it left. */
+  written: Set<string>;
+  cleanup(): Promise<void>;
 }
 
 const STORE_NAMES = [
@@ -263,6 +328,7 @@ const STORE_NAMES = [
 ] as const;
 const PUT_NAMES = ["put", "putObject", "write", "upload", "store"] as const;
 const GET_NAMES = ["get", "getObject", "read", "download", "fetch"] as const;
+const DELETE_NAMES = ["remove", "delete", "deleteObject", "del", "erase", "unlink"] as const;
 
 /**
  * Two call shapes are accepted for `put`. `lib/core/archive/store.ts` publishes
@@ -282,8 +348,16 @@ export async function objectStoreFor(mod: Namespace, digestOf: (c: string) => st
   const ns = store as Namespace;
   const put = pickFn(ns, "a put method", PUT_NAMES, "the object-storage client");
   const get = pickFn(ns, "a get method", GET_NAMES, "the object-storage client");
+  /* Optional here, and deliberately so. The test-isolation amendment has T000 publish a
+     delete and has each test take back what it wrote; but a store that has not published
+     one yet must fail on AC5, which is what these tests are for, and not on teardown.
+     Whether its absence should itself be a red is an open question in the T000 log. */
+  const remove = pickOptional(ns, DELETE_NAMES);
+
+  const written = new Set<string>();
 
   return {
+    written,
     async put(content) {
       let derived: unknown;
       try {
@@ -291,14 +365,34 @@ export async function objectStoreFor(mod: Namespace, digestOf: (c: string) => st
       } catch {
         derived = undefined;
       }
-      if (typeof derived === "string" && derived.length > 0) return derived;
+      if (typeof derived === "string" && derived.length > 0) {
+        written.add(derived);
+        return derived;
+      }
 
       const digest = digestOf(content);
+      written.add(digest);
       const supplied = await put.call(store, digest, content);
-      if (typeof supplied === "string" && supplied.length > 0) return supplied;
+      if (typeof supplied === "string" && supplied.length > 0) {
+        written.add(supplied);
+        return supplied;
+      }
       return digest;
     },
     get: (digest) => Promise.resolve(get.call(store, digest)),
+    async cleanup() {
+      if (typeof remove !== "function") return;
+      for (const digest of written) {
+        try {
+          await (remove as UnknownFn).call(store, digest);
+        } catch {
+          /* Teardown is not under test. An object left behind is addressed by its own
+             content and no other test can name it, which is the whole reason the
+             amendment forbids prefixing keys instead of requiring cleanup to succeed. */
+        }
+      }
+      written.clear();
+    },
   };
 }
 
@@ -320,24 +414,62 @@ export function asBytes(value: unknown): Uint8Array {
 
 /* --------------------- sessions --------------------- */
 
+/** RFC 6265 §4.1.1: a cookie-name is a token, so no separators, no spaces, no controls. */
+export const COOKIE_NAME = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+
+/** Enough of the value to recognise it in a failure message, and no more. */
+function preview(text: string): string {
+  return text.length <= 48 ? text : `${text.slice(0, 48)}… (${text.length} chars)`;
+}
+
+/**
+ * The kind check on the session-writer binding. A cookie is `name=value`, and a session
+ * token is the value alone; the two are both non-empty strings, which is why nothing
+ * caught the difference the first time. Everything downstream of this function puts what
+ * it is handed into a `Cookie:` header, where a bare token is not a cookie at all — the
+ * request carries no session, the guard correctly answers 401, and five tests report a
+ * round trip broken in the implementation when it is broken in the list above them.
+ */
+function asCookiePair(header: string, bound: string): string {
+  const pair = header.split(";")[0].trim();
+  const eq = pair.indexOf("=");
+  if (eq > 0 && COOKIE_NAME.test(pair.slice(0, eq)) && pair.length > eq + 1) return pair;
+  throw new BindingError(
+    `The session writer resolved to \`${bound}\`, which returned ${JSON.stringify(preview(pair))}.\n` +
+      `  That is a bare token, not a \`name=value\` cookie, so \`${bound}\` is the session ` +
+      `encoder and not the session writer. Put the cookie writer's name ahead of it in ` +
+      `WRITE_NAMES (tests/server/session.test.ts).`,
+  );
+}
+
 /**
  * The cookie the session writer produces, reduced to a `Cookie:` header value. Three
  * return shapes are accepted because the contract says "a GitHub OAuth cookie" and says
  * nothing about how the server hands one out: the `Set-Cookie` string, a
  * `{ name, value }` pair, or a `Response` carrying the header.
+ *
+ * A shape this cannot read is an ordinary error, because the caller has another argument
+ * order left to try. A shape it can read that is not a cookie is a `BindingError`: the
+ * call worked and answered, so no other argument order will improve on it.
  */
-export async function cookieHeaderFrom(sealed: unknown): Promise<string> {
-  if (typeof sealed === "string") return sealed.split(";")[0].trim();
+export async function cookieHeaderFrom(sealed: unknown, bound: string): Promise<string> {
+  if (typeof sealed === "string") return asCookiePair(sealed, bound);
   if (sealed instanceof Response) {
     const header = sealed.headers.get("set-cookie");
-    if (header === null) throw new Error("The session writer returned a Response with no Set-Cookie.");
-    return header.split(";")[0].trim();
+    if (header === null) {
+      throw new BindingError(
+        `The session writer resolved to \`${bound}\`, which returned a Response with no Set-Cookie.`,
+      );
+    }
+    return asCookiePair(header, bound);
   }
   if (sealed !== null && typeof sealed === "object") {
     const { name, value } = sealed as { name?: unknown; value?: unknown };
-    if (typeof name === "string" && typeof value === "string") return `${name}=${value}`;
+    if (typeof name === "string" && typeof value === "string") {
+      return asCookiePair(`${name}=${value}`, bound);
+    }
   }
-  throw new Error(`The session writer returned ${describe(sealed)}; expected a cookie.`);
+  throw new Error(`The session writer \`${bound}\` returned ${describe(sealed)}; expected a cookie.`);
 }
 
 /** Flip one character of the cookie's value, leaving its name and its shape intact. */
