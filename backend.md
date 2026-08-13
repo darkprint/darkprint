@@ -78,6 +78,12 @@ and the blind test author each chose a reasonable interface, chose differently, 
 was wrong. Two agents who cannot see each other cannot converge on a name, an arity or a
 call shape by reasoning about behaviour. They can only converge on something written down.
 
+**When a ruling withdraws or changes part of an acceptance criterion, the criterion itself is
+edited in the same commit.** Twice in wave 2 a ruling was added above a criteria line that still
+demanded the withdrawn thing — T025's dangling successor and T060's auditability — and both times
+a blind test author had to report the contradiction rather than a reader silently binding to the
+wrong half. A ruling that leaves its own criterion standing has not been made, only argued.
+
 **So every task's Contract section states the exact exported signatures of its public
 surface**, not just its semantics: the module each name is published from, the parameter
 list, and what it returns. Two conditions on that, both learned by breaking them in T000:
@@ -828,7 +834,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   - **An empty-string id never matches an empty-string id.** `""` is what an unset column and a half-built session row both look like, so treating them as equal is a default-allow wearing a disguise. The test author derived this and flagged it as derived; it is now stated.
 - **Goal:** one pure module answering whether an actor may perform an action on a resource, so no route re-implements a visibility rule.
 - **Contract:** two subjects only (B-13): the owner of a resource, and a break-glass operator. Four promises are the core cases, each stated on the surface that makes it — a private fork is never announced on its upstream, in fork counts, fork lists or the upstream author's notifications (`lib/data/bundles.ts:508-526`); a save is private and so is its count; an owner's blueprint and card counts include the private half and a visitor's never do (`components/profile/load.ts:192-200`); a private bundle has no resolved graph and therefore no reading. Three read contexts are distinguishable: anonymous, signed-in visitor, owner. A denied read resolves to 404, never 403 (B-03).
-- **Acceptance criteria:** (1) a visitor's fork list over a fixture holding a private fork is empty and the count agrees; (2) owner and visitor counts over one handle differ by exactly the private rows; (3) every action is decided by an exhaustive case list with no default-allow branch; (4) the operator subject can reach any resource and every such decision is auditable; (5) decisions are pure — same actor, action and resource, same answer, no I/O.
+- **Acceptance criteria:** (1) a visitor's fork list over a fixture holding a private fork is empty and the count agrees; (2) owner and visitor counts over one handle differ by exactly the private rows; (3) every action is decided by an exhaustive case list with no default-allow branch; (4) the operator subject can reach any resource, and `visibleTo` answers `"all"` for it over any handle — auditability is **withdrawn from this task** by the ruling above and belongs to the call site and T240; (5) decisions are pure — same actor, action and resource, same answer, no I/O.
 - **Out of scope:** enforcement inside routes (each feature task calls this), session establishment.
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-13.
