@@ -21,8 +21,8 @@
    vanish just because it did not parse.
    ============================================================ */
 
-import type { BumpAnalysis } from "@/lib/core";
-import { compareVersionStrings, declaredBump } from "@/lib/core";
+import type { BumpAnalysis, BumpLevel } from "@/lib/core";
+import { compareSemver, compareVersionStrings, declaredBump, parseSemver } from "@/lib/core";
 
 import { summarize, type Reason } from "./reasons";
 
@@ -87,6 +87,26 @@ function sameCounts(a: ReadonlyMap<string, number>, b: ReadonlyMap<string, numbe
 }
 
 /**
+ * The size of the change between two version strings, independent of which
+ * one is `beforeVersions[i]` and which is `afterVersions[i]`. `declaredBump`
+ * is asymmetric by design — it prices what a *declared* release may claim,
+ * and a downgrade declares nothing (`bump.ts`'s
+ * `compareSemver(after, before) <= 0` branch returns `"none"`), which is
+ * right for deciding whether an author's own version bump is big enough and
+ * wrong for pricing an arbitrary pair a sorted multiset happened to align.
+ * An author repinning back to a known-good older card still moves
+ * `cardDigests` and the bundle digest exactly as much as repinning forward
+ * would, so the pair is ordered by `compareSemver` first and `declaredBump`
+ * is asked for the magnitude, never handed a direction to declare against.
+ */
+function repinMagnitude(a: string, b: string): BumpLevel {
+  const parsedA = parseSemver(a);
+  const parsedB = parseSemver(b);
+  if (parsedA === undefined || parsedB === undefined) return declaredBump(a, b);
+  return compareSemver(parsedA, parsedB) <= 0 ? declaredBump(a, b) : declaredBump(b, a);
+}
+
+/**
  * One id's sorted version list, before and after, compared position by
  * position up to the shorter length — a version that moved there, priced by
  * `declaredBump` — and then whatever the longer list has left over: a
@@ -111,10 +131,10 @@ function compareVersions(
 
   for (let i = 0; i < n; i++) {
     if (beforeVersions[i] === afterVersions[i]) continue;
-    // A downgrade, or a version half that is not semver at all (`@latest`),
-    // declares no bump of its own; the repin itself still changed something,
-    // so it falls to "patch otherwise" rather than going unreported.
-    const level = declaredBump(beforeVersions[i], afterVersions[i]);
+    // A version half that is not semver at all (`@latest`) prices no
+    // magnitude of its own; the repin itself still changed something, so it
+    // falls to "patch otherwise" rather than going unreported.
+    const level = repinMagnitude(beforeVersions[i], afterVersions[i]);
     push(level === "none" ? "patch" : level, `card \`${id}\` repinned: ${beforeVersions[i]} → ${afterVersions[i]}`);
   }
   for (let i = n; i < afterVersions.length; i++) {

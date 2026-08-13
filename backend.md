@@ -1074,6 +1074,24 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     gate are meaningless while one test is a known, intentional red pending Agent B's
     rewrite, per "wait for Agent B's rewritten test before you finish." Committed the
     implementation; will run the full gate sequence and flip State once the rewrite lands.
+  - 2026-08-14 implementer: merged `4b8de07` and added direction-independent pricing.
+    `repinMagnitude(a, b)` orders the pair with `compareSemver` before calling
+    `declaredBump` — `parseSemver(a) <= parseSemver(b)` calls `declaredBump(a, b)` as
+    given, otherwise `declaredBump(b, a)` — so a rollback prices at the same level as
+    the matching forward move; only `compareVersions`'s position-wise loop was changed
+    to call it instead of `declaredBump` directly, the multiplicity/gained/lost tail
+    logic already had no direction to get wrong. Unparseable version halves (`@latest`)
+    still fall straight through to `declaredBump(a, b)` unordered, since there is no
+    magnitude to order by, and its `none` still becomes `patch` exactly as before.
+    Added 4 scratch regression tests: the ruling's own multiset example (`major`, not
+    `patch`), the order-independence example (`minor` both ways, not `patch` vs.
+    `major`), a pure-multiplicity change (not `none`), and a table of major/minor/patch
+    rollbacks each priced identically to their forward move. **Gates:** typecheck,
+    lint, build clean, no unexpected diff. `npx vitest run tests/server/t025
+    lib/server/versioning`: 179/180 — the one failure remains exactly and only "reads a
+    repeated pin as the same set", unchanged by this round's fix, still the sole thing
+    pending Agent B's rewrite. Not flipping State; not running the full three-run gate
+    yet, for the same reason as the previous entry.
 
 ### T060, Authorization policy: owner and operator
 

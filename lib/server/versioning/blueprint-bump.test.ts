@@ -98,6 +98,51 @@ describe("inferBlueprintBump, a ref the write-site validator would refuse is sti
   });
 });
 
+describe("inferBlueprintBump, the pin collection is a multiset, compared order-independently", () => {
+  it("prices a second node's repin across a major, even though the first node's pin is unchanged", () => {
+    const before = next({ dot: "digraph {}", cardRefs: ["solver@1.0.0", "solver@2.0.0"] });
+    const after = next({ dot: "digraph {}", cardRefs: ["solver@1.0.0", "solver@3.0.0"] });
+    expect(inferBlueprintBump(before, after).level).toBe("major");
+  });
+
+  it("infers the same level from the same multiset regardless of node order", () => {
+    const before = next({ dot: "digraph {}", cardRefs: ["a@1.0.0"] });
+    const forward = next({ dot: "digraph {}", cardRefs: ["a@1.0.0", "a@2.0.0"] });
+    const reversed = next({ dot: "digraph {}", cardRefs: ["a@2.0.0", "a@1.0.0"] });
+
+    const forwardResult = inferBlueprintBump(before, forward);
+    const reversedResult = inferBlueprintBump(before, reversed);
+    expect(forwardResult).toEqual(reversedResult);
+    expect(forwardResult.level).not.toBe("none");
+  });
+
+  it("prices a pure multiplicity change (same version, more or fewer pins) as at least a patch", () => {
+    const before = next({ dot: "digraph {}", cardRefs: ["a@1.0.0"] });
+    const after = next({ dot: "digraph {}", cardRefs: ["a@1.0.0", "a@1.0.0"] });
+    const result = inferBlueprintBump(before, after);
+    expect(result.level).not.toBe("none");
+  });
+});
+
+describe("inferBlueprintBump, a version move is priced by magnitude, not direction", () => {
+  it.each([
+    ["major", "2.0.0", "1.0.0"],
+    ["minor", "1.1.0", "1.0.0"],
+    ["patch", "1.0.1", "1.0.0"],
+  ] as const)("prices a %s rollback the same as the matching forward move", (level, higher, lower) => {
+    const forward = inferBlueprintBump(
+      next({ dot: "digraph {}", cardRefs: [`solver@${lower}`] }),
+      next({ dot: "digraph {}", cardRefs: [`solver@${higher}`] }),
+    );
+    const rollback = inferBlueprintBump(
+      next({ dot: "digraph {}", cardRefs: [`solver@${higher}`] }),
+      next({ dot: "digraph {}", cardRefs: [`solver@${lower}`] }),
+    );
+    expect(forward.level).toBe(level);
+    expect(rollback.level).toBe(level);
+  });
+});
+
 describe("inferBlueprintBump, determinism", () => {
   it("infers the same level for the same two inputs every time", () => {
     const after = next({
