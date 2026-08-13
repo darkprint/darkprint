@@ -146,7 +146,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | claimed | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | impl-done | typecheck/lint/build clean; 3789/3789 on three consecutive runs; 137 blind tests on `test/t025-versioning`, all red on the absent module, 20 falsifications confirm they discriminate |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | reverted | adversary FAIL: `inferBlueprintBump` drops every `cardRefs` member `parseCardRef` rejects and collapses a same-id pin conflict, so a moved pin set infers `none`; 2 blind tests red on three identical runs, 2 further cases uncovered; all six criteria pass, typecheck/lint/build clean |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | claimed | — |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -779,7 +779,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T025, Versioning service: semver, digest, bump, chains
 
-- **State:** impl-done
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t025-versioning` on `feat/t025-versioning`
 - **Test worktree:** `../darkprint-wt-t025-versioning-tests` on `test/t025-versioning`
 - **Depends on:** T000 (contract: types)
@@ -857,6 +857,79 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     to fix. Verified against the tree rather than the amendment note:
     `lib/core/ontology/resolve.ts:327-336` does emit `ontology/dangling-pointer` at `error`
     severity for a `deprecated.replacedBy` naming no term, so the withdrawal is right.
+  - 2026-08-14 adversary: **FAIL.** Merged `test/t025-versioning` as the first act: one
+    conflict, `backend.md`, content only, both sides' Log entries kept — no test-branch file
+    touched an implementation path, so the partition held. Gates: `npm run typecheck` exit 0,
+    `npm run lint` exit 0, `npm run build` exit 0 (the `prebuild` bundle regeneration left no
+    diff). `npm test` three times, byte-identical each run: `50 failed | 3865 passed | 11
+    skipped (3926)`, 5 files. No red in `lib/core/dot/graph.test.ts` on any run.
+    **Finding 1, confirmed, 2 blind tests red.** `pinsById` (`blueprint-bump.ts:19-29`) does
+    `if (parsed === undefined) continue`, so every `cardRefs` member `parseCardRef` rejects is
+    discarded before the comparison. A release whose pin set genuinely moved then infers
+    `none`, and `checkDeclaredBump` returns `[]` for a version that never moved. Observed:
+    `["café-solver@1.0.0"] → ["café-solver@2.0.0"]` ⇒ `none`
+    (`tests/server/t025/blueprint-bump.test.ts:211`, "expected 'none' to be 'major'");
+    `[] → [""]` ⇒ `{level:"none",reasons:[]}` (`:220`). Two further cases **no test covers**:
+    `["not-a-ref"] → []`, a pin vanishing entirely, ⇒ `none`; and `["Solver@1.0.0"] →
+    ["Solver@2.0.0"]` ⇒ `none`, since `CARD_ID` (`lib/core/card/schema.ts:167`) is
+    ASCII-lowercase-only. The comment at `blueprint-bump.ts:23-24` calls a malformed ref "the
+    validator's problem", but the effect is not deferral, it is acceptance — the exact class
+    the test author falsified as "unreadable input swallowed into `none`" (11 tests).
+    **Finding 2, new, no test covers it.** Same root cause, second face: the ref list is
+    reduced to an id-keyed map, first occurrence wins, so one id pinned at two versions is
+    collapsed. `["intake@1.0.0","solver@1.2.0"] → ["intake@1.0.0","solver@1.2.0","solver@9.0.0"]`
+    ⇒ `none`. An identical repeated pin collapsing is right; a conflicting one is a member of
+    "the set of card refs it pins" being dropped.
+    **Finding 3, related, lower severity, no test.** `["solver@latest"] → ["solver@2.0.0"]` ⇒
+    `minor`, reason "card `solver` was pinned at 2.0.0": `@latest` fails `REF_VERSION`, leaves
+    the previous side, and the repin reads as a first-time pin. Reachable only past the write
+    site that refuses `@latest`, but it mis-prices rather than defers.
+    **Root cause is one thing:** the contract's unit is the DOT plus *the set of card refs*,
+    and AC-2 needs a repin priced by semver. Both hold together — pair by id where the id
+    parses, and still count membership so no ref can vanish. Only the pairing half is built.
+    **What I could not break.** (1) `subject`: all five hostile values (`"blueprint"`, `""`,
+    `undefined`, `null`, `0`) return exactly one `error` diagnostic, never `[]`; `CODE_BY_SUBJECT`
+    is module-private so no caller can override the mapping; each valid subject maps to its own
+    code, one diagnostic, `error`. One observation, not charged: an out-of-union subject emits a
+    diagnostic with `code: undefined`, which a consumer switching on `d.code` cannot classify —
+    unreachable from typed callers and the blind test permits "throw, or report a diagnostic",
+    but worth one contract sentence if T020/T030/T100 will filter by code. (2) Ordering is
+    numeric and core is consumed, not rewritten: `parseSemver("0.10.0")` ⇒ `{0,10,0}`,
+    `compareSemver(0.9.9, 0.10.0)` ⇒ `-1` where string ordering says otherwise; repin
+    `0.9.9 → 0.10.0` ⇒ `minor`; `checkDeclaredBump("card","1.9.0","1.10.0",minor)` ⇒ `[]`.
+    (3) Ontology: removal major, addition minor, `kind` change major, narrowed `broader` major,
+    widened minor; deprecating without dropping the id is `patch`, not a removal; a deprecated
+    term with a **missing** successor is `patch` and emits nothing — correctly not refused here;
+    a cyclic `broader` (x→y→x) terminates ⇒ `none`, cyclic→acyclic ⇒ major. (4) Identity: two
+    identical snapshots ⇒ `none`, and so do structurally-equal distinct objects; reordered pins
+    ⇒ `none`; repin to a new major ⇒ major, lost pin ⇒ major, gained pin ⇒ minor. (5) Purity:
+    five repeated blueprint calls and three repeated ontology calls identical, interleaved calls
+    do not pollute each other, each caller gets its own reasons array, `summarize` keeps no
+    module state, and a deep-frozen input neither throws nor is sorted in place.
+    **Criteria, each run by name** (`npx vitest run tests/server/t025 -t "AC-n"`): AC-1 PASS
+    (4), AC-2 PASS (6), AC-3 PASS (3), AC-4 PASS (4), AC-5 PASS (9), AC-6 PASS (5). All six
+    pass; the two red tests sit under the Contract's "the set of card refs" clause, not a
+    numbered criterion, which is why `impl-done` was reported green. Verdict is FAIL on the new
+    defect, per Phase 2's "PASS only if every criterion passes **and** no new defect was found".
+    **The other 48 failures are not T025 and I did not clear them.** They are T000's
+    `tests/server/{session,migrations,object-store,environment}.test.ts` failing on unset
+    variables — `SESSION_SECRET` ×32, `DATABASE_URL` ×4, `S3_ENDPOINT` ×2, plus
+    `environment.test.ts`'s own 3. This worktree has no `.env` (only `.env.example`; `.env*` is
+    gitignored). The branch diff against `b53f413` touches only `lib/server/versioning/**`,
+    `tests/server/t025/**` and `backend.md`, so nothing here caused them. I left them red
+    deliberately: `docker exec` against the shared Postgres is denied by policy in this session,
+    and the migrations suite does a full down/up against a database three other live worktrees
+    share. The 2 T025 failures reproduce in isolation under no load
+    (`npx vitest run tests/server/t025 lib/server/versioning` ⇒ `2 failed | 162 passed`), so
+    they are not contention.
+    **Residue: none.** T025 stores nothing and every probe was an in-process call to the four
+    published functions — no database created, no object written, no `.env` left behind; the
+    scratch probe file was deleted and the tree is clean.
+    **No fifth gap.** The contract does not say what an unparseable ref is worth, and the
+    implementer and the test author read that silence in opposite directions — but the tests
+    bind, and "never answer `none` for input you could not read" is the only safe reading of a
+    clause whose unit is a set. That is a defect to fix, not an amendment to make; one sentence
+    would put it beyond argument if the orchestrator wants it.
 
 ### T060, Authorization policy: owner and operator
 
