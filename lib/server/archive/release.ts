@@ -87,9 +87,10 @@ export async function addRelease(db: Db, input: AddReleaseInput): Promise<Releas
 }
 
 /**
- * `digest` is validated as a shape check before it ever reaches a query — the
- * T000-inherited note (backend.md): a malformed path parameter becomes "not
- * found" here rather than `keyForDigest`'s raw `Error` echoing what was sent.
+ * `keyForDigest` here is not edge validation — a malformed `digest` already
+ * matches zero rows at this layer with or without it, since T010 never reaches
+ * object storage (that 404-not-500 requirement lives in T090, which does). This
+ * is only a cheap way to skip a round trip on input that cannot match.
  */
 export async function getRelease(db: Db, bundleId: string, digest: string): Promise<ReleaseRecord | undefined> {
   try {
