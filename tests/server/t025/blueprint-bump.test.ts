@@ -29,6 +29,8 @@ import { bumpSatisfies } from "@/lib/core";
 
 import {
   asBumpAnalysis,
+  asDiagnostics,
+  checkDeclaredBump,
   deepFreeze,
   inferBlueprintBump,
   neverSilentlyNone,
@@ -75,32 +77,9 @@ describe("AC-2: repinning a card to a new major is a major blueprint release", (
     );
   });
 
-  it("reports a repin below a major as something, since the pinned set did move", async () => {
-    const fn = await inferBlueprintBump();
-    const analysis = asBumpAnalysis(
-      fn(snapshot(BASE_DOT, ["intake@1.0.0", "solver@1.2.0"]), snapshot(BASE_DOT, ["intake@1.0.0", "solver@1.3.0"])),
-      WHERE,
-    );
-
-    expect(analysis, "a changed pin is part of the blueprint's diff and cannot read as no change").not.toEqual(
-      await baseline(),
-    );
-  });
-
-  it("reports a card added to the pinned set", async () => {
-    const fn = await inferBlueprintBump();
-    const analysis = asBumpAnalysis(
-      fn(snapshot(BASE_DOT, BASE_REFS), snapshot(BASE_DOT, [...BASE_REFS, "reviewer@1.0.0"])),
-      WHERE,
-    );
-    expect(analysis).not.toEqual(await baseline());
-  });
-
-  it("reports a card dropped from the pinned set", async () => {
-    const fn = await inferBlueprintBump();
-    const analysis = asBumpAnalysis(fn(snapshot(BASE_DOT, BASE_REFS), snapshot(BASE_DOT, ["intake@1.0.0"])), WHERE);
-    expect(analysis).not.toEqual(await baseline());
-  });
+  // A repin below a major, a card joining and a card leaving used to be asserted here as
+  // "not the baseline". The multiset block below pins each to an exact level instead, which
+  // strictly dominates, so they are not repeated.
 });
 
 describe("AC-3: a release that moved neither the DOT nor the pins", () => {
@@ -183,44 +162,213 @@ describe("inferBlueprintBump: the DOT half of the diff", () => {
   });
 });
 
-describe("inferBlueprintBump: `the set of card refs` is a set", () => {
-  it("reads a reordered pin list as the same set", async () => {
+/* ============================================================
+   The pin collection is a MULTISET, compared order-independently.
+
+   This block replaces one that read `cardRefs` as a deduplicated
+   set. That assertion was wrong, and it is worth being precise about
+   why, because the protocol treats the two cases differently: a test
+   that changes to match the code is a failed task, and this is the
+   other thing — the contract was silent, two agents who could not
+   see each other read the silence in opposite directions, and the
+   contract has been amended. The reading it settled on is not a
+   preference. It is forced by what identity is computed over, and
+   all three facts are checked in this tree rather than taken from
+   the amendment:
+
+     `lib/core/hash/digest.ts:62` — `cardDigests.slice().sort(byCodeUnit)`.
+       It **sorts**, so order can never move the digest; it does
+       **not** deduplicate, so multiplicity always can.
+     `lib/db/schema.ts:156` — "pinning one card twice is a different
+       digest from pinning it once, and deduplicating here would
+       erase that."
+     `lib/core/bundle/resolve.ts:749` — the digest is fed
+       `nodes.map((n) => n.digest)`: one entry per node, in node
+       order. Two nodes pinning different versions of one card is an
+       ordinary graph, not a degenerate input.
+
+   So if identity distinguishes two releases, inference has to as
+   well — otherwise a release whose bytes moved is not required to
+   move its version, and B-04 has every release carry a declared
+   semver *and* a computed digest that cannot disagree.
+   ============================================================ */
+describe("inferBlueprintBump: the pin collection is a multiset, compared order-independently", () => {
+  it("does not let the order of the pin list change the answer", async () => {
     const fn = await inferBlueprintBump();
     const previous = snapshot(BASE_DOT, ["intake@1.0.0", "solver@1.2.0"]);
     const next = snapshot(BASE_DOT, ["solver@1.2.0", "intake@1.0.0"]);
 
     expect(
       asBumpAnalysis(fn(previous, next), WHERE),
-      "the contract says the diff is the *set* of card refs, and a set has no order",
+      "`bundleDigest` sorts before hashing, so node order cannot move a version",
     ).toEqual(await baseline());
   });
 
-  it("reads a repeated pin as the same set", async () => {
+  /**
+   * The property `bundleDigest`'s sort guarantees, and the easiest one to lose: pairing an
+   * id's versions by first occurrence rather than sorting them makes the answer depend on
+   * which node came first. It cost this contract a round — `[a@1] → [a@1, a@2]` inferred
+   * patch while `[a@1] → [a@2, a@1]` inferred major, over the same DOT and the same members.
+   */
+  it("gives one answer however the added version is ordered", async () => {
     const fn = await inferBlueprintBump();
-    const previous = snapshot(BASE_DOT, ["intake@1.0.0", "solver@1.2.0"]);
-    const next = snapshot(BASE_DOT, ["intake@1.0.0", "solver@1.2.0", "solver@1.2.0", "intake@1.0.0"]);
+    const previous = snapshot(BASE_DOT, ["solver@1.0.0"]);
 
-    expect(asBumpAnalysis(fn(previous, next), WHERE)).toEqual(await baseline());
+    const appended = asBumpAnalysis(fn(previous, snapshot(BASE_DOT, ["solver@1.0.0", "solver@2.0.0"])), WHERE);
+    const prepended = asBumpAnalysis(fn(previous, snapshot(BASE_DOT, ["solver@2.0.0", "solver@1.0.0"])), WHERE);
+
+    expect(prepended, "node order alone decided the level").toEqual(appended);
+    expect(appended.level, "a pin was added, so the digest moved").not.toBe("none");
   });
 
-  it("reads two empty pin lists as the same set", async () => {
+  it("gives one answer however a longer pin list is permuted", async () => {
     const fn = await inferBlueprintBump();
-    expect(asBumpAnalysis(fn(snapshot(BASE_DOT, []), snapshot(BASE_DOT, [])), WHERE)).toEqual(await baseline());
+    const members = ["intake@1.0.0", "solver@1.2.0", "solver@2.0.0", "reviewer@0.9.0"];
+    const previous = snapshot(BASE_DOT, ["intake@1.0.0", "solver@1.2.0", "reviewer@0.9.0"]);
+
+    // Every rotation is the same multiset. Rotations rather than a shuffle: the fixture has
+    // to be the same on every run, and `lib/core` is isomorphic code with no `Math.random()`.
+    const rotations = members.map((_, i) => [...members.slice(i), ...members.slice(0, i)]);
+    const answers = rotations.map((refs) => asBumpAnalysis(fn(previous, snapshot(BASE_DOT, refs)), WHERE));
+
+    for (const answer of answers) expect(answer).toEqual(answers[0]);
   });
 
-  it("reports a pin whose id is non-ASCII", async () => {
+  it("prices a pure duplicate at least a patch, because the digest moved", async () => {
     const fn = await inferBlueprintBump();
     const analysis = asBumpAnalysis(
-      fn(snapshot(BASE_DOT, ["café-solver@1.0.0"]), snapshot(BASE_DOT, ["café-solver@2.0.0"])),
+      fn(snapshot(BASE_DOT, ["solver@1.0.0"]), snapshot(BASE_DOT, ["solver@1.0.0", "solver@1.0.0"])),
+      WHERE,
+    );
+
+    expect(
+      analysis.level,
+      "`cardDigests` is an array: pinning one card twice is a different digest from pinning " +
+        "it once, so the release must be allowed to move its version",
+    ).not.toBe("none");
+    expect(bumpSatisfies(analysis.level, "patch"), "at least a patch").toBe(true);
+  });
+
+  it("prices dropping one of two identical pins at least a patch", async () => {
+    const fn = await inferBlueprintBump();
+    const analysis = asBumpAnalysis(
+      fn(snapshot(BASE_DOT, ["solver@1.0.0", "solver@1.0.0"]), snapshot(BASE_DOT, ["solver@1.0.0"])),
+      WHERE,
+    );
+
+    expect(analysis.level, "multiplicity fell, so the digest moved").not.toBe("none");
+    expect(bumpSatisfies(analysis.level, "patch")).toBe(true);
+  });
+
+  it("infers major when a second node pinning the same card is repinned across a major", async () => {
+    const fn = await inferBlueprintBump();
+    // Two nodes instantiate `solver`, one at 1.0.0 and one at 2.0.0, and the second moves to
+    // 3.0.0. Pairing by first-occurrence-per-id hides this entirely: it compares 1.0.0 to
+    // 1.0.0, sees nothing, and a major repin ships as a patch release.
+    const analysis = asBumpAnalysis(
+      fn(
+        snapshot(BASE_DOT, ["solver@1.0.0", "solver@2.0.0"]),
+        snapshot(BASE_DOT, ["solver@1.0.0", "solver@3.0.0"]),
+      ),
+      WHERE,
+    );
+
+    expect(analysis.level).toBe("major");
+  });
+
+  it("does not let that major repin ship as a patch release", async () => {
+    // The whole point of the level, end to end: AC-2's inference feeding AC-1's refusal.
+    const infer = await inferBlueprintBump();
+    const check = await checkDeclaredBump();
+    const inferred = asBumpAnalysis(
+      infer(
+        snapshot(BASE_DOT, ["solver@1.0.0", "solver@2.0.0"]),
+        snapshot(BASE_DOT, ["solver@1.0.0", "solver@3.0.0"]),
+      ),
+      WHERE,
+    );
+
+    const ds = asDiagnostics(check("bundle", "1.0.0", "1.0.1", inferred), "checkDeclaredBump");
+    expect(ds.length, "a major repin declared as a patch has to be refused").toBe(1);
+    expect(ds[0].code).toBe("bundle/version-bump-too-small");
+  });
+
+  it("prices a moved version by `declaredBump` on that pair", async () => {
+    const fn = await inferBlueprintBump();
+    const at = async (from: string, to: string) =>
+      asBumpAnalysis(fn(snapshot(BASE_DOT, [`solver@${from}`]), snapshot(BASE_DOT, [`solver@${to}`])), WHERE).level;
+
+    expect(await at("1.2.0", "2.0.0")).toBe("major");
+    expect(await at("1.2.0", "1.3.0")).toBe("minor");
+    expect(await at("1.2.0", "1.2.1")).toBe("patch");
+  });
+
+  it("does not answer `none` when a pin is rolled back to an older version", async () => {
+    const fn = await inferBlueprintBump();
+    // `declaredBump("2.0.0", "1.0.0")` is `none` — a downgrade declares no bump — but the
+    // pin moved and so did `cardDigests`. Only the floor is asserted: the contract prices a
+    // moved version by `declaredBump` and separately argues from identity, and those two
+    // sentences meet on exactly this case. Reported rather than resolved here.
+    const analysis = asBumpAnalysis(
+      fn(snapshot(BASE_DOT, ["solver@2.0.0"]), snapshot(BASE_DOT, ["solver@1.0.0"])),
+      WHERE,
+    );
+
+    expect(analysis.level).not.toBe("none");
+  });
+
+  it("infers major when an id loses every one of its occurrences", async () => {
+    const fn = await inferBlueprintBump();
+    const analysis = asBumpAnalysis(
+      fn(snapshot(BASE_DOT, ["solver@1.0.0", "solver@2.0.0"]), snapshot(BASE_DOT, ["intake@1.0.0"])),
       WHERE,
     );
     expect(analysis.level).toBe("major");
   });
 
-  it("reports a pin that is the empty string, rather than dropping it", async () => {
+  it("infers minor when a new id joins the pin list", async () => {
     const fn = await inferBlueprintBump();
-    const analysis = asBumpAnalysis(fn(snapshot(BASE_DOT, []), snapshot(BASE_DOT, [""])), WHERE);
-    expect(analysis, "an empty ref is a member of the set like any other").not.toEqual(await baseline());
+    const analysis = asBumpAnalysis(
+      fn(snapshot(BASE_DOT, BASE_REFS), snapshot(BASE_DOT, [...BASE_REFS, "reviewer@1.0.0"])),
+      WHERE,
+    );
+    expect(analysis.level).toBe("minor");
+  });
+
+  it("reads two empty pin lists as no change", async () => {
+    const fn = await inferBlueprintBump();
+    expect(asBumpAnalysis(fn(snapshot(BASE_DOT, []), snapshot(BASE_DOT, [])), WHERE)).toEqual(await baseline());
+  });
+});
+
+describe("inferBlueprintBump: a ref the parser rejects is still a member", () => {
+  // `parseCardRef`'s id rule is ASCII (`lib/core/card/schema.ts`), so none of these pair by
+  // id. The contract pins the floor and not the level: "never answer `none` for input you
+  // could not read. Deferring to the validator is a defensible policy; silently accepting is
+  // not." So each of these asserts the floor exactly, and nothing above it.
+  it.each([
+    { name: "an unparseable ref repinned", previous: ["café-solver@1.0.0"], next: ["café-solver@2.0.0"] },
+    { name: "an unparseable ref disappearing", previous: ["café-solver@1.0.0"], next: [] },
+    { name: "an unparseable ref appearing", previous: [], next: ["café-solver@1.0.0"] },
+    { name: "a ref with no version at all", previous: ["solver"], next: ["solver@1.0.0"] },
+    { name: "a ref pinned to `latest`", previous: ["solver@latest"], next: ["solver@1.0.0"] },
+    { name: "the empty string as a ref", previous: [], next: [""] },
+    { name: "a repeated pin added at a conflicting version", previous: ["solver@1.0.0"], next: ["solver@1.0.0", "sölver@2.0.0"] },
+  ])("does not answer `none` for $name", async ({ previous, next }) => {
+    const fn = await inferBlueprintBump();
+    const analysis = asBumpAnalysis(fn(snapshot(BASE_DOT, previous), snapshot(BASE_DOT, next)), WHERE);
+
+    expect(analysis.level, "a member of the collection moved, so the digest did").not.toBe("none");
+  });
+
+  it("still compares order-independently when the refs do not parse", async () => {
+    const fn = await inferBlueprintBump();
+    const previous = snapshot(BASE_DOT, ["café-solver@1.0.0", "solver@1.0.0"]);
+    const forward = asBumpAnalysis(fn(previous, snapshot(BASE_DOT, ["café-solver@1.0.0", "solver@1.0.0"])), WHERE);
+    const reversed = asBumpAnalysis(fn(previous, snapshot(BASE_DOT, ["solver@1.0.0", "café-solver@1.0.0"])), WHERE);
+
+    expect(reversed).toEqual(forward);
+    expect(forward, "nothing moved").toEqual(await baseline());
   });
 });
 
