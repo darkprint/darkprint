@@ -13,26 +13,18 @@ const SECRET = "test-session-secret";
 describe("encodeSession / decodeSession", () => {
   it("round-trips a payload signed and verified with the same secret", () => {
     const payload = { accountId: "acc_1", handle: "berti" };
-    expect(decodeSession(encodeSession(payload, SECRET), SECRET)).toEqual({
-      ...payload,
-      exp: expect.any(Number),
-    });
+    expect(decodeSession(encodeSession(payload, SECRET), SECRET)).toEqual(payload);
   });
 
   it("round-trips a null handle — the pre-handle-chosen session state", () => {
     const payload = { accountId: "acc_1", handle: null };
-    expect(decodeSession(encodeSession(payload, SECRET), SECRET)).toEqual({
-      ...payload,
-      exp: expect.any(Number),
-    });
+    expect(decodeSession(encodeSession(payload, SECRET), SECRET)).toEqual(payload);
   });
 
-  it("mints an exp roughly `now + the session lifetime` when none is given", () => {
-    const before = Math.floor(Date.now() / 1000);
+  it("D-11: exp is a claim the decoder checks, never a field a handler sees", () => {
     const decoded = decodeSession(encodeSession({ accountId: "acc_1", handle: "berti" }, SECRET), SECRET);
-    const THIRTY_DAYS = 60 * 60 * 24 * 30;
-    expect(decoded?.exp).toBeGreaterThanOrEqual(before + THIRTY_DAYS);
-    expect(decoded?.exp).toBeLessThanOrEqual(before + THIRTY_DAYS + 5);
+    expect(decoded).toEqual({ accountId: "acc_1", handle: "berti" });
+    expect(Object.keys(decoded as object).sort()).toEqual(["accountId", "handle"]);
   });
 
   it("rejects a token past its own exp claim, expiry rather than revocation", () => {
@@ -45,6 +37,20 @@ describe("encodeSession / decodeSession", () => {
     const expiresSoon = Math.floor(Date.now() / 1000) + 1;
     const cookieValue = encodeSession({ accountId: "acc_1", handle: "berti" }, SECRET, expiresSoon);
     expect(decodeSession(cookieValue, SECRET)?.accountId).toBe("acc_1");
+  });
+
+  it("rejects an implausible exp — the seconds/milliseconds mixup the bound exists for", () => {
+    const millisecondsMistake = Date.now(); // read as seconds, roughly 30,000 years out
+    expect(() =>
+      encodeSession({ accountId: "acc_1", handle: "berti" }, SECRET, millisecondsMistake),
+    ).toThrow(/implausible/);
+  });
+
+  it("accepts an exp just inside the plausibility bound, rejects one just outside it", () => {
+    const now = Math.floor(Date.now() / 1000);
+    const ONE_YEAR = 60 * 60 * 24 * 365;
+    expect(() => encodeSession({ accountId: "acc_1", handle: "berti" }, SECRET, now + ONE_YEAR)).not.toThrow();
+    expect(() => encodeSession({ accountId: "acc_1", handle: "berti" }, SECRET, now + ONE_YEAR + 60)).toThrow();
   });
 
   it("rejects a cookie signed with a different secret", () => {
@@ -75,7 +81,7 @@ describe("getSession", () => {
     const request = new Request("https://darkprint.io/api/example", {
       headers: { cookie: `other=1; ${SESSION_COOKIE_NAME}=${cookieValue}; another=2` },
     });
-    expect(getSession(request, SECRET)).toEqual({ ...payload, exp: expect.any(Number) });
+    expect(getSession(request, SECRET)).toEqual(payload);
   });
 
   it("returns undefined for a request carrying no session cookie at all", () => {

@@ -77,7 +77,7 @@ it does not decide differently inside a worktree.
 
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
-| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` | `feat/t000-foundation` | reverted | adversary round 4 FAIL: D-11, `exp` leaks into the exposed session where the contract pins `{accountId, handle}`; 1 failed / 3760, deterministic. D-10 closed as a true rename; expiry mechanism sound |
+| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` | `feat/t000-foundation` | impl-done | typecheck/lint/build clean; test 3762/3762 (111/111 files), zero failures, identical across three consecutive runs; zero leftover scratch databases |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | — | — | todo | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | — | — | todo | — |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | — | — | todo | — |
@@ -211,7 +211,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T000, Foundation: schema, client, envelope, GitHub session, harness
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t000-foundation` on `feat/t000-foundation`
 - **Test worktree:** `../darkprint-wt-t000-foundation-tests` on `test/t000-foundation`
 - **Depends on:** —
@@ -575,6 +575,51 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     **Recorded, not charged.** `exp` expressed in milliseconds is accepted, because a millisecond value is simply a very distant second value. Not reachable by an attacker — minting needs the signing key — but it is the shape of an ordinary implementer mistake at a future call site: `Date.now()` where `Math.floor(Date.now() / 1000)` was meant yields a token good for roughly fifty thousand years and fails silently rather than loudly. A plausibility bound on `exp` would turn that into a red the day it is written. `encodeSession`'s third parameter is reachable through the barrel, so any server-side caller can mint an arbitrary expiry; it is documented as a test seam and is server-side only, but it is public surface rather than a private one. `keyForDigest` still throws a plain `Error` quoting the caller's input verbatim, which no route consumes yet.
 
     **What a fix has to clear.** `npm test` green on three consecutive runs. Concretely: narrow the exposed session to `{ accountId, handle }` while keeping `exp` as a verified token claim, and update the four implementation tests that currently assert the wider shape. Nothing else in this round failed. My probes complied with amendment 4: two scratch databases created and dropped, nine objects written and deleted, `pg_database` shows 0 leftovers.
+  - 2026-08-13 implementer: impl-done, fifth pass. Rebased on `backend` at `c727a01`
+    before starting; the fourteen-commit rebase conflicted repeatedly in this file's
+    own table row, State line and Log section, and twice more in `tests/server/**`
+    (once as add/add, once as content conflicts) against copies that turned out to be
+    older, already-superseded drafts from earlier rounds — verified by diff before
+    discarding rather than assumed, same as the last two rounds. Every conflict this
+    round resolved to content already present; nothing new arrived from the replay
+    that this file did not already have.
+    **D-11**: split the token from the exposed session in `lib/server/auth/session.ts`.
+    `SessionToken { accountId, handle, exp }` is what gets signed, decoded and
+    verified, module-internal, never exported. `SessionPayload { accountId, handle }`
+    is what `withSession`/`getSession` hand back, and also what a caller mints from —
+    `sessionCookieHeader`'s and `encodeSession`'s first parameter is `SessionPayload`,
+    so the `SessionClaims` alias from last round is retired rather than kept beside a
+    type it is now identical to. `decodeSession` verifies `exp` against the clock and
+    then constructs the return value as `{ accountId, handle }` explicitly, dropping
+    `exp` on the way out rather than returning the parsed token as-is — that
+    explicit reconstruction, not a type annotation, is what keeps the claim from
+    leaking, and `withSession`'s published signature is untouched, exactly as the
+    contract said it would be. `lib/server/auth/guard.test.ts` (3 assertions) and
+    `session.test.ts` (round-4 had 3 there too, not 1, all now fixed) reverted from
+    asserting `{ ...payload, exp: expect.any(Number) }` back to asserting the bare
+    two-field payload — the blind suite's shape was correct all along, per the
+    contract text I was handed this round. Falsified: had `decodeSession` return the
+    parsed token unstripped, watched 7 tests across both files fail showing `exp`
+    present where the assertion expected exactly two keys, restored it.
+    **exp plausibility bound**: `encodeSession` now throws if `exp` is more than
+    `MAX_SESSION_LIFETIME_SECONDS` (1 year, a constant with its own comment) beyond
+    the moment it is called — generous enough that no real 30-day session ever nears
+    it, tight enough that `Date.now()` written where `Math.floor(Date.now() / 1000)`
+    was meant (~1000x too large) throws immediately rather than minting a ~50,000-year
+    token silently. The bound lives at the mint site, not the decode site: the failure
+    mode is a units bug in this module, not an attacker input — forging a token needs
+    the secret regardless of what `exp` says — so checking where `exp` is accepted as
+    input catches the mistake the day it is written, per this round's brief, rather
+    than only if and when the badly-minted cookie is later decoded. No lower bound: a
+    past `exp` is an ordinary, intentionally-testable expired token, not an implausible
+    one. Falsified: disabled the bound, watched the two new tests exercising it fail
+    (one expecting a throw on a millisecond-mistake `exp`, one on the boundary case),
+    restored it.
+    No signature in the Published signatures block was ambiguous; nothing to report
+    as newly open. Gates on this tree, stack up (`docker compose up -d`): `typecheck`
+    and `lint` clean; `build` green; `test` run three times consecutively, identical
+    every time — **3762/3762 passed, 111/111 files, zero failures**. Zero leftover
+    scratch databases after any run.
 
 ### T010, Archive persistence: bundles, releases, bytes
 

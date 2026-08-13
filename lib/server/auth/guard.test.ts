@@ -21,7 +21,7 @@ describe("requireSession", () => {
     const request = new Request("https://darkprint.io/api/example", {
       headers: { cookie: `${SESSION_COOKIE_NAME}=${encodeSession(payload, SECRET)}` },
     });
-    expect(requireSession(request, SECRET)).toEqual({ ...payload, exp: expect.any(Number) });
+    expect(requireSession(request, SECRET)).toEqual(payload);
   });
 
   it("rejects an expired token exactly as it rejects a forged one — no revocation, only expiry", () => {
@@ -53,7 +53,7 @@ describe("withSession", () => {
     });
     const response = await withSession(request, (session) => Response.json(session));
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ ...payload, exp: expect.any(Number) });
+    await expect(response.json()).resolves.toEqual(payload);
   });
 
   it("AC3, expiry: an expired token's handler never runs either", async () => {
@@ -91,7 +91,7 @@ describe("GET /api/auth/session (the guarded handler AC3 describes)", () => {
     });
     const response = await sessionRoute(request);
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ ...payload, exp: expect.any(Number) });
+    await expect(response.json()).resolves.toEqual(payload);
   });
 
   it("expiry: a session that has already expired is turned away like a signed-out visitor", async () => {
