@@ -271,7 +271,7 @@ it does not decide differently inside a worktree.
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
-| T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | claimed | — |
+| T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | impl-done | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | claimed | — |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | adversarial-pass | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
@@ -845,7 +845,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T010, Archive persistence: bundles, releases, bytes
 
-- **State:** claimed
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t010-archive` on `feat/t010-archive`
 - **Test worktree:** `../darkprint-wt-t010-archive-tests` on `test/t010-archive`
 - **Depends on:** T000 (contract: schema, storage client, envelope)
@@ -919,6 +919,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 - **Out of scope:** the publish workflow (T100), the query index (T080), file serving (T090).
 - **Log:**
   - 2026-08-13 orchestrator: created.
+  - 2026-08-14 implementer: stopped twice before writing code — `cardDigests`/`manifest`/computed-`digest` missing from `addRelease`'s input, then `ReleaseRecord` carrying none of the content `addRelease` stores. Both amended (`f834833`, `cb2e81b`) before implementation began. Implemented `createBundle`, `getBundle`, `addRelease`, `getRelease`, `listReleases` under `lib/server/archive/**`; `getRelease` validates `digest` through `keyForDigest` as a shape check per the T000-inherited note, translating a throw into `undefined`. `State: impl-done`. Gates: `npm run build` (clean, no `public/bundles`/`public/cards` diff), `npm run typecheck` (clean), `npm run lint` (clean), `npm test` run three times — 112/112 files, 3771/3771 tests, identical every run. Both guards (the `cardRefs`/`cardDigests` length check, the digest shape check) falsified and restored per CLAUDE.md's definition of done; the length-check falsification failed for the right reason, the digest-shape one is currently vacuous at the Postgres layer (a malformed digest already returns no rows without it) but kept per the orchestrator's explicit direction, since T010 does not touch object storage.
 
 ### T025, Versioning service: semver, digest, bump, chains
 
