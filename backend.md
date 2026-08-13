@@ -17,9 +17,9 @@ wherever `docs/ORCHESTRATION.md` says `main`. Recorded here rather than assumed.
 
 | Slot | Task | Worktree | State |
 |---|---|---|---|
-| 1 | — | — | empty |
-| 2 | — | — | empty |
-| 3 | — | — | empty |
+| 1 | T060 | `../darkprint-wt-t060-policy` | claimed |
+| 2 | T010 | `../darkprint-wt-t010-archive` | claimed |
+| 3 | T025 | `../darkprint-wt-t025-versioning` | claimed |
 
 **T000 is merged and tagged `t000-verified` (`ec516fa`). Wave 2 is open**: T010, T025, T060,
 T070 and T240 are all ready, with disjoint `Owns` sets, and three of the five may run at once.
@@ -124,9 +124,9 @@ it does not decide differently inside a worktree.
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
-| T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | — | — | todo | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | — | — | todo | — |
-| T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | — | — | todo | — |
+| T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | claimed | — |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | claimed | — |
+| T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | claimed | — |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | — | — | todo | — |
@@ -698,7 +698,9 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T010, Archive persistence: bundles, releases, bytes
 
-- **State:** todo
+- **State:** claimed
+- **Worktree:** `../darkprint-wt-t010-archive` on `feat/t010-archive`
+- **Test worktree:** `../darkprint-wt-t010-archive-tests` on `test/t010-archive`
 - **Depends on:** T000 (contract: schema, storage client, envelope)
 - **Blocks:** T080, T090, T100, T110, T120, T180, T250
 - **Owns:** `lib/server/archive/**`
@@ -727,7 +729,9 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T025, Versioning service: semver, digest, bump, chains
 
-- **State:** todo
+- **State:** claimed
+- **Worktree:** `../darkprint-wt-t025-versioning` on `feat/t025-versioning`
+- **Test worktree:** `../darkprint-wt-t025-versioning-tests` on `test/t025-versioning`
 - **Depends on:** T000 (contract: types)
 - **Blocks:** T020, T030, T100
 - **Owns:** `lib/server/versioning/**`
@@ -750,7 +754,9 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T060, Authorization policy: owner and operator
 
-- **State:** todo
+- **State:** claimed
+- **Worktree:** `../darkprint-wt-t060-policy` on `feat/t060-policy`
+- **Test worktree:** `../darkprint-wt-t060-policy-tests` on `test/t060-policy`
 - **Depends on:** T000 (contract: identity type)
 - **Blocks:** T100, T110, T120, T130, T140, T150, T160, T170, T210
 - **Owns:** `lib/server/policy/**`
