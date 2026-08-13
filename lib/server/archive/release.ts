@@ -12,9 +12,13 @@ import { and, eq } from "drizzle-orm";
 import { bundleDigest } from "@/lib/core";
 import { keyForDigest, schema, type Db } from "@/lib/db";
 import type { AutonomyResult, BundleManifest, PhaseCoverage, SecurityResult } from "@/lib/server/types";
-import { ArchiveConflictError, isUniqueViolation } from "./errors";
+import { ArchiveConflictError, isUniqueViolationOn, sanitizedWriteError } from "./errors";
 import type { ReleaseRecord } from "./types";
 import { isWellFormedDeep } from "./well-formed";
+
+/** `schema.ts`'s `uniqueIndex("release_bundle_version_key")` — matched by name
+ *  (D-14), not owned here since `lib/db/schema.ts` is Forbidden to this task. */
+const RELEASE_BUNDLE_VERSION_CONSTRAINT = "release_bundle_version_key";
 
 function toReleaseRecord(row: typeof schema.release.$inferSelect): ReleaseRecord {
   const record: ReleaseRecord = {
@@ -57,8 +61,13 @@ export interface AddReleaseInput {
  * or an `OntologyView`. Refusing a release whose diagnostics carry an error is
  * T100's: that decision needs both, and both live in T020 and T030, Forbidden
  * here (contract). A duplicate `(bundleId, version)` rejects with a typed
- * `ArchiveConflictError` rather than the raw driver error, which would echo
- * this release's entire DOT source in its message (D-13).
+ * `ArchiveConflictError`, matched by constraint name (D-14) rather than
+ * SQLSTATE alone, so a violation of some other unique index cannot be
+ * mislabelled as this one. Every other write failure — a NUL byte in `dot`
+ * (well-formed UTF-16, so the D-12 guard above does not catch it and Postgres
+ * refuses the byte itself), a bad `bundleId` — still leaves, sanitized: no
+ * statement, no bound parameters, which on this table means no caller's DOT
+ * source (D-13).
  */
 export async function addRelease(db: Db, input: AddReleaseInput): Promise<ReleaseRecord> {
   if (input.cardRefs.length !== input.cardDigests.length) {
@@ -107,10 +116,10 @@ export async function addRelease(db: Db, input: AddReleaseInput): Promise<Releas
       .returning();
     return toReleaseRecord(row);
   } catch (err) {
-    if (isUniqueViolation(err)) {
+    if (isUniqueViolationOn(err, RELEASE_BUNDLE_VERSION_CONSTRAINT)) {
       throw new ArchiveConflictError("release-version", `Release "${input.version}" already exists for this bundle.`);
     }
-    throw err;
+    throw sanitizedWriteError("addRelease", err);
   }
 }
 

@@ -10,9 +10,13 @@
 
 import { and, eq } from "drizzle-orm";
 import { schema, type Db } from "@/lib/db";
-import { ArchiveConflictError, isUniqueViolation } from "./errors";
+import { ArchiveConflictError, isUniqueViolationOn, sanitizedWriteError } from "./errors";
 import type { BundleRecord } from "./types";
 import { isWellFormedDeep } from "./well-formed";
+
+/** `schema.ts`'s `uniqueIndex("bundle_owner_slug_key")` — matched by name (D-14),
+ *  not owned here since `lib/db/schema.ts` is Forbidden to this task. */
+const BUNDLE_OWNER_SLUG_CONSTRAINT = "bundle_owner_slug_key";
 
 function toBundleRecord(row: typeof schema.bundle.$inferSelect): BundleRecord {
   const record: BundleRecord = {
@@ -42,8 +46,11 @@ export interface CreateBundleInput {
  * side, applied here before it recurs on this one: an unpaired surrogate is
  * silently replaced with U+FFFD rather than raising, so the stored slug would
  * stop being the slug the caller asked for. A duplicate `(owner, slug)`
- * rejects with a typed `ArchiveConflictError` rather than the raw driver
- * error, which would otherwise carry the statement and the owner's id (D-13).
+ * rejects with a typed `ArchiveConflictError`, matched by constraint name
+ * (D-14) rather than SQLSTATE alone, so a violation of some other unique
+ * index a later migration adds cannot be mislabelled as this one. Every other
+ * write failure still leaves — a database being down must not be swallowed as
+ * a conflict — but sanitized: no statement, no bound parameters (D-13).
  */
 export async function createBundle(db: Db, input: CreateBundleInput): Promise<BundleRecord> {
   if (!isWellFormedDeep({ slug: input.slug, lineage: input.lineage })) {
@@ -70,10 +77,10 @@ export async function createBundle(db: Db, input: CreateBundleInput): Promise<Bu
       .returning();
     return toBundleRecord(row);
   } catch (err) {
-    if (isUniqueViolation(err)) {
+    if (isUniqueViolationOn(err, BUNDLE_OWNER_SLUG_CONSTRAINT)) {
       throw new ArchiveConflictError("bundle-slug", `A bundle already exists at slug "${input.slug}" for this owner.`);
     }
-    throw err;
+    throw sanitizedWriteError("createBundle", err);
   }
 }
 

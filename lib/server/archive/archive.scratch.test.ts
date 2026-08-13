@@ -207,4 +207,77 @@ describe.skipIf(!hasDb)("lib/server/archive", () => {
       }),
     ).rejects.toBeInstanceOf(ArchiveConflictError);
   });
+
+  it("D-13 remainder: a NUL byte in dot rejects with a safe message, the driver error only on cause", async () => {
+    const owner = await ownerId("gh-13");
+    const bundle = await createBundle(client.db, { ownerId: owner, slug: "b13", visibility: "public" });
+    const dot = "digraph { a }" + String.fromCharCode(0);
+
+    let caught: unknown;
+    try {
+      await addRelease(client.db, { bundleId: bundle.id, version: "1.0.0", dot, manifest, cardRefs: [], cardDigests: [] });
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toBeInstanceOf(Error);
+    const err = caught as Error;
+    expect(err.message.toLowerCase()).not.toContain("insert");
+    expect(err.message).not.toContain("digraph");
+    expect(err.cause).toBeDefined();
+  });
+
+  it("D-14: a violation of an unrelated unique index is not mislabeled as a slug conflict", async () => {
+    await client.query('CREATE UNIQUE INDEX test_owner_only_unique ON "bundle" (owner_id)');
+    try {
+      const owner = await ownerId("gh-14");
+      await createBundle(client.db, { ownerId: owner, slug: "first-slug", visibility: "public" });
+
+      const { ArchiveConflictError } = await import("./index");
+      let caught: unknown;
+      try {
+        await createBundle(client.db, { ownerId: owner, slug: "second-slug", visibility: "public" });
+      } catch (err) {
+        caught = err;
+      }
+      expect(caught).not.toBeInstanceOf(ArchiveConflictError);
+      expect(caught).toBeInstanceOf(Error);
+    } finally {
+      await client.query('DROP INDEX IF EXISTS test_owner_only_unique');
+    }
+  });
+
+  it("D-vocab: a cyclic vocabulary is refused, not a stack overflow", async () => {
+    const owner = await ownerId("gh-15");
+    const bundle = await createBundle(client.db, { ownerId: owner, slug: "b15", visibility: "public" });
+    const cyclic: Record<string, unknown> = { a: 1 };
+    cyclic.self = cyclic;
+
+    let caught: unknown;
+    try {
+      await addRelease(client.db, {
+        bundleId: bundle.id, version: "1.0.0", dot: "digraph { a -> b }", manifest,
+        cardRefs: [], cardDigests: [], vocabulary: cyclic,
+      });
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toBeInstanceOf(Error);
+    expect(caught).not.toBeInstanceOf(RangeError);
+    expect((caught as Error).message).toContain("D-12");
+  });
+
+  it("D-vocab: a shared (non-cyclic) sub-object is not mistaken for a cycle", async () => {
+    const owner = await ownerId("gh-16");
+    const bundle = await createBundle(client.db, { ownerId: owner, slug: "b16", visibility: "public" });
+    const shared = { x: 1 };
+    const vocabulary = { a: shared, b: shared };
+
+    const release = await addRelease(client.db, {
+      bundleId: bundle.id, version: "1.0.0", dot: "digraph { a -> b }", manifest,
+      cardRefs: [], cardDigests: [], vocabulary,
+    });
+    expect(release.vocabulary).toEqual(vocabulary);
+  });
 });

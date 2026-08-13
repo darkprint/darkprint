@@ -1,12 +1,15 @@
 /* ============================================================
    DarkPrint backend — archive: typed rejections
-   D-13 (backend.md): a duplicate write must reject with something
-   a caller can branch on without reaching through `cause` into a
-   Postgres-specific field, and without echoing the failed
-   statement or its bound parameters — `DrizzleQueryError.message`
-   does both. The 0267e52 ruling made duplicate rejection a named
-   T010 behaviour; the exact shape below is this module's own to
-   define.
+   D-13 (backend.md): no rejection this module produces may carry
+   the failed statement or its bound parameters, whatever its
+   SQLSTATE — `DrizzleQueryError.message` opens with the full query
+   and every bound parameter, including a losing writer's entire
+   DOT source. A duplicate write is named with a typed
+   `ArchiveConflictError` a caller can branch on (0267e52 ruling,
+   shape ours to define); everything else this module cannot name
+   still has to leave — a database being down must not be swallowed
+   as a conflict — but leaves with a safe `message` and the driver
+   error on `cause`, for whatever logs it.
    ============================================================ */
 
 /** The two unique constraints this module's writers can hit. */
@@ -23,14 +26,33 @@ export class ArchiveConflictError extends Error {
 }
 
 /**
- * `drizzle-orm`'s `DrizzleQueryError` carries no `code` of its own — the `pg`
- * error it wraps is `cause`, and `23505` is Postgres's unique-violation
- * SQLSTATE. This is the one place either writer reaches for it, so a
- * `pg`/`drizzle-orm` upgrade that changes the wrapping has one call site to
- * fix rather than two.
+ * D-14: `cause.code === "23505"` alone says *a* unique constraint was
+ * violated, not *which* — so with a second unique index on either table, the
+ * writer that did not own it would still label the violation as its own
+ * conflict, asserting a collision that never happened. `pg` carries the
+ * constraint name on the error it wraps; comparing it is what makes `kind`
+ * trustworthy rather than merely plausible.
  */
-export function isUniqueViolation(err: unknown): boolean {
+export function isUniqueViolationOn(err: unknown, constraint: string): boolean {
   if (typeof err !== "object" || err === null || !("cause" in err)) return false;
   const cause = err.cause;
-  return typeof cause === "object" && cause !== null && "code" in cause && cause.code === "23505";
+  if (typeof cause !== "object" || cause === null) return false;
+  return (
+    "code" in cause &&
+    cause.code === "23505" &&
+    "constraint" in cause &&
+    cause.constraint === constraint
+  );
+}
+
+/**
+ * Every write failure this module has not already given a name to — a NUL
+ * byte in `text` (well-formed UTF-16, so D-12's guard does not catch it and
+ * Postgres refuses the byte itself), a foreign key that does not resolve, a
+ * malformed uuid — still arrives as `DrizzleQueryError`. Re-thrown rather than
+ * swallowed, with `operation` naming only the function that failed and the
+ * original error moved to `cause` rather than into `message`.
+ */
+export function sanitizedWriteError(operation: string, err: unknown): Error {
+  return new Error(`${operation}: the write failed.`, { cause: err });
 }
