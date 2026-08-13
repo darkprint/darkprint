@@ -8,14 +8,20 @@
    ============================================================ */
 
 import type { Actor } from "./types";
+import { isOperator, isOwner } from "./is-owner";
 
 /**
- * `"all"` for the resource owner and the operator, `"public"` for everyone else — the
+ * `"all"` for the resource owner and a genuine operator, `"public"` for everyone else — the
  * exact split the profile tab strip states in words. Pure: same actor and owner, same
- * answer.
+ * answer. Never throws: a malformed `actor` (not an object, `null`) answers `"public"`, the
+ * least-privileged of the two values, rather than raising (2026-08-14 ruling). `isOwner` and
+ * `isOperator` both apply the empty-string and discriminant-vs-identity rulings, so a
+ * half-built session row (an operator tag or an account id that is `""`) never widens past
+ * what an anonymous caller sees.
  */
 export function visibleTo(actor: Actor, ownerId: string): "all" | "public" {
-  if (actor.kind === "operator") return "all";
-  if (actor.kind === "account" && actor.accountId === ownerId) return "all";
+  if (typeof actor !== "object" || actor === null) return "public";
+  if (isOperator(actor)) return "all";
+  if (isOwner(actor, ownerId)) return "all";
   return "public";
 }
