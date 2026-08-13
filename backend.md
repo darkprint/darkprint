@@ -67,6 +67,23 @@ the protocol rather than a decision inside it.
   being contract defects rather than code, which is convergence. Cycling without that fall is
   reported, not burned through.
 
+## Resolving `backend.md`: Log entries merge, contract text does not
+
+A hand-resolution in T025's worktree silently reverted a corrected acceptance criterion. The
+Log entries were preserved and independently verified as intact; nobody checked the contract
+prose, and both that task's worktrees carried a withdrawn clause its own blind test author then
+reported as an outstanding bug — twice.
+
+**The rule.** When resolving a `backend.md` conflict in any worktree: **keep both sides' Log
+entries in date order, and take `backend`'s version of everything else.** Contract text,
+acceptance criteria, signature blocks and rulings change on the base branch only. A worktree
+that appears to disagree with base about what the contract says is stale by definition, never
+authoritative, and resolving it "carefully by hand" is how a ruling gets undone by someone
+being careful.
+
+This is also why an amendment is announced to both sides rather than left to be discovered on
+the next rebase: the file they read may not be the file that was amended.
+
 ## Never use `git stash` in a worktree
 
 **The stash is repo-global, not per-worktree.** T025's implementer stashed to check whether
@@ -761,6 +778,12 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
         }): Promise<ReleaseRecord>   // digest is COMPUTED here, never supplied
         getRelease(db: Db, bundleId: string, digest: string): Promise<ReleaseRecord | undefined>
         listReleases(db: Db, bundleId: string): Promise<ReleaseRecord[]>
+
+  **No rejection carries the statement or its parameters, whatever its SQLSTATE.** The typed-conflict rule above was written about duplicates and read as being about duplicates, which is a scoping error its adversary charged against itself rather than against the implementer. It applies to every error leaving this module: a NUL byte in `dot` (22021), a foreign-key violation (23503), a malformed uuid (22P02) each currently escape as a `DrizzleQueryError` opening with the full INSERT and carrying the caller's DOT in `params`. The re-throw must stay — a database-down must not be swallowed as a conflict — but it carries a safe `message` with the driver error as `cause`, since nothing between here and a response body sanitises anything.
+
+  **A typed error names the constraint it matched.** `isUniqueViolation` testing only `cause.code === "23505"` makes either writer claim any unique violation as its own, so a second unique index added by a later migration produces an `ArchiveConflictError` asserting a slug collision that did not happen. Unreachable on today's schema and `kind` is exactly what downstream is being asked to branch on: a typed error that lies is worse than a raw one that does not. `pg` already carries `constraint`.
+
+  **Refusal, not a stack overflow.** `vocabulary` is typed `unknown`, so it is the one input that takes arbitrary shapes, and a cyclic or 200k-deep value makes the well-formedness walk die with `RangeError`, which reaches a route as a 500. Same invariant T060 carries: a module whose job is to decide cannot answer by crashing. A seen-set closes it.
 
   **Second amendment, same session.** `ReleaseRecord` carried only five fields and none of the content — so AC1 ("stored bytes read back byte-identical") had no function that could return the DOT to compare, and T080, T090 and T100 would have had no way to read a release's content at all, since they do not own `lib/db/schema.ts` and the layering rule forbids deep paths. It now mirrors what `addRelease` stores. The write side was fixed in the first amendment and the read side was left inconsistent with it, which is the same defect twice in one block.
 
