@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { contentDigest } from "@/lib/core";
-import { createObjectStorage, keyForDigest, objectStorageConfigFromEnv } from "./storage";
+import { createObjectStorage, keyForDigest, objectStorageConfigFromEnv } from "./storage.ts";
 
 /** Needs live MinIO (`docker compose up -d`); skips gracefully without one. */
 const hasStorage = Boolean(process.env.S3_ENDPOINT);

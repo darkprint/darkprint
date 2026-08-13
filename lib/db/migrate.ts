@@ -10,7 +10,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Pool, PoolClient } from "pg";
-import { createDbClient } from "./client";
+import { createDbClient } from "./client.ts";
 
 const MIGRATIONS_DIR = join(dirname(fileURLToPath(import.meta.url)), "migrations");
 const TRACKING_TABLE = `"_migrations"`;

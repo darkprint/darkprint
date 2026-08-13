@@ -165,8 +165,17 @@ describe("buildGraph — reachability", () => {
       return Date.now() - started;
     };
 
-    const small = timeLookups(5000);
-    const large = timeLookups(100000);
+    // Best-of-five, interleaved. The ratio alone was still a proxy: two measurements taken
+    // in sequence do not meet the same contention, so it narrowed the flake window without
+    // closing it and went red at `expected 150 to be less than 148` on a loaded host. Load
+    // only ever ADDS time, so the minimum of several samples is the one estimator it cannot
+    // inflate, and interleaving stops a slow patch landing entirely on one side.
+    let small = Infinity;
+    let large = Infinity;
+    for (let round = 0; round < 5; round += 1) {
+      small = Math.min(small, timeLookups(5000));
+      large = Math.min(large, timeLookups(100000));
+    }
 
     // The floor keeps a sub-millisecond `small` from making the bound meaninglessly tight.
     expect(large).toBeLessThan(Math.max(small * 4, 50));

@@ -8,8 +8,8 @@
    ============================================================ */
 
 /* --------------------- Postgres client --------------------- */
-export type { Db, DbClient } from "./client";
-export { createDbClient, getSharedDbClient, schema } from "./client";
+export type { Db, DbClient } from "./client.ts";
+export { createDbClient, getSharedDbClient, schema } from "./client.ts";
 
 /* --------------------- migrations --------------------- */
 /**
@@ -18,8 +18,8 @@ export { createDbClient, getSharedDbClient, schema } from "./client";
  * `DATABASE_URL` implicitly. A convenience wrapper reading it implicitly is what let
  * two suites drive the same database unknowingly and race each other's teardown.
  */
-export { migrateDown, migrateUp } from "./migrate";
+export { migrateDown, migrateUp } from "./migrate.ts";
 
 /* --------------------- object storage --------------------- */
-export type { ObjectStorage, ObjectStorageConfig } from "./storage";
-export { createObjectStorage, keyForDigest, objectStorageConfigFromEnv } from "./storage";
+export type { ObjectStorage, ObjectStorageConfig } from "./storage.ts";
+export { createObjectStorage, keyForDigest, objectStorageConfigFromEnv } from "./storage.ts";
