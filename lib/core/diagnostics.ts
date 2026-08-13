@@ -70,6 +70,11 @@ export type DiagnosticCode =
   // for a reader (see `NodeCard.cannot`), and a code that fired on them would report a
   // legal card as broken.
   | "bundle/prohibition-violated"
+  // §4's bump rule, applied to a blueprint rather than to a card. A blueprint's diff is
+  // its DOT plus the set of card refs it pins, and a release declaring a smaller bump than
+  // that diff implies is refused. Namespaced `bundle/` rather than `blueprint/` because
+  // that is the namespace this union gives a bundle, and `diagnostics.test.ts` enforces it.
+  | "bundle/version-bump-too-small"
   // attractor/ — the DOT subset Attractor reads (doc 1 §0.1.1, doc 2 §11 item 0).
   // Every one of these is a `warning`: a bundle that breaks an Attractor rule is
   // still a valid DarkPrint bundle, it just will not run under Attractor, and the
@@ -100,6 +105,9 @@ export type DiagnosticCode =
   // Doc 3 §5 subtracts a marker's weight, so a negative one is a credit, not a cheap
   // marker: a local term could cancel a core one. Reported, and counted as unweighted.
   | "ontology/local-marker-bad-weight"
+  // The same rule for a vocabulary version: removing a term or narrowing a `broader` chain
+  // is major, adding one is minor, and a release declaring less than it did is refused.
+  | "ontology/version-bump-too-small"
   // analysis/
   | "analysis/empty-graph"
   // Doc 3 §6 divides by *nodi totali*, and a node whose card is not in the bundle has no
