@@ -12,3 +12,6 @@ export { createBundle, getBundle } from "./bundle";
 
 export type { AddReleaseInput } from "./release";
 export { addRelease, getRelease, listReleases } from "./release";
+
+export type { ArchiveConflictKind } from "./errors";
+export { ArchiveConflictError } from "./errors";

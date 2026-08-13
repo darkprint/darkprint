@@ -12,7 +12,9 @@ import { and, eq } from "drizzle-orm";
 import { bundleDigest } from "@/lib/core";
 import { keyForDigest, schema, type Db } from "@/lib/db";
 import type { AutonomyResult, BundleManifest, PhaseCoverage, SecurityResult } from "@/lib/server/types";
+import { ArchiveConflictError, isUniqueViolation } from "./errors";
 import type { ReleaseRecord } from "./types";
+import { isWellFormedDeep } from "./well-formed";
 
 function toReleaseRecord(row: typeof schema.release.$inferSelect): ReleaseRecord {
   const record: ReleaseRecord = {
@@ -49,15 +51,34 @@ export interface AddReleaseInput {
 }
 
 /**
- * Refuses only when `cardRefs` and `cardDigests` disagree in length (AC5) — the
- * one check this layer can make on its own. Refusing a release whose diagnostics
- * carry an error is T100's: deciding that needs full card bodies and an
- * `OntologyView`, which live in T020 and T030 and are Forbidden here (contract).
+ * Refuses when `cardRefs` and `cardDigests` disagree in length (AC5), or when
+ * any string this call would persist cannot survive a UTF-8 round trip (D-12)
+ * — the two checks this layer can make on its own without reading card bodies
+ * or an `OntologyView`. Refusing a release whose diagnostics carry an error is
+ * T100's: that decision needs both, and both live in T020 and T030, Forbidden
+ * here (contract). A duplicate `(bundleId, version)` rejects with a typed
+ * `ArchiveConflictError` rather than the raw driver error, which would echo
+ * this release's entire DOT source in its message (D-13).
  */
 export async function addRelease(db: Db, input: AddReleaseInput): Promise<ReleaseRecord> {
   if (input.cardRefs.length !== input.cardDigests.length) {
     throw new Error(
       `addRelease: cardRefs (${input.cardRefs.length}) and cardDigests (${input.cardDigests.length}) must be the same length.`,
+    );
+  }
+
+  if (
+    !isWellFormedDeep({
+      dot: input.dot,
+      manifest: input.manifest,
+      cardRefs: input.cardRefs,
+      cardDigests: input.cardDigests,
+      vocabulary: input.vocabulary,
+      analysis: input.analysis,
+    })
+  ) {
+    throw new Error(
+      "addRelease: content contains an unpaired UTF-16 surrogate and cannot be stored losslessly (D-12) — refused rather than silently rewritten.",
     );
   }
 
@@ -67,30 +88,41 @@ export async function addRelease(db: Db, input: AddReleaseInput): Promise<Releas
   const cardDigests = [...input.cardDigests];
   const digest = bundleDigest({ dot: input.dot, cardDigests });
 
-  const [row] = await db
-    .insert(schema.release)
-    .values({
-      bundleId: input.bundleId,
-      version: input.version,
-      digest,
-      dot: input.dot,
-      manifest: input.manifest,
-      cardRefs: [...input.cardRefs],
-      cardDigests,
-      localVocabulary: input.vocabulary ?? null,
-      autonomy: input.analysis?.autonomy ?? null,
-      security: input.analysis?.security ?? null,
-      phaseCoverage: input.analysis?.phaseCoverage ?? null,
-    })
-    .returning();
-  return toReleaseRecord(row);
+  try {
+    const [row] = await db
+      .insert(schema.release)
+      .values({
+        bundleId: input.bundleId,
+        version: input.version,
+        digest,
+        dot: input.dot,
+        manifest: input.manifest,
+        cardRefs: [...input.cardRefs],
+        cardDigests,
+        localVocabulary: input.vocabulary ?? null,
+        autonomy: input.analysis?.autonomy ?? null,
+        security: input.analysis?.security ?? null,
+        phaseCoverage: input.analysis?.phaseCoverage ?? null,
+      })
+      .returning();
+    return toReleaseRecord(row);
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      throw new ArchiveConflictError("release-version", `Release "${input.version}" already exists for this bundle.`);
+    }
+    throw err;
+  }
 }
 
 /**
- * `keyForDigest` here is not edge validation — a malformed `digest` already
- * matches zero rows at this layer with or without it, since T010 never reaches
- * object storage (that 404-not-500 requirement lives in T090, which does). This
- * is only a cheap way to skip a round trip on input that cannot match.
+ * `keyForDigest` here is mostly not edge validation — most malformed digests
+ * already match zero rows at this layer with or without it, since T010 never
+ * reaches object storage (the general 404-not-500 requirement lives in T090).
+ * For those this is only a cheap way to skip a round trip on input that cannot
+ * match. One class is an exception: a digest carrying a NUL byte, which
+ * Postgres refuses outright rather than failing to match, so without this call
+ * that input would throw a raw `DrizzleQueryError` quoting the query. This call
+ * turns that one malformed-input class into `undefined` as well.
  */
 export async function getRelease(db: Db, bundleId: string, digest: string): Promise<ReleaseRecord | undefined> {
   try {

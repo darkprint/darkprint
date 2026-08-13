@@ -153,9 +153,58 @@ describe.skipIf(!hasDb)("lib/server/archive", () => {
     await expect(getRelease(client.db, bundle.id, "<script>alert(1)</script>")).resolves.toBeUndefined();
   });
 
+  it("getRelease: a digest carrying a NUL byte is undefined, not a raw Postgres error", async () => {
+    const owner = await ownerId("gh-7b");
+    const bundle = await createBundle(client.db, { ownerId: owner, slug: "b7b", visibility: "public" });
+    const nulDigest = "sha256:" + "a".repeat(63) + String.fromCharCode(0);
+    await expect(getRelease(client.db, bundle.id, nulDigest)).resolves.toBeUndefined();
+  });
+
   it("createBundle: refuses a second bundle at the same (owner, slug)", async () => {
     const owner = await ownerId("gh-8");
     await createBundle(client.db, { ownerId: owner, slug: "dup", visibility: "public" });
     await expect(createBundle(client.db, { ownerId: owner, slug: "dup", visibility: "public" })).rejects.toThrow();
+  });
+
+  it("D-12: a DOT carrying an unpaired surrogate is refused rather than silently rewritten", async () => {
+    const owner = await ownerId("gh-9");
+    const bundle = await createBundle(client.db, { ownerId: owner, slug: "b9", visibility: "public" });
+    const dot = "digraph { \ud800 }";
+
+    await expect(
+      addRelease(client.db, { bundleId: bundle.id, version: "1.0.0", dot, manifest, cardRefs: [], cardDigests: [] }),
+    ).rejects.toThrow();
+  });
+
+  it("D-12: a slug carrying an unpaired surrogate is refused rather than silently rewritten", async () => {
+    const owner = await ownerId("gh-9b");
+    await expect(
+      createBundle(client.db, { ownerId: owner, slug: "b9b-\ud800", visibility: "public" }),
+    ).rejects.toThrow();
+  });
+
+  it("D-13: a duplicate (owner, slug) rejects with a typed conflict, not a raw driver error", async () => {
+    const owner = await ownerId("gh-10");
+    await createBundle(client.db, { ownerId: owner, slug: "dup2", visibility: "public" });
+
+    const { ArchiveConflictError } = await import("./index");
+    await expect(
+      createBundle(client.db, { ownerId: owner, slug: "dup2", visibility: "public" }),
+    ).rejects.toBeInstanceOf(ArchiveConflictError);
+  });
+
+  it("D-13: a duplicate (bundleId, version) rejects with a typed conflict, not a raw driver error", async () => {
+    const owner = await ownerId("gh-11");
+    const bundle = await createBundle(client.db, { ownerId: owner, slug: "b11", visibility: "public" });
+    await addRelease(client.db, {
+      bundleId: bundle.id, version: "1.0.0", dot: "digraph { a -> b }", manifest, cardRefs: [], cardDigests: [],
+    });
+
+    const { ArchiveConflictError } = await import("./index");
+    await expect(
+      addRelease(client.db, {
+        bundleId: bundle.id, version: "1.0.0", dot: "digraph { a -> c }", manifest, cardRefs: [], cardDigests: [],
+      }),
+    ).rejects.toBeInstanceOf(ArchiveConflictError);
   });
 });
