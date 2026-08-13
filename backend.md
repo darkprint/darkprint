@@ -108,7 +108,7 @@ it does not decide differently inside a worktree.
 
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
-| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` | `feat/t000-foundation` | reverted | adversary FAIL `c7debfd` |
+| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` | `feat/t000-foundation` | adversarial-pass | typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | — | — | todo | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | — | — | todo | — |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | — | — | todo | — |
@@ -242,7 +242,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T000, Foundation: schema, client, envelope, GitHub session, harness
 
-- **State:** reverted
+- **State:** adversarial-pass
 - **Worktree:** `../darkprint-wt-t000-foundation` on `feat/t000-foundation`
 - **Test worktree:** `../darkprint-wt-t000-foundation-tests` on `test/t000-foundation`
 - **Depends on:** —
@@ -285,6 +285,35 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   This binds every task from T010 on, all of which share the same stack. Corrected 2026-08-13 after the adversary caught both defects in the amendment's first wording, within the hour it was written.
 - **Contract:** domain types are re-exported from `lib/core/**` and `lib/types.ts`, never restated (B-01). Storage is split: an S3-compatible client keyed by digest for bytes, Postgres for the index. The envelope is B-03 — a handler returns its payload at 200, including payloads that carry `diagnostics: Diagnostic[]` describing failure of the *content*; transport, auth and shape failures return `application/problem+json` per RFC 9457 with `type`, `title`, `status`, `detail`, `instance`; a resource the caller may not see returns 404. Session is a GitHub OAuth cookie (B-02) exposing `{ accountId, handle }` or nothing. Schema covers the tables every later task extends: `account`, `handle_reservation`, `bundle`, `release`, `card_version`, `ontology_version`, `ontology_term`, `target`, `target_actor`, `audit`. **`target_actor` is an amendment (2026-08-13)**, raised by the implementer and accepted: `target` carries aggregate counters but nothing records *who* acted, so T150's "starring twice yields 1" and T170's "a vote from one account counts once" would have had no idempotency storage to reach for — and every downstream task's `Owns` excludes `lib/db/**`, so they could not have added it themselves. One row per `(target, account, kind)`, where kind distinguishes a star from a note vote.
 - **Acceptance criteria:** (1) migrations apply to an empty database and are idempotent on re-run; (2) rollback returns the schema to the prior state; (3) a request with no session reaching a guarded handler receives a `problem+json` 401 and no body from the handler; (4) a handler returning diagnostics returns 200 and the diagnostics survive serialisation intact, including `location`; (5) an object written to storage under a digest reads back byte-identical; (6) every type exported from `lib/server/types.ts` is the engine's own, verified by identity not by shape.
+- **Open** (rewritten by the test author 2026-08-13, round 3). Both questions the last round raised are
+  answered, and one narrower one takes their place.
+
+  *Closed.* The database-isolation question (the three candidate answers it listed are in the log entry
+  that raised them) went the way of the first candidate: `createDbClient(config?)` takes a connection
+  string and `migrateUp(target, dir?)` takes a pool or one, so `tests/server/migrations.test.ts` now
+  creates `darkprint_t000_<pid>`, drives it and drops it. Reporting it rather than resolving it was the
+  right call — the answer lived in code the test branch could not see, and the candidate list would have
+  resolved to `migrate`, the one function that could not be pointed anywhere. The delete question is
+  answered too: the contract publishes put, get **and** delete, so a store without one is now a red.
+
+  *Still open, and reported rather than resolved.* Four capabilities these tests need are not in the
+  Published signatures block, so they are still bound by candidate list, and a list is a guess that has
+  twice resolved to the wrong export. Naming them would retire the last of them:
+  1. the session **reader** — `readSession`, `getSession`, `sessionFromRequest`, `currentSession`;
+  2. the session **writer** — `createSessionCookie`, `sessionCookie`, `sessionCookieHeader`,
+     `setSessionCookie`, then the encoder names, read first-match-wins because a cookie writer that
+     exists must be reached before an encoder that also exists (this is T-02, and the order is the fix);
+  3. the **200 payload helper** on `@/lib/server/http` — `ok`, `okJson`, `jsonOk`, `respond`, `payload`,
+     `envelope`, `data`, `json`; and the **404 helper** — `notFound`, `notFoundProblem`,
+     `problemNotFound`, `hidden`, `missing`. AC4 rests entirely on the first of these;
+  4. the client's **teardown**, which is optional here and never asserted on.
+
+  A fifth is a parameter list rather than a name. The contract publishes `keyForDigest(digest)` beside
+  put, get and delete and does not say which of the two supplies the key, so three readings are live:
+  `put(keyForDigest(digest), content)`, `put(digest, content)`, and `put(content) -> address`. The tests
+  resolve it once against a probe, in that order, and report the resolution; key-first because
+  `keyForDigest` is published beside the verbs, and bytes-only last because handing a two-megabyte string
+  to a `put(key, content)` store would try to write it *as a key*.
 - **Out of scope:** any route serving a domain object, any feature logic, any read model.
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-01, B-02, B-03.
@@ -294,6 +323,363 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   - 2026-08-13 orchestrator: **gate run and triage after the adversary's FAIL** (`c7debfd`). Verdict verified independently rather than accepted: typecheck reproduced with exactly one error, `tests/server/contract.ts(65,23) TS2307 Cannot find module '@/lib/db'`; suite reproduced red (37 failed here against the adversary's 32, the five extra being env-dependent tests failing without the compose stack up, which is a difference in my run and not in its report); D-02 and D-07 confirmed from source. Triage of the seven defects: **D-01 is a contract defect and mine, not the implementer's** — the contract named `lib/db/**` in `Owns` and never stated the import surface, so the implementer published no barrel and the test author, which had resolved the ambiguity in its own favour rather than reporting it, imported one. Amended above under *Public import surface*. D-02 through D-07 are genuine implementation defects and go back to Agent A. T-01 (raw NUL bytes) and T-02 (the session-writer candidate list omitting `sessionCookieHeader`, so five reds claim a broken round trip that direct invocation shows works) are test-branch defects and go back to Agent B.
   - 2026-08-13 orchestrator: **third partition fix**. `package.json` and `package-lock.json` were in no task's `Owns`, and the implementer had to modify both — a Postgres client cannot be added without them. Added to this task's `Owns`. The structural consequence is larger than the fix and is recorded here because it lands on every later wave: **dependency addition is a serialisation point across the whole plan.** Waves 2 to 6 run three tasks at once and any two that add a package collide in the lockfile, which is exactly the merge collision `T000` exists to prevent. Proposed remedy, for the wave-2 boundary: the orchestrator batches a wave's dependency additions onto the base branch before any task in it is claimed.
   - 2026-08-13 orchestrator: second partition fix on the base branch, before either session starts. `vitest.config.ts` collected `lib/**`, `components/**` and `scripts/**` only, so tests under `tests/server/**` would not have been collected at all and the test worktree would have reported zero tests as a pass. The glob now includes `tests/**/*.test.ts`. It is shared scaffolding that has to pre-exist both branches, so it belongs to neither task's `Owns` set and neither agent may edit it. Full suite re-run after the change: 92 files, 3625 tests, green. **Both worktrees must rebase on `backend` before starting.**
+  - 2026-08-13 test author: `tests-written`. 64 tests in six files under `tests/server/**`, plus `tests/server/contract.ts`, which is a helper and not collected. Every acceptance criterion is named in its own test: AC1 four tests, AC2 three, AC3 eight, AC4 ten, AC5 thirteen, AC6 six, with the rest covering the contract clauses no criterion states (RFC 9457 members, 404 rather than 403, the session surface, the environment contract). Full suite: 64 failed, 3625 passed. Every red is a missing module, a missing file or an unset contract variable; none is a syntax error or a bad path.
+  - 2026-08-13 test author, **contract amendment, naming**. The contract pins behaviour and never pins an identifier, so the tests resolve each capability from a candidate list rather than declaring one name and reporting a naming difference as a defect. The first entry in each list is the name the tests treat as canonical. From `@/lib/db`: migrate (`migrate`, `applyMigrations`, `runMigrations`, `migrateUp`, `up`), rollback (`rollback`, `rollbackMigration`, `migrateDown`, `revert`, `down`), query (`query`, `sql`, `dbQuery`, or a client factory named `createDbClient`, `createClient`, `createPool`, `getDb`, `db`, `pool`, `client` exposing `.query`), object storage (`createObjectStore`, `objectStore`, `createBlobStore`, `blobStore`, `createContentStore`, `contentStore`, `createStorage`, `storage`, `objects`, `bytes`, with `put`/`putObject`/`write`/`upload`/`store`, `get`/`getObject`/`read`/`download`/`fetch`, and, since the test-isolation amendment, `remove`/`delete`/`deleteObject`/`del`/`erase`/`unlink` for the delete, which is the one entry whose absence is tolerated rather than reported). From `@/lib/server/http`: `ok`, `okJson`, `jsonOk`, `respond`, `payload`, `envelope`, `data`, `json`; and `notFound`, `notFoundProblem`, `problemNotFound`, `hidden`, `missing`. From `@/lib/server/auth`: `requireSession`, `withSession`, `requireAuth`, `withAuth`, `guard`, `protect`, `authenticated`; `readSession`, `getSession`, `sessionFromRequest`, `currentSession`; `createSessionCookie`, `sessionCookie`, `sessionCookieHeader`, `setSessionCookie`, `sealSession`, `issueSession`, `signSession`, `writeSession`, `setSession`, `encodeSession` (the first four write a cookie and the rest encode what goes inside one, and the list is read in that order for exactly that reason; see T-02 below). A name outside its list is not a failed implementation, it is a contract that never said: add the name to the list that carries it (`tests/server/contract.ts` for the storage and client lists, the test file itself for the auth and http ones) and amend this entry. Argument order is resolved the same way, by trying each plausible call and reporting all of them when none produces a `Response`.
+  - 2026-08-13 test author, **contract amendment, module paths**. Every import goes through the barrel of an owned directory (`@/lib/db`, `@/lib/server/http`, `@/lib/server/auth`, `@/lib/server/types`) and never a deep path, following the rule `lib/core/index.ts` already states for this repository. Two consequences worth stating before the merge rather than after it. First, the object-storage client is looked up in `@/lib/db`: the goal lists it as a deliverable and `lib/db/**` is the only entry in `Owns` that can hold it, so a client that turned up under `lib/server/storage/**` would be a write outside the task's own partition. Second, a capability that exists behind a deep path but is not re-exported from its barrel reds here, which is the intended reading of "public interface" and not a test defect.
+  - 2026-08-13 test author, **environment policy**. The eight variables are read directly from `process.env` and an unset one fails loudly rather than skipping the suite. A test that stands down when the infrastructure is absent reports the same green as one that checked something, and `compose.yaml` is in this task's `Owns` set precisely so that "the infrastructure is not up" is an instruction rather than an excuse. `tests/server/environment.test.ts` also asserts that `compose.yaml` exists and that `.env.example` names all eight; pgvector availability is asserted for real against the running database, not by grepping the compose file.
+  - 2026-08-13 test author, **evidence that the tests discriminate**. Written blind, they cannot be run against the implementation, so they were run against a throwaway correct implementation in a scratch directory, aliased in through a temporary config, and never written into this worktree: 64 passed. Each guard was then falsified against a deliberately broken variant. A guard that runs the handler and replaces its answer with the 401 fails five AC3 tests while still returning 401. An envelope that re-sorts diagnostics or pads absent optionals to `null` fails AC4. A store that normalises unicode fails AC5, and one that invents its own key fails the addressing test. A migration runner that throws on re-run fails all ten, and one without an advisory lock fails only the cold-boot race. A `lib/server/types.ts` that restates `Diagnostic` with the engine's exact shape fails three AC6 tests, which is the case that no structural or `expectTypeOf` comparison can see. One gap was found and closed this way: flipping a single character mid-cookie is passed by a reader that never verifies the signature, because the edit lands in the payload and breaks the parse instead. The test now sweeps every character position and fails on any edit that reads back as an account nobody issued.
+  - 2026-08-13 implementer: impl-done, second pass. Rebased on `backend` at `4d5556a`
+    before starting; the three-way rebase conflicted only in this file's own Log and
+    State lines (my old `impl-done` entry against the orchestrator's amendments), kept
+    the orchestrator's side throughout since it was already the authoritative,
+    up-to-date account. All seven defects addressed; D-01 was triaged as the
+    contract's fault, not fixed differently for that.
+    **D-01**: published `lib/db/index.ts`, re-exporting `createDbClient`,
+    `getSharedDbClient`, `schema`, `migrate`/`migrateUp`, `rollback`/`migrateDown`,
+    `createObjectStore`, `keyForDigest`, `objectStorageConfigFromEnv`. Renamed the
+    object-storage factory `createObjectStorage` → `createObjectStore` to land on the
+    test contract's own first-choice candidate name. Fixing the barrel surfaced two
+    problems the missing file had been hiding: `queryFor`'s client-factory fallback
+    calls `createDbClient()` and then looks for `.query` on the result, which `DbClient`
+    (`{db, pool, close}`) never had — added a `query` method delegating to `pool.query`.
+    And `migrate`/`rollback` are resolved from the barrel and called with **zero**
+    arguments, no retry with other arg shapes the way the guard/notFound probes get —
+    so `migrateUp`/`migrateDown` stay pool-based internally (still what
+    `tests/support/db.ts` and `lib/db/migrate.test.ts` call directly) and the barrel
+    additionally exports self-contained `migrate()`/`rollback()` wrappers that open a
+    connection against `DATABASE_URL`, run, and close it. Also fixed a deep import this
+    barrel rule itself now forbids: `app/api/auth/github/callback/route.ts` imported
+    `@/lib/db/client` directly.
+    **D-02**: `problem()`, `notFound()`, `unauthorized()`, `badRequest()`, `conflict()`
+    now take the `Request` as their first argument and derive `instance` from
+    `new URL(request.url).pathname` inside `problem()` itself — every caller gets it
+    for free rather than being asked to remember a fifth argument. `notFound()`'s
+    `detail` now defaults to `"Not found."` so it is never dropped either.
+    `guard.ts` and both OAuth routes updated to the new signature.
+    **D-03**: `parseCookieHeader` wraps `decodeURIComponent` per cookie in try/catch;
+    a malformed one is dropped, not thrown, and does not take the others with it.
+    Falsified: reverted the guard, watched `cookie.test.ts` fail with the exact
+    `URIError` two ways, restored it.
+    **D-04**: validated in `keyForDigest` against `/^sha256:[0-9a-f]{64}$/`, matching
+    `lib/core/archive/store.ts`'s own digest shape — empty, malformed and
+    traversal-shaped digests are refused before ever reaching S3. `putObject`,
+    `getObject` and the new `deleteObject` all take the digest directly (not a
+    pre-derived key) and call `keyForDigest` internally, so every verb inherits the
+    guard from one place. Matches the blind contract's own calling convention
+    (`objectStoreFor` calls `put(digest, content)` / `get(digest)` on the client
+    directly, never pre-transforming).
+    **D-05**: `createDbClient` attaches `pool.on("error", ...)` so a terminated idle
+    connection logs instead of taking the process down.
+    **D-06**: `migrateUp`/`migrateDown` now hold one client for their whole run and
+    wrap it in `pg_advisory_lock`/`unlock` on a fixed key, so concurrent callers —
+    including from separate pools, the way separate app instances would — serialise
+    instead of racing the tracking table and the DDL that reads it. Added a
+    same-key lock to `migrateDown` too: an up and a down racing each other is the
+    identical hazard, and D-06 named the runner, not one direction of it. Added a
+    4-pool concurrent `migrateUp` test (`migrate.test.ts`) alongside the existing AC1
+    concurrency case.
+    **D-07**: the callback's 502 detail is now a fixed string; `err.message` (which
+    can be `"GITHUB_CLIENT_SECRET is not set"`, straight from `requiredEnv`) never
+    reaches the response body.
+    **`target_actor`** (contract amendment): added to `schema.ts` and both migration
+    directions — one row per `(target_id, account_id, kind)`, `kind` a new
+    `target_actor_kind` enum (`star` | `note_vote`), unique index doubling as the
+    idempotency guarantee. `tests/support/db.ts`'s truncate order and
+    `lib/db/migrate.test.ts`'s `EXPECTED_TABLES` updated; `schema.test.ts` gained a
+    round-trip test asserting the duplicate insert is refused.
+    `package.json`/`package-lock.json`: no dependency changes were needed for any of
+    the above (`@aws-sdk/client-s3` already carries `DeleteObjectCommand`), so nothing
+    to touch there this round beyond them being correctly in `Owns` now.
+    Gates on this tree, stack up (`docker compose up -d`): `typecheck` and `lint`
+    clean; `build` green; `test` 3738/3744 passed, 109/111 files. The 6 reds are
+    exactly T-01 (`components/build/source-hygiene.test.ts`, the raw NUL bytes in
+    `tests/server/{envelope,object-store}.test.ts`) and T-02 (5 reds in
+    `tests/server/session.test.ts`, all tracing to `validCookie()`: `WRITE_NAMES`
+    resolves to `encodeSession`, which returns a bare signed token with no `name=`
+    prefix and no `;`, so `cookieHeaderFrom` passes it through unprefixed and
+    `parseCookieHeader` — correctly — never sees an `=` to parse) — both already
+    triaged to the test branch in the entry above this one, neither touched here.
+    No ambiguity encountered that wasn't already resolved by this section's own
+    amendments; nothing to report as newly open.
+  - 2026-08-13 test author, **T-01 fixed**. The raw NUL in `tests/server/envelope.test.ts:175` and `tests/server/object-store.test.ts:82` is now the six-character escape `\u0000`. Identical strings at runtime, verified by evaluating both literals straight out of the files: no NUL byte on disk, U+0000 at index 18 in each. `file(1)` now reports both as UTF-8 text where it reported `data`. The edge case is untouched and still discriminates: an envelope that strips `\u0000` out of the serialised payload fails `unicode in a message survives byte-for-byte` and fails nothing else. One caveat for whoever reads this commit's diff. Git decides text or binary per blob and calls a *pair* binary when either side is, so the diff of the fix itself still prints `Bin`; the pre-image is the binary half. Every diff from this commit forward is text, which is what the hygiene guard is protecting.
+  - 2026-08-13 test author, **T-02 fixed**, and the general lesson taken with it. `WRITE_NAMES` in `tests/server/session.test.ts` gains `sessionCookieHeader` and `setSessionCookie` ahead of the encoder names, and the list's order is now load-bearing and documented as such: it is read first-match-wins, so a cookie writer that exists has to be reached before an encoder that also exists. The list alone is not the fix. Every candidate list is now checked for *kind* before its binding is used, because a list that resolves to nothing throws a message naming what it looked for, while a list that resolves to the wrong thing reports a defect that does not exist. Most bindings already had such a check by accident: the guard has to return a `Response` or resolution fails, the client has to expose `.query`, the store has to expose put and get. The session writer only had to return a string, and both the cookie writer and the token inside it do, which is the whole of T-02. It now goes through `BindingError`, a failure type distinct from a red, whose message names the export it bound to, says the answer is a bare token rather than a `name=value` cookie, and says to fix the list rather than the implementation. Two tests state the invariant on its own, ahead of everything that consumes a cookie: the writer's output is shaped like a cookie, and it is a cookie the session reader accepts.
+  - 2026-08-13 test author, **the fixes falsified, both ways**. Re-run against a throwaway implementation in a scratch directory, aliased in through a temporary config, never written into this worktree. Correct implementation, publishing `sessionCookieHeader` *and* `encodeSession` so the list has to choose: 44 of 44 pass. Then broken on purpose. An auth module publishing only the token encoder fails as `BindingError: The session writer resolved to encodeSession, which returned "eyJhY2NvdW50SWQi... (126 chars)". That is a bare token, not a name=value cookie`, on every test that needs a cookie, where the first pass reported five silent round-trip failures instead. A writer producing a well-formed cookie under a name the reader never looks for passes the shape half and fails the reader half, so the two halves discriminate independently. An envelope that strips NUL fails the unicode test alone. A store publishing no delete leaves teardown silent: 13 of 13 still pass, no `afterAll` error. With the delete published, the ledger reads `deleted 24, left behind 0`.
+  - 2026-08-13 test author, **contract tracked, not amended**: `target_actor`. The schema clause named nine tables when these tests were written and names ten now, so `CONTRACT_TABLES` in `tests/server/migrations.test.ts` gains `target_actor` and the two test titles that counted to nine count to ten. It is asserted exactly as the other nine are: present after migrate, absent after a full rollback, carrying a primary key. Nothing is decided here. The contract says ten and the tests now say ten.
+  - 2026-08-13 test author, **an ambiguity reported instead of resolved**, which is the process correction from the last round. The test-isolation amendment binds these tests and cannot be satisfied from this branch without knowing whether the published Postgres client can be pointed at a database other than `DATABASE_URL`. Written up as the **Open** line above, with the three candidate answers, rather than decided here: the last two ambiguities this author resolved alone were both resolved soundly and one of them still cost an adversarial cycle, because the import surface was settled in the tests' favour, the implementer published no barrel at `lib/db`, and neither side was wrong where the contract had never said. The storage half of the same amendment is implemented rather than reported, since taking back what a test wrote needs no decision, only a name, and an unpinned name is what candidate lists already exist for.
+  - 2026-08-13 adversary, round 2: **FAIL**, `State: reverted`. Merged `test/t000-foundation` at `e3b6378` into `d9251ff`. Six conflicts, none a partition error: the test branch changed only `tests/server/**` and `backend.md`, verified with `git diff --name-status 4d5556a test/t000-foundation`. The add/add pairs are history duplication, as predicted. Resolved `tests/server/**` to the test branch's copy in full and verified it rather than assuming: byte-identical to `test/t000-foundation` for all seven files, and `cat tests/server/*.test.ts | tr -dc '\0' | wc -c` prints `0`. Merge `2270148`.
+
+    **Gates.** `npm run typecheck` exit 0. `npm run lint` exit 0. `npm run build` exit 0. `npm test` exit 1, and **not the same failure twice**: three consecutive runs of the identical tree gave 6, 6 and 3 failures out of 3746. That instability is itself the headline finding.
+
+    **All seven round-1 defects are fixed. Each re-tested by invocation, not by reading the diff.**
+    - D-01 closed. `lib/db/index.ts` exists and exports the client, the four migration functions and the store. `typecheck` and `build` both pass, where both failed last round.
+    - D-02 closed. All five RFC 9457 members on every constructor: `unauthorized`, `notFound`, `badRequest`, `conflict` and raw `problem` each carry `type`, `title`, `status`, `detail` and `instance`, all of the right type. `instance` is derived from the request path rather than asked of each caller, which is why it is now impossible to forget — `notFound(req)` gives `"instance":"/api/guarded"`, and a URL with an escape and a fragment yields `/a/b%20c` without throwing. The 404 prose still avoids naming permission.
+    - D-03 closed. Eight hostile cookie headers (`theme=100%`, `ajs_anonymous_id=%D0`, `%E0%A4%A`, `x=%FF%FE`, `=novalue`, `; ; ;`, a malformed session cookie, and a malformed cookie sitting beside a valid session) all return `undefined` and none throws. A valid session still parses when a malformed sibling cookie precedes it, which is the case a naive fix breaks.
+    - D-04 closed, and closed at the root as asked. `keyForDigest` validates against `/^sha256:[0-9a-f]{64}$/`, so all three verbs inherit it: 19 malformed digests — empty, prefix-only, traversal, traversal-in-body, uppercase hex, leading and trailing space, off-by-one length, non-hex, percent escapes, unicode, newline, embedded NUL, slash-in-body, wrong algorithm, double prefix — were each tried against `putObject`, `getObject` and `deleteObject`, 57 calls, and every one threw. `getObject("")` now throws instead of returning the 11 KB `ListBucketResult` it returned last round.
+    - D-05 closed. `pg_terminate_backend` on an idle pooled connection now produces `uncaught exceptions: 0` where it produced one last round; `pool.listenerCount("error")` is 1, the error is logged, and the pool still answers `SELECT 1` afterwards, so the fix does not merely swallow the event.
+    - D-06 closed. Four concurrent `migrateUp` on a cold database: 0 rejections, and **exactly one** runner reports applying `0001_init` — the advisory lock serialises rather than letting three crash. An up racing a full down also settles with 0 rejections and a consistent schema.
+    - D-07 closed. With `GITHUB_CLIENT_SECRET` unset the callback now returns `detail: "GitHub sign-in failed. Try again."` instead of naming the variable. Scanned the 400, 401, 404 and 502 bodies for stack frames, internal paths, environment variable names, DSNs and SQL: none present.
+
+    **Acceptance criteria.** All six pass on behaviour. The verdict is FAIL on a new defect, not on a criterion.
+
+    - **AC1 — migrations apply to an empty database and are idempotent on re-run: PASS.** On `adv2_lifecycle`, a database the probe created: `tables before []`, `migrateUp` → `["0001_init"]`, all ten contract tables present including `target_actor`, then three further `migrateUp` calls each returning `[]` with a byte-identical catalogue snapshot (columns, types, nullability, defaults, indexes, constraints, enums). The blind AC1 suite corroborates it this round — it imports now — 10 passed.
+    - **AC2 — rollback returns the schema to the prior state: PASS.** `migrateDown(pool, 99)` → `["0001_init"]`, leaving `["_migrations"]` and none of the ten. Re-applying reproduced the snapshot exactly (`round trip identical: true`).
+    - **AC3 — a request with no session reaching a guarded handler receives a problem+json 401 and no body from the handler: PASS on behaviour, but two tests named AC3 are red.** The real route, `GET /api/auth/session`, cookieless: `401`, `application/problem+json`, all five members, `instance: "/api/auth/session"`, no leak, and the handler never runs because `requireSession` returns before `ok()` is reached. With a hostile cookie it now answers 401 instead of throwing. A tampered cookie is refused: every single-character edit of a valid cookie — the full sweep — reads back as `undefined`. The two reds are D-09 below and are a shape disagreement, not a behavioural failure.
+    - **AC4 — a handler returning diagnostics returns 200 and the diagnostics survive serialisation intact, including `location`: PASS.** 13 blind tests green. `ok()` still reshapes nothing: `false`, `0`, `""`, `[]`, `{}`, `null` and nested structures all survive.
+    - **AC5 — an object written to storage under a digest reads back byte-identical: PASS.** 13 blind tests green, and 29 probes of my own against MinIO. Plain text, unicode with an astral character and a ZWJ sequence, the empty object, edge whitespace and a 3 MB body all compared byte-for-byte and matched. Content addressing intact: same content one key, one byte different a different key, a valid-but-absent digest reads `undefined` rather than throwing. Round trip then delete then read gives `undefined`.
+    - **AC6 — every type exported from `lib/server/types.ts` is the engine's own, verified by identity not by shape: PASS.** 6 passed, and falsified again: restating `Diagnostic` with the engine's exact shape turns two of the six red. Restored, `git diff` empty.
+
+    **Two defects. The first is new and is why this is a FAIL.**
+
+    - **D-08, blocker: the test suite is nondeterministic, because two suites fight over one database.** `lib/db/schema.test.ts` reaches Postgres through `tests/support/db.ts`, which points `createTestDbClient` at the shared `DATABASE_URL` and cleans up with row deletes. `tests/server/migrations.test.ts` reaches the same database through the barrel's `migrate()`/`rollback()`, which take no target and so operate on `DATABASE_URL` unconditionally — and rollback **drops every table**. Run in the same suite, on separate threads, the second pulls the schema out from under the first. Reproducible both ways: `npm test -- lib/db/schema.test.ts` alone passes 4/4; `npm test -- lib/db/schema.test.ts tests/server/migrations.test.ts` gave 3, then 4, then 1 failures on three identical invocations, with errors `relation "account" does not exist` and `relation "target_actor" does not exist` (SQLSTATE 42P01). Full-suite runs gave 6, 6, 3. This is amendment 4 violated on both sides at once — the blind test leaves observable state behind, and `tests/support/db.ts` assumes a database it does not own. It matters past this task: `tests/support/db.ts` is the harness T000 hands to nine downstream tasks, so every one of them inherits the assumption. The test author raised precisely this as an open question before the round rather than resolving it alone, and the answer is available in the code they could not see: `createDbClient` accepts a connection string and `migrateUp`/`migrateDown` accept a pool, so both sides *can* create and drop their own. Only the barrel's zero-argument `migrate()`/`rollback()` cannot, and those are what the candidate list resolves to first.
+    - **D-09: the guard's shape is still unpinned, and it is the third instance of the D-01 pattern.** The two AC3 reds both end in `TypeError: The "key" argument must be of type string ... Received function handler` at `sign()` in `lib/server/auth/session.ts:31`. Cause: the blind harness probes for a guard that wraps a handler, settles on `guard(request, handler)`, and the implementation's second parameter is `secret`, so the handler is handed to `createHmac` as an HMAC key. Last round this was masked — the cookieless path returns before the secret is read — and fixing the cookie writer (T-02) is what exposed it. Neither side is wrong: AC3 is satisfiable by a guard that wraps and invokes, or by one that returns `SessionPayload | Response` and lets the route call the handler, and the contract never chose. Worth stating that a one-argument guard would not fix it either — the harness expects `guard(request, handler)` to *return a Response*, which a returning guard never does for a valid session. This needs the contract to name the shape, exactly as it eventually named the import surface. Verified by direct invocation that the implementation is correct at its real call site: `requireSession(req())` gives a 401 `Response`, `requireSession(req(validCookie))` gives `{accountId, handle}` and never a `Response`.
+
+    **Recorded, not charged.** `keyForDigest` throws a plain `Error` whose message quotes the caller's input verbatim (`"sha256:<script>alert(1)</script>" is not a digest — …`); no route consumes it yet, but D-07 was exactly this shape of message reaching a response body, and the error carries no type a route could branch on to choose 400 over 500. `deleteObject` on a well-formed digest that was never written resolves successfully — standard S3 idempotency and probably right, but `storage.ts` justifies it with "safe here only because `digest` is validated below, so there is no key this can silently no-op on", and that reasoning does not hold: validation proves the key is well-formed, never that it existed. `getObject` now throws where a malformed digest previously returned data, so a route passing an unvalidated path parameter straight through will 500 rather than 404; T010 should validate at the edge. The session token still carries no expiry claim, so a captured cookie stays valid indefinitely and sign-out clears only the browser's copy — unchanged from round 1 and still not in any criterion.
+
+    **What a fix has to clear.** `npm test` green three times running, not once. D-08 needs a decision about who owns a database in this suite, and the cheapest one that satisfies amendment 4 for both sides is a target-taking migrate/rollback on the barrel plus a `tests/support/db.ts` that creates and drops its own. D-09 needs the contract to state the guard's shape, after which one of the two sides changes and neither is at fault for having guessed. My probes complied with amendment 4: four scratch databases created and dropped, ten storage objects written and deleted, verified by the cleanup line in each run.
+  - 2026-08-13 implementer: impl-done, third pass. Rebased on `backend` at `3e9f51e`
+    before starting; the six-commit rebase conflicted only in this file's own table
+    row, State line and Log section (my round-2 history replaying against the
+    orchestrator's condensed one), resolved by keeping the most advanced state at
+    each step and folding in every Log entry from both sides rather than dropping
+    either — the test author's blind-test and T-01/T-02 entries now sit ahead of my
+    round-2 entry, in the order the work actually happened. Both **Published
+    signatures** items addressed; neither left ambiguous.
+    **D-09**: published `withSession(request, handler)` from `lib/server/auth/guard.ts`
+    — wraps, does not return a union, so AC3 is structurally true rather than
+    caller-enforced. The fix is not only the new function: `requireSession` is no
+    longer re-exported from the barrel (`lib/server/auth/index.ts`), kept only as an
+    internal helper `withSession` calls, imported directly from `./guard` by the one
+    file that still wants the union (`guard.test.ts`). This matters beyond style —
+    the blind harness's own `GUARD_NAMES` list tries `requireSession` before
+    `withSession`, and a still-published `requireSession` keeps winning that
+    resolution and reproducing the exact D-09 crash regardless of `withSession`
+    existing beside it. Verified by removing only the barrel export and re-running
+    `tests/server/session.test.ts` unmodified: 2 reds (the two AC3 cases described in
+    the FAIL above) went green, nothing else moved. `app/api/auth/session/route.ts`,
+    the goal's own guarded-route example, now calls `withSession` rather than
+    branching on the union itself. Falsified per this repo's definition of done: made
+    `withSession` run the handler unconditionally and only swap a 401 in afterward,
+    watched `guard.test.ts`'s new AC3 test fail with
+    `expected "vi.fn()" to not be called at all, but actually been called 1 times`,
+    restored it.
+    **D-08**: `migrateUp`/`migrateDown` now take `target: Pool | string` — a pool the
+    caller owns, or a connection string this run opens and closes itself
+    (`withTargetPool` in `migrate.ts`) — and the barrel no longer exports the
+    zero-argument `migrate`/`rollback`; they read `DATABASE_URL` implicitly with no
+    way to point elsewhere, which is exactly what let two suites drive the same
+    database. Nothing referenced them outside the barrel (`lib/db/cli.ts` already
+    passes its own `Pool` to `migrateUp`/`migrateDown` directly), so they are deleted
+    rather than kept as unreachable dead code; `npm run db:migrate`/`db:rollback`
+    still work unchanged through the CLI. `tests/support/db.ts` no longer opens a
+    client against `DATABASE_URL` directly: `createTestDb()` creates a uniquely named
+    scratch database (`CREATE DATABASE`, admin connection against the base URL,
+    `randomUUID()` suffix), migrates it, and returns `{ client, drop() }`, where
+    `drop()` closes the client and drops the database. `lib/db/schema.test.ts`
+    updated to the new shape (`testDb.drop()` in `afterAll`, not `client.close()`);
+    nothing else in `Owns` called the old `createTestDbClient`. Added a
+    `migrateUp`/`migrateDown` test against a bare connection-string target, no `Pool`
+    in sight, alongside the existing pool-based ones in `migrate.test.ts`.
+    `tests/server/migrations.test.ts` is Forbidden and untouched; its own
+    `migrate: () => pickFn(...)()` still calls whatever it resolves with zero
+    arguments, which now throws on `migrateUp`'s required `target` — the 9 reds this
+    leaves are exactly that test branch's own half of D-08, confirmed from source
+    (`tests/server/contract.ts`'s `MIGRATE_NAMES` resolves `migrate` first, absent
+    now, next `migrateUp`, called with nothing) and left for the test author, per this
+    round's brief.
+    No signature in the Published signatures block was ambiguous; nothing to report
+    as newly open. Gates on this tree, stack up (`docker compose up -d`): `typecheck`
+    and `lint` clean; `build` green; `test` run three times consecutively, identical
+    every time — 3740/3749 passed, 110/111 files, the 9 reds all
+    `tests/server/migrations.test.ts` as above.
+  - 2026-08-13 test author, round 3, **the named signatures bound exactly, and the lists retired with them**. Seven names are settled by the Published signatures block and are now bound by `required`/`requiredFn`, whose red quotes the clause that names the export and says in as many words that this is a failed acceptance criterion and not a naming difference: `withSession`, `migrateUp`, `migrateDown`, `createDbClient`, `getSharedDbClient`, `createObjectStorage`, `keyForDigest`, and put, get and delete on `ObjectStorage`. The guard's argument-shape probe went with them, because `withSession(request, handler)` is stated and there is nothing left to discover. Four capabilities are still unnamed and still bound by list; they are under **Open** above, reported rather than settled. The reason for the split, written down once so it does not have to be relearned: a list that resolves to *nothing* throws a message naming what it looked for, and a list that resolves to the *wrong thing* reports a defect that does not exist and sends somebody looking for it. That cost a cycle on `encodeSession` in round 1 and a cycle on `migrate` in round 2. Suite is now 71 tests in six files.
+  - 2026-08-13 test author, round 3, **`tests/server/migrations.test.ts` creates and drops its own database**, which is this branch's half of D-08. It creates `darkprint_t000_<pid>` from the maintenance database, points a client at it with `createDbClient(<connection string>)`, drives `migrateUp`/`migrateDown` against it, and drops it with `FORCE` in `afterAll`. One database for the file rather than one per test: the rule's purpose is that nothing outside this suite can observe or disturb what it does, and the tests inside run in declaration order in one worker with every empty-schema case rolling itself down first. Nothing sweeps other names, because dropping a database another process might be driving is the exact failure the rule exists to prevent, and a leaked scratch database is inert. Two things are new rather than moved. **The premise is checked, not assumed**: the harness asks `select current_database()` and refuses to continue unless the answer is the database it just created, since a `createDbClient` that takes a connection string and connects to `DATABASE_URL` anyway would leave this file on the shared database with every assertion still passing. And **one test drives the string form on purpose**, into a database of its own, and asserts that a second database created beside it stays empty. That is the D-08 shape stated as an assertion: a migrate that accepts a target and then reads `DATABASE_URL` anyway passes everything else in the file.
+  - 2026-08-13 test author, round 3, **evidence that the isolation actually isolates**. Run against a throwaway correct implementation in a scratch directory, aliased in through a temporary config, against Postgres and MinIO containers of this author's own on spare ports, and never written into this worktree. 71 of 71 pass. Three consecutive runs: 71, 71, 71, where round 2's shared-database design gave 6, 6 and 3 failures. Two copies of the migration suite started at the same time: 12 of 12 each, both green, which is the collision itself and not a proxy for it. After the run, 0 scratch databases left, 0 objects left in the bucket, and 0 tables in the shared `darkprint` — the suite never touched it.
+  - 2026-08-13 test author, round 3, **the guards falsified again, the four new ones included**. Sixteen deliberately broken variants, each run against the same blind suite. The four that are new to this round: a `migrateUp` that ignores its target and reads `DATABASE_URL` fails 6 of 12 including the target test; a module publishing `migrate`/`rollback` instead fails 11 of 12, each naming `exports no migrateUp`, where round 2's list bound it silently; an auth module publishing `requireSession` fails 9 naming `exports no withSession`, where round 2 passed the handler into the secret's position and it reached `createHmac` as an HMAC key; an `ObjectStorage` with no delete fails 14 of 15 naming the missing verb, where the first pass had 13 of 13 pass and teardown stay silent. The rest still discriminate, and the ones that should be narrow are narrow: a guard that runs the handler and then replaces its answer with the 401 fails 5 AC3 tests while still returning 401; an envelope that pads absent optionals to `null` fails 7 and one that re-sorts diagnostics fails exactly 1; a store that normalises unicode fails exactly 1; a `keyForDigest` that maps every digest onto one key fails 6; a guard that hands the handler the `Request` instead of the session fails exactly 1; a runner that re-applies on every run fails 9 and one that merely drops the advisory lock fails exactly 1, the cold-boot race; a `lib/server/types.ts` that restates `Diagnostic` with the engine's exact shape fails 3; an auth module publishing only the token encoder fails 11 as `BindingError`; a reader that never verifies the signature fails exactly 1, the single-character sweep.
+  - 2026-08-13 test author, round 3, **one gap found this way and closed, and one test defect found and fixed**. The gap: a `createDbClient` that ignores the connection string it is handed produced a single red, because the whole file then ran consistently against the shared database and eleven tests passed there. That is D-08 reproduced with the fix in place, so the `current_database()` premise check above was added; the same variant now fails 11 of 12 with a sentence naming what happened. The defect: the storage facade's `get` and `delete` were arrows returning `Promise.resolve(fn(...))`, and mapping an address through `keyForDigest` can throw — the contract says it validates — so a malformed digest threw *synchronously*, past the caller's `.catch`, and the correct implementation reported 70 of 71 instead of 71. Both are now `async`, so the throw is a rejection the caller can handle. It was the throwaway run that caught it, before the merge rather than after, which is what that run is for.
+  - 2026-08-13 adversary, round 3: **FAIL**, `State: reverted`. Merged `test/t000-foundation` at `4e71963` into `a0f7d19`. Five conflicts, none a partition error — the test branch changed only `tests/server/**` and `backend.md`, verified with `git diff --name-status 3e9f51e test/t000-foundation`. `tests/server/**` resolved to the test branch's copy in full, then verified rather than assumed: all seven files byte-identical to `test/t000-foundation`, NUL count 0. Merge `10ff213`.
+
+    **Gates.** `npm run typecheck` exit 0, `npm run lint` exit 0, `npm run build` exit 0. `npm test` exit 1: **14 failed / 3740 passed of 3754**, and this time the number does not move — five consecutive runs gave the identical 14, in the identical file, with 0 scratch databases left behind each time.
+
+    **D-08 is closed, and closed properly rather than by one lucky run.** Five full-suite runs, identical results, and `SELECT count(*) FROM pg_database WHERE datname LIKE 'darkprint\_%' OR datname LIKE 'adv%'` returned `0` after every one, so nothing creates a database and dies without dropping it. The barrel no longer exports `migrate`/`rollback` at all — `Object.keys` on `@/lib/db` is `createDbClient, createObjectStore, getSharedDbClient, keyForDigest, migrateDown, migrateUp, objectStorageConfigFromEnv, schema` — so the implicit-`DATABASE_URL` form that made the race possible cannot be reached. A connection-string target migrates, re-migrates as a no-op, rolls back and re-applies to a byte-identical catalogue snapshot, and opens and closes its own connections: `pg_stat_activity` for the target database reads 0 before and 0 after.
+
+    **D-09 is closed, and I attacked it the way the criterion means rather than the way a status code check would.** `withSession(request, handler)` is published; `requireSession` is not exported from `@/lib/server/auth` (the barrel's 18 names were enumerated at runtime) and `git grep` finds no reference to it under `app/`. The handler carries an observable side effect and the call count is the assertion: across **twelve** unauthenticated shapes — absent cookie, empty header, wrong cookie name, malformed percent, stray percent beside a valid session, garbage value, no signature, forged signature, foreign-secret cookie, empty value, a lone dot, and a 400 KB cookie — the handler ran **0 times**, every response was 401 `application/problem+json` carrying all five members, and the sentinel never appeared in a body. The full single-character tamper sweep of a valid cookie: 0 handler invocations, 0 non-401 responses. A valid session runs the handler exactly once, receives `{accountId, handle}` and nothing else, an async handler is awaited, and a throwing handler propagates rather than being laundered into a 401.
+
+    **Everything fixed in earlier rounds is still fixed**, re-checked by invocation rather than assumed from the diff: all five problem constructors carry `type`, `title`, `status`, `detail`, `instance`; the cookie reader cannot throw; `keyForDigest` validation holds and all three verbs reject a malformed digest; a killed idle connection produces 0 uncaught exceptions and the pool still answers afterwards; four racing migration runners give 0 rejections with exactly one applying; the OAuth 502 does not name an environment variable, and a string target naming a missing database fails without leaking the DSN.
+
+    **Acceptance criteria.**
+
+    - **AC1 — migrations apply to an empty database and are idempotent on re-run: PASS.** On `adv3_string`, a database the probe created: `migrateUp(url)` → `["0001_init"]`, all ten contract tables present; re-run → `[]` with an identical catalogue snapshot. Blind suite `tests/server/migrations.test.ts` 12 passed.
+    - **AC2 — rollback returns the schema to the prior state: PASS.** `migrateDown(url, 99)` → `["0001_init"]`, none of the ten remaining, and re-applying reproduced the snapshot exactly (`round trip identical: true`).
+    - **AC3 — a request with no session reaching a guarded handler receives a problem+json 401 and no body from the handler: PASS.** Evidence above; the "no body from the handler" half is now structurally true rather than incidentally true, which is what the wrapper bought. Blind suite `tests/server/session.test.ts` 19 passed. `GET /api/auth/session` cookieless: `401`, `application/problem+json`, `instance: "/api/auth/session"`, no leak.
+    - **AC4 — a handler returning diagnostics returns 200 and the diagnostics survive serialisation intact, including `location`: PASS.** `tests/server/envelope.test.ts` 13 passed.
+    - **AC5 — an object written to storage under a digest reads back byte-identical: PASS on behaviour, and its own 14 tests cannot run.** Verified through the export that exists: five shapes (plain, unicode with an astral character and a ZWJ sequence, empty, edge whitespace, 2 MB) all byte-identical; content addressing intact; delete removes its own object and leaves its neighbour; 15 malformed verb calls all rejected. The blind AC5 suite never constructs the store — that is D-10.
+    - **AC6 — every type exported from `lib/server/types.ts` is the engine's own, verified by identity not by shape: PASS.** 6 passed, and falsified again: restating `Diagnostic` with the engine's exact shape turns two of the six red. Restored, `git diff` empty.
+
+    **D-10, the only finding, in two halves — and both are the contract and the implementation disagreeing about a name the contract now pins.**
+
+    - **D-10a: the contract publishes `createObjectStorage(config?)`; the implementation exports `createObjectStore`.** Worth the history before anyone is blamed, because it is not what it looks like. `git show` on each round: `41f23a4` (round 1) had `createObjectStorage`; `d9251ff` (round 2) renamed it to `createObjectStore`; `a0f7d19` (round 3) still has `createObjectStore`. The Published signatures block was written at `3e9f51e`, *after* round 2 — so it names a function that had already not existed for a round when the block was written. The round-2 rename was itself reasonable: the blind candidate list led with `createObjectStore` and the round-2 AC5 suite passed on it. The contract is authoritative now by its own new rule, so the rename should go back, but the block transcribed a stale name rather than the implementer ignoring a fresh one.
+    - **D-10b: the contract says "put, get and delete on `ObjectStorage`"; the implementation has `putObject`, `getObject`, `deleteObject`.** The test binds those three as literal method names and reds with `The ObjectStorage createObjectStorage produced is missing put, get, delete. found: deleteObject, getObject, putObject`. This is the fourth instance of the pattern that produced D-01, D-09 and D-10a, and the tell is visible in the block itself: every other entry is written as a signature — `withSession(request: Request, handler: …): Promise<Response>`, `migrateUp(target, dir?)`, `createDbClient(config?: string | PoolConfig)` — and this one entry is written as prose. "put, get and delete on `ObjectStorage`" reads as three verbs to an implementer and as three identifiers to a test author, and both readings are honest. The method names have been `putObject`/`getObject`/`deleteObject` since round 1 and passed round 2's AC5 suite through the candidate list, so nothing regressed here either; the contract simply never said which reading it meant.
+
+    **D-10 is the whole of the remaining gap, and I measured that rather than assuming it.** With `createObjectStore` aliased as `createObjectStorage` and `put`/`get`/`delete` added alongside the `*Object` methods — a deliberately throwaway edit, reverted immediately after — the full suite went **3754 passed / 3754, 111 files, zero failures**. Both edits restored; `git status` clean; the 14 failures confirmed to return. So the fix is one rename plus three method names, and there is nothing else hiding behind it.
+
+    **Recorded, not charged.** The session token still carries no expiry claim: `{accountId, handle}` and nothing else, so `Max-Age` binds the browser only, a captured cookie is valid indefinitely, and sign-out clears the browser's copy rather than the token's validity. Unchanged since round 1, still outside every criterion, and it is the one thing in this task I would want stated in the contract before T050 builds sessions on top of it. `keyForDigest` still throws a plain `Error` quoting the caller's input verbatim, which no route consumes yet.
+
+    **What a fix has to clear.** `npm test` green, and green on three consecutive runs rather than one. Concretely that is: rename the factory to the contract's `createObjectStorage`, or amend the block to `createObjectStore` — either is fine and the contract should be the one that ends up matching reality; and settle whether the storage verbs are `put`/`get`/`delete` or `putObject`/`getObject`/`deleteObject`, writing the chosen one into the block as a signature rather than as prose, since that is the shape of every other entry that has not caused a round. My probes complied with amendment 4: three scratch databases created and dropped, seven objects written and deleted, cleanup line confirmed in each run, and `pg_database` shows 0 leftovers.
+  - 2026-08-13 implementer: impl-done, fourth pass. Rebased on `backend` at `3a44fa3`
+    before starting; the eleven-commit rebase (my round-3 lineage replaying twice, once
+    against my own prior rewrite and once against the round-3 test-authoring lineage)
+    conflicted repeatedly in this file's own table row, State line and Log section, and
+    twice more in `tests/server/**` itself as add/add pairs against an older, already-
+    superseded copy of the same files. Resolved every `backend.md` conflict by keeping
+    the most advanced state and folding in Log entries that were actually new rather
+    than re-adding content already present in a newer form; resolved every
+    `tests/server/**` add/add conflict by taking the side already checked out; the
+    superseded side (`e0440ab`, a round-1-era copy, predating `BindingError`) was byte-
+    for-byte older, verified by diff before discarding rather than assumed.
+    **D-10a**: `createObjectStore` → `createObjectStorage` in `lib/db/storage.ts`,
+    `lib/db/index.ts`'s barrel, `lib/db/storage.test.ts` and
+    `tests/support/storage.ts`. Not aliased — the round-2 name is gone, matching the
+    contract's own instruction that this is a rename and not a co-existence.
+    **D-10b**: `ObjectStorage.putObject`/`getObject`/`deleteObject` → `put`/`get`/
+    `delete`, same four call sites. Behaviour untouched: `get` still answers
+    `undefined` on a missing key rather than throwing, and `keyForDigest`'s validation
+    — the comment explaining why an unvalidated `delete` cannot silently no-op —
+    carried over the rename unchanged, still guarding all three verbs from one place.
+    Both were pure renames; nothing in the implementation itself was wrong, exactly as
+    the contract said.
+    **Expiry** (new scope, not a defect): `SessionPayload` gained `exp: number`
+    (unix seconds). A new `SessionClaims = Omit<SessionPayload, "exp">` is what a
+    caller mints from — `sessionCookieHeader`'s first parameter is now typed to it,
+    so the OAuth callback route (unchanged) never has to think about expiry.
+    `encodeSession(claims, secret?, exp?)` defaults `exp` to
+    `now + the existing 30-day cookie lifetime`; the third argument exists only so a
+    test can mint an already-expired token without waiting on the clock. `decodeSession`
+    checks `exp` after the signature and shape checks and returns `undefined` — not a
+    throw — on an expired token, which is what lets the existing `getSession` →
+    `requireSession`/`withSession` → 401 path reject it with zero changes to
+    `guard.ts` itself: an expired token now reads exactly like a forged one, all the
+    way up. Falsified: replaced the expiry check with `if (false)`, watched four tests
+    across `session.test.ts` and `guard.test.ts` fail (one showing the decoded payload
+    where `undefined` was expected, one a 200 where 401 was expected, one a called
+    handler that should never have run), restored it. **Precisely what this gives**:
+    expiry, not revocation. A stolen cookie stays valid until `exp`, and this task does
+    not add server-side session state to close that — it is a storage and scale
+    decision the owner has not taken, and the contract already records it as open;
+    building it here would have been scope no one asked for.
+    `tests/server/session.test.ts` (Forbidden) has one now-stale assertion, unrelated
+    to D-10: `"the session exposes those two fields and nothing else"` still checks
+    `Object.keys(session).sort()` against exactly `["accountId", "handle"]`, written
+    before this round's contract amendment added `exp`. Confirmed from source rather
+    than assumed — the contract text I was handed this round states in as many words
+    that `SessionPayload` carries the claim, so the object now has three keys by
+    design, and updating that assertion is the test branch's own half of this round's
+    scope change, the same shape as D-08's `migrations.test.ts` in round 3. Left
+    untouched.
+    No signature in the Published signatures block was ambiguous; nothing to report
+    as newly open. Gates on this tree, stack up (`docker compose up -d`): `typecheck`
+    and `lint` clean; `build` green; `test` run three times consecutively, identical
+    every time — 3759/3760 passed, 110/111 files, the 1 red exactly the stale
+    assertion above. Zero leftover scratch databases after any run.
+  - 2026-08-13 adversary, round 4: **FAIL**, `State: reverted`. Merged `test/t000-foundation` at `4e71963` into `5c8418c`. One conflict, `backend.md` only, both sides appending to this Log; the test branch did not move, so `tests/server/**` merged clean and was verified byte-identical to `test/t000-foundation` anyway, NUL count 0. Merge `83e72e8`.
+
+    **Gates.** `npm run typecheck` exit 0, `npm run lint` exit 0, `npm run build` exit 0. `npm test` exit 1: **1 failed / 3759 passed of 3760**, and the same single failure on all five consecutive runs, with 0 leftover scratch databases after every one.
+
+    **D-10 is closed, and it is a rename rather than an alias.** `git grep -nE "putObject|getObject|deleteObject" -- lib app tests scripts components` returns nothing: no `*Object` spelling survives anywhere in the repository. The `ObjectStorage` interface declares `put`, `get`, `delete` and the barrel publishes `createObjectStorage`; `Object.keys(@/lib/db)` at runtime is `createDbClient, createObjectStorage, getSharedDbClient, keyForDigest, migrateDown, migrateUp, objectStorageConfigFromEnv, schema` — `createObjectStore`, `migrate` and `rollback` are all absent. Exactly one way to call each verb.
+
+    **Expiry: the mechanism is sound, and I attacked it rather than reading it.** Nineteen `exp` shapes through the real decoder, each signed with the real secret so only the claim varies. Rejected: absent, `null`, a numeric string, a non-numeric string, `true`, an object, an array, negative, zero, **exactly now**, one second ago, and a fractional value just past. `NaN`, `Infinity` and `-Infinity` are rejected too — JSON turns them into `null` in transit, so they cannot even be expressed, and the type guard catches the result. Accepted: one second ahead, and far-future values. The failure mode that would have mattered — a missing or malformed `exp` treated as valid, which looks like a check and is not one — does not occur: `isSessionPayload` requires `typeof exp === "number"` before the comparison, so an absent claim is refused as forged rather than waved through.
+    Rejection goes through exactly the same path as a forged signature, which was the third thing to confirm. An expired token: `getSession` returns `undefined` without throwing; `withSession` gives 401 `application/problem+json` with all five members, the handler runs **0 times** and the sentinel never reaches the body. Expired and forged produce **byte-identical** response bodies, so the two are not distinguishable from outside. A token minted to expire in one second decodes before and returns `undefined` after. Extending `exp` while keeping the original signature — the obvious downgrade — is refused.
+
+    **The one failure, D-11: `exp` leaks into the exposed session surface, which the contract pins.**
+    The contract clause is "Session is a GitHub OAuth cookie (B-02) exposing `{ accountId, handle }` or nothing", and `lib/server/auth/session.ts` restates it verbatim in its own file header — then adds a third field to the object callers receive. Observed: `Object.keys` on what a `withSession` handler receives is `accountId, exp, handle`, and the same for `getSession`. The blind suite reds on it deterministically: `expected [ 'accountId', 'exp', 'handle' ] to deeply equal [ 'accountId', 'handle' ]`, and its comment gives the reason this clause exists — every later task reads this object, so anything extra on it is a wider blast radius than the session needs.
+    The distinction being missed is between the *token* and the *session*. `exp` is a claim the decoder must verify; it is not something the handler needs, and nothing downstream should be able to read or key off it. The mechanism can stay exactly as it is with the exposed object narrowed to the two fields.
+    **I measured the fix and it is not a one-liner, which is worth knowing before it is attempted.** Stripping `exp` in `getSession` alone takes the blind suite green but turns four of the implementation's own tests red — `guard.test.ts` ×3 and `session.test.ts` ×1 — because they assert `getSession` returns `{ ...payload, exp: expect.any(Number) }`. So the implementation's own suite currently asserts the opposite of the contract clause, and that is the more interesting half of this finding: the two suites disagree, and the blind one is the one aligned with the contract. A real fix separates the token payload type (with `exp`) from the exposed session type (`accountId`, `handle`) and updates those four tests to the narrower shape. Experiment reverted; `git diff` clean; the single failure confirmed to return.
+
+    **Acceptance criteria.**
+
+    - **AC1 — migrations apply to an empty database and are idempotent on re-run: PASS.** `adv4_life`, created by the probe: empty before, `migrateUp` → `["0001_init"]`, all ten contract tables, two further runs each `[]` with an identical catalogue snapshot. Four racing runners: 0 errors, exactly 1 applied.
+    - **AC2 — rollback returns the schema to the prior state: PASS.** `migrateDown(url, 99)` → `["0001_init"]`, none of the ten left, re-apply reproduces the snapshot exactly (`round trip identical: true`).
+    - **AC3 — a request with no session reaching a guarded handler receives a problem+json 401 and no body from the handler: PASS.** Four unauthenticated shapes plus the twelve from round 3 and the expired-token case: handler invocations 0, every response 401 `application/problem+json` with all five members, sentinel never in a body. A valid session runs the handler exactly once. The real route: `401`, `instance: "/api/auth/session"`, no leak.
+    - **AC4 — a handler returning diagnostics returns 200 and the diagnostics survive serialisation intact, including `location`: PASS.** `tests/server/envelope.test.ts` 13 passed; all five problem constructors carry the five members; `ok()` reshapes nothing.
+    - **AC5 — an object written to storage under a digest reads back byte-identical: PASS.** Blind suite 14 passed under the renamed verbs. Independently: five shapes byte-identical including 2 MB and the empty object, delete removes only its own object, addressing stable across repeat writes, and 15 malformed verb calls rejected across put/get/delete.
+    - **AC6 — every type exported from `lib/server/types.ts` is the engine's own, verified by identity not by shape: PASS.** 6 passed, falsified again (restating `Diagnostic` with the engine's exact shape reds two of six), restored, `git diff` empty.
+
+    **Recorded, not charged.** `exp` expressed in milliseconds is accepted, because a millisecond value is simply a very distant second value. Not reachable by an attacker — minting needs the signing key — but it is the shape of an ordinary implementer mistake at a future call site: `Date.now()` where `Math.floor(Date.now() / 1000)` was meant yields a token good for roughly fifty thousand years and fails silently rather than loudly. A plausibility bound on `exp` would turn that into a red the day it is written. `encodeSession`'s third parameter is reachable through the barrel, so any server-side caller can mint an arbitrary expiry; it is documented as a test seam and is server-side only, but it is public surface rather than a private one. `keyForDigest` still throws a plain `Error` quoting the caller's input verbatim, which no route consumes yet.
+
+    **What a fix has to clear.** `npm test` green on three consecutive runs. Concretely: narrow the exposed session to `{ accountId, handle }` while keeping `exp` as a verified token claim, and update the four implementation tests that currently assert the wider shape. Nothing else in this round failed. My probes complied with amendment 4: two scratch databases created and dropped, nine objects written and deleted, `pg_database` shows 0 leftovers.
+  - 2026-08-13 implementer: impl-done, fifth pass. Rebased on `backend` at `c727a01`
+    before starting; the fourteen-commit rebase conflicted repeatedly in this file's
+    own table row, State line and Log section, and twice more in `tests/server/**`
+    (once as add/add, once as content conflicts) against copies that turned out to be
+    older, already-superseded drafts from earlier rounds — verified by diff before
+    discarding rather than assumed, same as the last two rounds. Every conflict this
+    round resolved to content already present; nothing new arrived from the replay
+    that this file did not already have.
+    **D-11**: split the token from the exposed session in `lib/server/auth/session.ts`.
+    `SessionToken { accountId, handle, exp }` is what gets signed, decoded and
+    verified, module-internal, never exported. `SessionPayload { accountId, handle }`
+    is what `withSession`/`getSession` hand back, and also what a caller mints from —
+    `sessionCookieHeader`'s and `encodeSession`'s first parameter is `SessionPayload`,
+    so the `SessionClaims` alias from last round is retired rather than kept beside a
+    type it is now identical to. `decodeSession` verifies `exp` against the clock and
+    then constructs the return value as `{ accountId, handle }` explicitly, dropping
+    `exp` on the way out rather than returning the parsed token as-is — that
+    explicit reconstruction, not a type annotation, is what keeps the claim from
+    leaking, and `withSession`'s published signature is untouched, exactly as the
+    contract said it would be. `lib/server/auth/guard.test.ts` (3 assertions) and
+    `session.test.ts` (round-4 had 3 there too, not 1, all now fixed) reverted from
+    asserting `{ ...payload, exp: expect.any(Number) }` back to asserting the bare
+    two-field payload — the blind suite's shape was correct all along, per the
+    contract text I was handed this round. Falsified: had `decodeSession` return the
+    parsed token unstripped, watched 7 tests across both files fail showing `exp`
+    present where the assertion expected exactly two keys, restored it.
+    **exp plausibility bound**: `encodeSession` now throws if `exp` is more than
+    `MAX_SESSION_LIFETIME_SECONDS` (1 year, a constant with its own comment) beyond
+    the moment it is called — generous enough that no real 30-day session ever nears
+    it, tight enough that `Date.now()` written where `Math.floor(Date.now() / 1000)`
+    was meant (~1000x too large) throws immediately rather than minting a ~50,000-year
+    token silently. The bound lives at the mint site, not the decode site: the failure
+    mode is a units bug in this module, not an attacker input — forging a token needs
+    the secret regardless of what `exp` says — so checking where `exp` is accepted as
+    input catches the mistake the day it is written, per this round's brief, rather
+    than only if and when the badly-minted cookie is later decoded. No lower bound: a
+    past `exp` is an ordinary, intentionally-testable expired token, not an implausible
+    one. Falsified: disabled the bound, watched the two new tests exercising it fail
+    (one expecting a throw on a millisecond-mistake `exp`, one on the boundary case),
+    restored it.
+    No signature in the Published signatures block was ambiguous; nothing to report
+    as newly open. Gates on this tree, stack up (`docker compose up -d`): `typecheck`
+    and `lint` clean; `build` green; `test` run three times consecutively, identical
+    every time — **3762/3762 passed, 111/111 files, zero failures**. Zero leftover
+    scratch databases after any run.
+  - 2026-08-13 adversary, round 5: **PASS**, `State: adversarial-pass`. Merged `test/t000-foundation` at `4e71963` into `042d9bd`. One conflict, `backend.md` only, both sides appending to this Log; `tests/server/**` verified byte-identical to the test branch, NUL count 0. Merge `55a7f8f`.
+
+    **Gates, with `DATABASE_URL`, `S3_*`, `GITHUB_*` and `SESSION_SECRET` exported and `docker compose` up (both services healthy).** `npm run typecheck` exit 0. `npm run lint` exit 0. `npm run build` exit 0, working tree unchanged afterwards. `npm test` exit 0 at **3762 passed / 3762, 111 files**, on **eight** separate runs across this session — five before the falsification work and three after — with 0 leftover scratch databases after every one.
+
+    **A green suite is the state in which a defect is least likely to be noticed, so the first thing I did was establish the green means something.** Four deliberate breaks, each reverted immediately, each confirming the suite discriminates on the thing it claims to:
+    - restating `Diagnostic` in `lib/server/types.ts` with the engine's exact shape → 2 of 6 AC6 tests red;
+    - making `withSession` invoke the handler before returning the 401 → 7 of 19 session tests red;
+    - making the store normalise unicode on write → 1 of 15 object-store tests red;
+    - putting `exp` back on the object `decodeSession` returns → 1 of 19 session tests red, which is D-11 reproducing on demand.
+    `git diff` empty afterwards, and the suite green again.
+
+    **`exp` is unreachable from a handler by every runtime path I could construct**, which is the check the type system cannot make because the type is erased. For the object a handler receives, and separately for `getSession` and `decodeSession`, all of `Object.keys`, `Reflect.ownKeys`, `for...in`, `Object.entries`, spread, `Object.getOwnPropertyDescriptors`, `JSON.stringify` and `hasOwnProperty("exp")` agree: `accountId` and `handle`, nothing else, prototype `Object.prototype`. The 200 body of the real `/api/auth/session` route is `{"accountId":…,"handle":…}` with no `exp` anywhere in the text, and no 401 body mentions `exp`, the token, or an account id. `decodeSession` reconstructs the object field by field rather than passing the parsed token through, which is why this holds: a validly-signed token carrying `role: "admin"`, `scopes: ["*"]` and a `secretNote` reaches the handler as exactly the two fields, and a `__proto__` key in a signed body neither survives nor pollutes `Object.prototype`.
+
+    **The mint bound, attacked rather than accepted.** The boundary is exact: `exp = now + 1 year` mints and decodes; `now + 1 year + 60s` throws; `Date.now()` in the `exp` position — the units bug the bound exists for — throws with a message that names the likely cause. There is no second mint path: `git grep createHmac` over `lib` and `app` returns only `lib/server/auth/session.ts`, so every token in the system is minted through `encodeSession`, and minting needs `SESSION_SECRET`. The bound is therefore mint-only by design, and the consequence is real but not a defect: a token signed outside `encodeSession` with a century-long `exp` **does** still decode, which I confirmed. Since producing one requires the signing key, the implementer's reasoning — that this guards a units bug in this module rather than attacker input — holds, and I record the trade-off rather than charging it. **The absence of a lower bound costs nothing at verify**, which was the third thing to check: `exp` of one second ago, exactly now, zero, `-1`, `-MAX_SAFE_INTEGER` and a century past all reject at decode, as do absent, `null`, `"123"`, `"soon"`, `true`, `{}`, `[]`, and `NaN`/`±Infinity` (JSON renders those as `null` in transit, and the type guard refuses the result). A missing or malformed `exp` is refused as forged rather than waved through, which was the failure mode that would have mattered.
+
+    **Acceptance criteria, each executed.**
+
+    - **AC1 — migrations apply to an empty database and are idempotent on re-run: PASS.** `adv5_life`, created by the probe: empty before, `migrateUp` → `["0001_init"]`, all ten contract tables, three further runs each `[]` with a byte-identical catalogue snapshot (columns, types, nullability, defaults, indexes, constraints).
+    - **AC2 — rollback returns the schema to the prior state: PASS.** `migrateDown(url, 99)` → `["0001_init"]`, none of the ten left, re-apply reproduces the snapshot exactly (`AC1/AC2 identical: true`).
+    - **AC3 — a request with no session reaching a guarded handler receives a problem+json 401 and no body from the handler: PASS.** Six unauthenticated shapes including an expired token and a forged signature: handler invocations **0**, every response 401 `application/problem+json` carrying all five members, the sentinel never in a body, and no stack, path, environment variable or query in any of them. A valid session runs the handler exactly once and hands it two fields.
+    - **AC4 — a handler returning diagnostics returns 200 and the diagnostics survive serialisation intact, including `location`: PASS.** The fullest `location` the engine emits round-trips deep-equal; a deliberately reversed list keeps its order; a diagnostic built with no options comes back with exactly `code`, `message`, `severity` and no padded nulls.
+    - **AC5 — an object written to storage under a digest reads back byte-identical: PASS.** Five shapes — plain, unicode with an astral character and a ZWJ sequence, empty, edge whitespace, 2 MB — all byte-for-byte. Addressing stable across repeat writes, delete removes its own object and leaves its neighbour, and **42 malformed-digest verb calls** (14 digests × put/get/delete) all rejected, so D-04's bucket listing is unreachable.
+    - **AC6 — every type exported from `lib/server/types.ts` is the engine's own, verified by identity not by shape: PASS.** 6 passed, and falsified above.
+
+    **All eleven defects from rounds 1 to 4 are closed, re-verified this round rather than assumed.** D-01 the barrel (typecheck and build green); D-02 all five RFC 9457 members on every constructor with no permission prose on the 404; D-03 seven hostile cookie headers, none throwing, and a valid session still parsed beside a malformed sibling; D-04 above; D-05 a killed idle connection giving 0 uncaught exceptions with the pool still answering; D-06 four racing runners with 0 errors and exactly one applying, plus an up racing a down; D-07 the OAuth 502 reading "GitHub sign-in failed. Try again."; D-08 eight green runs with 0 database residue; D-09 `withSession` published and `requireSession` absent from the barrel; D-10 a true rename with no `*Object` spelling anywhere; D-11 above.
+
+    **Recorded, not charged — the standing trade-offs a later task inherits.** There is still no revocation: a stolen cookie is valid until it expires and sign-out clears only the browser's copy. That is now stated in the code and open in this contract, and it is a storage and scale decision rather than a T000 defect, but T050 builds sessions on this and should meet it deliberately. The mint bound is mint-only, per above. `keyForDigest` throws a plain `Error` quoting the caller's input verbatim; no route consumes it yet, and T010 should validate a digest at the edge so a bad path parameter becomes a 404 rather than a 500.
+
+    **Verdict.** Every acceptance criterion passes, every earlier defect stays closed, the suite is green and deterministic across eight runs, and the guards that produce that green are demonstrably load-bearing. I found no new defect. **PASS.** My probes complied with amendment 4: three scratch databases created and dropped, nine objects written and deleted, `pg_database` clean, working tree clean.
 
 ### T010, Archive persistence: bundles, releases, bytes
 
