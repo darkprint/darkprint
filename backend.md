@@ -77,7 +77,7 @@ it does not decide differently inside a worktree.
 
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
-| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` | `feat/t000-foundation` | impl-done | typecheck/lint/build clean; test 3762/3762 (111/111 files), zero failures, identical across three consecutive runs; zero leftover scratch databases |
+| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` | `feat/t000-foundation` | adversarial-pass | typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | — | — | todo | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | — | — | todo | — |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | — | — | todo | — |
@@ -211,7 +211,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T000, Foundation: schema, client, envelope, GitHub session, harness
 
-- **State:** impl-done
+- **State:** adversarial-pass
 - **Worktree:** `../darkprint-wt-t000-foundation` on `feat/t000-foundation`
 - **Test worktree:** `../darkprint-wt-t000-foundation-tests` on `test/t000-foundation`
 - **Depends on:** —
@@ -620,6 +620,35 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     and `lint` clean; `build` green; `test` run three times consecutively, identical
     every time — **3762/3762 passed, 111/111 files, zero failures**. Zero leftover
     scratch databases after any run.
+  - 2026-08-13 adversary, round 5: **PASS**, `State: adversarial-pass`. Merged `test/t000-foundation` at `4e71963` into `042d9bd`. One conflict, `backend.md` only, both sides appending to this Log; `tests/server/**` verified byte-identical to the test branch, NUL count 0. Merge `55a7f8f`.
+
+    **Gates, with `DATABASE_URL`, `S3_*`, `GITHUB_*` and `SESSION_SECRET` exported and `docker compose` up (both services healthy).** `npm run typecheck` exit 0. `npm run lint` exit 0. `npm run build` exit 0, working tree unchanged afterwards. `npm test` exit 0 at **3762 passed / 3762, 111 files**, on **eight** separate runs across this session — five before the falsification work and three after — with 0 leftover scratch databases after every one.
+
+    **A green suite is the state in which a defect is least likely to be noticed, so the first thing I did was establish the green means something.** Four deliberate breaks, each reverted immediately, each confirming the suite discriminates on the thing it claims to:
+    - restating `Diagnostic` in `lib/server/types.ts` with the engine's exact shape → 2 of 6 AC6 tests red;
+    - making `withSession` invoke the handler before returning the 401 → 7 of 19 session tests red;
+    - making the store normalise unicode on write → 1 of 15 object-store tests red;
+    - putting `exp` back on the object `decodeSession` returns → 1 of 19 session tests red, which is D-11 reproducing on demand.
+    `git diff` empty afterwards, and the suite green again.
+
+    **`exp` is unreachable from a handler by every runtime path I could construct**, which is the check the type system cannot make because the type is erased. For the object a handler receives, and separately for `getSession` and `decodeSession`, all of `Object.keys`, `Reflect.ownKeys`, `for...in`, `Object.entries`, spread, `Object.getOwnPropertyDescriptors`, `JSON.stringify` and `hasOwnProperty("exp")` agree: `accountId` and `handle`, nothing else, prototype `Object.prototype`. The 200 body of the real `/api/auth/session` route is `{"accountId":…,"handle":…}` with no `exp` anywhere in the text, and no 401 body mentions `exp`, the token, or an account id. `decodeSession` reconstructs the object field by field rather than passing the parsed token through, which is why this holds: a validly-signed token carrying `role: "admin"`, `scopes: ["*"]` and a `secretNote` reaches the handler as exactly the two fields, and a `__proto__` key in a signed body neither survives nor pollutes `Object.prototype`.
+
+    **The mint bound, attacked rather than accepted.** The boundary is exact: `exp = now + 1 year` mints and decodes; `now + 1 year + 60s` throws; `Date.now()` in the `exp` position — the units bug the bound exists for — throws with a message that names the likely cause. There is no second mint path: `git grep createHmac` over `lib` and `app` returns only `lib/server/auth/session.ts`, so every token in the system is minted through `encodeSession`, and minting needs `SESSION_SECRET`. The bound is therefore mint-only by design, and the consequence is real but not a defect: a token signed outside `encodeSession` with a century-long `exp` **does** still decode, which I confirmed. Since producing one requires the signing key, the implementer's reasoning — that this guards a units bug in this module rather than attacker input — holds, and I record the trade-off rather than charging it. **The absence of a lower bound costs nothing at verify**, which was the third thing to check: `exp` of one second ago, exactly now, zero, `-1`, `-MAX_SAFE_INTEGER` and a century past all reject at decode, as do absent, `null`, `"123"`, `"soon"`, `true`, `{}`, `[]`, and `NaN`/`±Infinity` (JSON renders those as `null` in transit, and the type guard refuses the result). A missing or malformed `exp` is refused as forged rather than waved through, which was the failure mode that would have mattered.
+
+    **Acceptance criteria, each executed.**
+
+    - **AC1 — migrations apply to an empty database and are idempotent on re-run: PASS.** `adv5_life`, created by the probe: empty before, `migrateUp` → `["0001_init"]`, all ten contract tables, three further runs each `[]` with a byte-identical catalogue snapshot (columns, types, nullability, defaults, indexes, constraints).
+    - **AC2 — rollback returns the schema to the prior state: PASS.** `migrateDown(url, 99)` → `["0001_init"]`, none of the ten left, re-apply reproduces the snapshot exactly (`AC1/AC2 identical: true`).
+    - **AC3 — a request with no session reaching a guarded handler receives a problem+json 401 and no body from the handler: PASS.** Six unauthenticated shapes including an expired token and a forged signature: handler invocations **0**, every response 401 `application/problem+json` carrying all five members, the sentinel never in a body, and no stack, path, environment variable or query in any of them. A valid session runs the handler exactly once and hands it two fields.
+    - **AC4 — a handler returning diagnostics returns 200 and the diagnostics survive serialisation intact, including `location`: PASS.** The fullest `location` the engine emits round-trips deep-equal; a deliberately reversed list keeps its order; a diagnostic built with no options comes back with exactly `code`, `message`, `severity` and no padded nulls.
+    - **AC5 — an object written to storage under a digest reads back byte-identical: PASS.** Five shapes — plain, unicode with an astral character and a ZWJ sequence, empty, edge whitespace, 2 MB — all byte-for-byte. Addressing stable across repeat writes, delete removes its own object and leaves its neighbour, and **42 malformed-digest verb calls** (14 digests × put/get/delete) all rejected, so D-04's bucket listing is unreachable.
+    - **AC6 — every type exported from `lib/server/types.ts` is the engine's own, verified by identity not by shape: PASS.** 6 passed, and falsified above.
+
+    **All eleven defects from rounds 1 to 4 are closed, re-verified this round rather than assumed.** D-01 the barrel (typecheck and build green); D-02 all five RFC 9457 members on every constructor with no permission prose on the 404; D-03 seven hostile cookie headers, none throwing, and a valid session still parsed beside a malformed sibling; D-04 above; D-05 a killed idle connection giving 0 uncaught exceptions with the pool still answering; D-06 four racing runners with 0 errors and exactly one applying, plus an up racing a down; D-07 the OAuth 502 reading "GitHub sign-in failed. Try again."; D-08 eight green runs with 0 database residue; D-09 `withSession` published and `requireSession` absent from the barrel; D-10 a true rename with no `*Object` spelling anywhere; D-11 above.
+
+    **Recorded, not charged — the standing trade-offs a later task inherits.** There is still no revocation: a stolen cookie is valid until it expires and sign-out clears only the browser's copy. That is now stated in the code and open in this contract, and it is a storage and scale decision rather than a T000 defect, but T050 builds sessions on this and should meet it deliberately. The mint bound is mint-only, per above. `keyForDigest` throws a plain `Error` quoting the caller's input verbatim; no route consumes it yet, and T010 should validate a digest at the edge so a bad path parameter becomes a 404 rather than a 500.
+
+    **Verdict.** Every acceptance criterion passes, every earlier defect stays closed, the suite is green and deterministic across eight runs, and the guards that produce that green are demonstrably load-bearing. I found no new defect. **PASS.** My probes complied with amendment 4: three scratch databases created and dropped, nine objects written and deleted, `pg_database` clean, working tree clean.
 
 ### T010, Archive persistence: bundles, releases, bytes
 
