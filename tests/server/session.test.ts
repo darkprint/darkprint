@@ -7,8 +7,10 @@ import {
   isProblemContentType,
   loadAuth,
   pickFn,
+  PUBLISHED,
   readProblem,
   requestWithCookie,
+  requiredFn,
   resolveFn,
   RFC9457_MEMBERS,
   tamper,
@@ -30,22 +32,28 @@ import {
    data the caller was never entitled to. So the handler here counts
    its own calls, and the count is the assertion.
 
+   ── the guard is named now ──
+   `withSession(request, handler): Promise<Response>`, published in
+   `backend.md` §T000, and the reason it is published is this
+   criterion: only a wrapping guard makes "the handler never runs"
+   structurally true, where one returning `payload | Response` leaves
+   it to every caller to check the union. So there is no candidate
+   list here any more and no probing for an argument order. Round 2
+   had both, resolved `requireSession(request, secret?)`, and passed
+   the handler into the secret's position — where it reached
+   `createHmac` as an HMAC key.
+
    The session itself is B-02: a GitHub OAuth cookie exposing
    `{ accountId, handle }` "or nothing". Nothing, not a partial
    session and not a thrown error — a reader that throws on a
    corrupt cookie turns an ordinary logged-out visitor with a stale
    cookie into a 500.
+
+   The reader and the writer are still unnamed by the contract, so
+   those two keep their lists, and the T000 log reports them as open
+   rather than treating the first match as settled.
    ============================================================ */
 
-const GUARD_NAMES = [
-  "requireSession",
-  "withSession",
-  "requireAuth",
-  "withAuth",
-  "guard",
-  "protect",
-  "authenticated",
-] as const;
 const READ_NAMES = ["readSession", "getSession", "sessionFromRequest", "currentSession"] as const;
 /**
  * Ordered, and the order is the fix. Every name below the line encodes a session; only
@@ -70,88 +78,46 @@ const WRITE_NAMES = [
 const SENTINEL = "handler-payload-that-must-not-escape";
 const ACCOUNT = { accountId: "acc_01HZY8QK2M4N6P8R0S2T4V6X8Z", handle: "ada" };
 
-/** Counts its own calls, so "the handler never ran" is a number and not an inference. */
-function countingHandler(): { handler: UnknownFn; calls: () => number } {
-  let calls = 0;
+/**
+ * Counts its own calls, so "the handler never ran" is a number and not an inference, and
+ * keeps what it was handed, because the published signature says the handler receives the
+ * session payload.
+ */
+function countingHandler(): {
+  handler: UnknownFn;
+  calls: () => number;
+  received: () => unknown[];
+} {
+  const received: unknown[] = [];
   return {
-    handler: () => {
-      calls += 1;
+    handler: (...args) => {
+      received.push(args[0]);
       return new Response(JSON.stringify({ secret: SENTINEL }), {
         status: 200,
         headers: { "content-type": "application/json" },
       });
     },
-    calls: () => calls,
+    calls: () => received.length,
+    received: () => received,
   };
 }
 
 /* --------------------- calling the guard --------------------- */
 
-type GuardShape = "wrapper" | "wrapper-with-context" | "direct";
-
-/**
- * Which way round the guard takes its arguments. Resolved once, with a throwaway
- * handler, and then reused: probing the shapes against the handler under test would let a
- * shape that happens to invoke the handler pollute the call count that AC3 turns on.
- */
-let shape: Promise<GuardShape> | undefined;
-
-async function guardFn(): Promise<UnknownFn> {
-  return pickFn(await loadAuth(), "a session guard", GUARD_NAMES, "@/lib/server/auth");
-}
-
-async function resolveShape(): Promise<GuardShape> {
-  shape ??= (async () => {
-    const guard = await guardFn();
-    const throwaway: UnknownFn = () => new Response("{}", { status: 200 });
-    const failures: string[] = [];
-
-    try {
-      const wrapped = await guard(throwaway);
-      if (typeof wrapped === "function") {
-        for (const [name, args] of [
-          ["wrapper", [requestWithCookie()]],
-          ["wrapper-with-context", [requestWithCookie(), {}]],
-        ] as const) {
-          try {
-            if ((await (wrapped as UnknownFn)(...args)) instanceof Response) return name;
-          } catch (cause) {
-            failures.push(`${name}: ${String(cause)}`);
-          }
-        }
-      } else {
-        failures.push(`guard(handler) returned ${typeof wrapped}, not a function`);
-      }
-    } catch (cause) {
-      failures.push(`guard(handler): ${String(cause)}`);
-    }
-
-    try {
-      if ((await guard(requestWithCookie(), throwaway)) instanceof Response) return "direct";
-    } catch (cause) {
-      failures.push(`guard(request, handler): ${String(cause)}`);
-    }
-
-    throw new Error(`No call to the session guard produced a Response.\n  ${failures.join("\n  ")}`);
-  })();
-  return shape;
-}
-
 async function callGuard(handler: UnknownFn, cookie?: string): Promise<Response> {
-  const guard = await guardFn();
-  const request = requestWithCookie(cookie);
-  const how = await resolveShape();
-
-  let response: unknown;
-  if (how === "direct") {
-    response = await guard(request, handler);
-  } else {
-    const wrapped = (await guard(handler)) as UnknownFn;
-    response = await wrapped(...(how === "wrapper" ? [request] : [request, {}]));
-  }
+  const withSession = requiredFn(
+    await loadAuth(),
+    "withSession",
+    "@/lib/server/auth",
+    PUBLISHED.withSession,
+  );
+  const response = await withSession(requestWithCookie(cookie), handler);
 
   if (!(response instanceof Response)) {
-    throw new Error(`The session guard returned ${typeof response}; expected a Response.`);
+    throw new Error(
+      `withSession(request, handler) returned ${typeof response}; the contract publishes it ` +
+        `as ${PUBLISHED.withSession}.`,
+    );
   }
   return response;
 }
@@ -194,11 +160,11 @@ async function readSession(cookie?: string): Promise<unknown> {
 
 /* --------------------- the bindings themselves --------------------- */
 
-describe("T000 contract binding — the candidate lists resolve to the right kind of thing", () => {
+describe("T000 contract binding — the two lists left resolve to the right kind of thing", () => {
   it("the session writer writes a cookie, not the token that goes inside one", async () => {
     /* Stated on its own, ahead of every test that consumes a cookie, because this is the
-       one binding in these files with nothing else standing behind it. The guard has to
-       return a `Response` or resolution fails; the store has to expose put and get; the
+       last binding in these files with nothing else standing behind it. The guard is named
+       by the contract now and no longer guessed at; the store's three verbs are named; the
        client has to expose `.query`. A session writer only has to return a string, and
        both the cookie writer and the token encoder do. So the kind check is explicit
        here, and a list that binds the wrong one fails as this test rather than as five
@@ -292,6 +258,17 @@ describe("T000 AC3 — no session reaching a guarded handler", () => {
     expect(response.status).toBe(200);
     expect(calls()).toBe(1);
     expect(await response.text()).toContain(SENTINEL);
+  });
+
+  it("AC3 (the other half): the handler is handed the session, not the request", async () => {
+    const { handler, received } = countingHandler();
+    await callGuard(handler, await validCookie());
+
+    /* Published signature: "handler receives the session payload". Every task from T010 on
+       writes handlers against this argument, so what arrives in it is contract and not
+       convenience — a guard that passes the `Request` through instead leaves each of them
+       to re-read the cookie, which is the duplication the wrapper exists to remove. */
+    expect(received()[0]).toMatchObject(ACCOUNT);
   });
 });
 

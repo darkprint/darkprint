@@ -2,7 +2,15 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { contentDigest } from "@/lib/core";
 
-import { asBytes, loadDb, objectStoreFor, type ObjectStore } from "./contract";
+import {
+  asBytes,
+  loadDb,
+  objectStoreFor,
+  PUBLISHED,
+  requiredFn,
+  type ObjectStore,
+  type UnknownFn,
+} from "./contract";
 
 /* ============================================================
    T000 acceptance criterion 5 — object storage
@@ -23,6 +31,25 @@ import { asBytes, loadDb, objectStoreFor, type ObjectStore } from "./contract";
    in characters where the bytes disagree has broken the archive's
    only guarantee while looking like it works. So every comparison
    here is on bytes, not on strings.
+
+   ── what the contract names, and what it still does not ──
+   `createObjectStorage(config?)`, `keyForDigest(digest)` and put,
+   get and delete on `ObjectStorage` are published, so they are bound
+   by name and their absence is a red. The delete in particular is no
+   longer optional: the test-isolation amendment has every storage
+   test take back what it wrote, and the round-2 log asked whether a
+   store publishing none should be a red of its own. The contract has
+   since answered by publishing it.
+
+   What is still unnamed is which of the three verbs' arguments is
+   the key and who computes it, so that one shape is resolved once
+   against a probe in `contract.ts` and reported as open.
+
+   Addresses in this file are always the engine's digest. The store
+   facade maps a digest to whatever physical key `keyForDigest`
+   returns, which is the amendment's rule exactly: "the key *is* the
+   digest the engine computes over the bytes", and no test may
+   prefix or namespace one.
    ============================================================ */
 
 let cached: Promise<ObjectStore> | undefined;
@@ -30,6 +57,10 @@ let cached: Promise<ObjectStore> | undefined;
 function store(): Promise<ObjectStore> {
   cached ??= loadDb().then((mod) => objectStoreFor(mod, contentDigest));
   return cached;
+}
+
+async function keyForDigest(): Promise<UnknownFn> {
+  return requiredFn(await loadDb(), "keyForDigest", "@/lib/db", PUBLISHED.keyForDigest);
 }
 
 /**
@@ -130,23 +161,41 @@ describe("T000 AC5 — an object reads back byte-identical", () => {
 });
 
 describe("T000 AC5 (edges) — the digest is the address", () => {
-  it("the same content written twice lands on the same key", async () => {
+  it("writing the same content twice is idempotent and the address does not move", async () => {
     const s = await store();
     const content = unique("idempotent");
 
-    expect(await s.put(content)).toBe(await s.put(content));
+    const first = await s.put(content);
+    const second = await s.put(content);
+
+    expect(second).toBe(first);
+    expectSameBytes(asBytes(await s.get(first)), encode(content));
   }, 60_000);
 
-  it("the key is the digest the engine computes over the same bytes", async () => {
+  it("the object is found again by recomputing the digest from the content alone", async () => {
     const s = await store();
     const content = unique("addressing");
+    await s.put(content);
 
-    /* Not a stylistic preference. Doc 1 §4 has the downloader verify an artefact by
-       recomputing its hash, and T010 already commits to storing "the digest the engine
-       computes". A server that files bytes under a key of its own invention breaks both
-       at once, and nothing downstream would notice until a verification failed in
-       somebody else's hands. */
-    expect(await s.put(content)).toBe(contentDigest(content));
+    /* Nothing here remembers what `put` answered, which is the downloader's position
+       exactly: doc 1 §4 has it verify an artefact by recomputing the hash, and T010 already
+       commits to storing "the digest the engine computes". A server that files bytes under
+       an address of its own invention breaks both at once, and nothing downstream would
+       notice until a verification failed in somebody else's hands. */
+    expectSameBytes(asBytes(await s.get(contentDigest(content))), encode(content));
+  }, 60_000);
+
+  it("keyForDigest is a function of the digest and nothing else", async () => {
+    const key = await keyForDigest();
+    const one = contentDigest(unique("key-a"));
+    const other = contentDigest(unique("key-b"));
+
+    /* The published mapping from the engine's address to the bucket's. Two properties
+       carry the archive: the same digest names the same object every time, so a
+       downloader can find it, and two digests never collide onto one key, so storing a
+       card can never overwrite somebody else's. */
+    expect(key(one)).toBe(key(one));
+    expect(key(one)).not.toBe(key(other));
   }, 60_000);
 
   it("one byte of difference is a different object", async () => {
@@ -180,6 +229,23 @@ describe("T000 AC5 (edges) — the digest is the address", () => {
         expect(new TextDecoder().decode(asBytes(read))).not.toBe(content);
       }
     }
+  }, 60_000);
+
+  it("a deleted object is gone, and its neighbour is not", async () => {
+    const s = await store();
+    const doomed = unique("delete-me");
+    const keeper = unique("keep-me");
+
+    const a = await s.put(doomed);
+    const b = await s.put(keeper);
+    await s.delete(a);
+
+    /* Every test in this file leans on delete for teardown, and until the contract
+       published it that reliance was silent: a store with no working delete left the whole
+       run's objects in the bucket and reported nothing. It is asserted here so the
+       teardown rests on something the suite has checked. */
+    expect(await s.get(a)).toBeFalsy();
+    expectSameBytes(asBytes(await s.get(b)), encode(keeper));
   }, 60_000);
 });
 
