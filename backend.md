@@ -1042,6 +1042,38 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     published functions. No database created, no object written, no `.env`, probe files deleted,
     tree clean. `docker exec` against the shared Postgres remains denied in my session, so the
     48 environment failures stay unaddressed here by choice rather than oversight.
+  - 2026-08-14 implementer: rebuilt `inferBlueprintBump`'s pin comparison for the multiset
+    ruling (`e5e232d`). `versionsById` now collects every parseable ref's version per id
+    (not just the first) and sorts each id's list with `compareVersionStrings`, so which
+    node happened to come first in the DOT cannot change the answer. `compareVersions`
+    walks one id's before/after lists position by position up to the shorter length —
+    a mismatch there is a repin, priced by `declaredBump` — then reads whatever the
+    longer list has left over: a version also present on the shorter side is a pure
+    multiplicity change (`patch`), a version present nowhere on the other side is a pin
+    genuinely gained (`minor`) or genuinely lost (`major`). An id absent from one side
+    supplies an empty list, which the same logic reads correctly as "every occurrence
+    gained/lost" with no separate branch. The raw-ref safety net moved from a
+    deduplicated `Set` to a counted `Map` (`refCounts`/`sameCounts`), consistent with the
+    same multiset reading. Re-verified by hand against both examples in the ruling:
+    `["solver@1.0.0","solver@2.0.0"] → ["solver@1.0.0","solver@3.0.0"]` now infers
+    `major` (was `patch`), and `[a@1] → [a@1,a@2]` and `[a@1] → [a@2,a@1]` both infer
+    `minor` (was `patch` vs. `major` depending on order). Every round-2 fix (café-solver,
+    uppercase id, `[] → [""]`, `["not-a-ref"] → []`, Finding 2's conflicting duplicate,
+    `@latest`) still holds — `splitRef` is untouched, only the id-keyed grouping and
+    comparison around it changed. Did not touch `tests/server/t025/blueprint-bump.test.ts`
+    or implement toward its "reads a repeated pin as the same set" assertion, per the
+    ruling's own instruction; ran it anyway to confirm the shape of the failure.
+    **Gates:** `npm run typecheck`, `npm run lint`, `npm run build` clean, no unexpected
+    prebuild diff. `npx vitest run tests/server/t025 lib/server/versioning`: 173/174 —
+    the one failure is exactly and only "reads a repeated pin as the same set"
+    (`blueprint-bump.test.ts:198`), now `{level:"patch",reasons:[...]}` instead of
+    `{level:"none",reasons:[]}`, which is the intended new answer per the ruling, not a
+    regression. Every other test — all other AC-2/AC-3 cases, the unreadable-input suite,
+    purity, determinism, `checkDeclaredBump`, `inferOntologyBump` — still green. **Holding
+    here rather than declaring `impl-done`**: full-suite `npm test` and the three-identical-run
+    gate are meaningless while one test is a known, intentional red pending Agent B's
+    rewrite, per "wait for Agent B's rewritten test before you finish." Committed the
+    implementation; will run the full gate sequence and flip State once the rewrite lands.
 
 ### T060, Authorization policy: owner and operator
 
