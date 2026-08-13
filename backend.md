@@ -34,7 +34,12 @@ call shape by reasoning about behaviour. They can only converge on something wri
 
 **So every task's Contract section states the exact exported signatures of its public
 surface**, not just its semantics: the module each name is published from, the parameter
-list, and what it returns. A capability reachable only by a deep path is not public. Where a
+list, and what it returns. Two conditions on that, both learned by breaking them in T000:
+a signature block is **checked against the tree at the moment it is written**, since the
+first one shipped a name that had not existed for a round (D-10a); and every entry is
+written **as a signature**, never as prose, since the one entry that said "put, get and
+delete" instead of naming three identifiers produced two honest readings and cost a round
+(D-10b). A capability reachable only by a deep path is not public. Where a
 signature is left open, the test author reports it rather than resolving it — a candidate
 list papers over the gap and then resolves to whichever name happens to exist first, which is
 precisely how D-08 selected the one function that could not be isolated.
@@ -216,7 +221,15 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   - `withSession(request: Request, handler: (session: SessionPayload) => Response | Promise<Response>): Promise<Response>` — the guard **wraps**, it does not return a union. AC3 requires that the handler never runs for an unauthenticated request, and only a wrapping guard makes that structurally true: a guard that returns `payload | Response` depends on every caller checking the union, and a caller who forgets runs the handler anyway. The round-2 implementation was `requireSession(request, secret?)`, which put the handler into the secret's position and passed a function to `createHmac` as an HMAC key. Keep `requireSession` internally if useful; it is not the published guard.
   - `migrateUp(target, dir?)` and `migrateDown(target, steps?, dir?)`, where `target` is a pool or a connection string. **No zero-argument migration function is published from the barrel.** A variant that reads `DATABASE_URL` implicitly is what made D-08 possible: the blind suite's candidate list resolved `migrate` first, both suites then drove the shared database, and rollback dropped the other suite's tables mid-run — three identical invocations gave 6, 6 and 3 failures. Convenience wrappers may exist behind `npm run db:migrate`; they are not part of the public surface.
   - `createDbClient(config?: string | PoolConfig)`, and `getSharedDbClient()` for route handlers only.
-  - `createObjectStorage(config?)`, `keyForDigest(digest)`, and put, get and delete on `ObjectStorage`.
+  - `createObjectStorage(config?: ObjectStorageConfig): ObjectStorage` — named for the type it returns. The round-2 code renamed this to `createObjectStore` because the blind candidate list led with that name, and this block, written afterwards at `3e9f51e`, named the round-1 spelling from memory without checking the tree. **That is D-10a and it is the orchestrator's defect, not the implementer's** — a contract cannot claim authority over an interface and then transcribe it from memory. The code moves to the contract because `createObjectStorage` returning `ObjectStorage` is the consistent pair, not because the contract was right by seniority.
+  - `keyForDigest(digest: string): string`
+  - On `ObjectStorage`, as signatures rather than as prose, which is the whole of D-10b — every other entry in this block was a signature and this one was three English verbs, so the implementer read three verbs and the test author read three identifiers, both honestly:
+
+        put(digest: string, body: Uint8Array | string): Promise<void>
+        get(digest: string): Promise<Uint8Array | undefined>   // undefined on a missing key; absence is a value, not a throw
+        delete(digest: string): Promise<void>
+
+  - `SessionPayload` carries an expiry claim, and `withSession` rejects an expired token as it rejects a forged one. The round-3 token had none: `Max-Age` bound the browser only, so a captured cookie stayed valid forever and signing out cleared the browser's copy rather than the token's validity. That sits outside every acceptance criterion, which is why three adversarial passes did not catch it — it is a gap in the contract, not a defect against it. Paid here rather than in T050, which would otherwise inherit a token format it has to change. **Open, and the owner's to settle: this gives expiry, not revocation.** A stolen cookie stays valid until it expires, and true sign-out invalidation needs server-side session state — a storage and scale decision nobody has taken.
   - `tests/support/db.ts` creates and drops its own database rather than targeting `DATABASE_URL`, per the isolation rule it currently violates. It is the harness nine downstream tasks inherit, so the assumption baked into it propagates.
 - **Public import surface** (amendment, 2026-08-13, after the first adversarial pass): every owned directory publishes a barrel and downstream code imports only through it — `@/lib/db`, `@/lib/server/http`, `@/lib/server/auth`, `@/lib/server/types`. This is the rule `lib/core/index.ts` already states for this repository: "Deep paths are internal and may be rearranged, so nothing outside `lib/core` should reach for one." A capability reachable only by a deep path is not part of the public interface. The object-storage client is published from `@/lib/db`, since B-01 treats Postgres and object storage as one connection concern and `lib/db/**` is the only owned path that can hold it.
 - **Forbidden:** `lib/core/**`, `lib/content/**`, `lib/data/**`, `app/**` outside `app/api/auth/**`, `components/**`, `tests/server/**` (the test branch owns it)
