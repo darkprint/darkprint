@@ -53,6 +53,10 @@ export const PUBLISHED = {
     'through it" — makes that barrel `@/lib/server/archive`',
   createBundle:
     "createBundle(db: Db, input: { ownerId; slug; visibility; lineage? }): Promise<BundleRecord>",
+  duplicateRejects:
+    "createBundle on an existing (owner, slug) REJECTS rather than returning the existing row: " +
+    "deciding that a second publish is a new release is T100's, and a silent upsert here would " +
+    "let it skip that decision without noticing",
   getBundle: "getBundle(db: Db, ownerId: string, slug: string): Promise<BundleRecord | undefined>",
   addRelease:
     "addRelease(db: Db, input: { bundleId: string; version: string; dot: string; " +
@@ -69,7 +73,13 @@ export const PUBLISHED = {
     "updatedAt: Date }",
   releaseRecord:
     "interface ReleaseRecord { id: string; bundleId: string; version: string; digest: string; " +
-    "createdAt: Date }",
+    "createdAt: Date; dot: string; manifest: BundleManifest; cardRefs: readonly string[]; " +
+    "cardDigests: readonly string[]; vocabulary?: unknown; analysis?: { autonomy; security; " +
+    "phaseCoverage } } — second amendment, 2026-08-13: it mirrors what addRelease stores, " +
+    "because the five-field projection left AC1 with no function that could return the DOT",
+  noObjectStorage:
+    "T010 does not write to object storage. The canonical release record — DOT, manifest, refs, " +
+    "digests — is Postgres; object storage holds T090's generated distribution artefacts",
   explicitDb:
     "Every function takes an explicit `Db` as its first parameter — no module-scope client, " +
     "no implicit DATABASE_URL",
@@ -408,11 +418,37 @@ export async function readObject(digest: string): Promise<Uint8Array | undefined
 }
 
 /**
- * Takes back everything the ledger holds. Best effort by design: a digest nothing ever
- * wrote deletes successfully on S3, and whether T010 writes bytes at all is one of the
- * questions this suite reports rather than answers.
+ * Every digest that reached storage in this file's databases, whether or not a test
+ * predicted it.
+ *
+ * The ledger alone under-records: it holds what `bundleDigest` was called on in a test, and
+ * several tests read an identity off the returned record instead of recomputing it. Measured
+ * against an implementation that does write bytes, that gap left 14 objects behind. The
+ * `release` table is the exact answer — `digest` and `card_digests` are the only strings
+ * this task could ever use as a key — so teardown reads them rather than hoping the ledger
+ * saw them.
+ */
+async function harvestDigests(): Promise<void> {
+  for (const client of created.clients) {
+    try {
+      const rows = await client.query("select digest, card_digests from release");
+      for (const row of rows) {
+        if (typeof row.digest === "string") ledger.add(row.digest);
+        for (const digest of (row.card_digests as string[] | null) ?? []) ledger.add(digest);
+      }
+    } catch {
+      /* Teardown is best effort: a database already gone is nothing left to harvest. */
+    }
+  }
+}
+
+/**
+ * Takes back everything this file put within reach of storage. Best effort by design: a
+ * digest nothing ever wrote deletes successfully on S3, and T010 is not supposed to write
+ * any of them — the sweep is what makes that a measurement rather than an assumption.
  */
 export async function forgetObjects(): Promise<number> {
+  await harvestDigests();
   if (ledger.size === 0) return 0;
   let storage: Namespace;
   try {

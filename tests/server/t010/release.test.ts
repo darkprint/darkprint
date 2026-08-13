@@ -10,6 +10,7 @@ import {
   manifestFor,
   marker,
   PUBLISHED,
+  readObject,
   remember,
   slugFor,
   validDot,
@@ -30,15 +31,15 @@ import {
    (4) appending a release leaves every earlier release readable at
        its own digest
 
-   ── the half of AC1 this file does not test ──
-   AC1 names "DOT **and card text**". `addRelease`'s input, after the
-   2026-08-13 amendment, carries `cardRefs` and `cardDigests` and no
-   card bytes at all — card bodies are T020's and Forbidden here —
-   and `ReleaseRecord` carries neither. There is no published way to
-   store card text through this task or to read it back, so the card
-   half of AC1 is **reported to the orchestrator, not resolved
-   here**: inventing a name for it is the technique that cost T000
-   two rounds. The DOT half is tested below, hard.
+   ── what AC1's "card text" resolved to ──
+   AC1 names "DOT **and card text**". The second amendment settled
+   it: `addRelease` takes `cardRefs` and `cardDigests` and no card
+   bytes — card bodies are T020's and Forbidden here — and
+   `ReleaseRecord` now carries the content back, so what round-trips
+   through this task is the DOT, the manifest and the two arrays.
+   All four are compared byte for byte below, **through the
+   published reader** rather than by reaching past it to a column,
+   which is what the five-field projection had forced.
 
    ── isolation ──
    One scratch database, created and dropped by this file. Object
@@ -115,17 +116,45 @@ function expectedDigest(dot: string, cardDigests: readonly string[]): string {
   return remember(bundleDigest({ dot, cardDigests }));
 }
 
-async function storedDot(id: unknown): Promise<string> {
-  /* No published reader returns a release's DOT: `ReleaseRecord` is
-     `{ id, bundleId, version, digest, createdAt }`. `release.dot` is `NOT NULL` in a schema
-     T010 is Forbidden from editing, so every implementation must write it, and this reads
-     that column through `createDbClient`'s own query rather than through anything inside
-     `lib/server/archive`. That no published function answers AC1's "reading it back" is
-     reported to the orchestrator. */
-  const [row] = await scratch.query("select dot from release where id = $1", [id]);
-  if (row === undefined) throw new Error(`No release row for id ${String(id)}.`);
-  return String(row.dot);
+/**
+ * AC1's "reading it back", through the published reader. `getRelease` is a fresh lookup by
+ * `(bundleId, digest)`, so what it answers came out of Postgres and not out of the object
+ * `addRelease` happened to return — an implementation that echoed its input without
+ * persisting it fails here and passes an assertion made on the returned record alone.
+ */
+async function readBack(bundleId: string, digest: unknown): Promise<Record<string, unknown>> {
+  const found = await api.getRelease(scratch.db, bundleId, String(digest));
+  return asRecord(found, `getRelease(${String(digest)})`);
 }
+
+/**
+ * An `analysis` block in the published shape — `AutonomyResult`, `SecurityResult` and
+ * `PhaseCoverage` from `lib/core`. B-08's "computed when a release is cut", stored as
+ * nullable jsonb, and never part of the identity.
+ */
+const ANALYSIS = {
+  autonomy: {
+    autonomyClass: "assisted",
+    isDarkFactory: false,
+    level: 2,
+    label: "Assisted",
+    fraction: 0.5,
+    autonomousNodes: 1,
+    totalNodes: 2,
+    contributions: [],
+    rationale: "fixture",
+  },
+  security: {
+    level: 4,
+    raw: 4,
+    penalties: [],
+    findings: [],
+    rationale: "4 → 4",
+    ontologyVersion: "1.0.0",
+    diagnostics: [],
+  },
+  phaseCoverage: { covered: [], missing: [], byPhase: {}, unphased: [] },
+};
 
 async function countReleases(bundleId: string): Promise<number> {
   const [row] = await scratch.query("select count(*)::int as n from release where bundle_id = $1", [
@@ -148,6 +177,58 @@ describe("the published surface", () => {
     const bundleId = await freshBundle(mark);
     const dot = validDot(mark);
     const cardDigests = [cardDigestFor(mark, 1)];
+    const manifest = manifestFor(mark);
+
+    const record = asRecord(
+      await api.addRelease(scratch.db, {
+        bundleId,
+        version: "1.0.0",
+        dot,
+        manifest,
+        cardRefs: ["solver-a@1.0.0"],
+        cardDigests,
+      }),
+      "addRelease",
+    );
+
+    /* Equality, not a subset check, and deliberately so. "Has at least these fields" passes
+       against the withdrawn five-field projection *and* against this one, so it proves
+       neither — and AC1 turns on exactly the fields it would stop checking. A record missing
+       `dot` and a record carrying an extra field both have to red here. */
+    expect(Object.keys(record).sort(), PUBLISHED.releaseRecord).toEqual(
+      [
+        "bundleId",
+        "cardDigests",
+        "cardRefs",
+        "createdAt",
+        "digest",
+        "dot",
+        "id",
+        "manifest",
+        "version",
+      ].sort(),
+    );
+    expect(typeof record.id).toBe("string");
+    expect(record.bundleId).toBe(bundleId);
+    expect(record.version).toBe("1.0.0");
+    expect(record.digest).toBe(expectedDigest(dot, cardDigests));
+    expect(record.createdAt).toBeInstanceOf(Date);
+    expect(record.dot).toBe(dot);
+    expect(record.manifest).toEqual(manifest);
+    expect(record.cardRefs).toEqual(["solver-a@1.0.0"]);
+    expect(record.cardDigests).toEqual(cardDigests);
+    /* `vocabulary?` and `analysis?` are optional, and absent is a different shape from null —
+       the same distinction `lineage` carries on BundleRecord. */
+    expect("vocabulary" in record).toBe(false);
+    expect("analysis" in record).toBe(false);
+  });
+
+  it("carries vocabulary and analysis when they were given, and nothing more", async () => {
+    const mark = marker("relshapefull");
+    const bundleId = await freshBundle(mark);
+    const dot = validDot(mark);
+    const cardDigests = [cardDigestFor(mark, 1)];
+    const vocabulary = [{ id: `${mark}/local`, kind: "phase", label: "Local" }];
 
     const record = asRecord(
       await api.addRelease(scratch.db, {
@@ -157,24 +238,69 @@ describe("the published surface", () => {
         manifest: manifestFor(mark),
         cardRefs: ["solver-a@1.0.0"],
         cardDigests,
+        vocabulary,
+        analysis: ANALYSIS,
       }),
       "addRelease",
     );
 
     expect(Object.keys(record).sort(), PUBLISHED.releaseRecord).toEqual(
-      ["bundleId", "createdAt", "digest", "id", "version"].sort(),
+      [
+        "analysis",
+        "bundleId",
+        "cardDigests",
+        "cardRefs",
+        "createdAt",
+        "digest",
+        "dot",
+        "id",
+        "manifest",
+        "version",
+        "vocabulary",
+      ].sort(),
     );
-    expect(typeof record.id).toBe("string");
-    expect(record.bundleId).toBe(bundleId);
-    expect(record.version).toBe("1.0.0");
-    expect(record.digest).toBe(expectedDigest(dot, cardDigests));
-    expect(record.createdAt).toBeInstanceOf(Date);
+    expect(record.vocabulary).toEqual(vocabulary);
+    expect(record.analysis).toEqual(ANALYSIS);
+  });
+
+  it("the reader returns the same eleven fields the writer did", async () => {
+    const mark = marker("readershape");
+    const bundleId = await freshBundle(mark);
+    const dot = validDot(mark);
+    const cardDigests = [cardDigestFor(mark, 1)];
+    const vocabulary = [{ id: `${mark}/local`, kind: "phase", label: "Local" }];
+
+    const written = asRecord(
+      await api.addRelease(scratch.db, {
+        bundleId,
+        version: "1.0.0",
+        dot,
+        manifest: manifestFor(mark),
+        cardRefs: ["solver-a@1.0.0"],
+        cardDigests,
+        vocabulary,
+        analysis: ANALYSIS,
+      }),
+      "addRelease",
+    );
+
+    /* One `ReleaseRecord`, three producers. A writer that returns the full record while
+       `getRelease` returns the old projection is exactly the inconsistency the second
+       amendment was written to fix, and it would otherwise show up in T080 rather than here. */
+    const read = await readBack(bundleId, written.digest);
+    expect(Object.keys(read).sort()).toEqual(Object.keys(written).sort());
+    expect(read).toEqual(written);
+
+    const listed = (await api.listReleases(scratch.db, bundleId)) as Record<string, unknown>[];
+    expect(listed.length).toBe(1);
+    expect(Object.keys(listed[0] ?? {}).sort()).toEqual(Object.keys(written).sort());
+    expect(listed[0]).toEqual(written);
   });
 });
 
 /* --------------------- AC1 --------------------- */
 
-describe("AC1 — storing a release and reading it back yields byte-identical DOT", () => {
+describe("AC1 — storing a release and reading it back yields byte-identical content", () => {
   it("AC1: a plain DOT survives the round trip byte for byte", async () => {
     const mark = marker("ac1plain");
     const bundleId = await freshBundle(mark);
@@ -193,9 +319,14 @@ describe("AC1 — storing a release and reading it back yields byte-identical DO
       "addRelease",
     );
 
-    const read = await storedDot(record.id);
-    expect(read).toBe(dot);
-    expect([...read].length).toBe([...dot].length);
+    const read = await readBack(bundleId, record.digest);
+    expect(read.dot).toBe(dot);
+    expect([...String(read.dot)].length).toBe([...dot].length);
+    /* AC1's other half, now that the record carries it: the manifest and the two arrays
+       come back as they went in, not merely the DOT. */
+    expect(read.manifest).toEqual(manifestFor(mark));
+    expect(read.cardRefs).toEqual(["solver-a@1.0.0"]);
+    expect(read.cardDigests).toEqual(cardDigests);
   });
 
   it("AC1: unicode, combining marks and a ZWJ sequence survive unnormalised", async () => {
@@ -228,7 +359,7 @@ describe("AC1 — storing a release and reading it back yields byte-identical DO
       "addRelease",
     );
 
-    const read = await storedDot(record.id);
+    const read = String((await readBack(bundleId, record.digest)).dot);
     expect(read).toBe(dot);
     expect(read.normalize("NFC")).toBe(dot.normalize("NFC"));
     expect(read.includes("é")).toBe(true);
@@ -255,7 +386,7 @@ describe("AC1 — storing a release and reading it back yields byte-identical DO
       "addRelease",
     );
 
-    expect(await storedDot(record.id)).toBe(dot);
+    expect((await readBack(bundleId, record.digest)).dot).toBe(dot);
   });
 
   it("AC1: an empty DOT is stored as the empty string, not as null", async () => {
@@ -278,7 +409,7 @@ describe("AC1 — storing a release and reading it back yields byte-identical DO
       "addRelease",
     );
 
-    expect(await storedDot(record.id)).toBe("");
+    expect((await readBack(bundleId, record.digest)).dot).toBe("");
     expect(record.digest).toBe(expectedDigest("", cardDigests));
   });
 
@@ -302,10 +433,69 @@ describe("AC1 — storing a release and reading it back yields byte-identical DO
       "addRelease",
     );
 
-    const read = await storedDot(record.id);
+    const read = String((await readBack(bundleId, record.digest)).dot);
     expect(read.length).toBe(dot.length);
     expect(read).toBe(dot);
   }, 60_000);
+
+  it("AC1: the reader honours the Db it is handed, so the content really came from storage", async () => {
+    const mark = marker("ac1fresh");
+    const bundleId = await freshBundle(mark);
+    const dot = validDot(mark);
+    const cardDigests = [cardDigestFor(mark, 1)];
+    const manifest = manifestFor(mark);
+
+    await api.addRelease(scratch.db, {
+      bundleId,
+      version: "1.0.0",
+      dot,
+      manifest,
+      cardRefs: ["solver-a@1.0.0"],
+      cardDigests,
+    });
+
+    const digest = expectedDigest(dot, cardDigests);
+    /* The same lookup against a second, empty database has to be absence. It is what tells
+       the earlier assertions apart from an implementation that answers a read out of
+       whatever the write left in memory — that one returns the content here too. */
+    const empty = await scratchDatabase("release_reader");
+    await expect(api.getRelease(empty.db, bundleId, digest)).resolves.toBeUndefined();
+    await expect(api.listReleases(empty.db, bundleId)).resolves.toEqual([]);
+
+    const read = await readBack(bundleId, digest);
+    expect(read.dot).toBe(dot);
+    expect(read.manifest).toEqual(manifest);
+    expect(read.cardDigests).toEqual(cardDigests);
+  }, 60_000);
+
+  it("AC1: T010 writes no bytes to object storage", async () => {
+    const mark = marker("ac1nobytes");
+    const bundleId = await freshBundle(mark);
+    const dot = validDot(mark);
+    const cardDigests = [cardDigestFor(mark, 1)];
+
+    const record = asRecord(
+      await api.addRelease(scratch.db, {
+        bundleId,
+        version: "1.0.0",
+        dot,
+        manifest: manifestFor(mark),
+        cardRefs: ["solver-a@1.0.0"],
+        cardDigests,
+      }),
+      "addRelease",
+    );
+
+    /* Settled in the second amendment, and asserted here so it stays settled: the canonical
+       record is Postgres and object storage holds T090's generated distribution artefacts.
+       Content-addressed, so this is not a race with the other suites sharing the bucket —
+       nothing else in the world can compute this digest, because no other run has these
+       bytes. */
+    await expect(readObject(String(record.digest)), PUBLISHED.noObjectStorage).resolves.toBeUndefined();
+    for (const cardDigest of cardDigests) {
+      await expect(readObject(cardDigest)).resolves.toBeUndefined();
+    }
+  });
 });
 
 /* --------------------- AC2 --------------------- */
@@ -445,30 +635,6 @@ describe("AC2 — the stored digest equals what lib/core computes", () => {
        B-08's "computed when a release is cut" and is re-computed on an ontology release, so
        a digest that moved with it would change a published blueprint's identity behind its
        author's back. */
-    const analysis = {
-      autonomy: {
-        autonomyClass: "assisted",
-        isDarkFactory: false,
-        level: 2,
-        label: "Assisted",
-        fraction: 0.5,
-        autonomousNodes: 1,
-        totalNodes: 2,
-        contributions: [],
-        rationale: "fixture",
-      },
-      security: {
-        level: 4,
-        raw: 4,
-        penalties: [],
-        findings: [],
-        rationale: "4 → 4",
-        ontologyVersion: "1.0.0",
-        diagnostics: [],
-      },
-      phaseCoverage: { covered: [], missing: [], byPhase: {}, unphased: [] },
-    };
-
     const withAnalysis = asRecord(
       await api.addRelease(scratch.db, {
         bundleId,
@@ -477,12 +643,14 @@ describe("AC2 — the stored digest equals what lib/core computes", () => {
         manifest: manifestFor(mark),
         cardRefs: ["solver-a@1.0.0"],
         cardDigests,
-        analysis,
+        analysis: ANALYSIS,
       }),
       "addRelease",
     );
 
     expect(withAnalysis.digest).toBe(expectedDigest(dot, cardDigests));
+    /* And it survives the round trip, since the record now carries it. */
+    expect((await readBack(bundleId, withAnalysis.digest)).analysis).toEqual(ANALYSIS);
   });
 });
 
@@ -742,10 +910,17 @@ describe("reading what is not there", () => {
       cardDigests,
     });
 
-    /* T010's inherited note: "`keyForDigest` throws a plain `Error` quoting its caller's
-       input. **Validate a digest at the edge**, so a bad path parameter is a 404 and not a
-       500 that echoes what the caller sent." At this layer a 404 is `undefined` — both
-       published readers return `| undefined` and that is how absence is said here. */
+    /* Ruled in the section: "`getRelease` validating its `digest` parameter through
+       `keyForDigest` as a shape check, and translating a throw into `undefined`, is correct
+       and is the T000-inherited note applied properly: a bad path parameter becomes a 404
+       rather than a 500 echoing caller input." At this layer a 404 is `undefined` — both
+       published readers return `| undefined` and that is how absence is said here.
+
+       The section also records that this guard cannot be made to fail from below, because a
+       malformed digest already matches zero rows in Postgres. It is asserted anyway: what is
+       under test is that `getRelease` answers absence rather than throwing, and an
+       implementation that let `keyForDigest`'s throw escape would fail here whether or not
+       the query would also have returned nothing. */
     const malformed = [
       "",
       " ",
@@ -890,15 +1065,13 @@ describe("input the contract leaves at its edges", () => {
       "addRelease",
     );
 
-    const [row] = await scratch.query("select local_vocabulary from release where id = $1", [
-      record.id,
-    ]);
-    expect(row?.local_vocabulary).toEqual(vocabulary);
+    expect(record.vocabulary).toEqual(vocabulary);
+    expect((await readBack(bundleId, record.digest)).vocabulary).toEqual(vocabulary);
     /* And it does not enter the identity: the digest is the DOT plus the card digests. */
     expect(record.digest).toBe(expectedDigest(dot, cardDigests));
   });
 
-  it("leaves local_vocabulary null when a release declares none", async () => {
+  it("omits vocabulary and analysis from the record when a release declares none", async () => {
     const mark = marker("novocab");
     const bundleId = await freshBundle(mark);
     const record = asRecord(
@@ -912,6 +1085,16 @@ describe("input the contract leaves at its edges", () => {
       }),
       "addRelease",
     );
+
+    /* Both are optional in the published interface, so absent — not `null`, which is what a
+       nullable column hands back if the mapping just copies it across. `release.
+       local_vocabulary` is checked too, because "absent in the record" and "null in the
+       column" have to be the same fact and not two. */
+    expect("vocabulary" in record).toBe(false);
+    expect("analysis" in record).toBe(false);
+    const read = await readBack(bundleId, record.digest);
+    expect("vocabulary" in read).toBe(false);
+    expect("analysis" in read).toBe(false);
     const [row] = await scratch.query("select local_vocabulary from release where id = $1", [
       record.id,
     ]);
