@@ -155,7 +155,7 @@ describe("AC-5: the same two inputs always infer the same level", () => {
     const fn = await checkDeclaredBump();
     const inferred: BumpAnalysis = { level: "major", reasons: ["output `answer` was removed"] };
     const runs = Array.from({ length: REPEATS }, () =>
-      asDiagnostics(fn("1.0.0", "1.1.0", inferred), "checkDeclaredBump"),
+      asDiagnostics(fn("card", "1.0.0", "1.1.0", inferred), "checkDeclaredBump"),
     );
 
     for (const run of runs) expect(run).toEqual(runs[0]);
