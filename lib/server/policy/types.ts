@@ -16,7 +16,7 @@ export type Resource =
   | { kind: "bundle"; ownerId: string; visibility: "public" | "private" }
   | { kind: "card"; ownerId: string; visibility: "public" | "private" }
   | { kind: "save"; ownerId: string }
-  | { kind: "note"; authorId: string }
+  | { kind: "note"; authorId: string; parent: { ownerId: string; visibility: "public" | "private" } }
   | { kind: "account"; accountId: string };
 
 export type Action = "read" | "write" | "delete" | "publish" | "transfer";

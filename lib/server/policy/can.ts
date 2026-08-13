@@ -66,18 +66,25 @@ function canOnSave(actor: Actor, action: Action, resource: { ownerId: string }):
 }
 
 /**
- * A note carries no `visibility` field, unlike bundle/card — it has no private state to
- * gate a read against, so reading one is open to any actor; only its author may change it.
+ * A note has no visibility of its own — it inherits its parent bundle/card's. A note on a
+ * private parent is readable only by that parent's owner (2026-08-14 contract amendment: the
+ * first shape carried no `parent`, so a private parent's notes were unreadably-gated by
+ * nothing, i.e. world-readable — a leak). Write/delete stay with the note's own author.
  */
-function canOnNote(actor: Actor, action: Action, resource: { authorId: string }): boolean {
-  const owner = isOwner(actor, resource.authorId);
+function canOnNote(
+  actor: Actor,
+  action: Action,
+  resource: { authorId: string; parent: { ownerId: string; visibility: "public" | "private" } },
+): boolean {
+  const author = isOwner(actor, resource.authorId);
+  const parentOwner = isOwner(actor, resource.parent.ownerId);
   switch (action) {
     case "read":
-      return true;
+      return parentOwner || resource.parent.visibility === "public";
     case "write":
-      return owner;
+      return author;
     case "delete":
-      return owner;
+      return author;
     case "publish":
       return false;
     case "transfer":
