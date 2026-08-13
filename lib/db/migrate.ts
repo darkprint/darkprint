@@ -89,25 +89,43 @@ async function withMigrationLock<T>(pool: Pool, fn: (client: PoolClient) => Prom
 }
 
 /**
+ * `target` is a pool the caller already owns, or a connection string this run opens
+ * and closes itself (T000 contract, D-08 — no zero-argument form reading
+ * `DATABASE_URL` implicitly is published; a caller with only a connection string
+ * still names it explicitly).
+ */
+async function withTargetPool<T>(target: Pool | string, fn: (pool: Pool) => Promise<T>): Promise<T> {
+  if (typeof target !== "string") return fn(target);
+  const client = createDbClient(target);
+  try {
+    return await fn(client.pool);
+  } finally {
+    await client.close();
+  }
+}
+
+/**
  * Applies every migration not yet recorded, in id order. Safe to call on an
  * already-current database — returns an empty list rather than re-applying (AC1).
  * Concurrent callers serialise on `MIGRATION_LOCK_KEY` rather than racing the
  * tracking table (AC1, concurrency; D-06).
  */
-export async function migrateUp(pool: Pool, dir?: string): Promise<string[]> {
-  return withMigrationLock(pool, async (client) => {
-    await ensureTrackingTable(client);
-    const applied = new Set(await appliedIds(client));
-    const pending = loadMigrations(dir).filter((m) => !applied.has(m.id));
-    const ran: string[] = [];
-    for (const migration of pending) {
-      await runInTransaction(client, migration.up, async () => {
-        await client.query(`INSERT INTO ${TRACKING_TABLE} (id) VALUES ($1)`, [migration.id]);
-      });
-      ran.push(migration.id);
-    }
-    return ran;
-  });
+export async function migrateUp(target: Pool | string, dir?: string): Promise<string[]> {
+  return withTargetPool(target, (pool) =>
+    withMigrationLock(pool, async (client) => {
+      await ensureTrackingTable(client);
+      const applied = new Set(await appliedIds(client));
+      const pending = loadMigrations(dir).filter((m) => !applied.has(m.id));
+      const ran: string[] = [];
+      for (const migration of pending) {
+        await runInTransaction(client, migration.up, async () => {
+          await client.query(`INSERT INTO ${TRACKING_TABLE} (id) VALUES ($1)`, [migration.id]);
+        });
+        ran.push(migration.id);
+      }
+      return ran;
+    }),
+  );
 }
 
 /**
@@ -115,47 +133,25 @@ export async function migrateUp(pool: Pool, dir?: string): Promise<string[]> {
  * Rolling back everything returns the schema to an empty database, byte-for-byte
  * what `migrateUp` started from.
  */
-export async function migrateDown(pool: Pool, steps = 1, dir?: string): Promise<string[]> {
-  return withMigrationLock(pool, async (client) => {
-    await ensureTrackingTable(client);
-    // `appliedIds` is already ascending (its query orders by id); reverse for
-    // most-recent-first without a second sort over the wrong element type.
-    const applied = (await appliedIds(client)).reverse();
-    const toRevert = applied.slice(0, steps);
-    const migrations = new Map(loadMigrations(dir).map((m) => [m.id, m]));
-    const reverted: string[] = [];
-    for (const id of toRevert) {
-      const migration = migrations.get(id);
-      if (!migration) throw new Error(`No migration file found for applied id "${id}"`);
-      await runInTransaction(client, migration.down, async () => {
-        await client.query(`DELETE FROM ${TRACKING_TABLE} WHERE id = $1`, [id]);
-      });
-      reverted.push(id);
-    }
-    return reverted;
-  });
-}
-
-/**
- * Self-contained convenience wrapper over `migrateUp`: opens its own connection
- * against `DATABASE_URL` and closes it when done, for a caller with no pool of its
- * own to hand in — `@/lib/db`'s barrel is the only place this is exported.
- */
-export async function migrate(dir?: string): Promise<string[]> {
-  const client = createDbClient();
-  try {
-    return await migrateUp(client.pool, dir);
-  } finally {
-    await client.close();
-  }
-}
-
-/** The `migrate` counterpart for `migrateDown`. */
-export async function rollback(steps = 1, dir?: string): Promise<string[]> {
-  const client = createDbClient();
-  try {
-    return await migrateDown(client.pool, steps, dir);
-  } finally {
-    await client.close();
-  }
+export async function migrateDown(target: Pool | string, steps = 1, dir?: string): Promise<string[]> {
+  return withTargetPool(target, (pool) =>
+    withMigrationLock(pool, async (client) => {
+      await ensureTrackingTable(client);
+      // `appliedIds` is already ascending (its query orders by id); reverse for
+      // most-recent-first without a second sort over the wrong element type.
+      const applied = (await appliedIds(client)).reverse();
+      const toRevert = applied.slice(0, steps);
+      const migrations = new Map(loadMigrations(dir).map((m) => [m.id, m]));
+      const reverted: string[] = [];
+      for (const id of toRevert) {
+        const migration = migrations.get(id);
+        if (!migration) throw new Error(`No migration file found for applied id "${id}"`);
+        await runInTransaction(client, migration.down, async () => {
+          await client.query(`DELETE FROM ${TRACKING_TABLE} WHERE id = $1`, [id]);
+        });
+        reverted.push(id);
+      }
+      return reverted;
+    }),
+  );
 }

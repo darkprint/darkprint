@@ -15,7 +15,7 @@ export {
   sessionCookieHeader,
 } from "./session";
 
-export { requireSession } from "./guard";
+export { withSession } from "./guard";
 
 export {
   OAUTH_STATE_COOKIE_NAME,

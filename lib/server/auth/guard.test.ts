@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { GET as sessionRoute } from "@/app/api/auth/session/route";
-import { requireSession } from "./guard";
+import { requireSession, withSession } from "./guard";
 import { SESSION_COOKIE_NAME, encodeSession } from "./session";
 
 const SECRET = "test-session-secret";
@@ -22,6 +22,27 @@ describe("requireSession", () => {
       headers: { cookie: `${SESSION_COOKIE_NAME}=${encodeSession(payload, SECRET)}` },
     });
     expect(requireSession(request, SECRET)).toEqual(payload);
+  });
+});
+
+describe("withSession", () => {
+  it("AC3: the handler never runs for an unauthenticated request", async () => {
+    const request = new Request("https://darkprint.io/api/example");
+    const handler = vi.fn(() => new Response("should never run"));
+    const response = await withSession(request, handler);
+    expect(handler).not.toHaveBeenCalled();
+    expect(response.status).toBe(401);
+    expect(response.headers.get("content-type")).toBe("application/problem+json");
+  });
+
+  it("runs the handler with the verified session and returns its response", async () => {
+    const payload = { accountId: "acc_1", handle: "berti" };
+    const request = new Request("https://darkprint.io/api/example", {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=${encodeSession(payload, SECRET)}` },
+    });
+    const response = await withSession(request, (session) => Response.json(session));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual(payload);
   });
 });
 

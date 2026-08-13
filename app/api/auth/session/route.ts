@@ -5,12 +5,9 @@
    Every later task's own guarded route follows this same shape.
    ============================================================ */
 
-import { requireSession } from "@/lib/server/auth";
+import { withSession } from "@/lib/server/auth";
 import { ok } from "@/lib/server/http";
 
 export async function GET(request: Request): Promise<Response> {
-  const session = requireSession(request);
-  if (session instanceof Response) return session;
-
-  return ok(session);
+  return withSession(request, (session) => ok(session));
 }

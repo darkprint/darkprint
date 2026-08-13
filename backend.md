@@ -77,7 +77,7 @@ it does not decide differently inside a worktree.
 
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
-| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` | `feat/t000-foundation` | reverted | adversary round 2 FAIL: D-08 the suite is nondeterministic (6/6/3 failures in three identical runs), D-09 the guard shape is unpinned. All seven round-1 defects verified fixed; typecheck/lint/build green |
+| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` | `feat/t000-foundation` | impl-done | typecheck/lint/build clean; test 3740/3749 (110/111 files), identical across three consecutive runs; the 9 reds are `tests/server/migrations.test.ts`, the test branch's own half of D-08 |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | — | — | todo | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | — | — | todo | — |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | — | — | todo | — |
@@ -211,7 +211,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T000, Foundation: schema, client, envelope, GitHub session, harness
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t000-foundation` on `feat/t000-foundation`
 - **Test worktree:** `../darkprint-wt-t000-foundation-tests` on `test/t000-foundation`
 - **Depends on:** —
@@ -395,6 +395,61 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     **Recorded, not charged.** `keyForDigest` throws a plain `Error` whose message quotes the caller's input verbatim (`"sha256:<script>alert(1)</script>" is not a digest — …`); no route consumes it yet, but D-07 was exactly this shape of message reaching a response body, and the error carries no type a route could branch on to choose 400 over 500. `deleteObject` on a well-formed digest that was never written resolves successfully — standard S3 idempotency and probably right, but `storage.ts` justifies it with "safe here only because `digest` is validated below, so there is no key this can silently no-op on", and that reasoning does not hold: validation proves the key is well-formed, never that it existed. `getObject` now throws where a malformed digest previously returned data, so a route passing an unvalidated path parameter straight through will 500 rather than 404; T010 should validate at the edge. The session token still carries no expiry claim, so a captured cookie stays valid indefinitely and sign-out clears only the browser's copy — unchanged from round 1 and still not in any criterion.
 
     **What a fix has to clear.** `npm test` green three times running, not once. D-08 needs a decision about who owns a database in this suite, and the cheapest one that satisfies amendment 4 for both sides is a target-taking migrate/rollback on the barrel plus a `tests/support/db.ts` that creates and drops its own. D-09 needs the contract to state the guard's shape, after which one of the two sides changes and neither is at fault for having guessed. My probes complied with amendment 4: four scratch databases created and dropped, ten storage objects written and deleted, verified by the cleanup line in each run.
+  - 2026-08-13 implementer: impl-done, third pass. Rebased on `backend` at `3e9f51e`
+    before starting; the six-commit rebase conflicted only in this file's own table
+    row, State line and Log section (my round-2 history replaying against the
+    orchestrator's condensed one), resolved by keeping the most advanced state at
+    each step and folding in every Log entry from both sides rather than dropping
+    either — the test author's blind-test and T-01/T-02 entries now sit ahead of my
+    round-2 entry, in the order the work actually happened. Both **Published
+    signatures** items addressed; neither left ambiguous.
+    **D-09**: published `withSession(request, handler)` from `lib/server/auth/guard.ts`
+    — wraps, does not return a union, so AC3 is structurally true rather than
+    caller-enforced. The fix is not only the new function: `requireSession` is no
+    longer re-exported from the barrel (`lib/server/auth/index.ts`), kept only as an
+    internal helper `withSession` calls, imported directly from `./guard` by the one
+    file that still wants the union (`guard.test.ts`). This matters beyond style —
+    the blind harness's own `GUARD_NAMES` list tries `requireSession` before
+    `withSession`, and a still-published `requireSession` keeps winning that
+    resolution and reproducing the exact D-09 crash regardless of `withSession`
+    existing beside it. Verified by removing only the barrel export and re-running
+    `tests/server/session.test.ts` unmodified: 2 reds (the two AC3 cases described in
+    the FAIL above) went green, nothing else moved. `app/api/auth/session/route.ts`,
+    the goal's own guarded-route example, now calls `withSession` rather than
+    branching on the union itself. Falsified per this repo's definition of done: made
+    `withSession` run the handler unconditionally and only swap a 401 in afterward,
+    watched `guard.test.ts`'s new AC3 test fail with
+    `expected "vi.fn()" to not be called at all, but actually been called 1 times`,
+    restored it.
+    **D-08**: `migrateUp`/`migrateDown` now take `target: Pool | string` — a pool the
+    caller owns, or a connection string this run opens and closes itself
+    (`withTargetPool` in `migrate.ts`) — and the barrel no longer exports the
+    zero-argument `migrate`/`rollback`; they read `DATABASE_URL` implicitly with no
+    way to point elsewhere, which is exactly what let two suites drive the same
+    database. Nothing referenced them outside the barrel (`lib/db/cli.ts` already
+    passes its own `Pool` to `migrateUp`/`migrateDown` directly), so they are deleted
+    rather than kept as unreachable dead code; `npm run db:migrate`/`db:rollback`
+    still work unchanged through the CLI. `tests/support/db.ts` no longer opens a
+    client against `DATABASE_URL` directly: `createTestDb()` creates a uniquely named
+    scratch database (`CREATE DATABASE`, admin connection against the base URL,
+    `randomUUID()` suffix), migrates it, and returns `{ client, drop() }`, where
+    `drop()` closes the client and drops the database. `lib/db/schema.test.ts`
+    updated to the new shape (`testDb.drop()` in `afterAll`, not `client.close()`);
+    nothing else in `Owns` called the old `createTestDbClient`. Added a
+    `migrateUp`/`migrateDown` test against a bare connection-string target, no `Pool`
+    in sight, alongside the existing pool-based ones in `migrate.test.ts`.
+    `tests/server/migrations.test.ts` is Forbidden and untouched; its own
+    `migrate: () => pickFn(...)()` still calls whatever it resolves with zero
+    arguments, which now throws on `migrateUp`'s required `target` — the 9 reds this
+    leaves are exactly that test branch's own half of D-08, confirmed from source
+    (`tests/server/contract.ts`'s `MIGRATE_NAMES` resolves `migrate` first, absent
+    now, next `migrateUp`, called with nothing) and left for the test author, per this
+    round's brief.
+    No signature in the Published signatures block was ambiguous; nothing to report
+    as newly open. Gates on this tree, stack up (`docker compose up -d`): `typecheck`
+    and `lint` clean; `build` green; `test` run three times consecutively, identical
+    every time — 3740/3749 passed, 110/111 files, the 9 reds all
+    `tests/server/migrations.test.ts` as above.
 
 ### T010, Archive persistence: bundles, releases, bytes
 

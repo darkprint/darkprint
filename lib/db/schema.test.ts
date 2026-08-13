@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { DbClient } from "./client";
-import { createTestDbClient, resetTestDb } from "../../tests/support/db";
+import { createTestDb, resetTestDb, type TestDb } from "../../tests/support/db";
 import * as schema from "./schema";
 
 /** Needs a live Postgres (`docker compose up -d`); skips gracefully without one. */
@@ -11,10 +11,12 @@ describe.skipIf(!hasDb)("lib/db/schema", () => {
   // Created in `beforeAll` rather than at describe scope: `describe.skipIf` still runs
   // this factory to discover the suite, and a promise built there would start a real
   // connection (and go unhandled) even when the suite is skipped.
+  let testDb: TestDb;
   let client: DbClient;
 
   beforeAll(async () => {
-    client = await createTestDbClient();
+    testDb = await createTestDb();
+    client = testDb.client;
   });
 
   beforeEach(async () => {
@@ -22,7 +24,7 @@ describe.skipIf(!hasDb)("lib/db/schema", () => {
   });
 
   afterAll(async () => {
-    await client.close();
+    await testDb.drop();
   });
 
   it("round-trips one row through every table, respecting the foreign keys between them", async () => {

@@ -12,7 +12,13 @@ export type { Db, DbClient } from "./client";
 export { createDbClient, getSharedDbClient, schema } from "./client";
 
 /* --------------------- migrations --------------------- */
-export { migrate, migrateDown, migrateUp, rollback } from "./migrate";
+/**
+ * D-08: no zero-argument form. `migrateUp`/`migrateDown` take a `target` — a pool
+ * the caller owns, or a connection string this run opens and closes itself — never
+ * `DATABASE_URL` implicitly. A convenience wrapper reading it implicitly is what let
+ * two suites drive the same database unknowingly and race each other's teardown.
+ */
+export { migrateDown, migrateUp } from "./migrate";
 
 /* --------------------- object storage --------------------- */
 export type { ObjectStorage, ObjectStorageConfig } from "./storage";

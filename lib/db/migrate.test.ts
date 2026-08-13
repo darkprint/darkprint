@@ -103,4 +103,32 @@ describe.skipIf(!hasDb)("lib/db/migrate", () => {
       await cleanup.end();
     }
   }, 60_000);
+
+  it("D-08: target may be a connection string, not only a pool the caller owns", async () => {
+    const baseUrl = process.env.DATABASE_URL as string;
+    const dbName = `darkprint_migrate_target_${process.pid}_${Math.trunc(performance.now())}`;
+
+    const admin = new Pool({ connectionString: baseUrl });
+    await admin.query(`CREATE DATABASE "${dbName}"`);
+    await admin.end();
+
+    const url = withDatabase(baseUrl, dbName);
+    try {
+      // migrateUp/migrateDown open and close their own connection for a string
+      // target — nothing here hands them a `Pool`.
+      expect(await migrateUp(url)).toEqual(["0001_init"]);
+      expect(await migrateDown(url, 1)).toEqual(["0001_init"]);
+
+      const verify = new Pool({ connectionString: url });
+      try {
+        expect(await publicTableNames(verify)).toEqual([]);
+      } finally {
+        await verify.end();
+      }
+    } finally {
+      const cleanup = new Pool({ connectionString: baseUrl });
+      await cleanup.query(`DROP DATABASE IF EXISTS "${dbName}"`);
+      await cleanup.end();
+    }
+  });
 });
