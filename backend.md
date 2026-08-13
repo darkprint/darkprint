@@ -67,6 +67,23 @@ the protocol rather than a decision inside it.
   being contract defects rather than code, which is convergence. Cycling without that fall is
   reported, not burned through.
 
+## Resolving `backend.md`: Log entries merge, contract text does not
+
+A hand-resolution in T025's worktree silently reverted a corrected acceptance criterion. The
+Log entries were preserved and independently verified as intact; nobody checked the contract
+prose, and both that task's worktrees carried a withdrawn clause its own blind test author then
+reported as an outstanding bug — twice.
+
+**The rule.** When resolving a `backend.md` conflict in any worktree: **keep both sides' Log
+entries in date order, and take `backend`'s version of everything else.** Contract text,
+acceptance criteria, signature blocks and rulings change on the base branch only. A worktree
+that appears to disagree with base about what the contract says is stale by definition, never
+authoritative, and resolving it "carefully by hand" is how a ruling gets undone by someone
+being careful.
+
+This is also why an amendment is announced to both sides rather than left to be discovered on
+the next rebase: the file they read may not be the file that was amended.
+
 ## Never use `git stash` in a worktree
 
 **The stash is repo-global, not per-worktree.** T025's implementer stashed to check whether
