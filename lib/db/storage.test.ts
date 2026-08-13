@@ -1,35 +1,71 @@
 import { describe, expect, it } from "vitest";
-import { createObjectStorage, keyForDigest, objectStorageConfigFromEnv } from "./storage";
+import { contentDigest } from "@/lib/core";
+import { createObjectStore, keyForDigest, objectStorageConfigFromEnv } from "./storage";
 
 /** Needs live MinIO (`docker compose up -d`); skips gracefully without one. */
 const hasStorage = Boolean(process.env.S3_ENDPOINT);
 
 describe("keyForDigest", () => {
   it("splits the algorithm prefix into a path segment", () => {
-    expect(keyForDigest("sha256:ab12cd34")).toBe("sha256/ab12cd34");
+    const digest = contentDigest("keyForDigest fixture");
+    expect(keyForDigest(digest)).toBe(digest.replace(":", "/"));
   });
 
-  it("passes through a digest with no algorithm prefix unchanged", () => {
-    expect(keyForDigest("ab12cd34")).toBe("ab12cd34");
+  it("rejects an empty digest (D-04: an empty key enumerates the whole bucket)", () => {
+    expect(() => keyForDigest("")).toThrow();
+  });
+
+  it.each([
+    ["a digest with no algorithm prefix", "ab12cd34"],
+    ["a bare colon", "sha256:"],
+    ["too short to be 64 hex digits", "sha256:ab12cd34"],
+    ["uppercase hex", `sha256:${"AB".repeat(32)}`],
+    ["a path-traversal shape", "../../etc/passwd"],
+    ["a traversal-shaped digest body", `sha256:${"../".repeat(21)}etc`],
+  ])("rejects %s", (_label, malformed) => {
+    expect(() => keyForDigest(malformed)).toThrow();
   });
 });
 
-describe.skipIf(!hasStorage)("createObjectStorage", () => {
+describe.skipIf(!hasStorage)("createObjectStore", () => {
   it("AC5: an object written under a digest reads back byte-identical", async () => {
-    const storage = createObjectStorage(objectStorageConfigFromEnv());
-    const key = keyForDigest(`sha256:test-${Date.now()}`);
-    const body = new TextEncoder().encode("byte-identical round trip");
+    const storage = createObjectStore(objectStorageConfigFromEnv());
+    const content = `byte-identical round trip ${process.pid} ${performance.now()}`;
+    const digest = contentDigest(content);
+    const body = new TextEncoder().encode(content);
 
-    await storage.putObject(key, body);
-    const readBack = await storage.getObject(key);
-
-    expect(readBack).toBeDefined();
-    expect(Array.from(readBack ?? [])).toEqual(Array.from(body));
+    await storage.putObject(digest, body);
+    try {
+      const readBack = await storage.getObject(digest);
+      expect(readBack).toBeDefined();
+      expect(Array.from(readBack ?? [])).toEqual(Array.from(body));
+    } finally {
+      await storage.deleteObject(digest);
+    }
   });
 
-  it("returns undefined rather than throwing for a missing key", async () => {
-    const storage = createObjectStorage(objectStorageConfigFromEnv());
-    const result = await storage.getObject(`sha256/does-not-exist-${Date.now()}`);
+  it("returns undefined rather than throwing for a well-formed digest nothing was written under", async () => {
+    const storage = createObjectStore(objectStorageConfigFromEnv());
+    const result = await storage.getObject(`sha256:${"0".repeat(64)}`);
     expect(result).toBeUndefined();
+  });
+
+  it("D-04: an empty digest is refused, never answered with a bucket listing", async () => {
+    const storage = createObjectStore(objectStorageConfigFromEnv());
+    await expect(storage.getObject("")).rejects.toThrow();
+    await expect(storage.putObject("", "x")).rejects.toThrow();
+    await expect(storage.deleteObject("")).rejects.toThrow();
+  });
+
+  it("delete removes what put wrote, and a repeat delete still never reports a false positive", async () => {
+    const storage = createObjectStore(objectStorageConfigFromEnv());
+    const content = `delete round trip ${process.pid} ${performance.now()}`;
+    const digest = contentDigest(content);
+
+    await storage.putObject(digest, content);
+    expect(await storage.getObject(digest)).toBeDefined();
+
+    await storage.deleteObject(digest);
+    expect(await storage.getObject(digest)).toBeUndefined();
   });
 });

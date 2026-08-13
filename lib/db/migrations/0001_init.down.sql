@@ -1,5 +1,6 @@
 -- Reverse of 0001_init.up.sql, table drops in dependency order (children before the
 -- parents they reference) so this runs cleanly without CASCADE.
+DROP TABLE IF EXISTS "target_actor";
 DROP TABLE IF EXISTS "target";
 DROP TABLE IF EXISTS "release";
 DROP TABLE IF EXISTS "ontology_term";
@@ -12,6 +13,7 @@ DROP TABLE IF EXISTS "account";
 
 DROP TYPE IF EXISTS "public"."visibility";
 DROP TYPE IF EXISTS "public"."target_kind";
+DROP TYPE IF EXISTS "public"."target_actor_kind";
 DROP TYPE IF EXISTS "public"."audit_decision";
 DROP TYPE IF EXISTS "public"."actor_kind";
 

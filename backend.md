@@ -77,7 +77,7 @@ it does not decide differently inside a worktree.
 
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
-| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` | `feat/t000-foundation` | reverted | adversary FAIL `c7debfd` |
+| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` | `feat/t000-foundation` | impl-done | typecheck/lint/build clean; test 3738/3744 (109/111 files) with the local stack up, the 6 reds being T-01 and T-02, both triaged to the test branch |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | — | — | todo | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | — | — | todo | — |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | — | — | todo | — |
@@ -211,7 +211,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T000, Foundation: schema, client, envelope, GitHub session, harness
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t000-foundation` on `feat/t000-foundation`
 - **Test worktree:** `../darkprint-wt-t000-foundation-tests` on `test/t000-foundation`
 - **Depends on:** —
@@ -263,6 +263,79 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   - 2026-08-13 orchestrator: **gate run and triage after the adversary's FAIL** (`c7debfd`). Verdict verified independently rather than accepted: typecheck reproduced with exactly one error, `tests/server/contract.ts(65,23) TS2307 Cannot find module '@/lib/db'`; suite reproduced red (37 failed here against the adversary's 32, the five extra being env-dependent tests failing without the compose stack up, which is a difference in my run and not in its report); D-02 and D-07 confirmed from source. Triage of the seven defects: **D-01 is a contract defect and mine, not the implementer's** — the contract named `lib/db/**` in `Owns` and never stated the import surface, so the implementer published no barrel and the test author, which had resolved the ambiguity in its own favour rather than reporting it, imported one. Amended above under *Public import surface*. D-02 through D-07 are genuine implementation defects and go back to Agent A. T-01 (raw NUL bytes) and T-02 (the session-writer candidate list omitting `sessionCookieHeader`, so five reds claim a broken round trip that direct invocation shows works) are test-branch defects and go back to Agent B.
   - 2026-08-13 orchestrator: **third partition fix**. `package.json` and `package-lock.json` were in no task's `Owns`, and the implementer had to modify both — a Postgres client cannot be added without them. Added to this task's `Owns`. The structural consequence is larger than the fix and is recorded here because it lands on every later wave: **dependency addition is a serialisation point across the whole plan.** Waves 2 to 6 run three tasks at once and any two that add a package collide in the lockfile, which is exactly the merge collision `T000` exists to prevent. Proposed remedy, for the wave-2 boundary: the orchestrator batches a wave's dependency additions onto the base branch before any task in it is claimed.
   - 2026-08-13 orchestrator: second partition fix on the base branch, before either session starts. `vitest.config.ts` collected `lib/**`, `components/**` and `scripts/**` only, so tests under `tests/server/**` would not have been collected at all and the test worktree would have reported zero tests as a pass. The glob now includes `tests/**/*.test.ts`. It is shared scaffolding that has to pre-exist both branches, so it belongs to neither task's `Owns` set and neither agent may edit it. Full suite re-run after the change: 92 files, 3625 tests, green. **Both worktrees must rebase on `backend` before starting.**
+  - 2026-08-13 implementer: impl-done, second pass. Rebased on `backend` at `4d5556a`
+    before starting; the three-way rebase conflicted only in this file's own Log and
+    State lines (my old `impl-done` entry against the orchestrator's amendments), kept
+    the orchestrator's side throughout since it was already the authoritative,
+    up-to-date account. All seven defects addressed; D-01 was triaged as the
+    contract's fault, not fixed differently for that.
+    **D-01**: published `lib/db/index.ts`, re-exporting `createDbClient`,
+    `getSharedDbClient`, `schema`, `migrate`/`migrateUp`, `rollback`/`migrateDown`,
+    `createObjectStore`, `keyForDigest`, `objectStorageConfigFromEnv`. Renamed the
+    object-storage factory `createObjectStorage` → `createObjectStore` to land on the
+    test contract's own first-choice candidate name. Fixing the barrel surfaced two
+    problems the missing file had been hiding: `queryFor`'s client-factory fallback
+    calls `createDbClient()` and then looks for `.query` on the result, which `DbClient`
+    (`{db, pool, close}`) never had — added a `query` method delegating to `pool.query`.
+    And `migrate`/`rollback` are resolved from the barrel and called with **zero**
+    arguments, no retry with other arg shapes the way the guard/notFound probes get —
+    so `migrateUp`/`migrateDown` stay pool-based internally (still what
+    `tests/support/db.ts` and `lib/db/migrate.test.ts` call directly) and the barrel
+    additionally exports self-contained `migrate()`/`rollback()` wrappers that open a
+    connection against `DATABASE_URL`, run, and close it. Also fixed a deep import this
+    barrel rule itself now forbids: `app/api/auth/github/callback/route.ts` imported
+    `@/lib/db/client` directly.
+    **D-02**: `problem()`, `notFound()`, `unauthorized()`, `badRequest()`, `conflict()`
+    now take the `Request` as their first argument and derive `instance` from
+    `new URL(request.url).pathname` inside `problem()` itself — every caller gets it
+    for free rather than being asked to remember a fifth argument. `notFound()`'s
+    `detail` now defaults to `"Not found."` so it is never dropped either.
+    `guard.ts` and both OAuth routes updated to the new signature.
+    **D-03**: `parseCookieHeader` wraps `decodeURIComponent` per cookie in try/catch;
+    a malformed one is dropped, not thrown, and does not take the others with it.
+    Falsified: reverted the guard, watched `cookie.test.ts` fail with the exact
+    `URIError` two ways, restored it.
+    **D-04**: validated in `keyForDigest` against `/^sha256:[0-9a-f]{64}$/`, matching
+    `lib/core/archive/store.ts`'s own digest shape — empty, malformed and
+    traversal-shaped digests are refused before ever reaching S3. `putObject`,
+    `getObject` and the new `deleteObject` all take the digest directly (not a
+    pre-derived key) and call `keyForDigest` internally, so every verb inherits the
+    guard from one place. Matches the blind contract's own calling convention
+    (`objectStoreFor` calls `put(digest, content)` / `get(digest)` on the client
+    directly, never pre-transforming).
+    **D-05**: `createDbClient` attaches `pool.on("error", ...)` so a terminated idle
+    connection logs instead of taking the process down.
+    **D-06**: `migrateUp`/`migrateDown` now hold one client for their whole run and
+    wrap it in `pg_advisory_lock`/`unlock` on a fixed key, so concurrent callers —
+    including from separate pools, the way separate app instances would — serialise
+    instead of racing the tracking table and the DDL that reads it. Added a
+    same-key lock to `migrateDown` too: an up and a down racing each other is the
+    identical hazard, and D-06 named the runner, not one direction of it. Added a
+    4-pool concurrent `migrateUp` test (`migrate.test.ts`) alongside the existing AC1
+    concurrency case.
+    **D-07**: the callback's 502 detail is now a fixed string; `err.message` (which
+    can be `"GITHUB_CLIENT_SECRET is not set"`, straight from `requiredEnv`) never
+    reaches the response body.
+    **`target_actor`** (contract amendment): added to `schema.ts` and both migration
+    directions — one row per `(target_id, account_id, kind)`, `kind` a new
+    `target_actor_kind` enum (`star` | `note_vote`), unique index doubling as the
+    idempotency guarantee. `tests/support/db.ts`'s truncate order and
+    `lib/db/migrate.test.ts`'s `EXPECTED_TABLES` updated; `schema.test.ts` gained a
+    round-trip test asserting the duplicate insert is refused.
+    `package.json`/`package-lock.json`: no dependency changes were needed for any of
+    the above (`@aws-sdk/client-s3` already carries `DeleteObjectCommand`), so nothing
+    to touch there this round beyond them being correctly in `Owns` now.
+    Gates on this tree, stack up (`docker compose up -d`): `typecheck` and `lint`
+    clean; `build` green; `test` 3738/3744 passed, 109/111 files. The 6 reds are
+    exactly T-01 (`components/build/source-hygiene.test.ts`, the raw NUL bytes in
+    `tests/server/{envelope,object-store}.test.ts`) and T-02 (5 reds in
+    `tests/server/session.test.ts`, all tracing to `validCookie()`: `WRITE_NAMES`
+    resolves to `encodeSession`, which returns a bare signed token with no `name=`
+    prefix and no `;`, so `cookieHeaderFrom` passes it through unprefixed and
+    `parseCookieHeader` — correctly — never sees an `=` to parse) — both already
+    triaged to the test branch in the entry above this one, neither touched here.
+    No ambiguity encountered that wasn't already resolved by this section's own
+    amendments; nothing to report as newly open.
 
 ### T010, Archive persistence: bundles, releases, bytes
 

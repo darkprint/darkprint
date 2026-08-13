@@ -7,8 +7,7 @@
    FK-safe delete order wrong differently.
    ============================================================ */
 
-import { createDbClient, schema, type DbClient } from "@/lib/db/client";
-import { migrateUp } from "@/lib/db/migrate";
+import { createDbClient, migrateUp, schema, type DbClient } from "@/lib/db";
 import { testEnv } from "./env";
 
 /** A client against `DATABASE_URL`, migrated to current. Caller closes it (`client.close()`). */
@@ -20,6 +19,7 @@ export async function createTestDbClient(): Promise<DbClient> {
 
 /** Children before the parents they reference — mirrors `migrations/0001_init.down.sql`. */
 const TABLES_CHILDREN_FIRST = [
+  schema.targetActor,
   schema.target,
   schema.release,
   schema.ontologyTerm,

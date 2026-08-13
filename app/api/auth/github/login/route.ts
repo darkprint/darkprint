@@ -20,7 +20,7 @@ export async function GET(request: Request): Promise<Response> {
     // GITHUB_CLIENT_ID is not set yet — expected until a GitHub OAuth App exists
     // (T000's environment contract). The guard this route sits in front of does not
     // need this to work; only the OAuth round trip itself does.
-    return badRequest("GitHub OAuth is not configured on this deployment.");
+    return badRequest(request, "GitHub OAuth is not configured on this deployment.");
   }
 
   return new Response(null, {

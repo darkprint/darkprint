@@ -105,6 +105,31 @@ describe.skipIf(!hasDb)("lib/db/schema", () => {
     expect(readRelease.cardRefs).toEqual(["solver-a@1.0.0"]);
   });
 
+  it("target_actor: one row per (target, account, kind) — the idempotency key T150/T170 need", async () => {
+    const { db } = client;
+    const [owner] = await db
+      .insert(schema.account)
+      .values({ githubId: "gh-actor", githubLogin: "actor" })
+      .returning();
+    const [target] = await db
+      .insert(schema.target)
+      .values({ kind: "blueprint", refId: "some-bundle-id" })
+      .returning();
+
+    await db.insert(schema.targetActor).values({ targetId: target.id, accountId: owner.id, kind: "star" });
+
+    // Starring twice is the exact case this table exists for: the second insert must
+    // fail the unique constraint, not silently succeed and double-count.
+    await expect(
+      db.insert(schema.targetActor).values({ targetId: target.id, accountId: owner.id, kind: "star" }),
+    ).rejects.toThrow();
+
+    // A different kind on the same (target, account) is a different row.
+    await expect(
+      db.insert(schema.targetActor).values({ targetId: target.id, accountId: owner.id, kind: "note_vote" }),
+    ).resolves.toBeDefined();
+  });
+
   it("refuses a second bundle at the same (owner, slug) — B-06/B-09", async () => {
     const { db } = client;
     const [owner] = await db.insert(schema.account).values({ githubId: "gh-2", githubLogin: "x" }).returning();

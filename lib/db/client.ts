@@ -4,7 +4,7 @@
    connection string — nothing here assumes local infrastructure.
    ============================================================ */
 
-import { Pool, type PoolConfig } from "pg";
+import { Pool, type PoolConfig, type QueryResult, type QueryResultRow } from "pg";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 
@@ -13,6 +13,10 @@ export type Db = NodePgDatabase<typeof schema>;
 export interface DbClient {
   db: Db;
   pool: Pool;
+  query<T extends QueryResultRow = QueryResultRow>(
+    text: string,
+    params?: unknown[],
+  ): Promise<QueryResult<T>>;
   close(): Promise<void>;
 }
 
@@ -25,10 +29,20 @@ export { schema };
  */
 export function createDbClient(config: string | PoolConfig = requiredEnv("DATABASE_URL")): DbClient {
   const pool = typeof config === "string" ? new Pool({ connectionString: config }) : new Pool(config);
+  /**
+   * D-05: `pg` documents an idle client's connection dying (a restart, a failover, an
+   * admin `pg_terminate_backend`) as an `'error'` event on the pool. An `EventEmitter`
+   * with no listener for that event crashes the process on the next occurrence — and
+   * `getSharedDbClient` hands this one pool to every route handler in the app.
+   */
+  pool.on("error", (err) => {
+    console.error("lib/db: idle Postgres client error", err);
+  });
   const db = drizzle(pool, { schema });
   return {
     db,
     pool,
+    query: (text, params) => pool.query(text, params),
     close: () => pool.end(),
   };
 }

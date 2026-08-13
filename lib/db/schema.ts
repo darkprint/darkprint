@@ -35,6 +35,9 @@ export const visibility = pgEnum("visibility", ["public", "private"]);
 /** B-10's polymorphic target covers exactly these two kinds; T140 (saves) adds "term". */
 export const targetKind = pgEnum("target_kind", ["blueprint", "card", "term"]);
 
+/** What `target_actor` records an account did to a target — a star, or a note vote. */
+export const targetActorKind = pgEnum("target_actor_kind", ["star", "note_vote"]);
+
 /**
  * B-13: the only two subjects. `system` covers a state change no account initiated
  * (e.g. an ontology release re-scoring every affected bundle, B-08).
@@ -223,6 +226,25 @@ export const target = pgTable("target", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   uniqueIndex("target_kind_ref_id_key").on(t.kind, t.refId),
+]);
+
+/* --------------------- target_actor (amendment, 2026-08-13) --------------------- */
+
+/**
+ * `target` carries aggregate counters only — nothing records *who* acted, so T150's
+ * "starring twice yields 1" and T170's "a vote from one account counts once" have no
+ * idempotency-key storage to reach for, and every downstream task's `Owns` excludes
+ * this file. One row per `(target, account, kind)`; the unique index below is the
+ * idempotency guarantee itself, not just an index on top of one.
+ */
+export const targetActor = pgTable("target_actor", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  targetId: uuid("target_id").notNull().references(() => target.id),
+  accountId: uuid("account_id").notNull().references(() => account.id),
+  kind: targetActorKind("kind").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("target_actor_target_account_kind_key").on(t.targetId, t.accountId, t.kind),
 ]);
 
 /* --------------------- audit (B-14) --------------------- */

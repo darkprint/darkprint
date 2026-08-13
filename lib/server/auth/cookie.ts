@@ -35,7 +35,15 @@ export function parseCookieHeader(header: string | null): Record<string, string>
     if (eq === -1) continue;
     const name = part.slice(0, eq).trim();
     const value = part.slice(eq + 1).trim();
-    if (name) result[name] = decodeURIComponent(value);
+    if (!name) continue;
+    try {
+      // D-03: a stray percent sign in any one cookie (a third-party analytics cookie,
+      // an unrelated `theme=100%`) must not throw the whole header apart. A malformed
+      // cookie is an absent one — skip it and keep parsing the rest.
+      result[name] = decodeURIComponent(value);
+    } catch {
+      continue;
+    }
   }
   return result;
 }

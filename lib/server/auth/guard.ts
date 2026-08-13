@@ -16,5 +16,5 @@ import { getSession, type SessionPayload } from "./session";
  */
 export function requireSession(request: Request, secret?: string): SessionPayload | Response {
   const session = getSession(request, secret);
-  return session ?? unauthorized();
+  return session ?? unauthorized(request);
 }

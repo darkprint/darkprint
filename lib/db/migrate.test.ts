@@ -25,6 +25,7 @@ const EXPECTED_TABLES = [
   "ontology_version",
   "release",
   "target",
+  "target_actor",
 ];
 
 async function publicTableNames(pool: Pool): Promise<string[]> {
@@ -71,4 +72,35 @@ describe.skipIf(!hasDb)("lib/db/migrate", () => {
       await cleanup.end();
     }
   });
+
+  it("D-06: concurrent migrateUp callers from empty serialise instead of crashing", async () => {
+    const baseUrl = process.env.DATABASE_URL as string;
+    const dbName = `darkprint_migrate_race_${process.pid}_${Math.trunc(performance.now())}`;
+
+    const admin = new Pool({ connectionString: baseUrl });
+    await admin.query(`CREATE DATABASE "${dbName}"`);
+    await admin.end();
+
+    // Four separate pools, the way four app instances booting at once each hold their
+    // own — the advisory lock has to serialise across connections, not just within one.
+    const url = withDatabase(baseUrl, dbName);
+    const pools = Array.from({ length: 4 }, () => new Pool({ connectionString: url }));
+    try {
+      const results = await Promise.allSettled(pools.map((pool) => migrateUp(pool)));
+      const rejected = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+      expect(rejected.map((r) => String(r.reason))).toEqual([]);
+
+      const verify = new Pool({ connectionString: url });
+      try {
+        expect(await publicTableNames(verify)).toEqual(EXPECTED_TABLES);
+      } finally {
+        await verify.end();
+      }
+    } finally {
+      await Promise.all(pools.map((pool) => pool.end()));
+      const cleanup = new Pool({ connectionString: baseUrl });
+      await cleanup.query(`DROP DATABASE IF EXISTS "${dbName}"`);
+      await cleanup.end();
+    }
+  }, 60_000);
 });

@@ -13,7 +13,7 @@
    at all, not a shortcut taken here.
    ============================================================ */
 
-import { getSharedDbClient, schema } from "@/lib/db/client";
+import { getSharedDbClient, schema } from "@/lib/db";
 import {
   clearOAuthStateCookieHeader,
   readOAuthStateCookie,
@@ -31,13 +31,13 @@ export async function GET(request: Request): Promise<Response> {
   const cookieState = readOAuthStateCookie(request);
 
   if (providerError) {
-    return badRequest(`GitHub declined sign-in: ${providerError}`);
+    return badRequest(request, `GitHub declined sign-in: ${providerError}`);
   }
   if (!verifyOAuthState(cookieState, state)) {
-    return badRequest("OAuth state mismatch — the sign-in link may have expired.");
+    return badRequest(request, "OAuth state mismatch — the sign-in link may have expired.");
   }
   if (!code) {
-    return badRequest("Missing authorization code.");
+    return badRequest(request, "Missing authorization code.");
   }
 
   const redirectUri = new URL("/api/auth/github/callback", request.url).toString();
@@ -45,12 +45,16 @@ export async function GET(request: Request): Promise<Response> {
   let identity;
   try {
     identity = await resolveGithubIdentity({ code, redirectUri });
-  } catch (err) {
-    return problem({
+  } catch {
+    // D-07: no error response may carry an internal name — `err.message` here can be
+    // "GITHUB_CLIENT_SECRET is not set", straight from `requiredEnv`. The real cause
+    // (missing config vs. a genuine GitHub-side failure) is for server logs, not this
+    // public body.
+    return problem(request, {
       type: "https://darkprint.io/problems/github-oauth-failed",
       title: "GitHub sign-in failed",
       status: 502,
-      detail: err instanceof Error ? err.message : "Unknown error exchanging the GitHub code.",
+      detail: "GitHub sign-in failed. Try again.",
     });
   }
 

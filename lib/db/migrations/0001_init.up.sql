@@ -4,6 +4,7 @@
 CREATE EXTENSION IF NOT EXISTS vector;--> statement-breakpoint
 CREATE TYPE "public"."actor_kind" AS ENUM('owner', 'operator', 'system');--> statement-breakpoint
 CREATE TYPE "public"."audit_decision" AS ENUM('allowed', 'denied', 'error');--> statement-breakpoint
+CREATE TYPE "public"."target_actor_kind" AS ENUM('star', 'note_vote');--> statement-breakpoint
 CREATE TYPE "public"."target_kind" AS ENUM('blueprint', 'card', 'term');--> statement-breakpoint
 CREATE TYPE "public"."visibility" AS ENUM('public', 'private');--> statement-breakpoint
 CREATE TABLE "account" (
@@ -111,6 +112,14 @@ CREATE TABLE "target" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "target_actor" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"target_id" uuid NOT NULL,
+	"account_id" uuid NOT NULL,
+	"kind" "target_actor_kind" NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 ALTER TABLE "audit" ADD CONSTRAINT "audit_actor_id_account_id_fk" FOREIGN KEY ("actor_id") REFERENCES "public"."account"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "bundle" ADD CONSTRAINT "bundle_owner_id_account_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."account"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "bundle" ADD CONSTRAINT "bundle_lineage_owner_id_account_id_fk" FOREIGN KEY ("lineage_owner_id") REFERENCES "public"."account"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -119,6 +128,8 @@ ALTER TABLE "handle_reservation" ADD CONSTRAINT "handle_reservation_account_id_a
 ALTER TABLE "ontology_term" ADD CONSTRAINT "ontology_term_ontology_version_id_ontology_version_id_fk" FOREIGN KEY ("ontology_version_id") REFERENCES "public"."ontology_version"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "release" ADD CONSTRAINT "release_bundle_id_bundle_id_fk" FOREIGN KEY ("bundle_id") REFERENCES "public"."bundle"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "release" ADD CONSTRAINT "release_scored_ontology_version_id_ontology_version_id_fk" FOREIGN KEY ("scored_ontology_version_id") REFERENCES "public"."ontology_version"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "target_actor" ADD CONSTRAINT "target_actor_target_id_target_id_fk" FOREIGN KEY ("target_id") REFERENCES "public"."target"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "target_actor" ADD CONSTRAINT "target_actor_account_id_account_id_fk" FOREIGN KEY ("account_id") REFERENCES "public"."account"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE UNIQUE INDEX "account_github_id_key" ON "account" USING btree ("github_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "account_handle_key" ON "account" USING btree ("handle");--> statement-breakpoint
 CREATE INDEX "audit_actor_id_idx" ON "audit" USING btree ("actor_id");--> statement-breakpoint
@@ -132,4 +143,5 @@ CREATE UNIQUE INDEX "ontology_term_version_term_key" ON "ontology_term" USING bt
 CREATE UNIQUE INDEX "ontology_version_version_key" ON "ontology_version" USING btree ("version");--> statement-breakpoint
 CREATE UNIQUE INDEX "release_bundle_version_key" ON "release" USING btree ("bundle_id","version");--> statement-breakpoint
 CREATE INDEX "release_digest_idx" ON "release" USING btree ("digest");--> statement-breakpoint
-CREATE UNIQUE INDEX "target_kind_ref_id_key" ON "target" USING btree ("kind","ref_id");
+CREATE UNIQUE INDEX "target_kind_ref_id_key" ON "target" USING btree ("kind","ref_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "target_actor_target_account_kind_key" ON "target_actor" USING btree ("target_id","account_id","kind");
