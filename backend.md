@@ -1635,6 +1635,33 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     to fix. Verified against the tree rather than the amendment note:
     `lib/core/ontology/resolve.ts:327-336` does emit `ontology/dangling-pointer` at `error`
     severity for a `deprecated.replacedBy` naming no term, so the withdrawal is right.
+  - 2026-08-14 test author: rebased onto `e5e232d` and **withdrew the wrong assertion**. "reads
+    a repeated pin as the same set" was mine, it was wrong, and the three facts that make it
+    wrong are checked in this tree rather than taken from the amendment:
+    `lib/core/hash/digest.ts:62` sorts `cardDigests` and does not deduplicate them;
+    `lib/db/schema.ts:156` says pinning one card twice is a different digest in as many words;
+    and `lib/core/bundle/resolve.ts:749` feeds the digest `nodes.map((n) => n.digest)`, one
+    entry per node. Multiplicity reaches identity and order cannot, so inference has to match.
+    152 tests, all red on the absent module, no todo. The multiset block asserts: order never
+    changes the answer (three tests, including the `[a@1] → [a@1, a@2]` versus
+    `[a@1] → [a@2, a@1]` pair that flipped patch/major in round 2, and a rotation sweep over a
+    longer list); a pure duplicate added or dropped is at least `patch` and never `none`; a
+    second node repinned across a major is `major`, with an end-to-end test feeding that
+    inference to `checkDeclaredBump` so a major repin cannot ship as a patch release; a moved
+    version is priced by `declaredBump` on that pair at all three levels; an id losing every
+    occurrence is `major` and a new id is `minor`. A separate block holds seven shapes of
+    unparseable ref to the floor the contract states — never `none` — and nothing above it.
+    Three weaker AC-2 assertions ("not the baseline") were deleted rather than kept beside the
+    exact-level ones that dominate them. Re-falsified: 25 breakages, all discriminating. The
+    five new ones land precisely — dedupe back to a set (2 red), pairing by first occurrence
+    (2, and they are the two defects the adversary demonstrated), an unsorted version list
+    (2), a rollback priced `none` (1), unparseable refs dropped (5), multiplicity ignored (2).
+  - 2026-08-14 test author: **one residual silence, floor-bound and reported.** "a version
+    that moved is priced by `declaredBump` on that pair" and the identity argument disagree on
+    a rollback: `declaredBump("2.0.0", "1.0.0")` is `none`, because a downgrade declares no
+    bump, while `cardDigests` and therefore the digest did move. The test asserts only the
+    floor — not `none` — and pins no level above it, so either ruling passes. Worth settling
+    before T100, which will hit it the first time an author pins back to an older card.
 
   **Ruling, round 5: an ambiguous pairing infers the *most* expensive plausible reading, never the cheapest.** `cardRefs` carries no node identity, so when one card id both loses and gains versions there is no fact about which pin moved where — some policy must be chosen and the contract named none. The choice is settled by B-04's purpose and by round 1's sibling ruling, which already went this way: never answer less than you can justify for input you could not read. Refusing an under-declared bump is the whole reason this check exists, so of the readings the data permits, the inference takes the one that demands the largest declared bump. Over-answering costs an author a version number they did not strictly need; under-answering ships a breaking change as a patch, and nothing downstream re-checks it.
 

@@ -161,6 +161,28 @@ describe("checkDeclaredBump: `subject` picks the code, and the function owns the
     // which is the exact hole the parameter was added to close — so it may not answer "fine".
     neverSilentlyAccepts(() => fn(subject, "1.0.0", "1.1.0", analysis("major", ["gone"])), WHERE);
   });
+
+  it.each([
+    { name: "a subject outside the union", subject: "blueprint" },
+    { name: "the empty string", subject: "" },
+    { name: "undefined", subject: undefined },
+  ])("emits no uncodeable diagnostic for $name", async ({ subject }) => {
+    const fn = await checkDeclaredBump();
+    // "A diagnostic always carries a classifiable `code`." Throwing satisfies that; so does
+    // refusing under a real code. What does not is a diagnostic whose `code` is `undefined`,
+    // because T020, T030 and T100 filter by code and nothing can filter that. `asDiagnostics`
+    // is what holds the shape, so the assertion is that it passes.
+    let returned: unknown;
+    try {
+      returned = fn(subject, "1.0.0", "1.1.0", analysis("major", ["gone"]));
+    } catch {
+      return; // a throw is a classifiable answer: the caller cannot mistake it for "fine"
+    }
+    const ds = asDiagnostics(returned, WHERE);
+    for (const d of ds) {
+      expect(Object.keys(SUBJECT_CODES).some((s) => d.code === SUBJECT_CODES[s as Subject])).toBe(true);
+    }
+  });
 });
 
 describe("checkDeclaredBump: what `at least the inferred level` means", () => {
