@@ -129,6 +129,10 @@ describe("inferBlueprintBump, a version move is priced by magnitude, not directi
     ["major", "2.0.0", "1.0.0"],
     ["minor", "1.1.0", "1.0.0"],
     ["patch", "1.0.1", "1.0.0"],
+    // compareSemver ranks a prerelease below its release, so this pair is a
+    // patch move in either direction — never major, which the wrong
+    // shortcut ("major whenever declaredBump says none") would give.
+    ["patch", "1.0.0", "1.0.0-rc.1"],
   ] as const)("prices a %s rollback the same as the matching forward move", (level, higher, lower) => {
     const forward = inferBlueprintBump(
       next({ dot: "digraph {}", cardRefs: [`solver@${lower}`] }),
