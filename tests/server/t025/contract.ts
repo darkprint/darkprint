@@ -15,20 +15,15 @@
    into exactly the per-criterion red the hand-off is supposed to
    produce. The specifier stays a literal so the `@` alias resolves.
 
-   ── why the barrel, and the gap it papers over ──
-   backend.md §T025's **Published signatures** block names three
-   functions and one interface and does **not** name the module they
-   are published from. That is the D-01 shape of defect and it is
-   reported to the orchestrator rather than resolved here. What this
-   file binds to is not a guess between candidates — there is exactly
-   one specifier consistent with the rule this repository already
-   states in `lib/core/index.ts` ("The one module the app imports …
-   Deep paths are internal and may be rearranged, so nothing outside
-   should reach for one") and with T025's `Owns: lib/server/versioning/**`:
-   the barrel at `@/lib/server/versioning`, the same shape as
-   `@/lib/server/http` and `@/lib/server/auth`, both of which T000
-   merged. A capability that turns out to live at a deep path instead
-   is a barrel that should re-export it, and that is worth a red.
+   ── why the barrel ──
+   backend.md §T025 now states it: "All four are published from the
+   barrel `@/lib/server/versioning`. Deep paths are not the public
+   interface". The first round of these tests bound to that specifier
+   as an inference — the only one consistent with the rule
+   `lib/core/index.ts` states and with the two barrels T000 merged —
+   and reported the gap. It is a contract now rather than a reading,
+   so a capability that turns up at a deep path instead is a barrel
+   that should re-export it, and that is worth a red.
 
    ── one tier of binding, and no candidate lists ──
    Every name this task publishes is bound *exactly*, and its absence
@@ -42,13 +37,14 @@
    where it has none the orchestrator hears about it.
 
    ── why nothing here reads `tests/support/**` ──
-   The hand-off forbids it. T000 has since merged that directory onto
-   `backend`, so the stated reason ("it does not exist on this
-   branch") no longer holds after the rebase — reported, and the
-   prohibition followed anyway, because T025 is a pure service that
-   stores nothing and needs no database, no object store and no
-   fixture harness. Nothing in this suite touches a database, so
-   there is no database to create, isolate or drop.
+   T000 merged that directory onto `backend`, so the hand-off's
+   stated reason ("it does not exist on this branch") is stale after
+   the rebase. The prohibition outlives its reason: the
+   implementation branch owns that path, and a test branch that
+   depends on it is a test branch that can be broken by a change it
+   cannot see. Moot here in any case — T025 is a pure service that
+   stores nothing, so nothing in this suite touches a database and
+   there is none to create, isolate or drop.
    ============================================================ */
 
 import type { BumpAnalysis, BumpLevel, Diagnostic, Severity } from "@/lib/core";
@@ -101,9 +97,25 @@ export const PUBLISHED = {
     "inferOntologyBump(previous: readonly OntologyTerm[], next: readonly OntologyTerm[]): " +
     "BumpAnalysis",
   checkDeclaredBump:
-    "checkDeclaredBump(previous: string, declared: string, inferred: BumpAnalysis): " +
-    "Diagnostic[]",
+    'checkDeclaredBump(subject: "card" | "bundle" | "ontology", previous: string, ' +
+    "declared: string, inferred: BumpAnalysis): Diagnostic[]",
 } as const;
+
+/**
+ * "otherwise one diagnostic at **`error`** severity carrying the engine's own `reasons`,
+ * with the code mapped from `subject`: `card/`, `bundle/` or `ontology/version-bump-too-small`."
+ *
+ * The mapping is the function's, not the caller's — that is the whole point of the closed
+ * union — so it is asserted here rather than left to whoever calls it. All three codes are
+ * in `@/lib/core`'s `DiagnosticCode`.
+ */
+export const SUBJECT_CODES = {
+  card: "card/version-bump-too-small",
+  bundle: "bundle/version-bump-too-small",
+  ontology: "ontology/version-bump-too-small",
+} as const;
+
+export type Subject = keyof typeof SUBJECT_CODES;
 
 /** What a value is, for a failure message that does not make the reader go looking. */
 function describe(value: unknown): string {
