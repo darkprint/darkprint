@@ -67,6 +67,21 @@ the protocol rather than a decision inside it.
   being contract defects rather than code, which is convergence. Cycling without that fall is
   reported, not burned through.
 
+## Never use `git stash` in a worktree
+
+**The stash is repo-global, not per-worktree.** T025's implementer stashed to check whether
+some typecheck errors predated its work, then popped on reflex and landed a stash belonging to
+`feat/core-engine-ontology-v0.1` — thirteen conflicted files in paths it did not own. It
+recovered without dropping the entry (a conflicted `pop` does not drop), and `stash@{0}` is
+verified intact, but the next session to do this may not be as careful.
+
+With six to nine worktrees on one repository, `git stash` is a shared mutable global with no
+owner. To check whether something predates your work, use `git diff HEAD`, a scratch clone, or
+`git worktree add` a throwaway — never the stash.
+
+**Someone owns that stash.** `stash@{0}: WIP on feat/core-engine-ontology-v0.1` is still there
+and is not ours; leave it for its owner to pop.
+
 ## The contract must name the interface, not only the behaviour
 
 Learned the expensive way in T000, and it binds every task in this file from here on.
