@@ -163,7 +163,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | claimed | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | reverted | adversary round 2 FAIL: round-1 defects all fixed, but `pinsById` first-occurrence-wins hides a repin on every node after the first pinning the same card id — a major repin infers `patch` and a patch release is accepted; set-vs-multiset conflicts with `lib/db/schema.ts:155-157`, reported not resolved |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | impl-done | round 3: pin comparison rebuilt as a multiset (`e5e232d`) and version moves priced by magnitude, not direction (`4b8de07`); merged Agent B's rewrite (`78fcdf2`), confirmed `1.0.0-rc.1 ↔ 1.0.0` prices `patch` not major. typecheck/lint/build clean; `tests/server/t025`+scratch 201/201; full suite 3963/3963 on three consecutive runs |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | claimed | — |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -809,7 +809,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T025, Versioning service: semver, digest, bump, chains
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t025-versioning` on `feat/t025-versioning`
 - **Test worktree:** `../darkprint-wt-t025-versioning-tests` on `test/t025-versioning`
 - **Depends on:** T000 (contract: types)
@@ -1155,6 +1155,28 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     catch the rule from opposite sides — keeping the direction prices a major rollback down to
     a patch (4 red), and the always-major shortcut prices a minor and a patch rollback up (4
     red, including the prerelease pair that only this one catches).
+  - 2026-08-14 implementer: unblocked. Confirmed the prerelease pair by execution rather
+    than reasoning: added `["patch", "1.0.0", "1.0.0-rc.1"]` to the scratch rollback table
+    and ran it — `repinMagnitude` orders with `compareSemver` first, `compareSemver`
+    ranks a prerelease below its release, so both directions price `patch`, never the
+    `major` the "always-major-on-none" shortcut would give. Merged `test/t025-versioning`
+    at `78fcdf2` to pick up Agent B's rewrite; took both rewritten test files
+    (`blueprint-bump.test.ts`, `card-chain.test.ts`) entirely via `--theirs`, since
+    `tests/server/**` is Forbidden to author or edit. The `backend.md` conflict was
+    resolved per the `e8ab013` rule: contract prose (Published signatures through Out of
+    scope) was already byte-identical to `backend` on both sides — verified by diff, not
+    assumed — so there was nothing to choose there. The four conflicting Log stretches
+    were reordered by hand into one causal narrative rather than resolved by picking a
+    side, since both are real history: adversary round 1 FAIL → my round-1 fix →
+    adversary round 2 FAIL (flags the set-vs-multiset conflict) → [`e5e232d`] → my
+    multiset fix → Agent B's withdrawal of the wrong assertion → Agent B's
+    residual-silence note on rollback direction → [`4b8de07`] → my direction-independence
+    fix → Agent B's final settle. No entry dropped or edited, only reordered to when it
+    actually happened relative to the two rulings it responds to. **Gates:**
+    `npm run typecheck`, `npm run lint`, `npm run build` clean, no unexpected diff.
+    `npx vitest run tests/server/t025 lib/server/versioning`: **201/201**. `npm test`,
+    full suite, three consecutive runs: **3963/3963** each time, byte-identical. Reported
+    result to orchestrator.
 
 ### T060, Authorization policy: owner and operator
 
