@@ -10,11 +10,16 @@ inside the task is still unsettled. A task with no Open line has a contract deri
 
 ## Live slots
 
+**Base branch is `backend`, not `main`.** The protocol says `main` throughout; `main` and `backend`
+were identical at `8a9801e` when this run started, the work and these three documents live on
+`backend`, and worktrees branched from `main` would not contain this file. Substitute `backend`
+wherever `docs/ORCHESTRATION.md` says `main`. Recorded here rather than assumed.
+
 | Slot | Task | Worktree | State |
 |---|---|---|---|
-| 1 | — | — | empty |
-| 2 | — | — | empty |
-| 3 | — | — | empty |
+| 1 | T000 | `../darkprint-wt-t000-foundation` | claimed |
+| 2 | — | — | empty (T000 runs alone) |
+| 3 | — | — | empty (T000 runs alone) |
 
 ## Decisions
 
@@ -49,7 +54,7 @@ it does not decide differently inside a worktree.
 
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
-| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example` | — | — | todo | — |
+| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example` | `../darkprint-wt-t000-foundation` | `feat/t000-foundation` | claimed | — |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | — | — | todo | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | — | — | todo | — |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | — | — | todo | — |
@@ -183,7 +188,9 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T000, Foundation: schema, client, envelope, GitHub session, harness
 
-- **State:** todo
+- **State:** claimed
+- **Worktree:** `../darkprint-wt-t000-foundation` on `feat/t000-foundation`
+- **Test worktree:** `../darkprint-wt-t000-foundation-tests` on `test/t000-foundation`
 - **Depends on:** —
 - **Blocks:** every task
 - **Owns:** `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`
@@ -195,6 +202,8 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 - **Out of scope:** any route serving a domain object, any feature logic, any read model.
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-01, B-02, B-03.
+  - 2026-08-13 orchestrator: partition amendment before claim. `tests/server/**` moved to the test branch's sole ownership and an environment contract published in this section, because Agent B's worktree branches before Agent A commits and any test importing `tests/support/**` would fail on a bad import, which the protocol calls a broken test rather than a red one. `compose.yaml` and `.env.example` added to Owns.
+  - 2026-08-13 orchestrator: claimed. Worktrees created from `backend` at `e29f64a`; slot 1 occupied, slots 2 and 3 left empty because T000 runs alone.
 
 ### T010, Archive persistence: bundles, releases, bytes
 
