@@ -254,25 +254,35 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   This binds every task from T010 on, all of which share the same stack. Corrected 2026-08-13 after the adversary caught both defects in the amendment's first wording, within the hour it was written.
 - **Contract:** domain types are re-exported from `lib/core/**` and `lib/types.ts`, never restated (B-01). Storage is split: an S3-compatible client keyed by digest for bytes, Postgres for the index. The envelope is B-03 — a handler returns its payload at 200, including payloads that carry `diagnostics: Diagnostic[]` describing failure of the *content*; transport, auth and shape failures return `application/problem+json` per RFC 9457 with `type`, `title`, `status`, `detail`, `instance`; a resource the caller may not see returns 404. Session is a GitHub OAuth cookie (B-02) exposing `{ accountId, handle }` or nothing. Schema covers the tables every later task extends: `account`, `handle_reservation`, `bundle`, `release`, `card_version`, `ontology_version`, `ontology_term`, `target`, `target_actor`, `audit`. **`target_actor` is an amendment (2026-08-13)**, raised by the implementer and accepted: `target` carries aggregate counters but nothing records *who* acted, so T150's "starring twice yields 1" and T170's "a vote from one account counts once" would have had no idempotency storage to reach for — and every downstream task's `Owns` excludes `lib/db/**`, so they could not have added it themselves. One row per `(target, account, kind)`, where kind distinguishes a star from a note vote.
 - **Acceptance criteria:** (1) migrations apply to an empty database and are idempotent on re-run; (2) rollback returns the schema to the prior state; (3) a request with no session reaching a guarded handler receives a `problem+json` 401 and no body from the handler; (4) a handler returning diagnostics returns 200 and the diagnostics survive serialisation intact, including `location`; (5) an object written to storage under a digest reads back byte-identical; (6) every type exported from `lib/server/types.ts` is the engine's own, verified by identity not by shape.
-- **Open** (raised by the test author 2026-08-13, reported rather than resolved): the test-isolation
-  amendment says AC1's empty database is one the test itself created, and `tests/server/migrations.test.ts`
-  still uses the shared one. It reaches Postgres only through the client `@/lib/db` publishes, and that
-  client reads `DATABASE_URL`; nothing in the contract says whether it can be pointed anywhere else. So
-  the rule is not implementable from the test branch without one of three answers, and all three are the
-  orchestrator's to give:
-  1. the published client factory accepts a connection string or options, and the tests create
-     `darkprint_t000_<pid>`, migrate into it, and drop it;
-  2. the tests set `process.env.DATABASE_URL` before the first import of `@/lib/db`, which works only if
-     the client reads the variable lazily. That is an implementation detail the contract does not pin, and
-     a test resting on an unpinned detail is a broken test the day it changes;
-  3. the rule binds T010 onward, which own no migrations, and T000's own migration tests keep the shared
-     database, since the schema they apply and roll back *is* that database's schema.
+- **Open** (rewritten by the test author 2026-08-13, round 3). Both questions the last round raised are
+  answered, and one narrower one takes their place.
 
-  A second question rides on the same amendment. The storage tests now delete what they wrote, through a
-  candidate list (`remove`, `delete`, `deleteObject`, `del`, `erase`, `unlink`) that tolerates absence, so
-  a store with no delete published fails on AC5 or not at all, never on teardown. Should its absence
-  instead be a red of its own? Writing that test today would not be blind: the amendment's own reasoning
-  cites the adversary's findings, so the test author declined to write it and reports the question here.
+  *Closed.* The database-isolation question (the three candidate answers it listed are in the log entry
+  that raised them) went the way of the first candidate: `createDbClient(config?)` takes a connection
+  string and `migrateUp(target, dir?)` takes a pool or one, so `tests/server/migrations.test.ts` now
+  creates `darkprint_t000_<pid>`, drives it and drops it. Reporting it rather than resolving it was the
+  right call — the answer lived in code the test branch could not see, and the candidate list would have
+  resolved to `migrate`, the one function that could not be pointed anywhere. The delete question is
+  answered too: the contract publishes put, get **and** delete, so a store without one is now a red.
+
+  *Still open, and reported rather than resolved.* Four capabilities these tests need are not in the
+  Published signatures block, so they are still bound by candidate list, and a list is a guess that has
+  twice resolved to the wrong export. Naming them would retire the last of them:
+  1. the session **reader** — `readSession`, `getSession`, `sessionFromRequest`, `currentSession`;
+  2. the session **writer** — `createSessionCookie`, `sessionCookie`, `sessionCookieHeader`,
+     `setSessionCookie`, then the encoder names, read first-match-wins because a cookie writer that
+     exists must be reached before an encoder that also exists (this is T-02, and the order is the fix);
+  3. the **200 payload helper** on `@/lib/server/http` — `ok`, `okJson`, `jsonOk`, `respond`, `payload`,
+     `envelope`, `data`, `json`; and the **404 helper** — `notFound`, `notFoundProblem`,
+     `problemNotFound`, `hidden`, `missing`. AC4 rests entirely on the first of these;
+  4. the client's **teardown**, which is optional here and never asserted on.
+
+  A fifth is a parameter list rather than a name. The contract publishes `keyForDigest(digest)` beside
+  put, get and delete and does not say which of the two supplies the key, so three readings are live:
+  `put(keyForDigest(digest), content)`, `put(digest, content)`, and `put(content) -> address`. The tests
+  resolve it once against a probe, in that order, and report the resolution; key-first because
+  `keyForDigest` is published beside the verbs, and bytes-only last because handing a two-megabyte string
+  to a `put(key, content)` store would try to write it *as a key*.
 - **Out of scope:** any route serving a domain object, any feature logic, any read model.
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-01, B-02, B-03.
@@ -450,6 +460,11 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     and `lint` clean; `build` green; `test` run three times consecutively, identical
     every time — 3740/3749 passed, 110/111 files, the 9 reds all
     `tests/server/migrations.test.ts` as above.
+  - 2026-08-13 test author, round 3, **the named signatures bound exactly, and the lists retired with them**. Seven names are settled by the Published signatures block and are now bound by `required`/`requiredFn`, whose red quotes the clause that names the export and says in as many words that this is a failed acceptance criterion and not a naming difference: `withSession`, `migrateUp`, `migrateDown`, `createDbClient`, `getSharedDbClient`, `createObjectStorage`, `keyForDigest`, and put, get and delete on `ObjectStorage`. The guard's argument-shape probe went with them, because `withSession(request, handler)` is stated and there is nothing left to discover. Four capabilities are still unnamed and still bound by list; they are under **Open** above, reported rather than settled. The reason for the split, written down once so it does not have to be relearned: a list that resolves to *nothing* throws a message naming what it looked for, and a list that resolves to the *wrong thing* reports a defect that does not exist and sends somebody looking for it. That cost a cycle on `encodeSession` in round 1 and a cycle on `migrate` in round 2. Suite is now 71 tests in six files.
+  - 2026-08-13 test author, round 3, **`tests/server/migrations.test.ts` creates and drops its own database**, which is this branch's half of D-08. It creates `darkprint_t000_<pid>` from the maintenance database, points a client at it with `createDbClient(<connection string>)`, drives `migrateUp`/`migrateDown` against it, and drops it with `FORCE` in `afterAll`. One database for the file rather than one per test: the rule's purpose is that nothing outside this suite can observe or disturb what it does, and the tests inside run in declaration order in one worker with every empty-schema case rolling itself down first. Nothing sweeps other names, because dropping a database another process might be driving is the exact failure the rule exists to prevent, and a leaked scratch database is inert. Two things are new rather than moved. **The premise is checked, not assumed**: the harness asks `select current_database()` and refuses to continue unless the answer is the database it just created, since a `createDbClient` that takes a connection string and connects to `DATABASE_URL` anyway would leave this file on the shared database with every assertion still passing. And **one test drives the string form on purpose**, into a database of its own, and asserts that a second database created beside it stays empty. That is the D-08 shape stated as an assertion: a migrate that accepts a target and then reads `DATABASE_URL` anyway passes everything else in the file.
+  - 2026-08-13 test author, round 3, **evidence that the isolation actually isolates**. Run against a throwaway correct implementation in a scratch directory, aliased in through a temporary config, against Postgres and MinIO containers of this author's own on spare ports, and never written into this worktree. 71 of 71 pass. Three consecutive runs: 71, 71, 71, where round 2's shared-database design gave 6, 6 and 3 failures. Two copies of the migration suite started at the same time: 12 of 12 each, both green, which is the collision itself and not a proxy for it. After the run, 0 scratch databases left, 0 objects left in the bucket, and 0 tables in the shared `darkprint` — the suite never touched it.
+  - 2026-08-13 test author, round 3, **the guards falsified again, the four new ones included**. Sixteen deliberately broken variants, each run against the same blind suite. The four that are new to this round: a `migrateUp` that ignores its target and reads `DATABASE_URL` fails 6 of 12 including the target test; a module publishing `migrate`/`rollback` instead fails 11 of 12, each naming `exports no migrateUp`, where round 2's list bound it silently; an auth module publishing `requireSession` fails 9 naming `exports no withSession`, where round 2 passed the handler into the secret's position and it reached `createHmac` as an HMAC key; an `ObjectStorage` with no delete fails 14 of 15 naming the missing verb, where the first pass had 13 of 13 pass and teardown stay silent. The rest still discriminate, and the ones that should be narrow are narrow: a guard that runs the handler and then replaces its answer with the 401 fails 5 AC3 tests while still returning 401; an envelope that pads absent optionals to `null` fails 7 and one that re-sorts diagnostics fails exactly 1; a store that normalises unicode fails exactly 1; a `keyForDigest` that maps every digest onto one key fails 6; a guard that hands the handler the `Request` instead of the session fails exactly 1; a runner that re-applies on every run fails 9 and one that merely drops the advisory lock fails exactly 1, the cold-boot race; a `lib/server/types.ts` that restates `Diagnostic` with the engine's exact shape fails 3; an auth module publishing only the token encoder fails 11 as `BindingError`; a reader that never verifies the signature fails exactly 1, the single-character sweep.
+  - 2026-08-13 test author, round 3, **one gap found this way and closed, and one test defect found and fixed**. The gap: a `createDbClient` that ignores the connection string it is handed produced a single red, because the whole file then ran consistently against the shared database and eleven tests passed there. That is D-08 reproduced with the fix in place, so the `current_database()` premise check above was added; the same variant now fails 11 of 12 with a sentence naming what happened. The defect: the storage facade's `get` and `delete` were arrows returning `Promise.resolve(fn(...))`, and mapping an address through `keyForDigest` can throw — the contract says it validates — so a malformed digest threw *synchronously*, past the caller's `.catch`, and the correct implementation reported 70 of 71 instead of 71. Both are now `async`, so the throw is a rejection the caller can handle. It was the throwaway run that caught it, before the merge rather than after, which is what that run is for.
 
 ### T010, Archive persistence: bundles, releases, bytes
 

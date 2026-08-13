@@ -25,30 +25,34 @@
    them is either a deep path that the barrel should re-export or a
    write outside the task's `Owns` set, and both are worth a red.
 
-   ── why identifiers are resolved from a candidate list ──
-   The contract pins behaviour: migrations idempotent on re-run, a
-   digest that reads back byte-identical, the five RFC 9457 members,
-   401 for no session, 404 rather than 403. It pins no function name
-   anywhere. A test that goes red because the implementer wrote
-   `runMigrations` where this file guessed `migrate` is a broken
-   test, not a red one, and the protocol says to fix those. So each
-   capability is looked up by a short list of names taken from the
-   contract's own vocabulary, and the failure message names the
-   capability, the module and every name tried. The first entry in
-   each list is the name these tests declare canonical; the T000 log
-   in `backend.md` carries the lists so the ambiguity sits on the
-   record instead of buried in a helper.
+   ── two tiers of binding, and why the lists shrank ──
+   `backend.md` now carries a **Published signatures** block for
+   T000, and the rule above it: "every task's Contract section states
+   the exact exported signatures of its public surface". So a name
+   the contract publishes is bound *exactly* and its absence is a
+   red — `required` and `requiredFn` below, whose message quotes the
+   clause that names it.
 
-   ── and why every list is checked for kind ──
-   A list that resolves to nothing throws a message naming what it
-   looked for. A list that resolves to the *wrong* thing is worse: it
-   reports a defect that does not exist and sends somebody looking
-   for it. So a binding is only usable once the thing it bound to has
-   been shown to be the right kind — a guard that returns a
-   `Response`, a client that exposes `.query`, a store that exposes
-   put and get, a session writer whose output is a cookie rather than
-   the token inside one. That last check is `BindingError`, and it is
-   the one that was missing.
+   The candidate lists survive only where the contract still names
+   nothing: the session reader, the session writer, the two http
+   helpers, and the client's teardown. Those are reported as open in
+   the T000 log rather than treated as settled.
+
+   The reason for the split is two rounds of evidence. A list that
+   resolves to *nothing* throws a message naming what it looked for.
+   A list that resolves to the *wrong thing* reports a defect that
+   does not exist: round 1's list resolved `encodeSession` instead of
+   the cookie writer and produced five false reports of a broken
+   round trip, and round 2's resolved `migrate` — the one migration
+   function with no database parameter — so both suites drove the
+   shared database and each dropped the other's tables. Where the
+   contract has a name, guessing is worse than binding.
+
+   ── and why every remaining list is checked for kind ──
+   A binding is only usable once the thing it bound to has been shown
+   to be the right kind of thing: a session writer whose output is a
+   cookie rather than the token inside one. That check is
+   `BindingError`, and it is a broken test rather than a red.
 
    ── why nothing here reads `tests/support/**` ──
    The environment contract in `backend.md` puts that directory on
@@ -116,7 +120,7 @@ export function loadServerTypes(): Promise<Namespace> {
   return typesModule;
 }
 
-/* --------------------- capability resolution --------------------- */
+/* --------------------- what the contract publishes --------------------- */
 
 /** What a value is, for a failure message that does not make the reader go looking. */
 function describe(value: unknown): string {
@@ -125,6 +129,62 @@ function describe(value: unknown): string {
   if (value instanceof Response) return `a Response (${value.status})`;
   return typeof value;
 }
+
+/**
+ * The Published signatures block of `backend.md` §T000, quoted so a red says where the
+ * name comes from and not merely that a test wanted it. These are the whole of the named
+ * surface; anything not here is still unnamed and still goes through a candidate list.
+ */
+export const PUBLISHED = {
+  withSession:
+    "withSession(request, handler): Promise<Response> — the guard wraps, it does not " +
+    "return a union",
+  migrateUp: "migrateUp(target, dir?), where target is a pool or a connection string",
+  migrateDown: "migrateDown(target, steps?, dir?)",
+  createDbClient: "createDbClient(config?: string | PoolConfig)",
+  getSharedDbClient: "getSharedDbClient(), for route handlers only",
+  createObjectStorage: "createObjectStorage(config?)",
+  keyForDigest: "keyForDigest(digest)",
+  storageVerbs: "put, get and delete on ObjectStorage",
+} as const;
+
+/**
+ * A name the contract publishes. Absent is a red, and the red says so in as many words:
+ * the whole point of the Published signatures block is that this name is no longer a
+ * thing either side may choose.
+ */
+export function required(mod: Namespace, name: string, source: string, clause: string): unknown {
+  if (mod[name] !== undefined) return mod[name];
+  const exported = Object.keys(mod).sort().join(", ") || "(nothing)";
+  throw new Error(
+    `${source} exports no \`${name}\`.\n` +
+      `  the contract publishes: ${clause}\n` +
+      `  found: ${exported}\n` +
+      `  This is a failed acceptance criterion, not a naming difference. backend.md's ` +
+      `T000 Published signatures block names this export exactly, and the rule above it ` +
+      `("the contract must name the interface, not only the behaviour") exists because ` +
+      `two rounds of candidate lists each resolved to the wrong thing. Do not add a ` +
+      `synonym to a list here; publish the name the contract states.`,
+  );
+}
+
+export function requiredFn(
+  mod: Namespace,
+  name: string,
+  source: string,
+  clause: string,
+): UnknownFn {
+  const value = required(mod, name, source, clause);
+  if (typeof value !== "function") {
+    throw new Error(
+      `${source} exports \`${name}\` as ${describe(value)}; the contract publishes it as ` +
+        `a function: ${clause}`,
+    );
+  }
+  return value as UnknownFn;
+}
+
+/* --------------------- capability resolution, where nothing is named --------------------- */
 
 /** What a candidate list bound to, carried with the name so a red can say which export it is. */
 export interface Bound<T> {
@@ -146,9 +206,10 @@ export function resolve(
     `${source} exports no ${capability}.\n` +
       `  tried: ${candidates.join(", ")}\n` +
       `  found: ${exported}\n` +
-      `  The T000 contract pins the behaviour of this capability and not its name. ` +
-      `If the implementation calls it something else, amend the T000 contract in ` +
-      `backend.md and add the name to this list; do not delete the test.`,
+      `  The T000 contract pins the behaviour of this capability and not its name — it is ` +
+      `one of the four the Published signatures block still leaves open, and the T000 log ` +
+      `says so. If the implementation calls it something else, amend the contract and add ` +
+      `the name to this list; do not delete the test.`,
   );
 }
 
@@ -168,15 +229,6 @@ export function resolveFn(
   return { name: bound.name, value: bound.value as UnknownFn };
 }
 
-export function pick(
-  mod: Namespace,
-  capability: string,
-  candidates: readonly string[],
-  source: string,
-): unknown {
-  return resolve(mod, capability, candidates, source).value;
-}
-
 export function pickFn(
   mod: Namespace,
   capability: string,
@@ -192,15 +244,6 @@ export function pickOptional(mod: Namespace, candidates: readonly string[]): unk
     if (mod[name] !== undefined) return mod[name];
   }
   return undefined;
-}
-
-/**
- * A capability published either as the thing itself or as a factory for it. The contract
- * says "the client factory" and "the object-storage client" without saying which of the
- * two is exported, so both are accepted and the caller sees one object either way.
- */
-async function instantiate(value: unknown): Promise<unknown> {
-  return typeof value === "function" ? await (value as UnknownFn)() : value;
 }
 
 /* --------------------- the environment contract --------------------- */
@@ -244,17 +287,12 @@ export function requireEnv(name: (typeof ENVIRONMENT_VARIABLES)[number]): string
 export type Row = Record<string, unknown>;
 export type Query = (sql: string, params?: readonly unknown[]) => Promise<Row[]>;
 
-const QUERY_NAMES = ["query", "sql", "dbQuery"] as const;
-const CLIENT_NAMES = [
-  "createDbClient",
-  "createClient",
-  "createPool",
-  "getDb",
-  "db",
-  "pool",
-  "client",
-] as const;
-const CLOSE_NAMES = ["closeDb", "close", "end", "disconnect", "shutdown", "destroy"] as const;
+/**
+ * Still unnamed by the contract, and deliberately optional. An open pool keeps vitest
+ * alive after the last assertion, which is a nuisance and not a failed criterion.
+ */
+const CLOSE_NAMES = ["end", "close", "destroy", "dispose", "disconnect", "shutdown"] as const;
+const MODULE_CLOSE_NAMES = ["closeDb", "close", "end", "disconnect", "shutdown", "destroy"] as const;
 
 /** `pg` returns `{ rows }`, several thinner wrappers return the array. Both are a result set. */
 function rowsOf(result: unknown): Row[] {
@@ -266,135 +304,108 @@ function rowsOf(result: unknown): Row[] {
   throw new Error(`A query returned ${describe(result)}; expected an array of rows or { rows }.`);
 }
 
+export interface DbClient {
+  /** Exactly what `createDbClient` returned, so it can be handed back as a migration target. */
+  raw: unknown;
+  query: Query;
+  /** Best effort. Teardown is not under test. */
+  close(): Promise<void>;
+}
+
 /**
  * The one way these tests reach Postgres. There is no driver in this branch's
  * `package.json` and adding one would collide with whatever the implementation picks, so
- * every statement goes through the client the task publishes. That is also the rule the
+ * every statement goes through the client the task publishes — which is also the rule the
  * protocol wants: the public interface, and nothing behind it.
+ *
+ * `config` is the connection string of the database this client is for. Passing it
+ * explicitly is what makes the isolation rule implementable at all: `createDbClient` takes
+ * one, so a suite that needs a clean database can create its own and point a client at it
+ * instead of driving the shared `darkprint`.
  */
-export async function queryFor(mod: Namespace): Promise<Query> {
-  requireEnv("DATABASE_URL");
-
-  const direct = pickOptional(mod, QUERY_NAMES);
-  if (typeof direct === "function") {
-    return async (sql, params) => rowsOf(await (direct as UnknownFn)(sql, params));
+export async function dbClient(mod: Namespace, config?: string): Promise<DbClient> {
+  const create = requiredFn(mod, "createDbClient", "@/lib/db", PUBLISHED.createDbClient);
+  const raw = await create(...(config === undefined ? [] : [config]));
+  if (raw === null || typeof raw !== "object") {
+    throw new Error(`createDbClient produced ${describe(raw)}; expected a client.`);
   }
-
-  const client = await instantiate(pick(mod, "client factory", CLIENT_NAMES, "@/lib/db"));
-  if (client === null || typeof client !== "object") {
-    throw new Error(`@/lib/db published a client factory that produced ${describe(client)}.`);
-  }
-  const query = (client as Record<string, unknown>).query;
+  const query = (raw as Namespace).query;
   if (typeof query !== "function") {
-    throw new Error(`@/lib/db published a client with no query method.`);
+    throw new Error(
+      `createDbClient produced a client with no \`query\` method (it has: ` +
+        `${Object.keys(raw as Namespace).sort().join(", ") || "(nothing)"}). These tests have ` +
+        `no Postgres driver of their own, so the published client is the only way in.`,
+    );
   }
-  return async (sql, params) => rowsOf(await (query as UnknownFn).call(client, sql, params));
+  return {
+    raw,
+    query: async (sql, params) => rowsOf(await (query as UnknownFn).call(raw, sql, params)),
+    async close() {
+      const end = pickOptional(raw as Namespace, CLOSE_NAMES);
+      if (typeof end !== "function") return;
+      try {
+        await (end as UnknownFn).call(raw);
+      } catch {
+        /* A client that cannot close cleanly is T000's problem to fix, not this suite's to
+           report as a failed acceptance criterion. */
+      }
+    },
+  };
 }
 
-/** Best effort: an open pool keeps vitest alive after the last assertion. Never asserted on. */
+export function migrateUpFn(mod: Namespace): UnknownFn {
+  return requiredFn(mod, "migrateUp", "@/lib/db", PUBLISHED.migrateUp);
+}
+
+export function migrateDownFn(mod: Namespace): UnknownFn {
+  return requiredFn(mod, "migrateDown", "@/lib/db", PUBLISHED.migrateDown);
+}
+
+/** Best effort: a module-level pool kept open outlives the last assertion. Never asserted on. */
 export async function closeDbIfPossible(mod: Namespace): Promise<void> {
-  const close = pickOptional(mod, CLOSE_NAMES);
+  const close = pickOptional(mod, MODULE_CLOSE_NAMES);
   if (typeof close === "function") {
     try {
       await (close as UnknownFn)();
     } catch {
-      /* Teardown is not under test. A client that cannot close cleanly is T000's problem
-         to fix, not this suite's to report as a failed acceptance criterion. */
+      /* Teardown is not under test. */
     }
   }
 }
 
 /* --------------------- object storage --------------------- */
 
+/**
+ * The store as these tests use it: addressed by the digest the engine computes over the
+ * bytes, whatever physical key the published `keyForDigest` maps that digest to.
+ */
 export interface ObjectStore {
+  /** Writes `content` and answers the address it is readable at. */
   put(content: string): Promise<string>;
-  get(digest: string): Promise<unknown>;
-  /** Every key this store has written, so the suite can take back what it left. */
+  get(address: string): Promise<unknown>;
+  delete(address: string): Promise<unknown>;
+  /** Which of the three call shapes below the store turned out to take. */
+  shape: string;
+  /** Every address this store has written, so the suite can take back what it left. */
   written: Set<string>;
   cleanup(): Promise<void>;
 }
 
-const STORE_NAMES = [
-  "createObjectStore",
-  "objectStore",
-  "createBlobStore",
-  "blobStore",
-  "createContentStore",
-  "contentStore",
-  "createStorage",
-  "storage",
-  "objects",
-  "bytes",
-] as const;
-const PUT_NAMES = ["put", "putObject", "write", "upload", "store"] as const;
-const GET_NAMES = ["get", "getObject", "read", "download", "fetch"] as const;
-const DELETE_NAMES = ["remove", "delete", "deleteObject", "del", "erase", "unlink"] as const;
-
 /**
- * Two call shapes are accepted for `put`. `lib/core/archive/store.ts` publishes
- * `put(content): digest` — the store derives the address, which is the whole point of
- * content addressing — and a client written against S3 first may take
- * `put(digest, content)` instead. The contract says "keyed by digest" without saying who
- * computes it, so both are tried and the failure message names both.
+ * The contract publishes the three verbs and `keyForDigest(digest)`, and stops there: it
+ * does not say whether the caller supplies the key, supplies the digest, or hands over
+ * bytes and is told the address. All three are live readings of "keyed by digest", so the
+ * shape is resolved once against a probe and reported, and the ambiguity is on the record
+ * in the T000 log rather than settled here.
+ *
+ * Ordered deliberately. `keyForDigest` is published beside the verbs, so key-first is the
+ * strongly signalled reading; the bytes-only call is tried last because handing a
+ * two-megabyte string to a `put(key, content)` store would try to write it *as a key*.
  */
-export async function objectStoreFor(mod: Namespace, digestOf: (c: string) => string): Promise<ObjectStore> {
-  requireEnv("S3_ENDPOINT");
-  requireEnv("S3_BUCKET");
+type PutShape = "key+content" | "digest+content" | "content";
+const PUT_SHAPES: readonly PutShape[] = ["key+content", "digest+content", "content"];
 
-  const store = await instantiate(pick(mod, "object-storage client", STORE_NAMES, "@/lib/db"));
-  if (store === null || typeof store !== "object") {
-    throw new Error(`@/lib/db published an object-storage client that produced ${describe(store)}.`);
-  }
-  const ns = store as Namespace;
-  const put = pickFn(ns, "a put method", PUT_NAMES, "the object-storage client");
-  const get = pickFn(ns, "a get method", GET_NAMES, "the object-storage client");
-  /* Optional here, and deliberately so. The test-isolation amendment has T000 publish a
-     delete and has each test take back what it wrote; but a store that has not published
-     one yet must fail on AC5, which is what these tests are for, and not on teardown.
-     Whether its absence should itself be a red is an open question in the T000 log. */
-  const remove = pickOptional(ns, DELETE_NAMES);
-
-  const written = new Set<string>();
-
-  return {
-    written,
-    async put(content) {
-      let derived: unknown;
-      try {
-        derived = await put.call(store, content);
-      } catch {
-        derived = undefined;
-      }
-      if (typeof derived === "string" && derived.length > 0) {
-        written.add(derived);
-        return derived;
-      }
-
-      const digest = digestOf(content);
-      written.add(digest);
-      const supplied = await put.call(store, digest, content);
-      if (typeof supplied === "string" && supplied.length > 0) {
-        written.add(supplied);
-        return supplied;
-      }
-      return digest;
-    },
-    get: (digest) => Promise.resolve(get.call(store, digest)),
-    async cleanup() {
-      if (typeof remove !== "function") return;
-      for (const digest of written) {
-        try {
-          await (remove as UnknownFn).call(store, digest);
-        } catch {
-          /* Teardown is not under test. An object left behind is addressed by its own
-             content and no other test can name it, which is the whole reason the
-             amendment forbids prefixing keys instead of requiring cleanup to succeed. */
-        }
-      }
-      written.clear();
-    },
-  };
-}
+const STORAGE_VERBS = ["put", "get", "delete"] as const;
 
 /**
  * "Byte-identical" is a claim about bytes, so both sides are reduced to bytes before they
@@ -410,6 +421,134 @@ export function asBytes(value: unknown): Uint8Array {
     return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
   }
   throw new Error(`Storage returned ${describe(value)}; expected text or bytes.`);
+}
+
+function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.byteLength !== b.byteLength) return false;
+  for (let i = 0; i < a.byteLength; i += 1) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+export async function objectStoreFor(
+  mod: Namespace,
+  digestOf: (content: string) => string,
+): Promise<ObjectStore> {
+  requireEnv("S3_ENDPOINT");
+  requireEnv("S3_BUCKET");
+
+  const create = requiredFn(mod, "createObjectStorage", "@/lib/db", PUBLISHED.createObjectStorage);
+  const keyForDigest = requiredFn(mod, "keyForDigest", "@/lib/db", PUBLISHED.keyForDigest);
+
+  const store = await create();
+  if (store === null || typeof store !== "object") {
+    throw new Error(`createObjectStorage produced ${describe(store)}; expected an ObjectStorage.`);
+  }
+  const ns = store as Namespace;
+  const missing = STORAGE_VERBS.filter((verb) => typeof ns[verb] !== "function");
+  if (missing.length > 0) {
+    throw new Error(
+      `The ObjectStorage \`createObjectStorage\` produced is missing ${missing.join(", ")}.\n` +
+        `  the contract publishes: ${PUBLISHED.storageVerbs}\n` +
+        `  found: ${Object.keys(ns).sort().join(", ") || "(nothing)"}\n` +
+        `  The delete is not optional any more: the test-isolation amendment has every ` +
+        `storage test take back what it wrote, and a store with no delete makes cleanup ` +
+        `through the public interface impossible.`,
+    );
+  }
+  const put = ns.put as UnknownFn;
+  const get = ns.get as UnknownFn;
+  const remove = ns.delete as UnknownFn;
+
+  /** Physical key for a logical address, under whichever shape the store turned out to take. */
+  const physical = (shape: PutShape, address: string): string =>
+    shape === "key+content" ? String(keyForDigest(address)) : address;
+
+  const written = new Set<string>();
+
+  /* A probe with bytes nothing else can produce, so resolving the shape cannot collide
+     with a fixture and cannot be answered by an object an earlier run left behind. */
+  const probe = `t000 storage shape probe\n${process.pid}\n${globalThis.performance.now()}\n`;
+  const probeDigest = digestOf(probe);
+  const probeBytes = new TextEncoder().encode(probe);
+
+  let shape: PutShape | undefined;
+  const failures: string[] = [];
+  for (const candidate of PUT_SHAPES) {
+    try {
+      let address: string;
+      if (candidate === "content") {
+        const answered = await put.call(store, probe);
+        if (typeof answered !== "string" || answered.length === 0) {
+          failures.push(`${candidate}: put(content) answered ${describe(answered)}, not an address`);
+          continue;
+        }
+        address = answered;
+      } else {
+        address = probeDigest;
+        await put.call(store, physical(candidate, address), probe);
+      }
+      const read = await get.call(store, physical(candidate, address));
+      if (read === undefined || read === null || !sameBytes(asBytes(read), probeBytes)) {
+        failures.push(`${candidate}: the probe did not read back`);
+        continue;
+      }
+      written.add(address);
+      shape = candidate;
+      break;
+    } catch (cause) {
+      failures.push(`${candidate}: ${String(cause)}`);
+    }
+  }
+
+  if (shape === undefined) {
+    throw new Error(
+      `No call to the published storage verbs round-tripped a probe.\n  ${failures.join("\n  ")}\n` +
+        `  The contract publishes put, get and delete on ObjectStorage and publishes ` +
+        `keyForDigest(digest) beside them, and does not state which of the two supplies ` +
+        `the key. All three readings were tried.`,
+    );
+  }
+  const resolved = shape;
+
+  return {
+    shape: resolved,
+    written,
+    async put(content) {
+      const digest = digestOf(content);
+      if (resolved === "content") {
+        const answered = await put.call(store, content);
+        const address = typeof answered === "string" && answered.length > 0 ? answered : digest;
+        written.add(address);
+        return address;
+      }
+      written.add(digest);
+      await put.call(store, physical(resolved, digest), content);
+      return digest;
+    },
+    /* `async` rather than an arrow returning `Promise.resolve(...)`, and the difference is
+       load-bearing: mapping an address through `keyForDigest` can throw, the contract says
+       so ("a digest is validated where it becomes a key"), and a synchronous throw out of
+       `store.get(...)` escapes the caller's `.catch` because there is no promise yet to
+       attach it to. Every caller here awaits, so a rejection is what they can handle. */
+    async get(address) {
+      return await get.call(store, physical(resolved, address));
+    },
+    async delete(address) {
+      return await remove.call(store, physical(resolved, address));
+    },
+    async cleanup() {
+      for (const address of written) {
+        try {
+          await remove.call(store, physical(resolved, address));
+        } catch {
+          /* Teardown is not under test. An object left behind is addressed by its own
+             content and no other test can name it, which is the whole reason the
+             amendment forbids prefixing keys instead of requiring cleanup to succeed. */
+        }
+      }
+      written.clear();
+    },
+  };
 }
 
 /* --------------------- sessions --------------------- */
