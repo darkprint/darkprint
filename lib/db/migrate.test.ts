@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import { describe, expect, it } from "vitest";
-import { migrateDown, migrateUp } from "./migrate";
+import { migrateDown, migrateUp } from "./migrate.ts";
 
 /**
  * Needs a live Postgres (`docker compose up -d`, per compose.yaml) and skips

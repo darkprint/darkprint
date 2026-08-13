@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import type { DbClient } from "./client";
+import type { DbClient } from "./client.ts";
 import { createTestDb, resetTestDb, type TestDb } from "../../tests/support/db";
-import * as schema from "./schema";
+import * as schema from "./schema.ts";
 
 /** Needs a live Postgres (`docker compose up -d`); skips gracefully without one. */
 const hasDb = Boolean(process.env.DATABASE_URL);
