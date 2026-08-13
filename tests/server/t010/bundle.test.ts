@@ -234,7 +234,7 @@ describe("AC6 — two owners may hold the same slug and their records never coll
 /* --------------------- one record per (owner, slug): B-06, B-09 --------------------- */
 
 describe("one record per (owner, slug)", () => {
-  it("a second createBundle for the same (owner, slug) leaves exactly one record", async () => {
+  it("a second createBundle for the same (owner, slug) rejects", async () => {
     const mark = marker("dup");
     const slug = slugFor(mark);
     const ownerId = await owner(primary, mark);
@@ -243,16 +243,47 @@ describe("one record per (owner, slug)", () => {
       await api.createBundle(primary.db, { ownerId, slug, visibility: "public" }),
       "createBundle",
     );
-    /* Whether the second call rejects or returns the record that already exists is not
-       named by the contract, so neither is asserted. What *is* named is the invariant —
-       "one record per (owner, slug) (B-06, B-09)" — and that is what this counts. */
-    await Promise.resolve(
+
+    /* Ruled after this suite reported it as unnamed: the second call **rejects** and never
+       returns the existing row. A silent upsert would let T100 decide that a second publish
+       is a new release without ever noticing it had made the decision. */
+    await expect(
       api.createBundle(primary.db, { ownerId, slug, visibility: "public" }),
-    ).catch(() => undefined);
+      PUBLISHED.duplicateRejects,
+    ).rejects.toThrow();
 
     expect(await countBundles(primary, ownerId, slug)).toBe(1);
     const read = asRecord(await api.getBundle(primary.db, ownerId, slug), "getBundle");
     expect(read.id).toBe(first.id);
+    /* And the first record is untouched — a reject that had already applied the second
+       call's fields would leave the row changed and the count still one. */
+    expect(read.visibility).toBe("public");
+    expect(read.createdAt).toEqual(first.createdAt);
+  });
+
+  it("a second createBundle rejects even when it differs in visibility and lineage", async () => {
+    const mark = marker("dupdiff");
+    const slug = slugFor(mark);
+    const ownerId = await owner(primary, mark);
+    const upstream = await owner(primary, `${mark}-up`);
+
+    await api.createBundle(primary.db, { ownerId, slug, visibility: "public" });
+    /* The uniqueness is on `(owner_id, slug)` alone, so a differing payload changes nothing:
+       an implementation that only refuses an exact repeat would pass the test above. */
+    await expect(
+      api.createBundle(primary.db, {
+        ownerId,
+        slug,
+        visibility: "private",
+        lineage: { ownerId: upstream, slug: `${slug}-upstream`, version: "1.0.0" },
+      }),
+      PUBLISHED.duplicateRejects,
+    ).rejects.toThrow();
+
+    expect(await countBundles(primary, ownerId, slug)).toBe(1);
+    const read = asRecord(await api.getBundle(primary.db, ownerId, slug), "getBundle");
+    expect(read.visibility).toBe("public");
+    expect("lineage" in read).toBe(false);
   });
 
   it("eight concurrent createBundle calls for one (owner, slug) leave exactly one record", async () => {
@@ -267,10 +298,12 @@ describe("one record per (owner, slug)", () => {
     );
 
     expect(await countBundles(primary, ownerId, slug)).toBe(1);
-    /* At least one caller has to succeed: eight racing writers all failing would satisfy a
-       row count of one only by accident, and would mean the first publish of a bundle is a
-       coin toss. */
-    expect(settled.some((r) => r.status === "fulfilled")).toBe(true);
+    /* Exactly one caller succeeds and the other seven reject, which is the concurrent form
+       of the same ruling. All eight failing would satisfy a row count of one only by
+       accident and would make the first publish of a bundle a coin toss; two succeeding
+       would mean the loser's write was silently absorbed. */
+    expect(settled.filter((r) => r.status === "fulfilled").length).toBe(1);
+    expect(settled.filter((r) => r.status === "rejected").length).toBe(7);
     const read = asRecord(await api.getBundle(primary.db, ownerId, slug), "getBundle");
     expect(typeof read.id).toBe("string");
   });

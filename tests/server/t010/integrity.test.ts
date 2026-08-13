@@ -22,8 +22,9 @@ import {
 
    (5) a release whose `cardRefs` and `cardDigests` differ in
        length is refused, and one pinning a card twice stores both
-       digests unsorted-but-undeduplicated so its bundle digest
-       differs from the single-pin case
+       digests **in the order supplied, with `cardRefs` and
+       `cardDigests` kept pairwise aligned** and nothing collapsed,
+       so its bundle digest differs from the single-pin case
 
    This is the whole of what T010 can validate: "T010 is
    persistence and validates only what it can see — the
@@ -32,18 +33,17 @@ import {
    2026-08-13 amendment and is Out of scope here, so nothing below
    asks for it.
 
-   ── the half of AC5 that is not asserted, and why ──
-   AC5 says the two digests are stored "unsorted"; the Contract
-   paragraph four lines above it says "card digests are sorted and
-   **not** deduplicated"; and the amendment makes `cardRefs` and
-   `cardDigests` parallel arrays, which sorting one of them alone
-   would silently unpair. Three clauses, three different answers,
-   so the stored *order* is reported to the orchestrator and not
-   asserted here. What every reading agrees on is asserted: both
-   entries are kept, nothing is collapsed, and the identity moves
-   when a pin is repeated. `bundleDigest` sorts internally, so the
-   identity is the same under all three readings anyway — which is
-   why the disagreement is safe to report rather than block on.
+   ── the order, once open and now ruled ──
+   AC5 first said the digests are stored "unsorted" while the
+   Contract paragraph above it said "sorted", and the arrays are
+   parallel, so sorting one alone would unpair it from the other.
+   That was reported rather than resolved, and the ruling came back
+   in the criterion itself: **stored in the order supplied, pairwise
+   aligned, nothing collapsed**, with "sorted" describing only what
+   `bundleDigest` does internally when it computes identity. The
+   order is therefore asserted now, and asserted through the
+   published reader, which since the second amendment returns both
+   arrays.
    ============================================================ */
 
 let api: Archive;
@@ -105,6 +105,12 @@ async function releaseRows(bundleId: string): Promise<Record<string, unknown>[]>
     "select id, digest, card_refs, card_digests from release where bundle_id = $1",
     [bundleId],
   );
+}
+
+/** AC5's read side, through the published reader rather than past it. */
+async function readBack(bundleId: string, digest: unknown): Promise<Record<string, unknown>> {
+  const found = await api.getRelease(scratch.db, bundleId, String(digest));
+  return asRecord(found, `getRelease(${String(digest)})`);
 }
 
 /**
@@ -277,14 +283,18 @@ describe("AC5 — a card pinned twice keeps both digests", () => {
       "addRelease",
     );
 
+    /* An array, not a set: "pinning the same card twice is a different bundle from pinning
+       it once, and deduplicating here would erase that". Read through the published reader,
+       which is where a consumer sees it. */
+    const read = await readBack(bundleId, record.digest);
+    expect(read.cardDigests).toEqual([card, card]);
+    expect(read.cardRefs).toEqual([ref, ref]);
+    expect(record.cardDigests).toEqual([card, card]);
+    expect(record.digest).toBe(expectedDigest(dot, [card, card]));
+
     const [row] = await releaseRows(bundleId);
-    /* `card_digests` is an array, not a set: "pinning the same card twice is a different
-       bundle from pinning it once, and deduplicating here would erase that". Order is not
-       asserted — the contract says three different things about it and they are reported,
-       not resolved. Multiplicity is asserted, because all three agree on it. */
     expect(row?.card_digests).toEqual([card, card]);
     expect(row?.card_refs).toEqual([ref, ref]);
-    expect(record.digest).toBe(expectedDigest(dot, [card, card]));
   });
 
   it("AC5: the two-pin identity differs from the one-pin identity", async () => {
@@ -390,11 +400,11 @@ describe("AC5 — a card pinned twice keeps both digests", () => {
     expect(doubled.digest).toBe(expectedDigest(dot, [a, a, b]));
     expect(plain.digest).toBe(expectedDigest(dot, [a, b]));
 
-    const rows = await releaseRows(bundleId);
-    const stored = rows.find((r) => r.id === doubled.id);
-    expect((stored?.card_digests as string[]).length).toBe(3);
-    expect([...(stored?.card_digests as string[])].sort()).toEqual([a, a, b].sort());
-    expect((stored?.card_refs as string[]).length).toBe(3);
+    /* Order supplied, order stored — the ruling, asserted directly now rather than as a
+       multiset. `[a, a, b]` and not `[a, b, a]`, and not `[a, b]`. */
+    const read = await readBack(bundleId, doubled.digest);
+    expect(read.cardDigests).toEqual([a, a, b]);
+    expect(read.cardRefs).toEqual([refA, refA, refB]);
   });
 
   it("AC5: the refs and digests stay paired at the same index", async () => {
@@ -422,13 +432,16 @@ describe("AC5 — a card pinned twice keeps both digests", () => {
       "addRelease",
     );
 
-    const [row] = await releaseRows(bundleId);
-    const storedRefs = row?.card_refs as string[];
-    const storedDigests = row?.card_digests as string[];
-    expect(storedRefs.length).toBe(storedDigests.length);
-    /* The pairing, stated as a mapping so it holds whichever order the arrays came back in.
-       If they were sorted together the map still reads correctly; if one was sorted alone,
-       it does not. */
+    const read = await readBack(bundleId, record.digest);
+    const storedRefs = read.cardRefs as string[];
+    const storedDigests = read.cardDigests as string[];
+    /* The ruling is "the order supplied, pairwise aligned", so both halves are asserted:
+       the arrays come back exactly as they went in... */
+    expect(storedRefs).toEqual(refs);
+    expect(storedDigests).toEqual([first, second]);
+    /* ...and the pairing holds index by index, which is the property that survives even if
+       someone later decides the storage order may change. A store that sorted the digests
+       alone would put `second` at index 0 against `aaa-card@1.0.0`. */
     const paired = new Map(storedRefs.map((ref, i) => [ref, storedDigests[i]]));
     expect(paired.get("aaa-card@1.0.0")).toBe(first);
     expect(paired.get("zzz-card@1.0.0")).toBe(second);
