@@ -17,9 +17,24 @@ wherever `docs/ORCHESTRATION.md` says `main`. Recorded here rather than assumed.
 
 | Slot | Task | Worktree | State |
 |---|---|---|---|
-| 1 | T000 | `../darkprint-wt-t000-foundation` | reverted |
-| 2 | — | — | empty (T000 runs alone) |
-| 3 | — | — | empty (T000 runs alone) |
+| 1 | — | — | empty |
+| 2 | — | — | empty |
+| 3 | — | — | empty |
+
+**T000 is merged and tagged `t000-verified` (`ec516fa`). Wave 2 is open**: T010, T025, T060,
+T070 and T240 are all ready, with disjoint `Owns` sets, and three of the five may run at once.
+
+**Before claiming anything in wave 2, read this.** The post-merge gate on `backend` failed
+first time, and not because of the code: `package.json` and the lockfile merged while this
+checkout's `node_modules` still predated them, so `pg`, `drizzle-orm`, `@aws-sdk/client-s3`
+and `drizzle-kit` were absent and typecheck reported 23 phantom errors. `npm ci` fixed it and
+all four gates then passed. Two operational rules follow, and they are the practical half of
+the lockfile serialisation point recorded under T000's log:
+
+- **After every merge that touches the lockfile, run `npm ci` on the base before the gates.**
+  A red suite there is an uninstalled dependency until proven otherwise.
+- **Every new worktree runs `npm ci` before its first gate.** A worktree gets its own
+  `node_modules`; branching does not carry one.
 
 ## How this run is governed
 
@@ -108,7 +123,7 @@ it does not decide differently inside a worktree.
 
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
-| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` | `feat/t000-foundation` | adversarial-pass | typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
+| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | — | — | todo | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | — | — | todo | — |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | — | — | todo | — |
@@ -242,7 +257,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T000, Foundation: schema, client, envelope, GitHub session, harness
 
-- **State:** adversarial-pass
+- **State:** merged
 - **Worktree:** `../darkprint-wt-t000-foundation` on `feat/t000-foundation`
 - **Test worktree:** `../darkprint-wt-t000-foundation-tests` on `test/t000-foundation`
 - **Depends on:** —
@@ -688,6 +703,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 - **Blocks:** T080, T090, T100, T110, T120, T180, T250
 - **Owns:** `lib/server/archive/**`
 - **Forbidden:** `lib/db/schema.ts`, `app/**`, `lib/core/**`
+- **Inherited from T000** (recorded by the adversary at T000's PASS, not a defect there): `keyForDigest` throws a plain `Error` quoting its caller's input. **Validate a digest at the edge**, so a bad path parameter is a 404 and not a 500 that echoes what the caller sent.
 - **Goal:** store and read a bundle record and its append-only releases, with each release's bytes addressed by the digest the engine computes.
 - **Contract:** one record per `(owner, slug)` (B-06, B-09); releases are append-only, each carrying the author's semver, the engine's digest, the DOT source, the pinned card refs and the local vocabulary the bundle uses. Identity is `bundleDigest(dot, sortedCardDigests)` (`lib/core/hash/digest.ts:61`), computed server-side and never accepted from a client; card digests are sorted and **not** deduplicated. Bytes return verbatim. A release carrying an error-severity diagnostic is refused, never stored (`lib/content/read.ts:281-291`). Visibility is a column on the bundle record, defaulting from the account (B-07 for cards is `T020`'s).
 - **Acceptance criteria:** (1) storing a release and reading it back yields byte-identical DOT and card text; (2) the stored digest equals what `lib/core` computes over the same inputs; (3) a bundle pinning one card twice stores a different digest from one pinning it once; (4) appending a release leaves every earlier release readable at its own digest; (5) a store carrying an error diagnostic persists nothing, including bytes; (6) two owners may hold the same slug and their records never collide.
@@ -786,6 +802,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 - **Blocks:** T100, T120, T130, T140, T150, T160, T170, T180, T190, T230, T250, T262
 - **Owns:** `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/route.ts`, `app/api/account/profile/route.ts`, `app/api/account/handle/route.ts`, `app/api/account/email/route.ts`, `app/api/account/default-visibility/route.ts`
 - **Forbidden:** `app/api/account/{notifications,saves,delete,keys}/**`, `lib/server/naming/**`, `lib/db/schema.ts`
+- **Inherited from T000** (recorded at its PASS): the session has expiry, **not revocation**. A stolen cookie stays valid until `exp`, and signing out clears only the browser's copy. The expiry bound is enforced at mint, so anything signed outside `encodeSession` bypasses it — acceptable only because minting needs the key. Meet this deliberately rather than discovering it: if true sign-out invalidation is wanted it needs server-side session state, which is a storage and scale decision the owner has not taken and which is recorded as open in T000's contract.
 - **Goal:** sign in through GitHub, hold one account per handle, and serve and mutate the account's own fields.
 - **Contract:** GitHub OAuth establishes credentials; the handle is chosen at sign-up and stored independently (B-02, B-05), so the OAuth subject and the handle are separate columns and a GitHub rename moves neither. The record is `Account { author: Author, email, joinedAt, validatorSince?, validatorWeight, defaultVisibility, notifications[] }` (`lib/data/account.ts:51-73`) with `Author { username, displayName, avatarHue, validator, bio? }`. `email` never appears on a public surface. The three profile fields the settings form edits live are `displayName`, `bio`, `avatarHue`. A handle change reserves the old one through `T070`.
 - **Acceptance criteria:** (1) a first sign-in with no handle cannot complete until one is chosen and allocated; (2) `email` is absent from every response a non-owner can obtain; (3) a GitHub rename leaves the handle and every attribution untouched; (4) a handle change makes the old handle permanently unclaimable; (5) reading the account without a session returns `problem+json` 401, never a fixture; (6) two GitHub identities cannot map to one account.
