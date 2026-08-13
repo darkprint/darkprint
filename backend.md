@@ -146,7 +146,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | claimed | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | impl-done | fix for adversary FAIL: `pinsById` now splits refs leniently (no `CARD_ID`/`REF_VERSION` grammar check) so a repin still prices by semver, plus a raw-ref-set membership check so nothing can vanish unparsed; `checkDeclaredBump`'s code lookup is now an exhaustive switch that throws on an out-of-union `subject` instead of emitting `code: undefined`. typecheck/lint/build clean; 164/164 in `tests/server/t025` + `lib/server/versioning`; full suite 3936/3936 on three consecutive runs |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | reverted | adversary round 2 FAIL: round-1 defects all fixed, but `pinsById` first-occurrence-wins hides a repin on every node after the first pinning the same card id — a major repin infers `patch` and a patch release is accepted; set-vs-multiset conflicts with `lib/db/schema.ts:155-157`, reported not resolved |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | claimed | — |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -786,7 +786,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T025, Versioning service: semver, digest, bump, chains
 
-- **State:** impl-done
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t025-versioning` on `feat/t025-versioning`
 - **Test worktree:** `../darkprint-wt-t025-versioning-tests` on `test/t025-versioning`
 - **Depends on:** T000 (contract: types)
@@ -971,6 +971,68 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     lib/server/versioning`: 164/164. `npm test`, full suite, three consecutive runs:
     3936/3936 each time, byte-identical. No `git stash` used anywhere in this session
     (`b53f413`'s rule).
+  - 2026-08-14 adversary round 2: **FAIL.** Rebased by merge onto `070025c` (a plain rebase
+    would flatten the round-1 `test/t025-versioning` merge this branch carries). Gates:
+    typecheck 0, lint 0, build 0 with no bundle diff; `npm test` three times, identical:
+    `48 failed | 3877 passed | 11 skipped (3936)`, the 48 being the same unset-variable
+    failures in T000's `session`/`migrations`/`object-store`/`environment` files that this
+    worktree has no `.env` for — unchanged in cause from round 1 and untouched by this diff.
+    `npx vitest run tests/server/t025 lib/server/versioning`: **174/174**. Criteria by name:
+    AC-1 (4), AC-2 (6), AC-3 (3), AC-4 (4), AC-5 (9), AC-6 (5) — all PASS. No red in
+    `lib/core/dot/graph.test.ts` on any run; the base fix holds.
+    **Every round-1 finding is genuinely fixed, verified by execution, not by reading.**
+    `["café-solver@1.0.0"] → ["café-solver@2.0.0"]` ⇒ major; `["Solver@1.0.0"] →
+    ["Solver@2.0.0"]` ⇒ major; `[] → [""]` ⇒ patch; `["not-a-ref"] → []` ⇒ patch; Finding 2's
+    conflicting duplicate ⇒ patch; `["solver@latest"] → ["solver@2.0.0"]` ⇒ patch with the
+    accurate reason "card `solver` repinned: latest → 2.0.0". Identity survived: identical
+    snapshots ⇒ none, reordered distinct ids ⇒ none, pure duplicate-count changes ⇒ none.
+    `codeFor` throws on all five out-of-union subjects, and — better than asked — the guard is
+    the **unconditional first line** of `checkDeclaredBump`, so it fires on the satisfied path
+    too rather than lying dormant until a release happens to need refusing. Purity holds:
+    repeated, interleaved and frozen-input calls all identical, caller arrays never sorted.
+    **NEW DEFECT, charged. `pinsById` first-occurrence-wins hides a repin on every occurrence
+    after the first for one card id.** `cardRefs` is `blueprint.nodes.map((n) => n.ref)`
+    (`lib/content/view.ts:138`) — one entry per node, in node order, duplicates normal, which
+    is why every consumer dedups explicitly (`components/bundle/load.ts:110`,
+    `app/blueprints/[slug]/page.tsx:149`). Two nodes pinning different versions of one card is
+    an ordinary graph, and for it the pairing map keeps only the first. Observed, `dot` held
+    constant: `["solver@1.0.0","solver@2.0.0"] → ["solver@1.0.0","solver@3.0.0"]` — the second
+    node repinned across a major — infers **`patch`**, reason "the pinned card refs changed",
+    and `checkDeclaredBump("bundle","1.0.0","1.0.1", that)` returns **`[]`**. A major repin
+    ships as a patch release. That is the refusal B-04 exists to make. Same shape: a minor
+    repin of the second occurrence ⇒ patch; the second pin *dropped entirely* ⇒ patch, where
+    losing a pin is specified major. The AC-2 control passes only because every AC-2 test pins
+    one version per id: `["solver@1.0.0"] → ["solver@2.0.0"]` ⇒ major, correctly.
+    Same root cause, second face: **the answer depends on array order.**
+    `["solver@1.0.0"] → ["solver@1.0.0","solver@2.0.0"]` ⇒ patch, but
+    `["solver@1.0.0"] → ["solver@2.0.0","solver@1.0.0"]` ⇒ **major** — same DOT, same *set*,
+    order alone. Since node order comes straight from the DOT text, reordering two nodes
+    changes the version a release is required to declare.
+    **CONTRACT CONFLICT, reported not resolved — this is the fifth gap.** The implementer chose
+    `Set` over multiset for the membership half, reasoning that a multiset would break the blind
+    test "reads a repeated pin as the same set". But `lib/db/schema.ts:155-157`, T000's own
+    stored shape, states the opposite in as many words: "`cardDigests` is an array, not a set:
+    **pinning one card twice is a different digest from pinning it once**, and deduplicating
+    here would erase that." Under that, `["solver@1.0.0"] → ["solver@1.0.0","solver@1.0.0"]`
+    changes the bundle digest while `inferBlueprintBump` infers `none` — a release whose bytes
+    moved and whose version is not required to. B-04 has every release carry both a declared
+    semver and a computed digest, so the two cannot disagree. Either the blind test's set
+    reading or T000's schema comment is wrong, and **that is the orchestrator's to rule, not
+    mine and not the implementer's** — per Phase 2, a test that changes to match the code is a
+    failed task. I have not touched either. Note the ruling also decides the defect above:
+    multiset semantics would price the hidden repin by pairing occurrences, set semantics needs
+    the pairing half fixed some other way.
+    **Process check, as asked.** The hand-resolved merge lost no Log entry — all eight round-1
+    entries are present in order and my round-1 report is byte-identical to `6c6197d`. One
+    cosmetic artifact: `backend.md:816`, the sentence beginning "For an ontology, removing a
+    term…", is indented one space instead of two and has no blank line above it, so it renders
+    as a lazy continuation of the new "A diagnostic always carries a classifiable `code`"
+    paragraph rather than as part of the blueprint/ontology contract statement it belongs to.
+    Content intact, structure wrong; a one-character fix.
+    **Residue: none.** T025 stores nothing; all three probes were in-process calls to the four
+    published functions. No database created, no object written, no `.env`, probe files deleted,
+    tree clean. `docker exec` against the shared Postgres remains denied in my session, so the
+    48 environment failures stay unaddressed here by choice rather than oversight.
 
 ### T060, Authorization policy: owner and operator
 
