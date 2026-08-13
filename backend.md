@@ -21,6 +21,37 @@ wherever `docs/ORCHESTRATION.md` says `main`. Recorded here rather than assumed.
 | 2 | — | — | empty (T000 runs alone) |
 | 3 | — | — | empty (T000 runs alone) |
 
+## How this run is governed
+
+Owner-stated, 2026-08-13, amending `docs/ORCHESTRATION.md`'s human gate. The protocol says
+`adversarial-pass → verified` is a human review step and that no task may self-promote. That
+is replaced by the following, and the replacement is recorded here because it is a change to
+the protocol rather than a decision inside it.
+
+- **An adversarial PASS is `verified`.** The orchestrator merges to `backend` and tags,
+  without asking.
+- **Every merge is an annotated tag** — `t000-verified`, `t010-verified` — whose message
+  carries the adversary's verdict commit, the four gate results and the suite count. Rolling
+  one task back is `git reset --hard <previous tag>`; rolling one back with history intact is
+  `git revert -m 1 <merge>`. The merge SHA and tag go in the task's row, so the tags and this
+  file cannot drift apart.
+- **Nothing is pushed.** `backend` tracks `origin/backend`; a local merge is reversible in a
+  way that publishing is not. `git push` waits for the owner, every time.
+- **The first PASS is still shown to the owner, once.** Not as a standing gate: as
+  calibration. Across four rounds this adversary has returned FAIL every time, so there is
+  strong evidence about its bar for *broken* and none at all about its bar for *done*, and
+  those are different judgements. After one PASS has been reviewed, the loop runs unattended.
+- **Contract amendments that change product behaviour are surfaced at each wave boundary.**
+  The adversary checks code against the contract, and the contract is the orchestrator's. A
+  name it specifies wrongly gets caught (D-10, D-11); something coherent and wrong *as
+  product* passes, correctly, and nothing downstream ever asks. The expiry requirement is the
+  live example — invented by the orchestrator, reviewed by nobody. Amendments that fix a name,
+  a shape or a path are not surfaced; ones that decide what the product does are.
+- **A task that stops converging is escalated rather than retried.** Convergence means the
+  defect count falling round on round. T000 ran 7 defects → 2 → 1 → 1, with the last three
+  being contract defects rather than code, which is convergence. Cycling without that fall is
+  reported, not burned through.
+
 ## The contract must name the interface, not only the behaviour
 
 Learned the expensive way in T000, and it binds every task in this file from here on.
