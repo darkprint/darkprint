@@ -274,6 +274,9 @@ describe("T060 (5) no I/O and no clock", () => {
       [bertrand, ALICE, "public"],
       [anonymous, ALICE, "public"],
       [bertrand, BERTRAND, "all"],
+      /* Ruled 2026-08-14: the operator's view of any handle is the whole of it. */
+      [operator, ALICE, "all"],
+      [operator, BERTRAND, "all"],
     ];
     const answers = await Promise.all(
       cases.map(async ([actor, ownerId, expected], i) => {
