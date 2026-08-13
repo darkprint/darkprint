@@ -711,7 +711,13 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
         interface BundleRecord  { id: string; ownerId: string; slug: string; visibility: "public" | "private";
                                   lineage?: { ownerId: string; slug: string; version: string };
                                   createdAt: Date; updatedAt: Date }
-        interface ReleaseRecord { id: string; bundleId: string; version: string; digest: string; createdAt: Date }
+        interface ReleaseRecord {
+          id: string; bundleId: string; version: string; digest: string; createdAt: Date;
+          dot: string; manifest: BundleManifest;
+          cardRefs: readonly string[]; cardDigests: readonly string[];
+          vocabulary?: unknown;
+          analysis?: { autonomy: AutonomyResult; security: SecurityResult; phaseCoverage: PhaseCoverage };
+        }
 
         createBundle(db: Db, input: { ownerId; slug; visibility; lineage? }): Promise<BundleRecord>
         getBundle(db: Db, ownerId: string, slug: string): Promise<BundleRecord | undefined>
@@ -724,6 +730,12 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
         }): Promise<ReleaseRecord>   // digest is COMPUTED here, never supplied
         getRelease(db: Db, bundleId: string, digest: string): Promise<ReleaseRecord | undefined>
         listReleases(db: Db, bundleId: string): Promise<ReleaseRecord[]>
+
+  **Second amendment, same session.** `ReleaseRecord` carried only five fields and none of the content — so AC1 ("stored bytes read back byte-identical") had no function that could return the DOT to compare, and T080, T090 and T100 would have had no way to read a release's content at all, since they do not own `lib/db/schema.ts` and the layering rule forbids deep paths. It now mirrors what `addRelease` stores. The write side was fixed in the first amendment and the read side was left inconsistent with it, which is the same defect twice in one block.
+
+  **Where bytes actually live, settled here so T090 does not rediscover it.** B-01 says bytes live in object storage keyed by digest, and `release.dot` is a `NOT NULL` Postgres text column — those look contradictory and are not. The **canonical release record** (DOT, manifest, refs, digests) is Postgres: it is small, it is queried, and it is what identity is computed over. **Object storage holds the generated distribution artefacts** — the exported folder, `factory.dot`, `README.md`, `AGENTS.md`, `cards/*.yaml` — written at publish by T090 and addressed by digest. **T010 does not write to object storage.** Its implementer read it this way and asked rather than assuming; the reading is correct.
+
+  `getRelease` validating its `digest` parameter through `keyForDigest` as a shape check, and translating a throw into `undefined`, is correct and is the T000-inherited note applied properly: a bad path parameter becomes a 404 rather than a 500 echoing caller input.
 
   **Amendment, 2026-08-13, before a line of T010 was written.** The first signature block was wrong in three ways and its implementer stopped and reported rather than guessing, which is the behaviour the T000 rounds were meant to buy.
 
