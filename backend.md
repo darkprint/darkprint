@@ -798,13 +798,16 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
           | { kind: "bundle";  ownerId: string; visibility: "public" | "private" }
           | { kind: "card";    ownerId: string; visibility: "public" | "private" }
           | { kind: "save";    ownerId: string }
-          | { kind: "note";    authorId: string }
+          | { kind: "note";    authorId: string;
+                                parent: { ownerId: string; visibility: "public" | "private" } }
           | { kind: "account"; accountId: string }
 
         type Action = "read" | "write" | "delete" | "publish" | "transfer"
 
         can(actor: Actor, action: Action, resource: Resource): boolean
         visibleTo(actor: Actor, ownerId: string): "all" | "public"
+
+  **Amendment, 2026-08-14.** `Resource.note` carried only `authorId`, so its implementer modelled note reads as open to everyone and flagged that T170 might expect notes to inherit their parent's privacy. It does, and the gap was a leak: a note on a **private** bundle would have been world-readable, because the shape gave the policy nothing to check privacy against. `note` now carries its parent's owner and visibility. Raising it rather than picking a reading was right — the same judgement its two siblings made this session.
 
   `can` returns a boolean and never a `Response`: mapping a denied read to 404 rather than 403 belongs to the caller, and this module may not import the envelope. `visibleTo` is how the counting rule is honoured without every query reinventing it — an owner sees `"all"`, everyone else `"public"`, which is exactly the difference the profile tab strip states in words.
 - **Goal:** one pure module answering whether an actor may perform an action on a resource, so no route re-implements a visibility rule.
