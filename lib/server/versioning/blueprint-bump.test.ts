@@ -64,6 +64,40 @@ describe("inferBlueprintBump, patch", () => {
   });
 });
 
+describe("inferBlueprintBump, a ref the write-site validator would refuse is still a set member", () => {
+  it("prices a repin by semver even when the id fails CARD_ID's grammar", () => {
+    const before = next({ dot: "digraph {}", cardRefs: ["café-solver@1.0.0"] });
+    const after = next({ dot: "digraph {}", cardRefs: ["café-solver@2.0.0"] });
+    expect(inferBlueprintBump(before, after).level).toBe("major");
+  });
+
+  it("never answers none for a pin that vanished without parsing", () => {
+    const before = next({ dot: "digraph {}", cardRefs: ["not-a-ref"] });
+    const after = next({ dot: "digraph {}", cardRefs: [] });
+    expect(inferBlueprintBump(before, after).level).not.toBe("none");
+  });
+
+  it("never answers none for an added empty-string pin", () => {
+    const before = next({ dot: "digraph {}", cardRefs: [] });
+    const after = next({ dot: "digraph {}", cardRefs: [""] });
+    expect(inferBlueprintBump(before, after).level).not.toBe("none");
+  });
+
+  it("does not collapse a same-id pin added at a conflicting version", () => {
+    const before = next({ dot: "digraph {}", cardRefs: ["intake@1.0.0", "solver@1.2.0"] });
+    const after = next({ dot: "digraph {}", cardRefs: ["intake@1.0.0", "solver@1.2.0", "solver@9.0.0"] });
+    expect(inferBlueprintBump(before, after).level).not.toBe("none");
+  });
+
+  it("reads a repin against an unparseable previous version as a change, not a fresh pin", () => {
+    const before = next({ dot: "digraph {}", cardRefs: ["solver@latest"] });
+    const after = next({ dot: "digraph {}", cardRefs: ["solver@2.0.0"] });
+    const result = inferBlueprintBump(before, after);
+    expect(result.level).not.toBe("none");
+    expect(result.reasons.join(" ")).toMatch(/solver.*repinned/);
+  });
+});
+
 describe("inferBlueprintBump, determinism", () => {
   it("infers the same level for the same two inputs every time", () => {
     const after = next({

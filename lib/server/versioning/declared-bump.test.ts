@@ -52,3 +52,10 @@ describe("checkDeclaredBump, refused", () => {
     expect(result[0].hint).toMatch(/2\.0\.0/);
   });
 });
+
+describe("checkDeclaredBump, an out-of-union subject", () => {
+  it.each(["blueprint", "", undefined, null, 0])("throws rather than emit a diagnostic with no code, for %s", (subject) => {
+    // @ts-expect-error -- exercising a caller that bypassed the closed union at runtime
+    expect(() => checkDeclaredBump(subject, "1.0.0", "1.1.0", MAJOR)).toThrow();
+  });
+});

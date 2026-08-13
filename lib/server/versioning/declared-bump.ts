@@ -11,11 +11,29 @@ import { bumpSatisfies, declaredBump, error, formatSemver, parseSemver } from "@
 /** What kind of release is being checked; picks the diagnostic's namespace. */
 export type BumpSubject = "card" | "bundle" | "ontology";
 
-const CODE_BY_SUBJECT: Record<BumpSubject, DiagnosticCode> = {
-  card: "card/version-bump-too-small",
-  bundle: "bundle/version-bump-too-small",
-  ontology: "ontology/version-bump-too-small",
-};
+/**
+ * `subject`'s mapping to a code, as an exhaustive switch rather than an
+ * object index. A diagnostic's `code` must always be classifiable
+ * (backend.md §T025) — unreachable from a typed caller since `subject` is a
+ * closed union, but an untyped one (plain JS, an `as` cast) can still call
+ * this with a value outside it, and an object index would silently answer
+ * `undefined` rather than a `DiagnosticCode` nothing could then filter by.
+ * Throwing is the loud, safe answer instead.
+ */
+function codeFor(subject: BumpSubject): DiagnosticCode {
+  switch (subject) {
+    case "card":
+      return "card/version-bump-too-small";
+    case "bundle":
+      return "bundle/version-bump-too-small";
+    case "ontology":
+      return "ontology/version-bump-too-small";
+    default: {
+      const invalid: never = subject;
+      throw new Error(`checkDeclaredBump: "${String(invalid)}" is not a subject this contract names`);
+    }
+  }
+}
 
 /** The lowest version that would satisfy `level`, mirroring `lib/core/card/validate.ts`'s `nextVersionFor`. */
 function nextVersionFor(previousVersion: string, level: BumpLevel): string | undefined {
@@ -49,6 +67,10 @@ export function checkDeclaredBump(
   declared: string,
   inferred: BumpAnalysis,
 ): Diagnostic[] {
+  // Resolved first and unconditionally: an unclassifiable subject is a
+  // programming error regardless of what the bump math below would decide.
+  const code = codeFor(subject);
+
   const declaredLevel = declaredBump(previous, declared);
   if (bumpSatisfies(declaredLevel, inferred.level)) return [];
 
@@ -60,7 +82,7 @@ export function checkDeclaredBump(
   const reasons = inferred.reasons.length > 0 ? ` ${inferred.reasons.join("; ")}.` : "";
 
   return [
-    error(CODE_BY_SUBJECT[subject], `${what}, but the changes require a ${inferred.level} bump.`, {
+    error(code, `${what}, but the changes require a ${inferred.level} bump.`, {
       hint: target ? `Publish \`${target}\` or higher.${reasons}` : reasons.trim(),
     }),
   ];

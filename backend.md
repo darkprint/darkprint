@@ -146,7 +146,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | claimed | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | reverted | adversary FAIL: `inferBlueprintBump` drops every `cardRefs` member `parseCardRef` rejects and collapses a same-id pin conflict, so a moved pin set infers `none`; 2 blind tests red on three identical runs, 2 further cases uncovered; all six criteria pass, typecheck/lint/build clean |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | impl-done | fix for adversary FAIL: `pinsById` now splits refs leniently (no `CARD_ID`/`REF_VERSION` grammar check) so a repin still prices by semver, plus a raw-ref-set membership check so nothing can vanish unparsed; `checkDeclaredBump`'s code lookup is now an exhaustive switch that throws on an out-of-union `subject` instead of emitting `code: undefined`. typecheck/lint/build clean; 164/164 in `tests/server/t025` + `lib/server/versioning`; full suite 3936/3936 on three consecutive runs |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | claimed | — |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -779,7 +779,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T025, Versioning service: semver, digest, bump, chains
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t025-versioning` on `feat/t025-versioning`
 - **Test worktree:** `../darkprint-wt-t025-versioning-tests` on `test/t025-versioning`
 - **Depends on:** T000 (contract: types)
@@ -935,6 +935,35 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     bind, and "never answer `none` for input you could not read" is the only safe reading of a
     clause whose unit is a set. That is a defect to fix, not an amendment to make; one sentence
     would put it beyond argument if the orchestrator wants it.
+  - 2026-08-14 implementer: fixed both faces of the one root cause in `blueprint-bump.ts`.
+    `pinsById` now splits a ref on its last `@` the way `parseCardRef` does, but without
+    `CARD_ID`/`REF_VERSION` grammar validation (`splitRef`, local to the file) — an id that
+    would be refused at the write site still pairs against itself one version apart, so a
+    repin is still priced by `declaredBump`. On top of that pairing, `previous.cardRefs` and
+    `next.cardRefs` are now also compared as raw `Set`s (deduplicated, not multisets — a
+    repeated *identical* ref stays a no-op, which `tests/server/t025/blueprint-bump.test.ts`'s
+    "reads a repeated pin as the same set" holds to) and a `patch` reason is pushed whenever
+    those sets differ, whichever face of a ref the id-keyed pairing above could not read:
+    unparseable-both-sides (`café-solver@1.0.0 → café-solver@2.0.0`, now priced `major` via
+    `splitRef`, not `patch`, since the id half matches even though `CARD_ID` would reject it),
+    an added or vanished garbage ref (`[] → [""]`, `["not-a-ref"] → []`), and a same-id pin
+    added at a conflicting version alongside the original (`Finding 2`, uncovered by any red
+    test — the raw-set check catches it as a `patch` since the id-keyed map still resolves
+    "first occurrence wins" for pricing, and nothing asked for a more specific level than
+    "not none" here). `Finding 3` (`["solver@latest"] → ["solver@2.0.0"]`) is now read as a
+    genuine repin — same id, `declaredBump("latest","2.0.0")` returns `none` since `"latest"`
+    is not semver, so it falls to the same `patch` safety net — rather than a fresh pin, which
+    is a more accurate reading than "the same fix covers it" asked for, not just a louder one.
+    Separately, `declared-bump.ts`'s `CODE_BY_SUBJECT` object index became `codeFor`, an
+    exhaustive `switch` over `BumpSubject` with a `const invalid: never` default branch that
+    throws — the observation, not charged as a defect, that an out-of-union `subject` produced
+    a `Diagnostic` with `code: undefined`, which `T020`/`T030`/`T100` could never filter by.
+    Added 6 scratch regression tests naming each fixed face under
+    `lib/server/versioning/*.test.ts`; they do not count as verification. Gates: `npm run
+    typecheck`, `npm run lint`, `npm run build` clean. `npx vitest run tests/server/t025
+    lib/server/versioning`: 164/164. `npm test`, full suite, three consecutive runs:
+    3936/3936 each time, byte-identical. No `git stash` used anywhere in this session
+    (`b53f413`'s rule).
 
 ### T060, Authorization policy: owner and operator
 
