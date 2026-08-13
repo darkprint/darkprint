@@ -22,4 +22,4 @@ export { migrateDown, migrateUp } from "./migrate";
 
 /* --------------------- object storage --------------------- */
 export type { ObjectStorage, ObjectStorageConfig } from "./storage";
-export { createObjectStore, keyForDigest, objectStorageConfigFromEnv } from "./storage";
+export { createObjectStorage, keyForDigest, objectStorageConfigFromEnv } from "./storage";

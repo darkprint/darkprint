@@ -77,7 +77,7 @@ it does not decide differently inside a worktree.
 
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
-| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` | `feat/t000-foundation` | reverted | adversary round 3 FAIL: D-10, the storage factory and verb names disagree with the Published signatures block; 14 failed / 3754, deterministic. Aliasing both names gives 3754/3754 |
+| T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` | `feat/t000-foundation` | impl-done | typecheck/lint/build clean; test 3759/3760 (110/111 files), identical across three consecutive runs; the 1 red is `tests/server/session.test.ts`'s pre-expiry "two fields and nothing else" assertion, now stale against the exp claim this round adds |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | — | — | todo | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | — | — | todo | — |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | — | — | todo | — |
@@ -211,7 +211,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T000, Foundation: schema, client, envelope, GitHub session, harness
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t000-foundation` on `feat/t000-foundation`
 - **Test worktree:** `../darkprint-wt-t000-foundation-tests` on `test/t000-foundation`
 - **Depends on:** —
@@ -494,6 +494,61 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     **Recorded, not charged.** The session token still carries no expiry claim: `{accountId, handle}` and nothing else, so `Max-Age` binds the browser only, a captured cookie is valid indefinitely, and sign-out clears the browser's copy rather than the token's validity. Unchanged since round 1, still outside every criterion, and it is the one thing in this task I would want stated in the contract before T050 builds sessions on top of it. `keyForDigest` still throws a plain `Error` quoting the caller's input verbatim, which no route consumes yet.
 
     **What a fix has to clear.** `npm test` green, and green on three consecutive runs rather than one. Concretely that is: rename the factory to the contract's `createObjectStorage`, or amend the block to `createObjectStore` — either is fine and the contract should be the one that ends up matching reality; and settle whether the storage verbs are `put`/`get`/`delete` or `putObject`/`getObject`/`deleteObject`, writing the chosen one into the block as a signature rather than as prose, since that is the shape of every other entry that has not caused a round. My probes complied with amendment 4: three scratch databases created and dropped, seven objects written and deleted, cleanup line confirmed in each run, and `pg_database` shows 0 leftovers.
+  - 2026-08-13 implementer: impl-done, fourth pass. Rebased on `backend` at `3a44fa3`
+    before starting; the eleven-commit rebase (my round-3 lineage replaying twice, once
+    against my own prior rewrite and once against the round-3 test-authoring lineage)
+    conflicted repeatedly in this file's own table row, State line and Log section, and
+    twice more in `tests/server/**` itself as add/add pairs against an older, already-
+    superseded copy of the same files. Resolved every `backend.md` conflict by keeping
+    the most advanced state and folding in Log entries that were actually new rather
+    than re-adding content already present in a newer form; resolved every
+    `tests/server/**` add/add conflict by taking the side already checked out; the
+    superseded side (`e0440ab`, a round-1-era copy, predating `BindingError`) was byte-
+    for-byte older, verified by diff before discarding rather than assumed.
+    **D-10a**: `createObjectStore` → `createObjectStorage` in `lib/db/storage.ts`,
+    `lib/db/index.ts`'s barrel, `lib/db/storage.test.ts` and
+    `tests/support/storage.ts`. Not aliased — the round-2 name is gone, matching the
+    contract's own instruction that this is a rename and not a co-existence.
+    **D-10b**: `ObjectStorage.putObject`/`getObject`/`deleteObject` → `put`/`get`/
+    `delete`, same four call sites. Behaviour untouched: `get` still answers
+    `undefined` on a missing key rather than throwing, and `keyForDigest`'s validation
+    — the comment explaining why an unvalidated `delete` cannot silently no-op —
+    carried over the rename unchanged, still guarding all three verbs from one place.
+    Both were pure renames; nothing in the implementation itself was wrong, exactly as
+    the contract said.
+    **Expiry** (new scope, not a defect): `SessionPayload` gained `exp: number`
+    (unix seconds). A new `SessionClaims = Omit<SessionPayload, "exp">` is what a
+    caller mints from — `sessionCookieHeader`'s first parameter is now typed to it,
+    so the OAuth callback route (unchanged) never has to think about expiry.
+    `encodeSession(claims, secret?, exp?)` defaults `exp` to
+    `now + the existing 30-day cookie lifetime`; the third argument exists only so a
+    test can mint an already-expired token without waiting on the clock. `decodeSession`
+    checks `exp` after the signature and shape checks and returns `undefined` — not a
+    throw — on an expired token, which is what lets the existing `getSession` →
+    `requireSession`/`withSession` → 401 path reject it with zero changes to
+    `guard.ts` itself: an expired token now reads exactly like a forged one, all the
+    way up. Falsified: replaced the expiry check with `if (false)`, watched four tests
+    across `session.test.ts` and `guard.test.ts` fail (one showing the decoded payload
+    where `undefined` was expected, one a 200 where 401 was expected, one a called
+    handler that should never have run), restored it. **Precisely what this gives**:
+    expiry, not revocation. A stolen cookie stays valid until `exp`, and this task does
+    not add server-side session state to close that — it is a storage and scale
+    decision the owner has not taken, and the contract already records it as open;
+    building it here would have been scope no one asked for.
+    `tests/server/session.test.ts` (Forbidden) has one now-stale assertion, unrelated
+    to D-10: `"the session exposes those two fields and nothing else"` still checks
+    `Object.keys(session).sort()` against exactly `["accountId", "handle"]`, written
+    before this round's contract amendment added `exp`. Confirmed from source rather
+    than assumed — the contract text I was handed this round states in as many words
+    that `SessionPayload` carries the claim, so the object now has three keys by
+    design, and updating that assertion is the test branch's own half of this round's
+    scope change, the same shape as D-08's `migrations.test.ts` in round 3. Left
+    untouched.
+    No signature in the Published signatures block was ambiguous; nothing to report
+    as newly open. Gates on this tree, stack up (`docker compose up -d`): `typecheck`
+    and `lint` clean; `build` green; `test` run three times consecutively, identical
+    every time — 3759/3760 passed, 110/111 files, the 1 red exactly the stale
+    assertion above. Zero leftover scratch databases after any run.
 
 ### T010, Archive persistence: bundles, releases, bytes
 

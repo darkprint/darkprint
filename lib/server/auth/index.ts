@@ -5,7 +5,7 @@
 export type { CookieOptions } from "./cookie";
 export { buildCookieHeader, parseCookieHeader } from "./cookie";
 
-export type { SessionPayload } from "./session";
+export type { SessionClaims, SessionPayload } from "./session";
 export {
   SESSION_COOKIE_NAME,
   clearSessionCookieHeader,

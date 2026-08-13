@@ -21,7 +21,18 @@ describe("requireSession", () => {
     const request = new Request("https://darkprint.io/api/example", {
       headers: { cookie: `${SESSION_COOKIE_NAME}=${encodeSession(payload, SECRET)}` },
     });
-    expect(requireSession(request, SECRET)).toEqual(payload);
+    expect(requireSession(request, SECRET)).toEqual({ ...payload, exp: expect.any(Number) });
+  });
+
+  it("rejects an expired token exactly as it rejects a forged one — no revocation, only expiry", () => {
+    const payload = { accountId: "acc_1", handle: "berti" };
+    const expiredOneSecondAgo = Math.floor(Date.now() / 1000) - 1;
+    const request = new Request("https://darkprint.io/api/example", {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=${encodeSession(payload, SECRET, expiredOneSecondAgo)}` },
+    });
+    const result = requireSession(request, SECRET);
+    expect(result).toBeInstanceOf(Response);
+    expect((result as Response).status).toBe(401);
   });
 });
 
@@ -42,7 +53,22 @@ describe("withSession", () => {
     });
     const response = await withSession(request, (session) => Response.json(session));
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual(payload);
+    await expect(response.json()).resolves.toEqual({ ...payload, exp: expect.any(Number) });
+  });
+
+  it("AC3, expiry: an expired token's handler never runs either", async () => {
+    const payload = { accountId: "acc_1", handle: "berti" };
+    const expiredOneSecondAgo = Math.floor(Date.now() / 1000) - 1;
+    const request = new Request("https://darkprint.io/api/example", {
+      headers: {
+        cookie: `${SESSION_COOKIE_NAME}=${encodeSession(payload, SECRET, expiredOneSecondAgo)}`,
+      },
+    });
+    const handler = vi.fn(() => new Response("should never run"));
+    const response = await withSession(request, handler);
+    expect(handler).not.toHaveBeenCalled();
+    expect(response.status).toBe(401);
+    expect(response.headers.get("content-type")).toBe("application/problem+json");
   });
 });
 
@@ -65,6 +91,17 @@ describe("GET /api/auth/session (the guarded handler AC3 describes)", () => {
     });
     const response = await sessionRoute(request);
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual(payload);
+    await expect(response.json()).resolves.toEqual({ ...payload, exp: expect.any(Number) });
+  });
+
+  it("expiry: a session that has already expired is turned away like a signed-out visitor", async () => {
+    const payload = { accountId: "acc_1", handle: "berti" };
+    const expiredOneSecondAgo = Math.floor(Date.now() / 1000) - 1;
+    const request = new Request("https://darkprint.io/api/auth/session", {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=${encodeSession(payload, SECRET, expiredOneSecondAgo)}` },
+    });
+    const response = await sessionRoute(request);
+    expect(response.status).toBe(401);
+    expect(response.headers.get("content-type")).toBe("application/problem+json");
   });
 });

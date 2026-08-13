@@ -22,15 +22,15 @@ export interface ObjectStorageConfig {
 }
 
 export interface ObjectStorage {
-  putObject(digest: string, body: Uint8Array | string): Promise<void>;
+  put(digest: string, body: Uint8Array | string): Promise<void>;
   /** `undefined` on a missing key, mirroring B-03: absence is a value, not a thrown error. */
-  getObject(digest: string): Promise<Uint8Array | undefined>;
+  get(digest: string): Promise<Uint8Array | undefined>;
   /**
    * S3 answers a DELETE on a key it never held with the same success as one it did —
    * safe here only because `digest` is validated below, so there is no key this can
    * silently no-op on that a caller could mistake for one it just removed.
    */
-  deleteObject(digest: string): Promise<void>;
+  delete(digest: string): Promise<void>;
 }
 
 /** "sha256:" plus exactly 64 lowercase hex digits — `lib/core/archive/store.ts`'s own shape. */
@@ -65,7 +65,7 @@ export function objectStorageConfigFromEnv(): ObjectStorageConfig {
   };
 }
 
-export function createObjectStore(config: ObjectStorageConfig = objectStorageConfigFromEnv()): ObjectStorage {
+export function createObjectStorage(config: ObjectStorageConfig = objectStorageConfigFromEnv()): ObjectStorage {
   const client = new S3Client({
     endpoint: config.endpoint,
     region: config.region ?? "auto",
@@ -78,11 +78,11 @@ export function createObjectStore(config: ObjectStorageConfig = objectStorageCon
   });
 
   return {
-    async putObject(digest, body) {
+    async put(digest, body) {
       const key = keyForDigest(digest);
       await client.send(new PutObjectCommand({ Bucket: config.bucket, Key: key, Body: body }));
     },
-    async getObject(digest) {
+    async get(digest) {
       const key = keyForDigest(digest);
       try {
         const result = await client.send(new GetObjectCommand({ Bucket: config.bucket, Key: key }));
@@ -93,7 +93,7 @@ export function createObjectStore(config: ObjectStorageConfig = objectStorageCon
         throw err;
       }
     },
-    async deleteObject(digest) {
+    async delete(digest) {
       const key = keyForDigest(digest);
       await client.send(new DeleteObjectCommand({ Bucket: config.bucket, Key: key }));
     },
