@@ -19,7 +19,7 @@ wherever `docs/ORCHESTRATION.md` says `main`. Recorded here rather than assumed.
 |---|---|---|---|
 | 1 | T060 | `../darkprint-wt-t060-policy` | claimed |
 | 2 | T010 | `../darkprint-wt-t010-archive` | claimed |
-| 3 | T025 | `../darkprint-wt-t025-versioning` | claimed |
+| 3 | T025 | `../darkprint-wt-t025-versioning` | tests-written |
 
 **T000 is merged and tagged `t000-verified` (`ec516fa`). Wave 2 is open**: T010, T025, T060,
 T070 and T240 are all ready, with disjoint `Owns` sets, and three of the five may run at once.
@@ -146,7 +146,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | claimed | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | impl-done | typecheck/lint/build clean; 3789/3789 on three consecutive runs (one interleaved run hit an unrelated pre-existing timing flake in `lib/core/dot/graph.test.ts`, outside Owns, reproduced in isolation as a pass) |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | impl-done | typecheck/lint/build clean; 3789/3789 on three consecutive runs; 137 blind tests on `test/t025-versioning`, all red on the absent module, 20 falsifications confirm they discriminate |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | claimed | — |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -809,6 +809,54 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 - **Log:**
   - 2026-08-13 orchestrator: created from B-04.
   - 2026-08-14 implementer: flagged the `checkDeclaredBump` diagnostic-code gap before writing it (no `DiagnosticCode` existed for blueprint/ontology bump refusals, and `lib/core/diagnostics.ts` is Forbidden); orchestrator amended the signature with `subject` and added `bundle/`/`ontology/version-bump-too-small` on base. Implemented all four published names — `BlueprintSnapshot`, `inferBlueprintBump`, `inferOntologyBump`, `checkDeclaredBump` — under `lib/server/versioning/**`, barrel at `@/lib/server/versioning` re-exporting the consumed `lib/core` card primitives alongside them. `inferBlueprintBump` diffs the DOT text plus a `parseCardRef`-keyed map of pinned card ids to versions (repin severity taken from `declaredBump` on the pinned version pair; losing a pin is major, gaining one minor, any other DOT byte a patch safety net; AC-3's "identical snapshot infers none" holds because both fields are literally unchanged). `inferOntologyBump` diffs by term id (removed = major, added = minor), plus a cycle-safe walk of each retained term's `broader` ancestor set (losing a reachable ancestor = major, gaining one = minor) and a `kind` change (= major); a term's own `deprecated` field is never consulted for removal, so deprecating without dropping the id is a patch at most, which is AC-6's first half. `checkDeclaredBump` maps `subject` to the matching code and returns one `error`-severity diagnostic with the engine's reasons, or `[]` when satisfied. State/Live-slots row left untouched per Standing rules (index row + this section only). Gates: `npm run typecheck`, `npm run lint`, `npm run build` all clean; `npm test` 3789/3789 on three separate runs (one interleaved run hit one unrelated failure, a timing-sensitive assertion in `lib/core/dot/graph.test.ts`, outside Owns and outside my diff — reproduces as a pass in isolation, consistent with machine-load flakiness rather than a regression). 27 scratch tests under `lib/server/versioning/*.test.ts` exercise every acceptance criterion I own; they are not the verification suite. Reported result to orchestrator.
+  - 2026-08-14 test author: 126 tests in `tests/server/t025/**`, at least one per acceptance
+    criterion and mapped to it by name (`AC-1` … `AC-6`), plus absent and malformed input,
+    empty strings, unicode, wrong types, semver boundaries, set semantics over `cardRefs`
+    and the term set, purity under frozen inputs, interleaved and concurrent callers, and
+    duplicate calls. 125 red on the absent module, 1 todo (the gap in AC-6 above). No
+    candidate lists anywhere: every published name is bound exactly and its absence quotes
+    the clause that names it. Nothing in the suite touches a database — the task stores
+    nothing — so there is none to isolate or drop, and `tests/support/**` is unused.
+  - 2026-08-14 test author: the guards were falsified before hand-off. A throwaway reference
+    implementation in the scratchpad turned all 125 green, then 17 deliberate breakages each
+    went red on exactly the tests naming the property broken: a removal priced minor (6), the
+    pin set ignored (8), a repin priced minor (2), an unmoved blueprint priced `none` (1, the
+    AC-3 reading), reasons dropped from the refusal (3), nothing ever refused (26), reasons
+    accumulating in module state (15), the pin list sorted in place (1), a narrowed `broader`
+    chain missed (2), a deprecation read as a removal (3), refs compared as an ordered list
+    (2), a repeated pin counted twice (1), unreadable input swallowed into `none` (11), the
+    refusal downgraded to a warning (1), versions ordered as strings (16), one published name
+    respelled (36), and `parseSemver` reimplemented rather than consumed (1).
+  - 2026-08-14 test author: two environment notes. `tests/support/**` **does** exist on this
+    branch after `git rebase backend` — T000 merged it — which contradicts the hand-off's
+    premise for forbidding it; the prohibition was followed anyway since T025 needs no
+    harness. And `npm run typecheck` in a fresh worktree reports 18 pre-existing
+    `Cannot find name 'PageProps'` errors under `app/**`, present with this branch's files
+    removed: `tsconfig.json` includes `.next/types/**`, which no build has generated here.
+    These tests add exactly one typecheck error, `Cannot find module
+    '@/lib/server/versioning'`, and it is the module under test.
+  - 2026-08-14 test author: rebased onto `25dd706`, which settles all four reported gaps, and
+    rebound the suite to the amended block. **The Open line is removed rather than answered
+    in place: the contract is now derivable in full.** 137 tests, all red on the absent
+    module, no todo. What moved: every `checkDeclaredBump` call takes `subject` first; a new
+    block asserts the code mapping the function owns (`card/`, `bundle/`,
+    `ontology/version-bump-too-small`) and that a subject outside the closed union is never a
+    silent acceptance; `error` severity moved from derived to contract-bound; the refusal is
+    now asserted as *exactly one* diagnostic, which the block states and the first round only
+    bounded below; AC-3 moved from `patch` to `none`, one test as predicted; and the AC-6
+    `it.todo` became a test holding this task to **not** refusing a dangling successor, since
+    a second authority on one question is what B-04 exists to prevent. Re-falsified: 20
+    breakages, each red on exactly the property broken, including the four new or moved
+    guards — the code ignoring `subject` (2 red, both non-card subjects), an unknown subject
+    accepted (5), an unmoved blueprint priced `patch` (1), and a dangling successor refused
+    here (1).
+  - 2026-08-14 test author: **one leftover in the contract, reported not edited.** AC-6's
+    acceptance-criteria line still ends "and a dangling successor is refused", which the
+    Published signatures block above it withdraws in as many words. The block is the later
+    and explicit ruling and is what the tests bind to; the criteria line is the orchestrator's
+    to fix. Verified against the tree rather than the amendment note:
+    `lib/core/ontology/resolve.ts:327-336` does emit `ontology/dangling-pointer` at `error`
+    severity for a `deprecated.replacedBy` naming no term, so the withdrawal is right.
 
 ### T060, Authorization policy: owner and operator
 
