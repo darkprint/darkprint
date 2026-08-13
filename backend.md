@@ -1662,6 +1662,19 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     bump, while `cardDigests` and therefore the digest did move. The test asserts only the
     floor — not `none` — and pins no level above it, so either ruling passes. Worth settling
     before T100, which will hit it the first time an author pins back to an older card.
+  - 2026-08-14 test author: settled at `4b8de07` — **magnitude, never direction** — and the
+    floor is now an exact level. `bump.ts:460` verified in the tree: `compareSemver(after,
+    before) <= 0` really does return `none`, so the clause names the right line. The rollback
+    test asserts **all three** levels rather than the major alone, since an implementation
+    special-casing the one direction it was shown passes a single-case test, and a fifth test
+    asserts the property itself — repinning a pair either way gives one answer — over five
+    pairs including `1.0.0-rc.1 ↔ 1.0.0`. That last pair is the one that separates the rule
+    from its shortcut: `compareSemver` orders a prerelease *below* its release, so ordering
+    the pair prices it a `patch`, where "major whenever `declaredBump` says `none`" says major.
+    157 tests, all red, no todo. 26 falsifications, all discriminating, and the two new ones
+    catch the rule from opposite sides — keeping the direction prices a major rollback down to
+    a patch (4 red), and the always-major shortcut prices a minor and a patch rollback up (4
+    red, including the prerelease pair that only this one catches).
 
   **Ruling, round 5: an ambiguous pairing infers the *most* expensive plausible reading, never the cheapest.** `cardRefs` carries no node identity, so when one card id both loses and gains versions there is no fact about which pin moved where — some policy must be chosen and the contract named none. The choice is settled by B-04's purpose and by round 1's sibling ruling, which already went this way: never answer less than you can justify for input you could not read. Refusing an under-declared bump is the whole reason this check exists, so of the readings the data permits, the inference takes the one that demands the largest declared bump. Over-answering costs an author a version number they did not strictly need; under-answering ships a breaking change as a patch, and nothing downstream re-checks it.
 

@@ -45,6 +45,13 @@ async function baseline() {
   return asBumpAnalysis(fn(snapshot(BASE_DOT, BASE_REFS), snapshot(BASE_DOT, BASE_REFS)), WHERE);
 }
 
+/** One card, repinned from one version to another over an unchanged DOT. */
+async function repin(from: string, to: string) {
+  const fn = await inferBlueprintBump();
+  return asBumpAnalysis(fn(snapshot(BASE_DOT, [`solver@${from}`]), snapshot(BASE_DOT, [`solver@${to}`])), WHERE)
+    .level;
+}
+
 describe("AC-2: repinning a card to a new major is a major blueprint release", () => {
   it("AC-2 infers major when a pinned card moves to a new major version", async () => {
     const fn = await inferBlueprintBump();
@@ -293,28 +300,46 @@ describe("inferBlueprintBump: the pin collection is a multiset, compared order-i
     expect(ds[0].code).toBe("bundle/version-bump-too-small");
   });
 
-  it("prices a moved version by `declaredBump` on that pair", async () => {
-    const fn = await inferBlueprintBump();
-    const at = async (from: string, to: string) =>
-      asBumpAnalysis(fn(snapshot(BASE_DOT, [`solver@${from}`]), snapshot(BASE_DOT, [`solver@${to}`])), WHERE).level;
-
-    expect(await at("1.2.0", "2.0.0")).toBe("major");
-    expect(await at("1.2.0", "1.3.0")).toBe("minor");
-    expect(await at("1.2.0", "1.2.1")).toBe("patch");
+  it("prices a version moving forward by the magnitude of the move", async () => {
+    expect(await repin("1.2.0", "2.0.0")).toBe("major");
+    expect(await repin("1.2.0", "1.3.0")).toBe("minor");
+    expect(await repin("1.2.0", "1.2.1")).toBe("patch");
   });
 
-  it("does not answer `none` when a pin is rolled back to an older version", async () => {
-    const fn = await inferBlueprintBump();
-    // `declaredBump("2.0.0", "1.0.0")` is `none` — a downgrade declares no bump — but the
-    // pin moved and so did `cardDigests`. Only the floor is asserted: the contract prices a
-    // moved version by `declaredBump` and separately argues from identity, and those two
-    // sentences meet on exactly this case. Reported rather than resolved here.
-    const analysis = asBumpAnalysis(
-      fn(snapshot(BASE_DOT, ["solver@2.0.0"]), snapshot(BASE_DOT, ["solver@1.0.0"])),
-      WHERE,
-    );
+  /**
+   * The direction of a repin is not part of its size.
+   *
+   * `declaredBump` answers `none` for a downgrade — `lib/core/version/bump.ts:460`,
+   * `compareSemver(after, before) <= 0` — which is right for *declaring* a version and wrong
+   * for *pricing a change*. Reading it literally lets an author repin back to a known-good
+   * older card, move `cardDigests`, move the bundle digest, and be required to move no
+   * version at all. So the pair is ordered with `compareSemver` and `declaredBump(lower,
+   * higher)` prices it, which is the same invariant the multiset ruling rests on: if identity
+   * distinguishes two releases, inference has to as well.
+   *
+   * All three levels, not just the major: an implementation that special-cases the one
+   * direction it was shown passes a single-case test and fails the next author.
+   */
+  it("prices a rollback by the same magnitude as the move that made it", async () => {
+    expect(await repin("2.0.0", "1.0.0"), "a rollback across a major is major").toBe("major");
+    expect(await repin("1.3.0", "1.2.0"), "a rollback across a minor is minor").toBe("minor");
+    expect(await repin("1.2.1", "1.2.0"), "a rollback across a patch is patch").toBe("patch");
+  });
 
-    expect(analysis.level).not.toBe("none");
+  it.each([
+    { name: "a major apart", a: "1.0.0", b: "3.0.0" },
+    { name: "a minor apart", a: "1.2.0", b: "1.9.0" },
+    { name: "a patch apart", a: "1.2.0", b: "1.2.7" },
+    { name: "a prerelease apart", a: "1.0.0-rc.1", b: "1.0.0" },
+    { name: "several majors apart", a: "0.1.0", b: "12.0.0" },
+  ])("gives one answer whichever way a pair $name is repinned", async ({ a, b }) => {
+    // The property, stated directly, rather than three fixed pairs that could each be
+    // special-cased. `1.0.0-rc.1 ↔ 1.0.0` is here because `compareSemver` orders the
+    // prerelease *below* the release, so ordering the pair prices it a patch — where a
+    // shortcut that answered "major whenever `declaredBump` says `none`" would say major.
+    expect(await repin(a, b), `${a} → ${b} and ${b} → ${a} are the same size of change`).toBe(
+      await repin(b, a),
+    );
   });
 
   it("infers major when an id loses every one of its occurrences", async () => {
