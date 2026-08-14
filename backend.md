@@ -488,7 +488,24 @@ set and it closes regardless of D-17. The fix is the
 other half of the bookkeeping already present — a `seen` set of containers **fully walked and
 found clean**, checked beside `open`, which is sound precisely because `open` handles cycles, and
 turns 16.7 M visits into 25. **Any task whose input can be built in-process rather than parsed
-must add it.** T010 ships without it deliberately; T020 and T030 copy the same walk and inherit
+must add it.**
+
+**Fixing the walk closes only half of T-02, and the other half is `lib/core`'s.** Measured by
+T020's implementer after its walk went to O(1) per visit: a depth-20 diamond still takes **13-15 s**
+through `addCard`, because `cardDigest`'s `canonicalJson` (~1.9 s alone at depth 20) and the
+pg/drizzle driver's own JSON serialisation of the `jsonb` parameter **both re-expand shared
+substructure**. Neither can do otherwise — JSON has no reference concept, so "the same object twice"
+cannot be represented without materialising it twice. At depth 22, `sha256Hex` hit
+`RangeError: Invalid array length` on the resulting string; `addCard`'s existing `try`/`catch`
+around `cardDigest` converts that into a typed error rather than an uncaught crash, so nothing is
+unhandled, but the ceiling is real and it is **outside every current task's `Owns`**.
+
+This applies to **every task that hashes or stores caller-built content** — T010's `bundleDigest`
+and `manifest`, T020's `cardDigest` and `body`, T030's term bodies — so the walk fix bounds the
+*guard's* cost and not the *request's*. Recorded rather than charged anywhere: `lib/core/**` is
+Forbidden to all three, and a depth cap belongs at the route boundary (T100/T080), which does not
+exist yet. **Whichever task first owns a route accepting caller-built objects owns this**, and it
+should arrive knowing the number is 13-15 s at depth 20 rather than discovering it. T010 ships without it deliberately; T020 and T030 copy the same walk and inherit
 the same condition.
 
 ## A ruling is implemented as narrowly as its worked example
