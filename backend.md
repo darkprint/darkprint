@@ -1028,6 +1028,24 @@ an individual suite moves the symptom, because the cause is one Postgres on 5432
 worktree, with no stated owner, driven by ~100 agent processes on ten cores. Same class as the
 repo-global `git stash` and the shared worktree.
 
+**A third time, at T090, and this one has a structural cause rather than a lapse.** The
+orchestrator told the adversary to hold the tree at `0b85bcf` **and called the implementer back in
+the same message**, so the handover went one direction: nothing told the implementer the adversary
+had not finished. It began the fix inside a tree still being measured, and the adversary found four
+files under `git diff --stat` with its own `backend.md` write timestamped **between two of theirs**.
+
+**So a handover names the commit AND who holds it, in both directions.** Telling the receiving side
+it may start is half a handover; the releasing side has to be told it has released, and until both
+messages exist the tree has two owners who each believe they are alone. Every instance of this
+failure so far has been the orchestrator sending one of the two.
+
+**The adversary's handling is the model for what to do when it happens**: it committed
+**path-limited** to `backend.md` with the staged file list verified by name, so the implementer's
+in-progress work and its untracked test file stayed out of the commit; it did not touch, revert or
+move another agent's files; and it reported the one run that **straddled** the edits even though
+that run imports nothing from the module and stands — *"the totals never moved so nothing looked
+wrong" is how the last one stayed invisible.*
+
 **And it happened again, worse, at T080 — dispatched on an INTERIM report.** T080's adversary sent
 a mid-round interim and the orchestrator called the implementer back on the strength of it, so
 round 2 began inside a tree the adversary was still measuring. Its route battery measured the
