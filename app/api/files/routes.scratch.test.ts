@@ -210,7 +210,20 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
     expect((await getFile()).status).toBe(200);
     expect((await getCard()).status).toBe(200);
 
-    /* Outage one: the card read, which `serveCard` reaches directly and `serveFile`
+    /* Outage one: the ontology read, which `buildExport` reaches through `openView` and
+       which `serveCard` does not reach at all. Ordered first because `openView` runs
+       before the pinned-card loop, so this is the statement that fails while every other
+       read still works — without it the `openView` wrap would be an unobserved guard. */
+    await testDb!.client.query('DROP TABLE "ontology_version" CASCADE');
+    const viaOntology = await outcome(getFile);
+    expect(viaOntology).toBeInstanceOf(ExportReadError);
+    expect(viaOntology).not.toBeInstanceOf(ExportError);
+    expect((viaOntology as Error).message).toBe("export: reading this release failed.");
+    /* And the card route is untouched by it, which is what says the outage was located
+       where this test claims rather than anywhere in the request. */
+    expect((await getCard()).status).toBe(200);
+
+    /* Outage two: the card read, which `serveCard` reaches directly and `serveFile`
        reaches through `buildExport`'s pinned-card loop. Both were unwrapped. */
     await testDb!.client.query('DROP TABLE "card_version" CASCADE');
     for (const [name, thrown] of [
@@ -226,8 +239,8 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
       expect(Object.prototype.propertyIsEnumerable.call(thrown, "cause"), name).toBe(false);
     }
 
-    /* Outage two: the bundle lookup itself, the first statement the request makes and the
-       one that was answering 404. */
+    /* Outage three: the bundle lookup itself, the first statement the request makes and
+       the one that was answering 404. */
     await testDb!.client.query('DROP TABLE "release", "bundle" CASCADE');
     const first = await outcome(getFile);
     expect(first).toBeInstanceOf(ExportReadError);
