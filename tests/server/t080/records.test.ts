@@ -522,6 +522,25 @@ describe("AC1 lookups", () => {
     expect(await card(s.db, anonymous, "beta-card@9.9.9")).toBeUndefined();
   });
 
+  it("card() canonicalises the ref it is handed, not just the refs it stores", async () => {
+    /* The pin-canonicalisation test below covers the *stored* side. This is the lookup
+       argument, and a **padded ref is the only input that separates the two implementations**:
+       every unpadded ref resolves identically whether the module canonicalises what it was
+       handed or looks the raw string up in a map already keyed by canonical refs. Nothing in
+       this suite passed one, so the difference was unobserved on both sides.
+
+       `parseCardRef` trims on purpose — "surrounding whitespace is tolerated because refs
+       arrive from hand-written DOT attributes" (lib/core/card/schema.ts) — so a padded ref
+       is a valid reference to the same card and not a malformed one. */
+    const card = await bind("card");
+    for (const padded of ["  beta-card@2.0.0", "beta-card@2.0.0  ", "  beta-card@2.0.0  "]) {
+      const found = asCardSummary(await card(s.db, anonymous, padded), `card(${JSON.stringify(padded)})`);
+      expect(found.ref, `card(${JSON.stringify(padded)}) must resolve the same card`).toBe(
+        "beta-card@2.0.0",
+      );
+    }
+  });
+
   it("card() answers undefined for a string that is not a pinned ref, rather than raising", async () => {
     const card = await bind("card");
     /* `parseCardRef` rejects all three: unversioned, `latest`, and a malformed id. The

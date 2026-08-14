@@ -52,6 +52,7 @@ import {
   type CardRef,
   type NodeCard,
 } from "@/lib/core";
+import { SESSION_COOKIE_NAME, encodeSession } from "@/lib/server/auth";
 import { createTestDb, type TestDb } from "@/tests/support";
 
 export type Namespace = Record<string, unknown>;
@@ -347,7 +348,11 @@ export function routePatternFor(path: string): string {
  * `/api/cards/duplicates` were shadowed by the catch-all, this would dispatch to the
  * catch-all exactly as production would.
  */
-export async function callRoute(name: RouteName, path: string): Promise<Response> {
+export async function callRoute(
+  name: RouteName,
+  path: string,
+  headers: Record<string, string> = {},
+): Promise<Response> {
   const spec = ROUTES[name];
   const { route, params } = matchRoute(path);
   let mod: Namespace;
@@ -368,7 +373,7 @@ export async function callRoute(name: RouteName, path: string): Promise<Response
         `and this route is the one serving \`${spec.url}\`.`,
     );
   }
-  const request = new Request(`https://darkprint.test${path}`);
+  const request = new Request(`https://darkprint.test${path}`, { headers });
   const answered = await (get as UnknownFn)(request, { params: Promise.resolve(params) });
   if (!(answered instanceof Response)) {
     throw new Error(
@@ -445,6 +450,20 @@ export async function dropScratchDatabases(): Promise<number> {
 }
 
 /* --------------------- actors --------------------- */
+
+/**
+ * A `Cookie` header carrying a real session for `accountId`, minted through T000's own
+ * published surface (`encodeSession`, `SESSION_COOKIE_NAME` from `@/lib/server/auth`) rather
+ * than hand-assembled — a hand-built token would test this suite's idea of the format.
+ *
+ * This is what makes a route's actor observable at all. A suite that only ever sends
+ * anonymous requests covers the reader half and the transport half separately and never the
+ * join between them, so whatever turns a session into an `Actor` can regress to "nobody"
+ * with every assertion still passing.
+ */
+export function sessionCookie(accountId: string, handle: string | null): Record<string, string> {
+  return { cookie: `${SESSION_COOKIE_NAME}=${encodeSession({ accountId, handle })}` };
+}
 
 /** T060's published `Actor`, built here rather than imported so a fixture reads as a fixture. */
 export const anonymous = { kind: "anonymous" } as const;
