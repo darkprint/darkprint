@@ -2319,6 +2319,39 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     not to self-promote; the tag is the owner's to give, not mine and not the orchestrator's.
     Probe files deleted, guard experiments reverted, tree clean at the after-stamp.
 
+  - 2026-08-14 adversary, **correction to my own Finding 1: the per-value predicate is not a
+    theorem and my proof of it was wrong.** The counterexample is the orchestrator's, executed
+    here: `before = ["1.0.0"], after = []` ⇒ `major`; `before = ["1.0.0"], after = ["1.0.1"]`
+    ⇒ `patch`. The added `1.0.1` has no surplus on the before side, so the per-value predicate
+    calls a correct drop a violation.
+    **Where the proof broke, precisely.** I argued that with no before-surplus, `bl` is unchanged
+    and `al` grows, so every term is monotone non-decreasing. That holds for the pair term and
+    for the after-stranding term. It is false for the **before-stranding** term, which fires only
+    while `|bl| > |al|`: growing `al` can switch that condition off and delete an expensive
+    stranding outright. The step I treated as bookkeeping — "`al` only grows" — is the step that
+    carried the whole error.
+    **Exhaustive sweep, 4-version pool, multisets to length 3: 4896 triples, 589 drops.**
+    Licensed by per-value only: **357**. By the deficit half only: **81** — my blind spot, and
+    not a corner: 14% of all drops. By both: 151. **By neither: 0.** So the licence is the union
+    and the union is complete over this domain.
+    **The deficit half is tighter than `|bl| > |al|`: it is `|bl| = |al| + 1`.** Drops with no
+    surplus and a deficit of 2 or more: **0**, and mechanically there can be none — with a
+    deficit above one the before-stranding still fires after the addition, over the same `bl`,
+    so its maximum is unchanged. Stating it as `|bl| > |al|` licenses a class of drop that cannot
+    occur, which is an over-broad licence: it would wave through a real defect if one ever
+    produced a drop at deficit 2. The mechanism-free form both halves instantiate:
+    **a drop requires the addition to remove a forced explanation, and there are exactly two ways
+    to do that — cancel a leftover before-item, or erase the last forced before-stranding.**
+    **Why 600 random draws could not have found it, which is not bad luck.** The case needs
+    `after` empty or nearly so. My generator drew each pool value's count uniformly from {0,1,2}
+    over eight values, so an empty `after` has probability `(1/3)^8`, about one in 6561 — an
+    expected 0.09 occurrences in 600 draws. The shape was outside what the generator could
+    produce, so no amount of sampling would have reached it, the same defect the implementer's
+    oracle header records about two disjoint pools. Exhaustive-over-small found it at once.
+    **And the upgrade to "theorem" is what hid it.** Calling it proved retired the question;
+    a predicate labelled sampled invites the next sweep, one labelled exact does not. That is the
+    cost of the stronger claim and it is mine, not the orchestrator's for accepting it.
+
 ### T060, Authorization policy: owner and operator
 
 - **State:** merged
