@@ -390,6 +390,11 @@ Three cheap guards, all now in force:
   match", which is a narrower question than "did the failures match". T025's adversary hashed
   the failing-file lines, got three different digests, and nearly filed a contention finding
   off it; stripped of durations and sorted, all three were the same.
+- Before recording a task's `State`, write the **row and the section together**. `9eac04a` fixed
+  three rows that lagged their sections and created two rows that **led** them — the same drift in
+  the opposite direction, in the commit that fixed it. Caught by T080's blind author during a
+  rebase, which resolved it toward the row and said so rather than picking silently. The rule is
+  not "check the row": it is that a state change touches both, in one edit.
 - Before carrying a gate result across a rebase whose diff is "`backend.md` prose only", note that
   **two guards parse that file** — `tests/wave-dependencies.test.ts` and
   `first-pass-calibration.test.ts`. Prose in `backend.md` is not inert, so re-gate after the rebase
@@ -2954,7 +2959,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T070, Namespace: handles, slugs, reservation
 
-- **State:** claimed
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t070-naming` on `feat/t070-naming`
 - **Test worktree:** `../darkprint-wt-t070-naming-tests` on `test/t070-naming`
 - **Depends on:** T000 (contract: schema)
@@ -3509,7 +3514,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T080, Registry read model and read API
 
-- **State:** claimed
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t080-registry` on `feat/t080-registry`
 - **Test worktree:** `../darkprint-wt-t080-registry-tests` on `test/t080-registry`
 - **Depends on:** T010, T020, T030 (data)
