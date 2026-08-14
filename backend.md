@@ -877,6 +877,16 @@ AC7 defect cleared 73 and left the same 9 that mutation reds. **A script only ev
 perfect implementation is untested in the direction the report depends on** — it can produce a
 zero, and nobody knows whether it can produce anything else.
 
+**Stronger still: a script that has never completed successfully in its intended configuration is
+untested exactly where it is needed.** The same author later built a throwaway **sighted** worktree,
+with its reference dropped in as a real on-disk module, purely to run the happy path — 83 of 83
+cleared, then 82 with the parse check removed and the one still-red being the right test. Its first
+version had hardcoded its own worktree, which holds no implementation: pointed anywhere else it
+would have `cd`ed back and reported *83 still red*, reading exactly like a total implementation
+failure. The target is an argument now, and it refuses on a missing module, a missing suite, **and a
+stale baseline** — a suite that is not the same 86 tests, which would otherwise make every line read
+as cleared.
+
 ## Having the guard is not using it
 
 The sharpest self-catch of the run, and a category the rest of this file does not cover. Every rule
@@ -3767,6 +3777,10 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **Reversal, at the implementation's handback: AC4's lint check IS reachable and the amendment below is wrong. Keep the check; do not label the outcome tests non-discriminating.** Executed and reproduced by the orchestrator: `Number.isInteger(1e23)` is `true`, `String(1e23)` is `"1e+23"`, and `emit.ts:461` writes `String(cap)` **unquoted** into `max_retries=`. So one card carrying `max_iterations: 100000000000000000000000` resolves clean, scores, produces a nine-file folder — and its `factory.dot` fails `parseDot` with *"Expected `=` after the attribute `e`, found `+`"*. Deleting `checkFactoryDot` reds exactly that test.
 
   **Both premises of the amendment were true and the conclusion did not follow.** `toAttractorIdentifier` does close the node ids and `quoteAttractorString` does close the string values — but the emitter writes **one attribute unquoted**, and its value comes from `card.params`, not from the DOT. Four hostile *source DOTs* could not reach it, because the region searched was source-DOT hostility and the value enters from the card. **That is this file's boundary rule one level up**, in a measurement I accepted and published as a contract amendment within the hour: the search was rigorous inside the region it drew, and the region did not contain the input.
+
+  **The reversal is half, and the blind author corrected my instruction rather than taking it.** Removing the **parse** check reds 1. Removing the **lint** check still reds **0** — the `1e+23` input never produces a graph, so `lintAttractor` is never reached by it, and every cap that *does* parse is a plain integer and therefore admissible. Recorded as **not observed**, never as *unreachable*: claiming unreachability from a search is the exact error being corrected here, and it must not be made twice in one paragraph. It matters downstream — **an adversary deleting only the lint half gets a 0 meaning "no input found", not "no input exists".**
+
+  **And the ten outcome tests still do not discriminate; what changed is the reason, so the label was corrected rather than removed.** Removing the parse check reds exactly the one new test, not the nine bundles — they assert the *shipped* archive parses and lints, and no shipped bundle carries such a card. The old label said *the emitter cannot produce invalid output*, which is false. The new one says *these nine inputs do not happen to*, which is true and **contingent**: the day a bundle ships a large integer cap, they fire. **A weak test whose weakness is contingent on the archive is worth more than one whose weakness is structural in the engine, and both beat an unlabelled one** — so the label says which.
 
   **`String(cap)` past 1e21 is a defect in `lib/core/attractor/emit.ts` and needs an owner.** It is Forbidden to T090, and a blind author cannot find it because finding it requires reading the emitter. Recorded here rather than fixed: the artefact this registry exists to distribute can be emitted unparseable by a card that is itself valid.
 
