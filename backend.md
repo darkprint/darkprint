@@ -206,6 +206,25 @@ imports an unmerged barrel:**
 four places, so its blind suite imports `@/lib/server/naming` and cannot typecheck until T070
 merges. It is wave 5, behind T070.
 
+**Owner instruction, 2026-08-14: recompute the graph before every wave and reassign the next
+wave accordingly.** Not once. Before each dispatch, because the graph is invalidated by exactly
+the thing that makes progress — a merge changes which dependencies are satisfied, and an amended
+contract changes which exist.
+
+**Mechanised at `tests/wave-dependencies.test.ts`**, since a governance clause with no mechanism
+is a reminder and this file has now replaced two others with structure. It asserts that **no
+claimed task depends on something that has not merged**, reading both spellings a dependency
+takes: the `Depends on` line, and every `@/lib/server/**` barrel the contract consumes. A second
+assertion fails on any barrel whose owning task it does not know, so a dependency nobody listed
+is an error rather than an invisible pass.
+
+**Its first version was wrong in the way this file keeps recording, and the falsification caught
+it.** It scanned barrel paths only. Claiming T050 — which needs T070 in four places, written as
+`T070` in prose and in `Depends on` rather than as `@/lib/server/naming` — **reddened nothing**.
+The guard's scope did not cover the way the dependency was actually written, which is the exact
+failure it exists to catch, arriving inside it. Falsified again after the fix: `T050 (claimed)
+consumes unmerged: T070`.
+
 **The declarations are left as written rather than rewritten to match.** Each task's `Depends on`
 line is what Phase 0 recorded; this section is what is true. Where they disagree, this section is
 the one that decides a dispatch — and the disagreement is itself the useful artefact, since it
