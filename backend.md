@@ -133,6 +133,16 @@ the protocol rather than a decision inside it.
   reparenting that reports every ancestor lost, deprecation never reading as removal, set-semantics
   duplicate collapse correctly differing from the blueprint half's multiset, unparseable inputs
   refusing with exactly one diagnostic. No defects, and now the coverage matches the claim.
+First PASS surfaced to owner: t020 on 2026-08-14.
+
+- **Mechanised at `tests/first-pass-calibration.test.ts`, because the clause could not enforce
+  itself.** T025's adversary's diagnosis: **the enforcer and the enforced are the same agent** —
+  the orchestrator merges, tags, and is also the one who must remember to surface, and nothing
+  inside a loop can fail closed against the agent operating that loop. The guard parses this file,
+  and while any task carries a `*-verified` tag with no calibration marker present, it reds. It
+  runs inside every gate triple, so the next unsurfaced PASS fails the orchestrator's own run.
+  Fails **closed** on the marker's absence rather than scanning for reassuring prose. It can be
+  deleted — but a deletion is a diff someone reviews, and a reminder is not.
 - **The first PASS is still shown to the owner, once.** Not as a standing gate: as
   calibration. Across four rounds this adversary has returned FAIL every time, so there is
   strong evidence about its bar for *broken* and none at all about its bar for *done*, and
@@ -355,6 +365,29 @@ suggests, and neither the count nor the newly-red list shows it. The diff runs b
 suite's 32 reds — 32 fell to 17, so fifteen were the superseded wording and none was a defect.
 Triaging 32 reds afterwards would have reached the same place slowly and with far more chances to
 charge one of the fifteen as real.
+
+## Pre-registered: does contract-derived coverage catch what an oracle catches?
+
+Written by T025's adversary **before** seeing `leftover-pricing.test.ts`, so the answer cannot be
+rationalised afterwards. The question is what a blind suite built from a contract can and cannot
+do relative to an oracle, and it matters because the answer decides whether blind suites should own
+oracles of their own.
+
+Its prediction:
+- The coverage **will** red against a reverted `worstStranded`, because the stranded-item table at
+  `2d0f728` states both worked examples and those examples *are* the discriminating cases — nothing
+  has to be derived.
+- It **will not** red against defects in regions the table gives no example for. Specifically: a
+  green suite if `worstPairing` is narrowed from the full cross product to adjacent pairs only, and
+  a green suite if one of the three terms in the unreadable-pair floor is deleted.
+
+Its framing, which is the reason to run it rather than argue it: *example-derived coverage catches
+the defect that produced the example; an oracle catches the defect nobody wrote an example for.*
+Not a criticism of the author — the difference between the two artefacts. If the coverage reds on
+both, that is strictly better than predicted and says a well-stated table generalises further than
+anyone credited.
+
+**Result to be recorded here after the experiment, whichever way it falls.**
 
 ## Mutate behaviours chosen for NOT being on your list
 
