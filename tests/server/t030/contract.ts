@@ -35,7 +35,10 @@
    where it has none, the orchestrator hears about it instead.
    ============================================================ */
 
+import { getTableConfig } from "drizzle-orm/pg-core";
+
 import type { Diagnostic, OntologyTerm, OntologyView, Severity } from "@/lib/core";
+import { schema } from "@/lib/db";
 
 export type Namespace = Record<string, unknown>;
 export type UnknownFn = (...args: unknown[]) => unknown;
@@ -269,7 +272,7 @@ export function of(ds: readonly Diagnostic[], code: string): Diagnostic[] {
  * `forbidden` list is what the caller planted: a sentinel it put in a field that is not an
  * identifier, so a message legitimately naming the caller's own version or term id still passes.
  */
-export function expectSealedError(err: unknown, forbidden: readonly string[], where: string): Error {
+export function expectSealedError(err: unknown, supplied: readonly string[], where: string): Error {
   if (!(err instanceof Error)) {
     throw new Error(`${where} rejected with ${describe_(err)}; the contract requires a typed Error.`);
   }
@@ -308,8 +311,23 @@ export function expectSealedError(err: unknown, forbidden: readonly string[], wh
     );
   }
 
-  // (5). Every rendering the clause enumerates. `stack` is deliberately not among them — it
-  // carries this module's own file paths by design, and its first line is the message anyway.
+  // (5). The whitelist, and it is asserted at **token granularity against a constructively
+  // derived set** rather than by scanning for a list of forbidden fragments.
+  //
+  // The clause was restated as a whitelist because "forbid these five things" leaves the sixth
+  // unenumerated. A blacklist *test* of a whitelist *clause* is still a blacklist, and it has the
+  // over-match failure the whitelist exists to remove: this suite scanned for `ontology_version`,
+  // which is a substring of `ontology_version_version_key` — the constraint name this contract
+  // requires the module to tie to `getTableConfig`. So both halves are now derived:
+  //
+  //   the deny set    every word in the *actual driver error* this rejection carries on `cause`
+  //   the allow set   the caller's own identifiers, plus every table, index and column name
+  //                   `getTableConfig` reports for the two tables this task owns
+  //
+  // Comparison is word-by-word, not substring, so `ontology_version` and
+  // `ontology_version_version_key` are different tokens and the over-match cannot recur even in
+  // principle. Nothing is hand-listed on either side, so a sixth thing nobody thought of is
+  // caught the moment the driver puts it in its own error.
   const renderings: Record<string, string> = {
     message: err.message,
     "String(err)": String(err),
@@ -317,12 +335,43 @@ export function expectSealedError(err: unknown, forbidden: readonly string[], wh
     "JSON.stringify({ detail: err.message })": JSON.stringify({ detail: err.message }),
     "own-property enumeration": keys.join(" "),
   };
-  for (const [name, text] of Object.entries(renderings)) {
-    for (const secret of [...forbidden, ...LEAKS]) {
-      if (text.includes(secret)) {
+
+  const cause: unknown = (err as { cause?: unknown }).cause;
+  if (cause !== undefined && cause !== null) {
+    // Structural scaffolding, derived rather than listed: `Error.prototype.name` puts "error"
+    // into every rendering on both sides, and `JSON.stringify({ detail })` puts "detail" into
+    // one. Those are shapes, not content, and a baseline `Error` is what says which they are.
+    const admissible = new Set([
+      ...moduleIdentifiers(),
+      ...structuralWords(),
+      ...wordsOf(supplied.join(" ")),
+    ]);
+    const fromDriver = [...wordsOf(renderCause(cause))].filter((word) => !admissible.has(word));
+    for (const [name, text] of Object.entries(renderings)) {
+      const echoed = [...wordsOf(text)].filter((word) => fromDriver.includes(word));
+      if (echoed.length > 0) {
         throw new Error(
-          `${where}: \`${name}\` leaks ${JSON.stringify(secret)}. No rendering may carry the ` +
-            `statement, a bound parameter, the caller's content, a SQLSTATE or a \`pg\` internal.`,
+          `${where}: \`${name}\` carries ${JSON.stringify(echoed.join(" "))}, which came from the ` +
+            `driver error on \`cause\` and is neither an identifier the caller supplied nor a ` +
+            `name \`getTableConfig\` reports for this task's tables. The clause admits only a ` +
+            `fixed message naming the operation, the caller's own identifiers, and counts of the ` +
+            `caller's own inputs — "no value derived from the driver error reaches any enumerable ` +
+            `output; \`cause\` carries all of it and is non-enumerable".`,
+        );
+      }
+    }
+  }
+
+  // The caller's own *content*, as opposed to its identifiers. A nonce, so this one substring
+  // check cannot over-match anything by construction — which is the property the fragment list
+  // it replaced did not have.
+  for (const nonce of supplied) {
+    if (!nonce.startsWith("SENTINEL-")) continue;
+    for (const [name, text] of Object.entries(renderings)) {
+      if (text.includes(nonce)) {
+        throw new Error(
+          `${where}: \`${name}\` echoes the caller's content back. Only identifiers the caller ` +
+            `supplied are admissible, and this was planted in a description.`,
         );
       }
     }
@@ -330,34 +379,72 @@ export function expectSealedError(err: unknown, forbidden: readonly string[], wh
   return err;
 }
 
+/** Words long enough to mean something. Compared as words, never as substrings. */
+const WORD = /[a-z_][a-z0-9_]{3,}/g;
+
+function wordsOf(text: string): Set<string> {
+  return new Set(text.toLowerCase().match(WORD) ?? []);
+}
+
 /**
- * Statement fragments, bound-parameter markers, SQLSTATEs and `pg` internals.
- *
- * Table and constraint names are deliberately **absent**: T030's contract ties
- * `ontology_version_version_key` and `ontology_term_version_term_key` to `getTableConfig`
- * rather than restating them, which means a typed conflict may legitimately name the
- * constraint it matched. Forbidding the bare table name would red an implementation for doing
- * what it was asked to do — and `ontology_version` is a substring of the constraint name.
+ * The words any sealed error carries for structural reasons, whatever it says. Computed from a
+ * baseline `Error` so nothing is hand-listed: `String(new Error(""))` is `"Error"`, and the
+ * `detail` rendering the clause enumerates contributes its own key.
  */
-const LEAKS: readonly string[] = [
-  "insert into",
-  "INSERT INTO",
-  "select ",
-  "$1",
-  "$2",
-  "23505",
-  "22021",
-  "23503",
-  "22P02",
-  "22001",
-  "42601",
-  "nbtinsert.c",
-  "duplicate key value",
-  "violates unique constraint",
-  "DrizzleQueryError",
-  "Query:",
-  "params:",
-];
+function structuralWords(): Set<string> {
+  const baseline = new Error("");
+  return new Set([
+    ...wordsOf(renderCause(baseline)),
+    ...wordsOf(String(baseline)),
+    ...wordsOf(JSON.stringify({ detail: "" })),
+  ]);
+}
+
+/**
+ * Every identifier this module may legitimately name, read from the schema rather than listed.
+ *
+ * "A constraint name the module ties to `getTableConfig` is the module's own identifier and is
+ * **not** a leak." Reading `schema.ts` is not editing it, so no Forbidden file is touched.
+ */
+function moduleIdentifiers(): Set<string> {
+  const out = new Set<string>();
+  for (const table of [schema.ontologyVersion, schema.ontologyTerm]) {
+    const config = getTableConfig(table);
+    for (const word of wordsOf(config.name)) out.add(word);
+    for (const index of config.indexes) {
+      for (const word of wordsOf(index.config.name ?? "")) out.add(word);
+    }
+    for (const column of config.columns) {
+      for (const word of wordsOf(column.name)) out.add(word);
+    }
+  }
+  return out;
+}
+
+/** Everything the driver put in its own error, whatever shape it took. */
+function renderCause(cause: unknown): string {
+  const parts: string[] = [];
+  if (cause instanceof Error) {
+    parts.push(cause.name, cause.message, String(cause));
+    for (const key of Object.getOwnPropertyNames(cause)) {
+      if (key === "stack") continue;
+      try {
+        parts.push(key, String((cause as unknown as Record<string, unknown>)[key]));
+      } catch {
+        /* a throwing getter tells us nothing */
+      }
+    }
+    const nested: unknown = (cause as { cause?: unknown }).cause;
+    if (nested !== undefined && nested !== null && nested !== cause) parts.push(renderCause(nested));
+  } else {
+    try {
+      parts.push(String(cause), JSON.stringify(cause) ?? "");
+    } catch {
+      /* unserialisable */
+    }
+  }
+  return parts.join(" ");
+}
 
 /** The one path where a `cause` genuinely exists to carry: a refusal the database raised. */
 export function expectCausePresent(err: Error, where: string): void {
@@ -374,14 +461,14 @@ export function expectCausePresent(err: Error, where: string): void {
 /** Run `call`, require it to reject, and hold the rejection to the sealed-error contract. */
 export async function rejects(
   call: () => Promise<unknown>,
-  forbidden: readonly string[],
+  supplied: readonly string[],
   where: string,
 ): Promise<Error> {
   let result: unknown;
   try {
     result = await call();
   } catch (err) {
-    return expectSealedError(err, forbidden, where);
+    return expectSealedError(err, supplied, where);
   }
   throw new Error(`${where} resolved with ${describe_(result)} where the contract requires a refusal.`);
 }

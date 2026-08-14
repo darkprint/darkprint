@@ -34,6 +34,7 @@ import {
   sortedIds,
   term,
   termWithSecret,
+  callerIdentifiers,
 } from "./fixtures";
 
 let t: TestDb;
@@ -257,7 +258,7 @@ describe("addOntologyVersion: one version per version string", () => {
 
     await rejects(
       () => add(db(t), { version: BASE_VERSION, terms: [termWithSecret("agent")] }) as Promise<unknown>,
-      [SECRET],
+      [SECRET, ...callerIdentifiers(BASE_VERSION, baseTerms()), "agent", "usurper", "evaluative"],
       "addOntologyVersion (duplicate version)",
     );
   });
@@ -318,7 +319,7 @@ describe("addOntologyVersion: N rows in one transaction", () => {
           version: BASE_VERSION,
           terms: [term("agent"), term("evaluative"), termWithSecret("agent", { label: "again" })],
         }) as Promise<unknown>,
-      [SECRET],
+      [SECRET, ...callerIdentifiers(BASE_VERSION, baseTerms()), "agent", "usurper", "evaluative"],
       "addOntologyVersion (duplicate term id)",
     );
 

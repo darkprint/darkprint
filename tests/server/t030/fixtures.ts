@@ -132,3 +132,13 @@ export function deeplyNestedTerm(id: string, depth: number): OntologyTerm {
 export function sortedIds(terms: readonly OntologyTerm[]): string[] {
   return terms.map((t) => t.id).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 }
+
+/**
+ * The identifiers a caller handed over, which the error clause admits by name: "a fixed message
+ * naming the operation, identifiers the **caller itself supplied**, and counts of the caller's own
+ * inputs". A term's identifier is its `id` — its description is content, not an identifier, which
+ * is why `SECRET` lives there and is never admissible.
+ */
+export function callerIdentifiers(version: string, terms: readonly { id?: unknown }[] = []): string[] {
+  return [version, ...terms.map((x) => String(x.id ?? ""))].filter((x) => x !== "");
+}
