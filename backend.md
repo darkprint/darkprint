@@ -399,6 +399,13 @@ Three cheap guards, all now in force:
   other line for the same accidental reason. **A tie between two places holding one fact has no
   local tiebreak.** Run at introduction it found **three** disagreements, not the two known: T060's
   row still read `adversarial-pass` and T020's `impl-done`, both merged hours earlier.
+- **`impl-done` and `tests-written` are parallel, not sequential, and one `State` field cannot hold
+  both.** The implementer and the blind author work simultaneously and finish in either order, so a
+  merge bringing the second one forward looks like a regression and is not: it is the field being
+  narrower than the fact. **The field records the later arrival**, which is also the one that means
+  *ready for an adversary*. The orchestrator read T070's `impl-done → tests-written` as a merge
+  walking the state backwards; T070's adversary corrected it, having resolved that merge itself and
+  set row and section together.
 - Before recording a task's `State`, write the **row and the section together**. `9eac04a` fixed
   three rows that lagged their sections and created two rows that **led** them — the same drift in
   the opposite direction, in the commit that fixed it. Caught by T080's blind author during a
@@ -408,6 +415,11 @@ Three cheap guards, all now in force:
   **two guards parse that file** — `tests/wave-dependencies.test.ts` and
   `first-pass-calibration.test.ts`. Prose in `backend.md` is not inert, so re-gate after the rebase
   rather than carrying a triple over it. Raised by T080's implementer about its own handover.
+- **Read the exit code of the command you mean, not of the pipeline you typed.** T080's adversary
+  reported "build exit 0" from a compound command whose last element was `tail`, while the log said
+  `Failed to type check.` twenty-five lines up. It corrected itself and named the rule it had broken
+  while quoting it. In `zsh`, `$?` after `a | tail` is `tail`'s; use `${pipestatus[1]}`, `set -o
+  pipefail`, or run the command alone.
 - Before reading a `typecheck` red in a **fresh worktree**, run `npm run build` once. `next` generates
   the `PageProps` globals into `.next/types`, so a tree that has never been built reports 18
   `Cannot find name 'PageProps'` errors in `app/**` that belong to nobody. Measured: red before the
@@ -750,6 +762,25 @@ The implementer also declined to settle the underlying question by shipping the 
 greener, and escalated instead. That is the correct handling of a fix whose merit depends on a
 ruling nobody has made.
 
+## A fix for an unseen defect lands unobserved by construction
+
+The second-order form of the rule below, spotted by T080's adversary from a number it had already
+taken rather than from a new measurement. Against the module **with** D-80-06 present, the blind
+suite ran `7 failed / 239 passed` and **not one of the seven was about the indexing rule** — the
+suite was *green on the defect*. It follows without further work that once the fix lands, reverting
+it reds **0**: the fix is correct, freshly ruled, and observed by nothing.
+
+That is not a coincidence, it is entailment. **A suite that could not see a defect cannot see its
+fix**, so every charged defect carries a second obligation: the blind suite gains a witness for it,
+or the repair is unobservable the moment it is made. The acceptance number for such a round is
+therefore the reverse mutation — **deleting the fix must red at least one blind test** — and a 0
+there is the *expected* result unless the witness was written first.
+
+**And the witness is derived from the clause, never from the report.** The adversary withdrew its
+probe with the rest of its residue and asked that the blind author be pointed at the specification
+instead — a fix that satisfies a probe it was shown proves nothing, and neither does a test written
+to match one. Its own framing: it is the wrong party to be shaping that suite.
+
 ## A ruling can be implemented correctly and still be unobserved
 
 T030's implementer shipped the existence-first AC6 enforcement, then ran the total method against
@@ -934,6 +965,15 @@ an individual suite moves the symptom, because the cause is one Postgres on 5432
 worktree, with no stated owner, driven by ~100 agent processes on ten cores. Same class as the
 repo-global `git stash` and the shared worktree.
 
+**And it happened again, worse, at T080 — dispatched on an INTERIM report.** T080's adversary sent
+a mid-round interim and the orchestrator called the implementer back on the strength of it, so
+round 2 began inside a tree the adversary was still measuring. Its route battery measured the
+**pre-fix** tree and its leak sweep the **post-fix** tree, and it caught that only because one
+endpoint answered differently on two calls. **The rule already said a round ends at the verdict;
+an interim report is not even a slot release.** The stamp is what caught it, which is the argument
+for the stamp — and the adversary labelled every result by which tree it was measured on rather
+than discarding the round.
+
 **A released gate slot is not a finished round, and the orchestrator conflated them.** T020's
 adversary released the slot after its triple and kept probing — which is correct, since the slot
 governs *machine contention* and the round governs *tree ownership*. The orchestrator read the
@@ -1019,6 +1059,16 @@ thought of**, and the handover protocol rests on porcelain being meaningful, so 
 directory is not a tidiness issue — it removes the signal the next agent's stamp depends on.
 Handled correctly on the other side: T030's implementer did **not** delete another agent's files and
 reported "clean but for that directory" rather than claiming clean.
+
+**T-01 has now fired eight times across four authors, always on the same fixture, and the fix is
+that nobody should have to type the byte.** It has caught an implementer, a blind test author
+writing a Log entry, an adversary writing an attack list, and the **orchestrator writing the shared
+fixture file intended to stop it** — that last one blocked by the tool layer rather than by any
+guard here, and the only occurrence so far **prevented rather than detected**. So the hazard's own
+wording, "any author writing a fixture", was too narrow: it is anyone who types the byte, and they
+type it because there was nowhere to import it from. **`tests/support/control-bytes.ts` now exports
+`NUL`, `LONE_HIGH_SURROGATE`, `LONE_LOW_SURROGATE`, `nulInside` and `surrogateInside`. Import them;
+do not retype them.**
 
 **T-01 recurred a fifth and sixth time, and the guard structurally could not see either.**
 `tests/no-raw-control-bytes.test.ts` enumerated `git ls-files`, which lists **tracked files only** —
@@ -1286,7 +1336,7 @@ it does not decide differently inside a worktree.
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | — | — | todo | — |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | — | — | todo | — |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | impl-done | — |
-| T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | claimed | — |
+| T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | impl-done | — |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | — | — | todo | — |
 | T100 | Publishing and releases | T010, T020, T025, T040, T050, T060, T070, T090 | `lib/server/publish/**`, `app/api/bundles/**` | — | — | todo | — |
@@ -3883,6 +3933,27 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   - **An owner and an operator DO see their own private content, and AC6 means cross-account.** "No private bundle or private card appears in any response" reads absolutely, and the signature block routes every reader through `visibleTo`, which answers `"all"` for both — so the two disagreed and the author asserted only what both readings share. Ruled by consequence: T130's AC2 requires an **owner's card count to include private rows** and a visitor's not to, so an owner blind to their own private content makes the profile owner view unimplementable. AC6 is therefore *no account sees another account's private content*, and the signed-in sweeps may be tightened to assert an owner sees their own.
   - **A `cardRefs` entry whose `card_version` row is missing is omitted, by the same rule that filters unreadable ones.** "Refs of every card it pins" reads both ways; one rule is better than two, and a row that does not exist is not a card the actor may read. No `CardSummary` is invented for it either, which is what the suite already asserts.
 
+  **Round-2 rulings, from the adversary's interim report.**
+
+  **D-80-06 (defect, charged): an unpinned version of a pinned id is indexed and served.** `snapshot.ts` selects `card_version` by `cardId` **alone** and keys every returned row into `rowsByRef`; the pin set only ever builds `visibleRefs`/`usedIn` and never restricts the rows. The comment directly below claims `rowsByRef` is the set of pins that resolve to a visible row, and the code does not do that. Measured with a card pinned at `1.0.0` and a `2.0.0` row nothing pins: `cards()` and `versionsOf()` both return the unpinned row, `card("…@2.0.0")` returns a record, and **`latestCards()` returns the unpinned version** — while `cardRefs` correctly returns only `1.0.0`, so **the read model contradicts itself**. It spreads: a phase only the unpinned row declares is reported by `phases()` with a non-empty bucket. The tell is exact — the leaked record carries `usedIn=[]`, which the indexing rule makes impossible. Violates "Only cards a DOT node instantiates are indexed", inflates both AC1 numbers, and is reachable the moment an author publishes `foo@2.0.0` before any blueprint pins it: the browse list flips to a version nothing uses. **Restrict the row set to the pinned refs, not the pinned ids.**
+
+  **D-80-07 is gate-blocking, not test-local, and that changes who must fix it.** Measured after the
+adversary corrected its own exit-code error: `tsc --noEmit` and `npm run build` **both fail** on
+`tests/server/t080/contract.ts` importing `@/app/api/cards/[id]/versions/route` and `.../users/route`.
+A dynamic `import()` specifier resolves at compile time — this file's own point from the
+dependency-graph section — so a suite that binds to **route modules** cannot be worked around by the
+implementation. **Ruled: the blind suite reaches routes by URL and imports no route module.** That
+is a suite fix, it is required before any gate can go green, and it is the second time in this run
+that a test binding to a module path rather than to behaviour has blocked a build.
+
+**D-80-07 (contract, mine): the published route paths are URLs, not App Router folder names.** I wrote them in folder syntax, and `CARD_ID` admits an `owner/name` namespace, so a literal `[id]` folder **cannot express every valid id** — `/api/cards/berti/solver-a/versions` needs the catch-all and returns 200 through it. **The URLs are the contract; the file layout is the implementation's.** So the implementer's single catch-all is correct and the blind suite's six reds are a **suite defect**: it binds to route module paths rather than to URLs. Tests reach routes by URL.
+
+  **D-80-08 (contract gap, mine): D-80-03 never stated the tie-break direction**, and the two sides read it opposite ways — blind author highest row id, implementer lowest. **Ruled: highest.** It matches "latest", and a suite already binds to it. Stated plainly, because it affects how much the rule can be trusted: `release.id` is `uuid().defaultRandom()`, so **ordering by it is arbitrary rather than chronological** — the tiebreak buys determinism, not recency, and it fires only where two releases differ solely in build metadata. If recency is ever wanted there, it needs `created_at` and a second tiebreak, since T010 measured 32 concurrent inserts collapsing onto 12 distinct timestamps.
+
+  **Two corrections to the orchestrator's brief, both measured by the adversary.** The disjointness result is about the **widening** mutations, not the filter ones — bundle-widening 12 reds, card-widening 20, intersection **0**; removing the filters outright gives 40/44 with intersection 18, a different pair rather than a refutation. And **"the visibility filter is the only place it is applied" is false**: `scores.ts` applies `readable` itself, a second site, and it is observed — removing it reds 4.
+
+  **And the implementer's scorecard zero does not reproduce against the blind suite** — the adversary's pattern reds 1 (`scores.test.ts > one axis present and two null`). The implementer's 0 was against its own scratch fixture, which is exactly why the blind suite exists.
+
   **Every reader takes an `Actor`, for the reason T020's did.** AC6 — "no private bundle or private card appears in any response" — is twelve functions' worth of remembering unless it is one filter at the boundary. Import `visibleTo` from `@/lib/server/policy`. The discriminating test is not "a private row is absent from `blueprints()`" but **the same assertion across all twelve**, because the one that forgets is the one nobody wrote a test for.
 
   **AC4 is the criterion I would otherwise have got wrong, and it is stated as an assertion rather than an absence.** "Bucket sizes do not sum to the card count, **and a test asserts that as intended**" — phase buckets cover without partitioning: a card in two phases is in both, a card in none is in no bucket. So a suite that checks the sums *match* is asserting the opposite of the contract, and one that checks nothing leaves a partitioning implementation passing. The test asserts the inequality **and** exhibits one card in two buckets and one in none.
@@ -3902,7 +3973,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T090, Distribution and export artefacts
 
-- **State:** claimed
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t090-export` on `feat/t090-export`
 - **Test worktree:** `../darkprint-wt-t090-export-tests` on `test/t090-export`
 - **Depends on:** T010, T020, T030 (data)
