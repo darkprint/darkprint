@@ -1004,7 +1004,14 @@ independent and are now stated as such wherever either appears.
 orchestrator rather than run concurrently.** In practice that is a **gate slot**: probe work,
 targeted `npx vitest run tests/server/<task>` and scratch databases run freely and do not collide;
 the **three consecutive full-suite runs that decide a verdict** are taken one session at a time,
-released by the orchestrator. Worth stating because the orchestrator wrote this rule and then
+released by the orchestrator. **Tightened at T090's report: "targeted runs are free" was free of
+*wall-clock contention for the slot*, not free of *database contention*.** Two consecutive
+`pg_database` reads minutes apart returned seven then four `darkprint_test_*` databases, different
+names, all with live connections and none belonging to the reporting session — at least two other
+sessions driving the host **during someone else's slot**. So a triple taken then still cannot
+distinguish a nondeterministic implementation from a contended host, which is the exact ambiguity
+the slot exists to remove. **While a slot is held, DB-touching targeted runs pause too**; in-process
+probes and reading remain free. Worth stating because the orchestrator wrote this rule and then
 dispatched three adversaries in parallel an hour later, each ending in exactly that gate — a rule
 recorded is not a rule applied. The cost of skipping it is not lost time, it is an unfalsifiable
 verdict: T020's test author measured one run in five returning two extra failing files outside its
@@ -3861,6 +3868,18 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **D-90-06: same as D-80-04, and the precedent is now recorded twice rather than assumed once.** `exportRelease` is keyed by `bundleId` and no published reader maps a bundle id to its owner; read `schema.bundle` and `schema.account` through `@/lib/db` directly. `lib/server/archive/**` stays Forbidden and is still consumed for `getRelease`/`listReleases`/`getBundle`.
 
   **D-90-07: the "Inherited from T000" note is aimed at a guard that is already upstream, and it is wrong twice.** T010's merged `getRelease` already validates through `keyForDigest` and returns `undefined`, so a digest guard here deletes to no red — **an unfalsifiable guard described as a guard, which is exactly what that note charges T010 for.** And **T090 as published never reaches object storage at all**: every input `exportBundle` needs is in Postgres, and no storage verb is in its block. The reachable, falsifiable edge guard at this layer is a **uuid shape check on `bundleId`**, caller input going into a `uuid` column, without which a malformed id raises 22P02 as a raw `DrizzleQueryError` quoting the statement. That is the guard; the inherited note is struck.
+
+  **D-90-A (defect, charged): a database read failure is served to the client as a 404.** `lookup.ts` wraps every driver error from `bundleById`, `bundleByHandle` and both branches of `resolveRelease` in `readFailed(err)`, which returns an **`ExportError`** — and `app/api/files/serve.ts` maps `instanceof ExportError` to `fileNotFound(request)`, **under a comment stating that a Postgres outage is a 500 and must not be dressed up as a missing file.** The comment and the code cannot both hold.
+
+  Measured on a scratch database with one table dropped, so exactly one statement fails and the connection stays live: control 200, then during the outage **route status 404** with a `problem+json` body reading `"Not found."`. The **error hygiene is correct** — `Object.keys` empty, `JSON.stringify` `"{}"`, `cause` non-enumerable, `stack` retained, nothing from the driver in the message. The leak clause is satisfied; the defect is purely the **classification**.
+
+  Three distinct harms, not one: alerting on 5xx sees an outage as traffic to missing files; B-03 reserves 404 for *absent or invisible* so existence does not leak, and this widens it to "or our database is down" with no way for a caller to tell; and **a client holding a pinned digest — the case AC6 exists for — concludes the release was withdrawn and stops retrying**, where a 500 says retry. The one reference the contract promises never moves is the one an outage makes look deleted.
+
+  **The tell that it is a slip rather than a decision is that the module contradicts itself**: a driver failure inside `resolveCardRef` or `openView` is **not** wrapped, escapes raw, and becomes a 500. The same outage answers 404 or 500 depending on which statement fails first.
+
+  **Ruled: `readFailed` returns a sibling class, not an `ExportError`.** So `respondWithFile`'s `throw err` reaches it and the 500 is structural rather than a string match, and the route's `instanceof` check becomes correct by construction. `ExportError` means *a fact about the release* — absent, invisible, refused. A driver failure is a different kind and must not share the type that the route reads as "not found".
+
+  **And it was unobserved for a reason that is my rule arriving in the one path where it changed an HTTP status.** `"exportRelease: reading this release failed."` is an **eighth** message form: D-90-02 published five, the block published two, the blind author pinned exactly those seven as literals and asserted the struck eighth absent. It could not know about this one, because this one was **invented in the implementation after the forms were ruled** — *a message form written after the implementation is the contract following the code*.
 
   **`TBD:` CLOSED, and the answer was forced by a measurement rather than chosen. Export artefacts ARE persisted to object storage at publish.** T090's adversary measured AC6's digest promise decaying under a **B-08 re-score** rather than under a newer release:
 
