@@ -168,6 +168,49 @@ First PASS surfaced to owner: t020 on 2026-08-14.
   being contract defects rather than code, which is convergence. Cycling without that fall is
   reported, not burned through.
 
+## The dependency graph was recomputed on 2026-08-14 and it had drifted three ways
+
+The Phase 0 graph was a claim, and nothing re-derived it while six tasks merged and every
+contract was amended. The owner asked whether it was still correct. It was not. Recomputed by
+cross-checking each contract's **declared** `Depends on` against the barrels its own text
+**consumes**, rather than by reading the declarations:
+
+**1. Two tasks consume a dependency they do not declare.** T020 and T080 both take an `Actor` and
+filter through `@/lib/server/policy`, and neither names T060. T020's was harmless by luck — T060
+merged first. **T080's is live**, and T080 was in the wave-4 list I gave the owner.
+
+**2. "Contract-only" dependencies are largely fictional, and T030 already proved it.** A blind
+suite imports the barrel it tests against, and a dynamic `import()` specifier resolves at
+**compile time**, so any task whose suite reaches a not-yet-merged module cannot gate green. That
+is not a special case about T030; it applies to **every composing task**. T100 composes seven
+barrels, T220 three, and the four cutover tasks two or three each — every one of those is a
+compile-time dependency wearing a contract-only label.
+
+**3. Five tasks need tables `lib/db/schema.ts` does not have** — saves (T140), notes (T170),
+ballot (T160), API keys (T230), run reports (T180) — and that file is Forbidden to all of them.
+That is a dependency on T000's owner which the Phase 0 graph does not contain at all, because the
+need only became visible when the signature blocks were written.
+
+**Corrected wave 4 — five tasks, each with every dependency already merged and no suite that
+imports an unmerged barrel:**
+
+| Task | Why it is genuinely free |
+| --- | --- |
+| T070 Namespace | T000 merged; `handle_reservation` exists; consumes nothing else |
+| T240 Observability | T000 merged; `audit` exists; consumes nothing else |
+| T040 Engine service | T030 merged; takes its input as arguments and consumes only `@/lib/core` |
+| T080 Registry read model | T010/T020/T030 merged, **and T060 merged** — the undeclared dependency is satisfied |
+| T090 Distribution | T010/T020/T030 merged; consumes `lib/content/bundle-export.ts`, which ships |
+
+**T050 was in my wave-4 list and does not belong there.** It calls T070 for handle allocation in
+four places, so its blind suite imports `@/lib/server/naming` and cannot typecheck until T070
+merges. It is wave 5, behind T070.
+
+**The declarations are left as written rather than rewritten to match.** Each task's `Depends on`
+line is what Phase 0 recorded; this section is what is true. Where they disagree, this section is
+the one that decides a dispatch — and the disagreement is itself the useful artefact, since it
+shows which dependencies were discovered rather than planned.
+
 ## Contract checklist — every task section is written against this before dispatch
 
 Derived from what the first six tasks cost. Wave 2's contracts had none of it and its tasks took
