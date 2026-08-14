@@ -17,14 +17,16 @@
 
    1. The worst-candidate defect itself — a stranded item must be
       the most expensive admissible choice, not whichever sorts last.
-   2. Monotonicity, in its exact per-value form: adding a pin to
-      `next` cannot lower the level unless the added value had a
-      surplus on the `before` side. This is a theorem about the
-      shape of a maximum (backend.md, round 6, "the per-value
-      predicate is exact rather than merely unfalsified"), asserted
-      here as an invariant over an exhaustive, deterministic sweep —
-      not sampled, so it cannot quietly weaken if a generator seed
-      changes.
+   2. Monotonicity, exact and stated as the union it actually is:
+      adding a pin to `next` cannot lower the level unless EITHER the
+      added value had a surplus on the `before` side, OR the addition
+      erased the last forced before-stranding (`|bl| = |al| + 1`
+      exactly, before the addition). The per-value predicate alone
+      is only half the licence — it covers the pair term's monotonicity
+      but not the stranded term's, which drops when growing `al`
+      toward `bl` deletes a forced stranding outright. Asserted here
+      as an invariant over an exhaustive, deterministic sweep — not
+      sampled, so it cannot quietly weaken if a generator seed changes.
    3. The carve-out's class, not its first mechanism. It was
       discovered from a forced-deletion example and first written
       narrowly enough to miss a repin instance of the same class —
@@ -131,6 +133,25 @@ function maxLevel(a: BumpLevel, b: BumpLevel): BumpLevel {
   return bumpSatisfies(a, b) ? a : b;
 }
 
+/**
+ * By-value cancellation: exact matches are free and removed from both sides first. Shared
+ * between the oracle and the monotonicity licence below so the two never see two
+ * independent (and possibly drifting) copies of the same cancellation logic.
+ */
+function cancel(before: readonly string[], after: readonly string[]): [string[], string[]] {
+  const beforeLeftover = [...before];
+  const afterLeftover = [...after];
+  for (const value of new Set([...before, ...after])) {
+    let toCancel = Math.min(countOf(beforeLeftover, value), countOf(afterLeftover, value));
+    while (toCancel > 0) {
+      beforeLeftover.splice(beforeLeftover.indexOf(value), 1);
+      afterLeftover.splice(afterLeftover.indexOf(value), 1);
+      toCancel -= 1;
+    }
+  }
+  return [beforeLeftover, afterLeftover];
+}
+
 /** `declaredBump` ordered by magnitude, never by which side was "previous" —
  *  the same recipe `blueprint-bump.test.ts` already exercises for a single repin. */
 function pairPrice(a: string, b: string): BumpLevel {
@@ -152,16 +173,7 @@ function strandedPrice(value: string, side: "before" | "after", fullOppositeList
  *  Forbidden here and unread — but the rule as `backend.md` states it, worked out and
  *  checked by hand against six examples before it is trusted against anything else. */
 function oracleLevel(before: readonly string[], after: readonly string[]): BumpLevel {
-  const beforeLeftover = [...before];
-  const afterLeftover = [...after];
-  for (const value of new Set([...before, ...after])) {
-    let cancel = Math.min(countOf(beforeLeftover, value), countOf(afterLeftover, value));
-    while (cancel > 0) {
-      beforeLeftover.splice(beforeLeftover.indexOf(value), 1);
-      afterLeftover.splice(afterLeftover.indexOf(value), 1);
-      cancel -= 1;
-    }
-  }
+  const [beforeLeftover, afterLeftover] = cancel(before, after);
 
   if (beforeLeftover.length === 0 && afterLeftover.length === 0) return "none";
 
@@ -170,8 +182,21 @@ function oracleLevel(before: readonly string[], after: readonly string[]): BumpL
   // The pair term: a true maximum over every cross pair. Always achievable in a real
   // matching — pair the single worst cross-pair first, then match whatever remains
   // arbitrarily, per the round-6 argument for why this term costs no more than a slice.
+  //
+  // One pairing is not a legitimate explanation on its own: equal semver precedence but a
+  // different exact string (build metadata is the only way to reach this) prices "none",
+  // which asserts nothing changed when the digest still moved. A residue-free explanation
+  // is always free to strand that specific pair instead — each side priced against the
+  // full original opposite list — so that alternative is folded into the same maximum
+  // rather than treated as the only reading of a "none" pairing.
   for (const b of beforeLeftover) {
-    for (const a of afterLeftover) best = maxLevel(best, pairPrice(a, b));
+    for (const a of afterLeftover) {
+      const price = pairPrice(a, b);
+      best = maxLevel(best, price);
+      if (price === "none" && a !== b) {
+        best = maxLevel(best, maxLevel(strandedPrice(b, "before", after), strandedPrice(a, "after", before)));
+      }
+    }
   }
 
   // The deletion term: a maximum over the WHOLE surplus-side leftover set, forced only
@@ -194,13 +219,23 @@ describe("leftover pricing: the oracle is verified against known-correct behavio
     { before: ["1.0.0", "1.0.1", "1.0.1"], after: ["1.0.1", "1.0.1"], want: "major" },
     { before: ["1.0.0"], after: ["2.0.0", "1.0.1"], want: "major" },
     { before: ["1.0.0"], after: ["2.0.0", "1.0.1", "1.0.0"], want: "minor" },
+    // Equal-precedence-different-string (build metadata): a duplicate leaves a leftover
+    // "1.0.0" still pinned in the full after list (patch), and "1.0.0+b" is genuinely new
+    // (minor) — maximum minor. Without the duplicate, the lost half masks it at major.
+    { before: ["1.0.0", "1.0.0"], after: ["1.0.0", "1.0.0+b"], want: "minor" },
+    { before: ["1.0.0"], after: ["1.0.0+b"], want: "major" },
   ])("oracle($before, $after) = $want", ({ before, after, want }) => {
     expect(oracleLevel(before, after)).toBe(want);
   });
 });
 
 describe("leftover pricing: PROPERTY — the oracle and the real function agree over a bounded, exhaustive domain", () => {
-  const POOL = ["1.0.0", "1.0.1", "1.0.2", "2.0.0", "9.0.0"] as const;
+  // `1.0.0+b` is not one more point — it is a witness for a different equivalence class of
+  // the comparator this domain has to cover: equal precedence, different exact string, only
+  // reachable through build metadata. A pool of only-distinct-precedence plain semvers can
+  // never reach it at any length, however many points it has — the exhaustive multiset
+  // generator supplies the required duplicate ("1.0.0" appears twice) for free.
+  const POOL = ["1.0.0", "1.0.0+b", "1.0.1", "1.0.2", "2.0.0", "9.0.0"] as const;
   const MAX_LENGTH = 3;
 
   it("agrees for every (before, after) pair the domain contains", async () => {
@@ -225,29 +260,64 @@ describe("leftover pricing: PROPERTY — the oracle and the real function agree 
 });
 
 /* ============================================================
-   2. Monotonicity, exact and per-value, asserted as an invariant
-   over an exhaustive sweep rather than sampled.
-
-   Proof sketch (backend.md §T025, round 6): adding a pin at value V
-   changes the leftovers in exactly one of two ways. If `before` held
-   a surplus of V, the addition cancels one leftover before-item —
-   an explanation that was forced stops being forced, and the level
-   may drop. If `before` held no surplus of V, nothing cancels: the
-   before-leftover is unchanged and the after-leftover grows by one —
-   and both the pair term (a maximum over a set that only grew) and
-   the stranded-gained term (same) are monotone non-decreasing under
-   that. So a drop with no before-surplus is impossible by
-   construction, not merely unobserved.
+   1c. A "none"-magnitude pairing between two different exact
+   strings (equal semver precedence, reachable only through build
+   metadata) is not a free explanation: the digest still moved even
+   though the declared magnitude did not. Named explicitly because
+   the equivalence class it belongs to is invisible to any pool of
+   distinct-precedence plain semvers, at any length or size — the
+   generator needs a witness for it, not more points.
    ============================================================ */
-describe("leftover pricing: PROPERTY — adding a pin cannot lower the level without a before-surplus", () => {
+describe("leftover pricing: a none-magnitude pairing between different strings is not free", () => {
+  it("[1.0.0, 1.0.0] -> [1.0.0, 1.0.0+b] is minor: the duplicate leaves 1.0.0 still pinned in after (patch), 1.0.0+b is genuinely new (minor)", async () => {
+    expect(await levelOf(["1.0.0", "1.0.0"], ["1.0.0", "1.0.0+b"])).toBe("minor");
+  });
+
+  it("control: [1.0.0] -> [1.0.0+b] is major — with no duplicate, the lost half masks the gained half", async () => {
+    // Without the duplicate, 1.0.0 is genuinely gone (absent from the full after list
+    // ["1.0.0+b"]), which prices major and dominates the gained half's minor.
+    expect(await levelOf(["1.0.0"], ["1.0.0+b"])).toBe("major");
+  });
+
+  it("control: [1.0.0, 1.0.0] -> [1.0.0, 1.0.1] never produces an equal-precedence pair at all", async () => {
+    // 1.0.1 has strictly higher precedence than 1.0.0, so this never reaches the special
+    // case — a plain sanity check that the ordinary path is undisturbed.
+    expect(await levelOf(["1.0.0", "1.0.0"], ["1.0.0", "1.0.1"])).toBe("patch");
+  });
+});
+
+/* ============================================================
+   2. Monotonicity, exact, asserted as an invariant over an
+   exhaustive sweep rather than sampled — and stated as the union it
+   turned out to be, not the per-value half this file shipped first.
+
+   That first version reds against a CORRECT implementation — the
+   dispatch's own best possible outcome for a blind suite, since it
+   is the sweep finding a defect in the licence itself within
+   minutes of landing. The theorem argument held that if `before`
+   has no surplus of `V` then `bl` is unchanged and `al` grows, so
+   both terms are monotone non-decreasing. True of the pair term.
+   False of the stranded term: `al` growing toward `bl` reduces the
+   forced-stranding count `max(0, |bl| − |al|)` and can delete an
+   expensive stranding outright, even with no surplus of the
+   specific value added. So a drop is licensed if EITHER the added
+   value had a before-surplus, OR the addition erased the last
+   forced before-stranding — `|bl| = |al| + 1` exactly, before the
+   addition. Stated at exactly one, not `|bl| > |al|`: above a
+   deficit of one the before-stranding still fires afterward, over
+   the same `bl`, so no drop is mechanically possible there, and a
+   loose `>` would license a class of drop that cannot occur — an
+   over-broad licence that fails open.
+   ============================================================ */
+describe("leftover pricing: PROPERTY — adding a pin cannot lower the level without a licence", () => {
   const POOL = ["1.0.0", "1.0.1", "2.0.0", "9.0.0"] as const;
   const MAX_LENGTH = 2;
 
   it("holds for every (before, after, added) triple in a bounded, exhaustive, deterministic sweep", async () => {
     const fn = await inferBlueprintBump();
     const multisets = multisetsUpTo(POOL, MAX_LENGTH);
-    let noSurplusChecks = 0;
-    let surplusChecks = 0;
+    let unlicensedChecks = 0;
+    let licensedChecks = 0;
 
     for (const before of multisets) {
       for (const after of multisets) {
@@ -255,34 +325,42 @@ describe("leftover pricing: PROPERTY — adding a pin cannot lower the level wit
           fn(snapshot(BASE_DOT, refsFor(before)), snapshot(BASE_DOT, refsFor(after))),
           WHERE,
         ).level;
+        // Independent of `added`: whether the addition can erase a forced before-stranding
+        // depends only on the leftover counts of the pair being compared.
+        const [bl, al] = cancel(before, after);
+        const erasesLastStranding = bl.length === al.length + 1;
 
         for (const added of POOL) {
           const hadSurplus = countOf(before, added) > countOf(after, added);
+          const licensed = hadSurplus || erasesLastStranding;
           const levelAfter = asBumpAnalysis(
             fn(snapshot(BASE_DOT, refsFor(before)), snapshot(BASE_DOT, refsFor([...after, added]))),
             WHERE,
           ).level;
 
-          if (hadSurplus) {
-            surplusChecks += 1;
+          if (licensed) {
+            licensedChecks += 1;
             continue; // licensed to drop, but not required to — nothing to assert here
           }
-          noSurplusChecks += 1;
+          unlicensedChecks += 1;
           expect(
             bumpSatisfies(levelAfter, levelBefore),
             `before=${JSON.stringify(before)} after=${JSON.stringify(after)} added=${added}: ` +
-              `level went from "${levelBefore}" to "${levelAfter}" with no before-surplus of ${added}`,
+              `level went from "${levelBefore}" to "${levelAfter}" with no licence (no before-surplus of ` +
+              `${added}, and |bl|=${bl.length} |al|=${al.length} is not a deficit of exactly one)`,
           ).toBe(true);
         }
       }
     }
 
-    // The sweep must exercise both branches, or this test would be vacuous in one of them.
-    expect(noSurplusChecks, "the sweep never hit the no-surplus branch").toBeGreaterThan(0);
-    expect(surplusChecks, "the sweep never hit the surplus branch — the domain is too narrow to matter").toBeGreaterThan(0);
+    // The sweep must exercise every branch, or this test would be vacuous in one of them —
+    // exactly how the per-value-only version above shipped without ever hitting the
+    // deficit-licence branch at all.
+    expect(unlicensedChecks, "the sweep never hit the unlicensed branch").toBeGreaterThan(0);
+    expect(licensedChecks, "the sweep never hit the licensed branch — the domain is too narrow to matter").toBeGreaterThan(0);
   });
 
-  it("executed case: before=[1.0.0], after=[2.0.0,1.0.1], adding 1.0.0 licenses major -> minor", async () => {
+  it("executed case (surplus licence): before=[1.0.0], after=[2.0.0,1.0.1], adding 1.0.0 licenses major -> minor", async () => {
     const withoutAddition = await levelOf(["1.0.0"], ["2.0.0", "1.0.1"]);
     const withAddition = await levelOf(["1.0.0"], ["2.0.0", "1.0.1", "1.0.0"]);
 
@@ -290,17 +368,43 @@ describe("leftover pricing: PROPERTY — adding a pin cannot lower the level wit
     expect(withAddition, "before held a surplus of 1.0.0, so the addition cancels the forced repin").toBe("minor");
   });
 
-  it("the original defect stays a defect: [1.0.0]->[9.0.0] vs [1.0.0]->[1.0.1,9.0.0] has no before-surplus", async () => {
-    // No deficit on either side of the pool of leftovers for 1.0.1: before never held it, so
-    // nothing was ever cancelled by adding it. The carve-out must not license this drop.
+  it("executed case (deficit licence): before=[1.0.0], after=[] is major, after=[1.0.1] is patch", async () => {
+    // The half the per-value predicate alone missed: 1.0.1 has no before-surplus (it never
+    // appeared in before at all), yet the drop is correct. With `after` empty, bl=1, al=0 —
+    // a deficit of exactly one. Adding 1.0.1 brings al to 1, matching bl, so the forced
+    // before-stranding (which priced major, since 1.0.0 was genuinely gone) disappears
+    // entirely and only the pair term is left: declaredBump(1.0.0, 1.0.1) = patch.
+    const withoutAddition = await levelOf(["1.0.0"], []);
+    const withAddition = await levelOf(["1.0.0"], ["1.0.1"]);
+
+    expect(withoutAddition, "with after empty, 1.0.0 is genuinely gone").toBe("major");
+    expect(
+      withAddition,
+      "the deficit of exactly one is erased by the addition, even though 1.0.1 has no before-surplus",
+    ).toBe("patch");
+  });
+
+  it("the original defect stays a defect: [1.0.0]->[9.0.0] vs [1.0.0]->[1.0.1,9.0.0] has no licence", async () => {
+    // Neither licence applies: no before-surplus of 1.0.1 (never appeared in before), and
+    // bl=1, al=1 before the addition — a deficit of zero, not one, so the deficit licence
+    // does not apply either. The carve-out must not license this drop.
     const withoutAddition = await levelOf(["1.0.0"], ["9.0.0"]);
     const withAddition = await levelOf(["1.0.0"], ["1.0.1", "9.0.0"]);
 
     expect(withoutAddition).toBe("major");
     expect(
       bumpSatisfies(withAddition, withoutAddition),
-      `level went from "${withoutAddition}" to "${withAddition}" with no before-surplus of 1.0.1`,
+      `level went from "${withoutAddition}" to "${withAddition}" with no licence`,
     ).toBe(true);
+  });
+
+  it("addition term in isolation: two unmoved pins plus a genuinely new one is minor, not none", async () => {
+    // Isolates the "gained" contribution specifically: before and after already agree on
+    // two pins (bl=0 after cancellation), so nothing is left to pair against, and the
+    // entire answer has to come from a stranded addition being priced rather than
+    // silently defaulting to `none`.
+    const level = await levelOf(["1.0.0", "1.0.1"], ["1.0.0", "1.0.1", "9.0.0"]);
+    expect(level, "9.0.0 is genuinely new and stranded, with nothing left to pair against").toBe("minor");
   });
 });
 

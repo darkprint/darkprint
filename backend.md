@@ -816,7 +816,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | adversarial-pass | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | tests-written | blind coverage for the round-6 leftover-pricing gap landed, `tests/server/t025/leftover-pricing.test.ts`, 174 tests total; see Live slots and the task section for the adversary's own `adversarial-pass` verdict, held for this coverage |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | tests-written | blind coverage for the round-6 leftover-pricing gap landed and twice corrected (union monotonicity licence, build-metadata pairing), `tests/server/t025/leftover-pricing.test.ts`, 181 tests total; see Live slots and the task section for the adversary's own `adversarial-pass` verdict, held for this coverage |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | adversarial-pass | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -1784,6 +1784,33 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     at all. No full-suite triple run: outside a test worktree's own scope and the gate queue was
     three deep at hand-off. `State: tests-written`, unchanged — this supplements the existing
     blind suite rather than advancing it through a round.
+  - 2026-08-14 blind test author, two follow-up corrections, both to `leftover-pricing.test.ts`
+    only — everything else in the file stands. **(1) The per-value monotonicity licence was
+    half the truth, and it reds against a correct implementation**, which the exhaustive sweep
+    found within minutes: `["1.0.0"]→[]` (major) vs `["1.0.0"]→["1.0.1"]` (patch), added `1.0.1`,
+    has no before-surplus and is nonetheless a correct drop. Fixed to the union stated at
+    `2d0f728`'s follow-up: licensed if the added value had a before-surplus, **or** the addition
+    erased the last forced before-stranding — `|bl| = |al| + 1` exactly, before the addition.
+    Factored the by-value cancellation into a shared `cancel()` used by both the oracle and the
+    licence check, so the two never see independently-drifting copies. Added the given executed
+    case as a named test and widened the sweep's assertion to the union; re-ran the full
+    exhaustive sweep (900 triples) and it passes clean. **(2) A "none"-magnitude pairing between
+    two different exact strings — reachable only through build metadata, since `parseSemver`
+    drops it and two differently-spelled versions can compare equal in precedence — is not a
+    free explanation**, since the digest still moved even though the declared magnitude did not.
+    Verified `parseSemver("1.0.0")` and `parseSemver("1.0.0+b")` are identical and
+    `compareSemver` returns `0` before writing anything. `oracleLevel`'s pair loop now folds in
+    the alternative of stranding that specific pair (priced against the full original opposite
+    lists) whenever a pairing prices `none` between two unequal strings. Verified against both
+    given cases by hand before trusting it, added to the oracle self-check block (now 8 cases),
+    and widened the oracle-vs-real sweep's pool with `1.0.0+b` (3 more standalone tests: the
+    main case, the "lost masks it" control with no duplicate, and a same-shape control that
+    never reaches an equal-precedence pair at all). `npx tsc --noEmit` and `npx eslint
+    tests/server/t025/leftover-pricing.test.ts` clean. Targeted run, `npx vitest run
+    tests/server/t025/`: 181 tests (174 prior + 7 new), 173 red on the absent module, 8 green
+    (the file's own oracle self-checks, unchanged in kind). Rebased onto `backend` at `75b37cd`.
+    No full-suite triple — targeted change, no gate slot requested, per the amendment.
+    `State: tests-written`, unchanged.
 
 ### T060, Authorization policy: owner and operator
 
