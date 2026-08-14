@@ -848,7 +848,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | adversarial-pass | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | claimed | — |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | adversarial-pass | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | adversarial-pass | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -1576,7 +1576,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T025, Versioning service: semver, digest, bump, chains
 
-- **State:** claimed
+- **State:** adversarial-pass
 - **Worktree:** `../darkprint-wt-t025-versioning` on `feat/t025-versioning`
 - **Test worktree:** `../darkprint-wt-t025-versioning-tests` on `test/t025-versioning`
 - **Depends on:** T000 (contract: types)
@@ -1619,6 +1619,503 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 - **Out of scope:** storing anything; this is a pure service the three stores call. What version a *forked* bundle starts at is fork behaviour and belongs to T110, not here — this service only infers the bump between two given versions.
 - **Log:**
   - 2026-08-13 orchestrator: created from B-04.
+  - 2026-08-14 implementer: flagged the `checkDeclaredBump` diagnostic-code gap before writing it (no `DiagnosticCode` existed for blueprint/ontology bump refusals, and `lib/core/diagnostics.ts` is Forbidden); orchestrator amended the signature with `subject` and added `bundle/`/`ontology/version-bump-too-small` on base. Implemented all four published names — `BlueprintSnapshot`, `inferBlueprintBump`, `inferOntologyBump`, `checkDeclaredBump` — under `lib/server/versioning/**`, barrel at `@/lib/server/versioning` re-exporting the consumed `lib/core` card primitives alongside them. `inferBlueprintBump` diffs the DOT text plus a `parseCardRef`-keyed map of pinned card ids to versions (repin severity taken from `declaredBump` on the pinned version pair; losing a pin is major, gaining one minor, any other DOT byte a patch safety net; AC-3's "identical snapshot infers none" holds because both fields are literally unchanged). `inferOntologyBump` diffs by term id (removed = major, added = minor), plus a cycle-safe walk of each retained term's `broader` ancestor set (losing a reachable ancestor = major, gaining one = minor) and a `kind` change (= major); a term's own `deprecated` field is never consulted for removal, so deprecating without dropping the id is a patch at most, which is AC-6's first half. `checkDeclaredBump` maps `subject` to the matching code and returns one `error`-severity diagnostic with the engine's reasons, or `[]` when satisfied. State/Live-slots row left untouched per Standing rules (index row + this section only). Gates: `npm run typecheck`, `npm run lint`, `npm run build` all clean; `npm test` 3789/3789 on three separate runs (one interleaved run hit one unrelated failure, a timing-sensitive assertion in `lib/core/dot/graph.test.ts`, outside Owns and outside my diff — reproduces as a pass in isolation, consistent with machine-load flakiness rather than a regression). 27 scratch tests under `lib/server/versioning/*.test.ts` exercise every acceptance criterion I own; they are not the verification suite. Reported result to orchestrator.
+  - 2026-08-14 test author: 126 tests in `tests/server/t025/**`, at least one per acceptance
+    criterion and mapped to it by name (`AC-1` … `AC-6`), plus absent and malformed input,
+    empty strings, unicode, wrong types, semver boundaries, set semantics over `cardRefs`
+    and the term set, purity under frozen inputs, interleaved and concurrent callers, and
+    duplicate calls. 125 red on the absent module, 1 todo (the gap in AC-6 above). No
+    candidate lists anywhere: every published name is bound exactly and its absence quotes
+    the clause that names it. Nothing in the suite touches a database — the task stores
+    nothing — so there is none to isolate or drop, and `tests/support/**` is unused.
+  - 2026-08-14 test author: the guards were falsified before hand-off. A throwaway reference
+    implementation in the scratchpad turned all 125 green, then 17 deliberate breakages each
+    went red on exactly the tests naming the property broken: a removal priced minor (6), the
+    pin set ignored (8), a repin priced minor (2), an unmoved blueprint priced `none` (1, the
+    AC-3 reading), reasons dropped from the refusal (3), nothing ever refused (26), reasons
+    accumulating in module state (15), the pin list sorted in place (1), a narrowed `broader`
+    chain missed (2), a deprecation read as a removal (3), refs compared as an ordered list
+    (2), a repeated pin counted twice (1), unreadable input swallowed into `none` (11), the
+    refusal downgraded to a warning (1), versions ordered as strings (16), one published name
+    respelled (36), and `parseSemver` reimplemented rather than consumed (1).
+  - 2026-08-14 test author: two environment notes. `tests/support/**` **does** exist on this
+    branch after `git rebase backend` — T000 merged it — which contradicts the hand-off's
+    premise for forbidding it; the prohibition was followed anyway since T025 needs no
+    harness. And `npm run typecheck` in a fresh worktree reports 18 pre-existing
+    `Cannot find name 'PageProps'` errors under `app/**`, present with this branch's files
+    removed: `tsconfig.json` includes `.next/types/**`, which no build has generated here.
+    These tests add exactly one typecheck error, `Cannot find module
+    '@/lib/server/versioning'`, and it is the module under test.
+  - 2026-08-14 test author: rebased onto `25dd706`, which settles all four reported gaps, and
+    rebound the suite to the amended block. **The Open line is removed rather than answered
+    in place: the contract is now derivable in full.** 137 tests, all red on the absent
+    module, no todo. What moved: every `checkDeclaredBump` call takes `subject` first; a new
+    block asserts the code mapping the function owns (`card/`, `bundle/`,
+    `ontology/version-bump-too-small`) and that a subject outside the closed union is never a
+    silent acceptance; `error` severity moved from derived to contract-bound; the refusal is
+    now asserted as *exactly one* diagnostic, which the block states and the first round only
+    bounded below; AC-3 moved from `patch` to `none`, one test as predicted; and the AC-6
+    `it.todo` became a test holding this task to **not** refusing a dangling successor, since
+    a second authority on one question is what B-04 exists to prevent. Re-falsified: 20
+    breakages, each red on exactly the property broken, including the four new or moved
+    guards — the code ignoring `subject` (2 red, both non-card subjects), an unknown subject
+    accepted (5), an unmoved blueprint priced `patch` (1), and a dangling successor refused
+    here (1).
+  - 2026-08-14 test author: **one leftover in the contract, reported not edited.** AC-6's
+    acceptance-criteria line still ends "and a dangling successor is refused", which the
+    Published signatures block above it withdraws in as many words. The block is the later
+    and explicit ruling and is what the tests bind to; the criteria line is the orchestrator's
+    to fix. Verified against the tree rather than the amendment note:
+    `lib/core/ontology/resolve.ts:327-336` does emit `ontology/dangling-pointer` at `error`
+    severity for a `deprecated.replacedBy` naming no term, so the withdrawal is right.
+  - 2026-08-14 adversary: **FAIL.** Merged `test/t025-versioning` as the first act: one
+    conflict, `backend.md`, content only, both sides' Log entries kept — no test-branch file
+    touched an implementation path, so the partition held. Gates: `npm run typecheck` exit 0,
+    `npm run lint` exit 0, `npm run build` exit 0 (the `prebuild` bundle regeneration left no
+    diff). `npm test` three times, byte-identical each run: `50 failed | 3865 passed | 11
+    skipped (3926)`, 5 files. No red in `lib/core/dot/graph.test.ts` on any run.
+    **Finding 1, confirmed, 2 blind tests red.** `pinsById` (`blueprint-bump.ts:19-29`) does
+    `if (parsed === undefined) continue`, so every `cardRefs` member `parseCardRef` rejects is
+    discarded before the comparison. A release whose pin set genuinely moved then infers
+    `none`, and `checkDeclaredBump` returns `[]` for a version that never moved. Observed:
+    `["café-solver@1.0.0"] → ["café-solver@2.0.0"]` ⇒ `none`
+    (`tests/server/t025/blueprint-bump.test.ts:211`, "expected 'none' to be 'major'");
+    `[] → [""]` ⇒ `{level:"none",reasons:[]}` (`:220`). Two further cases **no test covers**:
+    `["not-a-ref"] → []`, a pin vanishing entirely, ⇒ `none`; and `["Solver@1.0.0"] →
+    ["Solver@2.0.0"]` ⇒ `none`, since `CARD_ID` (`lib/core/card/schema.ts:167`) is
+    ASCII-lowercase-only. The comment at `blueprint-bump.ts:23-24` calls a malformed ref "the
+    validator's problem", but the effect is not deferral, it is acceptance — the exact class
+    the test author falsified as "unreadable input swallowed into `none`" (11 tests).
+    **Finding 2, new, no test covers it.** Same root cause, second face: the ref list is
+    reduced to an id-keyed map, first occurrence wins, so one id pinned at two versions is
+    collapsed. `["intake@1.0.0","solver@1.2.0"] → ["intake@1.0.0","solver@1.2.0","solver@9.0.0"]`
+    ⇒ `none`. An identical repeated pin collapsing is right; a conflicting one is a member of
+    "the set of card refs it pins" being dropped.
+    **Finding 3, related, lower severity, no test.** `["solver@latest"] → ["solver@2.0.0"]` ⇒
+    `minor`, reason "card `solver` was pinned at 2.0.0": `@latest` fails `REF_VERSION`, leaves
+    the previous side, and the repin reads as a first-time pin. Reachable only past the write
+    site that refuses `@latest`, but it mis-prices rather than defers.
+    **Root cause is one thing:** the contract's unit is the DOT plus *the set of card refs*,
+    and AC-2 needs a repin priced by semver. Both hold together — pair by id where the id
+    parses, and still count membership so no ref can vanish. Only the pairing half is built.
+    **What I could not break.** (1) `subject`: all five hostile values (`"blueprint"`, `""`,
+    `undefined`, `null`, `0`) return exactly one `error` diagnostic, never `[]`; `CODE_BY_SUBJECT`
+    is module-private so no caller can override the mapping; each valid subject maps to its own
+    code, one diagnostic, `error`. One observation, not charged: an out-of-union subject emits a
+    diagnostic with `code: undefined`, which a consumer switching on `d.code` cannot classify —
+    unreachable from typed callers and the blind test permits "throw, or report a diagnostic",
+    but worth one contract sentence if T020/T030/T100 will filter by code. (2) Ordering is
+    numeric and core is consumed, not rewritten: `parseSemver("0.10.0")` ⇒ `{0,10,0}`,
+    `compareSemver(0.9.9, 0.10.0)` ⇒ `-1` where string ordering says otherwise; repin
+    `0.9.9 → 0.10.0` ⇒ `minor`; `checkDeclaredBump("card","1.9.0","1.10.0",minor)` ⇒ `[]`.
+    (3) Ontology: removal major, addition minor, `kind` change major, narrowed `broader` major,
+    widened minor; deprecating without dropping the id is `patch`, not a removal; a deprecated
+    term with a **missing** successor is `patch` and emits nothing — correctly not refused here;
+    a cyclic `broader` (x→y→x) terminates ⇒ `none`, cyclic→acyclic ⇒ major. (4) Identity: two
+    identical snapshots ⇒ `none`, and so do structurally-equal distinct objects; reordered pins
+    ⇒ `none`; repin to a new major ⇒ major, lost pin ⇒ major, gained pin ⇒ minor. (5) Purity:
+    five repeated blueprint calls and three repeated ontology calls identical, interleaved calls
+    do not pollute each other, each caller gets its own reasons array, `summarize` keeps no
+    module state, and a deep-frozen input neither throws nor is sorted in place.
+    **Criteria, each run by name** (`npx vitest run tests/server/t025 -t "AC-n"`): AC-1 PASS
+    (4), AC-2 PASS (6), AC-3 PASS (3), AC-4 PASS (4), AC-5 PASS (9), AC-6 PASS (5). All six
+    pass; the two red tests sit under the Contract's "the set of card refs" clause, not a
+    numbered criterion, which is why `impl-done` was reported green. Verdict is FAIL on the new
+    defect, per Phase 2's "PASS only if every criterion passes **and** no new defect was found".
+    **The other 48 failures are not T025 and I did not clear them.** They are T000's
+    `tests/server/{session,migrations,object-store,environment}.test.ts` failing on unset
+    variables — `SESSION_SECRET` ×32, `DATABASE_URL` ×4, `S3_ENDPOINT` ×2, plus
+    `environment.test.ts`'s own 3. This worktree has no `.env` (only `.env.example`; `.env*` is
+    gitignored). The branch diff against `b53f413` touches only `lib/server/versioning/**`,
+    `tests/server/t025/**` and `backend.md`, so nothing here caused them. I left them red
+    deliberately: `docker exec` against the shared Postgres is denied by policy in this session,
+    and the migrations suite does a full down/up against a database three other live worktrees
+    share. The 2 T025 failures reproduce in isolation under no load
+    (`npx vitest run tests/server/t025 lib/server/versioning` ⇒ `2 failed | 162 passed`), so
+    they are not contention.
+    **Residue: none.** T025 stores nothing and every probe was an in-process call to the four
+    published functions — no database created, no object written, no `.env` left behind; the
+    scratch probe file was deleted and the tree is clean.
+    **No fifth gap.** The contract does not say what an unparseable ref is worth, and the
+    implementer and the test author read that silence in opposite directions — but the tests
+    bind, and "never answer `none` for input you could not read" is the only safe reading of a
+    clause whose unit is a set. That is a defect to fix, not an amendment to make; one sentence
+    would put it beyond argument if the orchestrator wants it.
+  - 2026-08-14 implementer: fixed both faces of the one root cause in `blueprint-bump.ts`.
+    `pinsById` now splits a ref on its last `@` the way `parseCardRef` does, but without
+    `CARD_ID`/`REF_VERSION` grammar validation (`splitRef`, local to the file) — an id that
+    would be refused at the write site still pairs against itself one version apart, so a
+    repin is still priced by `declaredBump`. On top of that pairing, `previous.cardRefs` and
+    `next.cardRefs` are now also compared as raw `Set`s (deduplicated, not multisets — a
+    repeated *identical* ref stays a no-op, which `tests/server/t025/blueprint-bump.test.ts`'s
+    "reads a repeated pin as the same set" holds to) and a `patch` reason is pushed whenever
+    those sets differ, whichever face of a ref the id-keyed pairing above could not read:
+    unparseable-both-sides (`café-solver@1.0.0 → café-solver@2.0.0`, now priced `major` via
+    `splitRef`, not `patch`, since the id half matches even though `CARD_ID` would reject it),
+    an added or vanished garbage ref (`[] → [""]`, `["not-a-ref"] → []`), and a same-id pin
+    added at a conflicting version alongside the original (`Finding 2`, uncovered by any red
+    test — the raw-set check catches it as a `patch` since the id-keyed map still resolves
+    "first occurrence wins" for pricing, and nothing asked for a more specific level than
+    "not none" here). `Finding 3` (`["solver@latest"] → ["solver@2.0.0"]`) is now read as a
+    genuine repin — same id, `declaredBump("latest","2.0.0")` returns `none` since `"latest"`
+    is not semver, so it falls to the same `patch` safety net — rather than a fresh pin, which
+    is a more accurate reading than "the same fix covers it" asked for, not just a louder one.
+    Separately, `declared-bump.ts`'s `CODE_BY_SUBJECT` object index became `codeFor`, an
+    exhaustive `switch` over `BumpSubject` with a `const invalid: never` default branch that
+    throws — the observation, not charged as a defect, that an out-of-union `subject` produced
+    a `Diagnostic` with `code: undefined`, which `T020`/`T030`/`T100` could never filter by.
+    Added 6 scratch regression tests naming each fixed face under
+    `lib/server/versioning/*.test.ts`; they do not count as verification. Gates: `npm run
+    typecheck`, `npm run lint`, `npm run build` clean. `npx vitest run tests/server/t025
+    lib/server/versioning`: 164/164. `npm test`, full suite, three consecutive runs:
+    3936/3936 each time, byte-identical. No `git stash` used anywhere in this session
+    (`b53f413`'s rule).
+  - 2026-08-14 adversary round 2: **FAIL.** Rebased by merge onto `070025c` (a plain rebase
+    would flatten the round-1 `test/t025-versioning` merge this branch carries). Gates:
+    typecheck 0, lint 0, build 0 with no bundle diff; `npm test` three times, identical:
+    `48 failed | 3877 passed | 11 skipped (3936)`, the 48 being the same unset-variable
+    failures in T000's `session`/`migrations`/`object-store`/`environment` files that this
+    worktree has no `.env` for — unchanged in cause from round 1 and untouched by this diff.
+    `npx vitest run tests/server/t025 lib/server/versioning`: **174/174**. Criteria by name:
+    AC-1 (4), AC-2 (6), AC-3 (3), AC-4 (4), AC-5 (9), AC-6 (5) — all PASS. No red in
+    `lib/core/dot/graph.test.ts` on any run; the base fix holds.
+    **Every round-1 finding is genuinely fixed, verified by execution, not by reading.**
+    `["café-solver@1.0.0"] → ["café-solver@2.0.0"]` ⇒ major; `["Solver@1.0.0"] →
+    ["Solver@2.0.0"]` ⇒ major; `[] → [""]` ⇒ patch; `["not-a-ref"] → []` ⇒ patch; Finding 2's
+    conflicting duplicate ⇒ patch; `["solver@latest"] → ["solver@2.0.0"]` ⇒ patch with the
+    accurate reason "card `solver` repinned: latest → 2.0.0". Identity survived: identical
+    snapshots ⇒ none, reordered distinct ids ⇒ none, pure duplicate-count changes ⇒ none.
+    `codeFor` throws on all five out-of-union subjects, and — better than asked — the guard is
+    the **unconditional first line** of `checkDeclaredBump`, so it fires on the satisfied path
+    too rather than lying dormant until a release happens to need refusing. Purity holds:
+    repeated, interleaved and frozen-input calls all identical, caller arrays never sorted.
+    **NEW DEFECT, charged. `pinsById` first-occurrence-wins hides a repin on every occurrence
+    after the first for one card id.** `cardRefs` is `blueprint.nodes.map((n) => n.ref)`
+    (`lib/content/view.ts:138`) — one entry per node, in node order, duplicates normal, which
+    is why every consumer dedups explicitly (`components/bundle/load.ts:110`,
+    `app/blueprints/[slug]/page.tsx:149`). Two nodes pinning different versions of one card is
+    an ordinary graph, and for it the pairing map keeps only the first. Observed, `dot` held
+    constant: `["solver@1.0.0","solver@2.0.0"] → ["solver@1.0.0","solver@3.0.0"]` — the second
+    node repinned across a major — infers **`patch`**, reason "the pinned card refs changed",
+    and `checkDeclaredBump("bundle","1.0.0","1.0.1", that)` returns **`[]`**. A major repin
+    ships as a patch release. That is the refusal B-04 exists to make. Same shape: a minor
+    repin of the second occurrence ⇒ patch; the second pin *dropped entirely* ⇒ patch, where
+    losing a pin is specified major. The AC-2 control passes only because every AC-2 test pins
+    one version per id: `["solver@1.0.0"] → ["solver@2.0.0"]` ⇒ major, correctly.
+    Same root cause, second face: **the answer depends on array order.**
+    `["solver@1.0.0"] → ["solver@1.0.0","solver@2.0.0"]` ⇒ patch, but
+    `["solver@1.0.0"] → ["solver@2.0.0","solver@1.0.0"]` ⇒ **major** — same DOT, same *set*,
+    order alone. Since node order comes straight from the DOT text, reordering two nodes
+    changes the version a release is required to declare.
+    **CONTRACT CONFLICT, reported not resolved — this is the fifth gap.** The implementer chose
+    `Set` over multiset for the membership half, reasoning that a multiset would break the blind
+    test "reads a repeated pin as the same set". But `lib/db/schema.ts:155-157`, T000's own
+    stored shape, states the opposite in as many words: "`cardDigests` is an array, not a set:
+    **pinning one card twice is a different digest from pinning it once**, and deduplicating
+    here would erase that." Under that, `["solver@1.0.0"] → ["solver@1.0.0","solver@1.0.0"]`
+    changes the bundle digest while `inferBlueprintBump` infers `none` — a release whose bytes
+    moved and whose version is not required to. B-04 has every release carry both a declared
+    semver and a computed digest, so the two cannot disagree. Either the blind test's set
+    reading or T000's schema comment is wrong, and **that is the orchestrator's to rule, not
+    mine and not the implementer's** — per Phase 2, a test that changes to match the code is a
+    failed task. I have not touched either. Note the ruling also decides the defect above:
+    multiset semantics would price the hidden repin by pairing occurrences, set semantics needs
+    the pairing half fixed some other way.
+    **Process check, as asked.** The hand-resolved merge lost no Log entry — all eight round-1
+    entries are present in order and my round-1 report is byte-identical to `6c6197d`. One
+    cosmetic artifact: `backend.md:816`, the sentence beginning "For an ontology, removing a
+    term…", is indented one space instead of two and has no blank line above it, so it renders
+    as a lazy continuation of the new "A diagnostic always carries a classifiable `code`"
+    paragraph rather than as part of the blueprint/ontology contract statement it belongs to.
+    Content intact, structure wrong; a one-character fix.
+    **Residue: none.** T025 stores nothing; all three probes were in-process calls to the four
+    published functions. No database created, no object written, no `.env`, probe files deleted,
+    tree clean. `docker exec` against the shared Postgres remains denied in my session, so the
+    48 environment failures stay unaddressed here by choice rather than oversight.
+  - 2026-08-14 implementer: rebuilt `inferBlueprintBump`'s pin comparison for the multiset
+    ruling (`e5e232d`). `versionsById` now collects every parseable ref's version per id
+    (not just the first) and sorts each id's list with `compareVersionStrings`, so which
+    node happened to come first in the DOT cannot change the answer. `compareVersions`
+    walks one id's before/after lists position by position up to the shorter length —
+    a mismatch there is a repin, priced by `declaredBump` — then reads whatever the
+    longer list has left over: a version also present on the shorter side is a pure
+    multiplicity change (`patch`), a version present nowhere on the other side is a pin
+    genuinely gained (`minor`) or genuinely lost (`major`). An id absent from one side
+    supplies an empty list, which the same logic reads correctly as "every occurrence
+    gained/lost" with no separate branch. The raw-ref safety net moved from a
+    deduplicated `Set` to a counted `Map` (`refCounts`/`sameCounts`), consistent with the
+    same multiset reading. Re-verified by hand against both examples in the ruling:
+    `["solver@1.0.0","solver@2.0.0"] → ["solver@1.0.0","solver@3.0.0"]` now infers
+    `major` (was `patch`), and `[a@1] → [a@1,a@2]` and `[a@1] → [a@2,a@1]` both infer
+    `minor` (was `patch` vs. `major` depending on order). Every round-2 fix (café-solver,
+    uppercase id, `[] → [""]`, `["not-a-ref"] → []`, Finding 2's conflicting duplicate,
+    `@latest`) still holds — `splitRef` is untouched, only the id-keyed grouping and
+    comparison around it changed. Did not touch `tests/server/t025/blueprint-bump.test.ts`
+    or implement toward its "reads a repeated pin as the same set" assertion, per the
+    ruling's own instruction; ran it anyway to confirm the shape of the failure.
+    **Gates:** `npm run typecheck`, `npm run lint`, `npm run build` clean, no unexpected
+    prebuild diff. `npx vitest run tests/server/t025 lib/server/versioning`: 173/174 —
+    the one failure is exactly and only "reads a repeated pin as the same set"
+    (`blueprint-bump.test.ts:198`), now `{level:"patch",reasons:[...]}` instead of
+    `{level:"none",reasons:[]}`, which is the intended new answer per the ruling, not a
+    regression. Every other test — all other AC-2/AC-3 cases, the unreadable-input suite,
+    purity, determinism, `checkDeclaredBump`, `inferOntologyBump` — still green. **Holding
+    here rather than declaring `impl-done`**: full-suite `npm test` and the three-identical-run
+    gate are meaningless while one test is a known, intentional red pending Agent B's
+    rewrite, per "wait for Agent B's rewritten test before you finish." Committed the
+    implementation; will run the full gate sequence and flip State once the rewrite lands.
+  - 2026-08-14 test author: rebased onto `e5e232d` and **withdrew the wrong assertion**. "reads
+    a repeated pin as the same set" was mine, it was wrong, and the three facts that make it
+    wrong are checked in this tree rather than taken from the amendment:
+    `lib/core/hash/digest.ts:62` sorts `cardDigests` and does not deduplicate them;
+    `lib/db/schema.ts:156` says pinning one card twice is a different digest in as many words;
+    and `lib/core/bundle/resolve.ts:749` feeds the digest `nodes.map((n) => n.digest)`, one
+    entry per node. Multiplicity reaches identity and order cannot, so inference has to match.
+    152 tests, all red on the absent module, no todo. The multiset block asserts: order never
+    changes the answer (three tests, including the `[a@1] → [a@1, a@2]` versus
+    `[a@1] → [a@2, a@1]` pair that flipped patch/major in round 2, and a rotation sweep over a
+    longer list); a pure duplicate added or dropped is at least `patch` and never `none`; a
+    second node repinned across a major is `major`, with an end-to-end test feeding that
+    inference to `checkDeclaredBump` so a major repin cannot ship as a patch release; a moved
+    version is priced by `declaredBump` on that pair at all three levels; an id losing every
+    occurrence is `major` and a new id is `minor`. A separate block holds seven shapes of
+    unparseable ref to the floor the contract states — never `none` — and nothing above it.
+    Three weaker AC-2 assertions ("not the baseline") were deleted rather than kept beside the
+    exact-level ones that dominate them. Re-falsified: 25 breakages, all discriminating. The
+    five new ones land precisely — dedupe back to a set (2 red), pairing by first occurrence
+    (2, and they are the two defects the adversary demonstrated), an unsorted version list
+    (2), a rollback priced `none` (1), unparseable refs dropped (5), multiplicity ignored (2).
+  - 2026-08-14 test author: **one residual silence, floor-bound and reported.** "a version
+    that moved is priced by `declaredBump` on that pair" and the identity argument disagree on
+    a rollback: `declaredBump("2.0.0", "1.0.0")` is `none`, because a downgrade declares no
+    bump, while `cardDigests` and therefore the digest did move. The test asserts only the
+    floor — not `none` — and pins no level above it, so either ruling passes. Worth settling
+    before T100, which will hit it the first time an author pins back to an older card.
+  - 2026-08-14 implementer: merged `4b8de07` and added direction-independent pricing.
+    `repinMagnitude(a, b)` orders the pair with `compareSemver` before calling
+    `declaredBump` — `parseSemver(a) <= parseSemver(b)` calls `declaredBump(a, b)` as
+    given, otherwise `declaredBump(b, a)` — so a rollback prices at the same level as
+    the matching forward move; only `compareVersions`'s position-wise loop was changed
+    to call it instead of `declaredBump` directly, the multiplicity/gained/lost tail
+    logic already had no direction to get wrong. Unparseable version halves (`@latest`)
+    still fall straight through to `declaredBump(a, b)` unordered, since there is no
+    magnitude to order by, and its `none` still becomes `patch` exactly as before.
+    Added 4 scratch regression tests: the ruling's own multiset example (`major`, not
+    `patch`), the order-independence example (`minor` both ways, not `patch` vs.
+    `major`), a pure-multiplicity change (not `none`), and a table of major/minor/patch
+    rollbacks each priced identically to their forward move. **Gates:** typecheck,
+    lint, build clean, no unexpected diff. `npx vitest run tests/server/t025
+    lib/server/versioning`: 179/180 — the one failure remains exactly and only "reads a
+    repeated pin as the same set", unchanged by this round's fix, still the sole thing
+    pending Agent B's rewrite. Not flipping State; not running the full three-run gate
+    yet, for the same reason as the previous entry.
+  - 2026-08-14 test author: settled at `4b8de07` — **magnitude, never direction** — and the
+    floor is now an exact level. `bump.ts:460` verified in the tree: `compareSemver(after,
+    before) <= 0` really does return `none`, so the clause names the right line. The rollback
+    test asserts **all three** levels rather than the major alone, since an implementation
+    special-casing the one direction it was shown passes a single-case test, and a fifth test
+    asserts the property itself — repinning a pair either way gives one answer — over five
+    pairs including `1.0.0-rc.1 ↔ 1.0.0`. That last pair is the one that separates the rule
+    from its shortcut: `compareSemver` orders a prerelease *below* its release, so ordering
+    the pair prices it a `patch`, where "major whenever `declaredBump` says `none`" says major.
+    157 tests, all red, no todo. 26 falsifications, all discriminating, and the two new ones
+    catch the rule from opposite sides — keeping the direction prices a major rollback down to
+    a patch (4 red), and the always-major shortcut prices a minor and a patch rollback up (4
+    red, including the prerelease pair that only this one catches).
+  - 2026-08-14 implementer: unblocked. Confirmed the prerelease pair by execution rather
+    than reasoning: added `["patch", "1.0.0", "1.0.0-rc.1"]` to the scratch rollback table
+    and ran it — `repinMagnitude` orders with `compareSemver` first, `compareSemver`
+    ranks a prerelease below its release, so both directions price `patch`, never the
+    `major` the "always-major-on-none" shortcut would give. Merged `test/t025-versioning`
+    at `78fcdf2` to pick up Agent B's rewrite; took both rewritten test files
+    (`blueprint-bump.test.ts`, `card-chain.test.ts`) entirely via `--theirs`, since
+    `tests/server/**` is Forbidden to author or edit. The `backend.md` conflict was
+    resolved per the `e8ab013` rule: contract prose (Published signatures through Out of
+    scope) was already byte-identical to `backend` on both sides — verified by diff, not
+    assumed — so there was nothing to choose there. The four conflicting Log stretches
+    were reordered by hand into one causal narrative rather than resolved by picking a
+    side, since both are real history: adversary round 1 FAIL → my round-1 fix →
+    adversary round 2 FAIL (flags the set-vs-multiset conflict) → [`e5e232d`] → my
+    multiset fix → Agent B's withdrawal of the wrong assertion → Agent B's
+    residual-silence note on rollback direction → [`4b8de07`] → my direction-independence
+    fix → Agent B's final settle. No entry dropped or edited, only reordered to when it
+    actually happened relative to the two rulings it responds to. **Gates:**
+    `npm run typecheck`, `npm run lint`, `npm run build` clean, no unexpected diff.
+    `npx vitest run tests/server/t025 lib/server/versioning`: **201/201**. `npm test`,
+    full suite, three consecutive runs: **3963/3963** each time, byte-identical. Reported
+    result to orchestrator.
+  - 2026-08-14 adversary round 3: **FAIL.** Merged onto `bec6438`. Read the T025 section from
+    `backend` first, per `e8ab013`: this worktree's section is **identical to base apart from
+    `State`**, AC-6 included — both read "**A dangling successor is not refused here**", and
+    `tests/server/t025/ontology-bump.test.ts:222` holds the code to not refusing it. The
+    withdrawn clause is not live anywhere I can find; only that file's header comment (lines
+    6, 14-17) still quotes the old wording, and it says in the same breath that the test binds
+    to *not* refusing. Test-branch file, not mine to edit. Round 2's `backend.md:816`
+    indentation artifact is fixed.
+    Gates: typecheck 0, lint 0, build 0 with no bundle diff, all against `a2c8fdf` before any
+    working-tree edit. `npm test` three times, all reporting
+    `48 failed | 3904 passed | 11 skipped (3963)` — but see the concurrency note below: only
+    the first of the three ran against `a2c8fdf`, so this is **not** a three-run determinism
+    result and I am not claiming it as one. The 48 remain the unset-variable failures in
+    T000's `session`/`migrations`/`object-store`/`environment` files — this worktree has no
+    `.env` and `docker exec` against the shared Postgres is denied in my session, so I record
+    them **unverified rather than contradicting** the reported 3963/3963. `npx vitest run
+    tests/server/t025 lib/server/versioning`: **201/201**. Criteria by name: AC-1 (4), AC-2 (3),
+    AC-3 (3), AC-4 (4), AC-5 (9), AC-6 (5) — all PASS.
+    **Everything from rounds 1 and 2 is fixed, by execution.** café and uppercase repins ⇒
+    major; `[] → [""]` and `["not-a-ref"] → []` ⇒ patch; `@latest` ⇒ patch; the round-2 hidden
+    repin `["solver@1.0.0","solver@2.0.0"] → ["solver@1.0.0","solver@3.0.0"]` ⇒ **major**, and
+    `checkDeclaredBump("bundle","1.0.0","1.0.1", …)` now correctly returns one `error` at
+    `bundle/version-bump-too-small`. Order agreement on the two round-2 examples ⇒ both minor.
+    The magnitude-not-direction ruling holds and I confirmed the prerelease boundary
+    independently: `2.0.0 → 1.0.0` ⇒ major, `1.0.0 → 2.0.0` ⇒ major, `1.0.0-rc.1 ↔ 1.0.0` ⇒
+    patch **in both directions**, `rc.1 → rc.2` ⇒ patch, `1.0.0-alpha.1.2 → 1.0.0-alpha.1.10`
+    ⇒ patch (numeric identifiers, not code units), `1.9.9 → 2.0.0-rc.1` ⇒ major.
+    **NEW DEFECT 1, charged. The position-wise walk misaligns when a duplicate of a
+    non-largest version is added or removed, and fabricates a repin.** The leftover branch only
+    inspects the **tail** of the sorted list, but dropping a duplicate from the middle shifts
+    every later element left by one, so each subsequent position compares mismatched pairs.
+    Observed, `dot` held constant, one id: `{1.0.0, 1.0.0, 2.0.0} → {1.0.0, 2.0.0}` — one of two
+    nodes pinning `1.0.0` removed, nothing repinned — infers **`major`**, reason "card `solver`
+    repinned: 1.0.0 → 2.0.0". That repin never happened. Symmetric on the gain:
+    `{1.0.0, 2.0.0} → {1.0.0, 1.0.0, 2.0.0}` ⇒ major, "repinned: 2.0.0 → 1.0.0". And
+    `{1.0.0 ×3, 5.0.0} → {1.0.0 ×2, 5.0.0}` ⇒ major. The control cases are right, which is what
+    makes it a misalignment rather than a policy choice: dropping a copy of the **largest**
+    version ⇒ patch, and `{1.0.0 ×3} → {1.0.0 ×2}` alone ⇒ patch. So one pure multiplicity
+    change is priced patch or major purely by whether the duplicated version happens to be the
+    largest in its id's list. `compareVersions`'s own doc comment (lines 113-117) states the
+    intended rule — a leftover version that also appears on the shorter side "is a pure
+    multiplicity change … and is at least a `patch`" — and the code does not deliver it.
+    Direction is over-pricing, so it forces a major where a patch is owed rather than shipping
+    a breaking change quietly; it is still a wrong level and a reason that names a repin the
+    author did not make.
+    **NEW DEFECT 2, charged. Order dependence is back, through a tie in the sort comparator —
+    an AC-3 violation.** The sort exists so "which node happened to come first in the DOT cannot
+    change the answer", and that holds only if the comparator is a total order over the strings
+    actually present. It is not: `parseSemver` **deliberately discards build metadata**
+    (`lib/core/version/semver.ts:11-13,38-40`), so `compareVersionStrings("1.0.0",
+    "1.0.0+build")` returns **0** for two distinct strings, and `Array.prototype.sort` is stable
+    — tied elements keep their input order, so the "canonical" order is not canonical.
+    Observed: `["solver@1.0.0","solver@1.0.0+build"]` against
+    `["solver@1.0.0+build","solver@1.0.0"]` — same DOT, **same multiset** — infers **`patch`**
+    with two invented reasons ("repinned: 1.0.0 → 1.0.0+build" and back), where AC-3 requires
+    `none`. Same for two build tags (`+a`/`+b`), and for rotations and reversals of any list
+    containing one. Reachable: `REF_VERSION` (`lib/core/card/schema.ts:174`) permits `+`, and
+    `parseSemver` accepts build metadata by design. Rotations and reversals of plain-semver
+    lists are correctly order-independent, so the property holds everywhere except at the tie.
+    **CONCURRENCY HAZARD, and it is a process finding, not a code one.** Another session was
+    editing this worktree while I tested it. `lib/server/versioning/blueprint-bump.ts` changed
+    on disk at 08:42:49 and `blueprint-bump.test.ts` at 08:43:25; my full runs finished at
+    08:42:40, 08:42:56 and 08:43:21. So run 1 was against `a2c8fdf`, run 2 straddled the edit,
+    and run 3 and every later run (the 201/201 and the per-criterion runs) were against a tree
+    with uncommitted changes in it. The totals did not move, which is consistent — the edit
+    changes no test outcome — but three runs of three different trees are not the guard that
+    was asked for. **Both charged defects were observed at 08:41:43, before any edit, against
+    `a2c8fdf` as committed**, so the findings themselves stand. I committed only `backend.md`
+    by path and did not sweep the other session's work in; had I used `git add -A` I would
+    have. Two agents in one worktree is the same class of hazard as the repo-global stash.
+    **The in-progress fix, tested and clearly labelled as uncommitted.** Those working-tree
+    edits add a `compareVersionsCanonical` code-unit tiebreak, and against that tree **Defect 2
+    is fixed** — both build-metadata orderings now infer `none`. **Defect 1 is untouched and
+    still reproduces**: `{1.0.0, 1.0.0, 2.0.0} → {1.0.0, 2.0.0}` still infers `major` with
+    "card `solver` repinned: 1.0.0 → 2.0.0", and the largest-version control still infers
+    `patch`. The verdict above is against `a2c8fdf`; this paragraph is a courtesy reading of
+    work that was not submitted for review.
+    **Residue: none.** T025 stores nothing; both probes were in-process calls to the published
+    functions. No database, no objects, no `.env`, probe files deleted. The two modified files
+    left in the tree are the other session's, untouched by me. No `git stash` at any point.
+  - 2026-08-14 implementer: fixed Defect 1. The flat "sort both id-keyed lists, compare
+    index by index" walk broke the instant a duplicate's count changed anywhere but the
+    tail of the sorted range — dropping one of three `1.0.0` pins while a `5.0.0` pin sat
+    untouched shifted `5.0.0` left by one position, and the walk read that shift as a
+    repin `5.0.0` never made. `leftoverVersions` now cancels matched occurrences **by
+    value** first — for each distinct version string, `matched = min(before-count,
+    after-count)`, leaving each side only the copies the other side cannot account for —
+    and only that leftover gets sorted (with the round-3 canonical tiebreak, kept) and
+    paired position by position for magnitude pricing. A value can never have leftover on
+    both sides at once, so the pairing is unambiguous; membership classification for the
+    tail (pure multiplicity vs. genuinely gained/lost) still checks the *full* original
+    before/after sets, not the leftover, which is what correctly reads a lost duplicate as
+    `patch` when its value is still pinned elsewhere. Verified by hand against both
+    reported examples — `{1.0.0, 1.0.0, 2.0.0} → {1.0.0, 2.0.0}` and
+    `{1.0.0 ×3, 5.0.0} → {1.0.0 ×2, 5.0.0}` — both now `patch`, no fabricated repin in
+    the reasons; the largest-version-drop and single-id-count-drop controls unchanged.
+    Added 2 scratch regression tests naming the exact shapes. Rebased by merge onto
+    `backend` at `6628854` (a literal rebase still explodes into replaying this branch's
+    merge-commit history into 16 individual commits — same as every prior round; aborted
+    immediately and merged instead). One real conflict, the Task index table: two rows had
+    each independently drifted stale on the other branch — kept my own T025 row (`reverted`,
+    round-3 evidence, base's copy was a stale `claimed`) and took base's T060 row
+    (`adversarial-pass`, mine was a stale `claimed`) rather than picking one side for the
+    whole table. Verified the contract prose against `backend` in full, no line limit this
+    time: 44 lines either side, zero diff except `State`. Committed the fix by explicit path
+    (`git add lib/server/versioning/blueprint-bump.ts lib/server/versioning/blueprint-bump.test.ts`),
+    never `-A`, per the new shared-worktree rule. **Gates**, run on a quiet tree — no other
+    session editing while these ran: `npm run typecheck`, `npm run lint`, `npm run build`
+    clean, no unexpected diff. `npx vitest run tests/server/t025 lib/server/versioning`:
+    **206/206**. `npm test`, full suite, three consecutive runs: **4056/4056** each time,
+    byte-identical. Reported result to orchestrator; tree is theirs to hand back to the
+    adversary.
+  - 2026-08-14 adversary round 4: **FAIL.** Handover verified from inside the tree rather than
+    taken: `0fc0c05e88ed…`, `git status --porcelain` empty. Merged `backend` at `974ebc3`;
+    everything below was measured at **`f4f6a82`**. Whole-tree stamp, per `974ebc3`:
+    `f4f6a82` + clean **before** the runs and `f4f6a82` + clean **after** them, so the three
+    runs measured one tree. This is the first determinism result on this task that means what
+    it says. Contract prose checked independently against `backend` — everything above the Log
+    is 44 lines either side and **`State` is the only difference**, so the merge that took one
+    side per conflicted row did not cost anything.
+    Gates: typecheck 0, lint 0, build 0, no bundle diff. `npm test` ×3, identical:
+    `48 failed | 3997 passed | 11 skipped (4056)`. The 48 stay the unset-variable failures in
+    T000's four files; no `.env` here and `docker exec` is denied in my session, so they are
+    recorded **unverified, not contradicting** the reported 4056/4056. `npx vitest run
+    tests/server/t025 lib/server/versioning`: **206/206**. AC-1 (4), AC-2 (3), AC-3 (3), AC-4
+    (4), AC-5 (9), AC-6 (5) — all PASS.
+    **Both round-3 defects are fixed, and I checked them on shapes the fix was not fitted to.**
+    The report noted the implementer had read my `_adv4.test.ts` before the dispatch arrived, so
+    that probe is a weak witness for its own fix; every regression below is a fresh shape.
+    Mid-list multiplicity: dropping one of four `1.0.0` pins beside a `7.0.0` ⇒ `patch`;
+    dropping a middle-valued duplicate with pins either side ⇒ `patch`; gaining one ⇒ `patch`;
+    two ids each shifting multiplicity ⇒ `patch` naming both. No fabricated repin anywhere, and
+    the largest-duplicate control still ⇒ `patch`. Build metadata: a tag mid-list among three
+    pins, two tags on different cores, and bare-plus-two-tags all ⇒ `none` under permutation,
+    while a genuine `+a → +b` still ⇒ `patch`.
+    **Order-independence now holds as a property, not as two examples.** 800 randomised
+    permutation pairs over a pool mixing duplicates, build metadata, a prerelease, `latest`,
+    `0.10.0` and `10.0.0` (deterministic PRNG, seeds 20260814 and 777): **0 failures** comparing
+    full `{level, reasons}` and 0 comparing level alone.
+    **NEW DEFECT, charged. The inference is not monotonic: adding a pin to `next` lowers the
+    inferred bump.** Adding a pin is at most `minor` on its own, so it cannot make a release
+    smaller — but it does. Observed, `dot` held constant, one id:
+    A. `[solver@1.0.0] → [solver@9.0.0]` ⇒ **major**, and
+    `checkDeclaredBump("bundle","1.0.0","1.1.0", …)` **refuses** at
+    `bundle/version-bump-too-small`.
+    B. the same repin with one more node pinned alongside it,
+    `[solver@1.0.0] → [solver@1.0.1, solver@9.0.0]` ⇒ **minor**, and the same declared `1.1.0`
+    is **accepted** (`[]`). Adding `solver@1.0.1` to the release is what buys the author the
+    right to ship a major repin as a minor.
+    Root cause: the pairing loop matches leftover before-versions against leftover
+    after-versions **by sorted position**, so a lost version is absorbed by whichever gained
+    version happens to sort nearest, and the level then turns on the numeric proximity of an
+    unrelated added pin. Losing one pin and gaining two: gain `{1.0.1, 9.0.0}` ⇒ minor, gain
+    `{1.1.0, 9.0.0}` ⇒ minor, gain `{2.0.0, 3.0.0}` ⇒ major, gain `{9.0.0, 9.0.1}` ⇒ major.
+    Same structural change, four different answers, decided by arithmetic distance to a pin that
+    has nothing to do with the one that vanished.
+    **Why this does not need a ruling first, and where a ruling is still owed.** Which node moved
+    where is genuinely unknowable — `cardRefs` carries no node identity — so *some* pairing
+    policy has to be chosen and the contract does not name one. But monotonicity does not depend
+    on that choice: whatever the policy, `after` gaining a pin must not lower the level, and that
+    is falsifiable on its own. So the defect stands without an amendment. The ruling still owed
+    is which reading to take when one id both loses and gains, because the implementation takes
+    the **cheapest** plausible pairing and B-04 exists to refuse under-declared bumps — the same
+    "never answer less than you can justify for input you could not read" that settled round 1.
+    **Observation, not charged.** `blueprint-bump.ts:190`'s
+    `if (beforeLeftover[i] === afterLeftover[i]) continue;` is unreachable: a value only ever
+    holds leftover on the side with the larger count, so the two leftover lists are disjoint by
+    construction and can never share a value at any index. Harmless, and the comment above it is
+    right about why.
+    **Residue: none.** Two probes, both in-process calls to the published functions; no database,
+    no objects, no `.env`; both probe files deleted and the after-stamp confirms it. Sole writer
+    throughout, per `6628854`.
 
   **Ruling, round 5: an ambiguous pairing infers the *most* expensive plausible reading, never the cheapest.** `cardRefs` carries no node identity, so when one card id both loses and gains versions there is no fact about which pin moved where — some policy must be chosen and the contract named none. The choice is settled by B-04's purpose and by round 1's sibling ruling, which already went this way: never answer less than you can justify for input you could not read. Refusing an under-declared bump is the whole reason this check exists, so of the readings the data permits, the inference takes the one that demands the largest declared bump. Over-answering costs an author a version number they did not strictly need; under-answering ships a breaking change as a patch, and nothing downstream re-checks it.
 
@@ -1700,6 +2197,355 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **The premise the one-sidedness heuristic rests on, recorded so it does not outlive it.** "All under-priced, none over-priced identifies a positional stand-in for a maximum" holds **only while the correct answer is itself a maximum** — true under the current ruling, and not a law. If a later ruling replaces "most expensive residue-free explanation" with a specific cheaper pairing policy — a live possibility, since the maximum is O(n·m) and someone will eventually want cheaper — the correct answer stops being an upper bound, legitimate divergences fall both ways, and zero over-pricing stops being diagnostic. **The oracle survives that change; the asymmetry heuristic does not.** Raised by the adversary that invented the heuristic, one message after inventing it, which is this file's central rule applied to its own instrument. Keep the oracle as the regression test — a property checked against an independent exhaustive implementation is worth more than any number of worked examples, and it is what found this after two rounds of examples did not.
 
   **Recorded, not charged:** `blueprint-bump.ts:190`'s `if (beforeLeftover[i] === afterLeftover[i]) continue;` is unreachable — by-value cancellation makes the two lists disjoint by construction. Harmless, and the comment above it is correct about why. Remove it or keep it, but do not let it survive as a guard a later reader trusts.
+  - 2026-08-14 implementer: implemented the ruling. `worstPairing` replaces the positional
+    walk over `leftoverVersions`' output with a maximum over the *full* `before×after`
+    cross product for one id's leftover — the single worst pair is always achievable by
+    some valid pairing (pair that one, pair the remainder arbitrarily; the remainder can
+    only add reasons at or below that level, never remove the max), so this is exactly
+    the maximum any full pairing could reach, `O(n·m)`, no permutation search. Removed
+    the now-pointless dead check the adversary flagged as a side effect of replacing the
+    loop it belonged to, not a separate edit.
+    **A second, independent monotonicity gap**, found by property-testing the fix rather
+    than assumed fixed: a pair `repinMagnitude` cannot read (one side not semver, e.g.
+    `@latest`) was floored at a flat `patch`, and that flat floor could itself be *lower*
+    than what the same before-item would have priced as genuinely lost had nothing been
+    available to pair it with — `[…,"latest"] → […]` (nothing to pair) priced `major`
+    correctly, but `[…,"latest"] → […,"1.0.1"]` (now pairable) priced only `patch`,
+    dropping below the smaller case. `unpairedFloor` fixes it: an unreadable pair takes
+    the worse of `patch` and each side's own genuinely-lost/genuinely-added price,
+    checked against the *full* original opposite-side list — never applied to a pair
+    `repinMagnitude` *can* read, which is what keeps an ordinary minor or patch repin
+    from being inflated to major just because it is, definitionally, leftover.
+    **One exemption, found the same way and kept intentionally.** Restoring pin-count
+    parity with `before` for one id can also legitimately lower the answer, and this is
+    not the same defect: `before=[1.1.0,1.0.0] → [rc.1]` (count 2→1) is `major` — the
+    occurrence count itself, read directly off the data, proves at least one node's pin
+    vanished with nothing to replace it, not a guess. `before=[1.1.0,1.0.0] →
+    [rc.1,rc.1]` (count 2→2) is `minor` — a complete, self-consistent explanation now
+    exists with no residue (node 1: `1.0.0`→`rc.1` patch, node 2: `1.1.0`→`rc.1` minor),
+    and asserting a hidden deletion on top of that would invent structure the multiset
+    does not contain. Same reasoning AC-3 already rests on for an identical before/after
+    pair inferring `none` regardless of how severe some *other* comparison against the
+    same `before` was. The property test's generator excludes trials that cross this
+    exact boundary (`before.length > smaller.length && before.length <= larger.length`)
+    and a dedicated test pins both sides of the exemption by name, so a reviewer who
+    disagrees with this reading has a single, named place to push back.
+    **Falsification, as asked, on generated inputs rather than the two examples.** Three
+    seeded, deterministic property tests (no external dependency — a small inline
+    `mulberry32` PRNG), 200 trials each over a pool mixing duplicates, build metadata, a
+    prerelease, `latest`, `0.10.0` and `10.0.0`: `bumpSatisfies(largerLevel,
+    smallerLevel)` holds for every trial after excluding the documented exemption.
+    Controls re-verified unchanged: largest-version-drop and single-id-count-drop still
+    `patch`, a dropped duplicate still pinned elsewhere still `patch`, order-independence
+    property intact. **Gates**, on a quiet tree, sole writer throughout (`6628854`):
+    `npm run typecheck`, `npm run lint`, `npm run build` clean, no unexpected diff.
+    `npx vitest run tests/server/t025 lib/server/versioning`: **217/217**. `npm test`,
+    full suite, three *consecutive* clean runs: **4151/4151** each time, byte-identical —
+    two earlier runs in the same session hit unrelated timeouts under heavy concurrent
+    load from other live sessions (`lib/db/migrate.test.ts`, `lib/core/dot/graph.test.ts`;
+    both reproduce as clean passes in isolation, both outside `lib/server/versioning/**`
+    and outside this diff), discarded rather than counted toward the three, per the same
+    "measure a quiet tree" standard the stamps exist for. Before-stamp `db53fbf`,
+    `git status --porcelain` empty (matches the orchestrator's external check that
+    dispatched this round). After-stamp taken on the committed tree per `6045613`, in
+    the commit this Log entry ships with; reported to the orchestrator alongside it.
+  - 2026-08-14 adversary round 5: **FAIL.** Handover verified from inside the tree, not taken:
+    `a146c50a8f0a…`, porcelain empty. Merged `backend` (through `2307c00`, the round-5 ruling);
+    everything below measured at **`239b6a77…`**. Whole-tree stamp `239b6a77…` + clean
+    **before** the three runs and `239b6a77…` + clean **after**. Gates: typecheck 0, lint 0,
+    build 0. Three consecutive full-suite runs, read per the new rule as exit code and
+    failed-file count rather than the test total: **exit 1, 7 failed files, 109 failed tests on
+    each**, and the failing file and test **sets are identical across all three** once sorted.
+    The 7 are `migrations`, `object-store`, `session`, `environment` and T010's
+    `bundle`/`release`/`integrity` — all DB/S3/env-dependent, failing on unset
+    `DATABASE_URL`/`SESSION_SECRET`/`S3_ENDPOINT`, since this worktree has no `.env`; recorded
+    **unverified, not contradicting**. The jump from 48 is T010's suite arriving with the merge,
+    not a regression. No T025 red in any run. `npx vitest run tests/server/t025
+    lib/server/versioning`: **217/217**. AC-1 (4), AC-2 (3), AC-3 (3), AC-4 (4), AC-5 (9), AC-6
+    (5) — all PASS.
+    **Assigned target 1 — the carve-out is a boundary condition, not a named exemption. PASS.**
+    `compareVersions` branches only on leftover counts; there is no literal-value or `rc` case
+    anywhere. Tested by running the ruling's *shape* on unrelated values, where the exemption
+    must not fire: `[2.0.0,1.0.0] → [0.5.0]` ⇒ major and `→ [0.5.0,0.5.0]` ⇒ **still major**;
+    `[1.0.0+a,3.0.0] → [7.0.0]` ⇒ major and `→ [7.0.0,7.0.0]` ⇒ **still major**. Only the
+    ruling's own example drops major → minor, and it drops because its cross-product maximum is
+    minor, which is the boundary doing the work rather than the name.
+    **Assigned target 2 — no leak of the kind described. PASS.** The level is
+    `max(worstPair, unpaired)`; adding to `after` only *adds* pairs, so the pair term is
+    monotone non-decreasing, and the level can never fall below what the pairs alone justify.
+    The round-4 defect is fully fixed and the whole proximity set is now major
+    (`{1.0.1,9.0.0}`, `{1.1.0,9.0.0}`, `{2.0.0,3.0.0}`, `{9.0.0,9.0.1}` — all major).
+    `unpairedFloor` holds: `[latest] → [1.0.1]` is now **major**, not patch.
+    Order-independence still 0 failures over 400 randomised permutation pairs.
+    **NEW DEFECT, charged. `worstPairing` is exact for the pair term; the unpaired term is
+    still positional, so a forced deletion is charged to the wrong candidate.** The exactness
+    argument — the single worst pair is achievable by some valid pairing, so the maximum is
+    exact — is **sound, and it covers only half the level.** The level is
+    `max(pair term, unpaired term)`, and each maximum has to be taken over the admissible
+    choices independently. When the counts force `|beforeLeftover| − |afterLeftover|` deletions,
+    *any* leftover item can be the deleted one, so the most expensive residue-free explanation
+    charges the worst candidate — but `compareVersions` still takes the sorted-tail slice
+    `[n..]`, i.e. whichever items happen to sort last.
+    Observed, `dot` constant, one id: `[1.0.0, 1.0.1, 1.0.1] → [1.0.1, 1.0.2]` ⇒ **`patch`**,
+    though `1.0.0` is pinned nowhere in `after`. The most expensive residue-free explanation
+    pairs `1.0.1 → 1.0.2` (patch) and deletes `1.0.0` (**major**). Controls confirm the engine
+    knows that deletion is major when it reaches the tail: `[1.0.0, 1.0.1] → [1.0.1]` ⇒ major,
+    and `[1.0.0, 1.0.1, 1.0.1] → [1.0.1, 1.0.1]` ⇒ major. Symmetric on the gained side:
+    `[1.0.1, 1.0.2] → [1.0.0, 1.0.1, 1.0.1]` ⇒ **`patch`** where `1.0.0` is pinned nowhere in
+    `before`, against a control of `[1.0.1] → [1.0.0, 1.0.1]` ⇒ minor.
+    **General, not hand-picked.** A brute-force oracle enumerating *every* residue-free pairing
+    of the two leftover lists — every choice of which items pair, to which, and which are left
+    unpaired — and taking the maximum, compared against the implementation on random inputs:
+    narrow pool `{1.0.0,1.0.1,1.0.2,1.0.3}`, 600 cases ⇒ **21 under-priced, 0 over-priced**;
+    wider pool `{1.0.0,1.0.1,1.1.0,1.1.1,2.0.0}`, 600 cases ⇒ 1 under-priced. Worked by hand
+    from the oracle's output: `["1.0.1","1.0.2","1.0.2"] → ["1.0.3","1.0.2"]` leaves leftover
+    `[1.0.1, 1.0.2]` against `[1.0.3]`; pairing `1.0.2 ↔ 1.0.3` (patch) strands `1.0.1`, which
+    appears nowhere in `after` ⇒ major, while the implementation pairs its worst pair (patch)
+    and then tails `1.0.2`, which *is* in the after set ⇒ patch. Every divergence is
+    under-pricing and none is over-pricing, which is the signature of a positional choice
+    standing in for a maximum.
+    This is round 4's defect class surviving in the half the fix did not reach: the level
+    decided by sorted position rather than by the worst valid explanation. The pair walk was
+    replaced; the tails were not.
+    **Method note, because it nearly cost me a false finding.** My first run-identity check
+    hashed the failing-file lines and returned three different digests — which looks exactly
+    like the cross-session contention the serialisation rule exists to catch. Those lines carry
+    per-test durations, and vitest also lists files in completion order, so the hash was
+    answering "did the timings and ordering match", not "did the failures match". Stripping
+    durations and sorting shows all three runs identical. Worth folding into the stamp rule:
+    compare failing **sets**, never raw run output.
+    **Residue: none.** Four probes this round, all in-process calls to the published functions;
+    no database, no objects, no `.env`, every probe file deleted, and the after-stamp is the
+    proof. Sole writer throughout; the three full-suite runs were taken in the serialised gate
+    slot and released to T020 and T030 as soon as they finished.
+  - 2026-08-14 implementer: fixed the deletion/addition terms. `worstStranded` scans the
+    *whole* surplus-side leftover — every item, not the sorted tail — and keeps the worst,
+    same exactness argument `worstPairing` already used: a residue-free explanation strands
+    exactly `max(0, |before|−|after|)` items when the counts force it, but *which* items are
+    stranded is a free choice, so any single item can be among them (strand it, pair the
+    remainder arbitrarily) and the worst explanation strands whichever item prices highest.
+    `[1.0.0,1.0.1,1.0.1] → [1.0.1,1.0.2]` now `major` (stranding `1.0.0`, pinned nowhere in
+    `after`), not `patch` (the old code always stranded the sorted-last leftover, `1.0.1`,
+    still pinned elsewhere). `O(n)` per side, no permutation search.
+    **The oracle, kept as a permanent regression test** (`blueprint-bump.oracle.test.ts`):
+    a brute-force enumerator over every residue-free explanation for one id's leftover —
+    every choice of which items are stranded × every permutation pairing the rest — built
+    from `@/lib/core` primitives directly and importing none of `worstPairing`,
+    `worstStranded` or `unpairedFloor`, so a shared misreading between the oracle and the
+    code under test cannot hide. **Caught a bug in the oracle itself before trusting it**: the
+    first draft derived "present in the full opposite list" from the *leftover* set rather
+    than the true original value set, undercounting membership the same way the production
+    bug did, and produced false-positive divergences against already-correct code. Verifying
+    against known-correct code first is what turned that into a fixed oracle rather than a
+    chased phantom.
+    **Falsification surface, stated explicitly per the tightened rule.** Every divergence —
+    both the oracle's and the two named regression tests
+    (`lib/server/versioning/blueprint-bump.test.ts`) — is measured by calling the *published*
+    `inferBlueprintBump(previous, next)` and reading `.level`, never a direct call into
+    `worstPairing`/`worstStranded`. Falsified in both directions on that surface: reverting
+    `compareVersions` to the sorted-tail-slice code reproduces the adversary's example and
+    is caught by both the oracle (1 of 1200 trials, the exact shape) and the named tests (2
+    of 2); the fix passes 1200/1200 with zero divergences. Nothing here asserts through a
+    colocated unit test that calls a private helper directly — the guard this round is
+    checked exists nowhere that isn't also reachable from the one function the contract
+    publishes.
+    Grepped every message/hint assertion in this task's tests (scratch and blind) for the
+    expected-message rule: all are literals or hardcoded regexes, none reconstructed from a
+    template or format helper imported from the module under test. Verified no tracked file
+    of mine carries a raw NUL byte.
+    **Gates**, environment via `set -a; . ./.env.example; set +a`, rebased by merge onto
+    `backend` at `e67c4f9` (a literal `git rebase` still explodes into replaying this
+    branch's merge-commit history — 22 commits this time — same as every prior round;
+    aborted immediately, merged instead, clean, no conflicts). `npm run typecheck`,
+    `npm run lint`, `npm run build` clean, no unexpected diff. `npx vitest run
+    tests/server/t025 lib/server/versioning`: **223/223**. Full suite, three consecutive
+    runs in the serialised gate slot: exit `1`, `1`, `1`; **2 failed files, 2 failed tests**
+    each time; sorted failing-file lines md5-identical across all three
+    (`a41063730057df04f827d6b2c0beaa4d`). Both failures are the same pre-existing offender,
+    `tests/no-raw-control-bytes.test.ts` tripping on its own embedded NUL-byte fixture at
+    offset 628 (`T-01`, `c897196`) — confirmed byte-identical to `backend`'s committed copy
+    before this round touched anything, outside `Owns`, not this task's to fix. No
+    migration or `graph.test.ts` contention noise anywhere in either run. Before-stamp and
+    after-stamp both `77f6508`, `git status --porcelain` empty both times, `HEAD` unmoved
+    across all three runs. Zero scratch databases after. Reported to orchestrator.
+  - 2026-08-14 adversary round 6, **interim — verdict withheld pending the gate slot.**
+    Handover verified from inside the tree: `c9dc75cf7c68…`, porcelain empty. Merged `backend`
+    at `64422ca`; measured at `1907d8cf…`. Non-DB gates: typecheck 0, lint 0, build 0.
+    `npx vitest run tests/server/t025 lib/server/versioning`: **223/223**. AC-1 (4), AC-2 (3),
+    AC-3 (3), AC-4 (4), AC-5 (9), AC-6 (5) — all PASS. The three consecutive full-suite runs
+    are queued behind T020's and T030's implementers and are the only thing missing; no verdict
+    until they are taken and stamped.
+    **The implementation is exact as far as I can measure it.** I wrote a second oracle,
+    independent of the implementer's, pricing pairs and strandings from the round-5 ruling using
+    only public `@/lib/core` primitives: **0 under-priced, 0 over-priced over 2674 generated
+    cases across four pools**, including one mixing build metadata, a prerelease and `latest`.
+    `worstStranded` maximises over the whole surplus side and the stranding is gated on a
+    **strict** surplus, which is the boundary that matters: the ruling's own
+    `[1.1.0,1.0.0] → [rc.1,rc.1]` still infers `minor` (a wider slice would have over-priced it
+    to major) while `→ [rc.1]` infers `major`. Round-5's defect is fixed on both sides
+    (`[1.0.0,1.0.1,1.0.1] → [1.0.1,1.0.2]` ⇒ major; the gained-side mirror ⇒ minor), every
+    round-1-to-4 regression holds, and order-independence is 0 failures over 500 randomised
+    permutation pairs.
+    **I broke my own oracle first and it produced 17 false positives, which is worth recording
+    because it is the same trap the implementer reported.** My first draft read each pair's
+    price from an isolated 1→1 `inferBlueprintBump` call. Pair pricing is **context-dependent** —
+    an unreadable pair is floored by whether each side appears in the *full* opposite list — so
+    the isolated call sees empty opposite sets and returns `major` where the real context returns
+    `minor`. Verified directly: `[1.0.0] → [1.0.0+b]` alone is `major`; the same pair inside its
+    generated case is `minor`. Independence from the code does not give independence from the
+    misunderstanding, and mine was a different one arriving at the same place. The corrected
+    oracle prices pairs with the full sets passed in, and then agrees exactly.
+    **FINDING 1, against the ruling rather than the implementation: the monotonicity property is
+    under-licensed as written, and encoding it literally would redden correct code.** `2307c00`
+    states it as *adding a pin cannot lower the level unless that pin removes a forced deletion —
+    that is, unless `|before| > |after|` and the addition reduces the deficit*. That predicate is
+    per-list-length; the real licence is **per-value**. Over 600 randomised additions the
+    ruling's predicate flags **7 drops as violations, and all 7 are legitimate**; the predicate
+    *the added value had a surplus on the before side* (`before` held more copies of it than
+    `after` did) flags **0**.
+    **Correction, 2026-08-14: the minimal case first recorded here was wrong and is replaced.**
+    It read `before = [1.0.0, 2.0.0]`, `after = [0.10.0]`, and claimed the level dropped to
+    `minor` on adding `1.0.0` with `|beforeLeftover| < |afterLeftover|` throughout. Executed,
+    that case gives `major` **and** `major` — no drop — and its leftovers are `bl = 2`,
+    `al = 1`, which is a forced deletion and therefore inside the ruling's licence, not outside
+    it. My own probe had printed `major`/`major`; the entry narrated a case instead of reading
+    the output, which is the error this Log has spent five rounds naming. The orchestrator
+    recomputed it and asked rather than amending, which is what caught it.
+    **The settled case, all four numbers executed:** `before = [1.0.0]`,
+    `after = [2.0.0, 1.0.1]`, add `1.0.0`. Level **major → minor**. Leftovers before the
+    addition: `bl = [1.0.0]` (1), `al = [2.0.0, 1.0.1]` (2), so `bl < al` and **no deletion is
+    forced** — the ruling's predicate says the drop is unlicensed. After the addition
+    `bl = []`, `al = [2.0.0, 1.0.1]`. The drop is nonetheless correct: `1.0.0` had to be
+    explained as a repin against `2.0.0` (major); once `after` also pins `1.0.0` it matches
+    itself, and only two cheap additions remain. The per-value predicate licenses it, because
+    `before` held one copy of `1.0.0` and `after` held none. The first randomised case agrees:
+    `bl = 1`, `al = 5`, major → minor, ruling predicate false, per-value predicate true. So the
+    licence is "the addition removes a forced **explanation**", of which a forced deletion is
+    one case. This matters because the same ruling requires the property test's generator to
+    encode the boundary rather than exclude it by name: a blind author encoding it as written
+    produces false reds on correct code, the implementer may not change the test, and it returns
+    as a contract amendment. Same shape as the T010 substring over-match.
+    **FINDING 2, a verification-coverage gap rather than a defect.** I ran the delete-the-guard
+    experiment. The raw-ref-count safety net is observable — deleting it reddens 3 tests across
+    2 files. But reverting `worstStranded` to round 5's positional slice reddens **3 tests, all
+    3 in `lib/server/versioning/**`** — the oracle and two scratch tests — and **0 in
+    `tests/server/t025/**`**. The blind suite has no coverage of the round-5 defect at all. Per
+    Phase 2 the implementer's own tests do not count as verification and the implementer may
+    modify them freely, so the only guard against the defect this round exists to fix lives in
+    the half of the tree that rule does not bind. Recording the oracle as "a permanent regression
+    test" is right, but it is permanent on the implementation branch, not the test branch.
+    **Residue: none.** Probes deleted; both guard experiments reverted by restoring a byte copy
+    and confirmed by a clean `git status --porcelain` and a green 223/223. Sole writer; no
+    full-suite run taken, so no gate slot consumed.
+
+  - 2026-08-14 adversary round 6, **verdict: PASS.** Gate slot taken after T030's implementer
+    released it. Merged `backend` at `2d0f728`; measured at **`e5b9c920`**. `.env.example`
+    sourced, so the environment-dependent files are now **measured rather than recorded
+    unverified** — the qualification carried since round 1 is gone.
+    Whole-tree stamp `e5b9c920` + clean **before** and `e5b9c920` + clean **after**. Gates:
+    typecheck 0, lint 0, build 0. **Three consecutive full-suite runs, every one exit 0,
+    `133/133` files and `4158/4158` tests, zero failing files and zero failing test lines in
+    all three, the three summaries byte-identical.** Load 12–22 across the window, inside the
+    range the serialisation was calibrated against; no contention artefact, nothing discarded.
+    `npx vitest run tests/server/t025 lib/server/versioning`: 223/223. AC-1 (4), AC-2 (3),
+    AC-3 (3), AC-4 (4), AC-5 (9), AC-6 (5) — all PASS.
+    **The gained-side challenge, answered by execution rather than by reading my own code.**
+    The orchestrator was right that my oracle was built from the same prose that misled T025's
+    blind author, so the same misreading was available to it. It was not made: my oracle prices
+    a stranded before-item absent from the full after list at `major` and a stranded after-item
+    absent from the full before list at `minor`, membership taken against the full original
+    lists. Verified against all six rows of the `2d0f728` table — the two worked examples plus
+    the four table rows in isolation — with oracle and implementation agreeing and both matching
+    the required answer on every one, including `[1.0.1, 1.0.2] → [1.0.0, 1.0.1, 1.0.1]` ⇒
+    **minor**, not major.
+    **Both round-6 findings were resolved by the orchestrator and neither was an implementation
+    defect.** Finding 1 (the monotonicity licence stated per-length rather than per-value) is
+    amended at `e6aeb44` and now stands as a theorem rather than a sampled property. Finding 2
+    (the blind suite carried no coverage of the round-5 defect, so the only guard lived in
+    implementer-owned tests) is dispatched to a session with no T025 context.
+    **Two things the human gate should weigh, neither of which blocks the verdict.**
+    (1) That Finding 2 coverage is **not in this tree yet**. Merging now ships an implementation
+    whose round-5 guard exists only in `lib/server/versioning/**`, which Phase 2 does not treat
+    as verification and which the implementer may modify freely. The verdict is on the
+    implementation, which is sound; the partition is one dispatch short of matching it.
+    (2) Residue: T025 stores nothing and every probe was in-process, but this triple ran the
+    T000/T010 database and object-store suites, which create and drop scratch state. Their own
+    teardown is what cleans up. **I could not independently verify residue** — `docker exec`
+    against the shared Postgres is denied in my session — so this is stated as unchecked rather
+    than clean, which is the distinction the last five rounds have been about.
+    **`adversarial-pass` is not `verified`.** Phase 2 puts a human review between them and says
+    not to self-promote; the tag is the owner's to give, not mine and not the orchestrator's.
+    Probe files deleted, guard experiments reverted, tree clean at the after-stamp.
+
+  - 2026-08-14 adversary, **correction to my own Finding 1: the per-value predicate is not a
+    theorem and my proof of it was wrong.** The counterexample is the orchestrator's, executed
+    here: `before = ["1.0.0"], after = []` ⇒ `major`; `before = ["1.0.0"], after = ["1.0.1"]`
+    ⇒ `patch`. The added `1.0.1` has no surplus on the before side, so the per-value predicate
+    calls a correct drop a violation.
+    **Where the proof broke, precisely.** I argued that with no before-surplus, `bl` is unchanged
+    and `al` grows, so every term is monotone non-decreasing. That holds for the pair term and
+    for the after-stranding term. It is false for the **before-stranding** term, which fires only
+    while `|bl| > |al|`: growing `al` can switch that condition off and delete an expensive
+    stranding outright. The step I treated as bookkeeping — "`al` only grows" — is the step that
+    carried the whole error.
+    **Exhaustive sweep, 4-version pool, multisets to length 3: 4896 triples, 589 drops.**
+    Licensed by per-value only: **357**. By the deficit half only: **81** — my blind spot, and
+    not a corner: 14% of all drops. By both: 151. **By neither: 0.** So the licence is the union
+    and the union is complete over this domain.
+    **The deficit half is tighter than `|bl| > |al|`: it is `|bl| = |al| + 1`.** Drops with no
+    surplus and a deficit of 2 or more: **0**, and mechanically there can be none — with a
+    deficit above one the before-stranding still fires after the addition, over the same `bl`,
+    so its maximum is unchanged. Stating it as `|bl| > |al|` licenses a class of drop that cannot
+    occur, which is an over-broad licence: it would wave through a real defect if one ever
+    produced a drop at deficit 2. The mechanism-free form both halves instantiate:
+    **a drop requires the addition to remove a forced explanation, and there are exactly two ways
+    to do that — cancel a leftover before-item, or erase the last forced before-stranding.**
+    **Why 600 random draws could not have found it, which is not bad luck.** The case needs
+    `after` empty or nearly so. My generator drew each pool value's count uniformly from {0,1,2}
+    over eight values, so an empty `after` has probability `(1/3)^8`, about one in 6561 — an
+    expected 0.09 occurrences in 600 draws. The shape was outside what the generator could
+    produce, so no amount of sampling would have reached it, the same defect the implementer's
+    oracle header records about two disjoint pools. Exhaustive-over-small found it at once.
+    **And the upgrade to "theorem" is what hid it.** Calling it proved retired the question;
+    a predicate labelled sampled invites the next sweep, one labelled exact does not. That is the
+    cost of the stronger claim and it is mine, not the orchestrator's for accepting it.
+
+  - 2026-08-14 adversary, **follow-up to the revert experiment: the unpaired-floor `gained`
+    term is unreachable in every domain currently guarding this task, and I have found what a
+    domain needs to reach it.** No implementation defect — the term is present and correct.
+    This is a coverage finding of the same class as Finding 2.
+    **The discriminating input:** `["1.0.0","1.0.0"] → ["1.0.0","1.0.0+b"]`. Correct answer
+    **`minor`**; with the `gained` term deleted, **`patch`**. It needs three things at once, and
+    all three: a leftover pair of **equal semver precedence but different strings**, which only
+    build metadata produces, to reach the `magnitude === "none"` branch at all; a **duplicate**,
+    so that cancellation leaves a before-item whose value is still pinned in the full after list
+    and the `lost` half of the floor is only `patch` rather than `major` masking everything; and
+    the after-value absent from the full before list, so the `gained` half is `minor` and is the
+    maximum. Controls: `["1.0.0"] → ["1.0.0+b"]` answers `major` because the `lost` half masks
+    it, and `["1.0.0","1.0.0"] → ["1.0.0","1.0.1"]` produces no equal-precedence pair at all.
+    **With the term deleted, both existing guards stay green**: `tests/server/t025` 157/157 and
+    `lib/server/versioning` 67/67, the latter including the implementer's own exhaustive oracle.
+    **What a domain needs, measured rather than argued.** Exhaustive sweeps of my oracle against
+    the implementation with the term deleted, multisets to length 3:
+    | pool | pairs | divergences |
+    | --- | --- | --- |
+    | `1.0.0, 1.0.1, 2.0.0` (no build metadata) | 399 | **0** |
+    | `1.0.0, 1.0.0+b, 1.0.1` | 399 | **14** |
+    | `1.0.0, 1.0.0+b, 1.0.1`, length ≤ 2 | 99 | **2** |
+    Same point count, 399 either way: the plain-semver pool cannot detect the deletion at any
+    length, and the build-metadata pool detects it at 99 points. **Domain reach is decided by
+    which value *relations* the pool can express, not by how many points it enumerates.** An
+    oracle over 3136 pairs of distinct plain semvers cannot reach a branch that only fires when
+    two versions compare equal and are not identical, however many pairs it adds.
+    **The generalisation, which is the useful half:** an oracle's coverage claim is over the
+    equivalence classes of the comparator its subject uses, and the pool must carry a witness
+    for each. Here that is at least: equal-precedence-but-different-string (build metadata),
+    prerelease-versus-release, unparseable-versus-parseable (`latest`), and
+    present-versus-absent-in-the-full-opposite-list (which needs duplicates, since without them
+    cancellation never leaves a leftover whose value survives elsewhere). This is the same
+    lesson as the `(1/3)^8` generator and as the implementer's two-disjoint-pools note, stated
+    as a construction rule rather than as a hazard to remember.
+    Guard experiment reverted by byte copy; tree clean, 223/223 green after restore.
 
 ### T060, Authorization policy: owner and operator
 
