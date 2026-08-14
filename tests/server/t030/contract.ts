@@ -273,49 +273,102 @@ export function expectSealedError(err: unknown, forbidden: readonly string[], wh
   if (!(err instanceof Error)) {
     throw new Error(`${where} rejected with ${describe_(err)}; the contract requires a typed Error.`);
   }
-  const own = Object.getOwnPropertyNames(err).sort();
-  const expected = ["cause", "message"];
-  if (own.join(",") !== expected.join(",")) {
+
+  // (1) and (2). `Object.keys` is the enumerable own set, which is what every serialiser walks.
+  const keys = Object.keys(err);
+  if (keys.length !== 0) {
     throw new Error(
-      `${where} rejected with an Error whose own properties are [${own.join(", ")}]; the ` +
-        `contract requires exactly ["message", "cause"]. A \`stack\`, a \`code\`, a \`detail\` ` +
-        `or a \`query\` here is the driver's error escaping under a new name.`,
+      `${where} rejected with an Error whose \`Object.keys\` is [${keys.join(", ")}]; the ` +
+        `error-hygiene clause requires it empty. A \`code\`, a \`detail\`, a \`query\` or a ` +
+        `\`params\` here is the driver's error escaping under a new name.`,
     );
   }
-  const causeDescriptor = Object.getOwnPropertyDescriptor(err, "cause");
-  if (causeDescriptor?.enumerable !== false) {
+  const serialised = JSON.stringify(err);
+  if (serialised !== "{}") {
     throw new Error(
-      `${where} rejected with an Error whose \`cause\` is enumerable; the contract requires it ` +
-        `non-enumerable so \`JSON.stringify\` cannot reach the driver's error through it.`,
+      `${where} rejected with an Error serialising to ${serialised}; the clause requires exactly "{}".`,
     );
   }
 
+  // (3). `propertyIsEnumerable`, never by inference — the clause says so in as many words.
+  if (Object.prototype.propertyIsEnumerable.call(err, "cause")) {
+    throw new Error(
+      `${where} rejected with an Error whose \`cause\` is enumerable; the clause requires it ` +
+        `non-enumerable, which is what keeps \`JSON.stringify\` from reaching the driver's error.`,
+    );
+  }
+
+  // (4). `stack` is RETAINED. This replaced "own properties exactly [message, cause]", which was
+  // unsatisfiable: `stack` is an own property of every `new Error()` in V8, so the old wording
+  // could only be met by deleting it and costing every real failure its trace.
+  if (!Object.prototype.hasOwnProperty.call(err, "stack") || typeof err.stack !== "string" || err.stack === "") {
+    throw new Error(
+      `${where} rejected with an Error carrying no \`stack\`. The clause requires it retained, ` +
+        `not deleted: an error nobody can locate is a worse outcome than one that says too much.`,
+    );
+  }
+
+  // (5). Every rendering the clause enumerates. `stack` is deliberately not among them — it
+  // carries this module's own file paths by design, and its first line is the message anyway.
   const renderings: Record<string, string> = {
     message: err.message,
     "String(err)": String(err),
-    "JSON.stringify(err)": JSON.stringify(err) ?? "",
-    "own-property enumeration": Object.keys(err).join(" "),
-    "JSON.stringify(Object.entries(err))": JSON.stringify(Object.entries(err)),
+    "JSON.stringify(err)": serialised,
+    "JSON.stringify({ detail: err.message })": JSON.stringify({ detail: err.message }),
+    "own-property enumeration": keys.join(" "),
   };
   for (const [name, text] of Object.entries(renderings)) {
-    for (const secret of forbidden) {
+    for (const secret of [...forbidden, ...LEAKS]) {
       if (text.includes(secret)) {
         throw new Error(
-          `${where}: \`${name}\` leaks ${JSON.stringify(secret)}. Nothing the caller handed over ` +
-            `may reach a rendering of the error — not the statement, not a bound parameter, not ` +
-            `a SQLSTATE.`,
+          `${where}: \`${name}\` leaks ${JSON.stringify(secret)}. No rendering may carry the ` +
+            `statement, a bound parameter, the caller's content, a SQLSTATE or a \`pg\` internal.`,
         );
-      }
-    }
-    // SQLSTATE is five alphanumerics; the codes this module can raise are 23505, 22021, 23503
-    // and 22P02, and none of them is a thing a caller should have to read.
-    for (const sqlstate of ["23505", "22021", "23503", "22P02", "22001", "42601"]) {
-      if (text.includes(sqlstate)) {
-        throw new Error(`${where}: \`${name}\` carries SQLSTATE ${sqlstate}.`);
       }
     }
   }
   return err;
+}
+
+/**
+ * Statement fragments, bound-parameter markers, SQLSTATEs and `pg` internals.
+ *
+ * Table and constraint names are deliberately **absent**: T030's contract ties
+ * `ontology_version_version_key` and `ontology_term_version_term_key` to `getTableConfig`
+ * rather than restating them, which means a typed conflict may legitimately name the
+ * constraint it matched. Forbidding the bare table name would red an implementation for doing
+ * what it was asked to do — and `ontology_version` is a substring of the constraint name.
+ */
+const LEAKS: readonly string[] = [
+  "insert into",
+  "INSERT INTO",
+  "select ",
+  "$1",
+  "$2",
+  "23505",
+  "22021",
+  "23503",
+  "22P02",
+  "22001",
+  "42601",
+  "nbtinsert.c",
+  "duplicate key value",
+  "violates unique constraint",
+  "DrizzleQueryError",
+  "Query:",
+  "params:",
+];
+
+/** The one path where a `cause` genuinely exists to carry: a refusal the database raised. */
+export function expectCausePresent(err: Error, where: string): void {
+  if (!Object.prototype.hasOwnProperty.call(err, "cause")) {
+    throw new Error(
+      `${where} rejected with an Error carrying no \`cause\`, and the clause requires it present ` +
+        `but non-enumerable. Asserted only where a driver error exists to wrap: a refusal this ` +
+        `module raised for itself has nothing underneath it, and requiring one there would be ` +
+        `reading the clause past what it settles.`,
+    );
+  }
 }
 
 /** Run `call`, require it to reject, and hold the rejection to the sealed-error contract. */

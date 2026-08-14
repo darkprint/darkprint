@@ -29,7 +29,9 @@
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { asRecord, asView, bind, notARangeError, rejects, swallow } from "./contract";
+import type { OntologyTerm } from "@/lib/core";
+
+import { asRecord, asView, bind, expectCausePresent, notARangeError, rejects, swallow } from "./contract";
 import {
   BASE_VERSION,
   ILL_FORMED,
@@ -58,8 +60,14 @@ beforeEach(async () => {
   await clean(t);
 });
 
-/** Everything a rejection may never echo: the sentinel, the statement, a parameter marker. */
-const NEVER_ECHOED = [SECRET, "insert into", "INSERT INTO", "ontology_term", "ontology_version", "$1", "$2"];
+/**
+ * The caller's own content, which is the half only this suite knows about. The statement
+ * fragments, bound-parameter markers, SQLSTATEs and `pg` internals are checked for every
+ * rejection by `expectSealedError` itself, so they are not repeated per call site — and bare
+ * table names are deliberately not on either list, because a typed conflict may name the
+ * constraint it matched and `ontology_version` is a substring of that constraint's name.
+ */
+const NEVER_ECHOED = [SECRET];
 
 describe("content that cannot round-trip is refused, not repaired", () => {
   it.each([
@@ -212,6 +220,41 @@ describe("no rejection carries the statement, its parameters or a SQLSTATE", () 
     );
   });
 
+  it("keeps the stack, which the amended clause requires retained", async () => {
+    const add = await bind("addOntologyVersion");
+    await add(db(t), { version: BASE_VERSION, terms: baseTerms() });
+
+    // The clause this replaced — "own properties exactly ["message", "cause"]" — was
+    // unsatisfiable: `stack` is an own property of every `new Error()` in V8, so the only way to
+    // meet it was to delete `stack` and cost every real failure its trace. `expectSealedError`
+    // holds the whole amended clause; this test exists so a deleted stack reds under its own name
+    // rather than inside a five-part assertion.
+    const err = await rejects(
+      () => add(db(t), { version: BASE_VERSION, terms: [termWithSecret("agent")] }) as Promise<unknown>,
+      NEVER_ECHOED,
+      "addOntologyVersion (stack retained)",
+    );
+
+    expect(typeof err.stack).toBe("string");
+    expect((err.stack ?? "").length, "an error nobody can locate is the worse outcome").toBeGreaterThan(0);
+  });
+
+  it("carries a non-enumerable `cause` on a refusal the database raised", async () => {
+    const add = await bind("addOntologyVersion");
+    await add(db(t), { version: BASE_VERSION, terms: baseTerms() });
+
+    const err = await rejects(
+      () => add(db(t), { version: BASE_VERSION, terms: [termWithSecret("agent")] }) as Promise<unknown>,
+      NEVER_ECHOED,
+      "addOntologyVersion (cause present)",
+    );
+
+    // Presence is asserted here and not on a refusal this module raised for itself: a bad-input
+    // rejection has nothing underneath it to carry, and requiring one there would read the clause
+    // past what it settles. Non-enumerability is checked on every rejection by `expectSealedError`.
+    expectCausePresent(err, "addOntologyVersion (cause present)");
+  });
+
   it("names the caller's own identifiers, which is all a caller can act on", async () => {
     const add = await bind("addOntologyVersion");
     await add(db(t), { version: "7.7.7", terms: baseTerms() });
@@ -353,4 +396,82 @@ describe("inputs no criterion mentions", () => {
     const ids = views.map((v) => asView(v, "openView").ontology.terms.map((x) => x.id));
     for (const run of ids) expect(run).toEqual(ids[0]);
   });
+});
+
+describe("the walk carries T-02's `seen` set, which this task's input requires", () => {
+  /**
+   * "**Any task whose input can be built in-process rather than parsed must add it.** T010 ships
+   * without it deliberately; T020 and T030 copy the same walk and inherit the same condition."
+   *
+   * T030's input qualifies: `terms` is a `readonly OntologyTerm[]` a caller constructs, not a
+   * parsed body, and `structuredClone` preserves sharing where `JSON.parse` cannot. Without the
+   * `seen` set of containers already walked clean, a diamond is re-walked per path: measured on
+   * T010's walk at 6 025 ms for 24 levels, a clean x4 per +2.
+   *
+   * The offending term is second in the list, so the walk has to finish the diamond before it can
+   * reach the refusal. That keeps the test independent of traversal order, and it never reaches
+   * the driver — which matters, because `JSON.stringify` expands shared structure exponentially
+   * too and would confound the measurement.
+   */
+  it("refuses in bounded time whichever end of the list the offending term sits at", async () => {
+    const add = await bind("addOntologyVersion");
+
+    // 24 levels of diamond: 25 distinct objects, 2^24 paths. T010's measurement of the
+    // path-scoped-only walk puts that at 6 025 ms, a clean x4 per +2; with the `seen` set it is
+    // 25 visits.
+    const diamondTerm = () => {
+      let shared: Record<string, unknown> = { leaf: "bottom" };
+      for (let i = 0; i < 24; i += 1) shared = { left: shared, right: shared };
+      return { ...term("berti/diamond"), nested: shared } as unknown as OntologyTerm;
+    };
+    const bad = () => term("berti/bad", { label: ILL_FORMED.loneHigh });
+
+    // **Both arrangements, and this is the point of the test.** A first version of it put the
+    // offending term second and measured nothing: the reference walk pops its stack LIFO, so the
+    // bad label was found before the diamond was ever entered, and removing the `seen` set
+    // reddened nothing. Traversal order is not something a blind suite may assume, and for any
+    // deterministic order one of these two arrangements walks the diamond first.
+    const timings: Record<string, number> = {};
+    for (const [where, terms] of [
+      ["offending term last", [diamondTerm(), bad()]],
+      ["offending term first", [bad(), diamondTerm()]],
+    ] as const) {
+      await clean(t);
+      const started = Date.now();
+      await rejects(
+        () => add(db(t), { version: BASE_VERSION, terms }) as Promise<unknown>,
+        NEVER_ECHOED,
+        `addOntologyVersion (shared substructure, ${where})`,
+      );
+      timings[where] = Date.now() - started;
+    }
+
+    const worst = Math.max(...Object.values(timings));
+    expect(
+      worst,
+      `the walk took ${JSON.stringify(timings)} over a 24-level diamond, which is the O(2^n) ` +
+        `re-walk T-02 names. backend.md: "Any task whose input can be built in-process rather ` +
+        `than parsed must add it" — T030's \`terms\` is a caller-built array, and ` +
+        `\`structuredClone\` preserves sharing where \`JSON.parse\` cannot. Add the \`seen\` set of ` +
+        `containers already walked clean, beside the path-scoped \`open\` set that handles cycles.`,
+    ).toBeLessThan(3_000);
+  }, 120_000);
+
+  it("still refuses an ill-formed string reachable only through shared substructure", async () => {
+    const add = await bind("addOntologyVersion");
+
+    // The `seen` set must not become a way to skip a subtree that was never actually cleared.
+    let shared: Record<string, unknown> = { leaf: ILL_FORMED.loneLow };
+    for (let i = 0; i < 8; i += 1) shared = { left: shared, right: shared };
+
+    await rejects(
+      () =>
+        add(db(t), {
+          version: BASE_VERSION,
+          terms: [{ ...term("berti/diamond"), nested: shared } as unknown as OntologyTerm],
+        }) as Promise<unknown>,
+      NEVER_ECHOED,
+      "addOntologyVersion (shared ill-formed leaf)",
+    );
+  }, 60_000);
 });

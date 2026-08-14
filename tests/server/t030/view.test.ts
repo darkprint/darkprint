@@ -99,10 +99,11 @@ describe("AC1: a merged view reports the base version", () => {
   });
 
   /**
-   * Flagged: `Ontology` requires a `title` and no column stores one, so the merged view has to
-   * supply a constant. That it equals `CORE_ONTOLOGY.title` reached this suite by message and is
-   * not in backend.md — asserted in one test that can move on its own, and read from `lib/core`
-   * rather than restated, so this file does not become the third place that string lives.
+   * Published now, at `95033be`: "Ruling: the `Ontology` title is a module constant, tied by a
+   * test", which asks for exactly this — "tie it in a colocated test asserting it equals
+   * `CORE_ONTOLOGY.title`, because a literal restated in two places with nothing checking them
+   * is the defect T010 spent its round 4 closing". Read from `lib/core` rather than restated, so
+   * this file does not become the third place that string lives.
    */
   it("titles the merged view with the core vocabulary's own title", async () => {
     const open = await bind("openView");
