@@ -179,6 +179,39 @@ Three cheap guards, all now in force:
 
   T010 merged against the old wording and is unaffected: its adversary measured the property above across six paths and five renderings, which is the test that matters. The wording was wrong; the thing it verified was right.
 
+## A falsification has to break the path production takes
+
+T030's implementer broke its own store's error wrap — rethrowing the driver error unwrapped
+from `addOntologyVersion`'s catch — and **nothing reddened**. Its leak suite had four error
+classes × five leak classes × five renderings, and every one of those errors was **built by
+hand**; not one reached the catch path a caller actually hits. So the coverage was real and it
+was over a path production never takes.
+
+**A guard that cannot fail is worth less than no guard, because it reports safety it never
+tested.** The fix was a `Db` stub whose `transaction` rejects, which reaches the catch with no
+database at all; the same break now reds. Correctly it reds *one* test rather than three — the
+two unique-violation branches map before the generic wrap, so an unwrapped `cause` cannot reach
+them, and a falsification that reddened all three would have been the suspicious result.
+
+So: when falsifying a guard, break it and confirm the red arrives **through the entry point a
+caller uses**. A test that constructs the failure object directly proves the assertion works, not
+that the guard does. This sits underneath the whole falsification rule — every "I broke it and
+the right test reddened" report is only as good as whether the break was reachable.
+
+## The compose stack is shared and unowned, and chasing individual suites will not fix it
+
+Three suites were stabilised this run — `archive.scratch.test.ts`, `lib/db/schema.test.ts` and
+`stage-labels` — and each stopped failing. The flakiness then **reappeared in the two migration
+suites at a lower load than before**. That is the measurement that settles the diagnosis: fixing
+an individual suite moves the symptom, because the cause is one Postgres on 5432 shared by every
+worktree, with no stated owner, driven by ~100 agent processes on ten cores. Same class as the
+repo-global `git stash` and the shared worktree.
+
+**Operating rule until it is fixed properly: DB-touching gates are serialised at handover by the
+orchestrator rather than run concurrently.** The real fix is per-worktree ports, which is a
+change to `compose.yaml` — T000's `Owns`, and not worth a mid-run repartition. Do not spend a
+round chasing whichever suite surfaces next.
+
 ## Two hazards that recur across tasks rather than belonging to one
 
 **T-01: a raw NUL lands in a test file while writing a deliberate-control-character fixture.**
