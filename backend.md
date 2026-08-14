@@ -236,7 +236,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | claimed | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | impl-done | round 3 fix: match-by-value cancellation before pairing (`leftoverVersions`) replaces the flat sorted positional walk, fixing the middle-of-list misalignment; canonical tiebreak sort fixes the build-metadata order-dependence. typecheck/lint/build clean; `tests/server/t025`+scratch 206/206; full suite 4056/4056 on three consecutive runs on a quiet tree |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | reverted | adversary round 4 FAIL: both round-3 defects fixed and order-independence now holds as a property (800 permutations, 0 failures), but inference is **not monotonic** — adding a pin to `next` lowers the inferred bump, so a major repin ships as a minor when a nearby pin is added alongside it |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | adversarial-pass | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -882,7 +882,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T025, Versioning service: semver, digest, bump, chains
 
-- **State:** impl-done
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t025-versioning` on `feat/t025-versioning`
 - **Test worktree:** `../darkprint-wt-t025-versioning-tests` on `test/t025-versioning`
 - **Depends on:** T000 (contract: types)
@@ -1362,6 +1362,66 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     **206/206**. `npm test`, full suite, three consecutive runs: **4056/4056** each time,
     byte-identical. Reported result to orchestrator; tree is theirs to hand back to the
     adversary.
+  - 2026-08-14 adversary round 4: **FAIL.** Handover verified from inside the tree rather than
+    taken: `0fc0c05e88ed…`, `git status --porcelain` empty. Merged `backend` at `974ebc3`;
+    everything below was measured at **`f4f6a82`**. Whole-tree stamp, per `974ebc3`:
+    `f4f6a82` + clean **before** the runs and `f4f6a82` + clean **after** them, so the three
+    runs measured one tree. This is the first determinism result on this task that means what
+    it says. Contract prose checked independently against `backend` — everything above the Log
+    is 44 lines either side and **`State` is the only difference**, so the merge that took one
+    side per conflicted row did not cost anything.
+    Gates: typecheck 0, lint 0, build 0, no bundle diff. `npm test` ×3, identical:
+    `48 failed | 3997 passed | 11 skipped (4056)`. The 48 stay the unset-variable failures in
+    T000's four files; no `.env` here and `docker exec` is denied in my session, so they are
+    recorded **unverified, not contradicting** the reported 4056/4056. `npx vitest run
+    tests/server/t025 lib/server/versioning`: **206/206**. AC-1 (4), AC-2 (3), AC-3 (3), AC-4
+    (4), AC-5 (9), AC-6 (5) — all PASS.
+    **Both round-3 defects are fixed, and I checked them on shapes the fix was not fitted to.**
+    The report noted the implementer had read my `_adv4.test.ts` before the dispatch arrived, so
+    that probe is a weak witness for its own fix; every regression below is a fresh shape.
+    Mid-list multiplicity: dropping one of four `1.0.0` pins beside a `7.0.0` ⇒ `patch`;
+    dropping a middle-valued duplicate with pins either side ⇒ `patch`; gaining one ⇒ `patch`;
+    two ids each shifting multiplicity ⇒ `patch` naming both. No fabricated repin anywhere, and
+    the largest-duplicate control still ⇒ `patch`. Build metadata: a tag mid-list among three
+    pins, two tags on different cores, and bare-plus-two-tags all ⇒ `none` under permutation,
+    while a genuine `+a → +b` still ⇒ `patch`.
+    **Order-independence now holds as a property, not as two examples.** 800 randomised
+    permutation pairs over a pool mixing duplicates, build metadata, a prerelease, `latest`,
+    `0.10.0` and `10.0.0` (deterministic PRNG, seeds 20260814 and 777): **0 failures** comparing
+    full `{level, reasons}` and 0 comparing level alone.
+    **NEW DEFECT, charged. The inference is not monotonic: adding a pin to `next` lowers the
+    inferred bump.** Adding a pin is at most `minor` on its own, so it cannot make a release
+    smaller — but it does. Observed, `dot` held constant, one id:
+    A. `[solver@1.0.0] → [solver@9.0.0]` ⇒ **major**, and
+    `checkDeclaredBump("bundle","1.0.0","1.1.0", …)` **refuses** at
+    `bundle/version-bump-too-small`.
+    B. the same repin with one more node pinned alongside it,
+    `[solver@1.0.0] → [solver@1.0.1, solver@9.0.0]` ⇒ **minor**, and the same declared `1.1.0`
+    is **accepted** (`[]`). Adding `solver@1.0.1` to the release is what buys the author the
+    right to ship a major repin as a minor.
+    Root cause: the pairing loop matches leftover before-versions against leftover
+    after-versions **by sorted position**, so a lost version is absorbed by whichever gained
+    version happens to sort nearest, and the level then turns on the numeric proximity of an
+    unrelated added pin. Losing one pin and gaining two: gain `{1.0.1, 9.0.0}` ⇒ minor, gain
+    `{1.1.0, 9.0.0}` ⇒ minor, gain `{2.0.0, 3.0.0}` ⇒ major, gain `{9.0.0, 9.0.1}` ⇒ major.
+    Same structural change, four different answers, decided by arithmetic distance to a pin that
+    has nothing to do with the one that vanished.
+    **Why this does not need a ruling first, and where a ruling is still owed.** Which node moved
+    where is genuinely unknowable — `cardRefs` carries no node identity — so *some* pairing
+    policy has to be chosen and the contract does not name one. But monotonicity does not depend
+    on that choice: whatever the policy, `after` gaining a pin must not lower the level, and that
+    is falsifiable on its own. So the defect stands without an amendment. The ruling still owed
+    is which reading to take when one id both loses and gains, because the implementation takes
+    the **cheapest** plausible pairing and B-04 exists to refuse under-declared bumps — the same
+    "never answer less than you can justify for input you could not read" that settled round 1.
+    **Observation, not charged.** `blueprint-bump.ts:190`'s
+    `if (beforeLeftover[i] === afterLeftover[i]) continue;` is unreachable: a value only ever
+    holds leftover on the side with the larger count, so the two leftover lists are disjoint by
+    construction and can never share a value at any index. Harmless, and the comment above it is
+    right about why.
+    **Residue: none.** Two probes, both in-process calls to the published functions; no database,
+    no objects, no `.env`; both probe files deleted and the after-stamp confirms it. Sole writer
+    throughout, per `6628854`.
 
 ### T060, Authorization policy: owner and operator
 
