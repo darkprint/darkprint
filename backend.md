@@ -165,6 +165,17 @@ Three cheap guards, all now in force:
   that fails runs no test, so it adds nothing to the failed column. A handoff quoting that
   total would have claimed green on a red run, which is the three-green-totals shape again with
   a new way in.
+- Before calling two runs **identical**, compare the failing **file and test sets**, sorted —
+  never the raw output. Vitest varies both ordering (files are listed as they complete) and
+  per-test durations between identical runs, so hashing the output answers "did the timings
+  match", which is a narrower question than "did the failures match". T025's adversary hashed
+  the failing-file lines, got three different digests, and nearly filed a contention finding
+  off it; stripped of durations and sorted, all three were the same.
+- Before treating an env-dependent red as a result, check the worktree has the variables. Since
+  `bca3930` `.env.example` ships values that work against the shared compose stack, so
+  `set -a; . ./.env.example; set +a` before a gate turns those files green instead of
+  "recorded unverified". Every `DATABASE_URL`/`S3_*`/`SESSION_SECRET` failure in this run has
+  been an unset shell, never a defect — including two of the orchestrator's own.
 - Before carrying a **finding** forward into a later round, re-read the thing it is about.
   T010's adversary re-ran all six criteria rather than carrying them forward, then carried its
   AC1-contradiction claim into two further rounds without re-reading AC1, which had been
