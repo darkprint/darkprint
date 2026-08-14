@@ -192,7 +192,17 @@ Three cheap guards, all now in force:
   - `Object.keys(err)` is empty and `JSON.stringify(err)` is exactly `"{}"`.
   - `cause` is present but **non-enumerable**, which is what keeps `JSON.stringify` from reaching it. Check with `propertyIsEnumerable`, never by inference.
   - `stack` is **retained**, not deleted.
-  - No rendering — `message`, `String(err)`, `JSON.stringify(err)`, `JSON.stringify({ detail: err.message })`, own-property enumeration — contains the SQL statement, a bound parameter, the caller's content, a SQLSTATE or a `pg` internal.
+  - **Whitelist, not blacklist.** Across every rendering — `message`, `String(err)`, `JSON.stringify(err)`, `JSON.stringify({ detail: err.message })`, own-property enumeration — the only things that may appear are a fixed message naming the **operation**, identifiers the **caller itself supplied**, and counts of the caller's own inputs. **No value derived from the driver error reaches any enumerable output**; `cause` carries all of it and is non-enumerable. Stated as a whitelist so it fails closed — the earlier form forbade five named things and left the sixth unenumerated, which is a site list moved one level down. A constraint name the module ties to `getTableConfig` is the module's own identifier and is **not** a leak: two blind suites independently put table names on a forbidden list and would have reddened an implementation for naming its own constraint, since `ontology_version` is a substring of `ontology_version_version_key`.
+
+  **Enforcement, named alongside the clause because fixing the clause does not fix the test.** A whitelist asserted with a blacklist test **is** a blacklist. A blind suite can adopt the wording above in full and still assert it as `output.includes(tableName)` — at which point the over-match returns unchanged at the test layer and a correct implementation naming its own constraint goes red. Same shape as everything else in this file: `includes` answers "do these characters appear", the claim is "does this leak a table name", and the second is narrower. So: **assert the whitelist by exact match against the admissible form, never by scanning for forbidden substrings.** The enumerable output of a sealed error is small enough to pin exactly — `JSON.stringify(err)` is `"{}"`, `Object.keys` is empty, and `message` equals the constructed form for that path with the caller's own identifiers substituted in. Pin those; do not go looking for what should not be there.
+
+  **And the expected message must be a LITERAL in the test.** "Assert `message` equals the constructed form" is only a check if the expected string is written out. A test that builds its expectation from the module under test — importing the template, reusing the format helper, reconstructing it from an exported constant — asserts "does the module agree with itself", and passes unchanged if the template itself starts interpolating a driver value. That is the narrower-question shape arriving inside the fix for the narrower-question shape.
+
+  A **blind** author gets this right by necessity: the implementation does not exist in their worktree, so they have to hardcode it. **The exposure is later** — an implementer or adversary looking at a failing exact-match test, for whom importing the shared constant is the fastest way to make it agree, and which reads as removing duplication rather than as deleting an assertion. So: **a later change that derives the expected message from the module is a removed assertion, and is treated as one.** Note the scope — only the message equality can go tautological. `JSON.stringify(err) === "{}"`, empty `Object.keys`, non-enumerable `cause` and retained `stack` are properties of the object with nothing to derive from the module.
+
+  This matters most to a **blind** author, who cannot see the implementation and so cannot tell an over-match from a genuine leak: it presents as a real red, and the cheapest way to make it green is to change correct code. Two blind suites reached the same wrong predicate independently, which is evidence it is the obvious thing to write rather than a slip either author made.
+
+  **The sixth-leak prediction was tested against T010 rather than argued about, and it does not hold there.** Every throw in the merged module, enumerated: two surrogate refusals carrying fixed literals with no interpolation; a length mismatch interpolating two `.length` **numbers**; two conflicts interpolating the caller's own `slug`/`version`; and `sanitizedWriteError`, whose message is `${operation}: the write failed.` with `operation` a module literal. No driver-derived value reaches any output on any path, so T010's implementation is whitelist-by-construction and was already **stronger than the clause that governed it**. The clause was the weak thing, which is why it is fixed here — for T020 and T030, which inherit it and are still building.
 
   T010 merged against the old wording and is unaffected: its adversary measured the property above across six paths and five renderings, which is the test that matters. The wording was wrong; the thing it verified was right.
 
@@ -237,6 +247,56 @@ the stable ones. Without serialisation a non-identical triple cannot distinguish
 implementation from a contended host, and that ambiguity lands in a report as a hedge. The real fix is per-worktree ports, which is a
 change to `compose.yaml` — T000's `Owns`, and not worth a mid-run repartition. Do not spend a
 round chasing whichever suite surfaces next.
+
+## T-04: a blacklist tell can match the fixture's own identifier, and it reds like a real leak
+
+T020's blind suite mints fixture identifiers containing `process.pid`. Its SQLSTATE tells are
+`["23505","23503","22021","22P02"]`, asserted with `not.toContain`. A pid of `23505` — or any
+pid containing one of those strings — produces:
+
+    cardId   t020-leakdup-23505-58-5gy0kq
+    message  addCard: `t020-leakdup-23505-58-5gy0kq@1.0.0` already exists (card_version_id_version_key).
+    → the SQLSTATE tell "23505" matches
+
+That message is **whitelist-legal**: the operation, an identifier the caller itself supplied, and
+the module's own constraint name. Roughly 1 run in 30 000 on five-digit pids, and when it fires it
+reds the leak sweep for every test routed through it, reading exactly like a real leak. This is the
+second instance of the same predicate defect in one suite — the first was `card_version` inside
+`card_version_id_version_key` — which is the evidence that the defect is the *predicate*, not
+either substring.
+
+**The fix is not to delete the tells.** Keep them and make the blacklist **provably**
+non-over-matching rather than probably: at fixture time, assert that no tell is a substring of any
+caller-supplied identifier the test will use, and re-mint the identifier if one is. That converts
+"these characters do not appear" into "these characters cannot appear except by leaking", which is
+the claim actually being made, and it generalises — a tell added later is checked against the
+fixtures automatically instead of trusted. Statement fragments (`insert into`, `values (`,
+`returning`, `$1`) and a random per-run planted secret are sound as-is, since neither can appear in
+an admissible message.
+
+**Owed, and it is a contract gap rather than a suite defect: no task publishes the admissible
+message form for each rejection path.** So the strongest pin in the enforcement rule — `message`
+equals the constructed form — cannot be written by a blind author without inventing the wording,
+which is a candidate list in a new hat. T020's author refused to invent it and reported it, which
+is right. **A task's published signatures must state the admissible message form per path, before
+the implementation exists.** Writing it afterwards to match shipped code is the contract following
+the implementation, which is the wrong direction and is not being done retroactively here.
+
+## T-03: the surrogate test on a `jsonb` column asserts an outcome Postgres already guarantees
+
+Found independently by three sessions — both blind test authors and T020's implementer — which
+is why it is recorded here rather than in one task. `pg` sends `text` as UTF-8 and an unpaired
+UTF-16 surrogate has no UTF-8 encoding, so it is **silently replaced with U+FFFD** and the write
+succeeds carrying bytes the digest does not name. A `jsonb` parameter goes the other way:
+Postgres's own parser **rejects** the unpaired escape outright (22P02).
+
+So a surrogate test aimed at a `jsonb` column passes against a module with **no guard at all**.
+It asserts the criterion's outcome and cannot distinguish a module that refuses from one that
+does not; the module's own check is defence-in-depth there. **The only place the guard is
+observable from outside is a `text` column** — for T010 that is `dot` and `slug`, for T020
+`source`, and for T030 the `version` string alone. Any test meant to hold the *guard* rather
+than the outcome has to reach it through one of those, and any test that cannot should say so
+beside itself. Three tasks inherit a test that reads stronger than it is.
 
 ## Two hazards that recur across tasks rather than belonging to one
 
@@ -296,6 +356,23 @@ data" is properly *no decision depends on a property that is not the object's ow
 over every decision, not a list of fields. **Write the output property first. Enumerate sites
 only as commentary on it, never as the specification.**
 
+**Second clause, and it is the half that makes the first one work: the property must quantify
+over a set defined by CONSTRUCTION, and its predicate must be CLOSED.** Moving the enumeration
+off the sites only relocates the incompleteness if the predicate is still a list. Compare the
+three: T025's "the maximum over all residue-free explanations" quantifies over a set that is
+exhaustively enumerable by construction, which is exactly why an oracle can compute it. T060's
+"no decision depends on a property that is not the object's own" quantifies over decisions and
+tests **provenance**, a closed test rather than a list of forbidden fields. T010's "no rendering
+contains the statement, a parameter, the caller's content, a SQLSTATE or a `pg` internal"
+quantifies correctly and then applies a **blacklist of five** — and the sixth is unenumerated.
+A table name, a connection string, a constraint name embedding a column: the original failure
+moved one level down rather than removed.
+
+A **blacklist predicate is incomplete for the same reason a site list is**; a whitelist is
+complete by construction and fails closed when someone invents a sixth thing. The error clause
+is restated as a whitelist below. Raised by T025's adversary, which also predicted a sixth leak
+in T010 — merged and tagged at the time it said so.
+
 ## Resolving `backend.md`: Log entries merge, contract text does not
 
 A hand-resolution in T025's worktree silently reverted a corrected acceptance criterion. The
@@ -312,6 +389,22 @@ being careful.
 
 This is also why an amendment is announced to both sides rather than left to be discovered on
 the next rebase: the file they read may not be the file that was amended.
+
+**Announcing it is not enough, and the orchestrator broke this rule the same day it was written.**
+The `stack` amendment landed at `40a1f15` (09:29:34). T020's implementer had rebased onto
+`6045613` (09:11:49) and committed at `153b541` (09:40:09) — and `40a1f15` is **not** an ancestor
+of it. It implemented the only wording in its tree, correctly, said so in its log, and was charged
+a defect for it. T030's implementer *was* told and corrected within the hour; T020's was not,
+because the announcement went to whoever happened to be in front of me. An announcement that
+depends on the orchestrator remembering which sessions are live is a reminder, and reminders are
+what this file keeps replacing with structure.
+
+**So: the final gate run happens on a tree rebased onto current `backend`, and the handover states
+the `backend` sha it was rebased onto.** That makes a stale contract *visible at handover* rather
+than discoverable by an adversary two hours later — the receiving side can compare that sha
+against the tip and see what it missed, instead of inferring it from a contradiction. The same
+shape as every other fix here: replace "the orchestrator will remember" with something the
+evidence itself carries.
 
 ## Never use `git stash` in a worktree
 
