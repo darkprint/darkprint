@@ -23,7 +23,12 @@ import {
   ROUTES,
   type RouteName,
   type Scratch,
+  account,
+  asArray,
+  asBlueprintSummary,
+  asCardSummary,
   assertTellsCannotOverMatch,
+  bind,
   callRoute,
   dropScratchDatabases,
   findTokens,
@@ -35,6 +40,7 @@ import {
   manifest,
   mark,
   scratchDatabase,
+  sessionCookie,
 } from "./contract";
 
 const SLUG = "route-fixture";
@@ -50,8 +56,20 @@ const SEALED_PHASE = "deployment";
 const SEALED_TAG = "route-sealed-tag";
 const SEALED_CATEGORY = "Route-Sealed-Category";
 
+/* A second owner, so a signed-in request is distinguishable from an operator's as well as
+   from nobody's. With one owner, "the session became an account actor" and "the session
+   became an operator" produce the same body and the join is only half observed. */
+const OTHER_SEALED_SLUG = "route-other-sealed";
+const OTHER_HIDDEN = "route-other-hidden-card";
+
 let s: Scratch;
 let handle: string;
+let ownerId: string;
+/** Everything private to the signed-in owner: absent for nobody, present for them. */
+let tellsOwn: string[];
+/** Everything private to the *other* owner: absent for both. */
+let tellsOther: string[];
+/** The union, for the anonymous sweep. */
 let tells: string[];
 let originalDatabaseUrl: string | undefined;
 
@@ -62,6 +80,8 @@ beforeAll(async () => {
   s = await scratchDatabase();
   const owner = await insertAccount(s, mark("t080-routes"));
   handle = owner.handle;
+  ownerId = owner.id;
+  const other = await insertAccount(s, mark("t080-routes-other"));
 
   const twinBody = { name: "Route Twin", action: "route-twin-action", spec: "One shared spec." };
   const twinA = await insertCard(s, { ownerId: owner.id, id: TWIN_A, phases: [PHASE], ...twinBody });
@@ -117,7 +137,28 @@ beforeAll(async () => {
     manifest: manifest({ slug: SEALED_SLUG, tags: [SEALED_TAG], category: SEALED_CATEGORY }),
   });
 
-  tells = [SEALED_SLUG, SEALED_TAG, SEALED_CATEGORY, SEALED_PHASE, HIDDEN, hidden.ref, hidden.digest, sealed.id];
+  /* The other owner's private half, which the signed-in owner must not be shown either. */
+  const otherHidden = await insertCard(s, {
+    ownerId: other.id,
+    id: OTHER_HIDDEN,
+    visibility: "private",
+    action: "route-other-hidden-action",
+  });
+  const otherSealed = await insertBundle(s, {
+    owner: other,
+    slug: OTHER_SEALED_SLUG,
+    visibility: "private",
+  });
+  await insertRelease(s, {
+    bundle: otherSealed,
+    version: "1.0.0",
+    cards: [otherHidden],
+    manifest: manifest({ slug: OTHER_SEALED_SLUG }),
+  });
+
+  tellsOwn = [SEALED_SLUG, SEALED_TAG, SEALED_CATEGORY, SEALED_PHASE, HIDDEN, hidden.ref, hidden.digest, sealed.id];
+  tellsOther = [OTHER_SEALED_SLUG, OTHER_HIDDEN, otherHidden.ref, otherHidden.digest, otherSealed.id];
+  tells = [...tellsOwn, ...tellsOther];
   assertTellsCannotOverMatch(tells, [
     handle,
     SLUG,
@@ -226,6 +267,102 @@ describe("D-80-02 the published 200 envelope", () => {
         `publishes overlap. If the catch-all wins, this answers a card lookup for the ref ` +
         `"duplicates" instead.`,
     ).toEqual([[`${TWIN_A}@1.0.0`, `${TWIN_B}@1.0.0`].sort()]);
+  });
+});
+
+describe("the signed-in request, which is the join the two sweeps leave uncovered", () => {
+  /**
+   * The privacy sweep hands an `Actor` **straight to the readers**; the sweep above drives
+   * routes **anonymously**. Each half is covered and the join between them is not — whatever
+   * turns a session into an `Actor` is the only thing connecting the two, and it can regress
+   * to "nobody" with every other assertion in this suite still passing. That path is what
+   * T130's AC2 depends on and what the owner-sees-own ruling turned on, so the ruling was
+   * enforced in the readers and unenforced where a caller actually reaches them.
+   *
+   * The assertion is an equality against the reader's own answer for that actor, not a
+   * hand-written expectation: `route(signed in as A) === reader(account A)`, and both must
+   * differ from `route(anonymous)`. The first half alone would pass against a route that
+   * widened to an operator, which is why there is a second owner.
+   */
+  const refsOf = (body: unknown, key: string): string[] =>
+    ((body as Record<string, { ref?: string; slug?: string }[]>)[key] ?? []).map(
+      (x) => x.ref ?? x.slug ?? "",
+    );
+
+  it("carries the session's own actor to `cards`, not nobody's", async () => {
+    const cards = await bind("cards");
+    const cookie = sessionCookie(ownerId, handle);
+
+    const anonBody = await (await callRoute("cards", "/api/cards")).json();
+    const ownBody = await (await callRoute("cards", "/api/cards", cookie)).json();
+    const reader = asArray(
+      await cards(s.db, account(ownerId, handle)),
+      "cards(account)",
+    ).map((row, i) => asCardSummary(row, `cards()[${i}]`).ref);
+
+    expect(
+      refsOf(ownBody, "cards"),
+      `The route must answer what the reader answers for this actor. Making the request's ` +
+        `actor unconditionally anonymous leaves this equal to the anonymous body instead, ` +
+        `and nothing else in either suite notices.`,
+    ).toEqual(reader);
+    expect(
+      refsOf(ownBody, "cards"),
+      `and it must differ from the anonymous body, or the equality above is satisfied by a ` +
+        `route that never reads the session at all`,
+    ).not.toEqual(refsOf(anonBody, "cards"));
+    expect(refsOf(ownBody, "cards")).toContain(`${HIDDEN}@1.0.0`);
+    expect(refsOf(anonBody, "cards")).not.toContain(`${HIDDEN}@1.0.0`);
+  });
+
+  it("carries the session's own actor to `blueprints`, not nobody's", async () => {
+    const blueprints = await bind("blueprints");
+    const cookie = sessionCookie(ownerId, handle);
+
+    const anonBody = await (await callRoute("blueprints", "/api/blueprints")).json();
+    const ownBody = await (await callRoute("blueprints", "/api/blueprints", cookie)).json();
+    const reader = asArray(
+      await blueprints(s.db, account(ownerId, handle)),
+      "blueprints(account)",
+    ).map((row, i) => asBlueprintSummary(row, `blueprints()[${i}]`).slug);
+
+    expect(refsOf(ownBody, "blueprints")).toEqual(reader);
+    expect(refsOf(ownBody, "blueprints")).toContain(SEALED_SLUG);
+    expect(refsOf(anonBody, "blueprints")).not.toContain(SEALED_SLUG);
+  });
+
+  it("resolves the owner's own private bundle through the keyed route", async () => {
+    const anon = await callRoute("blueprint", `/api/blueprints/${handle}/${SEALED_SLUG}`);
+    expect(anon.status, "nobody gets the 404 B-03 requires").toBe(404);
+    const own = await callRoute(
+      "blueprint",
+      `/api/blueprints/${handle}/${SEALED_SLUG}`,
+      sessionCookie(ownerId, handle),
+    );
+    expect(
+      own.status,
+      `the owner of a private bundle reaches it — the same ruling AC6's widened-actor block ` +
+        `asserts at the reader, now asserted where a caller actually arrives`,
+    ).toBe(200);
+  });
+
+  it("shows the signed-in owner nothing of the OTHER owner's private content", async () => {
+    /* Without a second owner, "the session became an account actor" and "the session became
+       an operator" produce the same body, so the equality above would hold for both and only
+       half the join would be observed. */
+    const cookie = sessionCookie(ownerId, handle);
+    for (const name of ["cards", "blueprints", "tags", "categories"] as const) {
+      const body = await (await callRoute(name, calls[name], cookie)).json();
+      expect(
+        findTokens(body, tellsOther),
+        `\`${ROUTES[name].url}\` showed the signed-in owner content private to another ` +
+          `account. A route that widens every session to an operator passes every other ` +
+          `assertion in this block.`,
+      ).toEqual([]);
+      expect(findTokens(body, tellsOwn).length, `${ROUTES[name].url} own content`).toBeGreaterThan(
+        0,
+      );
+    }
   });
 });
 
