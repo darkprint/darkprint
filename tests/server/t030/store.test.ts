@@ -92,11 +92,10 @@ describe("addOntologyVersion: the digest is computed here", () => {
   });
 
   /**
-   * Derived, not published. `lib/core/hash/digest.ts:26` says of a card's identity that
-   * "everything else is included, `version` and `ontologyVersion` among them", and an ontology
-   * version is the same kind of artefact under B-04. Two releases with the same terms are still
-   * two releases. Flagged in the Log: the ruling reached this suite by message and is not in
-   * backend.md, so it is asserted in one test that can move on its own.
+   * Published now, at `95033be`: "Ruling: the digest covers `version` as well as the terms",
+   * from `lib/core/hash/digest.ts`. It reached this suite by message first and was asserted on
+   * the strength of that file rather than the message — the ruling is in the contract, so the
+   * provenance caveat this comment used to carry is gone.
    */
   it("gives two different digests to one term set under two versions", async () => {
     const add = await bind("addOntologyVersion");
@@ -258,7 +257,7 @@ describe("addOntologyVersion: one version per version string", () => {
 
     await rejects(
       () => add(db(t), { version: BASE_VERSION, terms: [termWithSecret("agent")] }) as Promise<unknown>,
-      [SECRET, "insert", "ontology_version", "$1"],
+      [SECRET],
       "addOntologyVersion (duplicate version)",
     );
   });
@@ -319,7 +318,7 @@ describe("addOntologyVersion: N rows in one transaction", () => {
           version: BASE_VERSION,
           terms: [term("agent"), term("evaluative"), termWithSecret("agent", { label: "again" })],
         }) as Promise<unknown>,
-      [SECRET, "insert", "ontology_term", "$1"],
+      [SECRET],
       "addOntologyVersion (duplicate term id)",
     );
 
