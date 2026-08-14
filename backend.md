@@ -415,6 +415,11 @@ Three cheap guards, all now in force:
   **two guards parse that file** — `tests/wave-dependencies.test.ts` and
   `first-pass-calibration.test.ts`. Prose in `backend.md` is not inert, so re-gate after the rebase
   rather than carrying a triple over it. Raised by T080's implementer about its own handover.
+- **Read the exit code of the command you mean, not of the pipeline you typed.** T080's adversary
+  reported "build exit 0" from a compound command whose last element was `tail`, while the log said
+  `Failed to type check.` twenty-five lines up. It corrected itself and named the rule it had broken
+  while quoting it. In `zsh`, `$?` after `a | tail` is `tail`'s; use `${pipestatus[1]}`, `set -o
+  pipefail`, or run the command alone.
 - Before reading a `typecheck` red in a **fresh worktree**, run `npm run build` once. `next` generates
   the `PageProps` globals into `.next/types`, so a tree that has never been built reports 18
   `Cannot find name 'PageProps'` errors in `app/**` that belong to nobody. Measured: red before the
@@ -940,6 +945,15 @@ suites at a lower load than before**. That is the measurement that settles the d
 an individual suite moves the symptom, because the cause is one Postgres on 5432 shared by every
 worktree, with no stated owner, driven by ~100 agent processes on ten cores. Same class as the
 repo-global `git stash` and the shared worktree.
+
+**And it happened again, worse, at T080 — dispatched on an INTERIM report.** T080's adversary sent
+a mid-round interim and the orchestrator called the implementer back on the strength of it, so
+round 2 began inside a tree the adversary was still measuring. Its route battery measured the
+**pre-fix** tree and its leak sweep the **post-fix** tree, and it caught that only because one
+endpoint answered differently on two calls. **The rule already said a round ends at the verdict;
+an interim report is not even a slot release.** The stamp is what caught it, which is the argument
+for the stamp — and the adversary labelled every result by which tree it was measured on rather
+than discarding the round.
 
 **A released gate slot is not a finished round, and the orchestrator conflated them.** T020's
 adversary released the slot after its triple and kept probing — which is correct, since the slot
@@ -3720,7 +3734,16 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **D-80-06 (defect, charged): an unpinned version of a pinned id is indexed and served.** `snapshot.ts` selects `card_version` by `cardId` **alone** and keys every returned row into `rowsByRef`; the pin set only ever builds `visibleRefs`/`usedIn` and never restricts the rows. The comment directly below claims `rowsByRef` is the set of pins that resolve to a visible row, and the code does not do that. Measured with a card pinned at `1.0.0` and a `2.0.0` row nothing pins: `cards()` and `versionsOf()` both return the unpinned row, `card("…@2.0.0")` returns a record, and **`latestCards()` returns the unpinned version** — while `cardRefs` correctly returns only `1.0.0`, so **the read model contradicts itself**. It spreads: a phase only the unpinned row declares is reported by `phases()` with a non-empty bucket. The tell is exact — the leaked record carries `usedIn=[]`, which the indexing rule makes impossible. Violates "Only cards a DOT node instantiates are indexed", inflates both AC1 numbers, and is reachable the moment an author publishes `foo@2.0.0` before any blueprint pins it: the browse list flips to a version nothing uses. **Restrict the row set to the pinned refs, not the pinned ids.**
 
-  **D-80-07 (contract, mine): the published route paths are URLs, not App Router folder names.** I wrote them in folder syntax, and `CARD_ID` admits an `owner/name` namespace, so a literal `[id]` folder **cannot express every valid id** — `/api/cards/berti/solver-a/versions` needs the catch-all and returns 200 through it. **The URLs are the contract; the file layout is the implementation's.** So the implementer's single catch-all is correct and the blind suite's six reds are a **suite defect**: it binds to route module paths rather than to URLs. Tests reach routes by URL.
+  **D-80-07 is gate-blocking, not test-local, and that changes who must fix it.** Measured after the
+adversary corrected its own exit-code error: `tsc --noEmit` and `npm run build` **both fail** on
+`tests/server/t080/contract.ts` importing `@/app/api/cards/[id]/versions/route` and `.../users/route`.
+A dynamic `import()` specifier resolves at compile time — this file's own point from the
+dependency-graph section — so a suite that binds to **route modules** cannot be worked around by the
+implementation. **Ruled: the blind suite reaches routes by URL and imports no route module.** That
+is a suite fix, it is required before any gate can go green, and it is the second time in this run
+that a test binding to a module path rather than to behaviour has blocked a build.
+
+**D-80-07 (contract, mine): the published route paths are URLs, not App Router folder names.** I wrote them in folder syntax, and `CARD_ID` admits an `owner/name` namespace, so a literal `[id]` folder **cannot express every valid id** — `/api/cards/berti/solver-a/versions` needs the catch-all and returns 200 through it. **The URLs are the contract; the file layout is the implementation's.** So the implementer's single catch-all is correct and the blind suite's six reds are a **suite defect**: it binds to route module paths rather than to URLs. Tests reach routes by URL.
 
   **D-80-08 (contract gap, mine): D-80-03 never stated the tie-break direction**, and the two sides read it opposite ways — blind author highest row id, implementer lowest. **Ruled: highest.** It matches "latest", and a suite already binds to it. Stated plainly, because it affects how much the rule can be trusted: `release.id` is `uuid().defaultRandom()`, so **ordering by it is arbitrary rather than chronological** — the tiebreak buys determinism, not recency, and it fires only where two releases differ solely in build metadata. If recency is ever wanted there, it needs `created_at` and a second tiebreak, since T010 measured 32 concurrent inserts collapsing onto 12 distinct timestamps.
 
