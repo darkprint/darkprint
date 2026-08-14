@@ -46,7 +46,21 @@ but three runs of three different trees is not a determinism guard, and it retra
 itself rather than let it stand. It also had to commit `backend.md` **by path**, because
 `git add -A` would have swept the implementer's uncommitted work into the adversary's commit.
 
-**The rule.** A task's implementation worktree has exactly one writer at a time. While an
+**The rule.** A task's implementation worktree has exactly one writer at a time, **and a
+handover states the commit the tree is expected to be at, not only who holds it.** The second
+half is the adversary's own correction to this rule: a one-writer rule alone would have left
+round 3's contamination silent had the implementer edited *before* the pass began rather than
+during it. So a pass stamps `git rev-parse HEAD` and `git status --porcelain`
+**before and after** its runs and reports both, and a handover is not complete until the
+receiving agent has the sha *and* confirmation that `git status --porcelain` is empty at it.
+
+That stamp is deliberately whole-tree rather than scoped to the files under test, which is the
+adversary's own correction to its first version of this guard — the same error class one level
+up. `npm test` runs the whole repository, so an edit to `lib/core/**` or `tests/support/**`
+contaminates a task's run exactly as thoroughly as an edit to its own module and would appear
+in no scoped stamp. In round 3 the contaminating edit happened to land inside the task's own
+`Owns`, which was luck rather than coverage. Mtimes are then a diagnostic for *which* file
+moved, never the detector for whether anything did. While an
 adversarial pass is running the implementer does not touch the tree, and while an implementer
 is working the adversary does not start. The orchestrator hands the tree over explicitly in
 both directions, as it already does for the merge. Any agent committing in a shared worktree
@@ -93,6 +107,22 @@ the protocol rather than a decision inside it.
   defect count falling round on round. T000 ran 7 defects → 2 → 1 → 1, with the last three
   being contract defects rather than code, which is convergence. Cycling without that fall is
   reported, not burned through.
+
+## Measure the claim, not something adjacent to it
+
+Stated by T025's adversary after correcting the orchestrator twice in one session, and it is
+a better diagnosis than "checking a proxy": **both times the tool answered exactly the question
+it was asked, and the question was narrower than the claim drawn from it.** `grep` found a
+string in a file, which is what `grep` does — reading that as "the clause is live" was the
+error, when the string sat in a Log entry quoting it. Three green totals were three green
+totals — reading that as "the tree held still" was the error, when three runs measured three
+different trees.
+
+Two cheap guards, both now in force:
+- Before charging a **document** defect, diff the section against `backend` rather than
+  grepping for the string.
+- Before claiming a **determinism** result, stamp what was measured: the commit sha, and the
+  mtimes of the files under test, before and after.
 
 ## A ruling is implemented as narrowly as its worked example
 
