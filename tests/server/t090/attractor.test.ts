@@ -1,36 +1,71 @@
 /* ============================================================
    T090 — AC4, the last check on emitted Attractor input
 
-   ── read this before trusting the first test in this file ──
-   AC4 says "every served `factory.dot` passes `parseDot` and
-   `lintAttractor`". Asserting that outcome does NOT discriminate a
-   module that checks from one that does not, and that is a
-   measurement rather than a suspicion. `emitAttractorDot` is total:
-   `toAttractorIdentifier` rewrites every node id onto
-   `[A-Za-z_][A-Za-z0-9_]*` and is documented as never throwing and
-   always passing `isAttractorIdentifier`, and
-   `quoteAttractorString` escapes `\`, `"`, newline and tab and
-   turns every other control character into a space. So no
-   `ResolvedBlueprint` emits Attractor-invalid DOT.
+   ── this file's own header used to say the opposite, and the
+      correction is the point ──
+   It claimed the ten outcome tests below did not discriminate,
+   because `emitAttractorDot` was "total" and no `ResolvedBlueprint`
+   could emit invalid Attractor DOT. **That was wrong, and both
+   premises it rested on were true.** `toAttractorIdentifier` does
+   close the node ids; `quoteAttractorString` does close the string
+   values. The emitter writes exactly one attribute UNQUOTED —
+   `max_retries=${String(cap)}` at `emit.ts:461` — and its value
+   comes from `card.params`, not from the DOT.
 
-   Measured rather than reasoned: all nine shipped bundles emit with
-   0 parse diagnostics and 0 lint diagnostics, and four hostile
-   source DOTs — a `type=` handler-override attribute, a `#`
-   comment, an HTML-like `<b>` attribute value, and `strict digraph`
-   — each resolve and then emit 0 and 0, because none of those
-   survives the emitter. That is T-03's species: a test asserting an
-   outcome something upstream already guarantees.
+   The region searched was source-DOT hostility (a `type=` handler
+   override, a `#` comment, an HTML-like value, `strict digraph`),
+   and the value that breaks it enters from the card. Four probes,
+   all clean, all in the wrong place. The boundary was the claim.
 
-   So the first test is kept and LABELLED, per backend.md's rule
-   that "a weak test known to be weak is worth having; the failure
-   is the unlabelled one" — and the discriminating half of AC4 is
-   the reachable one below it: a stored release whose DOT no longer
-   resolves must be refused rather than served.
+   Measured here rather than taken on report:
 
-   `exportRelease: the emitted factory.dot is not valid Attractor
-   input.` is therefore a published refusal that no input reachable
-   through the published surface can produce. Reported in the Log as
-   a measured result, not written as a test that cannot fire.
+       Number.isInteger(1e23)                     true
+       String(1e23)                               "1e+23"
+       readIterationCap({max_iterations: 1e23})   1e+23
+       bundle resolves with errors?               false
+       emitted                                    max_retries=1e+23
+       parseDot                                   dot/parse-error:
+         "Expected `=` after the attribute `e`, found `+`."
+       graph produced?                            false
+
+   So a single card carrying a large integer cap resolves clean,
+   scores, and produces a complete-looking nine-file folder whose
+   `factory.dot` will not parse. That is exactly the failure AC4
+   exists to prevent, it is reachable through the published surface,
+   and `exportRelease: the emitted factory.dot is not valid
+   Attractor input.` is a live refusal path rather than a dead one.
+
+   ── but the reversal is only half, and the halves were measured
+      separately ──
+   Removing the PARSE check now reds 1. Removing the LINT check
+   still reds 0. The `1e+23` input never produces a graph, so
+   `lintAttractor` is never reached by it, and every cap that does
+   parse is a plain integer and so an admissible value. The lint
+   half remains unobserved through the published surface and no
+   input for it has been found — stated as "not observed", not as
+   "unreachable", because claiming unreachability from a search is
+   the exact error this header is correcting.
+
+   ── and the ten outcome tests below still do not discriminate ──
+   Measured, not assumed: removing the parse check reds exactly one
+   test, the new one. The nine shipped bundles carry no such card,
+   so their served `factory.dot` parses and lints whether or not
+   this layer checks. What changed is the REASON they are weak, and
+   the difference matters: it is no longer "the emitter cannot
+   produce invalid output" (false), it is "these nine inputs do not
+   happen to" (true, and contingent — the day a shipped bundle
+   carries a large integer cap, they fire). A weak test whose
+   weakness is contingent is worth more than one whose weakness is
+   structural, and both are worth more than an unlabelled one.
+
+   ── what this file does not do ──
+   It does not pin `1e+23`, or any rendering of the cap. The
+   `String(cap)` defect is `lib/core/attractor/emit.ts`'s, Forbidden
+   to this task and owing an owner; a test that asserted the buggy
+   output would make the defect permanent and would red the day it
+   is fixed. What is asserted is that a release whose `factory.dot`
+   does not parse is REFUSED — which stays true whichever way the
+   emitter is repaired.
    ============================================================ */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -102,13 +137,18 @@ async function factoryDotOf(release: SeededRelease): Promise<string> {
 
 describe("AC4 — every served factory.dot passes parseDot and lintAttractor", () => {
   /*
-   * WEAK BY MEASUREMENT — see the file header. This passes against an implementation with no
-   * check at all, because `emitAttractorDot` cannot produce invalid Attractor DOT. It is kept
-   * because AC4's *outcome* is worth pinning: if the emitter ever regresses, or if this layer
-   * ever post-processes the emitted DOT, the nine bundles are where it shows.
+   * WEAK BUT CONTINGENTLY SO, and measured rather than argued: removing the parse check reds
+   * exactly one test in this file and it is not one of these. The nine shipped bundles carry no
+   * card whose iteration cap renders in exponential form, so their `factory.dot` parses and lints
+   * whether or not this layer checks.
+   *
+   * Kept, and the label is no longer the one an earlier version of this file carried. These are
+   * not weak because the emitter cannot produce invalid output — it can (see the header) — they
+   * are weak because these nine inputs do not happen to. That is a property of the archive, not
+   * of the engine, and it stops being true the day a bundle ships such a card.
    */
   for (const slug of archive().map((entry) => entry.slug)) {
-    it(`serves a factory.dot for ${slug} that lexes, parses and lints (does not discriminate)`, async () => {
+    it(`serves a factory.dot for ${slug} that lexes, parses and lints`, async () => {
       const text = await factoryDotOf(seeded.get(slug) as SeededRelease);
       const parsed = parseDot(text, FACTORY_DOT);
       expect(
@@ -125,7 +165,7 @@ describe("AC4 — every served factory.dot passes parseDot and lintAttractor", (
     }, 60_000);
   }
 
-  it("serves a factory.dot whose node ids are all Attractor identifiers (does not discriminate)", async () => {
+  it("serves a factory.dot whose node ids are all Attractor identifiers", async () => {
     /*
      * Same class as the tests above and stated separately because it is the rule most likely to
      * be broken by a layer that rewrote the emitted DOT: DarkPrint's own parser accepts hyphens
@@ -142,6 +182,72 @@ describe("AC4 — every served factory.dot passes parseDot and lintAttractor", (
       ).toBe(true);
     }
   }, 60_000);
+
+  it("refuses a release whose factory.dot does not parse, though the release itself resolves clean", async () => {
+    /*
+     * THE CRITERION'S OWN CASE, and the one the earlier version of this file wrongly reported as
+     * unreachable. One pinned card declares an iteration cap large enough that `String(cap)`
+     * renders in exponential form; `readIterationCap` admits it because `Number.isInteger(1e23)`
+     * is true, and `emit.ts` writes `max_retries=` **unquoted**. The DOT parses, the bundle
+     * resolves with **no** error diagnostics, both scores compute, and the folder that comes out
+     * has nine files and a `factory.dot` that will not lex.
+     *
+     * That is the whole of AC4 in one input: nothing before this layer refuses it. T010 stores it,
+     * `resolveBundle` is happy with it, `hasErrors` is false, and the degraded-resolve check added
+     * for the other half of AC4 does not fire. Only `parseDot` on the emitted bytes catches it.
+     *
+     * The cap is planted in the card's stored YAML *and* its stored body, because nothing
+     * published says which of the two an export resolves from.
+     *
+     * Nothing here asserts the rendering. `1e+23` is a defect in `lib/core/attractor/emit.ts` —
+     * Forbidden to this task and owing an owner — and pinning the broken output would make it
+     * permanent and red the day it is fixed. What is asserted is the refusal, which survives any
+     * repair to the emitter.
+     */
+    const own = await scratchDatabase("attractor_exponential");
+    try {
+      await seedOntology(own.db);
+      const account = await seedAccount(own, "exponential");
+      const HUGE = 100000000000000000000000; // 1e23; `String()` gives "1e+23"
+      const release = await seedRelease(own, account, bundleBySlug("checkpoint-resume-runner"), {
+        patchCard: {
+          refMatch: "bounded-retry",
+          source: (text) =>
+            /^params:\s*$/m.test(text)
+              ? text.replace(/^params:\s*$/m, `params:\n  max_iterations: ${HUGE}`)
+              : `${text}\nparams:\n  max_iterations: ${HUGE}\n`,
+          body: (body) => ({
+            ...body,
+            params: { ...((body.params as Record<string, unknown>) ?? {}), max_iterations: HUGE },
+          }),
+        },
+      });
+
+      const mod = await loadExport();
+      const outcome = await outcomeOf(() =>
+        requiredFn(mod, "exportRelease")(own.db, ANONYMOUS, release.bundleId, release.digest),
+      );
+      if (outcome.kind === "value") {
+        const files = outcome.value as readonly { path: string; text: string }[];
+        const factory = files.find((f) => f.path === FACTORY_DOT);
+        const parsed = factory === undefined ? undefined : parseDot(factory.text, FACTORY_DOT);
+        throw new Error(
+          `\`exportRelease\` served a ${files.length}-file folder whose \`${FACTORY_DOT}\` ` +
+            `${parsed?.graph === undefined ? "does not parse" : "parses"}: ` +
+            `${parsed?.diagnostics.map((d) => d.message).join("; ") ?? "(no factory.dot at all)"}. ` +
+            `The release resolves clean, so this layer is the last thing standing between a ` +
+            `complete-looking folder and a runner that cannot read it.`,
+        );
+      }
+      expectThrewExactly(
+        outcome,
+        ADMISSIBLE.badFactoryDot,
+        "`exportRelease` on a release whose emitted factory.dot does not parse",
+      );
+    } finally {
+      await own.drop();
+    }
+  }, 300_000);
 
   it("refuses a release whose stored DOT no longer resolves, rather than serving it", async () => {
     /*

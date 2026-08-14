@@ -465,6 +465,20 @@ export interface SeedOptions {
   dropOneCardRef?: boolean;
   /** Overrides the slug, so two owners can hold the same one (B-09). */
   slug?: string;
+  /**
+   * Rewrites one pinned card's stored YAML and body before it is written.
+   *
+   * Both halves, because nothing published says which one an export resolves from: `card_version`
+   * stores `source` (the YAML bytes) and `body` (the parsed card), and an implementation is free
+   * to re-parse the first or to use the second. A fixture that patched only one would test
+   * whichever choice the implementer happened to make.
+   */
+  patchCard?: {
+    /** Substring of the card ref to patch, e.g. "bounded-retry". */
+    refMatch: string;
+    source: (text: string) => string;
+    body: (body: Record<string, unknown>) => Record<string, unknown>;
+  };
 }
 
 /**
@@ -565,13 +579,17 @@ export async function seedRelease(
     }
 
     const cardOwner = options.cardOwner ?? owner;
+    const patch = options.patchCard;
+    const patched = patch !== undefined && node.ref.includes(patch.refMatch);
     const record = await addCard(db, {
       cardId: parsed.id,
       version: parsed.version,
       ownerId: cardOwner.accountId,
       visibility: options.cardVisibility ?? "public",
-      body: node.card,
-      source,
+      body: (patched
+        ? patch.body({ ...(node.card as unknown as Record<string, unknown>) })
+        : node.card) as never,
+      source: patched ? patch.source(source) : source,
     });
     cardRefs.push(node.ref);
     cardDigests.push(record.digest);
