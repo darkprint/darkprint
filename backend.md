@@ -425,7 +425,10 @@ Three cheap guards, all now in force:
   **a false number that supports a true conclusion**, corroborated by everything around it. It
   reached a committed report and a message before anyone recomputed it, and what caught it was doing
   the arithmetic from the summary rows rather than from memory — the same rule that caught a
-  narrated `major`/`minor` in T025.
+  narrated `major`/`minor` in T025. Note also that **"contained" is a claim about a tree**: the
+  wrong figure was absent from `backend`'s copy and present in the branch's, so the orchestrator and
+  the author were each right about a different one. State which tree, or two true statements
+  reconcile later as a contradiction.
 - **Paste the output; do not narrate the case.** T025's adversary reported a minimal case whose
   numbers it had reconstructed rather than read — its probe had printed `major`/`major` and it
   wrote the entry as `major`/`minor`. The narrated case was *plausible*: right shape, right
@@ -840,6 +843,27 @@ load lazily and say why in their own comments.** So the rule being written down 
 next file breaking it, which is the argument for reading the number rather than trusting the
 convention: **a run's skipped count is part of its result.** Zero failed and seven skipped is not a
 pass.
+
+## A set that can only be empty is not a measurement
+
+T090's blind author offered three sets for its post-fix signal — cleared, still red, and **newly
+red** — then tested its instrument against a reference carrying a real defect and **withdrew the
+third before it did any work.** "Green before" for a blind suite against an absent module is only
+its module-independent guards, none of which an implementation can break: two read fixtures on
+disk, the third reads a constant in the suite itself. The only way that set fills is the whole file
+failing to collect. So a zero there is not evidence of no regression — it is a restatement of the
+fact that a blind suite has nothing meaningfully green to regress.
+
+Its general form, and the part that makes it a rule rather than a correction: **a set that can only
+be empty is not a measurement, and reporting it beside two that can vary lends it their
+credibility.** "0 newly red" handed over in good faith reads as "nothing regressed", and the two
+honest numbers next to it are what make it persuasive.
+
+**And it found this by testing the instrument in the direction it would actually need.** The
+dry-run against a correct reference cleared 82 of 82; the dry-run against a reference carrying the
+AC7 defect cleared 73 and left the same 9 that mutation reds. **A script only ever run against a
+perfect implementation is untested in the direction the report depends on** — it can produce a
+zero, and nobody knows whether it can produce anything else.
 
 ## Having the guard is not using it
 
