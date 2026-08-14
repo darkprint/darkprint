@@ -318,6 +318,21 @@ refuse that input". A guard can be correct, unit-tested, and load-bearing nowher
 cheap and total — delete the guard, run the whole suite, diff the sorted failing sets; if they are
 identical the guard is unobserved.
 
+**But a zero has three causes and the count cannot separate them.** T030's blind author hit all
+three in one round: **a guard that cannot fail** (`expectCausePresent` tested
+`hasOwnProperty("cause")`, true on *every* sealed error because the constructor defines the property
+whether or not anything was passed — the trap built into the check written to catch it); **a probe
+that cannot reach the guard** (two mutations reddened nothing because the module's outer catch
+re-wrapped them and supplied a cause, so the intended input never arrived); and **a genuinely
+unobservable behaviour** (the AC6 enforcement's real 7-and-7). It also reported a 152-red result
+that was its own patch breaking the module, and a 0-red baseline that was T025 merging underneath
+it.
+
+So: **a zero is not a result until you have read what the mutation actually did to the module.**
+Confirm the mutated code still loads, still reaches the path under test, and changed the behaviour
+you intended — then the zero means unobserved. Otherwise it means one of the other two, and the
+three are indistinguishable from the number alone.
+
 **The experiment yields a number, and the number is a usable acceptance criterion.** T030's blind
 test author ran the identical experiment against its own reference — which checks `version` as
 well as `terms` — and got **2 of 151 red**: the surrogate-in-the-version-string test and the T-02
