@@ -274,9 +274,27 @@ at all. In both cases the adversary charged the gap against the ruling rather th
 implementer, which is the correct attribution: an agent that implements exactly what it was
 told has not erred.
 
-So: **state the principle, then enumerate every site it reaches, or say explicitly that the
-list is not exhaustive and the principle governs.** A worked example is read as the scope,
-not as an illustration of it.
+The first fix was: state the principle, then enumerate every site it reaches. Better than
+nothing and still wrong, because an enumeration is a list and a list can be incomplete — which
+is how this recurred a third time, in T025 round 5, where the ruling named the pair term as a
+maximum and the other two terms as *contributions*, and the implementer replaced exactly the
+term named.
+
+**The durable fix, from T025's adversary: state the property over the OUTPUT, not distributed
+over the terms.** "The pair term is a maximum and the unpaired items contribute" has as many
+places to under-deliver as it has clauses. "**The level is the maximum over all residue-free
+explanations**" is one sentence, it binds every term at once *including terms nobody has thought
+of yet*, and it is falsifiable in a single place. That is exactly why a brute-force oracle over
+the output found this in one run while two rounds of worked examples did not: a worked example
+tests an instance, a property over the output tests the rule.
+
+The same rewrite applies to the other two, and both had already drifted toward it under pressure:
+T010's "no rejection carries the statement" became *nothing leaving this module through any
+rendering contains the statement, a parameter, caller content, a SQLSTATE or a `pg` internal* —
+a property over every output, not a list of SQLSTATEs. T060's "`Actor` and `Resource` are plain
+data" is properly *no decision depends on a property that is not the object's own* — a property
+over every decision, not a list of fields. **Write the output property first. Enumerate sites
+only as commentary on it, never as the specification.**
 
 ## Resolving `backend.md`: Log entries merge, contract text does not
 
@@ -1170,7 +1188,9 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
   **This costs no more than the current code.** Any single item can be among the stranded ones — choose it, then match the remainder arbitrarily — so the deletion term is `max` over the **whole** surplus-side leftover set rather than over a slice of it, and likewise for additions. O(n) each, beside the existing O(n·m) pair term. No permutation search, same as before.
 
-  **The evidence is a brute-force oracle rather than examples, which is why this is a defect and not a disagreement.** The adversary enumerated *every* residue-free explanation — which items pair, to which, which are stranded — and took the maximum: 21 under-priced of 600 on a narrow pool, 1 of 600 on a wide one, and **zero over-priced in either**. That one-sidedness is the signature of a positional choice standing in for a maximum: a wrong tie-break scatters both ways, a slice that misses the worst candidate can only ever answer low. Keep the oracle as the regression test — a property checked against an independent exhaustive implementation is worth more than any number of worked examples, and it is what found this after two rounds of examples did not.
+  **The evidence is a brute-force oracle rather than examples, which is why this is a defect and not a disagreement.** The adversary enumerated *every* residue-free explanation — which items pair, to which, which are stranded — and took the maximum: 21 under-priced of 600 on a narrow pool, 1 of 600 on a wide one, and **zero over-priced in either**. That one-sidedness is the signature of a positional choice standing in for a maximum: a wrong tie-break scatters both ways, a slice that misses the worst candidate can only ever answer low. Keep the oracle as a permanent regression test rather than as this round's evidence.
+
+  **The premise the one-sidedness heuristic rests on, recorded so it does not outlive it.** "All under-priced, none over-priced identifies a positional stand-in for a maximum" holds **only while the correct answer is itself a maximum** — true under the current ruling, and not a law. If a later ruling replaces "most expensive residue-free explanation" with a specific cheaper pairing policy — a live possibility, since the maximum is O(n·m) and someone will eventually want cheaper — the correct answer stops being an upper bound, legitimate divergences fall both ways, and zero over-pricing stops being diagnostic. **The oracle survives that change; the asymmetry heuristic does not.** Raised by the adversary that invented the heuristic, one message after inventing it, which is this file's central rule applied to its own instrument. Keep the oracle as the regression test — a property checked against an independent exhaustive implementation is worth more than any number of worked examples, and it is what found this after two rounds of examples did not.
 
   **Recorded, not charged:** `blueprint-bump.ts:190`'s `if (beforeLeftover[i] === afterLeftover[i]) continue;` is unreachable — by-value cancellation makes the two lists disjoint by construction. Harmless, and the comment above it is correct about why. Remove it or keep it, but do not let it survive as a guard a later reader trusts.
 
