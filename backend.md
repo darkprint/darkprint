@@ -417,6 +417,15 @@ Three cheap guards, all now in force:
   `set -a; . ./.env.example; set +a` before a gate turns those files green instead of
   "recorded unverified". Every `DATABASE_URL`/`S3_*`/`SESSION_SECRET` failure in this run has
   been an unset shell, never a defect — including two of the orchestrator's own.
+- **A re-measured mutation is one mutation with two results, not two mutations.** T090's blind
+  author reported 29/26 and then 37/34; recounted from its harness logs the figures are **28/24**
+  and **36/32**. One mutation was counted twice — a GAP in round one, a test added to close it, then
+  CAUGHT on re-measurement — so it landed in both columns and inflated numerator and denominator
+  alike. Nothing about the findings moved, which is what makes it the shape this file already names:
+  **a false number that supports a true conclusion**, corroborated by everything around it. It
+  reached a committed report and a message before anyone recomputed it, and what caught it was doing
+  the arithmetic from the summary rows rather than from memory — the same rule that caught a
+  narrated `major`/`minor` in T025.
 - **Paste the output; do not narrate the case.** T025's adversary reported a minimal case whose
   numbers it had reconstructed rather than read — its probe had printed `major`/`major` and it
   wrote the entry as `major`/`minor`. The narrated case was *plausible*: right shape, right
