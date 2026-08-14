@@ -29,7 +29,7 @@ serialisation point out, so the cap is now sessions rather than review capacity.
 | 1 | T000 | *(merged)* | **verified**, tag `t000-verified` at `ec516fa` | — |
 | 2 | T060 | *(merged)* | **verified**, tag `t060-verified` at `eef7cce` | — |
 | 3 | T010 | *(merged)* | **verified**, tag `t010-verified` at `3fd050f` | — |
-| 4 | T025 | `../darkprint-wt-t025-versioning` | **adversarial-pass** at `c1bf813` — merge **held** for Finding 2's blind coverage | adversary `…versioning-f2` idle; coverage `…archive-c2` writing |
+| 4 | T025 | *(merged)* | **verified**, tag `t025-verified` at `87dffd8` | — |
 | 5 | T020 | *(merged)* | **verified**, tag `t020-verified` at `aee6e07` | — |
 | 6 | T030 | `../darkprint-wt-t030-ontology` | round 2, implementer at `cbf02b0` | `…policy-c9`; adversary `…archive-28`, tests `…versioning-tests-eb` idle |
 
@@ -433,7 +433,14 @@ plain semvers cannot reach a branch that fires only when two versions compare eq
 identical, however many pairs it adds. **Adding points is the intuitive fix and it is the wrong
 one.**
 
-**Construction rule, which is the transferable part: an oracle's coverage claim is over the
+  **Both corrections verified by measurement rather than report, in a scratch worktree.** Against
+  the corrected coverage: baseline **24/24 green**, where it had been 1 red on the monotonicity
+  invariant; and the gained-floor revert now reds **2**, where it had been 0. So the union fix and
+  the pool-composition fix each do what they claim, and the second confirms the equivalence-class
+  rule by construction — one extra value, no extra points, and a branch that no 3136-pair plain-semver
+  domain could reach is now reachable at 99.
+
+  **Construction rule, which is the transferable part: an oracle's coverage claim is over the
 equivalence classes of the comparator its subject uses, and the pool must carry a witness for
 each.** For version comparison that is, at minimum: equal-precedence-but-different-string (build
 metadata), prerelease-versus-release, unparseable-versus-parseable (`latest`), and
