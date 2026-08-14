@@ -633,6 +633,17 @@ beside itself. Three tasks inherit a test that reads stronger than it is.
 
 ## Two hazards that recur across tasks rather than belonging to one
 
+**Residue includes the filesystem, not only the media you thought of.** T010's adversary checked
+`pg_database` and the object store after every round of that task and met a zero-residue standard
+there — and never once checked the working tree it was sitting in, leaving `.t030-probes/` behind
+in a *different* task's worktree, where it accounted for all 49 of that tree's lint warnings and
+made an honest empty porcelain impossible for whoever held it next. Its own words: the same rule it
+held itself to on databases and buckets. **A residue check is scoped to the media its author
+thought of**, and the handover protocol rests on porcelain being meaningful, so an untracked
+directory is not a tidiness issue — it removes the signal the next agent's stamp depends on.
+Handled correctly on the other side: T030's implementer did **not** delete another agent's files and
+reported "clean but for that directory" rather than claiming clean.
+
 **T-01: a raw NUL lands in a test file while writing a deliberate-control-character fixture.**
 Twice in two tasks now, on the 22021 fixture both times — `file(1)` reports the file as `data`
 rather than UTF-8 text. It is a property of *writing the file*, not of either task. Any author
