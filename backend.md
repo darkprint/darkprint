@@ -1310,6 +1310,19 @@ complete by construction and fails closed when someone invents a sixth thing. Th
 is restated as a whitelist below. Raised by T025's adversary, which also predicted a sixth leak
 in T010 — merged and tagged at the time it said so.
 
+## Diff the merge against base and account for every missing line
+
+T090's implementer rebuilt `backend.md` from `git show backend:backend.md` and re-applied only its
+Log block — and found the auto-merge had **silently dropped sixteen lines** of base contract text:
+the whole of `edc4618`'s two-direction handover rule. **A hand-resolve would not have caught it
+either**, because the conflict markers sat two hundred lines away on the T090 State line and that
+block conflicted with nothing at all. It verified the rebuild by asserting every line present in
+base survives, with one deliberate exception.
+
+So the rebuild-from-base method is **necessary rather than ceremonial**, and the check is not
+*"resolve the conflicts carefully"* — it is **"diff the result against base and account for every
+missing line"**, because the lines a merge loses are the ones it never flagged.
+
 ## Resolving `backend.md`: Log entries merge, contract text does not
 
 A hand-resolution in T025's worktree silently reverted a corrected acceptance criterion. The
@@ -3918,6 +3931,11 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         exportRelease: a card this release pins is unavailable.
         exportRelease: the ontology version this release names is not published.
         exportRelease: this release's stored vocabulary is not a term list.
+        export: reading this release failed.
+
+  **The eighth form, published here rather than left in a Log — it is contract text.** `"export: reading this release failed."`, named `export:` and not `exportRelease:` because `bundleById`, `bundleByHandle` and `resolveRelease` are reached from **both** `exportRelease` and `serveFile`, so the `exportRelease:` literal was **false on the serving path** — a message whose truth depended on which entry point called it. Threading an operation string would make the pin depend on that too, so the form is fixed and entry-point-independent.
+
+  **It is invisible to the published-message surface by construction rather than by wording**: it is an `ExportReadError`, the route rethrows it, and the caller gets a generic 500 with no body from this module. **The seven forms a caller can observe are unchanged and still seven** — this eighth is the one a log sees.
 
   Not interpolating the caller's `path` into `"serveFile: no such file in this release."` is right — the published string is a literal and interpolating would red an exact-match pin. **And `"serveFile: recording the download failed."` is struck: a counter write that fails must not deny a legitimate download.** The serve succeeds, the failure is audited through T240, and the count is lost. A counter outage taking downloads offline is a worse product than an undercount, and B-14 makes the event explicit rather than load-bearing.
 
