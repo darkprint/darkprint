@@ -137,8 +137,27 @@ describe("T030 the error shape the amendment specifies", () => {
    stub whose transaction rejects reaches it exactly.
    ============================================================ */
 
+/**
+ * `addOntologyVersion` reads before it writes — the existence check that AC6's ruled ordering
+ * put in front of the bump check — so the stub has to answer `select()` as well as
+ * `transaction()`. It answers "no such version and no predecessor", which is the shape that
+ * reaches the write with nothing else refusing first.
+ */
 function dbWhoseTransactionRejects(rejection: unknown): Db {
-  return { transaction: () => Promise.reject(rejection) } as unknown as Db;
+  // Every builder method returns the same thenable, which resolves to no rows: the store reads
+  // before it writes (the existence check AC6's ruled ordering put ahead of the bump check),
+  // and "no such version, no predecessor" is the shape that reaches the write with nothing
+  // else refusing first. A chain rather than a fixed shape so a later `.where`/`.orderBy`
+  // added to a read cannot silently break this into a TypeError again.
+  const chain: Record<string, unknown> = {};
+  for (const method of ["from", "where", "limit", "orderBy", "select"]) {
+    chain[method] = () => chain;
+  }
+  chain.then = (resolve: (rows: unknown[]) => unknown) => Promise.resolve([]).then(resolve);
+  return {
+    select: () => chain,
+    transaction: () => Promise.reject(rejection),
+  } as unknown as Db;
 }
 
 const ONE_GOOD_TERM = [
