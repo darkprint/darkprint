@@ -511,6 +511,29 @@ The implementer also declined to settle the underlying question by shipping the 
 greener, and escalated instead. That is the correct handling of a fix whose merit depends on a
 ruling nobody has made.
 
+## A ruling can be implemented correctly and still be unobserved
+
+T030's implementer shipped the existence-first AC6 enforcement, then ran the total method against
+it: **7 red with the enforcement, 7 without, zero new and zero cleared.** AC6's tests bind
+`inferOntologyBump` and `checkDeclaredBump` directly and never reach `addOntologyVersion`'s refusal
+path, so the enforcement is correct, freshly ruled, and **load-bearing nowhere** — a guard that
+cannot fail, by the rule at `64422ca`, arriving hours after that rule was written and in a change
+the orchestrator had just ordered.
+
+Worth being exact about what this is not: not an implementation defect, and not a bad ruling. It is
+that **ruling a behaviour into existence does not create coverage of it**, and a criterion satisfied
+by testing its *components* leaves the composition untested. The two tests it needs are the blind
+author's: a **new** version with a too-small declared bump driven through the store, and a republish
+with changed terms asserting the duplicate refusal wins over the bump refusal.
+
+**A suite-scoped run hides breakage in the suite it is not running.** The same enforcement broke
+three colocated tests — a `Db` stub implementing only `transaction` met a read-before-write and
+produced `TypeError: db.select is not a function` instead of what those tests assert. The blind
+suite was 7 before and 7 after, so a blind-scoped run showed nothing; it surfaced only by running
+colocated and blind **together**. The repair was falsified rather than assumed: an unwrapped rethrow
+still reds 1, so the test still reaches the catch path and did not become one that passes because it
+no longer arrives.
+
 ## A conditional assertion is a guard that switches itself off
 
 Predicted from reading by T030's adversary, before any measurement and labelled as such.
