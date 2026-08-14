@@ -1201,8 +1201,11 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     6, 14-17) still quotes the old wording, and it says in the same breath that the test binds
     to *not* refusing. Test-branch file, not mine to edit. Round 2's `backend.md:816`
     indentation artifact is fixed.
-    Gates: typecheck 0, lint 0, build 0 with no bundle diff. `npm test` three times, identical:
-    `48 failed | 3904 passed | 11 skipped (3963)`. The 48 remain the unset-variable failures in
+    Gates: typecheck 0, lint 0, build 0 with no bundle diff, all against `a2c8fdf` before any
+    working-tree edit. `npm test` three times, all reporting
+    `48 failed | 3904 passed | 11 skipped (3963)` — but see the concurrency note below: only
+    the first of the three ran against `a2c8fdf`, so this is **not** a three-run determinism
+    result and I am not claiming it as one. The 48 remain the unset-variable failures in
     T000's `session`/`migrations`/`object-store`/`environment` files — this worktree has no
     `.env` and `docker exec` against the shared Postgres is denied in my session, so I record
     them **unverified rather than contradicting** the reported 3963/3963. `npx vitest run
@@ -1249,9 +1252,27 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     containing one. Reachable: `REF_VERSION` (`lib/core/card/schema.ts:174`) permits `+`, and
     `parseSemver` accepts build metadata by design. Rotations and reversals of plain-semver
     lists are correctly order-independent, so the property holds everywhere except at the tie.
-    **Residue: none.** T025 stores nothing; the probe was in-process calls to the published
-    functions. No database, no objects, no `.env`, probe file deleted, tree clean.
-    No `git stash` at any point.
+    **CONCURRENCY HAZARD, and it is a process finding, not a code one.** Another session was
+    editing this worktree while I tested it. `lib/server/versioning/blueprint-bump.ts` changed
+    on disk at 08:42:49 and `blueprint-bump.test.ts` at 08:43:25; my full runs finished at
+    08:42:40, 08:42:56 and 08:43:21. So run 1 was against `a2c8fdf`, run 2 straddled the edit,
+    and run 3 and every later run (the 201/201 and the per-criterion runs) were against a tree
+    with uncommitted changes in it. The totals did not move, which is consistent — the edit
+    changes no test outcome — but three runs of three different trees are not the guard that
+    was asked for. **Both charged defects were observed at 08:41:43, before any edit, against
+    `a2c8fdf` as committed**, so the findings themselves stand. I committed only `backend.md`
+    by path and did not sweep the other session's work in; had I used `git add -A` I would
+    have. Two agents in one worktree is the same class of hazard as the repo-global stash.
+    **The in-progress fix, tested and clearly labelled as uncommitted.** Those working-tree
+    edits add a `compareVersionsCanonical` code-unit tiebreak, and against that tree **Defect 2
+    is fixed** — both build-metadata orderings now infer `none`. **Defect 1 is untouched and
+    still reproduces**: `{1.0.0, 1.0.0, 2.0.0} → {1.0.0, 2.0.0}` still infers `major` with
+    "card `solver` repinned: 1.0.0 → 2.0.0", and the largest-version control still infers
+    `patch`. The verdict above is against `a2c8fdf`; this paragraph is a courtesy reading of
+    work that was not submitted for review.
+    **Residue: none.** T025 stores nothing; both probes were in-process calls to the published
+    functions. No database, no objects, no `.env`, probe files deleted. The two modified files
+    left in the tree are the other session's, untouched by me. No `git stash` at any point.
 
 ### T060, Authorization policy: owner and operator
 
