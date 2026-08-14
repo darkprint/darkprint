@@ -42,6 +42,8 @@ const SEALED_SLUG = "route-sealed-fixture";
 const TWIN_A = "route-twin-one";
 const TWIN_B = "route-twin-two";
 const VERSIONED = "route-versioned-card";
+/** A namespaced id: one card id spanning two URL segments, which `CARD_ID` admits. */
+const NAMESPACED = "t080ns/route-ns-card";
 const HIDDEN = "route-hidden-card";
 const PHASE = "planning";
 const SEALED_PHASE = "deployment";
@@ -53,8 +55,8 @@ let handle: string;
 let tells: string[];
 let originalDatabaseUrl: string | undefined;
 
-/** Path and params per route, as one table so the sweep and the envelope check agree. */
-let calls: Record<RouteName, { path: string; params: Record<string, string | string[]> }>;
+/** One concrete URL per published route, so the sweep and the envelope check agree. */
+let calls: Record<RouteName, string>;
 
 beforeAll(async () => {
   s = await scratchDatabase();
@@ -81,6 +83,11 @@ beforeAll(async () => {
     version: "2.0.0",
     action: "route-versioned-action-v2",
   });
+  const namespaced = await insertCard(s, {
+    ownerId: owner.id,
+    id: NAMESPACED,
+    action: "route-namespaced-action",
+  });
   const hidden = await insertCard(s, {
     ownerId: owner.id,
     id: HIDDEN,
@@ -94,7 +101,7 @@ beforeAll(async () => {
   await insertRelease(s, {
     bundle,
     version: "1.0.0",
-    cards: [twinA, twinB, v1, v2, hidden],
+    cards: [twinA, twinB, v1, v2, hidden, namespaced],
     manifest: manifest({ slug: SLUG, tags: ["route-open-tag"], category: "Route-Open-Category" }),
     autonomy: { autonomyClass: "supervised", level: 2 },
     security: { level: 3, raw: 3, penalties: [], findings: [], rationale: "4 − 1.00 → 3" },
@@ -124,17 +131,17 @@ beforeAll(async () => {
   ]);
 
   calls = {
-    blueprints: { path: "/api/blueprints", params: {} },
-    blueprint: { path: `/api/blueprints/${handle}/${SLUG}`, params: { owner: handle, slug: SLUG } },
-    cards: { path: "/api/cards", params: {} },
-    card: { path: `/api/cards/${TWIN_A}@1.0.0`, params: { ref: [`${TWIN_A}@1.0.0`] } },
-    versions: { path: `/api/cards/${VERSIONED}/versions`, params: { id: VERSIONED } },
-    users: { path: `/api/cards/${VERSIONED}/users`, params: { id: VERSIONED } },
-    duplicates: { path: "/api/cards/duplicates", params: {} },
-    phases: { path: "/api/ontology/phases", params: {} },
-    phaseCards: { path: `/api/ontology/phases/${PHASE}/cards`, params: { phase: PHASE } },
-    tags: { path: "/api/ontology/tags", params: {} },
-    categories: { path: "/api/ontology/categories", params: {} },
+    blueprints: "/api/blueprints",
+    blueprint: `/api/blueprints/${handle}/${SLUG}`,
+    cards: "/api/cards",
+    card: `/api/cards/${TWIN_A}@1.0.0`,
+    versions: `/api/cards/${VERSIONED}/versions`,
+    users: `/api/cards/${VERSIONED}/users`,
+    duplicates: "/api/cards/duplicates",
+    phases: `/api/ontology/phases`,
+    phaseCards: `/api/ontology/phases/${PHASE}/cards`,
+    tags: "/api/ontology/tags",
+    categories: "/api/ontology/categories",
   };
 
   originalDatabaseUrl = process.env.DATABASE_URL;
@@ -160,8 +167,7 @@ const EXTRA_MEMBERS: Partial<Record<RouteName, readonly string[]>> = { blueprint
 describe("D-80-02 the published 200 envelope", () => {
   for (const name of ROUTE_NAMES) {
     it(`\`${ROUTES[name].url}\` answers 200 with { ${ROUTES[name].payloadKey}: … }`, async () => {
-      const { path, params } = calls[name];
-      const response = await callRoute(name, path, params);
+      const response = await callRoute(name, calls[name]);
       expect(response.status, `${ROUTES[name].url} answered ${response.status}`).toBe(200);
       const body = (await response.json()) as Record<string, unknown>;
       expect(
@@ -172,8 +178,45 @@ describe("D-80-02 the published 200 envelope", () => {
     });
   }
 
+  it("serves a namespaced card id and both of its sub-resources", async () => {
+    /* `CARD_ID` admits an `owner/name` namespace, so this id spans two URL segments and no
+       literal `[id]` folder can express it — the fact that made the folder-syntax reading
+       of the published templates wrong. Driven by URL, so whatever pattern serves them has
+       to reassemble the id from every segment before the sub-resource name. */
+    const lookup = await callRoute("card", `/api/cards/${NAMESPACED}@1.0.0`);
+    expect(lookup.status, `/api/cards/${NAMESPACED}@1.0.0`).toBe(200);
+    const body = (await lookup.json()) as { card?: { ref?: unknown; id?: unknown } };
+    expect(body.card?.ref).toBe(`${NAMESPACED}@1.0.0`);
+    expect(body.card?.id).toBe(NAMESPACED);
+
+    const versions = await callRoute("versions", `/api/cards/${NAMESPACED}/versions`);
+    expect(versions.status, `/api/cards/${NAMESPACED}/versions`).toBe(200);
+    expect(((await versions.json()) as { versions?: unknown[] }).versions).toHaveLength(1);
+
+    const users = await callRoute("users", `/api/cards/${NAMESPACED}/users`);
+    expect(users.status, `/api/cards/${NAMESPACED}/users`).toBe(200);
+    expect(((await users.json()) as { users?: unknown[] }).users).toHaveLength(1);
+  });
+
+  it("does not read a bare sub-resource name as a card with an empty id", async () => {
+    /* `/api/cards/versions` and `/api/cards/users` reach whatever serves `/api/cards/*`
+       with a single segment. Read as a sub-resource, that is a versions listing for the
+       empty id — a 200 carrying somebody's cards under a URL that names no card. Read as a
+       card ref, `versions` has no `@` and resolves to nothing, which is the 404 the
+       admissible-message clause publishes.
+
+       Only reachable by URL: dispatched by module, the sub-resource handler is called
+       directly and the ambiguity never arises. */
+    for (const path of ["/api/cards/versions", "/api/cards/users"]) {
+      const response = await callRoute("card", path);
+      expect(response.status, `${path} answered ${response.status}`).toBe(404);
+      const problem = (await response.json()) as { detail?: unknown };
+      expect(problem.detail, path).toBe("card: no such card.");
+    }
+  });
+
   it("`GET /api/cards/duplicates` answers the twin group rather than being shadowed by [...ref]", async () => {
-    const response = await callRoute("duplicates", "/api/cards/duplicates", {});
+    const response = await callRoute("duplicates", "/api/cards/duplicates");
     const body = (await response.json()) as { groups?: unknown };
     const groups = body.groups as { ref: string }[][] | undefined;
     expect(
@@ -189,8 +232,7 @@ describe("D-80-02 the published 200 envelope", () => {
 describe("AC6 across the transport", () => {
   for (const name of ROUTE_NAMES) {
     it(`AC6: \`${ROUTES[name].url}\` shows an anonymous caller no private content`, async () => {
-      const { path, params } = calls[name];
-      const response = await callRoute(name, path, params);
+      const response = await callRoute(name, calls[name]);
       const body: unknown = response.status === 200 ? await response.json() : await response.text();
       const leaked = findTokens(body, tells);
       expect(
