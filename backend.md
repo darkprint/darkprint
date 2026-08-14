@@ -3487,6 +3487,46 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         tags(db: Db, actor: Actor): Promise<readonly string[]>
         categories(db: Db, actor: Actor): Promise<readonly string[]>
 
+  **Amendment, before a line of T080 was written — five defects, two blocking, all reported rather than guessed. The two blocking ones are in the half of this task that had no contract at all.**
+
+  **D-80-01: `BlueprintRecord` is keyed on one part of a two-part key, so "consumed, never restated" is wrong here.** `lib/core/archive/registry.ts:40-46` is `{ slug, manifest, digest, cardRefs }` and `BundleManifest` carries only an optional display `author` — **no owner anywhere**. So `blueprint(db, actor, ownerHandle, slug)` takes a two-part key and returns a record keyed by one; `blueprints()` returns `alice/foo` and `bob/foo` as two records both reading `slug: "foo"`, indistinguishable to the caller; and AC2's "sorted and distinct" has no total key to sort or dedupe on. `CardVersionRecord.usedIn` has the same hole — it is documented as blueprint **slugs**. Invisible today only because B-20 puts all seed content under one handle.
+
+  The rule was mine and it is wrong for this type: `lib/core`'s registry is a build-time index over a **single-owner archive**, and this task serves a **multi-owner registry**. That is a change of domain, not a restatement. **Ruled: T080 publishes its own records**, and the reader signatures above return these instead:
+
+        interface BlueprintSummary { ownerHandle: string; slug: string; manifest: BundleManifest; digest: string; cardRefs: readonly CardRef[] }
+        interface CardSummary { ref: CardRef; id: string; version: string; digest: string; card: NodeCard; usedIn: readonly { ownerHandle: string; slug: string }[] }
+
+  Substitute `BlueprintSummary` for `BlueprintRecord` and `CardSummary` for `CardVersionRecord` throughout the block. The **fields they share keep `lib/core`'s names and meanings** — that is what "never restated" was protecting and it still holds; what changes is the key. The implementer identified this as the branch it would pick, and it declined to pick it inside the worktree because a blind author was binding to the same block. Correct on both counts.
+
+  **D-80-02: `Owns` is three route trees and nothing was published for them.** No path, no method, no response shape, no status code — and **two acceptance criteria live only there**, which makes them unwritable by a blind author and unimplementable without inventing an interface. That is D-01's shape exactly, and it violates this file's own checklist line "every criterion reachable through the published surface". Published now:
+
+        GET /api/blueprints                        -> { blueprints: BlueprintSummary[] }
+        GET /api/blueprints/[owner]/[slug]         -> { blueprint: BlueprintSummary, scores: Scores }   | 404
+        GET /api/cards                             -> { cards: CardSummary[] }
+        GET /api/cards/[...ref]                    -> { card: CardSummary }                             | 404
+        GET /api/cards/[id]/versions               -> { versions: CardSummary[] }
+        GET /api/cards/[id]/users                  -> { users: BlueprintSummary[] }
+        GET /api/cards/duplicates                  -> { groups: CardSummary[][] }
+        GET /api/ontology/phases                   -> { phases: string[] }
+        GET /api/ontology/phases/[phase]/cards     -> { cards: CardSummary[] }
+        GET /api/ontology/tags                     -> { tags: string[] }
+        GET /api/ontology/categories               -> { categories: string[] }
+
+  Every response is B-03's envelope at 200; every 404 is `problem+json` with `detail` exactly `"blueprint: no such bundle."` or `"card: no such card."`, **identical for an unknown key and for one the caller may not see**. Readers return `undefined` and the route maps it; that division was already in the contract and only the route was missing.
+
+  **D-80-02b: AC7 was unreachable through any published surface**, because **none of the twelve readers returns a score**. The block claimed to be checked against `autonomy`, `security`, `phase_coverage` and `scored_ontology_version_id`, and the Goal says T080 "holds the stored scorecard projection" — while nothing could return one. Published now, and it is the thirteenth reader:
+
+        interface Scores { autonomy: AutonomyResult; security: SecurityResult; phaseCoverage: PhaseCoverage; ontologyVersion: string }
+        scoresOf(db: Db, actor: Actor, ownerHandle: string, slug: string): Promise<Scores | undefined>
+
+  AC7 is now tested through `scoresOf`, not by reading the table.
+
+  **D-80-03: the current release is the highest semver, tiebroken on row id.** Ruled as the implementer proposed, and it matches T020's merged rule rather than T010's `listReleases`, which orders by `created_at` and shipped without a tiebreak — a known open defect there, not a precedent. The same choice decides which cards are indexed: `card_version` rows whose `id@version` appears in the current release's `cardRefs`, which is also what turns 57 files on disk into AC1's 53.
+
+  **D-80-04: reading `@/lib/db` directly is correct and the layering claim in `lib/server/archive/types.ts` does not hold for this task.** `blueprint(...ownerHandle...)` needs handle → accountId and the only mapping is `account.handle`; T050 and T070 are unmerged. And T010's barrel cannot serve T080 regardless — no list-all reader, `getBundle` takes an `ownerId` not a handle, and `ReleaseRecord` omits `scoredOntologyVersionId`. Merged T020 already reads `@/lib/db` directly in `visible-versions.ts`, so this is the established precedent rather than an exception. `lib/server/archive/**` stays Forbidden.
+
+  **D-80-05 is a re-discovery and it is right.** `card_version.digest`'s schema comment claims two `(id, version)` rows can legitimately share a digest; they cannot, since `cardDigest` excludes only `author` and `provenance` so both id and version are inside the hash. Already recorded at `d465350` against T020, reached here independently from `registry.ts:122-129`'s statement in the other direction. Consequence for T080, which is new: **`duplicates()` cannot be built from the stored digest column** and is computed as core does it — canonical JSON of the body minus `id`, `version`, `author`, `provenance`.
+
   **Every reader takes an `Actor`, for the reason T020's did.** AC6 — "no private bundle or private card appears in any response" — is twelve functions' worth of remembering unless it is one filter at the boundary. Import `visibleTo` from `@/lib/server/policy`. The discriminating test is not "a private row is absent from `blueprints()`" but **the same assertion across all twelve**, because the one that forgets is the one nobody wrote a test for.
 
   **AC4 is the criterion I would otherwise have got wrong, and it is stated as an assertion rather than an absence.** "Bucket sizes do not sum to the card count, **and a test asserts that as intended**" — phase buckets cover without partitioning: a card in two phases is in both, a card in none is in no bucket. So a suite that checks the sums *match* is asserting the opposite of the contract, and one that checks nothing leaves a partitioning implementation passing. The test asserts the inequality **and** exhibits one card in two buckets and one in none.
