@@ -511,6 +511,29 @@ The implementer also declined to settle the underlying question by shipping the 
 greener, and escalated instead. That is the correct handling of a fix whose merit depends on a
 ruling nobody has made.
 
+## A ruling can be implemented correctly and still be unobserved
+
+T030's implementer shipped the existence-first AC6 enforcement, then ran the total method against
+it: **7 red with the enforcement, 7 without, zero new and zero cleared.** AC6's tests bind
+`inferOntologyBump` and `checkDeclaredBump` directly and never reach `addOntologyVersion`'s refusal
+path, so the enforcement is correct, freshly ruled, and **load-bearing nowhere** — a guard that
+cannot fail, by the rule at `64422ca`, arriving hours after that rule was written and in a change
+the orchestrator had just ordered.
+
+Worth being exact about what this is not: not an implementation defect, and not a bad ruling. It is
+that **ruling a behaviour into existence does not create coverage of it**, and a criterion satisfied
+by testing its *components* leaves the composition untested. The two tests it needs are the blind
+author's: a **new** version with a too-small declared bump driven through the store, and a republish
+with changed terms asserting the duplicate refusal wins over the bump refusal.
+
+**A suite-scoped run hides breakage in the suite it is not running.** The same enforcement broke
+three colocated tests — a `Db` stub implementing only `transaction` met a read-before-write and
+produced `TypeError: db.select is not a function` instead of what those tests assert. The blind
+suite was 7 before and 7 after, so a blind-scoped run showed nothing; it surfaced only by running
+colocated and blind **together**. The repair was falsified rather than assumed: an unwrapped rethrow
+still reds 1, so the test still reaches the catch path and did not become one that passes because it
+no longer arrives.
+
 ## A conditional assertion is a guard that switches itself off
 
 Predicted from reading by T030's adversary, before any measurement and labelled as such.
@@ -531,6 +554,23 @@ did it carry a `cause`?* Green with a duplicate-version error carrying a driver 
 flagged words means the deny side was genuinely fixed. Green with a bump refusal and
 `cause === undefined` means the ordering is wrong **and** the whitelist result is vacuous — one test
 reporting a pass for two different reasons, neither of them the one its name claims.
+
+**Confirmed by measurement, on the error that would have caused it.** T030's adversary drove all
+four paths directly:
+
+    republish 0.1.0 with a term removed  -> DuplicateOntologyVersionError | cause: DrizzleQueryError, 23505 down the chain
+    new version 0.2.0 dropping a term    -> VersionBumpTooSmallError      | cause: UNDEFINED, no sqlstate
+    same removal declared as 1.0.0       -> accepted
+    same term id twice                   -> InvalidVocabularyError        | cause: DrizzleQueryError, 23505 down the chain
+
+The first is the ordering: both refusals apply and the duplicate wins. The second is the trap that
+did not spring — a bump refusal carries **no driver cause at all**, so had it arrived for a
+duplicate, the `if (cause !== undefined)` guard would have skipped the whole whitelist block and
+those five tests would have gone green **with the assertion switched off**. Predicted from reading,
+then measured on exactly the error that would have caused it. The discriminator returns the good
+answer: every whitelist-tested rejection carries a live `DrizzleQueryError` cause, so the assertion
+is genuinely running and the 7 reds are real over-matches. **A 2 would have been the ordering
+defect; a 7 with driver causes intact is the ordering working.**
 
 **The general defect is the conditional itself**, independent of the ordering: a suite whose check
 runs only when the subject supplies a particular shape cannot test the subject that does not supply
