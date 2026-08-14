@@ -121,8 +121,19 @@ export const ADMISSIBLE = {
    * `ExportError`, not an instance, so a driver failure reaches the route as a 500 rather than
    * sharing the type the route reads as "not found". A client holding a pinned digest reads 404
    * as *withdrawn, stop retrying*; an outage must not say that.
+   *
+   * And it is named `export:` rather than `exportRelease:`, because `bundleById`, `bundleByHandle`
+   * and `resolveRelease` are reached from **both** `exportRelease` and `serveFile` — so the
+   * `exportRelease:` prefix was simply **false on the serving path**. A message form that names
+   * the wrong operation is a rendering that lies, which is the thing every other pin here exists
+   * to prevent.
+   *
+   * It is not caller-observable: the route rethrows it and the caller gets a generic 500 with no
+   * body from this module. **The seven forms a caller can observe are still seven**, which is why
+   * the count assertion below is over `RELEASE_FACT_FORMS` and not over every literal this file
+   * knows.
    */
-  readFailed: "exportRelease: reading this release failed.",
+  readFailed: "export: reading this release failed.",
 } as const;
 
 /** The seven that mean "a fact about the release" — everything except the driver-failure sibling. */

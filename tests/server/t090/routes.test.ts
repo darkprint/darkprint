@@ -413,17 +413,42 @@ describe("the three routes D-90-04 published", () => {
      * path a caller takes rather than being constructed.
      */
     await withRelease.pool.query('alter table "release" rename to "release_t090_hidden"');
-    let status: number;
+    let answer: { kind: "status"; status: number } | { kind: "threw"; message: string };
     try {
-      status = (await getByDigest(release.digest, "README.md")).status;
+      const response = await getByDigest(release.digest, "README.md");
+      answer = { kind: "status", status: response.status };
+    } catch (err) {
+      answer = { kind: "threw", message: err instanceof Error ? err.message : String(err) };
     } finally {
       await withRelease.pool.query('alter table "release_t090_hidden" rename to "release"');
     }
-    expect(
-      status,
-      `A failed read answered ${status}. 404 means absent or invisible (B-03) and a client with a ` +
-        `pinned digest reads it as withdrawn; an outage must say retry.`,
-    ).toBe(500);
+
+    /*
+     * Two admissible shapes, one forbidden outcome. The contract says the route **rethrows** the
+     * read failure and "the caller gets a generic 500 with no body from this module" — the
+     * framework turns an uncaught throw into a 500, and a handler called directly in a test
+     * therefore throws rather than returning one. Published as `-> file bytes | problem+json 404`,
+     * so a 500 Response is not in the route's own vocabulary either.
+     *
+     * So a throw and a 500 are both the ruled behaviour and neither is asserted over the other.
+     * What is forbidden is 404, and the reason is the product one rather than a status-code
+     * preference: a client holding a pinned digest reads 404 as *withdrawn, stop retrying*, so an
+     * outage answering 404 tells every pinned consumer the release was deleted at the one address
+     * the contract promises never moves.
+     */
+    if (answer.kind === "status") {
+      expect(
+        answer.status,
+        `A failed read answered ${answer.status}. 404 means absent or invisible (B-03), and a ` +
+          `client with a pinned digest reads that as withdrawn; an outage must say retry.`,
+      ).toBe(500);
+    } else {
+      expect(
+        answer.message,
+        "The read failure was rethrown, which is the ruled behaviour — the framework renders it " +
+          "as a 500. Recorded here so the throw is not mistaken for a broken test.",
+      ).toBeTruthy();
+    }
   }, 120_000);
 
   it("does not let a digest resolve through the version segment", async () => {

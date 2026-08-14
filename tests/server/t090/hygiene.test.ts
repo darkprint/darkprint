@@ -355,11 +355,36 @@ describe("every refusal is sealed, per the governance clause", () => {
       const words = (text: string): Set<string> =>
         new Set(text.toLowerCase().match(/[a-z0-9_]{4,}/g) ?? []);
 
-      /* Scaffolding derived, not listed: whatever a baseline Error renders anyway is not a leak.
-         `error` lands in both renderings structurally because `Error.prototype.name` puts it
-         there, and it was a false red for T030 until it was subtracted this way. */
+      /*
+       * The allow set, derived twice over and hand-written nowhere.
+       *
+       * Half one — scaffolding: whatever a baseline `Error` renders anyway is not a leak. `error`
+       * lands in both renderings structurally because `Error.prototype.name` puts it there, and it
+       * was a false red for T030 until it was subtracted this way rather than listed.
+       *
+       * Half two — the module's own published vocabulary. This is the third ordinary-English
+       * over-match in this run, after `already` and `term`: `failed` and `release` appear in the
+       * fixed literal `export: reading this release failed.` AND in Postgres's own
+       * `Failed query: … from "release" …`, so a deny set built from the cause alone reds on a
+       * message that leaks nothing. `release` happens to be subtractable as a table name;
+       * **`failed` is not**, and solving it one word at a time is how a blacklist gets rebuilt
+       * under a new name.
+       *
+       * So the allow set takes **every word of every published message form**. Those literals are
+       * contract text, fixed and non-interpolating, so a word appearing in one of them cannot be
+       * evidence of a leak — and the subtraction is derived from the SPECIFICATION rather than
+       * from the driver, which keeps both sides of the predicate underived by hand. A fourth
+       * English word in a future form is subtracted automatically instead of costing a round.
+       *
+       * The property this protects is unchanged and is separately pinned: `message` equals the
+       * published literal by exact match, above. Rewording the literal to slip past a token
+       * check would be the lexical dodge this file charges, and is not what happens here.
+       */
       const scaffolding = words(`${String(new Error("x"))} ${String(new Error("x").stack ?? "")}`);
-      const deny = [...words(causeText)].filter((w) => !scaffolding.has(w));
+      const published = words(Object.values(ADMISSIBLE).join(" "));
+      const deny = [...words(causeText)].filter(
+        (w) => !scaffolding.has(w) && !published.has(w),
+      );
       expect(
         deny.length,
         "The driver error carries no tokens of its own beyond an ordinary Error's, so this " +

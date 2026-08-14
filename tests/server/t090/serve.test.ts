@@ -465,15 +465,22 @@ describe("AC6 — fetching by digest returns the bytes of that release even afte
      * the input: what AC6 constrains is the bytes a caller receives, not how the row came to be
      * re-scored.
      *
-     * ── this test may be UNSATISFIABLE today, and that is information rather than a defect ──
-     * The `TBD:` closed as "T100 writes the artefacts at publish; T090 serves what was written",
-     * which is the only mechanism by which the bytes can stay put. But **no published signature
-     * gives T090 a way to read a persisted artefact, and none gives T100 a way to write one** —
-     * T090's block has no storage verb and its own contract says it must not invent one. So an
-     * implementation generating from Postgres, which is the only thing the published surface
-     * permits, necessarily fails this. Written as a property over the output rather than against
-     * any mechanism, so it stays correct whichever way the interface is eventually published, and
-     * reported rather than resolved.
+     * ── RED BY DESIGN, and the dependency is named rather than gestured at ──
+     * Ruled after this test was written: AC6 splits, the newer-release half is keepable by the
+     * current interface and stays live, and **this half is red until persistence exists** — on
+     * the T030-AC6-waiting-on-T025 precedent, which worked. `persistArtefacts` is **T100's** and
+     * is the verb that would freeze these bytes; `readPersisted` is T090's and its `undefined` is
+     * the pre-persistence release, with generate-from-Postgres remaining the fallback. Neither is
+     * T090's to build in this round.
+     *
+     * So a red here is **the dependency, not a defect in T090**, and this suite must not be read
+     * as charging one. It is kept rather than deleted for the reason that precedent records: a
+     * named red with a stated dependency is worth more than a criterion nobody is measuring, and
+     * it turns green by itself the day T100 persists.
+     *
+     * It is also the reason the fixture does not persist anything before re-scoring: it *cannot*,
+     * because the write verb belongs to another task. Stating that here so nobody later reads the
+     * missing persist call as an oversight and "fixes" the test into vacuity.
      */
     const before = asServedFile(
       await callServeFile(
@@ -523,8 +530,12 @@ describe("AC6 — fetching by digest returns the bytes of that release even afte
       decode(after.bytes),
       `\`README.md\` at digest ${first.digest} changed after a B-08 re-score, with the digest ` +
         `unchanged. AC6 is "fetching by digest returns the bytes of THAT release": one digest ` +
-        `must not serve two answers. This is the case a newer release cannot exercise, because a ` +
-        `newer release has a newer digest.`,
+        `must not serve two answers, and this is the case a newer release cannot exercise because ` +
+        `a newer release has a newer digest.\n` +
+        `  THIS RED IS THE NAMED DEPENDENCY, NOT A DEFECT IN T090. The bytes can only be frozen ` +
+        `by \`persistArtefacts\`, which is T100's, and read back by \`readPersisted\`, whose ` +
+        `\`undefined\` is the pre-persistence release. Neither is T090's to build in this round, ` +
+        `and this test turns green by itself once T100 persists.`,
     ).toBe(decode(before.bytes));
   }, 120_000);
 
