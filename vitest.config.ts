@@ -51,5 +51,11 @@ export default defineConfig({
        actually needs. Raised here rather than per-file so no task inherits a red gate
        it did not cause. */
     testTimeout: 20000,
+    /* Raised with `testTimeout` and for the same reason, which the original raise missed: a
+       `beforeAll` that creates a scratch database can cross the 10s default under load, and a
+       hook failure runs no test — so vitest prints `Tests 75 passed (75)` alongside two failed
+       files and exit 1. A run read off the test total then looks green while the gate is red.
+       Found by T090's blind author. */
+    hookTimeout: 30000,
   },
 });

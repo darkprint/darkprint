@@ -36,19 +36,31 @@ const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
 /** Extensions git tracks that are legitimately binary and are never source. */
 const BINARY = /\.(png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf|eot|pdf|zip|gz|mp4|webm)$/i;
 
-function trackedTextFiles(): string[] {
-  const out = execFileSync("git", ["ls-files", "-z"], { cwd: REPO_ROOT, encoding: "buffer" });
-  return out
-    .toString("utf8")
-    .split("\0")
-    .filter((p) => p.length > 0 && !BINARY.test(p));
+/**
+ * Tracked files **and** untracked-but-not-ignored ones.
+ *
+ * `git ls-files` alone was the original and it is one commit too late for the case this guard
+ * exists for: a blind test author's entire output is untracked until it commits, so the fifth and
+ * sixth recurrences of T-01 both landed in files this check could not see. Found by T090's blind
+ * author, which put two NULs in an uncommitted test file and then two more into `backend.md` while
+ * writing the Log entry describing the first pair.
+ *
+ * `--others --exclude-standard` adds what is new and not gitignored, which is exactly the window
+ * the guard was blind to.
+ */
+function candidateTextFiles(): string[] {
+  const args = ["ls-files", "-z", "--cached", "--others", "--exclude-standard"];
+  const out = execFileSync("git", args, { cwd: REPO_ROOT, encoding: "buffer" });
+  return [...new Set(out.toString("utf8").split("\0"))].filter(
+    (p) => p.length > 0 && !BINARY.test(p),
+  );
 }
 
 describe("no source file carries a raw control byte", () => {
-  it("finds no NUL byte in anything git tracks as text (T-01)", () => {
+  it("finds no NUL byte in any tracked or newly added text file (T-01)", () => {
     const offenders: string[] = [];
 
-    for (const relative of trackedTextFiles()) {
+    for (const relative of candidateTextFiles()) {
       let bytes: Buffer;
       try {
         bytes = readFileSync(new URL(relative, `file://${REPO_ROOT}`));
