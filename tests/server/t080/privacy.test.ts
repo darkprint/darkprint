@@ -30,15 +30,23 @@
      categories    a category only the private bundle's manifest has
      scoresOf      the private bundle's scores
 
-   ── why the sweep is run for three actors ──
-   AC6 says "any response", and the signature block says every
-   reader takes an `Actor` and filters through `visibleTo`, which
-   answers `"all"` for the owner. Those two readings disagree about
-   whether an owner sees their **own** private content, and nothing
-   here resolves it — so nothing here asserts it. What both
-   readings agree on is that an account never sees *another*
-   account's private content, and that is what the signed-in sweeps
-   assert: A is shown nothing of B's, B nothing of A's.
+   ── AC6 means cross-account, and the widened actors are asserted ──
+   AC6 reads "no private bundle or private card appears in any
+   response" while the signature block sends every reader through
+   `visibleTo`, which answers `"all"` for the owner and for B-13's
+   break-glass operator. The two readings disagreed, and the ruling
+   settled it by consequence rather than by reading: **T130's AC2
+   requires an owner's card count to include their private rows**
+   and a visitor's not to, so an owner blind to their own private
+   content makes the profile owner view unimplementable.
+
+   So the sweeps below assert the cross-account half — A is shown
+   nothing of B's, B nothing of A's — and `AC6 the widened actors`
+   asserts the other half: the owner and the operator do see it.
+   Both halves matter and they fail differently. Without the first,
+   a module with no filter passes; without the second, a module
+   that filters unconditionally passes, and that one looks *safer*
+   than the correct implementation while quietly breaking T130.
 
    ── why the control tests exist ──
    A sweep for absence passes against a module that answers `[]` to
@@ -70,6 +78,7 @@ import {
   keyOf,
   manifest,
   mark,
+  operator,
   scratchDatabase,
 } from "./contract";
 
@@ -325,6 +334,52 @@ for (const sweep of SWEEPS) {
             `substring of any admissible content (T-04), so a hit is a leak and not an ` +
             `over-match.`,
         ).toEqual([]);
+      });
+    }
+  });
+}
+
+/* --------------------- the other half: the widened actors --------------------- */
+
+/**
+ * Ruled: an owner and a B-13 operator **do** see their own private content, and AC6 means
+ * cross-account. Settled by consequence — T130's AC2 requires an owner's card count to
+ * include their private rows, so an owner blind to them makes the profile owner view
+ * unimplementable.
+ *
+ * Asserted with the same thirteen calls and the same derived tell set, in the opposite
+ * direction: at least one tell must appear. "At least one" rather than "all" because the
+ * calls are scoped — `blueprint(privateSlug)` returns one bundle and cannot carry the
+ * private *cards*' tells — and a per-reader list of which tells each ought to show would be
+ * a curated set, which is the thing this file avoids everywhere else.
+ *
+ * Without this block a module that filters unconditionally passes every sweep above, and it
+ * looks *safer* than the correct implementation while quietly breaking T130.
+ */
+const WIDENED: readonly { who: string; victim: "A" | "B"; actor: () => unknown }[] = [
+  { who: "the owner", victim: "A", actor: () => account(sides.A.owner.id, sides.A.owner.handle) },
+  { who: "the owner", victim: "B", actor: () => account(sides.B.owner.id, sides.B.owner.handle) },
+  { who: "a break-glass operator", victim: "A", actor: () => operator(sides.A.owner.id) },
+  { who: "a break-glass operator", victim: "B", actor: () => operator(sides.A.owner.id) },
+];
+
+for (const sweep of WIDENED) {
+  describe(`AC6 the widened actors — ${sweep.who} sees ${sweep.victim}'s own private content`, () => {
+    for (const call of CALLS) {
+      it(`AC6 via \`${call.name}\` (${call.reach})`, async () => {
+        const victim = sides[sweep.victim];
+        const fn = await bind(call.name);
+        const answered = await fn(s.db, sweep.actor(), ...call.args(victim));
+        const found = findTokens(answered, victim.tells);
+        expect(
+          found,
+          `\`visibleTo\` answers \`"all"\` for the resource owner and for a genuine operator ` +
+            `— "an owner's blueprint and card counts include the private half and a ` +
+            `visitor's never do" (lib/server/policy/visible-to.ts). \`${call.name}\` showed ` +
+            `${sweep.who} nothing of ${sweep.victim}'s private content, which is a filter ` +
+            `applied to an actor the policy widens. Tells looked for: ` +
+            `${JSON.stringify(victim.tells.slice(0, 6))}…`,
+        ).not.toEqual([]);
       });
     }
   });
