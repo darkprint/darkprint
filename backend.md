@@ -2867,6 +2867,66 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   - 2026-08-14 implementer, **the falsification found a hole in my own harness, which is the point of running it**. Breaking the store's wrap — rethrowing the driver error unwrapped from `addOntologyVersion`'s catch — reddened **nothing**, because every leak assertion built its error by hand and none reached the catch path a caller actually hits. Recorded because a guard that cannot fail is worth less than no guard: it reports safety it never tested. Closed with a `Db` stub whose `transaction` rejects, so the catch path runs with no database at all; the same break now reds *wraps an unrecognised driver failure rather than passing it through*. Only one test reds rather than three, and that is correct — the two unique-violation branches map before the generic wrap, so rethrowing `cause` cannot reach them. Falsified the other two directions as well: `cause` made enumerable reds 18 tests, every one of them a leak assertion, which is the `JSON.stringify` leak itself; deleting `stack` again reds exactly *retains stack, so a real failure keeps its trace*.
   - 2026-08-14 implementer, **gates after the amendment, and the three-run gate is still not met — 2 of 3 clean**. `npm ci`, `build`, `typecheck`, `lint` all 0, lint with no warnings. `npm test` three times at `04b402c`, tree verifiably still (`git status --porcelain` empty before and after all three, whole-tree): runs 1 and 3 clean at 126/126 files and 3978/3978 tests; run 2 failed **two files with one test failure**, `tests/server/migrations.test.ts` (`Hook timed out in 10000ms`) and `lib/db/migrate.test.ts` (`Test timed out in 20000ms`). Zero failures under `lib/server/ontology/**` in all three. **The offenders moved.** Last round it was `archive.scratch.test.ts`, `lib/db/schema.test.ts` and `stage-labels`; those three are fixed on base and did not fail once here, and the flakiness reappeared in the two *migration* suites instead. That is the evidence for the third finding rather than the first two: fixing an individual suite moves the symptom, because the cause is one Postgres on 5432 shared by every worktree with no stated owner. Load was 29–59 on ten cores, lower than last round, and it still happened.
   - 2026-08-14 implementer, **on the four colocated test files under `lib/server/ontology/**`** (`errors`, `well-formed`, `vocabulary`, and the store's catch path inside `errors.test.ts`): they are a **falsification harness, not verification**. Every one was written by the agent that wrote the code, against its own reading of the contract, and each exists because a hardening rule had to be broken on purpose and watched to red. A test written beside the code it checks is evidence of a weaker kind than one written blind against the contract, and where the blind suite overlaps or contradicts them, the blind suite wins. They raise the suite from 3954 to 3978.
+  - 2026-08-14 test author: 147 blind tests in `tests/server/t030/**`, all red on a missing
+    module and none on a syntax error or a bad path — verified by grouping every failure by its
+    root cause, which yields exactly two: `Cannot find package '@/lib/server/ontology'` (140)
+    and `Cannot find package '@/lib/server/versioning'` (7). Per file, with the criterion each
+    covers: `surface.test.ts` 11 (the six published names, plus identity checks that
+    `ontologyView`/`partitionTerms`/`splitTermId` are consumed and not forked, plus that no
+    export reads a release); `store.test.ts` 27 (no criterion — the digest being computed and
+    not supplied, value-identical round trips, sorted reads, latest/list, the unique version,
+    concurrent writers, and the one-transaction rule); `view.test.ts` 22 (**AC1** 6, **AC2** 7,
+    **AC5** 9); `validate.test.ts` 34 (**AC3** 11, **AC4** 12, `validateVocabulary` 11);
+    `bump.test.ts` 7 (**AC6**); `robustness.test.ts` 46 (the three inherited hardening rules,
+    plus absent and malformed input, wrong types, surplus arguments, empty term sets, unicode,
+    duplicate calls and concurrent readers). `contract.ts` and `fixtures.ts` are not collected.
+  - 2026-08-14 test author: **AC6 is red on T025, and the file is arranged so it says so.**
+    With the base published in a `beforeEach`, all seven AC6 tests reddened on
+    `@/lib/server/ontology` and the criterion that "waits on T025" named T025 nowhere. Every
+    AC6 test now binds `inferOntologyBump` before it touches the store, so the red names the
+    module the contract says the criterion is waiting for, and `contract.ts` gives that red a
+    message saying whose module it is and that it is not a reason to grow a second bump
+    inference inside `lib/server/ontology/**`.
+  - 2026-08-14 test author: the guards were falsified before hand-off. A throwaway reference
+    implementation in the scratchpad turned 140 of 147 green on the first run, the other seven
+    being AC6. Twenty deliberate breakages then each reddened tests beyond that baseline, and
+    each hit the property it broke. **The one worth naming is the module-scope cache AC5
+    forbids**: under it, all three tests of AC5 *as written* — identical answers across
+    consecutive resolutions, across an interleaved reverse question, and under concurrent
+    callers — stayed **green**, while all five converse tests went red. The criterion as
+    literally stated cannot catch the thing the contract spends a paragraph forbidding; only
+    the converse can. The others: the view reporting a non-base version (2), the overlay
+    appended instead of replaced in place (17), `validateVocabulary` treating its array as an
+    overlay (4), no transaction (1, exactly the atomicity test), a recursive well-formedness
+    walk (140 — it dies before anything else runs), a surrogate repaired instead of refused (1,
+    and instructively: only the version string, because `pg` rejects a bad surrogate inside
+    `body` and silently replaces one in a `text` column), a blanket unicode ban (87), the
+    driver's error escaping unwrapped (6), `cause` enumerable (25), `stack` left on (25), a
+    caller-supplied digest honoured (1), the digest ignoring the version (1), unsorted reads
+    (5), latest-by-arrival (1), `openView` answering for an unpublished version (1), a declared
+    weight of `0` dropped (1), `createdAt` as a string (6), the overlay sorted in place (1),
+    and `openView` ignoring the overlay (24).
+  - 2026-08-14 test author: **three assertions are derived rather than published**, each
+    isolated in one test so a ruling moves one thing. (a) `getLatestOntologyVersion` orders by
+    semver, not by arrival — the contract does not say, and this is the rule the card path
+    already states in `lib/core/card/validate.ts` ("the last published one is a fact about the
+    numbers and not about a directory listing"). (b) Two versions with identical term sets get
+    different digests, from `lib/core/hash/digest.ts:26`. (c) The merged view's `title` equals
+    `CORE_ONTOLOGY.title`, read from `lib/core` rather than restated. (b) and (c) reached this
+    suite by message and are **not in backend.md** — a transcribed contract is what cost T000
+    a round, so they are recorded here. `listOntologyVersions`'s ordering is left unasserted
+    beyond being stable across calls, because nothing states a direction.
+  - 2026-08-14 test author: two environment findings, neither this task's to fix.
+    `tests/support/env.ts` still says `tests/server/**` must not import it because that tree is
+    "written blind, in a worktree branched before this file exists" — stale since T000 merged,
+    and the harness is used, since reimplementing create-migrate-drop per test branch is the
+    duplication it exists to prevent. Its live consequence: `testEnv()` demands all five
+    variables, so this suite cannot run without `S3_*` exported and it never touches object
+    storage. Separately, the full tree is **3997 tests**: 147 red here and 3850 green, once
+    `SESSION_SECRET`, `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are set — left blank in
+    `.env.example`, they fail 20 of T000's own environment and session tests, which is
+    pre-existing and reproduces with `tests/server/t030/` excluded. Every scratch database was
+    dropped: `pg_database` holds no `darkprint_test%` row after the run.
 
 
 ### T050, Accounts and sessions
