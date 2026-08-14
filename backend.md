@@ -1329,7 +1329,7 @@ it does not decide differently inside a worktree.
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
-| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | tests-written | impl code at `3ed5e74`, rebased onto `backend` at `8bdc3cb`; blind suite at `tests/server/t070/**` (`c64fbc1`): 119 tests over 6 files, all six criteria named, 119/119 against a throwaway reference, 28 of 30 mutations caught; adversary round 1 in progress |
+| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | reverted | adversary round 1 **FAIL** at `29f7a800`: all six criteria pass from commands; typecheck/lint/build 0; three consecutive full-suite runs exit 0, 0 failed files, 159/159 files, 4587/4587, **0 skipped**, identical sorted failing sets, whole-tree stamp clean both ends; 20 mutations, 16 observed, 0 greening anything. Six charged (D-70-08…13), five of them the contract's: `Availability.reason` and both `/api/names/**` routes unimplemented, three self-contradictions in the amended section, `NamingStoreError` unobserved on all three doors, six behaviours held only by colocated tests, and no length bound so `checkHandle` promises what `allocateHandle` refuses |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
@@ -3112,7 +3112,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T070, Namespace: handles, slugs, reservation
 
-- **State:** tests-written
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t070-naming` on `feat/t070-naming`
 - **Test worktree:** `../darkprint-wt-t070-naming-tests` on `test/t070-naming`
 - **Depends on:** T000 (contract: schema)
@@ -3363,6 +3363,288 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     so the reading that settles it is repeated sampling plus `pg_stat_activity`, never one
     count. Scratch worktree removed
     (`git worktree list` back to 17), working tree clean but for this commit.
+
+  - 2026-08-15 adversary: `tests-written` → `reverted`. **Round 1, FAIL.** Measured at
+    `29f7a800`, which is `e5c1a58` merged with `test/t070-naming` at `c64fbc1` and then with
+    `backend` at `5335c19`. Both merges conflicted on `backend.md` **and on nothing else**, so
+    the test branch touched no implementation path and there is no partition error. Resolved by
+    this file's own rule: base's text for everything, both sides' Log entries kept, row and
+    section set to the same value in one edit.
+
+    **All six acceptance criteria pass, every one of them from a command, and the FAIL is not
+    about them.** Six items are charged; five are the contract's rather than the
+    implementation's, and one is a coverage hole nobody could have been asked to fill. I would
+    rather that attribution be read before the verdict is.
+
+    **The gates**, whole-tree stamp `29f7a800` with `git status --porcelain` **empty before and
+    after**, `set -a; . ./.env.example; set +a` throughout. `npm run typecheck` 0, `npm run lint`
+    0, `npm run build` 0 with porcelain still empty (no `public/bundles/**` diff). `npm test`
+    three consecutive times inside the gate slot:
+
+        run 1  exit 0   159 files   0 failed files   4587 tests   0 skipped   15.9s   load 26.7
+        run 2  exit 0   159 files   0 failed files   4587 tests   0 skipped   16.7s   load 30.4
+        run 3  exit 0   159 files   0 failed files   4587 tests   0 skipped   22.3s   load 33.0
+
+    Compared by **sorted failing file and test sets** with ANSI and durations stripped —
+    `237ms`, `1523ms` *and* `2.09s` — all three empty and identical. Read off the exit code, the
+    failed-**file** count and the **skipped** count; the test total is reported and is not the
+    criterion. No contention this round, unlike the implementer's two runs in eighteen: every
+    run here sat at load 26-33 against its 51-200. That is a difference in the machine, not in
+    the tree, and it is why the slot is worth taking rather than a fact about this task.
+
+    **The six criteria, each from a command through the barrel `@/lib/server/naming`.**
+
+        AC1  checkSlug(owner, "blueprints"|"cards"|"saved"|"terms")
+             -> {"available":false,"suggestion":"<slug>-2"} for all four, and the four are
+                read from components/profile/tabs.ts rather than restated in the probe
+             control: checkSlug(owner, "frontline-triage") -> {"available":true}
+        AC2  A holds frontline-triage; checkSlug(B, "frontline-triage") -> {"available":true}
+             and B really creates it: rows in bundle at that slug = 2
+        AC3  checkSlug(A, "frontline-triage") -> {"available":false,"suggestion":"…-2"};
+             a second insert for A is refused by bundle_owner_slug_key
+        AC4  allocate(A,h); release(A,h) -> one row, status "released", released_at stamped;
+             checkHandle(h) -> {"available":false}; allocate(B,h) ->
+             HandleTakenError "allocateHandle: the handle `…` is not available.";
+             the row afterwards is still A's, untouched
+        AC5  16 concurrent callers, one handle: fulfilled 1, rejected 15, every rejection a
+             HandleTakenError, **losers with no driver cause: 0**, one row, and its account_id
+             is the winner's. Repeated at N=12 over four rounds: 1/11/0/1 every time, with
+             peak 12 statements in flight measured by wrapping the pool rather than assumed.
+             Control: the same 16 callers at 16 different handles -> fulfilled 16.
+        AC6  checkHandle on a taken handle -> suggestion `…-2`; checkHandle on that suggestion
+             -> {"available":true}; allocating it succeeds; once it is gone the next answer is
+             `…-3`; all eight variants taken -> {"available":false} with NO suggestion.
+             The advisory half: with the suggestion taken in between, allocating it raises
+             HandleTakenError. checkSlug's suggestion is never itself a reserved slug.
+
+    **The arbiter's name, checked against Postgres rather than against the module.** This is the
+    one the contract says AC4 and AC5 both rest on and that reading cannot catch:
+
+        pg_constraint on handle_reservation -> [{"conname":"handle_reservation_pkey","contype":"p"},
+                                                {"conname":"handle_reservation_account_id_account_id_fk","contype":"f"}]
+        a raw duplicate INSERT             -> code=23505 constraint=handle_reservation_pkey
+        the same duplicate through the module -> HandleTakenError, not NamingStoreError
+
+    The derived name is right, and mutating it (A1 below) reds 11 tests, so it is load-bearing
+    rather than merely correct.
+
+    **Attacks that found nothing, recorded because a PASS on absence is worth only the shape of
+    the search.** 28 hostile names — unpaired high and low surrogates, a NUL, a bell, a Cyrillic
+    homoglyph, a zero-width space, an RTL override, a combining mark, `__proto__`, `..`,
+    `a%2Fb`, `a'; drop table handle_reservation; --`, uppercase, both hyphen edges, `a//b`,
+    `a/`, `mara-veil@1.0.0`, leading and trailing whitespace, a leading newline — refused at
+    **all four** entry points, with `handle_reservation` rows before 0 and after 0, so nothing
+    reached the driver. `checkHandle`, `checkSlug` and `allocateHandle` issue **exactly one
+    statement each**, measured by wrapping `pool.query`; there is no N+1. Every error class is
+    sealed over five renderings: `Object.keys` `[]`, `JSON.stringify` `"{}"`, `cause`
+    non-enumerable, `stack` retained, and nothing from the driver's own error — which does carry
+    the whole INSERT and every bound parameter on `cause` — in any of them. A stranger's release
+    is a no-op that leaves the row byte-identical; a second release does not walk `released_at`
+    forward; a release racing a stranger's allocation never hands the name over, six rounds out
+    of six.
+
+    **A finding I nearly filed and did not.** My first unhandled-rejection probe returned 1, a
+    `HandleTakenError` from `allocateHandle`. It was mine: `await account()` inside the array
+    literal passed to `Promise.allSettled` starts element 1 and then suspends, so its rejection
+    lands in a turn where nothing is attached yet. Built synchronously it is **0**; rebuilt in
+    the original shape as a control it is **1** again, which is what makes the zero a
+    measurement rather than a silence. The module leaves no unhandled rejection.
+
+    **T-01 fired a seventh time, on the adversary, in the attack list itself.** Writing the
+    deliberate-control-character fixture put a raw NUL in my probe file and `file(1)` reported
+    it as `data`. Three authors, seven occurrences, every one while writing the thing that names
+    a control character. T090's author already widened the hazard's scope from "a fixture" to
+    "any file"; this is the third population it has now caught, and the wording still says
+    "any author writing a fixture".
+
+    **Falsification: twenty mutations, every one through the published surface, every one run
+    against the WHOLE suite, diffed in both directions.** Baseline 0 failing, so newly-red is
+    the whole failing set. **Zero mutations greened anything.** My instrument is my own — exact
+    source anchors I chose, and vitest's JSON reporter rather than parsed `FAIL` lines, so
+    ordering and duration variance cannot reach the comparison at all; the duration strip is
+    applied anyway, because a property held by accident is one you cannot rely on keeping. It
+    refuses an anchor that is absent or not unique, refuses a no-op patch, prints every line it
+    removed, and calls a newly-red set larger than half the suite breakage rather than a result.
+
+        A1  constraint name wrong (…_handle_key)                     11 red   OBSERVED
+        A2  SELECT-then-INSERT with onConflictDoNothing               6 red   OBSERVED
+        A3  releaseHandle deletes the row                             7 red   OBSERVED
+        A4  checkHandle counts only `active` rows                     4 red   OBSERVED
+        A5  the grammar parses instead of round-tripping              2 red   OBSERVED, colocated only
+        B1  releaseHandle drops status='active'                       1 red   OBSERVED, colocated only
+        B2  suggestion candidates skip the grammar filter             0 red   UNOBSERVED
+        B3  NamingError always passes the options bag                 1 red   OBSERVED, colocated only
+        B4  the cause walk stops at depth 1                          11 red   OBSERVED
+        B5  checkHandle answers `available:true` for an illegal name  1 red   OBSERVED, colocated only
+        B6  checkSlug swallows a fault and answers `free`             0 red   UNOBSERVED
+        B7  releaseHandle drops its accountId condition               1 red   OBSERVED, colocated only
+        B8  release never stamps released_at                          1 red   OBSERVED, colocated only
+        B9  isNameSegment drops the one-segment check                 2 red   OBSERVED
+        B10 checkHandle never suggests                                5 red   OBSERVED
+        B11 the reserved list is never consulted                     12 red   OBSERVED
+        B12 allocateHandle swallows a fault and resolves              0 red   UNOBSERVED
+        B13 NamingStoreError interpolates String(cause)               0 red   UNOBSERVED
+        B15 checkSlug stops scoping by owner                          4 red   OBSERVED
+        B16 the suggestion is offered without checking it is free     1 red   OBSERVED
+
+    **The four zeros were not reported as zeros until I read what the mutation did.** B6, B12
+    and B13 were each re-run against my own probe suite with the mutation still applied: B6 reds
+    1, B12 reds 2, B13 reds 2. So the mutated module **loads, reaches the path, and changes the
+    behaviour intended** — the zero against the committed suite means unobserved, and not
+    unreachable and not broken. B2 is the fourth and is different in kind, and is the one zero I
+    am **not** charging: the candidate grammar filter cannot fail while appending `-2` to a
+    legal segment yields a legal segment, which is true today. Its author wrote it for the day
+    the grammar tightens elsewhere and said so beside it. A guard that cannot fail *yet* is a
+    different object from one that cannot fail, and labelling it is the honest handling.
+
+    ---
+
+    **D-70-08, unimplemented contract: `Availability.reason`.** D-70-01 amended the published
+    shape to `{ available: boolean; reason?: "taken" | "reserved"; suggestion?: string }`. The
+    shipped `interface Availability` has no `reason` and nothing in the module ever sets one.
+    Measured on both of the two values the union enumerates: a reserved slug answers
+    `{"available":false,"suggestion":"blueprints-2"}` and a taken one
+    `{"available":false,"suggestion":"frontline-triage-2"}`. **Not the implementer's error** —
+    D-70-01 was ruled at `9eac04a`, 33 minutes after `58922ef` set `impl-done`. Note also that
+    the union does not cover the module's **third** refusal kind: a name that is not legal at
+    all also answers `{available:false}`, and `"taken" | "reserved"` has no member for it, so a
+    caller branching on `reason` cannot tell "not a legal name" from "I did not say".
+
+    **D-70-09, unimplemented contract: the two published routes.** D-70-03 published
+    `GET /api/names/handles/[handle]` and `GET /api/names/slugs/[owner]/[slug]`. `app/api/names/`
+    does not exist, and the measurement is the build's own route manifest rather than an empty
+    directory: `npm run build` exit 0 lists four `/api/auth/*` routes and **no `/api/names/*`**.
+    Ruled at the same `9eac04a`, after `impl-done`. The implementer reported the missing route
+    block as D-70-03 rather than inventing one, which was right.
+
+    **D-70-10, the contract contradicts itself in three places after its own amendment.** This
+    is the rule at "when a ruling withdraws part of an acceptance criterion, the criterion is
+    edited in the same commit", recurring inside the commit that invoked it:
+
+    - D-70-01 **struck** `SlugTakenError` and `ReservedSlugError`, and the **Admissible message
+      forms** block below still publishes both.
+    - That block still ends "Nothing else may appear in any rendering: the operation, the
+      caller's own value, and **the four fixed forms above**", while D-70-05 accepted
+      `NamingStoreError` as a **fifth**. The whitelist sentence forbids the form the ruling
+      three paragraphs earlier admitted.
+    - The **Contract** line still reads "Availability answers `{ available, suggestion? }`",
+      contradicting the signature block's own amended `reason?`.
+
+      A reader arriving at this section — T050's implementer next, since `Blocks` names it —
+      gets two answers to each of three questions, and the blind author already had to spend one
+      of its seven reported questions on the first of them.
+
+    **D-70-11, the fifth rejection form is a guard that cannot fail, in all three directions.**
+    `NamingStoreError` was added at D-70-05 precisely because "a sealed write path beside a
+    leaking read path is the same defect with a different door", and **no committed test —
+    blind or colocated — observes either door**:
+
+    - **B6**: `checkSlug` swallowing its `SELECT`'s fault and answering `{available:true}` reds
+      nothing. A malformed `ownerId` would make an unavailable name read as free.
+    - **B12**: `allocateHandle` swallowing a non-conflict fault and **resolving** reds nothing.
+      This is the serious one: the caller is told it holds a handle no row exists for. Reachable
+      today — an `accountId` with no `account` row raises 23503, which I fired.
+    - **B13**: `NamingStoreError` interpolating `String(cause)` into its own message reds
+      nothing. That is D-13 exactly: `DrizzleQueryError.message` opens with the statement and
+      every bound parameter, and I have it on the `cause` chain in this round's output.
+
+      The cause is not carelessness by either author: `NamingStoreError` did not exist in the
+      contract the blind suite was written against, and it still does not appear in the
+      Admissible message forms block (D-70-10). The blind author could not test a form the
+      contract does not publish. **A form ruled in after both the implementation and the blind
+      suite arrives with no coverage by construction**, and nothing in the loop re-opens either.
+
+    **D-70-12, six behaviours are held by the implementer's own colocated tests alone.** A5, B1,
+    B3, B5, B7 and B8 each red only inside `lib/server/naming/*.test.ts`, which is T070's `Owns`
+    — so the sole evidence for them is a test written by the agent whose work it certifies,
+    which is the arrangement the blind split exists to prevent. Two were already reported by the
+    blind author as its own labelled gaps (B7 releasing another account's handle, B8 the missing
+    `released_at`) and I reproduce both independently; the other four are new here. **A5 is the
+    one that matters**: the round-trip guard the implementer added at `3ed5e74` — the one that
+    stops `" mara-veil"` reserving `mara-veil`, a different primary key from the one asked for —
+    reds **two colocated tests and zero blind ones**. The blind suite could not cover it, and
+    said so: no handle grammar was published when it was written, and D-70-04 ruled one in
+    afterwards. Same mechanism as D-70-11 with a different consequence. Not a defect in the
+    code, and the file's own argument applies — "the nearer suite caught what the further one
+    had no way to see, which is the case for keeping both" — but it means six properties would
+    go unobserved the moment those colocated files moved.
+
+    **D-70-13, `checkHandle` promises a name `allocateHandle` cannot store.** The grammar bounds
+    the alphabet and not the length, so:
+
+        incompressible handle, length 2000  ->  checkHandle {"available":true}   allocate STORED
+        incompressible handle, length 2704  ->  checkHandle {"available":true}   allocate NamingStoreError, sqlstate 54000
+        incompressible handle, length 8000  ->  checkHandle {"available":true}   allocate NamingStoreError, sqlstate 54000
+        "a" x 100000                        ->  checkHandle {"available":true}   allocate STORED
+
+    The threshold is the btree index-tuple limit, so it depends on how well the value
+    compresses — which is why the first version of this measurement, using `"a".repeat(n)`,
+    reported 100 000 characters STORED and would have made me miss the bound entirely. Two
+    consequences. A user typing a long name is told it is available and then met with a fault
+    class rather than `InvalidNameError`, which is `handles.ts`'s own stated invariant —
+    "availability and allocation would then disagree, which is worse than either answer alone" —
+    broken by the one input the grammar does not constrain. And below the threshold a
+    100 000-character handle becomes a **permanent** primary key, since AC4 forbids deleting the
+    row. Reachable from T050's sign-up path with user input. One predicate closes both: a length
+    bound inside `isNameSegment`, which every entry point already routes through. The contract
+    publishes no bound, so this is a gap in it rather than a departure from it.
+
+    **Not charged, and reported so the next task does not discover it as a surprise.** A handle
+    written straight onto `account.handle` with no `handle_reservation` row is invisible to
+    `checkHandle` — it answers `{"available":true}` — and a **different** account then allocates
+    it successfully: measured as `accounts=1, reservations=1` for one name held by two accounts.
+    `account.handle` carries its own `account_handle_key` and is T050's to write; the invariant
+    "every `account.handle` has an active reservation" is stated nowhere and belongs to whoever
+    owns the rename path. T070 is right not to reach for a Forbidden table. Separately,
+    `allocateHandle(db, undefined, h)` inserts a row with a NULL `account_id` — a reservation no
+    account can ever release, since the UPDATE is scoped by `account_id`. The signature types
+    `accountId` as `string`, so this is a caller error rather than a defect; it is one line in
+    T050's contract to say the column is `NOT NULL` in effect.
+
+    **What would falsify this verdict.** (1) AC5 is fired at N=16 and N=12 with a measured peak
+    of 12 statements in flight, but a machine that serialised the pool would degrade it to a
+    sequential test — the discriminator that survives that is the causeless-refusal count, which
+    is 0, and A2 reddening 6 confirms the probe detects the read-then-write shape; if either
+    were to change, AC5's evidence would be a count and not a race. (2) My deny-set leak check
+    only flags driver strings longer than 20 characters, so a short driver value echoed into a
+    rendering would pass it; the exact-match message pins in the blind suite are what actually
+    hold that, and they cover three forms rather than five. (3) The four UNOBSERVED results are
+    statements about the committed suite at `29f7a800`; a test added elsewhere would change them
+    without changing the module. (4) Every criterion here was driven through the barrel against a
+    scratch database, and none through an HTTP route, because there are none — so nothing in
+    this report says anything about how these answers behave once D-70-09's routes exist. (5)
+    D-70-13's threshold is a property of Postgres's index-tuple limit on this server's page size,
+    not of the module; a different page size moves the number but not the finding.
+
+    **Even attention.** My scrutiny wanted to pool on `allocateHandle`, because AC4, AC5, the
+    constraint name and the concurrency question all live there and that is where a defect would
+    have been most satisfying to find. Counted afterwards: 9 of the 20 mutations touch
+    `handles.ts`. So before writing this I went back and gave the parts I had been staring past
+    their own pass — `suggest.ts` (B2, B10, B16, and the eight-variants-taken exhaustion case),
+    `reserved.ts` (B11 and the four segments read from the tabs module), `slugs.ts` (B6, B15, and
+    AC2 asserted at the index rather than only at the answer), `errors.ts` (B3, B13 and five
+    renderings per class), and `pg-error.ts` (B4). **Three of the four unobserved results came
+    out of that second pass, not the first** — B6 and B13 from `slugs.ts` and `errors.ts`, and
+    B12 from re-reading `allocateHandle`'s catch for what it does *not* do rather than for what
+    it does. That is the clearest evidence I have that the skew is structural rather than
+    personal: the region with no prior defects was the region still holding them.
+
+    **Residue.** `pg_database` sampled three times over 24 seconds — 0, 1, 0 — with
+    `pg_stat_activity` showing **0** live connections into any `darkprint_test_%` at the end;
+    the middle 1 is another session's scratch database arriving and dropping itself, which is
+    why one count is not an answer. Working tree clean including untracked files;
+    `git worktree list` unchanged at 17; my probe suites were archived outside the repository
+    and the directory removed **before** the triple, so nothing under `tests/` is mine. The
+    object store holds only T000's `darkprint` bucket; this task touches no storage.
+
+    **Back to the implementer with a short list.** The code as written against the contract it
+    had is sound: six criteria, twenty mutations, sixteen observed, none greening anything, and
+    every charged item is either contract-after-the-fact or coverage. What is owed is
+    `Availability.reason` (D-70-08), the two routes (D-70-09), tests that make
+    `NamingStoreError` capable of failing on both doors and on its own message (D-70-11), and a
+    length bound (D-70-13). D-70-10 is mine to hand back to the orchestrator rather than the
+    implementer's to fix, and D-70-12 needs a decision about whether the blind suite is re-opened
+    for the three behaviours ruled in after it was written.
 
 ### T240, Observability and audit log
 
