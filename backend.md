@@ -516,7 +516,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | adversarial-pass | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | reverted | adversary round 5 FAIL: `worstPairing` is exact for the pair term and the carve-out is a genuine boundary condition, but the **unpaired** term is still positional — a forced deletion is charged to whichever leftover sorts last, not to the worst candidate, so the level under-prices; brute-force oracle over all residue-free pairings finds 22/1200, all under, none over |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | impl-done | round 6 fix: `worstStranded` replaces the sorted-tail slice with a true max over the whole surplus-side leftover, closing the under-pricing gap; brute-force oracle (`blueprint-bump.oracle.test.ts`) kept as a permanent regression test, falsified through the published `inferBlueprintBump` surface in both directions. typecheck/lint/build clean; `tests/server/t025`+scratch 223/223; full suite three consecutive runs, exit 1/1/1, 2 failed files/2 failed tests each time (pre-existing `tests/no-raw-control-bytes.test.ts` self-fixture, outside Owns), sorted failing sets md5-identical, stamps clean before and after with HEAD unmoved at `77f6508`, zero scratch databases |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | adversarial-pass | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -1244,7 +1244,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T025, Versioning service: semver, digest, bump, chains
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t025-versioning` on `feat/t025-versioning`
 - **Test worktree:** `../darkprint-wt-t025-versioning-tests` on `test/t025-versioning`
 - **Depends on:** T000 (contract: types)
@@ -1935,6 +1935,56 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     no database, no objects, no `.env`, every probe file deleted, and the after-stamp is the
     proof. Sole writer throughout; the three full-suite runs were taken in the serialised gate
     slot and released to T020 and T030 as soon as they finished.
+  - 2026-08-14 implementer: fixed the deletion/addition terms. `worstStranded` scans the
+    *whole* surplus-side leftover — every item, not the sorted tail — and keeps the worst,
+    same exactness argument `worstPairing` already used: a residue-free explanation strands
+    exactly `max(0, |before|−|after|)` items when the counts force it, but *which* items are
+    stranded is a free choice, so any single item can be among them (strand it, pair the
+    remainder arbitrarily) and the worst explanation strands whichever item prices highest.
+    `[1.0.0,1.0.1,1.0.1] → [1.0.1,1.0.2]` now `major` (stranding `1.0.0`, pinned nowhere in
+    `after`), not `patch` (the old code always stranded the sorted-last leftover, `1.0.1`,
+    still pinned elsewhere). `O(n)` per side, no permutation search.
+    **The oracle, kept as a permanent regression test** (`blueprint-bump.oracle.test.ts`):
+    a brute-force enumerator over every residue-free explanation for one id's leftover —
+    every choice of which items are stranded × every permutation pairing the rest — built
+    from `@/lib/core` primitives directly and importing none of `worstPairing`,
+    `worstStranded` or `unpairedFloor`, so a shared misreading between the oracle and the
+    code under test cannot hide. **Caught a bug in the oracle itself before trusting it**: the
+    first draft derived "present in the full opposite list" from the *leftover* set rather
+    than the true original value set, undercounting membership the same way the production
+    bug did, and produced false-positive divergences against already-correct code. Verifying
+    against known-correct code first is what turned that into a fixed oracle rather than a
+    chased phantom.
+    **Falsification surface, stated explicitly per the tightened rule.** Every divergence —
+    both the oracle's and the two named regression tests
+    (`lib/server/versioning/blueprint-bump.test.ts`) — is measured by calling the *published*
+    `inferBlueprintBump(previous, next)` and reading `.level`, never a direct call into
+    `worstPairing`/`worstStranded`. Falsified in both directions on that surface: reverting
+    `compareVersions` to the sorted-tail-slice code reproduces the adversary's example and
+    is caught by both the oracle (1 of 1200 trials, the exact shape) and the named tests (2
+    of 2); the fix passes 1200/1200 with zero divergences. Nothing here asserts through a
+    colocated unit test that calls a private helper directly — the guard this round is
+    checked exists nowhere that isn't also reachable from the one function the contract
+    publishes.
+    Grepped every message/hint assertion in this task's tests (scratch and blind) for the
+    expected-message rule: all are literals or hardcoded regexes, none reconstructed from a
+    template or format helper imported from the module under test. Verified no tracked file
+    of mine carries a raw NUL byte.
+    **Gates**, environment via `set -a; . ./.env.example; set +a`, rebased by merge onto
+    `backend` at `e67c4f9` (a literal `git rebase` still explodes into replaying this
+    branch's merge-commit history — 22 commits this time — same as every prior round;
+    aborted immediately, merged instead, clean, no conflicts). `npm run typecheck`,
+    `npm run lint`, `npm run build` clean, no unexpected diff. `npx vitest run
+    tests/server/t025 lib/server/versioning`: **223/223**. Full suite, three consecutive
+    runs in the serialised gate slot: exit `1`, `1`, `1`; **2 failed files, 2 failed tests**
+    each time; sorted failing-file lines md5-identical across all three
+    (`a41063730057df04f827d6b2c0beaa4d`). Both failures are the same pre-existing offender,
+    `tests/no-raw-control-bytes.test.ts` tripping on its own embedded NUL-byte fixture at
+    offset 628 (`T-01`, `c897196`) — confirmed byte-identical to `backend`'s committed copy
+    before this round touched anything, outside `Owns`, not this task's to fix. No
+    migration or `graph.test.ts` contention noise anywhere in either run. Before-stamp and
+    after-stamp both `77f6508`, `git status --porcelain` empty both times, `HEAD` unmoved
+    across all three runs. Zero scratch databases after. Reported to orchestrator.
 
 ### T060, Authorization policy: owner and operator
 
