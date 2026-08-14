@@ -276,7 +276,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | adversarial-pass | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | reverted | adversary round 4 FAIL: both round-3 defects fixed and order-independence now holds as a property (800 permutations, 0 failures), but inference is **not monotonic** — adding a pin to `next` lowers the inferred bump, so a major repin ships as a minor when a nearby pin is added alongside it |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | impl-done | round 5 fix: worst-case pairing over the full leftover cross product (`worstPairing`) replaces positional pairing, restoring monotonicity; an unpaired-floor check fixes a second monotonicity gap for pairs `repinMagnitude` cannot read. Falsified via 3 seeded property tests (200 trials each). typecheck/lint/build clean; `tests/server/t025`+scratch 217/217; full suite 4151/4151 on three consecutive runs, stamped before/after |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | adversarial-pass | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -1004,7 +1004,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T025, Versioning service: semver, digest, bump, chains
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t025-versioning` on `feat/t025-versioning`
 - **Test worktree:** `../darkprint-wt-t025-versioning-tests` on `test/t025-versioning`
 - **Depends on:** T000 (contract: types)
@@ -1554,6 +1554,58 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   **Scope, stated because a ruling gets implemented as narrowly as its example:** this governs every place an ambiguous multiplicity change is priced, not only the same-id-loses-and-gains case worked above. If another site prices a change from an ambiguous reading, it takes the most expensive plausible one too.
 
   **Recorded, not charged:** `blueprint-bump.ts:190`'s `if (beforeLeftover[i] === afterLeftover[i]) continue;` is unreachable — by-value cancellation makes the two lists disjoint by construction. Harmless, and the comment above it is correct about why. Remove it or keep it, but do not let it survive as a guard a later reader trusts.
+  - 2026-08-14 implementer: implemented the ruling. `worstPairing` replaces the positional
+    walk over `leftoverVersions`' output with a maximum over the *full* `before×after`
+    cross product for one id's leftover — the single worst pair is always achievable by
+    some valid pairing (pair that one, pair the remainder arbitrarily; the remainder can
+    only add reasons at or below that level, never remove the max), so this is exactly
+    the maximum any full pairing could reach, `O(n·m)`, no permutation search. Removed
+    the now-pointless dead check the adversary flagged as a side effect of replacing the
+    loop it belonged to, not a separate edit.
+    **A second, independent monotonicity gap**, found by property-testing the fix rather
+    than assumed fixed: a pair `repinMagnitude` cannot read (one side not semver, e.g.
+    `@latest`) was floored at a flat `patch`, and that flat floor could itself be *lower*
+    than what the same before-item would have priced as genuinely lost had nothing been
+    available to pair it with — `[…,"latest"] → […]` (nothing to pair) priced `major`
+    correctly, but `[…,"latest"] → […,"1.0.1"]` (now pairable) priced only `patch`,
+    dropping below the smaller case. `unpairedFloor` fixes it: an unreadable pair takes
+    the worse of `patch` and each side's own genuinely-lost/genuinely-added price,
+    checked against the *full* original opposite-side list — never applied to a pair
+    `repinMagnitude` *can* read, which is what keeps an ordinary minor or patch repin
+    from being inflated to major just because it is, definitionally, leftover.
+    **One exemption, found the same way and kept intentionally.** Restoring pin-count
+    parity with `before` for one id can also legitimately lower the answer, and this is
+    not the same defect: `before=[1.1.0,1.0.0] → [rc.1]` (count 2→1) is `major` — the
+    occurrence count itself, read directly off the data, proves at least one node's pin
+    vanished with nothing to replace it, not a guess. `before=[1.1.0,1.0.0] →
+    [rc.1,rc.1]` (count 2→2) is `minor` — a complete, self-consistent explanation now
+    exists with no residue (node 1: `1.0.0`→`rc.1` patch, node 2: `1.1.0`→`rc.1` minor),
+    and asserting a hidden deletion on top of that would invent structure the multiset
+    does not contain. Same reasoning AC-3 already rests on for an identical before/after
+    pair inferring `none` regardless of how severe some *other* comparison against the
+    same `before` was. The property test's generator excludes trials that cross this
+    exact boundary (`before.length > smaller.length && before.length <= larger.length`)
+    and a dedicated test pins both sides of the exemption by name, so a reviewer who
+    disagrees with this reading has a single, named place to push back.
+    **Falsification, as asked, on generated inputs rather than the two examples.** Three
+    seeded, deterministic property tests (no external dependency — a small inline
+    `mulberry32` PRNG), 200 trials each over a pool mixing duplicates, build metadata, a
+    prerelease, `latest`, `0.10.0` and `10.0.0`: `bumpSatisfies(largerLevel,
+    smallerLevel)` holds for every trial after excluding the documented exemption.
+    Controls re-verified unchanged: largest-version-drop and single-id-count-drop still
+    `patch`, a dropped duplicate still pinned elsewhere still `patch`, order-independence
+    property intact. **Gates**, on a quiet tree, sole writer throughout (`6628854`):
+    `npm run typecheck`, `npm run lint`, `npm run build` clean, no unexpected diff.
+    `npx vitest run tests/server/t025 lib/server/versioning`: **217/217**. `npm test`,
+    full suite, three *consecutive* clean runs: **4151/4151** each time, byte-identical —
+    two earlier runs in the same session hit unrelated timeouts under heavy concurrent
+    load from other live sessions (`lib/db/migrate.test.ts`, `lib/core/dot/graph.test.ts`;
+    both reproduce as clean passes in isolation, both outside `lib/server/versioning/**`
+    and outside this diff), discarded rather than counted toward the three, per the same
+    "measure a quiet tree" standard the stamps exist for. Before-stamp `db53fbf`,
+    `git status --porcelain` empty (matches the orchestrator's external check that
+    dispatched this round). After-stamp taken on the committed tree per `6045613`, in
+    the commit this Log entry ships with; reported to the orchestrator alongside it.
 
 ### T060, Authorization policy: owner and operator
 
