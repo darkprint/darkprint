@@ -912,6 +912,17 @@ directory is not a tidiness issue — it removes the signal the next agent's sta
 Handled correctly on the other side: T030's implementer did **not** delete another agent's files and
 reported "clean but for that directory" rather than claiming clean.
 
+**T-01 recurred a fifth and sixth time, and the guard structurally could not see either.**
+`tests/no-raw-control-bytes.test.ts` enumerated `git ls-files`, which lists **tracked files only** —
+and a blind test author's entire output is untracked until it commits, so the guard was one commit
+late for exactly the case T-01 keeps happening in. T090's blind author put two NULs in an
+uncommitted test file, then two more into `backend.md` while writing the Log entry describing the
+first pair. **`file(1)` missed the `backend.md` one**: a couple of NULs in a 4,378-line file do not
+move its heuristic, and only a byte count found them. Fixed at `024513e` with
+`--others --exclude-standard`, falsified against an untracked NUL. **The check that transfers is a
+NUL count over every file a change touches, `backend.md` included — not `file(1)` on the fixture
+you were thinking about.**
+
 **T-01: a raw NUL lands in a test file while writing a deliberate-control-character fixture.**
 Twice in two tasks now, on the 22021 fixture both times — `file(1)` reports the file as `data`
 rather than UTF-8 text. It is a property of *writing the file*, not of either task. Any author
@@ -3647,6 +3658,16 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **AC2's byte-identity is `exportBundle`'s promise, and this task's job is not to break it.** Generation is pure and sorted upstream. So the criterion tests **two calls through `exportRelease`**, and the way to fail it is to add anything time-, order- or environment-dependent at this layer — a timestamp in `README.md`, a `Map` iterated by insertion, a `Date` in a header. State that, since "byte-identical" reads as satisfied by the module that already guarantees it.
 
   **AC6 is why the digest path exists and it is the one that decays silently.** "Fetching by digest returns the bytes of that release even after a newer one exists" — so `serveFile` resolves `digest` **before** `version`, and a `version` reference is a convenience that moves while a digest reference never does. `/mcp` calls that distinction load-bearing.
+
+  **Amendment at the blind suite's delivery: AC4's lint and parse checks are load-bearing nowhere, measured rather than suspected.** Deleting `lintAttractor`'s check reds 0; deleting `parseDot`'s reds 0. `emitAttractorDot` is **total** — `toAttractorIdentifier` rewrites every node id onto the Attractor Identifier class and `quoteAttractorString` turns every other control character into a space — so **no `ResolvedBlueprint` can emit invalid Attractor DOT.** Nine bundles emit 0/0, and four hostile source DOTs (`type=` handler override, `#` comment, HTML-like `<b>` value, `strict digraph`) each resolve and then emit 0/0, because none survives the emitter. So `"exportRelease: the emitted factory.dot is not valid Attractor input."` is **a published refusal no reachable input can produce**. The ten outcome tests are kept and **labelled as not discriminating**, which is T-03's disposition rather than deleting them or writing a test that cannot fire.
+
+  **And the real half of AC4 is a case the contract never named.** A release whose `cardRefs` omit a card its DOT pins **stores fine** — T010's parity check is satisfied when both arrays lose an entry — resolution then degrades by dropping that node, and `exportBundle` does not throw. So the naive composition serves **a complete-looking folder, one card short, with a `factory.dot` missing a node.** That is the failure AC4 exists to prevent and it has nothing to do with lint. **`exportRelease` refuses when the resolved blueprint carries error diagnostics**, with the published form `"exportRelease: this release does not resolve."`; deleting `hasErrors(diagnostics)` must red.
+
+  **The download event needs a published signature and has none.** The contract says one event per served file, counted by T150, explicit rather than derived (B-14) — no name, arity or table, so a blind author has nothing to bind to and the clause is untested. Same shape as D-90-04 one level smaller. Published:
+
+        recordDownload(db: Db, target: { kind: "blueprint" | "card"; refId: string }): Promise<void>
+
+  the same signature T150 publishes, called by `serveFile` and `serveCard` exactly once each and **not** by `exportRelease`. `refId` is `bundle.id` for a release file and the bare `cardId` for a card, per `target`'s own comment. A failure to record does not deny the serve (D-90-02).
 
   **AC4 makes this task the last check on emitted Attractor input.** Every served `factory.dot` passes `parseDot` and `lintAttractor` before it is served — not at publish, here, because a release stored before a lint rule changed would otherwise be served unchecked forever.
 
