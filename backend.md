@@ -390,6 +390,15 @@ Three cheap guards, all now in force:
   match", which is a narrower question than "did the failures match". T025's adversary hashed
   the failing-file lines, got three different digests, and nearly filed a contention finding
   off it; stripped of durations and sorted, all three were the same.
+- **`tests/task-state-agreement.test.ts` asserts the row and the section agree for every task**,
+  because the edit-time rule below does not survive a **rebase**: the two lines are 2,300 lines
+  apart in one file and git resolves them independently, so T080's blind author's replay conflicted
+  on the section and merged the row **silently**, twice. Its second point is why the guard checks
+  agreement rather than picking a winner — resolving toward the more advanced of the two was luck,
+  not judgement, and had the drift gone the other way the same reasoning would have chosen the
+  other line for the same accidental reason. **A tie between two places holding one fact has no
+  local tiebreak.** Run at introduction it found **three** disagreements, not the two known: T060's
+  row still read `adversarial-pass` and T020's `impl-done`, both merged hours earlier.
 - Before recording a task's `State`, write the **row and the section together**. `9eac04a` fixed
   three rows that lagged their sections and created two rows that **led** them — the same drift in
   the opposite direction, in the commit that fixed it. Caught by T080's blind author during a
@@ -1173,13 +1182,13 @@ it does not decide differently inside a worktree.
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
-| T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | adversarial-pass | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | adversarial-pass | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
-| T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | adversarial-pass | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
+| T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
+| T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | impl-done | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
-| T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | impl-done | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
-| T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | adversarial-pass | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
+| T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
+| T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | — | — | todo | — |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | — | — | todo | — |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | impl-done | — |
@@ -1747,7 +1756,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T010, Archive persistence: bundles, releases, bytes
 
-- **State:** adversarial-pass
+- **State:** merged
 - **Worktree:** `../darkprint-wt-t010-archive` on `feat/t010-archive`
 - **Test worktree:** `../darkprint-wt-t010-archive-tests` on `test/t010-archive`
 - **Depends on:** T000 (contract: schema, storage client, envelope)
@@ -1902,7 +1911,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T025, Versioning service: semver, digest, bump, chains
 
-- **State:** adversarial-pass
+- **State:** merged
 - **Worktree:** `../darkprint-wt-t025-versioning` on `feat/t025-versioning`
 - **Test worktree:** `../darkprint-wt-t025-versioning-tests` on `test/t025-versioning`
 - **Depends on:** T000 (contract: types)
@@ -3065,7 +3074,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T020, Card library: versions, digests, private cards
 
-- **State:** adversarial-pass
+- **State:** merged
 - **Worktree:** `../darkprint-wt-t020-cards` on `feat/t020-cards`
 - **Test worktree:** `../darkprint-wt-t020-cards-tests` on `test/t020-cards`
 - **Depends on:** T000 (contract), T025 (contract: bump and chain)
@@ -3160,7 +3169,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T030, Ontology store, merged view, versioned releases
 
-- **State:** adversarial-pass
+- **State:** merged
 - **Worktree:** `../darkprint-wt-t030-ontology` on `feat/t030-ontology`
 - **Test worktree:** `../darkprint-wt-t030-ontology-tests` on `test/t030-ontology`
 - **Depends on:** T000 (contract), T025 (contract: version chains)
