@@ -9,31 +9,70 @@
    does not hold. Refused here rather than repaired, per the
    Contract's amendment — "T010 ... validates ... that the content
    it is asked to store survives storage unchanged."
+
+   Round 4: the Contract named two hazards for this walk — cyclic
+   *and* 200k-deep — and a recursive walk with a seen-set only closed
+   the first; acyclic depth still exhausted the call stack, reachable
+   from a `vocabulary` an upstream route parsed out of a request body
+   (`vocabulary` is `unknown`, the one input with no assumed shape).
+   The walk is iterative for exactly that reason: depth costs heap
+   here, not call-stack frames, mirroring `lib/core/hash/canonical.ts`'s
+   own open/close bookkeeping for the same class of problem —
+   independently arrived at, since `lib/core/**` is Forbidden here.
    ============================================================ */
+
+/** One step of the walk: visit a value, or close a container it opened. */
+type WalkStep =
+  | { readonly kind: "enter"; readonly value: unknown }
+  | { readonly kind: "leave"; readonly container: object };
 
 /**
  * Walks strings, arrays and plain objects; anything else (numbers, booleans,
  * null, undefined) trivially round-trips and is not inspected further.
- *
- * `vocabulary` is typed `unknown`, so it is the one input this walk cannot
- * assume a shape for — including a self-referential one. `onStack` tracks only
- * the objects on the *current* recursive path (added before descending,
- * removed in `finally` on the way back out), so a value legitimately reached
- * twice through two different paths is not a false cycle; a value that
- * contains itself is refused rather than recursing until the call stack
- * overflows and the whole request dies as an uncaught `RangeError` (a module
- * whose job is to decide cannot answer by crashing).
+ * Refuses — rather than recursing until the call stack overflows and the
+ * whole request dies as an uncaught `RangeError` — on either hazard: a value
+ * that contains itself, or one merely deep enough that a recursive walk
+ * would have exhausted the stack before finishing. A module whose job is to
+ * decide cannot answer by crashing, whichever hazard it met.
  */
-export function isWellFormedDeep(value: unknown, onStack: WeakSet<object> = new WeakSet()): boolean {
-  if (typeof value === "string") return value.isWellFormed();
-  if (typeof value !== "object" || value === null) return true;
-  if (onStack.has(value)) return false;
+export function isWellFormedDeep(root: unknown): boolean {
+  const stack: WalkStep[] = [{ kind: "enter", value: root }];
+  /**
+   * Containers open on the *current* path from the root, for O(1) cycle
+   * detection — added before their children are pushed, removed on `leave`
+   * once every one of those children has finished. That is what keeps a
+   * value legitimately reached twice through two different paths from
+   * reading as a false cycle: it is only ever "open" while still an
+   * ancestor of the value being visited, never merely because it was
+   * visited once already.
+   */
+  const open = new Set<object>();
 
-  onStack.add(value);
-  try {
-    if (Array.isArray(value)) return value.every((item) => isWellFormedDeep(item, onStack));
-    return Object.values(value).every((item) => isWellFormedDeep(item, onStack));
-  } finally {
-    onStack.delete(value);
+  while (stack.length > 0) {
+    const step = stack.pop();
+    if (step === undefined) break; // unreachable: stack.length > 0 guarantees a value
+
+    if (step.kind === "leave") {
+      open.delete(step.container);
+      continue;
+    }
+
+    const value = step.value;
+    if (typeof value === "string") {
+      // Short-circuits the whole walk on the first offender, same as the
+      // `every()` this replaced — a large manifest with an early bad string
+      // is not a reason to keep visiting the rest of it.
+      if (!value.isWellFormed()) return false;
+      continue;
+    }
+    if (typeof value !== "object" || value === null) continue;
+    if (open.has(value)) return false;
+
+    open.add(value);
+    stack.push({ kind: "leave", container: value });
+    const children = Array.isArray(value) ? value : Object.values(value);
+    for (const child of children) stack.push({ kind: "enter", value: child });
   }
+
+  return true;
 }

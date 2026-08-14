@@ -280,4 +280,14 @@ describe.skipIf(!hasDb)("lib/server/archive", () => {
     });
     expect(release.vocabulary).toEqual(vocabulary);
   });
+
+  it("D-14: constraint names are derived from the schema, not restated beside it", async () => {
+    const { BUNDLE_OWNER_SLUG_CONSTRAINT, RELEASE_BUNDLE_VERSION_CONSTRAINT } = await import("./constraints");
+    // Pinned to the names schema.ts declares today — a rename there changes these
+    // too, since both are derived via getTableConfig rather than hand-copied.
+    expect(BUNDLE_OWNER_SLUG_CONSTRAINT).toBe("bundle_owner_slug_key");
+    // release also carries release_digest_idx, non-unique: proves the derivation
+    // picks the unique index on (bundle_id, version) and not merely "the first one".
+    expect(RELEASE_BUNDLE_VERSION_CONSTRAINT).toBe("release_bundle_version_key");
+  });
 });

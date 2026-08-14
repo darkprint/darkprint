@@ -10,13 +10,10 @@
 
 import { and, eq } from "drizzle-orm";
 import { schema, type Db } from "@/lib/db";
+import { BUNDLE_OWNER_SLUG_CONSTRAINT } from "./constraints";
 import { ArchiveConflictError, isUniqueViolationOn, sanitizedWriteError } from "./errors";
 import type { BundleRecord } from "./types";
 import { isWellFormedDeep } from "./well-formed";
-
-/** `schema.ts`'s `uniqueIndex("bundle_owner_slug_key")` — matched by name (D-14),
- *  not owned here since `lib/db/schema.ts` is Forbidden to this task. */
-const BUNDLE_OWNER_SLUG_CONSTRAINT = "bundle_owner_slug_key";
 
 function toBundleRecord(row: typeof schema.bundle.$inferSelect): BundleRecord {
   const record: BundleRecord = {
@@ -47,10 +44,12 @@ export interface CreateBundleInput {
  * silently replaced with U+FFFD rather than raising, so the stored slug would
  * stop being the slug the caller asked for. A duplicate `(owner, slug)`
  * rejects with a typed `ArchiveConflictError`, matched by constraint name
- * (D-14) rather than SQLSTATE alone, so a violation of some other unique
- * index a later migration adds cannot be mislabelled as this one. Every other
- * write failure still leaves — a database being down must not be swallowed as
- * a conflict — but sanitized: no statement, no bound parameters (D-13).
+ * (D-14) — derived from the schema itself via `./constraints`, not a literal
+ * restated beside it — so a violation of some other unique index a later
+ * migration adds cannot be mislabelled as this one, and a rename of this one
+ * cannot make the label silently stop arriving. Every other write failure
+ * still leaves — a database being down must not be swallowed as a conflict —
+ * but sanitized: no statement, no bound parameters (D-13).
  */
 export async function createBundle(db: Db, input: CreateBundleInput): Promise<BundleRecord> {
   if (!isWellFormedDeep({ slug: input.slug, lineage: input.lineage })) {
