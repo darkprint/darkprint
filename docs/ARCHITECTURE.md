@@ -15,7 +15,7 @@ contract seams](architecture/seams.md), the matching `TODO(SEAM-xx)` comment in 
 the same change. This document does not get updated speculatively or on a schedule — see
 [12 · Maintenance protocol](#12-maintenance-protocol-and-revision-log).
 
-**Last verified against commit `b9851af` on 2026-08-14.**
+**Last verified against commit `49b8d2f` on 2026-08-14.**
 
 **Stack summary.** Next.js 16.2.11 (App Router, Turbopack, no Pages Router code), React
 19.2.4, TypeScript 5 (`tsc --noEmit` as the type gate), Tailwind CSS v4 (CSS-first
@@ -256,6 +256,9 @@ flowchart LR
 | `db/` | **Backend, LIVE.** Postgres via Drizzle — `schema.ts` (10 tables: `account`, `handle_reservation`, `ontology_version`, `ontology_term`, `bundle`, `release`, `card_version`, `target`, `target_actor`, `audit`), `migrations/` with paired up/down SQL, `migrate.ts` + `cli.ts` (the runner behind `npm run db:migrate` / `db:rollback`), `client.ts`, and `storage.ts` (the S3-compatible object client, keyed by digest). Merged at `ec516fa`, tagged `t000-verified` |
 | `server/auth/` | **Backend, LIVE.** GitHub OAuth — `github.ts` (the provider exchange), `oauth-state.ts`, `cookie.ts` (HMAC-signed), `session.ts` (`SessionToken` is signed and carries `exp`; `SessionPayload` is what a handler receives and carries `{ accountId, handle }` only), `guard.ts` (`withSession`). Expiry, **not** revocation: a stolen cookie stays valid until `exp` |
 | `server/http/` | **Backend, LIVE.** The response envelope of B-03 — `ok.ts` for payloads at 200, `problem.ts` for RFC 9457 `application/problem+json` |
+| `server/archive/` | **Backend, LIVE.** Bundle records and their append-only releases — `bundle.ts`, `release.ts`, `well-formed.ts` (an iterative, path-scoped walk that refuses content Postgres would silently rewrite), `constraints.ts` (index names derived from the schema at runtime, never restated), `errors.ts`. Merged at `3fd050f`, tagged `t010-verified` |
+| `server/cards/` | **Backend, LIVE.** One immutable row per `(cardId, version)` with its digest, owner and visibility. Reads take an `Actor` and filter through `server/policy`, so a private card is unreadable by anyone but its owner and an operator at the storage boundary rather than by caller convention. `addCard` requires a strict semver — narrower than `REF_VERSION`, because `compareSemver` cannot order `1.0` and "latest" must always be defined. Merged at `aee6e07`, tagged `t020-verified` |
+| `server/versioning/` | **Backend, LIVE.** Server-authoritative bump inference for blueprints and ontologies (`lib/core` already carried the card path) — `blueprint-bump.ts`, `ontology-bump.ts`, `declared-bump.ts`. An ambiguous pairing infers the **most expensive residue-free explanation**, never the cheapest, so an under-declared bump is refused rather than shipped. Merged at `87dffd8`, tagged `t025-verified` |
 | `server/policy/` | **Backend, LIVE.** The authorization decision — `can.ts`, `visible-to.ts`, `is-owner.ts`. Pure, zero runtime imports, never throws, no default-allow. Two subjects only: a resource's owner and a break-glass operator (B-13). Merged at `eef7cce`, tagged `t060-verified` |
 
 **Top level:**
@@ -267,7 +270,7 @@ flowchart LR
 | `scripts/` | Build-time generation: `generate-bundles.ts` (content → public), `generate-skill-refs.ts`, `generate-wordmark-paths.ts`, `measure-prose.ts` |
 | `skills/darkprint/` | The vendored Claude Code authoring skill (SKILL.md, references, templates) |
 | `docs/` | `ARCHITECTURE.md` (this file) and `architecture/` (its split sections), `DECISIONS.md`, `audit/` |
-| `tests/` | Backend test trees that cannot sit beside the code they test, because `docs/ORCHESTRATION.md` has each backend task's tests written **blind**, in a separate worktree branched before the implementation exists — `tests/server/**` per task, `tests/support/**` for database/storage/env fixtures. Collected by `vitest.config.ts`'s one non-colocated glob |
+| `tests/` | Backend test trees that cannot sit beside the code they test, because `docs/ORCHESTRATION.md` has each backend task's tests written **blind**, in a separate worktree branched before the implementation exists — `tests/server/**` per task (`t010`, `t020`, `t025`, `t060` so far), `tests/support/**` for database/storage/env fixtures. Also two repo-level guards that are nobody's task and red for everyone: `no-raw-control-bytes.test.ts` (a raw NUL reached a fixture four times, the fourth inside the guard written to stop it) and `first-pass-calibration.test.ts` (a governance clause the orchestrator could not enforce against itself). Collected by `vitest.config.ts`'s one non-colocated glob |
 | `backend.md` | The backend build's state store — task partition, contracts, published signatures, per-task logs. Not documentation: it is the file the parallel implementer/test-author/adversary sessions read and write |
 
 ---
@@ -625,5 +628,6 @@ next revision records the divergence; nobody edits the code to match a stale doc
 | Date | Commit | Sections touched |
 |---|---|---|
 | 2026-08-12 | `f32267c` | Initial publication — all sections (0-12), assembled from Phase 2A's `ROUTES.md`, `ENTITIES.md`, `SEAMS.md` (carried over unchanged into §2-4, §8) and a fresh code-derived pass for §1, §5-7, §9-11 |
+| 2026-08-14 | `49b8d2f` | §6.2 directory tree — `lib/server/{archive,cards,versioning}/` added as T010, T020 and T025 merged (`3fd050f`, `aee6e07`, `87dffd8`); `tests/` gains the two repo-level guards. §8 seams still **unchanged**: five backend modules now exist and no route calls any of them, so every seam stays `PLANNED` until one does |
 | 2026-08-14 | `b9851af` | §6.2 directory tree — `lib/db/`, `lib/server/{auth,http,policy}/`, `tests/` and `backend.md` added as the first backend code to merge (T000 at `ec516fa`, T060 at `eef7cce`). §8 seams deliberately **unchanged**: these are modules, and no route calls them yet, so every seam stays `PLANNED` until one does |
 | 2026-08-13 | `f8ff1f7` | §4 sitemap (call sites for `ContentRow` / `NodeCardSummary`), §8 seams (SEAM-56 rewritten for stars/validated, SEAM-59 split, SEAM-113 added), §2 glossary and §3 concept model (`stars`, `validated`, card visibility) |
