@@ -791,6 +791,20 @@ The implementer also declined to settle the underlying question by shipping the 
 greener, and escalated instead. That is the correct handling of a fix whose merit depends on a
 ruling nobody has made.
 
+## The region with no prior defects is the region still holding them
+
+Two independent instances now, so it is a rule rather than an anecdote. T070's adversary counted
+its own distribution afterwards — 9 of 20 mutations on one file — went back over the parts it had
+been staring past, and **three of its four unobserved results came out of that second pass**.
+T080's adversary found four files at **zero** mutations in round 1, aimed its second pass at exactly
+those, and **both of its open gaps came out of it** — including `actorFrom` unobserved at the
+transport, where a regression makes every route anonymous and the whole suite still passes.
+
+Neither found much where the defects had already been. **Attention follows evidence, and evidence
+accumulates where someone has already looked** — so the second pass is not diligence, it is the
+only pass aimed at the places the first one could not have covered. Count the distribution, name
+the zeros, and go there.
+
 ## A fix for an unseen defect lands unobserved by construction
 
 The second-order form of the rule below, spotted by T080's adversary from a number it had already
@@ -3979,7 +3993,22 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **Charged against the criterion, not the implementer**, which built exactly what B-08 makes authoritative.
 
+  **Follow-up, and the ruling above created a criterion no published interface can keep.** T090's blind author wrote the re-score case as instructed and then reported that it is **unsatisfiable today, and not because of the implementation**: closing the `TBD:` as *T100 writes the artefacts at publish, T090 serves what was written* named a mechanism, and **no published signature gives T090 a way to read a persisted artefact, nor T100 a way to write one.** T090's block carries no storage verb and its contract says in terms that it must not invent one. So an implementation that generates from Postgres — the only thing the published surface permits — **necessarily fails that test, correctly built and all.** A contract gap of D-90-04's shape, arriving through a **ruling** rather than through an omission.
+
+  **Ruled: AC6 splits, and the re-score half is red-by-design with its dependency named.** The **newer-release** half is keepable by the current interface and stays a live criterion. The **re-score** half is red until persistence exists, on the T030-AC6-waiting-on-T025 precedent, which worked: a named red with a stated dependency is honest where a skip is not, and this run has recorded three times over that a skipped test hides what a red one reports. **The test stays in the suite, written as a property over the output so it survives whichever interface is eventually published, and an adversary reads its red as this dependency rather than as a defect.**
+
+  **T100 gains the write verb and T090 the read verb, published now so the dependency is real rather than gestured at:**
+
+        // T100, at publish, after exportRelease returns
+        persistArtefacts(storage: ObjectStorage, digest: string, files: readonly ExportedFile[]): Promise<void>
+        // T090, at serve
+        readPersisted(storage: ObjectStorage, digest: string, path: string): Promise<Uint8Array | undefined>
+
+  `readPersisted` answering `undefined` is the pre-persistence release and the generate-from-Postgres path remains its fallback, so the two coexist rather than one replacing the other. **Neither verb is T090's to build in this round** — it is recorded so the blind author's test has a surface to be true of, and so T100 does not rediscover the requirement at its own adversary round.
+
   **Second defect, needing an owner: the README names the wrong ontology version.** It prints `Both were read against ontology v${manifest.ontologyVersion}` — the **declared** version, which a re-score does not move — beside scores computed under the newer one. `release.scored_ontology_version_id` exists to record exactly that disagreement **and nothing reads it.** `lib/content/bundle-export.ts` is Forbidden to T090, so this is reported rather than fixed and it outlives the freeze: a frozen artefact still carries a sentence that was false when it was written if the scores were re-computed before publish.
+
+  **`TBD:` OPEN and for the owner — every dynamic route answers a bare `500 text/plain` to a malformed percent-encoded path segment**, where B-03 requires `problem+json` and 404 is the natural answer. Unpaired surrogate `%ED%A0%80`, bare `%`, truncated `%E0%A4`, `%FF%FE`. Nothing is logged, nothing leaks, the server survives. **Not charged to any task**: T080's adversary nearly did, then found the pre-existing frontend pages `/blueprints/[slug]`, `/nodes/[...id]` and `/u/[username]` **500 identically on the same bytes**, so it is framework-level, app-wide and predates this run. What is new is that T080 ships the **first dynamic API routes**, so a class that previously only reached HTML now reaches a JSON API that promises an envelope.
 
   **`TBD:` OPEN and for the owner — a blueprint's download count is not comparable to another's.** "Each served file emits one download event" is implemented exactly as published, and one run of `bundleDownloadCommand`'s own curl glob leaves `download_count` at **12** for a twelve-file bundle. Folder sizes run 9-13 across the nine, so T150's blueprint "downloads" is a **file-fetch count inflated by folder size**. Coherent, correctly implemented, and a number a registry would print beside another that means something different. Never an amendment, which is why the surfacing rule never caught it.
 
