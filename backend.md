@@ -2024,6 +2024,63 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     migration or `graph.test.ts` contention noise anywhere in either run. Before-stamp and
     after-stamp both `77f6508`, `git status --porcelain` empty both times, `HEAD` unmoved
     across all three runs. Zero scratch databases after. Reported to orchestrator.
+  - 2026-08-14 adversary round 6, **interim — verdict withheld pending the gate slot.**
+    Handover verified from inside the tree: `c9dc75cf7c68…`, porcelain empty. Merged `backend`
+    at `64422ca`; measured at `1907d8cf…`. Non-DB gates: typecheck 0, lint 0, build 0.
+    `npx vitest run tests/server/t025 lib/server/versioning`: **223/223**. AC-1 (4), AC-2 (3),
+    AC-3 (3), AC-4 (4), AC-5 (9), AC-6 (5) — all PASS. The three consecutive full-suite runs
+    are queued behind T020's and T030's implementers and are the only thing missing; no verdict
+    until they are taken and stamped.
+    **The implementation is exact as far as I can measure it.** I wrote a second oracle,
+    independent of the implementer's, pricing pairs and strandings from the round-5 ruling using
+    only public `@/lib/core` primitives: **0 under-priced, 0 over-priced over 2674 generated
+    cases across four pools**, including one mixing build metadata, a prerelease and `latest`.
+    `worstStranded` maximises over the whole surplus side and the stranding is gated on a
+    **strict** surplus, which is the boundary that matters: the ruling's own
+    `[1.1.0,1.0.0] → [rc.1,rc.1]` still infers `minor` (a wider slice would have over-priced it
+    to major) while `→ [rc.1]` infers `major`. Round-5's defect is fixed on both sides
+    (`[1.0.0,1.0.1,1.0.1] → [1.0.1,1.0.2]` ⇒ major; the gained-side mirror ⇒ minor), every
+    round-1-to-4 regression holds, and order-independence is 0 failures over 500 randomised
+    permutation pairs.
+    **I broke my own oracle first and it produced 17 false positives, which is worth recording
+    because it is the same trap the implementer reported.** My first draft read each pair's
+    price from an isolated 1→1 `inferBlueprintBump` call. Pair pricing is **context-dependent** —
+    an unreadable pair is floored by whether each side appears in the *full* opposite list — so
+    the isolated call sees empty opposite sets and returns `major` where the real context returns
+    `minor`. Verified directly: `[1.0.0] → [1.0.0+b]` alone is `major`; the same pair inside its
+    generated case is `minor`. Independence from the code does not give independence from the
+    misunderstanding, and mine was a different one arriving at the same place. The corrected
+    oracle prices pairs with the full sets passed in, and then agrees exactly.
+    **FINDING 1, against the ruling rather than the implementation: the monotonicity property is
+    under-licensed as written, and encoding it literally would redden correct code.** `2307c00`
+    states it as *adding a pin cannot lower the level unless that pin removes a forced deletion —
+    that is, unless `|before| > |after|` and the addition reduces the deficit*. That predicate is
+    per-list-length; the real licence is **per-value**. Over 600 randomised additions the
+    ruling's predicate flags **7 drops as violations, and all 7 are legitimate**; the predicate
+    *the added value had a surplus on the before side* (`before` held more copies of it than
+    `after` did) flags **0**. Minimal case: `before = [1.0.0, 2.0.0]`, `after = [0.10.0]` ⇒
+    `major`, because `1.0.0` must be explained as a repin against `0.10.0`; add a pin at
+    `1.0.0` and it infers `minor`, because that addition lets `1.0.0` match itself and the
+    expensive explanation is no longer forced — with `|beforeLeftover| < |afterLeftover|`
+    throughout, so no *deletion* was ever forced and the ruling's clause never applies. The
+    licence is "the addition removes a forced **explanation**", of which a forced deletion is
+    one case. This matters now rather than later because the same ruling requires the property
+    test's generator to encode the boundary rather than exclude it by name: a blind author
+    encoding it as written produces false reds on correct code, the implementer may not change
+    the test, and it returns as a contract amendment. Same shape as the T010 substring
+    over-match.
+    **FINDING 2, a verification-coverage gap rather than a defect.** I ran the delete-the-guard
+    experiment. The raw-ref-count safety net is observable — deleting it reddens 3 tests across
+    2 files. But reverting `worstStranded` to round 5's positional slice reddens **3 tests, all
+    3 in `lib/server/versioning/**`** — the oracle and two scratch tests — and **0 in
+    `tests/server/t025/**`**. The blind suite has no coverage of the round-5 defect at all. Per
+    Phase 2 the implementer's own tests do not count as verification and the implementer may
+    modify them freely, so the only guard against the defect this round exists to fix lives in
+    the half of the tree that rule does not bind. Recording the oracle as "a permanent regression
+    test" is right, but it is permanent on the implementation branch, not the test branch.
+    **Residue: none.** Probes deleted; both guard experiments reverted by restoring a byte copy
+    and confirmed by a clean `git status --porcelain` and a green 223/223. Sole writer; no
+    full-suite run taken, so no gate slot consumed.
 
 ### T060, Authorization policy: owner and operator
 
