@@ -610,16 +610,19 @@ describe("AC1 current release (D-80-03)", () => {
     const refs = rows.map((row, i) => asCardSummary(row, `cards()[${i}]`).ref);
     expect(refs).not.toContain(DANGLING_REF);
     expect(await card(s.db, anonymous, DANGLING_REF)).toBeUndefined();
-    /* Whether `${DANGLING_SLUG}`'s own `cardRefs` still lists the dangling ref is NOT
-       asserted, and the omission is deliberate. `BlueprintRecord.cardRefs` is documented as
-       "refs of every card it pins", and a ref with no row is still a ref it pins — so both
-       listing it and dropping it are readings the contract permits. What is not permitted
-       is answering a `CardSummary` for it, since there is no body to put in one. */
+
     const blueprint = await bind("blueprint");
-    expect(
+    const bp = asBlueprintSummary(
       await blueprint(s.db, anonymous, ownerHandle, DANGLING_SLUG),
-      `the blueprint itself still projects; one unresolvable pin is not a reason to drop it`,
-    ).toBeDefined();
+      `blueprint(${DANGLING_SLUG})`,
+    );
+    expect(
+      [...bp.cardRefs],
+      `Ruled: a \`cardRefs\` entry whose \`card_version\` row is missing is omitted, "by the ` +
+        `same rule that filters unreadable ones — one rule is better than two, and a row ` +
+        `that does not exist is not a card the actor may read." So the blueprint still ` +
+        `projects (one unresolvable pin is not a reason to drop it) and the pin does not.`,
+    ).toEqual(["alpha-card@1.0.0"]);
   });
 
   it("canonicalises a pin to id@version before using it as a key", async () => {
