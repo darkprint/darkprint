@@ -1160,14 +1160,14 @@ it does not decide differently inside a worktree.
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | adversarial-pass | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | adversarial-pass | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | adversarial-pass | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
-| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
+| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | impl-done | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | impl-done | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | adversarial-pass | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | — | — | todo | — |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | — | — | todo | — |
-| T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | — | — | todo | — |
-| T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | — | — | todo | — |
+| T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | impl-done | — |
+| T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | claimed | — |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | — | — | todo | — |
 | T100 | Publishing and releases | T010, T020, T025, T040, T050, T060, T070, T090 | `lib/server/publish/**`, `app/api/bundles/**` | — | — | todo | — |
@@ -2961,6 +2961,31 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         isReservedSlug(slug: string): boolean          // pure, no Db — the four profile tabs
         validateCardId(id: string): Diagnostic[]       // pure, grammar only
         validateNamespace(namespace: string): Diagnostic[]   // pure
+
+  **Amendment, at T070's handback — seven defects, one of them a contradiction its blind author is writing against right now.**
+
+  **D-70-01: `checkSlug` published `Promise<Availability>` and two error classes prefixed `checkSlug:`.** A taken slug cannot be both `{ available: false }` and a throw, and `Availability.available` is dead if it is the throw. **Ruled: `checkSlug` is a query and returns; both error classes are struck.** A query asked "is this available" answers, and one that throws to say "no" makes its own return type meaningless. AC1 and AC3 are checkable through the published surface **only** under this reading, since creating the bundle is out of scope here — which is what settles it rather than taste. `Availability` gains the reason so the caller need not infer it:
+
+        interface Availability { available: boolean; reason?: "taken" | "reserved"; suggestion?: string }
+
+  The implementer took this reading, **defined neither class**, and said why: an exported error class nothing can raise is a guard that cannot fail. Right on both counts.
+
+  **D-70-02: `releaseHandle` on a handle the account does not hold is a silent no-op, and that is correct.** It updates nothing because the UPDATE is scoped by `account_id`, and inventing a fifth message form for it would be the whitelist breach the block exists to prevent. Release is idempotent: calling it twice, or on a handle you never held, is not an error. Stated so nobody adds a refusal later.
+
+  **D-70-03: `app/api/names/**` is owned and no route was published.** Third instance of this defect in one wave. Published now:
+
+        GET /api/names/handles/[handle]       -> { available, reason?, suggestion? }
+        GET /api/names/slugs/[owner]/[slug]   -> { available, reason?, suggestion? }
+
+  Both 200 with the `Availability` payload; there is no 404, because "not found" **is** the available answer. No allocation route: allocation happens through T050's sign-up and handle-change paths, which is why `Blocks` names T050.
+
+  **D-70-04: one grammar for handles, slugs and namespaces, derived rather than restated.** The contract published only the card-id grammar, and the implementer's reasoning is accepted: a handle **is** a card id's namespace and appears in every published card's author field, and a slug with no grammar lets an unpaired surrogate reach a `SELECT` as U+FFFD, so `checkSlug` would answer about a name nobody typed. All three use `CARD_ID` through the engine's exported `parseCardRef`/`cardRef`, and the check **round-trips** rather than parses — `parseCardRef` trims, so a bare `!== undefined` accepts `" mara-veil"` and reserves `mara-veil`, a different primary key from the one asked for, substituted with nothing reporting it.
+
+  **D-70-05: `NamingStoreError` is accepted as a fifth form.** `"<operation>: the database call failed."` A fault has to leave and must not carry `DrizzleQueryError.message` (D-13). One form covering reads and writes is right: a malformed `ownerId` raises 22P02 from `checkSlug`'s SELECT, and a sealed write path beside a leaking read path is the same defect with a different door.
+
+  **D-70-06 needed a product ruling and now has one: the original holder may reclaim its own released handle; a different account never may.** AC4 forbids a *second* account claiming and is silent on the first, and the single insert the contract asked for refuses everyone — so an account could not rename back. B-05's "reserved" is protection against **impersonation**, not a tombstone, and reclaiming your own former identity is not the thing being prevented. `ON CONFLICT DO UPDATE … WHERE account_id = excluded.account_id` is equally atomic and preserves AC5. **Flagged for owner review**, since it is a product decision rather than a technical one; T050 owns rename and would have hit it.
+
+  **D-70-07 is a document defect of the orchestrator's.** The claim commit `8f01945` updated the three task **sections** and none of the three **index rows**, which the protocol requires to agree. T070's implementer corrected its own and told me to check the other two — both were wrong the same way. All three fixed here.
 
   **AC5 is satisfied by the unique index, not by code, and the contract requires that shape.** "Two concurrent allocations of one name yield exactly one success" cannot be met by `SELECT` then `INSERT` — two callers both read free and both write. `allocateHandle` is a **single insert** whose conflict is caught and translated; the primary key is the arbiter. Same for a slug against `bundle_owner_slug_key`. A read-then-write implementation passes every sequential test and fails only under concurrency, which is exactly the defect this criterion exists to catch, so **the criterion is tested with concurrent callers or it is not tested**.
 
