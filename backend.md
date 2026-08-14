@@ -922,7 +922,7 @@ it does not decide differently inside a worktree.
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | impl-done | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
-| T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | — | — | todo | — |
+| T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | tests-written | 147 blind tests on `test/t030-ontology`, all red on a missing module (140 on `@/lib/server/ontology`, 7 on T025's `@/lib/server/versioning` as AC6 provides for); 20 falsifications confirm they discriminate |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | — | — | todo | — |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | — | — | todo | — |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | — | — | todo | — |
@@ -2825,7 +2825,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T030, Ontology store, merged view, versioned releases
 
-- **State:** claimed
+- **State:** tests-written
 - **Worktree:** `../darkprint-wt-t030-ontology` on `feat/t030-ontology`
 - **Test worktree:** `../darkprint-wt-t030-ontology-tests` on `test/t030-ontology`
 - **Depends on:** T000 (contract), T025 (contract: version chains)
@@ -2896,6 +2896,66 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Out of scope:** usage counting and promotion (T210), the re-score job's scheduling (T080 owns the projection).
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-04, B-07, B-08.
+  - 2026-08-14 test author: 147 blind tests in `tests/server/t030/**`, all red on a missing
+    module and none on a syntax error or a bad path — verified by grouping every failure by its
+    root cause, which yields exactly two: `Cannot find package '@/lib/server/ontology'` (140)
+    and `Cannot find package '@/lib/server/versioning'` (7). Per file, with the criterion each
+    covers: `surface.test.ts` 11 (the six published names, plus identity checks that
+    `ontologyView`/`partitionTerms`/`splitTermId` are consumed and not forked, plus that no
+    export reads a release); `store.test.ts` 27 (no criterion — the digest being computed and
+    not supplied, value-identical round trips, sorted reads, latest/list, the unique version,
+    concurrent writers, and the one-transaction rule); `view.test.ts` 22 (**AC1** 6, **AC2** 7,
+    **AC5** 9); `validate.test.ts` 34 (**AC3** 11, **AC4** 12, `validateVocabulary` 11);
+    `bump.test.ts` 7 (**AC6**); `robustness.test.ts` 46 (the three inherited hardening rules,
+    plus absent and malformed input, wrong types, surplus arguments, empty term sets, unicode,
+    duplicate calls and concurrent readers). `contract.ts` and `fixtures.ts` are not collected.
+  - 2026-08-14 test author: **AC6 is red on T025, and the file is arranged so it says so.**
+    With the base published in a `beforeEach`, all seven AC6 tests reddened on
+    `@/lib/server/ontology` and the criterion that "waits on T025" named T025 nowhere. Every
+    AC6 test now binds `inferOntologyBump` before it touches the store, so the red names the
+    module the contract says the criterion is waiting for, and `contract.ts` gives that red a
+    message saying whose module it is and that it is not a reason to grow a second bump
+    inference inside `lib/server/ontology/**`.
+  - 2026-08-14 test author: the guards were falsified before hand-off. A throwaway reference
+    implementation in the scratchpad turned 140 of 147 green on the first run, the other seven
+    being AC6. Twenty deliberate breakages then each reddened tests beyond that baseline, and
+    each hit the property it broke. **The one worth naming is the module-scope cache AC5
+    forbids**: under it, all three tests of AC5 *as written* — identical answers across
+    consecutive resolutions, across an interleaved reverse question, and under concurrent
+    callers — stayed **green**, while all five converse tests went red. The criterion as
+    literally stated cannot catch the thing the contract spends a paragraph forbidding; only
+    the converse can. The others: the view reporting a non-base version (2), the overlay
+    appended instead of replaced in place (17), `validateVocabulary` treating its array as an
+    overlay (4), no transaction (1, exactly the atomicity test), a recursive well-formedness
+    walk (140 — it dies before anything else runs), a surrogate repaired instead of refused (1,
+    and instructively: only the version string, because `pg` rejects a bad surrogate inside
+    `body` and silently replaces one in a `text` column), a blanket unicode ban (87), the
+    driver's error escaping unwrapped (6), `cause` enumerable (25), `stack` left on (25), a
+    caller-supplied digest honoured (1), the digest ignoring the version (1), unsorted reads
+    (5), latest-by-arrival (1), `openView` answering for an unpublished version (1), a declared
+    weight of `0` dropped (1), `createdAt` as a string (6), the overlay sorted in place (1),
+    and `openView` ignoring the overlay (24).
+  - 2026-08-14 test author: **three assertions are derived rather than published**, each
+    isolated in one test so a ruling moves one thing. (a) `getLatestOntologyVersion` orders by
+    semver, not by arrival — the contract does not say, and this is the rule the card path
+    already states in `lib/core/card/validate.ts` ("the last published one is a fact about the
+    numbers and not about a directory listing"). (b) Two versions with identical term sets get
+    different digests, from `lib/core/hash/digest.ts:26`. (c) The merged view's `title` equals
+    `CORE_ONTOLOGY.title`, read from `lib/core` rather than restated. (b) and (c) reached this
+    suite by message and are **not in backend.md** — a transcribed contract is what cost T000
+    a round, so they are recorded here. `listOntologyVersions`'s ordering is left unasserted
+    beyond being stable across calls, because nothing states a direction.
+  - 2026-08-14 test author: two environment findings, neither this task's to fix.
+    `tests/support/env.ts` still says `tests/server/**` must not import it because that tree is
+    "written blind, in a worktree branched before this file exists" — stale since T000 merged,
+    and the harness is used, since reimplementing create-migrate-drop per test branch is the
+    duplication it exists to prevent. Its live consequence: `testEnv()` demands all five
+    variables, so this suite cannot run without `S3_*` exported and it never touches object
+    storage. Separately, the full tree is **3997 tests**: 147 red here and 3850 green, once
+    `SESSION_SECRET`, `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are set — left blank in
+    `.env.example`, they fail 20 of T000's own environment and session tests, which is
+    pre-existing and reproduces with `tests/server/t030/` excluded. Every scratch database was
+    dropped: `pg_database` holds no `darkprint_test%` row after the run.
 
 ### T050, Accounts and sessions
 
