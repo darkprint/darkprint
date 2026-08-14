@@ -28,7 +28,7 @@
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { asDiagnostics, asRecord, bind, bindT025, of } from "./contract";
+import { asDiagnostics, asRecord, bind, bindT025, expectCausePresent, of, rejects } from "./contract";
 import { BASE_VERSION, type TestDb, baseTerms, clean, db, openDatabase, term } from "./fixtures";
 
 let t: TestDb;
@@ -129,6 +129,63 @@ describe("AC6: removing a term is a major ontology version", () => {
 
     expect(ds).toHaveLength(1);
     expect(of(ds, TOO_SMALL)).toHaveLength(1);
+  });
+
+  /* ---------- AC6 through the store, not only through the primitives ---------- */
+
+  /**
+   * The six tests above bind `inferOntologyBump` and `checkDeclaredBump` directly and never
+   * reach `addOntologyVersion`. That is testing the *components* of the criterion and leaving
+   * the *composition* untested: the store's enforcement was ruled, implemented correctly, and
+   * measured load-bearing nowhere — 7 red with it, 7 without. A guard that cannot fail.
+   *
+   * These two go through the published store instead.
+   */
+  it("AC6 refuses a release whose declared bump is smaller than the removal requires", async () => {
+    const add = await bind("addOntologyVersion");
+    await add(db(t), { version: BASE_VERSION, terms: baseTerms() });
+
+    // 0.1.0 -> 0.2.0 is a minor; dropping a term requires a major.
+    await expect(
+      add(db(t), { version: "0.2.0", terms: baseTerms().filter((x) => x.id !== "validation") }) as Promise<unknown>,
+      "a removal declared as a minor has to be refused by the store, not only by the primitives",
+    ).rejects.toThrow();
+  });
+
+  it("AC6 accepts the same removal when it is declared as a major", async () => {
+    const add = await bind("addOntologyVersion");
+    const get = await bind("getOntologyVersion");
+    await add(db(t), { version: BASE_VERSION, terms: baseTerms() });
+
+    // The control that makes the test above discriminate. Without it, "removals are refused"
+    // passes just as well as "the bump rule is enforced", and only one of those is the criterion.
+    await add(db(t), { version: "1.0.0", terms: baseTerms().filter((x) => x.id !== "validation") });
+
+    const published = asRecord(await get(db(t), "1.0.0"), "getOntologyVersion");
+    expect(published.terms.map((x) => x.id)).not.toContain("validation");
+  });
+
+  /**
+   * Existence is checked before the bump, and the ordering has exactly one guard: this.
+   *
+   * A republish with changed terms gives both rules something to say. The ruling is that the
+   * duplicate wins, and the observable difference is the `cause`: the duplicate refusal comes
+   * from the unique index and carries its driver error, while a bump refusal is raised before
+   * the database is touched and carries none. So this asserts the `cause` is present rather than
+   * only that something was refused — a bump refusal here would satisfy "it threw" while being
+   * the wrong refusal, and it would arrive with no `cause` at all.
+   */
+  it("AC6 gives a republish the duplicate refusal, not the bump one", async () => {
+    const add = await bind("addOntologyVersion");
+    await add(db(t), { version: BASE_VERSION, terms: baseTerms() });
+
+    const err = await rejects(
+      () => add(db(t), { version: BASE_VERSION, terms: baseTerms().filter((x) => x.id !== "validation") }) as Promise<unknown>,
+      [BASE_VERSION, ...baseTerms().map((x) => x.id)],
+      "addOntologyVersion (republish with changed terms)",
+    );
+
+    expectCausePresent(err, "addOntologyVersion (republish, existence before bump)");
   });
 
   it("AC6 judges the proposal against what the registry actually holds", async () => {

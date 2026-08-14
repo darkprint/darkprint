@@ -123,6 +123,17 @@ describe("getOntologyVersion: terms round-trip value-identically", () => {
     );
   });
 
+  it("returns them sorted by term id from the write, not only from the read", async () => {
+    const add = await bind("addOntologyVersion");
+    // The same invariant on the other return path. It was asserted on `getOntologyVersion` and
+    // nowhere on `addOntologyVersion`, so a store that sorted on read and returned the caller's
+    // order on write passed — measured, and it did.
+    const terms = [term("text"), term("agent"), term("validation"), term("evaluative")];
+    const written = asRecord(await add(db(t), { version: BASE_VERSION, terms }), "addOntologyVersion");
+
+    expect(written.terms.map((x) => x.id)).toEqual(sortedIds(terms));
+  });
+
   it("reads them back sorted by term id, for a total order", async () => {
     const add = await bind("addOntologyVersion");
     const get = await bind("getOntologyVersion");
@@ -163,6 +174,11 @@ describe("getOntologyVersion: terms round-trip value-identically", () => {
     expect(await get(db(t), "9.9.9")).toBeUndefined();
   });
 
+  /**
+   * **T-03: the storage layer guarantees this one.** No row has `version = ""`, so the query
+   * answers nothing whether or not the module guards the input — measured: removing the guard
+   * reds nothing. Kept as an outcome test, labelled because it cannot discriminate.
+   */
   it("answers `undefined` for the empty string", async () => {
     const get = await bind("getOntologyVersion");
     await (await bind("addOntologyVersion"))(db(t), { version: BASE_VERSION, terms: baseTerms() });

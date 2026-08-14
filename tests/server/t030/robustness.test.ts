@@ -126,15 +126,32 @@ describe("content that cannot round-trip is refused, not repaired", () => {
     await swallow(() => add(db(t), { version: BASE_VERSION, terms: [term("berti/x", { label: `a${ILL_FORMED.loneHigh}b` })] }));
 
     const read = await get(db(t), BASE_VERSION);
-    if (read !== undefined) {
-      const stored = asRecord(read, "getOntologyVersion").terms[0]?.label ?? "";
-      expect(
-        stored.includes("�"),
-        "the term was stored with the surrogate replaced: the digest names bytes the store does not hold",
-      ).toBe(false);
+
+    // Both branches assert. This test used to skip its body whenever `read` was `undefined` —
+    // which is the *correct* outcome — so it was green in every run this suite ever had,
+    // including against eleven deliberately broken references, without once evaluating an
+    // `expect`. Tolerating an unspecified answer is not the same as tolerating silence.
+    if (read === undefined) {
+      const list = await bind("listOntologyVersions");
+      expect(await list(db(t)), "nothing stored is a coherent answer, and it has to be checked").toEqual([]);
+      return;
     }
+    const stored = asRecord(read, "getOntologyVersion").terms[0]?.label ?? "";
+    expect(
+      stored.includes("�"),
+      "the term was stored with the surrogate replaced: the digest names bytes the store does not hold",
+    ).toBe(false);
   });
 
+  /**
+   * **T-03: this one cannot hold the guard, and the clue was in its own name.** Postgres raises
+   * 22021 for a NUL in `text` and in `jsonb` alike, so the refusal happens with or without the
+   * module's check — measured: deleting that check reds nothing anywhere in the suite. The name
+   * says "which Postgres text cannot hold either", which is the reason the outcome is guaranteed
+   * written down beside the assertion of it. Kept, because the outcome still matters and a
+   * changed outcome still reds; labelled, because it cannot tell a module that checks from one
+   * that does not.
+   */
   it("refuses a NUL byte, which Postgres text cannot hold either", async () => {
     const add = await bind("addOntologyVersion");
     await rejects(
@@ -305,6 +322,13 @@ describe("inputs no criterion mentions", () => {
     { name: "a term with no id", input: { version: "0.1.0", terms: [{ kind: "node-type", label: "x" }] } },
     { name: "a term whose id is not a string", input: { version: "0.1.0", terms: [{ id: 7, kind: "node-type" }] } },
     { name: "a term of no known kind", input: { version: "0.1.0", terms: [{ id: "x", kind: "sideways", label: "x", description: "x", since: "0.1.0" }] } },
+  /**
+   * **T-03 again, for two of these rows.** `terms holding null` and `terms holding a string`
+   * are refused by the driver before any module check is reached — measured: removing the
+   * term-shape validation reds nothing. The other rows do hold their guard: removing the
+   * unknown-kind check reds `a term of no known kind`, the id check reds `a term whose id is
+   * not a string`, and the version check reds two more.
+   */
   ])("refuses $name, and stores nothing", async ({ input }) => {
     const add = await bind("addOntologyVersion");
     const list = await bind("listOntologyVersions");
@@ -350,15 +374,25 @@ describe("inputs no criterion mentions", () => {
     const open = await bind("openView");
     await add(db(t), { version: BASE_VERSION, terms: baseTerms() });
 
-    // Either refuse, or produce a view — but never a view that quietly claims the overlay was
-    // merged when it was discarded. The base has to still be there either way.
+    // Refusing is a coherent answer to an overlay it cannot read. Silently answering as though
+    // the caller supplied *no* overlay is not: the caller passed one, and a bundle would then
+    // resolve against a vocabulary nobody chose. So the tolerance admits an unspecified answer
+    // and excludes the wrong one — measured, because the old form permitted exactly the wrong
+    // one and a reference that dropped `extensions` on the floor passed it.
     let view: unknown;
     try {
       view = await open(db(t), BASE_VERSION, extensions);
     } catch {
       return;
     }
-    expect(asView(view, "openView").get("agent")?.id, "the base vocabulary went missing too").toBe("agent");
+    const produced = asView(view, "openView");
+    expect(produced.get("agent")?.id, "the base vocabulary went missing too").toBe("agent");
+    const plain = asView(await open(db(t), BASE_VERSION), "openView");
+    expect(
+      produced.ontology.terms,
+      "a malformed overlay was discarded silently: this view is indistinguishable from one " +
+        "opened with no overlay at all, so nothing tells the caller their overlay never arrived",
+    ).not.toEqual(plain.ontology.terms);
   });
 
   it("treats an absent overlay and an empty one the same", async () => {
