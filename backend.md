@@ -182,7 +182,22 @@ It is the through-line of this whole run, and nearly every rule below is an inst
   **no token at all** from `"23505"`. The clause names a SQLSTATE among the things no rendering may
   carry, and the assertion enforcing it is vacuous for exactly that value. **Widening what you look
   for does nothing if the thing that does the looking cannot represent it** — the boundary rule
-  inside the fix for its own previous instance.
+  inside the fix for its own previous instance. Fixed in one character: the leading class now admits
+  a digit.
+
+  **This is a distinct failure from the others here and the author named it precisely:** not an
+  unexamined assumption, not an unused instrument, not a guard that cannot fail, but **a component
+  correct for its original purpose, silently inherited into a new one, and never re-derived when the
+  purpose changed.** The tokenizer had been written for identifiers three rounds earlier and had
+  stopped being a decision — it had become background. The mechanical tell, which costs nothing:
+  **after widening a set, check that every member of the new set is representable by whatever
+  consumes it.**
+
+  **And it argues for the arrangement rather than for anyone's carefulness.** The colocated harness
+  saw the planted `${code}`; the blind suite structurally could not. Two suites at different
+  distances from the code, and the nearer one caught what the further one had no way to see —
+  which is the case for keeping both, against the standing rule that the blind suite outranks the
+  colocated one on any conflict. Outranking is not redundancy.
 
 In each, the *method* was sound and applied honestly. What was never re-examined was the boundary
 the method ran inside — and a boundary is a claim: *"everything that could matter is in here."*
