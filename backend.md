@@ -719,7 +719,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | adversarial-pass | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | impl-done | round 6 fix: `worstStranded` replaces the sorted-tail slice with a true max over the whole surplus-side leftover, closing the under-pricing gap; brute-force oracle (`blueprint-bump.oracle.test.ts`) kept as a permanent regression test, falsified through the published `inferBlueprintBump` surface in both directions. typecheck/lint/build clean; `tests/server/t025`+scratch 223/223; full suite three consecutive runs, exit 1/1/1, 2 failed files/2 failed tests each time (pre-existing `tests/no-raw-control-bytes.test.ts` self-fixture, outside Owns), sorted failing sets md5-identical, stamps clean before and after with HEAD unmoved at `77f6508`, zero scratch databases |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | adversarial-pass | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | adversarial-pass | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -1447,7 +1447,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T025, Versioning service: semver, digest, bump, chains
 
-- **State:** impl-done
+- **State:** adversarial-pass
 - **Worktree:** `../darkprint-wt-t025-versioning` on `feat/t025-versioning`
 - **Test worktree:** `../darkprint-wt-t025-versioning-tests` on `test/t025-versioning`
 - **Depends on:** T000 (contract: types)
@@ -2279,6 +2279,45 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     **Residue: none.** Probes deleted; both guard experiments reverted by restoring a byte copy
     and confirmed by a clean `git status --porcelain` and a green 223/223. Sole writer; no
     full-suite run taken, so no gate slot consumed.
+
+  - 2026-08-14 adversary round 6, **verdict: PASS.** Gate slot taken after T030's implementer
+    released it. Merged `backend` at `2d0f728`; measured at **`e5b9c920`**. `.env.example`
+    sourced, so the environment-dependent files are now **measured rather than recorded
+    unverified** — the qualification carried since round 1 is gone.
+    Whole-tree stamp `e5b9c920` + clean **before** and `e5b9c920` + clean **after**. Gates:
+    typecheck 0, lint 0, build 0. **Three consecutive full-suite runs, every one exit 0,
+    `133/133` files and `4158/4158` tests, zero failing files and zero failing test lines in
+    all three, the three summaries byte-identical.** Load 12–22 across the window, inside the
+    range the serialisation was calibrated against; no contention artefact, nothing discarded.
+    `npx vitest run tests/server/t025 lib/server/versioning`: 223/223. AC-1 (4), AC-2 (3),
+    AC-3 (3), AC-4 (4), AC-5 (9), AC-6 (5) — all PASS.
+    **The gained-side challenge, answered by execution rather than by reading my own code.**
+    The orchestrator was right that my oracle was built from the same prose that misled T025's
+    blind author, so the same misreading was available to it. It was not made: my oracle prices
+    a stranded before-item absent from the full after list at `major` and a stranded after-item
+    absent from the full before list at `minor`, membership taken against the full original
+    lists. Verified against all six rows of the `2d0f728` table — the two worked examples plus
+    the four table rows in isolation — with oracle and implementation agreeing and both matching
+    the required answer on every one, including `[1.0.1, 1.0.2] → [1.0.0, 1.0.1, 1.0.1]` ⇒
+    **minor**, not major.
+    **Both round-6 findings were resolved by the orchestrator and neither was an implementation
+    defect.** Finding 1 (the monotonicity licence stated per-length rather than per-value) is
+    amended at `e6aeb44` and now stands as a theorem rather than a sampled property. Finding 2
+    (the blind suite carried no coverage of the round-5 defect, so the only guard lived in
+    implementer-owned tests) is dispatched to a session with no T025 context.
+    **Two things the human gate should weigh, neither of which blocks the verdict.**
+    (1) That Finding 2 coverage is **not in this tree yet**. Merging now ships an implementation
+    whose round-5 guard exists only in `lib/server/versioning/**`, which Phase 2 does not treat
+    as verification and which the implementer may modify freely. The verdict is on the
+    implementation, which is sound; the partition is one dispatch short of matching it.
+    (2) Residue: T025 stores nothing and every probe was in-process, but this triple ran the
+    T000/T010 database and object-store suites, which create and drop scratch state. Their own
+    teardown is what cleans up. **I could not independently verify residue** — `docker exec`
+    against the shared Postgres is denied in my session — so this is stated as unchecked rather
+    than clean, which is the distinction the last five rounds have been about.
+    **`adversarial-pass` is not `verified`.** Phase 2 puts a human review between them and says
+    not to self-promote; the tag is the owner's to give, not mine and not the orchestrator's.
+    Probe files deleted, guard experiments reverted, tree clean at the after-stamp.
 
 ### T060, Authorization policy: owner and operator
 
