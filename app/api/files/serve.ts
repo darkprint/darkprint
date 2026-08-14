@@ -19,10 +19,10 @@
    ============================================================ */
 
 import { getSession } from "@/lib/server/auth";
-import { notFound } from "@/lib/server/http";
+import { notFound, problem } from "@/lib/server/http";
 import type { Actor } from "@/lib/server/policy";
 import type { ServedFile } from "@/lib/server/export";
-import { ExportError } from "@/lib/server/export";
+import { ExportError, ExportReadError } from "@/lib/server/export";
 
 /**
  * Who is asking.
@@ -40,6 +40,30 @@ export function actorFor(request: Request): Actor {
 /** The one refusal body all three routes answer with. */
 export function fileNotFound(request: Request): Response {
   return notFound(request, "Not found.");
+}
+
+/**
+ * The read failed, so the caller should retry rather than conclude anything.
+ *
+ * **A 500 is a transport failure and B-03 makes those `problem+json`**, which is why this
+ * is a `Response` and not a rethrow: throwing produces a 500 too, but Next's own generic
+ * one, outside the envelope every other failure on this route uses and unobservable to
+ * anything driving the handler directly. The distinction that matters to a client is
+ * already carried by the status — 404 means the release is absent or not yours and there
+ * is nothing to come back for, 500 means ask again, which is the whole of what the
+ * pinned-digest consumer AC6 exists for needs to tell apart. No `retry-after`: this
+ * layer knows no recovery time and inventing one would be a number nobody measured.
+ *
+ * The `detail` is a fixed string. The driver error rides on `cause` inside the
+ * `ExportReadError` and reaches no rendering.
+ */
+export function fileReadFailed(request: Request): Response {
+  return problem(request, {
+    type: "https://darkprint.io/problems/read-failed",
+    title: "Temporarily unavailable",
+    status: 500,
+    detail: "The release could not be read. Try again.",
+  });
 }
 
 /**
@@ -87,7 +111,11 @@ export async function respondWithFile(
   try {
     file = await lookup();
   } catch (err) {
+    // Three kinds, three answers, decided by type rather than by inspection. The first
+    // two are conditions this module knows how to describe; the third is a bug, and a bug
+    // dressed up as a known condition is how one stops being noticed.
     if (err instanceof ExportError) return fileNotFound(request);
+    if (err instanceof ExportReadError) return fileReadFailed(request);
     throw err;
   }
   if (file === undefined) return fileNotFound(request);

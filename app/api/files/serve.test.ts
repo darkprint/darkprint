@@ -63,13 +63,35 @@ describe("app/api/files — classification", () => {
     expect(await absent.text()).toBe([...bodies][0]);
   });
 
-  /** D-90-A itself: the case that was answering 404 and must not. */
-  it("a driver failure is not caught here, so the route answers 500", async () => {
+  /**
+   * D-90-A itself: the case that was answering 404 and must not.
+   *
+   * A `Response` rather than a rethrow, because B-03 makes a transport failure
+   * `problem+json` and throwing produces Next's own generic 500 outside the envelope
+   * every other failure on this route uses — and unobservable to anything driving the
+   * handler directly, which is how this went unnoticed in the first place.
+   */
+  it("a driver failure answers 500, in the envelope, with a different body from the 404", async () => {
     const driver = new ExportReadError("export: reading this release failed.", new Error("57P01"));
-    await expect(respondWithFile(REQUEST(), () => Promise.reject(driver))).rejects.toBe(driver);
+    const response = await respondWithFile(REQUEST(), () => Promise.reject(driver));
+
+    expect(response.status).toBe(500);
+    expect(response.headers.get("content-type")).toBe("application/problem+json");
+
+    const body = await response.text();
+    const notFoundBody = await (await respondWithFile(REQUEST(), () => Promise.resolve(undefined))).text();
+    expect(body).not.toBe(notFoundBody);
+    /* Nothing from the driver, and nothing naming the release either. */
+    expect(body).not.toContain("57P01");
+    expect(body).not.toContain("reading this release failed");
   });
 
-  it("anything else is not caught either", async () => {
+  /**
+   * A bug is not a known condition. `ExportError` and `ExportReadError` are the two this
+   * module knows how to describe; anything else escapes, because a bug dressed up as a
+   * known condition is how it stops being noticed.
+   */
+  it("anything else is not caught, so a bug stays a bug", async () => {
     const boom = new TypeError("db.select is not a function");
     await expect(respondWithFile(REQUEST(), () => Promise.reject(boom))).rejects.toBe(boom);
   });

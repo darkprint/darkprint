@@ -174,12 +174,44 @@ function storedAnalysis(release: ReleaseRecord): BlueprintAnalysis | undefined {
   const stored = release.analysis;
   if (stored === undefined) return undefined;
   return {
+    // The three the README quotes, taken as stored: they are the answer B-08 makes
+    // authoritative and this layer has no business second-guessing them.
     autonomy: stored.autonomy,
     security: stored.security,
     phaseCoverage: stored.phaseCoverage,
-    ontologyVersion: stored.autonomy.ontologyVersion,
-    diagnostics: dedupe([...stored.autonomy.diagnostics, ...stored.security.diagnostics]),
+    // The two the export never reads, derived defensively. `release.autonomy` and
+    // `release.security` are `jsonb` columns written by T100, and `ReleaseRecord` types
+    // them as `AutonomyResult`/`SecurityResult` by assertion rather than by validation —
+    // so a scorecard stored without `diagnostics`, which the type says is required and
+    // the column cannot enforce, made `[...stored.autonomy.diagnostics]` throw a bare
+    // `TypeError` out of this module. That reached a route as a 500 for a release whose
+    // folder is otherwise perfectly servable, and it is the same class as D-90-A: an
+    // unsealed throw escaping where a fact about the release was meant.
+    ontologyVersion: asString(stored.autonomy?.ontologyVersion) ?? release.manifest.ontologyVersion,
+    diagnostics: dedupe([
+      ...asDiagnostics(stored.autonomy?.diagnostics),
+      ...asDiagnostics(stored.security?.diagnostics),
+    ]),
   };
+}
+
+/** A stored `diagnostics` that is absent or not an array reads as none, never as a throw. */
+function asDiagnostics(value: unknown): readonly Diagnostic[] {
+  return Array.isArray(value) ? (value as readonly Diagnostic[]) : [];
+}
+
+/**
+ * The scored ontology version, when the stored scorecard carries one.
+ *
+ * The fallback is the version the release **declares**, which is the honest second
+ * answer: it is what the manifest says the bundle was written against, and it is what
+ * `README.md` already prints. It is not always the version the scores were computed
+ * under — a B-08 re-score moves one and not the other, which is a defect the contract
+ * records against `bundle-export.ts` and an owner owes — so this fallback is the weaker
+ * answer and is only reached when the stronger one was never stored.
+ */
+function asString(value: unknown): string | undefined {
+  return typeof value === "string" && value !== "" ? value : undefined;
 }
 
 function dedupe(diagnostics: readonly Diagnostic[]): Diagnostic[] {

@@ -194,7 +194,6 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
       "@/app/api/files/blueprints/[owner]/[slug]/v/[version]/[...path]/route"
     );
     const cardRoute = await import("@/app/api/files/cards/[...ref]/route");
-    const { ExportError, ExportReadError } = await import("@/lib/server/export");
 
     const getFile = (): Promise<Response> =>
       blueprintRoute.GET(new Request("http://x/api/files/b"), {
@@ -204,8 +203,6 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
       cardRoute.GET(new Request("http://x/api/files/c"), {
         params: Promise.resolve({ ref: [pinned] }),
       });
-    const outcome = async (call: () => Promise<Response>): Promise<unknown> =>
-      call().then((response) => `returned ${response.status}`, (err: unknown) => err);
 
     expect((await getFile()).status).toBe(200);
     expect((await getCard()).status).toBe(200);
@@ -231,19 +228,39 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
     const fixTable = async (name: string): Promise<void> => {
       await testDb!.client.query(`ALTER TABLE "${name}_hidden" RENAME TO "${name}"`);
     };
-    const expectReadError = (thrown: unknown, where: string): void => {
-      expect(thrown, where).toBeInstanceOf(ExportReadError);
-      expect(thrown, where).not.toBeInstanceOf(ExportError);
-      expect((thrown as Error).message, where).toBe("export: reading this release failed.");
-      expect(Object.keys(thrown as object), where).toEqual([]);
-      expect(JSON.stringify(thrown), where).toBe("{}");
-      expect((thrown as Error).cause, where).toBeDefined();
-      expect(Object.prototype.propertyIsEnumerable.call(thrown, "cause"), where).toBe(false);
+    /**
+     * The answer is a **500 in the envelope**, not a thrown object: B-03 makes a transport
+     * failure `problem+json`, and asserting on a throw would pin the mechanism rather than
+     * the behaviour a caller sees. The sealed error is still asserted, at the layer that
+     * owns it, in `serve.test.ts`.
+     */
+    /*
+     * Pinned by **exact match against the admissible form**, not by scanning for forbidden
+     * substrings — a whitelist asserted with a blacklist test is a blacklist. The first
+     * version of this helper did scan, and `not.toContain("release")` reddened against the
+     * module's own `detail`, "The release could not be read": T-04's shape, a tell matching
+     * legitimate content, arriving in the assertion written to prevent a leak.
+     *
+     * The expected document is written out here as a literal and never rebuilt from the
+     * module, so it cannot go tautological if the constructor starts interpolating.
+     */
+    const expectReadError = async (
+      response: Response,
+      where: string,
+      instance: string,
+    ): Promise<void> => {
+      expect(response.status, where).toBe(500);
+      expect(response.headers.get("content-type"), where).toBe("application/problem+json");
+      expect(await response.text(), where).toBe(
+        `{"type":"https://darkprint.io/problems/read-failed",` +
+          `"title":"Temporarily unavailable","status":500,` +
+          `"detail":"The release could not be read. Try again.","instance":"${instance}"}`,
+      );
     };
 
     /* The ontology read, reached only through `buildExport`'s `openView`. */
     await breakTable("ontology_version");
-    expectReadError(await outcome(getFile), "openView");
+    await expectReadError(await getFile(), "openView", "/api/files/b");
     /* Untouched by it, which says the outage was where this test claims. */
     expect((await getCard()).status).toBe(200);
     await fixTable("ontology_version");
@@ -253,8 +270,8 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
        loop. Both were unwrapped, and both are separately observed only because `openView`
        is working again above. */
     await breakTable("card_version");
-    expectReadError(await outcome(getCard), "serveCard -> resolveCardRef");
-    expectReadError(await outcome(getFile), "buildExport -> pinnedCards");
+    await expectReadError(await getCard(), "serveCard -> resolveCardRef", "/api/files/c");
+    await expectReadError(await getFile(), "buildExport -> pinnedCards", "/api/files/b");
     await fixTable("card_version");
     expect((await getFile()).status).toBe(200);
     expect((await getCard()).status).toBe(200);
@@ -262,6 +279,6 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
     /* And the bundle lookup itself: the first statement the request makes, and the one
        that was answering 404. Dropped rather than renamed, because nothing follows it. */
     await testDb!.client.query('DROP TABLE "release", "bundle" CASCADE');
-    expectReadError(await outcome(getFile), "lookup -> bundleByHandle");
+    await expectReadError(await getFile(), "lookup -> bundleByHandle", "/api/files/b");
   });
 });
