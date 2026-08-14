@@ -132,7 +132,13 @@ the protocol rather than a decision inside it.
   round 6's scrutiny had gone almost entirely to `inferBlueprintBump`, because that is where every
   prior defect had been, leaving `inferOntologyBump` and `checkDeclaredBump` with regression-level
   checks only. Defects attract attention to where defects already were, which is exactly the wrong
-  distribution for a verdict whose purpose is to show a bar for *done*. It went back and gave both
+  distribution for a verdict whose purpose is to show a bar for *done*. **It does not change the verdict; it changes the evidence** — T030's adversary's
+  sharpening, and the two are different objects: a PASS resting on the parts the adversary had been
+  staring at, versus one that also covers the part it had not. Only the second is a verdict about
+  *done*. And the skew is **structural rather than personal**: an adversary's attention follows
+  where defects were found, and by the last round that is precisely the region least likely to still
+  hold one. Two adversaries found it in themselves within an hour of each other, independently,
+  which is what rules out carelessness as the explanation. It went back and gave both
   fresh adversarial attention before letting the PASS stand — self-`broader` termination, cycles,
   reparenting that reports every ancestor lost, deprecation never reading as removal, set-semantics
   duplicate collapse correctly differing from the blueprint half's multiset, unparseable inputs
