@@ -312,6 +312,36 @@ describe("inferBlueprintBump, an ambiguous pairing infers the most expensive pla
   });
 });
 
+describe("inferBlueprintBump, the stranded item is whichever prices worst, not whichever sorts last", () => {
+  it("strands the version pinned nowhere in after, not the one that happens to sort last", () => {
+    // Sorted before-leftover is [1.0.0, 1.0.1]; a positional tail slice of
+    // length one always strands 1.0.1 (still pinned in after, so only a
+    // patch). The worst stranding is 1.0.0, pinned nowhere in after: major.
+    const before = next({ dot: "digraph {}", cardRefs: ["solver@1.0.0", "solver@1.0.1", "solver@1.0.1"] });
+    const after = next({ dot: "digraph {}", cardRefs: ["solver@1.0.1", "solver@1.0.2"] });
+    const result = inferBlueprintBump(before, after);
+    expect(result.level).toBe("major");
+  });
+
+  it("is symmetric on the gained side: strands the version pinned nowhere in before", () => {
+    const before = next({ dot: "digraph {}", cardRefs: ["solver@1.0.1", "solver@1.0.2"] });
+    const after = next({ dot: "digraph {}", cardRefs: ["solver@1.0.0", "solver@1.0.1", "solver@1.0.1"] });
+    const result = inferBlueprintBump(before, after);
+    expect(result.level).toBe("minor");
+  });
+
+  it.each([
+    [["solver@1.0.0", "solver@1.0.1"], ["solver@1.0.1"]],
+    [["solver@1.0.0", "solver@1.0.1", "solver@1.0.1"], ["solver@1.0.1", "solver@1.0.1"]],
+  ])("controls: dropping the only version not shared with after is still major (%#)", (before, after) => {
+    const result = inferBlueprintBump(
+      next({ dot: "digraph {}", cardRefs: before }),
+      next({ dot: "digraph {}", cardRefs: after }),
+    );
+    expect(result.level).toBe("major");
+  });
+});
+
 describe("inferBlueprintBump, sorting is canonical even when precedence ties", () => {
   it("reads the same two build-metadata variants as unchanged regardless of which was written first", () => {
     const forward = next({ dot: "digraph {}", cardRefs: ["a@1.0.0", "a@1.0.0+build"] });

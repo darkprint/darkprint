@@ -184,6 +184,38 @@ function unpairedFloor(version: string, seenElsewhere: boolean, kind: "lost" | "
 }
 
 /**
+ * The worst price any single item in `leftover` could carry if it turned
+ * out to be the one a residue-free explanation left genuinely unpaired,
+ * and which item that is — checked against the *full* original
+ * opposite-side list (a value cancelled out earlier by an exact match is
+ * still "present" there). Only meaningful, and only ever called, when the
+ * counts *force* at least one item on this side to go unpaired: a
+ * residue-free explanation strands exactly `|thisSide| − |otherSide|`
+ * items when that is positive, and *which* ones is a free choice — any
+ * single item can be among the stranded ones (strand it, pair the
+ * remainder arbitrarily, however many pairing steps or further strandings
+ * that takes), so the worst explanation strands whichever item prices
+ * highest over the *whole* leftover list, not whichever one happens to
+ * sort last. A version cancelled out by count already never reaches here;
+ * a version this function is checking is by construction not present
+ * elsewhere on its *own* side, only possibly on the opposite one.
+ */
+function worstStranded(
+  leftover: readonly string[],
+  presentOnOtherSide: ReadonlySet<string>,
+  kind: "lost" | "gained",
+): { level: Exclude<BumpLevel, "none">; version: string } | undefined {
+  let worst: { level: Exclude<BumpLevel, "none">; version: string } | undefined;
+  for (const version of leftover) {
+    const level = unpairedFloor(version, presentOnOtherSide.has(version), kind);
+    if (worst === undefined || LEVEL_RANK[level] > LEVEL_RANK[worst.level]) {
+      worst = { level, version };
+    }
+  }
+  return worst;
+}
+
+/**
  * The worst repin size a `beforeLeftover`/`afterLeftover` pairing could
  * justify, over every `(before, after)` pair the leftovers permit —
  * `cardRefs` carries no node identity, so which specific before-version
@@ -240,7 +272,9 @@ function worstPairing(
 
 /**
  * One id's version lists, before and after. Reduced to the leftover only
- * `leftoverVersions` could not cancel out, then priced two ways.
+ * `leftoverVersions` could not cancel out, then priced two ways, both
+ * maxima over every explanation the leftover counts admit rather than one
+ * assumed explanation.
  *
  * First, the pairable portion — `worstPairing` over the *whole* leftover
  * cross product, not a positional walk. A flat "sort both lists and
@@ -253,18 +287,26 @@ function worstPairing(
  * adding a pin only ever adds more candidate pairs, and a maximum over a
  * superset of pairs cannot go down.
  *
- * Second, whatever `worstPairing` did not price at all: once the shorter
- * leftover list is exhausted, the longer one still has
- * `|beforeLeftover.length − afterLeftover.length|` entries no pairing
- * could consume in *any* assignment — a version that also appears
- * anywhere in the *full* list on the other side is a pure multiplicity
- * change (a second node now pinning, or no longer pinning, what another
- * node already pins) and is at least a `patch`, since the bytes and the
- * digest both moved even though the declared surface did not; a version
- * that appears nowhere on the other side, at any count, is a pin
- * genuinely gained (minor) or genuinely lost (major). An id absent from
- * one side supplies an empty leftover list here, which this same logic
- * reads correctly as "every occurrence gained" or "every occurrence
+ * Second, whatever pairing structurally cannot consume: when the leftover
+ * counts differ, a residue-free explanation strands exactly
+ * `|beforeLeftover.length − afterLeftover.length|` items on the longer
+ * side, no matter how the rest are paired — but *which* items are the
+ * stranded ones is still a free choice, and a positional "whichever ones
+ * sort last" answer (tried, and wrong) can pick the cheapest candidate
+ * over and over while a *more* expensive one, sitting earlier in sorted
+ * order, goes unpriced: `[1.0.0,1.0.1,1.0.1] → [1.0.1,1.0.2]` sorts its
+ * before-leftover as `[1.0.0,1.0.1]` and a tail slice of length one always
+ * strands `1.0.1` (pinned nowhere in `after`, still only a patch) instead
+ * of `1.0.0` (pinned nowhere in `after` at all, major). `worstStranded`
+ * takes the max over the *entire* surplus-side leftover instead of a
+ * slice of it — exactness by the same argument as `worstPairing`: any one
+ * item can be the stranded one, so trying all of them and keeping the
+ * worst is exact, not an over-estimate. When the leftover counts are
+ * equal, nothing is stranded at all: a residue-free bijection exists with
+ * no leftover residue to explain away, and `worstPairing` alone already
+ * covers every pairing that bijection could choose. An id absent from one
+ * side supplies an empty leftover list on that side, which this same
+ * logic reads correctly as "every occurrence gained" or "every occurrence
  * lost" with no extra branch.
  */
 function compareVersions(
@@ -282,21 +324,25 @@ function compareVersions(
     push(worst.level, `card \`${id}\` may have repinned: ${worst.before} → ${worst.after}`);
   }
 
-  const n = Math.min(beforeLeftover.length, afterLeftover.length);
-  for (let i = n; i < afterLeftover.length; i++) {
-    const version = afterLeftover[i];
-    if (beforeSet.has(version)) {
-      push("patch", `card \`${id}\`'s pin count at \`${version}\` changed`);
-    } else {
-      push("minor", `card \`${id}\` gained a pin at ${version}`);
+  if (beforeLeftover.length > afterLeftover.length) {
+    const stranded = worstStranded(beforeLeftover, afterSet, "lost");
+    if (stranded !== undefined) {
+      push(
+        stranded.level,
+        stranded.level === "major"
+          ? `card \`${id}\`'s pin at ${stranded.version} is gone`
+          : `card \`${id}\`'s pin count at \`${stranded.version}\` changed`,
+      );
     }
-  }
-  for (let i = n; i < beforeLeftover.length; i++) {
-    const version = beforeLeftover[i];
-    if (afterSet.has(version)) {
-      push("patch", `card \`${id}\`'s pin count at \`${version}\` changed`);
-    } else {
-      push("major", `card \`${id}\`'s pin at ${version} is gone`);
+  } else if (afterLeftover.length > beforeLeftover.length) {
+    const stranded = worstStranded(afterLeftover, beforeSet, "gained");
+    if (stranded !== undefined) {
+      push(
+        stranded.level,
+        stranded.level === "minor"
+          ? `card \`${id}\` gained a pin at ${stranded.version}`
+          : `card \`${id}\`'s pin count at \`${stranded.version}\` changed`,
+      );
     }
   }
 }
