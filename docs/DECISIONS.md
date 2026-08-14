@@ -202,9 +202,9 @@ everything the skill instructs — are `AGENT-PROPOSED` and unread.
 | D-78 | The moment any backend feature lands, every seeded marker and every disclaimer has to be revisited in the same change. | `PROJECT.md:293-295`; `app/settings/page.tsx:44-47` | UNATTRIBUTED | IMPLEMENTED as a recorded precondition — `app/settings/page.tsx:44-47` names it | PENDING-OWNER-REVIEW |
 | D-79 | Supabase covers auth, database and storage; no separate service for each. | `files/darkprint-design.md:357` | AGENT-PROPOSED (Q2/Q3: doc 1 §9.3 "Decisione" — decided by whoever wrote doc 1, not by the owner) | NOT-IMPLEMENTED — no Supabase dependency in `package.json` | PENDING-OWNER-REVIEW |
 | D-80 | Immutable content lives in object storage indexed by hash, not in Git; Git is at most a later export function. | `files/darkprint-design.md:169-187` | AGENT-PROPOSED (Q2/Q3: doc 1 §5.1 "Decisione") | NOT-IMPLEMENTED — content lives in `content/` in this Git repository and is copied to `public/bundles/` at prebuild | PENDING-OWNER-REVIEW |
-| D-81 | No GitHub OAuth, no linking of user repositories, no Git as the blueprint archive — a product constraint, not a constraint on the author's own workflow. | `files/darkprint-design.md:31-33` | AGENT-PROPOSED (Q2/Q3: doc 1 §0 constraint 4) | NOT-IMPLEMENTED (nothing to violate yet; no auth of any kind exists) | PENDING-OWNER-REVIEW |
+| D-81 | No GitHub OAuth, no linking of user repositories, no Git as the blueprint archive — a product constraint, not a constraint on the author's own workflow. | `files/darkprint-design.md:31-33` | AGENT-PROPOSED (Q2/Q3: doc 1 §0 constraint 4) | CONTRADICTED — superseded by the owner's answers of 2026-08-13, recorded as `backend.md` B-02: sign-in **is** GitHub OAuth. Implemented and merged at `ec516fa` (`lib/server/auth/**`), tagged `t000-verified`. Repository linking and Git-as-archive are untouched by that reversal and remain out | CONTRADICTED |
 | D-82 | Private blueprints are excluded from the MCP semantic-search index and from the usage counts that trigger ontology promotion. | `files/darkprint-onboarding-positioning.md:326-327`; `files/darkprint-ontology-v0.1.md:144` | AGENT-PROPOSED (Q2/Q3: doc 2 §6.4, doc 3 §7) | NOT-IMPLEMENTED — `lib/core/config.ts:161` holds promotion thresholds nothing reads; `architecture/engine.md:182-183` says so | PENDING-OWNER-REVIEW |
-| D-83 | Do not build anything actively anti-scraping; put rate limiting on the APIs instead, because "not scrapable" conflicts with SEO, LLM ranking and MCP. | `files/darkprint-onboarding-positioning.md:367-369` | AGENT-PROPOSED (Q2/Q3: doc 2 §7.3) | NOT-IMPLEMENTED (no API exists to rate-limit) | PENDING-OWNER-REVIEW |
+| D-83 | Do not build anything actively anti-scraping; put rate limiting on the APIs instead, because "not scrapable" conflicts with SEO, LLM ranking and MCP. | `files/darkprint-onboarding-positioning.md:367-369` | AGENT-PROPOSED (Q2/Q3: doc 2 §7.3) | CONTRADICTED — superseded by the owner's answers of 2026-08-13, recorded as `backend.md` B-17: rate limits apply to reads **and** writes, with API keys for high-volume consumers. Rate-limiting reads is the anti-scraping measure D-83 ruled out; the cost to MCP and LLM discoverability was accepted knowingly. Not yet built (T230) | CONTRADICTED |
 | D-84 | An account is asked for on *save*, never on download. | `files/darkprint-onboarding-positioning.md:303` | AGENT-PROPOSED (Q2/Q3: doc 2 §6.1) | NOT-IMPLEMENTED — downloads are open and there is no save; `app/u/[username]/saved/page.tsx` renders a seeded list | PENDING-OWNER-REVIEW |
 
 ---
@@ -236,9 +236,13 @@ After the owner's answers of 2026-08-12 (Q1–Q13, recorded at the foot of
 D-85 to D-89 are numbered out of order because they were added after the ledger was first
 numbered; the IDs are stable and each sits in the section it belongs to.
 
-The eight `CONTRADICTED` rows are D-09, D-11, D-32, D-35, D-39, D-42, D-43 and D-63. Four of
+The ten `CONTRADICTED` rows are D-09, D-11, D-32, D-35, D-39, D-42, D-43, D-63, D-81 and
+D-83. Six of
 them are `CONTRADICTED` because a later owner decision superseded the earlier one, which is
-the healthy case: D-32 (`feaa9bc`), D-35 and D-43 (D-88), and D-42 (D-89). **No question in
+the healthy case: D-32 (`feaa9bc`), D-35 and D-43 (D-88), D-42 (D-89), and D-81 and D-83
+(the owner's twenty backend answers of 2026-08-13, recorded as `backend.md` B-02 and B-17).
+Both of the last two were `AGENT-PROPOSED` and unowned, so what superseded them is the
+first owner statement either question ever received rather than a reversal of one. **No question in
 this audit is left open.**
 
 One thing the answers settled by direction rather than by fact, and it is recorded rather
