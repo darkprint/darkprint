@@ -158,6 +158,36 @@ First PASS surfaced to owner: t020 on 2026-08-14.
   being contract defects rather than code, which is convergence. Cycling without that fall is
   reported, not burned through.
 
+## The scope of a check is itself a claim, and it goes stale like any other
+
+T030's adversary's formulation, offered about its own two failures and declined as a compliment:
+*"I applied a standard rigorously inside the boundary I had drawn and never checked the boundary."*
+It is the through-line of this whole run, and nearly every rule below is an instance of it:
+
+- `pg_database` and the object store checked after every round for four rounds — and never the
+  working tree, which was in a *different* task's worktree, so nothing it ran could have shown it.
+- A determinism stamp scoped to the files thought to be under test, while `npm test` runs the
+  whole repository.
+- A suite-scoped run reporting 7 before and 7 after while three tests in the *other* suite broke.
+- An oracle exhaustive over 3136 pairs that cannot reach a branch needing two versions equal and
+  not identical, because the pool carried no build metadata.
+- A generator whose reachable set excluded an empty `after` at probability `(1/3)^8`.
+- A blacklist predicate complete over the five things someone listed.
+- A falsification confirmed against the guard function rather than the published surface.
+- A leak assertion built by hand, never reaching the catch path a caller hits.
+- A whitelist block inside `if (cause !== undefined)`, absent for every error raised before the
+  database is touched.
+
+In each, the *method* was sound and applied honestly. What was never re-examined was the boundary
+the method ran inside — and a boundary is a claim: *"everything that could matter is in here."*
+**So the scope of a check gets re-derived when the thing checked changes, exactly as a finding gets
+re-read.** A check whose scope was right when it was written and is stale now reports silence as
+cleanliness, which is the failure this file has recorded in eleven different costumes.
+
+The counterpart, from the same agent's better instance: it had a 2^n **measurement** and no
+**reachability**, and said which was which rather than collapsing them into either a charge or a
+dismissal. Naming the boundary is the whole discipline; it is only invisible when nobody states it.
+
 ## Measure the claim, not something adjacent to it
 
 Stated by T025's adversary after correcting the orchestrator twice in one session, and it is
