@@ -531,6 +531,18 @@ its 2 against its own throwaway reference, which is precisely why it could. The 
 produce the post-fix number was therefore incoherent, and it said so before handback rather than
 either breaking blindness quietly or arriving empty-handed.
 
+**Blindness is preserved by default, and a measurement that needs no judgement moves to whoever can
+take it without cost.** T090's blind author asked which direction to join the trees rather than
+typing a `git merge` — merging the implementation into its worktree is cheaper and ends its
+blindness for good, since it cannot un-see a stack trace. The asymmetry decides it: **blindness is
+cheap to keep and impossible to restore**, every wave-3 task needed a second round, and the
+set-difference is *mechanical* — a captured baseline, a script, and a diff. It requires the
+author's instrument, not the author's eyes. So the author hands over the baseline and the script,
+and the orchestrator or the adversary runs it in a tree that is already sighted.
+
+The general form: **before joining a blind tree to a sighted one, ask what the join buys that the
+artefact alone would not.** If the answer is only convenience, it is the wrong direction.
+
 **Blindness is not lifted.** The division is: the **implementer** runs the experiment on its own
 fix before handing back, and the **adversary** reproduces it independently — two measurers, and
 deliberately two instruments, since the blind author's parameterised script goes to the adversary
