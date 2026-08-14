@@ -253,6 +253,26 @@ against the implementation and got **0**. The two results do not conflict; the g
 expectation rather than a hope: after the fix the experiment must red **2, not 0**, and a 0 means
 the fix did not reach the published surface however green the suite looks.
 
+**Who runs it, because the orchestrator asked the one agent who cannot.** The experiment deletes a
+guard from the module under test, which requires finding it, which requires reading the
+implementation — so a **blind test author cannot run it without ceasing to be blind**. It produced
+its 2 against its own throwaway reference, which is precisely why it could. The instruction to
+produce the post-fix number was therefore incoherent, and it said so before handback rather than
+either breaking blindness quietly or arriving empty-handed.
+
+**Blindness is not lifted.** The division is: the **implementer** runs the experiment on its own
+fix before handing back, and the **adversary** reproduces it independently — two measurers, and
+deliberately two instruments, since the blind author's parameterised script goes to the adversary
+while the implementer builds its own. An instrument shared by the agent being measured and the
+agent checking it is one instrument wearing two hats. What the blind author contributes at handback
+without any ruling is the **other direction**: re-run the suite against the merged implementation
+and report which reds cleared. That signal is real and **weaker**, and the reason is worth keeping
+— *a test can pass for the wrong reason where a deletion diff cannot.*
+
+The script itself carries the lesson of this file: it **refuses to report anything if its pattern
+matched no line**, so a silent no-op cannot read as a pass. Every instrument here should fail that
+way.
+
 **Test the suite before trusting its output, not after.** T030's adversary patched
 `expectSealedError` in a **scratch copy** to the amended clause and re-ran *before* reading the
 suite's 32 reds — 32 fell to 17, so fifteen were the superseded wording and none was a defect.
