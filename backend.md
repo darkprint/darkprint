@@ -206,7 +206,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | claimed | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | reverted | adversary round 3 FAIL: rounds 1-2 all fixed and 201/201 green, but the sorted position-wise walk misaligns when a duplicate of a non-largest version moves (a pure multiplicity change infers `major` with a fabricated repin), and `compareVersionStrings` ties on build metadata so a stable sort makes the answer order-dependent again — same multiset, `patch` not `none` |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | impl-done | round 3 fix: match-by-value cancellation before pairing (`leftoverVersions`) replaces the flat sorted positional walk, fixing the middle-of-list misalignment; canonical tiebreak sort fixes the build-metadata order-dependence. typecheck/lint/build clean; `tests/server/t025`+scratch 206/206; full suite 4056/4056 on three consecutive runs on a quiet tree |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | adversarial-pass | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -852,7 +852,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T025, Versioning service: semver, digest, bump, chains
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t025-versioning` on `feat/t025-versioning`
 - **Test worktree:** `../darkprint-wt-t025-versioning-tests` on `test/t025-versioning`
 - **Depends on:** T000 (contract: types)
@@ -1300,6 +1300,38 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     **Residue: none.** T025 stores nothing; both probes were in-process calls to the published
     functions. No database, no objects, no `.env`, probe files deleted. The two modified files
     left in the tree are the other session's, untouched by me. No `git stash` at any point.
+  - 2026-08-14 implementer: fixed Defect 1. The flat "sort both id-keyed lists, compare
+    index by index" walk broke the instant a duplicate's count changed anywhere but the
+    tail of the sorted range — dropping one of three `1.0.0` pins while a `5.0.0` pin sat
+    untouched shifted `5.0.0` left by one position, and the walk read that shift as a
+    repin `5.0.0` never made. `leftoverVersions` now cancels matched occurrences **by
+    value** first — for each distinct version string, `matched = min(before-count,
+    after-count)`, leaving each side only the copies the other side cannot account for —
+    and only that leftover gets sorted (with the round-3 canonical tiebreak, kept) and
+    paired position by position for magnitude pricing. A value can never have leftover on
+    both sides at once, so the pairing is unambiguous; membership classification for the
+    tail (pure multiplicity vs. genuinely gained/lost) still checks the *full* original
+    before/after sets, not the leftover, which is what correctly reads a lost duplicate as
+    `patch` when its value is still pinned elsewhere. Verified by hand against both
+    reported examples — `{1.0.0, 1.0.0, 2.0.0} → {1.0.0, 2.0.0}` and
+    `{1.0.0 ×3, 5.0.0} → {1.0.0 ×2, 5.0.0}` — both now `patch`, no fabricated repin in
+    the reasons; the largest-version-drop and single-id-count-drop controls unchanged.
+    Added 2 scratch regression tests naming the exact shapes. Rebased by merge onto
+    `backend` at `6628854` (a literal rebase still explodes into replaying this branch's
+    merge-commit history into 16 individual commits — same as every prior round; aborted
+    immediately and merged instead). One real conflict, the Task index table: two rows had
+    each independently drifted stale on the other branch — kept my own T025 row (`reverted`,
+    round-3 evidence, base's copy was a stale `claimed`) and took base's T060 row
+    (`adversarial-pass`, mine was a stale `claimed`) rather than picking one side for the
+    whole table. Verified the contract prose against `backend` in full, no line limit this
+    time: 44 lines either side, zero diff except `State`. Committed the fix by explicit path
+    (`git add lib/server/versioning/blueprint-bump.ts lib/server/versioning/blueprint-bump.test.ts`),
+    never `-A`, per the new shared-worktree rule. **Gates**, run on a quiet tree — no other
+    session editing while these ran: `npm run typecheck`, `npm run lint`, `npm run build`
+    clean, no unexpected diff. `npx vitest run tests/server/t025 lib/server/versioning`:
+    **206/206**. `npm test`, full suite, three consecutive runs: **4056/4056** each time,
+    byte-identical. Reported result to orchestrator; tree is theirs to hand back to the
+    adversary.
 
 ### T060, Authorization policy: owner and operator
 
