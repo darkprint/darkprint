@@ -109,7 +109,32 @@ export const ADMISSIBLE = {
   ontologyUnpublished: "exportRelease: the ontology version this release names is not published.",
   vocabularyNotTerms: "exportRelease: this release's stored vocabulary is not a term list.",
   noSuchFile: "serveFile: no such file in this release.",
+  /**
+   * The EIGHTH, and it arrived differently from the other seven.
+   *
+   * D-90-02 published five and the block published two; this one was invented in the
+   * implementation **after** the forms were ruled, which is the contract following the code and
+   * is why no blind suite could have pinned it. It is published now, so it is pinned now — and
+   * it is the second time a form arriving after the ruling has cost coverage.
+   *
+   * It is also the one form whose CLASS matters as much as its wording: ruled a **sibling** of
+   * `ExportError`, not an instance, so a driver failure reaches the route as a 500 rather than
+   * sharing the type the route reads as "not found". A client holding a pinned digest reads 404
+   * as *withdrawn, stop retrying*; an outage must not say that.
+   */
+  readFailed: "exportRelease: reading this release failed.",
 } as const;
+
+/** The seven that mean "a fact about the release" — everything except the driver-failure sibling. */
+export const RELEASE_FACT_FORMS: readonly string[] = [
+  ADMISSIBLE.noSuchRelease,
+  ADMISSIBLE.doesNotResolve,
+  ADMISSIBLE.badFactoryDot,
+  ADMISSIBLE.cardUnavailable,
+  ADMISSIBLE.ontologyUnpublished,
+  ADMISSIBLE.vocabularyNotTerms,
+  ADMISSIBLE.noSuchFile,
+];
 
 /*
  * D-90-02 also STRUCK `"serveFile: recording the download failed."` — "a counter write that fails
