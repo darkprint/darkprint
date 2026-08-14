@@ -3505,6 +3505,30 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** —
 - **Owns:** `lib/server/limits/**`, `app/api/account/keys/**`
 - **Forbidden:** every other route file, `lib/server/auth/**`
+- **Published signatures** (checked against `backend` at `912666e`. Two limits already exist in the code and are the **starting numbers, consumed not restated**: 512 KB per uploaded file (`components/upload/BundleDropzone.tsx:91`) and a card `params` nesting depth of 100 (`lib/core/card/validate.ts:108`). **No API-key table exists in `lib/db/schema.ts`** — a dependency on T000's owner, reported not worked around. Barrel: `@/lib/server/limits`.)
+
+        interface LimitVerdict { allowed: boolean; limit: number; remaining: number; resetAt: Date }
+        interface ApiKeyRecord { keyId: string; accountId: string; label: string; createdAt: Date; revokedAt: Date | null }
+
+        checkLimit(db: Db, subject: { accountId: string | null; keyId: string | null; ip: string }, bucket: string): Promise<LimitVerdict>
+        issueKey(db: Db, actor: Actor, accountId: string, label: string): Promise<{ record: ApiKeyRecord; secret: string }>
+        revokeKey(db: Db, actor: Actor, keyId: string): Promise<void>
+        resolveKey(db: Db, secret: string): Promise<ApiKeyRecord | undefined>
+
+  **`issueKey` returns the secret exactly once and `ApiKeyRecord` does not carry it.** The secret is stored hashed and is unrecoverable; the record shape makes that structural rather than a rule someone remembers, in the same way `PublicAuthor` has no `email`. A test asserts `ApiKeyRecord`'s key set excludes any secret-bearing field.
+
+  **AC4 — "a revoked key is refused immediately" — forbids caching `resolveKey`.** The natural optimisation is a process-local map, and it satisfies every other criterion while leaving a revoked key live until the process restarts. If a cache is ever wanted it needs invalidation on revoke, which is a harder thing to get right; state the prohibition rather than leaving it to be discovered.
+
+  **AC5 is a negative and negatives go untested.** "An anonymous read below the ceiling is never delayed or challenged" — asserted by measuring that `checkLimit` on an under-ceiling read performs **no write**, not by observing that a response came back. A counter implementation that writes on every read passes a latency-free test on an idle machine and falls over under load.
+
+  **AC1's refusal carries the limit and the reset and is `problem+json` 429** (B-03). Admissible form:
+
+        RateLimitedError  "<bucket>: limit of <n> per <window> reached; resets at <ISO instant>."
+
+  The bucket name, the number, the window and the instant. **Never the caller's identity, key id or IP** — a rendering that names the subject makes the refusal itself an identity oracle.
+
+  **This reverses D-83 and the cost is explicit** (`backend.md` B-17): an unkeyed MCP or crawler client hits a ceiling, so the product's discoverability by agents depends on that ceiling being generous. The starting numbers are a decision the owner has not taken; **the ceiling values are `TBD:` and the task must not invent them.**
+
 - **Goal:** bound reads and writes, and issue API keys to high-volume consumers.
 - **Contract:** B-17 — limits apply to reads as well as writes, with keys issued per account for volume. Two limits already exist in the code and are the starting numbers: 512 KB per uploaded file (`components/upload/BundleDropzone.tsx:91`) and a card `params` nesting depth of 100 (`lib/core/card/validate.ts:108`). A refusal names the limit and when it resets, as `problem+json` 429. This reverses D-83, so the cost is explicit: an unkeyed MCP or crawler client hits a ceiling, and the product's discoverability by agents depends on that ceiling being generous.
 - **Acceptance criteria:** (1) an over-limit request returns 429 naming the limit and the reset; (2) limits are enforced server-side regardless of any client cap; (3) a valid API key raises the ceiling and is attributable in the audit log; (4) a revoked key is refused immediately; (5) an anonymous read below the ceiling is never delayed or challenged.
@@ -3568,6 +3592,29 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** T250, T262
 - **Owns:** `lib/server/profiles/**`, `app/api/authors/**`
 - **Forbidden:** `lib/server/accounts/**`, `app/api/account/**`
+- **Published signatures** (checked against `backend` at `912666e` and against `lib/data/profiles.ts:33-60`'s record — `{ joinedAt, watchers, support, validated, pinned }`. Barrel: `@/lib/server/profiles`.)
+
+        interface ProfileRecord {
+          author: PublicAuthor; joinedAt: Date;
+          watchers: number; support: number; validated: boolean;
+          pinned: readonly string[];
+          counts: { blueprints: number; cards: number; terms: number };
+        }
+
+        getProfile(db: Db, actor: Actor, handle: string): Promise<ProfileRecord | undefined>
+        setPins(db: Db, actor: Actor, accountId: string, pins: readonly string[]): Promise<ProfileRecord>
+        toggleFollow(db: Db, actor: Actor, handle: string): Promise<{ watchers: number; followedByCaller: boolean }>
+
+  **AC1 is the contract's own sentence made structural: `counts` is computed at read time and is not a column.** "Anything countable is counted, never stored as a counter" — the profile record holds only what the archive cannot count. A stored count passes every criterion here and drifts silently the first time a bundle is deleted, transferred (T120) or made private. **There is no counter column and there must not be one.**
+
+  **AC2 is why `getProfile` takes an `Actor` and why `counts` cannot be cached across callers.** An owner's card count includes private rows and a visitor's does not, so the same handle yields two different records. A process-level cache keyed on handle alone serves the owner's counts to a visitor — which is the private-row leak B-13 exists to prevent, arriving through a cache rather than through a query.
+
+  **AC3's omission, not null, is a shape decision the frontend already made** (`components/profile/load.ts:182-190`): a pin whose target no longer resolves is **absent from the array**, never present as a null. So `pinned` is `readonly string[]` and never `(string | null)[]`, and the test asserts the array length changes rather than that an element is null. `setPins` accepts at most two.
+
+  **AC4's "watcher count equals the follower count" is a consistency criterion between two things that could drift**, so the count is derived from the follow rows rather than incremented alongside them — same rule as `counts`, and the same reason.
+
+  **Admissible message form:** `"getProfile: no such handle."` — identical for an unknown handle and one the caller may not see, since a distinguishable message reinstates the existence oracle the 404 closes.
+
 - **Goal:** serve the page at one handle — identity, published work, pins, follows, and the summary figures.
 - **Contract:** the profile record holds only what the archive cannot count: `{ joinedAt, watchers, support, validated, pinned }` (`lib/data/profiles.ts:33-60`); anything countable is counted, never stored as a counter. A pin is at most two, a blueprint or a card ref, and a pin whose target no longer resolves is omitted rather than returned null (`components/profile/load.ts:182-190`). Owner and visitor counts differ by exactly the private rows (B-13, T060).
 - **Acceptance criteria:** (1) blueprints, cards and namespaced terms are counted from the stores, not stored; (2) an owner's card count includes private rows and a visitor's does not; (3) a pin at a deleted target is omitted; (4) a follow toggles and the watcher count equals the follower count; (5) an unknown handle returns 404.
@@ -3728,6 +3775,26 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** T190
 - **Owns:** `lib/server/lineage/**`, `app/api/lineage/**`
 - **Forbidden:** `lib/server/publish/**`, `lib/server/archive/**`
+- **Published signatures** (checked against `backend` at `912666e`. Lineage is one optional field on the ordinary bundle record — `{ owner, slug, version }`, already published in T010's `BundleRecord` — and **there is no `Fork` type and no second list** (`lib/data/bundles.ts:1-28`). Barrel: `@/lib/server/lineage`.)
+
+        type DriftTone = "ok" | "moved" | "blocked"
+        interface Repin { card: string; from: string; to: string; at: Date }
+        interface Drift { tone: DriftTone; repins: readonly Repin[]; reason?: string }
+
+        forkBundle(db: Db, actor: Actor, from: { ownerHandle: string; slug: string; version: string }, to: { slug: string; visibility?: "public" | "private" }): Promise<BundleRecord>
+        driftOf(db: Db, actor: Actor, bundleId: string): Promise<Drift>
+        forksOf(db: Db, actor: Actor, bundleId: string): Promise<readonly BundleRecord[]>
+
+  **AC2 and AC3 are one property and it is the hardest thing in this task: a private fork is invisible upstream in every direction.** Not in the count, not in the list, not in the upstream author's notifications. `forksOf` filters through `visibleTo`, and the count is `forksOf(...).length` **from the same filtered query** rather than a separate aggregate — the T140 rule again, because a count that forgets the filter is the standard way this leaks. The discriminating test forks privately, asserts the upstream count is unchanged, publishes, and asserts it increments.
+
+  **`blocked` describes this bundle's own problem and never frames it as falling behind.** That is a copy constraint, not an engineering one, and it is why `Drift` carries `reason?` separately from `repins`: a `blocked` drift must be renderable **without naming the upstream at all** (AC5). A single message string would make it impossible to satisfy that without string surgery at the call site.
+
+  **`moved` names the exact repin `{ card, from, to, at }`** — AC4 asserts *both versions* appear, so a tone alone does not satisfy it.
+
+  **AC1 records the release taken, not the bundle.** A fork copies the upstream **release's** bytes and lineage carries `version`, so a fork of a bundle that later publishes again still names what it actually took.
+
+  **Admissible message forms:** `"forkBundle: no such bundle."` for an unreadable upstream (AC6, 404 not 403), and `"forkBundle: `<slug>` is already yours."` for a slug collision in the forker's own namespace — the caller's own slug, which is theirs to see.
+
 - **Goal:** let an account copy somebody else's bundle, record where it came from, and report when the upstream moved past it.
 - **Contract:** lineage is one optional field on the ordinary bundle record, `{ owner, slug, version }`, not an entity: there is no `Fork` type and no second list (`lib/data/bundles.ts:1-28`). Fork counts and lists are computed over public rows only, and a private fork is never announced on its upstream nor to its author (`:508-526`, `components/bundle/Aside.tsx:262-265`). Drift is one of three tones, `ok`, `moved`, `blocked`, where `blocked` describes this bundle's own problem and never frames it as falling behind, and `moved` names the exact repin `{ card, from, to, at }`. A fork copies the upstream release's bytes and records the release taken.
 - **Acceptance criteria:** (1) forking a public bundle produces one owned by the forker with lineage naming owner, slug and release; (2) the upstream's fork count is unchanged while the fork is private and increases when it is published public; (3) the upstream author gets no notification for a private fork; (4) drift over a copy pinning an older card reports `moved` and names both versions; (5) drift over a copy with an unresolvable node reports `blocked` without mentioning the upstream; (6) forking a bundle the caller cannot read returns 404.
@@ -3743,6 +3810,33 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** —
 - **Owns:** `lib/server/lifecycle/**`, `app/api/transfer/**`, `app/api/account/delete/**`
 - **Forbidden:** `lib/server/accounts/**`, `lib/server/publish/**`
+- **Published signatures** (checked against `backend` at `912666e`. Both cascades are written on the page that offers them (`app/settings/page.tsx:433-449`) and are **consumed as the spec, not paraphrased**. Re-attribution is digest-safe by construction: `author` is excluded from `cardDigest` (`lib/core/hash/digest.ts`) and the manifest is not part of `bundleDigest`. Barrel: `@/lib/server/lifecycle`.)
+
+        interface TransferPlan { bundleId: string; fromAccountId: string; toAccountId: string; slug: string; collides: boolean }
+        interface DeletionPlan { accountId: string; handle: string; privateBundles: number; privateCards: number; publishedRetained: number }
+
+        planTransfer(db: Db, actor: Actor, bundleId: string, toHandle: string): Promise<TransferPlan>
+        transferBundle(db: Db, actor: Actor, bundleId: string, toHandle: string): Promise<BundleRecord>
+        planDeletion(db: Db, actor: Actor, accountId: string): Promise<DeletionPlan>
+        deleteAccount(db: Db, actor: Actor, accountId: string): Promise<void>
+
+  **The two `plan*` verbs exist because AC3 requires refusing "before anything moves", and a criterion about ordering needs a surface that can be observed without performing the act.** `planTransfer` reports `collides` without writing; `transferBundle` re-checks and refuses. A test can then assert the refusal **and** that nothing moved, rather than inferring atomicity from an error.
+
+  **AC1 is a non-effect and the most important test in the task: the digest is unchanged.** Asserted by capturing the release digest before and after the transfer and comparing — it holds by construction because `author` is outside `cardDigest` and the manifest is outside `bundleDigest`, and the test is what keeps that true if either digest input ever widens.
+
+  **AC5 is the deletion cascade's real content and it is a property about strangers' bundles.** "Every published bundle pinning the deleted account's cards still resolves" — so deletion **must not** delete published cards, whoever owns them. The discriminating fixture is a *second* account's public bundle pinning the deleted account's card, resolved before and after.
+
+  **AC4 is T070's reservation and this task must not implement its own.** `releaseHandle` updates the reservation row; the handle stays unclaimable because the row is the primary key. Call it, do not reproduce it.
+
+  **AC6 needs the private half destroyed while the published half stays**, which is why `DeletionPlan` reports the three numbers separately: a plan that cannot distinguish them cannot be reviewed before it runs, and this is the one irreversible operation in the registry.
+
+  **Admissible message forms:**
+
+        TransferRefusedError  "transferBundle: `<handle>` already has a bundle at `<slug>`."
+        DeletionRefusedError  "deleteAccount: not this account's owner."
+
+  The recipient handle and the slug are both the caller's own submission. Nothing enumerates what the recipient holds.
+
 - **Goal:** move a bundle to another handle, and delete an account, without breaking anything that pins their content.
 - **Contract:** both cascades are written on the page that offers them — transfer: "the digest does not change, because the bundle is the same bytes. Only the author line moves"; deletion: the handle is reserved, private bundles are destroyed, everything published stays, and a pinned card cannot be withdrawn (`app/settings/page.tsx:433-449`). Re-attribution is digest-safe by construction: `author` is excluded from a card's digest and the manifest is not part of a bundle's. A transfer moves the bundle's slug into the recipient's namespace, which may collide (B-09).
 - **Acceptance criteria:** (1) after a transfer the digest is unchanged and the bundle resolves identically; (2) after a transfer the old owner has no write access and the new owner does; (3) a transfer into a namespace where the slug is taken is refused before anything moves; (4) after a deletion the handle cannot be claimed; (5) after a deletion every published bundle pinning the deleted account's cards still resolves; (6) after a deletion the account's private bundles and private cards are unreadable by anyone.
