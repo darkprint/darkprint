@@ -36,6 +36,24 @@ the lockfile serialisation point recorded under T000's log:
 - **Every new worktree runs `npm ci` before its first gate.** A worktree gets its own
   `node_modules`; branching does not carry one.
 
+## One writer per worktree at a time
+
+The implementer and the adversary share a task's implementation worktree, and the protocol
+never says which of them may write when. T025's adversary discovered mid-verdict that the
+implementer was editing `blueprint-bump.ts` while it ran: run 1 measured one tree, run 2
+straddled an edit, run 3 measured a third. The totals never moved, so nothing looked wrong —
+but three runs of three different trees is not a determinism guard, and it retracted the claim
+itself rather than let it stand. It also had to commit `backend.md` **by path**, because
+`git add -A` would have swept the implementer's uncommitted work into the adversary's commit.
+
+**The rule.** A task's implementation worktree has exactly one writer at a time. While an
+adversarial pass is running the implementer does not touch the tree, and while an implementer
+is working the adversary does not start. The orchestrator hands the tree over explicitly in
+both directions, as it already does for the merge. Any agent committing in a shared worktree
+commits **by path**, never `git add -A`.
+
+Same class as the repo-global stash: a shared mutable resource with no stated owner.
+
 ## Worktree removal is deferred while sessions live in them
 
 `docs/ORCHESTRATION.md` Phase 3 removes a worktree on merge. That is deferred here for a
