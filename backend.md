@@ -182,6 +182,15 @@ Three cheap guards, all now in force:
   `set -a; . ./.env.example; set +a` before a gate turns those files green instead of
   "recorded unverified". Every `DATABASE_URL`/`S3_*`/`SESSION_SECRET` failure in this run has
   been an unset shell, never a defect — including two of the orchestrator's own.
+- **Paste the output; do not narrate the case.** T025's adversary reported a minimal case whose
+  numbers it had reconstructed rather than read — its probe had printed `major`/`major` and it
+  wrote the entry as `major`/`minor`. The narrated case was *plausible*: right shape, right
+  direction, right conclusion, invented numbers. **A false claim that supports a true finding is
+  the hardest kind to catch**, because everything around it corroborates it and the conclusion
+  survives the correction. It reached a committed report and was caught only by recomputing the
+  arithmetic from the definitions. A case reported as executed numbers — inputs, outputs, and the
+  intermediate values the predicate reads — cannot be narrated, which is why asking for exactly
+  that resolved it in one exchange.
 - Before carrying a **finding** forward into a later round, re-read the thing it is about.
   T010's adversary re-ran all six criteria rather than carrying them forward, then carried its
   AC1-contradiction claim into two further rounds without re-reading AC1, which had been
@@ -253,11 +262,131 @@ against the implementation and got **0**. The two results do not conflict; the g
 expectation rather than a hope: after the fix the experiment must red **2, not 0**, and a 0 means
 the fix did not reach the published surface however green the suite looks.
 
+**Who runs it, because the orchestrator asked the one agent who cannot.** The experiment deletes a
+guard from the module under test, which requires finding it, which requires reading the
+implementation — so a **blind test author cannot run it without ceasing to be blind**. It produced
+its 2 against its own throwaway reference, which is precisely why it could. The instruction to
+produce the post-fix number was therefore incoherent, and it said so before handback rather than
+either breaking blindness quietly or arriving empty-handed.
+
+**Blindness is not lifted.** The division is: the **implementer** runs the experiment on its own
+fix before handing back, and the **adversary** reproduces it independently — two measurers, and
+deliberately two instruments, since the blind author's parameterised script goes to the adversary
+while the implementer builds its own. An instrument shared by the agent being measured and the
+agent checking it is one instrument wearing two hats. What the blind author contributes at handback
+without any ruling is the **other direction**: re-run the suite against the merged implementation
+and report which reds cleared. That signal is real and **weaker**, and the reason is worth keeping
+— *a test can pass for the wrong reason where a deletion diff cannot.*
+
+The script itself was supposed to carry the lesson of this file — refusing to report anything if
+its pattern matched no line, so a silent no-op cannot read as a pass. **It did not, and its author
+found that by running it rather than re-reading it.** The refusal compared patched text to original
+with `!=`, and a trailing-newline difference made that true with no line deleted, so a no-op printed
+`IDENTICAL SETS — the guard is unobserved`. A silent no-op reading as a pass, inside the instrument
+built to detect silent no-ops reading as passes — and the claim that it refused had already been
+written into its docstring and reported to the orchestrator before it was true. It now counts
+removed lines and exits 2 at zero.
+
+Its second self-test is the one that generalises: the pattern `assertStorable\(` matches the
+guard's own `function` line as well as its two call sites, which **breaks the module** instead of
+removing the guard — 144 newly red rather than 2. A number that large is breakage wearing an
+observability result's clothes, so it now prints every deleted line and warns when the newly-red
+set is most of the suite. **The result depends on the deletion pattern, and 2 versus 144 is one
+anchor in a regex.** That is the strongest argument yet for two instruments rather than one shared:
+an adversary writing its own pattern will hit its own version of this, and two instruments
+disagreeing is how it surfaces, where one shared instrument yields a single confident wrong number.
+Whoever runs it reads the deleted lines, not just the count.
+
+**Independence is about the choice, not the arithmetic.** Two instruments should be free to
+disagree on *judgment* — which lines the pattern deletes, what counts as the guard — and must not
+disagree on *correctness*. Vitest prints per-run millisecond suffixes in its failing lines, so an
+instrument that does not normalise them before diffing reports every line as new: 9 instead of 2,
+for the same tree and the same fix. That is not a second opinion, it is one of the two being
+wrong. So normalisation is shared and the deletion pattern is not — and where two instruments do
+disagree, the first question is whether both normalised, before anyone reads the gap as a finding.
+
+**Fortunate is not robust.** The blind author's script turns out to be duration-free *by
+construction*: it anchors on vitest's `FAIL` summary lines, which carry the full
+`file > describe > test` path and **no** duration, where the inline `×` lines carry durations and
+no path. But it chose those lines for legibility and got the stability for free — its words:
+"luck, not design". A future reporter putting a duration or a retry count on that line would make
+it silently report every row as new, reading 9 where the answer is 2, with nothing in the script
+to catch it. An explicit normalisation before the set comparison costs nothing and
+converts a property held by accident into one held on purpose — **but `\d+ms` alone is not that
+normalisation.** Vitest switches units on slow tests and prints `2.09s`, which a millisecond
+pattern sails straight past, so the strip must cover `237ms`, `1523ms` *and* `2.09s`, plus ANSI
+escapes, and be idempotent. T030's adversary found this while testing a claim it had already
+made — it was stripping durations explicitly rather than relying on line choice, and checked that
+the strip actually worked instead of asserting it. The orchestrator had endorsed the
+millisecond-only form one message earlier. **A guarantee you did not know
+you had is one you cannot rely on keeping.**
+
+**And check that nothing went green.** The implementer did this and the blind author did not: a
+deletion that reds two tests while quietly *greening* a third is a worse state than either number
+suggests, and neither the count nor the newly-red list shows it. The diff runs both directions.
+
 **Test the suite before trusting its output, not after.** T030's adversary patched
 `expectSealedError` in a **scratch copy** to the amended clause and re-ran *before* reading the
 suite's 32 reds — 32 fell to 17, so fifteen were the superseded wording and none was a defect.
 Triaging 32 reds afterwards would have reached the same place slowly and with far more chances to
 charge one of the fifteen as real.
+
+## Mutate behaviours chosen for NOT being on your list
+
+T030's blind author ran seven mutations against its own 151-test suite — six minutes — and **three
+reddened nothing**, in a suite that had already survived 23 falsifications, an adversary round and
+four rebinds. Its diagnosis is the transferable part: **a falsification set built from the author's
+own list of what matters cannot find what the author did not think of.** All 23 passed because the
+author chose them, and each targeted a behaviour already considered. What surfaced the gaps was
+mutating behaviours picked *for not being on that list*. Same root as T025's blind suite having no
+coverage of a defect nobody anticipated.
+
+The three that reddened nothing, because each is a distinct trap:
+
+- **A test asserting an outcome the database already guarantees.** `answers 'undefined' for the
+  empty string` passes with the guard removed, because the query then matches no row and returns
+  `undefined` anyway. T-03's species, written eleven tests after the author discovered T-03.
+- **A tolerance that admitted the broken answer.** `openView` with a non-array `extensions` was
+  allowed to *either* throw or return a view with the base intact; with validation removed,
+  iterating a string yields characters, nothing throws, and the base is intact — so the permitted
+  outcome was the silently-wrong one. Tolerate an unspecified answer, never a wrong one: "either,
+  **and** the overlay must not be silently dropped".
+- **An invariant asserted on one return path and not its twin.** Sorted order checked on
+  `getOntologyVersion`'s result and never on `addOntologyVersion`'s own.
+
+**The tell is often in the test's own name.** T030's author had a test called *"refuses a NUL byte,
+**which Postgres text cannot hold either**"* — it wrote down the reason the storage layer guarantees
+the outcome, in the name, and then asserted the outcome anyway. A name containing "which the
+database also does", "as Postgres already rejects", "which cannot be stored regardless" is a name
+describing why the test cannot discriminate. Grep your own suite for that shape before mutating
+anything; it is free.
+
+**And the fix is not always "assert harder".** Where the storage layer genuinely is the thing doing
+the refusing, the honest move is T-03's: label the test, say what it can and cannot distinguish,
+and keep it. A weak test known to be weak is worth having; the failure is the unlabelled one.
+
+## Having the guard is not using it
+
+The sharpest self-catch of the run, and a category the rest of this file does not cover. Every rule
+above is about *building* the right check. This one is about a check that existed and was bypassed.
+
+T030's author built the `len(newly) > len(after)/2` warning into `guard-observability.py` — the one
+that says *"likely BREAKAGE, not observability"* — and then ran its next mutation sweep as **a raw
+loop without the instrument**, because wiring up the script felt more expensive than a quick loop.
+Two of the five results came back 144 red, which is not a measurement at all: removing a single
+`if (…) {` line leaves a dangling brace and the module fails to load. Re-run properly, by removing
+the whole block, **N3 flipped from "caught" to "gap"** — so one of the two numbers it would have
+reported was wrong *in the direction that hides a hole*.
+
+It had the guard, knew exactly why it existed, and did not reach for it. **Not a missing safeguard
+but an unused one**, and the reason was that the correct instrument had a setup cost and the wrong
+one did not. The rule that follows is dull and it is the one that would have prevented this:
+**when an instrument exists for a measurement, the measurement goes through the instrument.** A
+result produced by a quicker path is not a cheaper version of the same result.
+
+**Standing question for any suite before it is offered as evidence: if the fix were reverted, would
+this test red?** If the answer is not known, mutate and find out. It is minutes, and it is the only
+method here that has found gaps in suites their authors had already falsified.
 
 ## The default failure of writing a test against a description
 
@@ -389,7 +518,24 @@ set and it closes regardless of D-17. The fix is the
 other half of the bookkeeping already present — a `seen` set of containers **fully walked and
 found clean**, checked beside `open`, which is sound precisely because `open` handles cycles, and
 turns 16.7 M visits into 25. **Any task whose input can be built in-process rather than parsed
-must add it.** T010 ships without it deliberately; T020 and T030 copy the same walk and inherit
+must add it.**
+
+**Fixing the walk closes only half of T-02, and the other half is `lib/core`'s.** Measured by
+T020's implementer after its walk went to O(1) per visit: a depth-20 diamond still takes **13-15 s**
+through `addCard`, because `cardDigest`'s `canonicalJson` (~1.9 s alone at depth 20) and the
+pg/drizzle driver's own JSON serialisation of the `jsonb` parameter **both re-expand shared
+substructure**. Neither can do otherwise — JSON has no reference concept, so "the same object twice"
+cannot be represented without materialising it twice. At depth 22, `sha256Hex` hit
+`RangeError: Invalid array length` on the resulting string; `addCard`'s existing `try`/`catch`
+around `cardDigest` converts that into a typed error rather than an uncaught crash, so nothing is
+unhandled, but the ceiling is real and it is **outside every current task's `Owns`**.
+
+This applies to **every task that hashes or stores caller-built content** — T010's `bundleDigest`
+and `manifest`, T020's `cardDigest` and `body`, T030's term bodies — so the walk fix bounds the
+*guard's* cost and not the *request's*. Recorded rather than charged anywhere: `lib/core/**` is
+Forbidden to all three, and a depth cap belongs at the route boundary (T100/T080), which does not
+exist yet. **Whichever task first owns a route accepting caller-built objects owns this**, and it
+should arrive knowing the number is 13-15 s at depth 20 rather than discovering it. T010 ships without it deliberately; T020 and T030 copy the same walk and inherit
 the same condition.
 
 ## A ruling is implemented as narrowly as its worked example
@@ -425,6 +571,24 @@ a property over every output, not a list of SQLSTATEs. T060's "`Actor` and `Reso
 data" is properly *no decision depends on a property that is not the object's own* — a property
 over every decision, not a list of fields. **Write the output property first. Enumerate sites
 only as commentary on it, never as the specification.**
+
+**Third clause: the output-property rule does not reach EXCEPTIONS, and that is where mechanism
+hides once you have adopted it.** T025's main property was already stated over the output — "the
+maximum over all residue-free explanations" — and what named a mechanism was its **carve-out**. An
+exception is not a property of the output; it is a condition on the *input*, so the rule slides
+past it. Nor is that bad luck: a carve-out is almost always discovered from **one** concrete
+counter-example, so its first statement describes *that example's mechanism* unless it is
+deliberately generalised afterwards. Here the example was `[rc.1]` versus `[rc.1, rc.1]`, whose
+mechanism is a forced **deletion**, and the clause was written as "unless the addition removes a
+forced deletion" — while the class is "unless the addition removes a forced **explanation**", of
+which a repin is another instance.
+
+So: **when an exception is derived from a counter-example, name the class the example instantiates
+before writing the clause, and check the clause against a second example that shares the class and
+differs in the mechanism.** `[rc.1, rc.1]` (deletion) and `[1.0.0] → [2.0.0, 1.0.1]` (repin) share
+the class; one of each would have caught it at the time. This is the same instrument as testing a
+ruling's shape on values where it must *not* fire, turned on the exception instead of on the
+implementation.
 
 **Second clause, and it is the half that makes the first one work: the property must quantify
 over a set defined by CONSTRUCTION, and its predicate must be CLOSED.** Moving the enumeration
@@ -1838,13 +2002,35 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
   **Why the strict reading of the round-5 ruling has to yield here.** "Most expensive plausible reading" taken absolutely would price `{a, b} → {c, c}` as *delete one and add one*, which is structurally available for **every** non-identical change — and an inference that answers `major` to everything answers nothing. So the ruling is bounded, and this is its boundary: **among explanations that leave no unexplained residue, take the most expensive; price a deletion or an addition only where the counts force one.** The maximum still runs over the full leftover cross product, which is what the round-5 fix does.
 
-  **The monotonicity property, corrected.** "Adding a pin to `next` cannot lower the level" is false as an absolute, and the counter-example is above. It holds as: *adding a pin cannot lower the level **unless that pin removes a forced deletion*** — that is, unless `|before| > |after|` and the addition reduces the deficit. The adversary's original defect is untouched by the carve-out and stays a defect: `[1.0.0] → [9.0.0]` against `[1.0.0] → [1.0.1, 9.0.0]` has no deficit on either side, so no deletion was ever forced and nothing was removed by the addition. The property test's generator must encode that boundary rather than excluding the case by name, so the carve-out is falsifiable rather than merely asserted.
+  **The monotonicity property, corrected.** "Adding a pin to `next` cannot lower the level" is false as an absolute, and the counter-example is above. **Corrected again in round 6, and the corrected form is per-value rather than per-length.** The licence is *the addition removes a forced **explanation***; a forced deletion is one instance of that, not the whole of it. The predicate is: **the added value had a surplus on the before side.** Executed case, four numbers rather than a narrated shape:
+
+      before = [1.0.0]              after = [2.0.0, 1.0.1]        added = 1.0.0
+      level before addition: major   level after addition: minor
+      leftover before: bl = [1.0.0] (1), al = [2.0.0, 1.0.1] (2)
+      leftover after:  bl = []      (0), al = [2.0.0, 1.0.1] (2)
+      per-length predicate (bl > al): FALSE — "unlicensed"
+      per-value predicate  (surplus of 1.0.0 on the before side): TRUE — licensed
+
+  `bl < al` throughout, so no deletion is ever forced and the per-length clause never applies — yet the drop is correct: `1.0.0` had to be explained as a repin against `2.0.0`, which is major, and once `after` pins `1.0.0` it matches itself, leaving two cheap additions. Over 600 randomised additions the per-length predicate flags **seven** drops as violations and all seven are legitimate; the per-value predicate flags **zero**.
+
+  **And the per-value predicate is exact rather than merely unfalsified — it is a theorem about the maximum, so a suite asserts it as an invariant rather than sampling it.** Adding a pin at value `V` changes the leftovers in exactly one of two ways. If `before` held a surplus of `V`, the addition cancels one leftover before-item: `bl` shrinks and an explanation that was forced stops being forced, so the level may drop. If `before` held no surplus of `V`, nothing cancels: `bl` is unchanged and `al` grows by one — and both terms are monotone non-decreasing under that, since the pair term is a maximum over `bl × al` and enlarging `al` only adds candidates, while the stranded-gained term is a maximum over a set that only grew. So the level cannot drop. "Drop ⟹ before-surplus of the added value" follows from the shape of the maximum; the 600-draw zero is confirmation, not the evidence. The adversary's original defect is untouched by the carve-out and stays a defect: `[1.0.0] → [9.0.0]` against `[1.0.0] → [1.0.1, 9.0.0]` has no deficit on either side, so no deletion was ever forced and nothing was removed by the addition. The property test's generator must encode that boundary rather than excluding the case by name, so the carve-out is falsifiable rather than merely asserted.
 
   **The second gap the implementer found is the more valuable half of the round**, because nothing asked for it: a pair `repinMagnitude` cannot read — one side not a semver, `@latest` being the live case — was floored at a flat `patch`, and that floor could sit *below* what the same item would have priced as genuinely lost. `[…, "latest"] → []` gave `major`; `[…, "latest"] → […, "1.0.1"]` gave `patch`, purely because something existed to pair against. Found by property testing rather than by assuming the first fix sufficed, which is the discipline the round-4 by-value fix did not get and needed.
 
   **Amendment, round 6, and it is my ruling's defect for the third time in the same shape.** The round-5 ruling said the level is "the largest `inferBump`-level over every `(before, after)` pair the leftovers permit, combined with the at-least-minor contribution of a genuinely added pin and the contribution of a genuinely removed one." The implementer took a true maximum over the **pairs** — its exactness argument for that term is sound, since the single worst pair is always achievable by pairing it first and pairing the remainder arbitrarily — and left the deletion and addition terms as the **sorted-tail slice `[n..]`**, whichever items happen to sort last. I named the pair term as a maximum and the other two as contributions, so the pair walk was replaced and the tails were not. Same failure as T010's typed-error rule and T060's never-inherit rule: I pointed at one site and the other sites kept the old behaviour.
 
-  **Every term is a maximum over its own admissible choices.** A residue-free explanation is a matching between the leftover multisets in which deletions and additions occur **only where the counts force them** — exactly `max(0, |before| - |after|)` deletions and `max(0, |after| - |before|)` additions. Within that, *which* item is stranded is a free choice, so the most expensive residue-free explanation strands the **worst candidate**, not the last-sorting one. Concretely: `[1.0.0, 1.0.1, 1.0.1] → [1.0.1, 1.0.2]` must be **major**, because pairing `1.0.1 → 1.0.2` (patch) strands `1.0.0`, which is pinned nowhere in `after`. It currently answers `patch`. The gained side is symmetric: `[1.0.1, 1.0.2] → [1.0.0, 1.0.1, 1.0.1]` answers `patch` where `1.0.0` is pinned nowhere in `before`.
+  **Every term is a maximum over its own admissible choices.** A residue-free explanation is a matching between the leftover multisets in which deletions and additions occur **only where the counts force them** — exactly `max(0, |before| - |after|)` deletions and `max(0, |after| - |before|)` additions. Within that, *which* item is stranded is a free choice, so the most expensive residue-free explanation strands the **worst candidate**, not the last-sorting one. Concretely: `[1.0.0, 1.0.1, 1.0.1] → [1.0.1, 1.0.2]` must be **major**, because pairing `1.0.1 → 1.0.2` (patch) strands `1.0.0`, which is pinned nowhere in `after`. It currently answers `patch`. The gained side is symmetric: `[1.0.1, 1.0.2] → [1.0.0, 1.0.1, 1.0.1]` answers `patch` where `1.0.0` is pinned nowhere in `before` — and **must answer `minor`**, not major: the symmetry is in the *defect* (a sorted slice standing in for a maximum on both sides) and **not** in the level, since a genuinely removed pin is breaking and a genuinely added one is not.
+
+  **The per-item contribution of a stranded leftover, stated in full because it cannot be derived from the examples.** T025's blind author tried, hit a contradiction against the gained-side case, and **stopped rather than shipping a guessed oracle** — correctly, and the contradiction was mine: "symmetric" was read as "same level". Membership is checked against the **full original opposite list**, never against the leftover set:
+
+  | stranded on | its value appears in the full opposite list | contribution |
+  | --- | --- | --- |
+  | before side | no — the pin is genuinely gone | **major** |
+  | before side | yes — only its occurrence count changed | **patch** |
+  | after side | no — the pin is genuinely new | **minor** |
+  | after side | yes — only its occurrence count changed | **patch** |
+
+  Worked against both examples. `[1.0.0, 1.0.1, 1.0.1] → [1.0.1, 1.0.2]`: leftovers `bl = [1.0.0, 1.0.1]`, `al = [1.0.2]`, one deletion forced; the pair term is `patch` either way; stranding `1.0.0` gives **major** (absent from the full after list), stranding `1.0.1` gives `patch` (still pinned there) — maximum **major**. `[1.0.1, 1.0.2] → [1.0.0, 1.0.1, 1.0.1]`: leftovers `bl = [1.0.2]`, `al = [1.0.0, 1.0.1]`, one addition forced; pair term `patch`; stranding `1.0.0` gives **minor**, stranding `1.0.1` gives `patch` — maximum **minor**.
 
   **This costs no more than the current code.** Any single item can be among the stranded ones — choose it, then match the remainder arbitrarily — so the deletion term is `max` over the **whole** surplus-side leftover set rather than over a slice of it, and likewise for additions. O(n) each, beside the existing O(n·m) pair term. No permutation search, same as before.
 
@@ -2306,6 +2492,24 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   **Ruling: the digest covers `version` as well as the terms.** `lib/core/hash/digest.ts:26` states the convention outright — everything but `author` and `provenance` is inside the identity, "`version` and `ontologyVersion` among them" — so two ontology versions with identical term sets have **different** digests. `sha256:<hex>` over `canonicalJson`, computed in `lib/server/ontology/**` since `lib/core` is not this task's to extend.
 
   **Both of the above were ruled to the implementer by message on 2026-08-14 and written here only afterwards, which is the defect that cost T000 a round.** T030's blind test author asserted both anyway, having verified them against `digest.ts:26` and `core.ts:505` in the tree, and flagged that they had arrived by message and not by contract. A ruling that lives only in a transcript is not a ruling — the two sides cannot agree on what they were never both shown.
+
+  **Merge ordering, which "waits on T025" understated: T025 must merge BEFORE T030 can pass its gates.** I described the dependency as contract-only, and it is not — it is a **compile-time** dependency. The blind suite reaches AC6 through `import("@/lib/server/versioning")`, and its author handled the absence carefully at *runtime*, with a rejection handler quoting the contract and explaining that a red there is the missing dependency rather than a T030 defect. But **a dynamic import's specifier is still resolved at compile time**, so `tsc` fails at `tests/server/t030/contract.ts:78` with TS2307 before that handler can run: `npm run typecheck` exits 2 and `npm run build` exits 1. Verified directly rather than taken on report.
+
+  Neither side can fix it: `tests/server/**` is Forbidden to the implementer, `lib/server/versioning/**` is Forbidden to it too, and stubbing a barrel to green the gate would be the second bump implementation the partition exists to prevent. So T030 hands over and is reviewed with those two gates red **on that one documented cause**, and merges only after T025.
+
+  **The error count depends on which worktree you are in, and the orchestrator conflated them.** In the **test** worktree, `tsc` reports **two** — `@/lib/server/ontology` is absent there as well as `@/lib/server/versioning`. In the **implementation** worktree it reports exactly **one**, because only the versioning import is unresolved: `contract.ts` holds a single compile-time reference to it, and the other three occurrences are a string constant and two comments that `tsc` never resolves. T030's implementer reported one, checked it against the tree rather than matching the prediction, and said so — which is the right response to a number from me that does not match what is in front of you. So: two in the test tree, one in the implementation tree, zero everywhere once T025 merges. Until T030's own implementation merges, `tsc` fails on **two** lines of `contract.ts`, 55 and 78; once T030 lands only 78 remains; once T025 lands, none. Stated because "expect exactly one error" would otherwise read as a failed expectation at the one point in the sequence where it is the correct one.
+
+  **A `TS2307` makes the imported namespace `any`, so the file containing it is not measured.** Raised by T030's adversary against the orchestrator's "check that nothing else is hiding behind them": everything downstream of the failed import in `contract.ts` typechecks **vacuously**, because `any` satisfies everything. The rest of the repository *is* genuinely measured — `tsc` does not stop at the first error — so the claim "one error and the tree is otherwise clean" is true of the tree and false of that one file. The way to measure it is to point a stub at `@/lib/server/versioning` in a **scratch copy** and re-run `tsc` to see what the file says once the import resolves. Worth doing before T025 merges rather than after, since after the merge a newly-revealed error in the blind suite would look like T025 breaking T030.
+
+  **Measured, and nothing is hiding — for a structural reason rather than a lucky one.** T030's adversary stubbed `lib/server/versioning/index.ts` from this file's published signatures inside its **own** idle worktree (never T030's, which the implementer held), ran `tsc`, and deleted the borrowed paths afterwards, restoring its tree to `50ff07b` clean. Baseline with versioning absent: exactly **1** error at `contract.ts(78,25)`, independently confirming the 2 → 1 → 0 middle state. With the import satisfied: **exit 0, zero errors, none in `contract.ts`.**
+
+  The reason is the durable part. `contract.ts` declares `export type Namespace = Record<string, unknown>` and both loaders do `import(...).then((m) => m as unknown as Namespace)` — verified at lines 43, 59 and 82 — so the module's real shape is erased **at the boundary by construction**. There was never anything for the `any` to suppress, because the cast would have erased it regardless. That is stronger than an empty search: the file is built so the import's type cannot matter, which is also why the blind author could keep the literal specifier without paying for it in type safety.
+
+  **Consequence for the merge:** when T025 lands, `contract.ts` will not suddenly reveal errors. If something does go red there afterwards it is a genuinely new fact, not a hidden one surfacing — a distinction that would otherwise cost an expensive hour of looking for a regression that was always there.
+
+  Same family as the rest of this file: an error that suppresses measurement downstream of itself reports silence as cleanliness. The general point stands; it simply does not bite here.
+
+  The blind author could have dodged this with a non-literal specifier and deliberately did not: T000's precedent requires the literal so the `@` alias resolves at runtime, and trading a real runtime binding for a quiet compile is the wrong side of that trade. Merge ordering is the right resolution, not a workaround for a missing one. The same will hit T020 if its blind suite reaches for T025 the same way. Stated here because an ordering constraint discovered at gate time reads as a defect.
 
   **AC6 is the one criterion that waits on T025.** `inferOntologyBump(previous: readonly OntologyTerm[], next: readonly OntologyTerm[]): BumpAnalysis` and `checkDeclaredBump("ontology", …)` are T025's published surface and do **not** exist in `lib/core` — unlike the card path, which is entirely self-contained. `ontology/version-bump-too-small` is already a `lib/core/diagnostics.ts` code, but nothing computes it for ontologies yet. Build everything else, and if `lib/server/versioning/**` has not merged by the time the gates run, leave AC6's call site as a single named function that reports the absent dependency, say so in the Log, and let the criterion stand red. Do **not** reimplement bump inference inside `lib/server/ontology/**` to make it green — two implementations of one rule is the defect the partition exists to prevent.
 
