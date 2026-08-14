@@ -410,6 +410,38 @@ domain it enumerates and blind outside it, exactly as a worked example is exhaus
 **The reachable set is the coverage claim**, which is the same lesson the 600 draws taught when an
 empty `after` sat outside what their generator could produce.
 
+**And "reachable set" is still too coarse. Reach is decided by which value RELATIONS the pool can
+express, not by how many points it enumerates.** T025's adversary chased the green revert and found
+its discriminating input: `["1.0.0","1.0.0"] → ["1.0.0","1.0.0+b"]`, correct **minor**, and **patch**
+with the `gained` floor term deleted. It needs three conditions at once — a leftover pair of *equal
+semver precedence but different strings*, which only build metadata produces, to reach the
+`magnitude === "none"` branch at all; a **duplicate**, so cancellation leaves a before-item whose
+value is still pinned in the full after list and the `lost` half prices at `patch` instead of
+masking everything at `major`; and the after-value absent from the full before list, so `gained` is
+`minor` and becomes the maximum. Controls confirm each is load-bearing.
+
+Measured, against the implementation with the term deleted, multisets to length 3:
+
+    pool                            pairs   divergences
+    1.0.0, 1.0.1, 2.0.0              399      0
+    1.0.0, 1.0.0+b, 1.0.1            399     14
+    1.0.0, 1.0.0+b, 1.0.1 (len 2)     99      2
+
+**Same point count, 399 either way.** The plain-semver pool cannot detect the deletion at *any*
+length; the build-metadata pool detects it at 99 points. So an oracle over 3136 pairs of distinct
+plain semvers cannot reach a branch that fires only when two versions compare equal and are not
+identical, however many pairs it adds. **Adding points is the intuitive fix and it is the wrong
+one.**
+
+**Construction rule, which is the transferable part: an oracle's coverage claim is over the
+equivalence classes of the comparator its subject uses, and the pool must carry a witness for
+each.** For version comparison that is, at minimum: equal-precedence-but-different-string (build
+metadata), prerelease-versus-release, unparseable-versus-parseable (`latest`), and
+present-versus-absent-in-the-full-opposite-list — which **requires duplicates**, since without them
+cancellation never leaves a leftover whose value survives elsewhere. Same lesson as the `(1/3)^8`
+generator and the two-disjoint-pools note, stated as something to build from rather than a hazard
+to remember.
+
 And the answer to the question the prediction was really asking: told the property rather than the
 examples, a blind author reached for the same class of instrument as the adversary, independently.
 That is a better answer than either branch of the prediction would have given.
