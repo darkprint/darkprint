@@ -386,7 +386,14 @@ Three cheap guards, all now in force:
   `git status --porcelain` before and after, and report both. Whole-tree, never scoped to the
   files thought to be under test: `npm test` runs the whole repository, so an edit anywhere
   contaminates equally. Mtimes are a diagnostic for *which* file moved, never the detector for
-  whether anything did. **Commit before the after-stamp**, so it reads clean at the
+  whether anything did. **And read porcelain twice before believing it, confirming
+  anything it reports with the diff that would explain it.** T090's adversary hit two sub-minute
+  races in twenty minutes against trees another agent was writing: a `UU backend.md` with **no
+  `MERGE_HEAD` and zero conflict markers**, and a porcelain reporting `backend.md` modified whose
+  `git diff` came back empty moments later. Both were genuine instants inside someone else's merge
+  and both cleared on their own. **A single `git status` against a live tree is a sample, not a
+  state** — the stamp is the right instrument and one reading of it is not, and the cost of the
+  second reading is seconds against a charge that would have been wrong. **Commit before the after-stamp**, so it reads clean at the
   sha being handed over: T010's round 4 stamped honestly and byte-identically across three runs,
   but on an uncommitted working tree — which establishes that the tree held still and *not* that
   the gates ran on what got committed. Those are two different claims and only the second is
