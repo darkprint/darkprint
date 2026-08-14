@@ -240,6 +240,22 @@ implementation from a contended host, and that ambiguity lands in a report as a 
 change to `compose.yaml` — T000's `Owns`, and not worth a mid-run repartition. Do not spend a
 round chasing whichever suite surfaces next.
 
+## T-03: the surrogate test on a `jsonb` column asserts an outcome Postgres already guarantees
+
+Found independently by three sessions — both blind test authors and T020's implementer — which
+is why it is recorded here rather than in one task. `pg` sends `text` as UTF-8 and an unpaired
+UTF-16 surrogate has no UTF-8 encoding, so it is **silently replaced with U+FFFD** and the write
+succeeds carrying bytes the digest does not name. A `jsonb` parameter goes the other way:
+Postgres's own parser **rejects** the unpaired escape outright (22P02).
+
+So a surrogate test aimed at a `jsonb` column passes against a module with **no guard at all**.
+It asserts the criterion's outcome and cannot distinguish a module that refuses from one that
+does not; the module's own check is defence-in-depth there. **The only place the guard is
+observable from outside is a `text` column** — for T010 that is `dot` and `slug`, for T020
+`source`, and for T030 the `version` string alone. Any test meant to hold the *guard* rather
+than the outcome has to reach it through one of those, and any test that cannot should say so
+beside itself. Three tasks inherit a test that reads stronger than it is.
+
 ## Two hazards that recur across tasks rather than belonging to one
 
 **T-01: a raw NUL lands in a test file while writing a deliberate-control-character fixture.**
