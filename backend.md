@@ -20,7 +20,7 @@ graph was recomputed — T070 unblocks T050, T080 unblocks T200 and T210, T090 u
 T261. T040 and T240 are leaves and go second. Adversary sessions are **not started** until their
 implementer hands back: a round ends at the verdict, never at a slot release.
 
-**Gate-slot queue** (three consecutive full-suite runs only; targeted runs and probes are free):
+**Gate-slot queue** (the three consecutive full-suite runs, **and every DB-touching targeted run** — see the tightening below; in-process probes and reading stay free):
 T020's implementer holds it, then T030's implementer, then T025's adversary. The queue
 moves on completed triples, never on seniority — T025's adversary was offered the chance to
 re-run early to remove the last qualification from its own report and declined it, which is the
@@ -1066,7 +1066,7 @@ independent and are now stated as such wherever either appears.
 
 **Operating rule until it is fixed properly: DB-touching gates are serialised at handover by the
 orchestrator rather than run concurrently.** In practice that is a **gate slot**: probe work,
-targeted `npx vitest run tests/server/<task>` and scratch databases run freely and do not collide;
+targeted `npx vitest run tests/server/<task>` and scratch databases were originally free — **superseded, see the tightening below**;
 the **three consecutive full-suite runs that decide a verdict** are taken one session at a time,
 released by the orchestrator. **Tightened at T090's report: "targeted runs are free" was free of
 *wall-clock contention for the slot*, not free of *database contention*.** Two consecutive
