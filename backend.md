@@ -3988,6 +3988,24 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** —
 - **Owns:** `packages/cli/**`
 - **Forbidden:** `lib/server/**`, `app/**`, `components/**`
+- **Published signatures** (checked against `backend` at `8c7d520`. `Owns: packages/cli/**`, which does not exist yet — the first task outside `lib/` and `app/`. It **ships the engine rather than reimplementing bump or digest rules**, importing `@/lib/core` and calling the same endpoints the wizard uses for the server-side verbs.)
+
+        darkprint clone <owner>/<slug> [--version <v> | --digest <d>] [--out <dir>]
+        darkprint validate [<dir>]                 // local, no network
+        darkprint bump [<dir>] --declare <level>   // local, no network
+        darkprint publish [<dir>] --version <v>
+        darkprint report --digest <d> --model <m> --cost <n> --duration <ms>
+
+  **AC1 is what justifies shipping the engine rather than reimplementing it, and it is falsifiable.** "`validate` on the nine archive bundles produces **byte-identical** diagnostics to the server" — so the CLI and T040 run the *same* `loadBundle`, and the test compares the two outputs directly rather than checking each is reasonable. A reimplementation passes a plausibility test and fails this one, which is the point.
+
+  **AC6 defines which verbs are local, and the block above says so**: `validate` and `bump` take no credential and reach nothing. The discriminating test runs them with the **network unavailable**, not merely unconfigured.
+
+  **AC3's conflict is T100's digest-based refusal surfacing, and AC2's is T025's inferred bump.** Neither is recomputed here; both are rendered. So the CLI's job for those two is **not to lose the reasons** — printing "conflict" without the version, or "too small" without the engine's reasons, satisfies the verb and fails the user.
+
+  **AC5's actionable message for an expired or revoked key is T230's refusal rendered for a human** — the same standard T220's AC6 sets for an agent: the limit, the reset, and that a key exists.
+
+  **Admissible message forms:** the CLI is a human surface so its rendering may be prose, but it renders **only** what the server sent plus the caller's own arguments. No credential, no endpoint, no stack, never a raw driver or HTTP body.
+
 - **Goal:** the command the site already advertises: fetch a bundle, validate it, bump it, publish it, and report a run.
 - **Contract:** B-04 and B-16 — `clone <owner>/<slug>` fetches a release by version or digest; `validate` runs the same engine locally that `T040` runs on the server, so a local pass and a server pass cannot disagree; `bump` proposes the version the engine infers and refuses a smaller declaration; `publish` writes through the same endpoint the wizard uses; `report` submits a run keyed by digest. Authentication is an API key from `T230`. The CLI must ship the engine rather than reimplement bump or digest rules, which is the drift `lib/skill.ts` already warns about for the authoring skill.
 - **Acceptance criteria:** (1) `validate` on the nine archive bundles produces byte-identical diagnostics to the server; (2) `bump` refuses a declared level below the inferred one, naming the reasons; (3) `publish` of an unchanged bundle is refused as a conflict; (4) `clone` by digest yields bytes identical to the server's export; (5) an expired or revoked key fails with an actionable message; (6) every command works with no network for the local-only paths.
@@ -4002,6 +4020,18 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** —
 - **Owns:** `app/blueprints/page.tsx`, `app/nodes/page.tsx`, `app/ontology/page.tsx`, `components/gallery/**`, `components/nodes/NodeBrowser.tsx`, `components/ontology/**`
 - **Forbidden:** every detail route, `app/u/**`, `app/upload/**`, `lib/server/**`, `app/api/**`
+- **Published signatures** — **none.** This task publishes no module surface; it moves three routes from build-time archive reads onto `@/lib/server/registry` (T080) and `@/lib/server/search` (T200), both already published. What it owns is route and component files.
+
+  **These are cutover tasks and their contract is different in kind: the deliverable is a route that behaves as it does today, on a different source.** So the criteria are dominated by **existing tests passing unchanged** — and that is the strongest form available, because those tests were written against the frontend as shipped and none of them knows a backend exists. **Do not weaken, skip or rewrite a named test to make a cutover pass.** If one fails, either the cutover is wrong, or the test encodes a behaviour the backend genuinely changes and that change needs a ruling first.
+
+  **The honesty markers are the load-bearing part and they move in exactly one direction.** A marker over a figure that has become real comes off **in the same change that makes it real**; a marker over a figure still seeded **stays** (D-78, `app/settings/page.tsx:41-58`). Neither ahead nor behind: removed early is a false claim, left late is a true statement that has become a lie about the product. `honesty.test.ts` pins the sentences verbatim, so changing one is changing that test in the same commit, with the new sentence pinned.
+
+  **AC1 is the point and it is a negative about the build**: a blueprint published after the last deploy appears on `/blueprints` **without a rebuild**. Public reads stay static with tag-based revalidation (B-15), so the test asserts publish-then-fetch with no build step between — not that a page renders.
+
+  **AC5's "render without JavaScript for their first paint" is a server-component constraint**, and the reason revalidation rather than client fetching is the mechanism.
+
+  **Named tests that must pass unchanged:** `honesty.test.ts`, `autonomy-surfaces.test.ts` — the second pins the two prohibitions T200 inherits.
+
 - **Goal:** move the three index shelves off build-time archive reads onto the read API and search.
 - **Contract:** the query keys and their `Clear filters` sets are unchanged (`components/ui/useQueryState.ts`, B-12), so existing shared links keep working. Public reads stay static with tag-based revalidation (B-15). Every honesty marker over a figure that has become real comes off in the same change, and every marker over a figure still seeded stays (D-78, and the rule `app/settings/page.tsx:41-58` states).
 - **Acceptance criteria:** (1) a blueprint published after the last deploy appears on `/blueprints` without a rebuild; (2) every filter and the clear control behave as they do today; (3) `honesty.test.ts` and `autonomy-surfaces.test.ts` pass unchanged; (4) no seeded marker remains over a figure now served by the backend; (5) the shelves render without JavaScript for their first paint.
@@ -4016,6 +4046,20 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** —
 - **Owns:** `app/blueprints/[owner]/**`, `app/nodes/[...id]/**`, `app/ontology/[...term]/**`, `lib/href.ts`, `next.config.ts`, `components/blueprint/**`, `components/bundle/**`, `components/panes/**`
 - **Forbidden:** `app/blueprints/page.tsx`, `app/u/**`, `app/upload/**`, `lib/server/**`
+- **Published signatures** — **none published**; consumes `@/lib/server/registry`, `@/lib/server/export` and `@/lib/server/search`. It **owns `lib/href.ts` and `next.config.ts`**, which is the only reason a URL migration can be atomic.
+
+  **These are cutover tasks and their contract is different in kind: the deliverable is a route that behaves as it does today, on a different source.** So the criteria are dominated by **existing tests passing unchanged** — and that is the strongest form available, because those tests were written against the frontend as shipped and none of them knows a backend exists. **Do not weaken, skip or rewrite a named test to make a cutover pass.** If one fails, either the cutover is wrong, or the test encodes a behaviour the backend genuinely changes and that change needs a ruling first.
+
+  **The honesty markers are the load-bearing part and they move in exactly one direction.** A marker over a figure that has become real comes off **in the same change that makes it real**; a marker over a figure still seeded **stays** (D-78, `app/settings/page.tsx:41-58`). Neither ahead nor behind: removed early is a false claim, left late is a true statement that has become a lie about the product. `honesty.test.ts` pins the sentences verbatim, so changing one is changing that test in the same commit, with the new sentence pinned.
+
+  **B-09 moves the public blueprint URL and the migration is this task's real content.** A **fourteenth** permanent redirect from `/blueprints/{slug}` to the owner path joins the thirteen already in `next.config.ts` (checked by `nav.test.ts`). AC1 requires the **query string survives the 308** — a redirect that drops it breaks every shared filtered link, the same property T200's `params` rule protects at the other end.
+
+  **`dynamicParams = false` and `generateStaticParams` over the archive cannot serve a registry that grows between deploys, so both go.** That is a deletion, and AC3 proves it happened: a blueprint published after the last deploy is reachable at its URL.
+
+  **AC6 is B-03 reaching the browser**: a private bundle's URL returns the **404 page** for a non-owner, not a 403 and not an empty state. The existence oracle closes at the route as well as at the API.
+
+  **Named tests that must pass unchanged:** `nav.test.ts`, `severity-word.test.ts`, `archive-labels.test.ts`.
+
 - **Goal:** move the three detail pages onto the API and carry out the `/blueprints/{owner}/{slug}` migration.
 - **Contract:** B-09 moves the public blueprint URL, so this task owns the route move, `contentHref`/`bundleHref` (`lib/href.ts`), the download-command URL list, and a fourteenth permanent redirect from `/blueprints/{slug}` to the owner path alongside the thirteen already in `next.config.ts` (checked by `nav.test.ts`). `dynamicParams = false` and `generateStaticParams` over the archive cannot serve a registry that grows between deploys, so both go, replaced by revalidation (B-15). Owner-visible surfaces on a bundle page go per-request.
 - **Acceptance criteria:** (1) `/blueprints/{slug}` 308s to the owner path with the query string intact; (2) every one of the thirteen existing redirects still resolves; (3) a blueprint published after the last deploy is reachable at its URL; (4) the download command's URLs fetch the files the page lists; (5) `severity-word.test.ts` and `archive-labels.test.ts` pass unchanged; (6) a private bundle's URL returns the 404 page for a non-owner.
@@ -4030,6 +4074,22 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** —
 - **Owns:** `app/u/**`, `app/settings/**`, `components/profile/**`, `components/settings/**`, `components/ui/FavoriteStar.tsx`, `lib/data/**`
 - **Forbidden:** `app/blueprints/**`, `app/nodes/**`, `app/upload/**`, `lib/server/**`
+- **Published signatures** — **none published**; consumes `@/lib/server/accounts`, `@/lib/server/profiles` and `@/lib/server/saves`. **This task deletes `lib/data/**`**, which is why it owns it.
+
+  **These are cutover tasks and their contract is different in kind: the deliverable is a route that behaves as it does today, on a different source.** So the criteria are dominated by **existing tests passing unchanged** — and that is the strongest form available, because those tests were written against the frontend as shipped and none of them knows a backend exists. **Do not weaken, skip or rewrite a named test to make a cutover pass.** If one fails, either the cutover is wrong, or the test encodes a behaviour the backend genuinely changes and that change needs a ruling first.
+
+  **The honesty markers are the load-bearing part and they move in exactly one direction.** A marker over a figure that has become real comes off **in the same change that makes it real**; a marker over a figure still seeded **stays** (D-78, `app/settings/page.tsx:41-58`). Neither ahead nor behind: removed early is a false claim, left late is a true statement that has become a lie about the product. `honesty.test.ts` pins the sentences verbatim, so changing one is changing that test in the same commit, with the new sentence pinned.
+
+  **The assumption a session breaks is stated in the code and is this task's central difficulty**: the owner view is currently a *page*, not a state, and **both variants ship in the build** (`components/profile/load.ts:34-41`). So these routes go per-request, and AC1 is the criterion — signed-out visitor and signed-in owner see different things **at the same URL**.
+
+  **AC2 is the honesty rule as a biconditional and the sharpest criterion in the cutover set**: no control on `/settings` is **both enabled and inert, or disabled and functional**. Both directions fail, which is what makes it testable — enabling everything passes a naive "nothing is disabled" check and fails this.
+
+  **AC4 closes the disjointness the code apologises for three times**: starring on a card page appears in the owner's Saved tab. `FavoriteStar` moves from `localStorage` to the saves API via T140's `migrateLocalSaves`, whose idempotency AC5 there already covers.
+
+  **AC6 — "no import of `lib/data/**` remains anywhere" — is a source-level assertion**, greppable, and the only criterion here that cannot be satisfied by a passing render.
+
+  **Named tests that must pass unchanged:** `nav.test.ts`, `tabs.test.ts`, and `honesty.test.ts` for every strip that stays.
+
 - **Goal:** put a real session behind the profile and settings surfaces, and delete the fixtures they stood on.
 - **Contract:** the owner view is currently a *page*, not a state, and both variants ship in the build (`components/profile/load.ts:34-41`) — that is the assumption a session breaks, so these routes go per-request. `/settings`' honesty strip and every `disabled` attribute come off in the same change that makes them false, and not before (`app/settings/page.tsx:41-58`, D-78). `FavoriteStar` moves from `localStorage` to the saves API with a one-time migration (T140). `lib/data/**` is deleted here, which is why this task owns it.
 - **Acceptance criteria:** (1) a signed-out visitor sees the visitor view and a signed-in owner sees the owner view at the same URL; (2) no control on `/settings` is both enabled and inert, or disabled and functional; (3) the honesty strip is gone exactly where persistence now works; (4) starring on a card page appears in the owner's Saved tab, which is the disjointness the code currently apologises for three times; (5) `nav.test.ts` and `tabs.test.ts` pass unchanged; (6) no import of `lib/data/**` remains anywhere.
@@ -4044,6 +4104,22 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** —
 - **Owns:** `app/upload/**`, `components/upload/**`
 - **Forbidden:** `app/blueprints/**`, `app/u/**`, `lib/server/**`
+- **Published signatures** — **none published**; consumes `@/lib/server/engine` (T040) and `@/lib/server/publish` (T100).
+
+  **These are cutover tasks and their contract is different in kind: the deliverable is a route that behaves as it does today, on a different source.** So the criteria are dominated by **existing tests passing unchanged** — and that is the strongest form available, because those tests were written against the frontend as shipped and none of them knows a backend exists. **Do not weaken, skip or rewrite a named test to make a cutover pass.** If one fails, either the cutover is wrong, or the test encodes a behaviour the backend genuinely changes and that change needs a ruling first.
+
+  **The honesty markers are the load-bearing part and they move in exactly one direction.** A marker over a figure that has become real comes off **in the same change that makes it real**; a marker over a figure still seeded **stays** (D-78, `app/settings/page.tsx:41-58`). Neither ahead nor behind: removed early is a false claim, left late is a true statement that has become a lie about the product. `honesty.test.ts` pins the sentences verbatim, so changing one is changing that test in the same commit, with the new sentence pinned.
+
+  **The client-side validation stays and the server adds its authoritative pass at publish** (`docs/ARCHITECTURE.md` §7). Two validators is the design, not a duplication to remove: the client's is for latency, the server's is the one that decides.
+
+  **The three disabled reasons collapse to two, and the third is deleted rather than reworded** (`components/upload/UploadFlow.tsx:1176-1201`). `still being written` and `blocked` with an error count survive; **`not wired up` goes**, because it becomes false — rewording would leave a sentence explaining a limitation that no longer exists.
+
+  **AC3 is the honesty rule at its most literal.** The success screen states that nothing was sent and nothing was saved, pinned **verbatim** by `honesty.test.ts`. It now states what was published, and `honesty.test.ts` pins the **new** sentence in the same commit. The claim and its test change together, or the test is pinning a lie.
+
+  **AC2 distinguishes unfinished from in-error**, which is T100's `PublishRefusedError.kind` surfacing — the reason that error carries a `kind` rather than a message.
+
+  **AC5 is greppable and is the check that the cutover was complete**: no copy anywhere on the route still says nothing is sent.
+
 - **Goal:** wire the wizard's validation to the server and make its Publish button do what it says.
 - **Contract:** the client-side validation stays and the server adds its authoritative pass at publish (`docs/ARCHITECTURE.md` §7). The three disabled reasons already written — `still being written`, `blocked` with an error count, `not wired up` — collapse to two, and the third is deleted rather than reworded (`components/upload/UploadFlow.tsx:1176-1201`). The success screen currently states that nothing was sent and nothing was saved, pinned verbatim by `honesty.test.ts`; it now states what was published, and the pin moves with it. The core-versus-overlay divergence the route discloses three times (`app/upload/page.tsx:195-200`) is resolved once the server resolves against published overlays, so those three disclosures come off together.
 - **Acceptance criteria:** (1) a clean bundle publishes and the response names the owner, slug, release and digest; (2) an unfinished bundle is refused with the unfinished wording, not an error count; (3) the success screen states what was stored, and `honesty.test.ts` pins the new sentence; (4) `REPORT.md` still downloads for a bundle that cannot publish; (5) no copy anywhere on the route still says nothing is sent.
