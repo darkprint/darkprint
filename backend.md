@@ -25,7 +25,7 @@ serialisation point out, so the cap is now sessions rather than review capacity.
 | 3 | T010 | *(merged)* | **verified**, tag `t010-verified` at `3fd050f` | — |
 | 4 | T025 | `../darkprint-wt-t025-versioning` | round 5, **adversary** at `a146c50` | `…versioning-f2`; impl `…versioning-3a` idle |
 | 5 | T020 | `../darkprint-wt-t020-cards` | round 1, **adversary** at `153b541` | `…policy-tests-9f`; impl `…policy-d0`, tests `…archive-tests-67` idle |
-| 6 | T030 | `../darkprint-wt-t030-ontology` | round 1, implementer correcting `stack` | `…policy-c9`, tests `…versioning-tests-eb` idle |
+| 6 | T030 | `../darkprint-wt-t030-ontology` | round 1, **adversary** at `f5fbaca` | `…archive-28`; impl `…policy-c9`, tests `…versioning-tests-eb` idle |
 
 `…policy-tests-9f` is held free as the next adversary. T060's and T000's worktrees stay on
 disk while sessions live in them, per the deferred-removal rule.
