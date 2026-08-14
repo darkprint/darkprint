@@ -244,6 +244,36 @@ refuse that input". A guard can be correct, unit-tested, and load-bearing nowher
 cheap and total — delete the guard, run the whole suite, diff the sorted failing sets; if they are
 identical the guard is unobserved.
 
+**The experiment yields a number, and the number is a usable acceptance criterion.** T030's blind
+test author ran the identical experiment against its own reference — which checks `version` as
+well as `terms` — and got **2 of 151 red**: the surrogate-in-the-version-string test and the T-02
+timing test, exactly the two its annotation names as holding the guard. The adversary ran it
+against the implementation and got **0**. The two results do not conflict; the gap between them
+*is* the defect, and it converts a clause into a measurement. So T030 round 2 has a stated
+expectation rather than a hope: after the fix the experiment must red **2, not 0**, and a 0 means
+the fix did not reach the published surface however green the suite looks.
+
+**Test the suite before trusting its output, not after.** T030's adversary patched
+`expectSealedError` in a **scratch copy** to the amended clause and re-ran *before* reading the
+suite's 32 reds — 32 fell to 17, so fifteen were the superseded wording and none was a defect.
+Triaging 32 reds afterwards would have reached the same place slowly and with far more chances to
+charge one of the fifteen as real.
+
+## The default failure of writing a test against a description
+
+Four independent authors produced the same species in one day, and it is worth naming as a class
+rather than as four incidents: **an assertion aimed at what the author expected rather than at what
+the thing is.** `ontology_version` matching inside `ontology_version_version_key`; a diamond probe
+whose offending node was never reached because the walk pops LIFO; a leak sentinel planted in the
+one field the module renders on purpose; `view.version` where `OntologyView` exposes
+`ontology.version`; `/shadow/i` where core reports `bundle/ontology-mismatch`; a bad-version list
+containing `1.0`, which `REF_VERSION` accepts. None was caught by re-reading, and every one was
+caught the same way: **running a correct implementation first**, and treating any red against it as
+a defect in the test rather than in the code. That is now the standing first step for a blind
+suite, before it is offered as evidence about anything.
+
+
+
 ## The compose stack is shared and unowned, and chasing individual suites will not fix it
 
 Three suites were stabilised this run — `archive.scratch.test.ts`, `lib/db/schema.test.ts` and
