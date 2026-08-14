@@ -798,6 +798,30 @@ or the repair is unobservable the moment it is made. The acceptance number for s
 therefore the reverse mutation — **deleting the fix must red at least one blind test** — and a 0
 there is the *expected* result unless the witness was written first.
 
+**Outcome: the witness landed and the number is 8, not 0.** Deleting the pin-set narrowing now reds
+eight blind tests, reproduced on **both** route layouts. The spread is the interesting part — the
+`id@version` exhibit, the two-directional property, `latestCards()`, the unpinned-only phase in
+`phases()` **and** `cardsByPhase()`, `cards()` ordering, and the lifecycle-order test, because an
+extra row changes a **sequence** as well as a set. The blind author's own note on how it got there:
+what made the gap visible was not writing more tests of the same shape but **being handed the two
+clauses and asked what fixture each requires**, and it kept that reasoning in the file rather than
+only the assertions.
+
+**The invariant it derived is better than the fixture it was asked for**: *no indexed card has
+`usedIn === []`* — quantified over the index rather than over a planted row, so it catches the class
+rather than the instance. Its own words: the assertion it would keep if it could keep only one.
+
+**And the layout-agnosticism claim was proven against two layouts, not one.** Its first reference
+had nine route files with the catch-all serving both sub-resources; it built the eleven-file shape
+too, same commit, same suite, no edits between runs — **254/254 on both**. Layout-agnosticism is the
+entire claim of binding by URL, and demonstrating it against a single layout demonstrates nothing.
+
+**A third guard-that-cannot-fail, found only because the binding that broke the build was being
+replaced.** The precedence test — *"`/api/cards/duplicates` is not shadowed by `[...ref]`"* —
+**imported the duplicates module directly**, so no shadowing was reachable by it in either
+direction. Deleting that route file now reds 2; before, it reddened nothing. A guard about routing
+that never went near the router.
+
 **And the witness is derived from the clause, never from the report.** The adversary withdrew its
 probe with the rest of its residue and asked that the blind author be pointed at the specification
 instead — a fix that satisfies a probe it was shown proves nothing, and neither does a test written
