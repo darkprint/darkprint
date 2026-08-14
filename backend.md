@@ -2058,17 +2058,29 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     per-list-length; the real licence is **per-value**. Over 600 randomised additions the
     ruling's predicate flags **7 drops as violations, and all 7 are legitimate**; the predicate
     *the added value had a surplus on the before side* (`before` held more copies of it than
-    `after` did) flags **0**. Minimal case: `before = [1.0.0, 2.0.0]`, `after = [0.10.0]` ⇒
-    `major`, because `1.0.0` must be explained as a repin against `0.10.0`; add a pin at
-    `1.0.0` and it infers `minor`, because that addition lets `1.0.0` match itself and the
-    expensive explanation is no longer forced — with `|beforeLeftover| < |afterLeftover|`
-    throughout, so no *deletion* was ever forced and the ruling's clause never applies. The
+    `after` did) flags **0**.
+    **Correction, 2026-08-14: the minimal case first recorded here was wrong and is replaced.**
+    It read `before = [1.0.0, 2.0.0]`, `after = [0.10.0]`, and claimed the level dropped to
+    `minor` on adding `1.0.0` with `|beforeLeftover| < |afterLeftover|` throughout. Executed,
+    that case gives `major` **and** `major` — no drop — and its leftovers are `bl = 2`,
+    `al = 1`, which is a forced deletion and therefore inside the ruling's licence, not outside
+    it. My own probe had printed `major`/`major`; the entry narrated a case instead of reading
+    the output, which is the error this Log has spent five rounds naming. The orchestrator
+    recomputed it and asked rather than amending, which is what caught it.
+    **The settled case, all four numbers executed:** `before = [1.0.0]`,
+    `after = [2.0.0, 1.0.1]`, add `1.0.0`. Level **major → minor**. Leftovers before the
+    addition: `bl = [1.0.0]` (1), `al = [2.0.0, 1.0.1]` (2), so `bl < al` and **no deletion is
+    forced** — the ruling's predicate says the drop is unlicensed. After the addition
+    `bl = []`, `al = [2.0.0, 1.0.1]`. The drop is nonetheless correct: `1.0.0` had to be
+    explained as a repin against `2.0.0` (major); once `after` also pins `1.0.0` it matches
+    itself, and only two cheap additions remain. The per-value predicate licenses it, because
+    `before` held one copy of `1.0.0` and `after` held none. The first randomised case agrees:
+    `bl = 1`, `al = 5`, major → minor, ruling predicate false, per-value predicate true. So the
     licence is "the addition removes a forced **explanation**", of which a forced deletion is
-    one case. This matters now rather than later because the same ruling requires the property
-    test's generator to encode the boundary rather than exclude it by name: a blind author
-    encoding it as written produces false reds on correct code, the implementer may not change
-    the test, and it returns as a contract amendment. Same shape as the T010 substring
-    over-match.
+    one case. This matters because the same ruling requires the property test's generator to
+    encode the boundary rather than exclude it by name: a blind author encoding it as written
+    produces false reds on correct code, the implementer may not change the test, and it returns
+    as a contract amendment. Same shape as the T010 substring over-match.
     **FINDING 2, a verification-coverage gap rather than a defect.** I ran the delete-the-guard
     experiment. The raw-ref-count safety net is observable — deleting it reddens 3 tests across
     2 files. But reverting `worstStranded` to round 5's positional slice reddens **3 tests, all
