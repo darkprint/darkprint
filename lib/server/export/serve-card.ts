@@ -18,6 +18,7 @@ import { resolveCardRef } from "@/lib/server/cards";
 import type { Actor } from "@/lib/server/policy";
 import { cardFilePath } from "@/lib/content/bundle-export";
 import { contentTypeFor } from "./content-type";
+import { readFailed } from "./errors";
 import { recordDownload } from "./downloads";
 import type { ServedFile } from "./types";
 
@@ -35,7 +36,15 @@ import type { ServedFile } from "./types";
  * characters that must not reach a filename.
  */
 export async function serveCard(db: Db, actor: Actor, ref: CardRef): Promise<ServedFile | undefined> {
-  const record = await resolveCardRef(db, actor, ref);
+  let record;
+  try {
+    record = await resolveCardRef(db, actor, ref);
+  } catch (err) {
+    // D-90-A's consistency half: an outage here answered 500 while the identical outage
+    // on the blueprint path answered 404. `readFailed` is an `ExportReadError`, which the
+    // route rethrows, so both are now 500 and neither carries the driver's statement.
+    throw readFailed(err);
+  }
   if (record === undefined) return undefined;
 
   const path = cardFilePath(cardRef(record.cardId, record.version));

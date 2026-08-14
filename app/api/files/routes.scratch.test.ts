@@ -170,47 +170,68 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
   });
 
   /**
-   * D-90-A, end to end and by the total method: control, then an outage, on the same
-   * request.
+   * D-90-A, end to end and through the published surface: control, then an outage, on the
+   * same requests — never by constructing the error object, which would prove the class
+   * hierarchy and not the classification.
    *
-   * The outage is one dropped table, so exactly one statement fails and the connection
-   * stays live — a killed connection would take the whole pool down and prove something
-   * weaker. Before the fix this returned **404 with a `problem+json` body reading "Not
-   * found."**; a caller holding a pinned digest would read that as "withdrawn" and stop
-   * retrying, which is the harm AC6's whole promise is about.
+   * The outage is a dropped table, so exactly one statement fails and the connection
+   * stays live; killing the connection would take the whole pool down and prove something
+   * weaker. Before the fix the blueprint route returned **404 with a `problem+json` body
+   * reading "Not found."**, and a caller holding a pinned digest would read that as
+   * "withdrawn" and stop retrying — the harm AC6's whole promise is about.
+   *
+   * **Both paths, because the tell was that the module contradicted itself.** The card
+   * read and the ontology read were never wrapped and escaped raw as a 500, while the
+   * bundle read answered 404: one outage, two statuses, decided by which statement
+   * happened to run first. Each half is measured here separately.
    *
    * The assertion is that the failure **escapes the route**, not that it is literally a
-   * 500: converting an uncaught throw into a 500 is Next's job and there is no server
-   * here. What this file owns is that `respondWithFile` does not swallow it, and that is
-   * exactly what the type split decides.
+   * 500: turning an uncaught throw into a 500 is Next's job and there is no server here.
+   * What this file owns is that `respondWithFile` does not swallow it.
    */
-  it("a driver failure escapes as a read error, and is never dressed up as a 404", async () => {
-    const { GET } = await import(
+  it("a driver failure escapes as a read error from every path, and is never a 404", async () => {
+    const blueprintRoute = await import(
       "@/app/api/files/blueprints/[owner]/[slug]/v/[version]/[...path]/route"
     );
+    const cardRoute = await import("@/app/api/files/cards/[...ref]/route");
     const { ExportError, ExportReadError } = await import("@/lib/server/export");
-    const call = (): Promise<Response> =>
-      GET(new Request("http://x/api/files/..."), {
+
+    const getFile = (): Promise<Response> =>
+      blueprintRoute.GET(new Request("http://x/api/files/b"), {
         params: Promise.resolve({ owner: "routes", slug, version: "1.0.0", path: ["README.md"] }),
       });
+    const getCard = (): Promise<Response> =>
+      cardRoute.GET(new Request("http://x/api/files/c"), {
+        params: Promise.resolve({ ref: [pinned] }),
+      });
+    const outcome = async (call: () => Promise<Response>): Promise<unknown> =>
+      call().then((response) => `returned ${response.status}`, (err: unknown) => err);
 
-    const control = await call();
-    expect(control.status).toBe(200);
+    expect((await getFile()).status).toBe(200);
+    expect((await getCard()).status).toBe(200);
 
-    /* `bundle` is what `bundleByHandle` joins against, so this is the first statement the
-       request makes. CASCADE because `release` references it; both come back below. */
+    /* Outage one: the card read, which `serveCard` reaches directly and `serveFile`
+       reaches through `buildExport`'s pinned-card loop. Both were unwrapped. */
+    await testDb!.client.query('DROP TABLE "card_version" CASCADE');
+    for (const [name, thrown] of [
+      ["card route", await outcome(getCard)],
+      ["blueprint route via pinned cards", await outcome(getFile)],
+    ] as const) {
+      expect(thrown, name).toBeInstanceOf(ExportReadError);
+      expect(thrown, name).not.toBeInstanceOf(ExportError);
+      expect((thrown as Error).message, name).toBe("export: reading this release failed.");
+      expect(Object.keys(thrown as object), name).toEqual([]);
+      expect(JSON.stringify(thrown), name).toBe("{}");
+      expect((thrown as Error).cause, name).toBeDefined();
+      expect(Object.prototype.propertyIsEnumerable.call(thrown, "cause"), name).toBe(false);
+    }
+
+    /* Outage two: the bundle lookup itself, the first statement the request makes and the
+       one that was answering 404. */
     await testDb!.client.query('DROP TABLE "release", "bundle" CASCADE');
-
-    const thrown: unknown = await call().then(
-      (response) => `returned ${response.status}`,
-      (err: unknown) => err,
-    );
-    expect(thrown).toBeInstanceOf(ExportReadError);
-    expect(thrown).not.toBeInstanceOf(ExportError);
-    expect((thrown as Error).message).toBe("export: reading this release failed.");
-    /* The driver error is on `cause` and nowhere a rendering can reach. */
-    expect(Object.keys(thrown as object)).toEqual([]);
-    expect(JSON.stringify(thrown)).toBe("{}");
-    expect((thrown as Error).cause).toBeDefined();
+    const first = await outcome(getFile);
+    expect(first).toBeInstanceOf(ExportReadError);
+    expect(first).not.toBeInstanceOf(ExportError);
+    expect((first as Error).message).toBe("export: reading this release failed.");
   });
 });

@@ -54,6 +54,7 @@ import type { Actor } from "@/lib/server/policy";
 import {
   factoryDotRejected,
   pinnedCardUnavailable,
+  readFailed,
   releaseDoesNotResolve,
   unpublishedOntologyVersion,
 } from "./errors";
@@ -81,8 +82,12 @@ export async function buildExport(
   try {
     ontology = await openView(db, release.manifest.ontologyVersion, vocabulary?.terms);
   } catch (err) {
+    // A fact about the release — it names a version nobody published — and a 404.
     if (err instanceof UnknownOntologyVersionError) throw unpublishedOntologyVersion(err);
-    throw err;
+    // Anything else here is the ontology *read* failing, and D-90-A is what makes this
+    // branch exist: an unwrapped driver error escaped raw, so the same Postgres outage
+    // answered 500 from this line and 404 from `lookup.ts`. One outage, one status.
+    throw readFailed(err);
   }
 
   const cards = await pinnedCards(db, actor, release.cardRefs);
@@ -134,7 +139,15 @@ async function pinnedCards(
   for (const ref of cardRefs) {
     if (seen.has(ref)) continue;
     seen.add(ref);
-    const record = await resolveCardRef(db, actor, ref as CardRef);
+    let record;
+    try {
+      record = await resolveCardRef(db, actor, ref as CardRef);
+    } catch (err) {
+      // Same reason as `openView` above: a driver failure reading a card is the
+      // infrastructure, not a fact about the release, and must not escape raw carrying
+      // the statement and its bound parameters.
+      throw readFailed(err);
+    }
     if (record === undefined) throw pinnedCardUnavailable();
     // `source`, not `body`: the YAML bytes as archived. `body` is `jsonb` and round-trips
     // value-identical only, so a folder built from it would hash to something else and the
