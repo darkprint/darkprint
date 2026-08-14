@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { PUBLISHED, READER_NAMES, REGISTRY, ROUTES, bind, loadRegistry, routeGet } from "./contract";
+import { PUBLISHED, READER_NAMES, REGISTRY, ROUTES, bind, loadRegistry, routePatternFor } from "./contract";
 
 describe("T080 published signatures", () => {
   it("publishes the barrel the task owns", async () => {
@@ -56,9 +56,35 @@ describe("T080 published signatures", () => {
 });
 
 describe("T080 published routes (D-80-02)", () => {
-  for (const [name, spec] of Object.entries(ROUTES)) {
-    it(`publishes \`${spec.url}\``, async () => {
-      expect(typeof (await routeGet(name as keyof typeof ROUTES))).toBe("function");
+  /**
+   * Asked of the URL, never of a file. The contract publishes paths; the App Router folder
+   * layout that serves them is the implementation's, and a suite that bound to one would
+   * red a correct implementation whose layout differed — and, because a dynamic `import()`
+   * specifier resolves at compile time, take `tsc` and `npm run build` down with it. The
+   * first version of this file did exactly that.
+   */
+  for (const [, spec] of Object.entries(ROUTES)) {
+    it(`serves \`${spec.url}\``, () => {
+      expect(
+        routePatternFor(spec.sample),
+        `\`${spec.sample}\` is a concrete instance of the published template.`,
+      ).toMatch(/^\/api\//);
     });
   }
+
+  /**
+   * The two sub-resources are the reason the templates cannot be read as folder names.
+   * `CARD_ID` admits an `owner/name` namespace, so `berti/solver-a` is **one id spanning
+   * two URL segments** and no literal `[id]` folder can express it. Whatever pattern serves
+   * them must therefore also serve the namespaced form.
+   */
+  it("serves a namespaced card id, which a literal [id] segment cannot express", () => {
+    for (const path of [
+      "/api/cards/berti/solver-a@1.0.0",
+      "/api/cards/berti/solver-a/versions",
+      "/api/cards/berti/solver-a/users",
+    ]) {
+      expect(routePatternFor(path), path).toMatch(/^\/api\/cards\//);
+    }
+  });
 });

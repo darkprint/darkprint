@@ -158,11 +158,7 @@ describe("AC5 the reader half", () => {
 
 describe("AC5 the route half", () => {
   it("answers 404 problem+json for an unknown owner/slug pair", async () => {
-    const response = await callRoute(
-      "blueprint",
-      `/api/blueprints/${handle}/no-such-slug`,
-      { owner: handle, slug: "no-such-slug" },
-    );
+    const response = await callRoute("blueprint", `/api/blueprints/${handle}/no-such-slug`);
     expect(response.status).toBe(404);
     const problem = await problemOf(response);
     expect(
@@ -176,10 +172,7 @@ describe("AC5 the route half", () => {
   });
 
   it("answers 404 for a private bundle rather than 403", async () => {
-    const response = await callRoute("blueprint", `/api/blueprints/${handle}/${CLOSED_SLUG}`, {
-      owner: handle,
-      slug: CLOSED_SLUG,
-    });
+    const response = await callRoute("blueprint", `/api/blueprints/${handle}/${CLOSED_SLUG}`);
     expect(
       response.status,
       `B-03: "A private resource the caller may not see returns 404, never 403, so existence ` +
@@ -189,16 +182,10 @@ describe("AC5 the route half", () => {
 
   it("words the private refusal identically to the unknown one", async () => {
     const unknown = await problemOf(
-      await callRoute("blueprint", `/api/blueprints/${handle}/no-such-slug`, {
-        owner: handle,
-        slug: "no-such-slug",
-      }),
+      await callRoute("blueprint", `/api/blueprints/${handle}/no-such-slug`),
     );
     const priv = await problemOf(
-      await callRoute("blueprint", `/api/blueprints/${handle}/${CLOSED_SLUG}`, {
-        owner: handle,
-        slug: CLOSED_SLUG,
-      }),
+      await callRoute("blueprint", `/api/blueprints/${handle}/${CLOSED_SLUG}`),
     );
     expect(
       withoutInstance(priv),
@@ -213,20 +200,17 @@ describe("AC5 the route half", () => {
 
   it("words a private card's refusal identically to an unknown card's", async () => {
     const unknown = await problemOf(
-      await callRoute("card", "/api/cards/no-such-card@1.0.0", { ref: ["no-such-card@1.0.0"] }),
+      await callRoute("card", "/api/cards/no-such-card@1.0.0"),
     );
     const priv = await problemOf(
-      await callRoute("card", `/api/cards/${CLOSED_CARD}@1.0.0`, { ref: [`${CLOSED_CARD}@1.0.0`] }),
+      await callRoute("card", `/api/cards/${CLOSED_CARD}@1.0.0`),
     );
     expect(unknown.detail, `D-80-02 publishes ${JSON.stringify(CARD_DETAIL)}.`).toBe(CARD_DETAIL);
     expect(withoutInstance(priv)).toStrictEqual(withoutInstance(unknown));
   });
 
   it("answers 200 for a bundle that does exist, so the 404s above are not the only answer", async () => {
-    const response = await callRoute("blueprint", `/api/blueprints/${handle}/${OPEN_SLUG}`, {
-      owner: handle,
-      slug: OPEN_SLUG,
-    });
+    const response = await callRoute("blueprint", `/api/blueprints/${handle}/${OPEN_SLUG}`);
     expect(
       response.status,
       `The control for the four assertions above: a route that answered 404 to everything ` +
