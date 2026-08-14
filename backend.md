@@ -248,6 +248,40 @@ implementation from a contended host, and that ambiguity lands in a report as a 
 change to `compose.yaml` — T000's `Owns`, and not worth a mid-run repartition. Do not spend a
 round chasing whichever suite surfaces next.
 
+## T-04: a blacklist tell can match the fixture's own identifier, and it reds like a real leak
+
+T020's blind suite mints fixture identifiers containing `process.pid`. Its SQLSTATE tells are
+`["23505","23503","22021","22P02"]`, asserted with `not.toContain`. A pid of `23505` — or any
+pid containing one of those strings — produces:
+
+    cardId   t020-leakdup-23505-58-5gy0kq
+    message  addCard: `t020-leakdup-23505-58-5gy0kq@1.0.0` already exists (card_version_id_version_key).
+    → the SQLSTATE tell "23505" matches
+
+That message is **whitelist-legal**: the operation, an identifier the caller itself supplied, and
+the module's own constraint name. Roughly 1 run in 30 000 on five-digit pids, and when it fires it
+reds the leak sweep for every test routed through it, reading exactly like a real leak. This is the
+second instance of the same predicate defect in one suite — the first was `card_version` inside
+`card_version_id_version_key` — which is the evidence that the defect is the *predicate*, not
+either substring.
+
+**The fix is not to delete the tells.** Keep them and make the blacklist **provably**
+non-over-matching rather than probably: at fixture time, assert that no tell is a substring of any
+caller-supplied identifier the test will use, and re-mint the identifier if one is. That converts
+"these characters do not appear" into "these characters cannot appear except by leaking", which is
+the claim actually being made, and it generalises — a tell added later is checked against the
+fixtures automatically instead of trusted. Statement fragments (`insert into`, `values (`,
+`returning`, `$1`) and a random per-run planted secret are sound as-is, since neither can appear in
+an admissible message.
+
+**Owed, and it is a contract gap rather than a suite defect: no task publishes the admissible
+message form for each rejection path.** So the strongest pin in the enforcement rule — `message`
+equals the constructed form — cannot be written by a blind author without inventing the wording,
+which is a candidate list in a new hat. T020's author refused to invent it and reported it, which
+is right. **A task's published signatures must state the admissible message form per path, before
+the implementation exists.** Writing it afterwards to match shipped code is the contract following
+the implementation, which is the wrong direction and is not being done retroactively here.
+
 ## T-03: the surrogate test on a `jsonb` column asserts an outcome Postgres already guarantees
 
 Found independently by three sessions — both blind test authors and T020's implementer — which
