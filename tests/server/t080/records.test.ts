@@ -79,6 +79,30 @@ const DANGLING_REF = "no-such-pinned-card@3.0.0";
 const HANDLELESS_SLUG = "e-handleless-owner";
 const HANDLELESS_CARD = "handleless-owner-card";
 
+/**
+ * The fixture the two indexing clauses require, and the one this suite did not have.
+ *
+ *   Contract: "Only cards a DOT node instantiates are indexed."
+ *   D-80-03:  "`card_version` rows whose **`id@version`** appears in the current release's
+ *              `cardRefs`."
+ *
+ * The membership predicate is over `id@version`. Every negative fixture above uses an **id**
+ * no release mentions — `${SUPERSEDED_CARD}`, `${ORPHAN_CARD}` — so all of them are excluded
+ * by a reader that narrows on the *id* alone, and the distinction the clauses turn on is
+ * asserted by nothing. `build-parity` cannot reach it either: it seeds from `buildRegistry`'s
+ * own output, where every row is pinned by construction.
+ *
+ * So: a row at a version no current release pins, whose **id another version of is pinned**.
+ * `beta-card` is pinned at 1.0.0, 2.0.0 and 10.0.0; `beta-card@99.0.0` is pinned by nothing.
+ * It declares a phase nothing else declares, so `phases()` leaks it too if it is indexed.
+ */
+const UNPINNED_VERSION = "beta-card@99.0.0";
+const UNPINNED_VERSION_PHASE = "zzz-unpinned-only-phase";
+
+/** Two versions of one card with otherwise identical bodies — a content twin group. */
+const TWIN_CARD = "version-twin-card";
+const TWIN_SLUG = "e-version-twins";
+
 /** Pins spelled with surrounding whitespace, and pins that do not parse at all. */
 const CANON_SLUG = "e-canonical-pins";
 const UNPARSEABLE_PINS = ["beta-card", "beta-card@latest", "Beta Card@1.0.0", "@1.0.0", ""];
@@ -213,6 +237,34 @@ beforeAll(async () => {
 
   /* Indexed by nothing: no release anywhere names this ref. */
   await insertCard(s, { ownerId: owner.id, id: ORPHAN_CARD });
+
+  /* Indexed by nothing either — but its *id* is pinned three times over, so it is excluded
+     only by a predicate over `id@version`. Nothing else in this suite reaches that. */
+  await insertCard(s, {
+    ownerId: owner.id,
+    id: "beta-card",
+    version: "99.0.0",
+    phases: [UNPINNED_VERSION_PHASE],
+  });
+
+  /* Two versions of one card with otherwise identical bodies. `contentKey` strips
+     `id`/`version`/`author`/`provenance`, so these are a duplicate group — a fact this
+     suite's own Log recorded and nothing asserted, which is how dropping `version` from
+     that field set reddened zero. */
+  const twin1 = await insertCard(s, {
+    ownerId: owner.id,
+    id: TWIN_CARD,
+    version: "1.0.0",
+    action: "version-twin-action",
+  });
+  const twin2 = await insertCard(s, {
+    ownerId: owner.id,
+    id: TWIN_CARD,
+    version: "2.0.0",
+    action: "version-twin-action",
+  });
+  const twins = await insertBundle(s, { owner, slug: TWIN_SLUG });
+  await insertRelease(s, { bundle: twins, version: "1.0.0", cards: [twin1, twin2] });
 
   /* A bundle row with no release at all. B-06 says a bundle first exists at its first
      publish, so this is off-contract state the schema nonetheless permits — and every
@@ -655,6 +707,121 @@ describe("AC1 current release (D-80-03)", () => {
     for (const ref of summaries.map((c) => c.ref)) {
       expect(ref, "no ref reaches a caller uncanonicalised").toBe(ref.trim());
     }
+  });
+
+  it("indexes on id@version, not on id: an unpinned version of a pinned id is absent", async () => {
+    const cards = await bind("cards");
+    const versionsOf = await bind("versionsOf");
+    const card = await bind("card");
+
+    const refs = asArray(await cards(s.db, anonymous), "cards()").map((row, i) =>
+      asCardSummary(row, `cards()[${i}]`).ref,
+    );
+    expect(
+      refs,
+      `D-80-03 makes the membership predicate "\`card_version\` rows whose \`id@version\` ` +
+        `appears in the current release's \`cardRefs\`". \`beta-card\` is pinned at three ` +
+        `versions and \`${UNPINNED_VERSION}\` at none, so a reader that narrows on the ` +
+        `**id** and then reads every row for it answers this — and every other negative ` +
+        `fixture in this suite uses an id no release mentions, so none of them can tell the ` +
+        `two predicates apart.`,
+    ).not.toContain(UNPINNED_VERSION);
+
+    const versions = asArray(await versionsOf(s.db, anonymous, "beta-card"), "versionsOf()").map(
+      (row, i) => asCardSummary(row, `versionsOf()[${i}]`).version,
+    );
+    expect(versions).toEqual(["10.0.0", "2.0.0", "1.0.0"]);
+    expect(await card(s.db, anonymous, UNPINNED_VERSION)).toBeUndefined();
+  });
+
+  it("takes latestCards() over the indexed versions, not over every row for the id", async () => {
+    const latestCards = await bind("latestCards");
+    const rows = asArray(await latestCards(s.db, anonymous), "latestCards()");
+    const beta = rows
+      .map((row, i) => asCardSummary(row, `latestCards()[${i}]`))
+      .find((c) => c.id === "beta-card");
+    expect(
+      beta?.version,
+      `\`${UNPINNED_VERSION}\` is the highest version of \`beta-card\` in \`card_version\` ` +
+        `and the lowest-effort way to answer "newest" is to take it. The newest *indexed* ` +
+        `version is 10.0.0.`,
+    ).toBe("10.0.0");
+  });
+
+  it("does not report a phase only an unpinned version declares", async () => {
+    const phases = await bind("phases");
+    const cardsByPhase = await bind("cardsByPhase");
+    expect(
+      asArray(await phases(s.db, anonymous), "phases()"),
+      `\`${UNPINNED_VERSION}\` declares \`${UNPINNED_VERSION_PHASE}\` and nothing else does, ` +
+        `so a gallery filter offering it is the production shape of indexing an unpinned row.`,
+    ).not.toContain(UNPINNED_VERSION_PHASE);
+    expect(
+      asArray(await cardsByPhase(s.db, anonymous, UNPINNED_VERSION_PHASE), "cardsByPhase()"),
+    ).toEqual([]);
+  });
+
+  it("holds cards() and the blueprints' cardRefs to each other, in both directions", async () => {
+    /* The relationship the two clauses are really about, stated over the output rather than
+       over any fixture. `cardRefs` is where the membership predicate reads from, so the
+       index and the pins are two views of one set:
+
+         every ref in cards() is pinned by some visible blueprint   <- no unpinned row leaks
+         every card a visible blueprint pins is in cards()          <- no pinned row is lost
+
+       The first direction makes `usedIn === []` impossible for an indexed card, which is
+       the tell for the whole class — it catches an unpinned row however it got in, and it
+       does not depend on the fixture below having thought of that row's shape. */
+    const cards = await bind("cards");
+    const blueprints = await bind("blueprints");
+
+    const summaries = asArray(await cards(s.db, anonymous), "cards()").map((row, i) =>
+      asCardSummary(row, `cards()[${i}]`),
+    );
+    const pinned = new Set<string>();
+    for (const [i, row] of asArray(await blueprints(s.db, anonymous), "blueprints()").entries()) {
+      for (const ref of asBlueprintSummary(row, `blueprints()[${i}]`).cardRefs) pinned.add(ref);
+    }
+
+    const unpinned = summaries.filter((c) => !pinned.has(c.ref)).map((c) => c.ref);
+    expect(
+      unpinned,
+      `Every indexed card must appear in some visible blueprint's \`cardRefs\` — that is ` +
+        `what "only cards a DOT node instantiates are indexed" means once D-80-03 says ` +
+        `which release supplies the pins.`,
+    ).toEqual([]);
+
+    const missing = [...pinned].filter((ref) => !summaries.some((c) => c.ref === ref));
+    expect(
+      missing,
+      `And the converse: a ref a visible blueprint pins, whose row is readable, must be in ` +
+        `\`cards()\`. Without this half the first is satisfied by returning nothing.`,
+    ).toEqual([]);
+
+    const orphaned = summaries.filter((c) => c.usedIn.length === 0).map((c) => c.ref);
+    expect(
+      orphaned,
+      `\`usedIn\` is the same join read from the other side, so an indexed card with no ` +
+        `users is a contradiction the indexing rule makes impossible. This is the tell that ` +
+        `does not depend on knowing which row leaked.`,
+    ).toEqual([]);
+  });
+
+  it("groups two versions of one card whose bodies are otherwise identical", async () => {
+    const duplicates = await bind("duplicates");
+    const groups = asArray(await duplicates(s.db, anonymous), "duplicates()").map((group, i) =>
+      asArray(group, `duplicates()[${i}]`)
+        .map((row, j) => asCardSummary(row, `duplicates()[${i}][${j}]`).ref)
+        .sort(),
+    );
+    expect(
+      groups,
+      `D-80-05: \`duplicates()\` is computed from the canonical JSON of the body minus ` +
+        `\`id\`, \`version\`, \`author\`, \`provenance\`. \`version\` is one of the four, so ` +
+        `two versions of one card that differ in nothing else **are** a content twin group. ` +
+        `This suite's Log recorded that and asserted it nowhere, which is why dropping ` +
+        `\`version\` from the stripped set reddened zero on both sides.`,
+    ).toContainEqual([`${TWIN_CARD}@1.0.0`, `${TWIN_CARD}@2.0.0`]);
   });
 
   it("does not index a superseded release's cards through usersOf either", async () => {
