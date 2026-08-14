@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { inferBump, parseCardRef } from "@/lib/core";
+import { inferBump, parseCardRef, parseSemver } from "@/lib/core";
 
 import {
   account,
@@ -225,23 +225,47 @@ describe("AC1 — one immutable document per (id, version)", () => {
 /* --------------------- AC3 --------------------- */
 
 describe("AC3 — a private card is validated exactly as a public one", () => {
-  /* `CardRef` is `id@version` and versions must match `REF_VERSION`, so an unversioned or
-     `@latest` reference is refused at the write site. Which strings those are is asked of
-     the engine rather than remembered: `REF_VERSION` is `/^[0-9][0-9A-Za-z.+-]*$/`, looser
-     than semver, so `1.0` is a valid *reference* even though it is not a valid version —
-     a list written from memory had `1.0` in it and was wrong. Each survivor is refused for
-     a public card; AC3's claim is that privacy changes nothing about that. */
-  const BAD_VERSIONS = ["latest", "", " ", "v1.0.0", "1,0,0", "1 0 0", "one.0.0", "-1.0.0"].filter(
-    (v) => parseCardRef(`a-card@${v}`) === undefined,
-  );
+  /* Ruled after this suite reported the gap: **`addCard` requires a strict semver**, which is
+     narrower than `REF_VERSION`. The two grammars answer different questions and only one of
+     them mints — citing a version may stay loose, storing one may not, because `compareSemver`
+     cannot order `1.0` and a single stored non-semver leaves "latest" undefined for that id
+     forever. So the write-side list is filtered through `parseSemver`, not `parseCardRef`, and
+     it is deliberately wider than the reference grammar's. Asked of the engine rather than
+     remembered: a list written from memory is what got this wrong the first time. */
+  const BAD_VERSIONS = [
+    "latest",
+    "",
+    " ",
+    "v1.0.0",
+    "1,0,0",
+    "1 0 0",
+    "one.0.0",
+    "-1.0.0",
+    /* Valid references, and not semvers. These are the four the ruling added. */
+    "1.0",
+    "1",
+    "1.0.0.0",
+    "01.0.0",
+  ].filter((v) => parseSemver(v) === undefined);
 
-  it("AC3: the malformed-version fixtures are ones the engine itself refuses", () => {
-    /* The premise, checked rather than assumed, so a fixture that drifts fails here as a
-       fixture error instead of as a contract red somewhere downstream. */
-    expect(BAD_VERSIONS.length).toBeGreaterThanOrEqual(5);
+  it("AC3: the malformed-version fixtures are ones the engine's own semver parser refuses", () => {
+    expect(BAD_VERSIONS.length).toBeGreaterThanOrEqual(10);
     for (const version of BAD_VERSIONS) {
-      expect(parseCardRef(`a-card@${version}`), JSON.stringify(version)).toBeUndefined();
+      expect(parseSemver(version), JSON.stringify(version)).toBeUndefined();
     }
+  });
+
+  it("AC3: the write grammar is strictly narrower than the reference grammar", () => {
+    /* The ruling's whole content, stated as a property rather than as a list: there are
+       versions the reference grammar accepts and the write grammar must not. If these two
+       ever became the same grammar, every test below would still pass and the ruling would
+       have been quietly undone. */
+    const refsAcceptSemversRefuse = BAD_VERSIONS.filter(
+      (v) => parseCardRef(`a-card@${v}`) !== undefined,
+    );
+    expect(refsAcceptSemversRefuse).toEqual(
+      expect.arrayContaining(["1.0", "1", "1.0.0.0", "01.0.0"]),
+    );
   });
 
   it("AC3: every malformed version is refused for a public card", async () => {
@@ -561,6 +585,8 @@ describe("content that cannot survive storage is refused, not repaired", () => {
 
 describe("no rejection carries the statement, its parameters, the source or a SQLSTATE", () => {
   const SQLSTATES = ["23505", "23503", "22021", "22P02"];
+  /* `pg` internals a driver error drags along. */
+  const PG_INTERNALS = ["severity", "routine", "sqlstate", "detail:", "schema:", "where:"];
   /* Tells of the *statement*, not of the schema. `card_version` is deliberately absent:
      AC1 requires the conflict to name `card_version_id_version_key`, so the table name is
      inside a string the contract asks for. Falsifying against a correct implementation is
@@ -664,7 +690,16 @@ describe("no rejection carries the statement, its parameters, the source or a SQ
 
   it("no rendering of any rejection leaks the statement, parameters, source or SQLSTATE", async () => {
     for (const { label, error, secret } of await failures()) {
-      for (const { label: how, text } of renderings(error)) {
+      /* `JSON.stringify({ detail: err.message })` is the fifth rendering the rule names — it
+         is what `problem.ts` does with a message on its way into a response body. */
+      const all = [
+        ...renderings(error),
+        {
+          label: "JSON.stringify({ detail: err.message })",
+          text: JSON.stringify({ detail: (error as { message?: unknown })?.message }),
+        },
+      ];
+      for (const { label: how, text } of all) {
         const where = `${label} via ${how}`;
         expect(text, `${where} leaked the caller's card source`).not.toContain(secret);
         for (const tell of STATEMENT_TELLS) {
@@ -675,6 +710,9 @@ describe("no rejection carries the statement, its parameters, the source or a SQ
         for (const state of SQLSTATES) {
           expect(text, `${where} leaked a SQLSTATE`).not.toContain(state);
         }
+        for (const internal of PG_INTERNALS) {
+          expect(text.toLowerCase(), `${where} leaked a pg internal`).not.toContain(internal);
+        }
       }
     }
   }, 120_000);
@@ -682,26 +720,27 @@ describe("no rejection carries the statement, its parameters, the source or a SQ
   it("carries no own properties beyond message and cause, and cause is not enumerable", async () => {
     for (const { label, error } of await failures()) {
       const err = error as object;
-      /* `stack` is an own property of every `new Error()` in V8, so the contract's "own
-         properties are exactly ['message','cause']" is read as "and nothing of its own
-         beyond these". Taken literally it could only be satisfied by deleting `stack`,
-         which would cost every real failure its trace; reported to the orchestrator rather
-         than asserted as written. */
-      expect(ownPropertiesBeyondBuiltins(err), `${label}: ${PUBLISHED.errorsCarryNothing}`).toEqual(
-        expect.arrayContaining([]),
-      );
+      /* Amended after this suite reported the old wording as unsatisfiable: `stack` is an own
+         property of every `new Error()` in V8, so "own properties exactly ['message','cause']"
+         could only be met by deleting it. The rule now asks for what it was always reaching
+         for, and this asserts each clause of it. */
       expect(
         ownPropertiesBeyondBuiltins(err).filter((k) => k !== "cause"),
-        `${label} carries own properties the contract does not publish`,
+        `${label} carries own properties the rule does not allow`,
       ).toEqual([]);
+      /* `stack` is retained, not deleted — a real failure keeps its trace. */
+      expect(Object.hasOwn(err, "stack"), `${label} deleted its stack`).toBe(true);
+      expect(String((err as Error).stack ?? "").length).toBeGreaterThan(0);
       if (Object.hasOwn(err, "cause")) {
+        /* Checked with `propertyIsEnumerable`, never inferred. */
         expect(
-          Object.getOwnPropertyDescriptor(err, "cause")?.enumerable,
+          err.propertyIsEnumerable("cause"),
           `${label}: cause must be non-enumerable so JSON.stringify cannot reach it`,
         ).toBe(false);
       }
       expect(Object.keys(err), `${label} has enumerable own properties`).toEqual([]);
       expect(JSON.stringify(err), `${label} serialises to something`).toBe("{}");
+      expect(PUBLISHED.errorsCarryNothing.length).toBeGreaterThan(0);
     }
   }, 120_000);
 });

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { compareVersionStrings, parseCardRef } from "@/lib/core";
+import { compareVersionStrings, parseCardRef, parseSemver } from "@/lib/core";
 
 import {
   anonymous,
@@ -175,6 +175,46 @@ describe("AC5 — a bare id resolves to the newest version, an exact ref to that
         value: undefined,
       });
     }
+  }, 60_000);
+
+  it("AC5: a ref naming a non-semver finds nothing, because nothing non-semver can be stored", async () => {
+    const id = cardIdFor("ac5nonsemver");
+    await put(id, "1.0.0");
+
+    /* The read half of the semver ruling. `resolveCardRef` keeps the looser grammar, so each
+       of these parses as a reference — and each names a version `addCard` cannot have
+       minted, so each finds nothing. A resolver that "helpfully" widened `1.0` to `1.0.0`
+       would answer the stored row here and quietly invent a reference form nothing writes. */
+    for (const version of ["1.0", "1", "1.0.0.0", "01.0.0"]) {
+      const ref = `${id}@${version}`;
+      expect(parseCardRef(ref), `${ref} is a well-formed reference`).not.toBeUndefined();
+      expect(parseSemver(version), `${version} is not a semver`).toBeUndefined();
+      const outcome = await Promise.resolve(api.resolveCardRef(scratch.db, anonymous, ref)).then(
+        (value) => ({ ok: true as const, value }),
+        (error: unknown) => ({ ok: false as const, value: String(error) }),
+      );
+      expect(outcome, `resolveCardRef(${JSON.stringify(ref)})`).toEqual({
+        ok: true,
+        value: undefined,
+      });
+    }
+  }, 60_000);
+
+  it("AC5: every stored version is orderable, so latest is always defined", async () => {
+    const id = cardIdFor("ac5orderable");
+    for (const version of ["1.0.0", "2.0.0", "1.5.0"]) await put(id, version);
+
+    /* The reason the ruling exists, asserted as a property of what is in the table: one
+       stored non-semver would leave `compareSemver` with nothing to order it by and "latest"
+       undefined for this id forever. */
+    const listed = (await api.listCardVersions(scratch.db, anonymous, id)) as Record<
+      string,
+      unknown
+    >[];
+    for (const row of listed) {
+      expect(parseSemver(String(row.version)), `stored version ${String(row.version)}`).not.toBeUndefined();
+    }
+    expect(await api.getLatestCard(scratch.db, anonymous, id)).not.toBeUndefined();
   }, 60_000);
 
   it("AC5: getLatestCard answers undefined for a card id nothing holds", async () => {
