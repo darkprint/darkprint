@@ -182,6 +182,15 @@ Three cheap guards, all now in force:
   `set -a; . ./.env.example; set +a` before a gate turns those files green instead of
   "recorded unverified". Every `DATABASE_URL`/`S3_*`/`SESSION_SECRET` failure in this run has
   been an unset shell, never a defect — including two of the orchestrator's own.
+- **Paste the output; do not narrate the case.** T025's adversary reported a minimal case whose
+  numbers it had reconstructed rather than read — its probe had printed `major`/`major` and it
+  wrote the entry as `major`/`minor`. The narrated case was *plausible*: right shape, right
+  direction, right conclusion, invented numbers. **A false claim that supports a true finding is
+  the hardest kind to catch**, because everything around it corroborates it and the conclusion
+  survives the correction. It reached a committed report and was caught only by recomputing the
+  arithmetic from the definitions. A case reported as executed numbers — inputs, outputs, and the
+  intermediate values the predicate reads — cannot be narrated, which is why asking for exactly
+  that resolved it in one exchange.
 - Before carrying a **finding** forward into a later round, re-read the thing it is about.
   T010's adversary re-ran all six criteria rather than carrying them forward, then carried its
   AC1-contradiction claim into two further rounds without re-reading AC1, which had been
@@ -1404,7 +1413,16 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
   **Why the strict reading of the round-5 ruling has to yield here.** "Most expensive plausible reading" taken absolutely would price `{a, b} → {c, c}` as *delete one and add one*, which is structurally available for **every** non-identical change — and an inference that answers `major` to everything answers nothing. So the ruling is bounded, and this is its boundary: **among explanations that leave no unexplained residue, take the most expensive; price a deletion or an addition only where the counts force one.** The maximum still runs over the full leftover cross product, which is what the round-5 fix does.
 
-  **The monotonicity property, corrected.** "Adding a pin to `next` cannot lower the level" is false as an absolute, and the counter-example is above. It holds as: *adding a pin cannot lower the level **unless that pin removes a forced deletion*** — that is, unless `|before| > |after|` and the addition reduces the deficit. The adversary's original defect is untouched by the carve-out and stays a defect: `[1.0.0] → [9.0.0]` against `[1.0.0] → [1.0.1, 9.0.0]` has no deficit on either side, so no deletion was ever forced and nothing was removed by the addition. The property test's generator must encode that boundary rather than excluding the case by name, so the carve-out is falsifiable rather than merely asserted.
+  **The monotonicity property, corrected.** "Adding a pin to `next` cannot lower the level" is false as an absolute, and the counter-example is above. **Corrected again in round 6, and the corrected form is per-value rather than per-length.** The licence is *the addition removes a forced **explanation***; a forced deletion is one instance of that, not the whole of it. The predicate is: **the added value had a surplus on the before side.** Executed case, four numbers rather than a narrated shape:
+
+      before = [1.0.0]              after = [2.0.0, 1.0.1]        added = 1.0.0
+      level before addition: major   level after addition: minor
+      leftover before: bl = [1.0.0] (1), al = [2.0.0, 1.0.1] (2)
+      leftover after:  bl = []      (0), al = [2.0.0, 1.0.1] (2)
+      per-length predicate (bl > al): FALSE — "unlicensed"
+      per-value predicate  (surplus of 1.0.0 on the before side): TRUE — licensed
+
+  `bl < al` throughout, so no deletion is ever forced and the per-length clause never applies — yet the drop is correct: `1.0.0` had to be explained as a repin against `2.0.0`, which is major, and once `after` pins `1.0.0` it matches itself, leaving two cheap additions. Over 600 randomised additions the per-length predicate flags **seven** drops as violations and all seven are legitimate; the per-value predicate flags **zero**. The adversary's original defect is untouched by the carve-out and stays a defect: `[1.0.0] → [9.0.0]` against `[1.0.0] → [1.0.1, 9.0.0]` has no deficit on either side, so no deletion was ever forced and nothing was removed by the addition. The property test's generator must encode that boundary rather than excluding the case by name, so the carve-out is falsifiable rather than merely asserted.
 
   **The second gap the implementer found is the more valuable half of the round**, because nothing asked for it: a pair `repinMagnitude` cannot read — one side not a semver, `@latest` being the live case — was floored at a flat `patch`, and that floor could sit *below* what the same item would have priced as genuinely lost. `[…, "latest"] → []` gave `major`; `[…, "latest"] → […, "1.0.1"]` gave `patch`, purely because something existed to pair against. Found by property testing rather than by assuming the first fix sufficed, which is the discipline the round-4 by-value fix did not get and needed.
 
