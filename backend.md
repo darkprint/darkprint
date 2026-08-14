@@ -50,8 +50,17 @@ itself rather than let it stand. It also had to commit `backend.md` **by path**,
 handover states the commit the tree is expected to be at, not only who holds it.** The second
 half is the adversary's own correction to this rule: a one-writer rule alone would have left
 round 3's contamination silent had the implementer edited *before* the pass began rather than
-during it. So a pass starts by recording the sha it is measuring and the mtimes of the files
-under test, and reports both with its result. While an
+during it. So a pass stamps `git rev-parse HEAD` and `git status --porcelain`
+**before and after** its runs and reports both, and a handover is not complete until the
+receiving agent has the sha *and* confirmation that `git status --porcelain` is empty at it.
+
+That stamp is deliberately whole-tree rather than scoped to the files under test, which is the
+adversary's own correction to its first version of this guard — the same error class one level
+up. `npm test` runs the whole repository, so an edit to `lib/core/**` or `tests/support/**`
+contaminates a task's run exactly as thoroughly as an edit to its own module and would appear
+in no scoped stamp. In round 3 the contaminating edit happened to land inside the task's own
+`Owns`, which was luck rather than coverage. Mtimes are then a diagnostic for *which* file
+moved, never the detector for whether anything did. While an
 adversarial pass is running the implementer does not touch the tree, and while an implementer
 is working the adversary does not start. The orchestrator hands the tree over explicitly in
 both directions, as it already does for the merge. Any agent committing in a shared worktree
