@@ -762,6 +762,25 @@ The implementer also declined to settle the underlying question by shipping the 
 greener, and escalated instead. That is the correct handling of a fix whose merit depends on a
 ruling nobody has made.
 
+## A fix for an unseen defect lands unobserved by construction
+
+The second-order form of the rule below, spotted by T080's adversary from a number it had already
+taken rather than from a new measurement. Against the module **with** D-80-06 present, the blind
+suite ran `7 failed / 239 passed` and **not one of the seven was about the indexing rule** — the
+suite was *green on the defect*. It follows without further work that once the fix lands, reverting
+it reds **0**: the fix is correct, freshly ruled, and observed by nothing.
+
+That is not a coincidence, it is entailment. **A suite that could not see a defect cannot see its
+fix**, so every charged defect carries a second obligation: the blind suite gains a witness for it,
+or the repair is unobservable the moment it is made. The acceptance number for such a round is
+therefore the reverse mutation — **deleting the fix must red at least one blind test** — and a 0
+there is the *expected* result unless the witness was written first.
+
+**And the witness is derived from the clause, never from the report.** The adversary withdrew its
+probe with the rest of its residue and asked that the blind author be pointed at the specification
+instead — a fix that satisfies a probe it was shown proves nothing, and neither does a test written
+to match one. Its own framing: it is the wrong party to be shaping that suite.
+
 ## A ruling can be implemented correctly and still be unobserved
 
 T030's implementer shipped the existence-first AC6 enforcement, then ran the total method against
