@@ -11,25 +11,32 @@
    logger that serialises an error cannot reach the driver's copy
    of the statement through it.
 
-   Two consequences worth stating, because both look like
-   oversights and are not:
+   The rule is about what leaks through a *rendering*, not about
+   the own-property list (2026-08-14 amendment). `stack` is an own
+   property of every V8 `Error` and is **retained**: the earlier
+   wording, "own properties exactly message and cause", could only
+   be satisfied by deleting it, which costs every real failure its
+   trace. What has to hold instead:
 
-   - `stack` is deleted. V8 installs it as an *own* property, and
-     "own properties are exactly message and cause" is a rule about
-     `Object.getOwnPropertyNames`, not about `Object.keys` — under
-     the `Object.keys` reading the clause "`cause` non-enumerable"
-     would contradict the clause it qualifies, since a
-     non-enumerable `cause` is not an enumerable own property. The
-     driver error keeps its own stack and stays reachable at
-     `err.cause` while debugging, so the trace that matters is not
-     lost.
-   - `name` lives on the prototype, never on the instance, for the
-     same reason. Callers branch on `instanceof`, and the classes
-     are separate rather than one class with a `code` field because
-     a `code` own property is exactly what the rule forbids. That
-     is also why no error here carries the `Diagnostic[]` that
-     explains it: a caller wanting detail calls `validateVocabulary`,
-     which is published for that purpose.
+   - `Object.keys(err)` is empty and `JSON.stringify(err)` is
+     exactly `"{}"`.
+   - `cause` is present and non-enumerable, which is what keeps
+     `JSON.stringify` from reaching it.
+   - No rendering carries the statement, a bound parameter, the
+     caller's content, a SQLSTATE or a `pg` internal.
+
+   `name` lives on the prototype, never on the instance, so it
+   cannot appear in an enumeration either. Callers branch on
+   `instanceof`, and the classes are separate rather than one class
+   with a `code` field so that nothing enumerable has to be added
+   to carry the distinction. That is also why no error here carries
+   the `Diagnostic[]` explaining it: a caller wanting detail calls
+   `validateVocabulary`, which is published for that purpose.
+
+   A version string *is* rendered, deliberately. It is the caller's
+   own identifier, not its content — the vocabulary's terms, labels
+   and descriptions never appear — and it is what makes the failure
+   actionable rather than anonymous.
    ============================================================ */
 
 /** Base for every rejection this module raises. */
@@ -44,7 +51,6 @@ export class OntologyStoreError extends Error {
       writable: true,
       configurable: true,
     });
-    delete (this as { stack?: string }).stack;
   }
 }
 OntologyStoreError.prototype.name = "OntologyStoreError";
