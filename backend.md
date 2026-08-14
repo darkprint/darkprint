@@ -20,7 +20,7 @@ graph was recomputed — T070 unblocks T050, T080 unblocks T200 and T210, T090 u
 T261. T040 and T240 are leaves and go second. Adversary sessions are **not started** until their
 implementer hands back: a round ends at the verdict, never at a slot release.
 
-**Gate-slot queue** (three consecutive full-suite runs only; targeted runs and probes are free):
+**Gate-slot queue** (the three consecutive full-suite runs, **and every DB-touching targeted run** — see the tightening below; in-process probes and reading stay free):
 T020's implementer holds it, then T030's implementer, then T025's adversary. The queue
 moves on completed triples, never on seniority — T025's adversary was offered the chance to
 re-run early to remove the last qualification from its own report and declined it, which is the
@@ -386,7 +386,14 @@ Three cheap guards, all now in force:
   `git status --porcelain` before and after, and report both. Whole-tree, never scoped to the
   files thought to be under test: `npm test` runs the whole repository, so an edit anywhere
   contaminates equally. Mtimes are a diagnostic for *which* file moved, never the detector for
-  whether anything did. **Commit before the after-stamp**, so it reads clean at the
+  whether anything did. **And read porcelain twice before believing it, confirming
+  anything it reports with the diff that would explain it.** T090's adversary hit two sub-minute
+  races in twenty minutes against trees another agent was writing: a `UU backend.md` with **no
+  `MERGE_HEAD` and zero conflict markers**, and a porcelain reporting `backend.md` modified whose
+  `git diff` came back empty moments later. Both were genuine instants inside someone else's merge
+  and both cleared on their own. **A single `git status` against a live tree is a sample, not a
+  state** — the stamp is the right instrument and one reading of it is not, and the cost of the
+  second reading is seconds against a charge that would have been wrong. **Commit before the after-stamp**, so it reads clean at the
   sha being handed over: T010's round 4 stamped honestly and byte-identically across three runs,
   but on an uncommitted working tree — which establishes that the tree held still and *not* that
   the gates ran on what got committed. Those are two different claims and only the second is
@@ -1066,7 +1073,7 @@ independent and are now stated as such wherever either appears.
 
 **Operating rule until it is fixed properly: DB-touching gates are serialised at handover by the
 orchestrator rather than run concurrently.** In practice that is a **gate slot**: probe work,
-targeted `npx vitest run tests/server/<task>` and scratch databases run freely and do not collide;
+targeted `npx vitest run tests/server/<task>` and scratch databases were originally free — **superseded, see the tightening below**;
 the **three consecutive full-suite runs that decide a verdict** are taken one session at a time,
 released by the orchestrator. **Tightened at T090's report: "targeted runs are free" was free of
 *wall-clock contention for the slot*, not free of *database contention*.** Two consecutive
@@ -1302,6 +1309,19 @@ A **blacklist predicate is incomplete for the same reason a site list is**; a wh
 complete by construction and fails closed when someone invents a sixth thing. The error clause
 is restated as a whitelist below. Raised by T025's adversary, which also predicted a sixth leak
 in T010 — merged and tagged at the time it said so.
+
+## Diff the merge against base and account for every missing line
+
+T090's implementer rebuilt `backend.md` from `git show backend:backend.md` and re-applied only its
+Log block — and found the auto-merge had **silently dropped sixteen lines** of base contract text:
+the whole of `edc4618`'s two-direction handover rule. **A hand-resolve would not have caught it
+either**, because the conflict markers sat two hundred lines away on the T090 State line and that
+block conflicted with nothing at all. It verified the rebuild by asserting every line present in
+base survives, with one deliberate exception.
+
+So the rebuild-from-base method is **necessary rather than ceremonial**, and the check is not
+*"resolve the conflicts carefully"* — it is **"diff the result against base and account for every
+missing line"**, because the lines a merge loses are the ones it never flagged.
 
 ## Resolving `backend.md`: Log entries merge, contract text does not
 
@@ -3911,6 +3931,11 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         exportRelease: a card this release pins is unavailable.
         exportRelease: the ontology version this release names is not published.
         exportRelease: this release's stored vocabulary is not a term list.
+        export: reading this release failed.
+
+  **The eighth form, published here rather than left in a Log — it is contract text.** `"export: reading this release failed."`, named `export:` and not `exportRelease:` because `bundleById`, `bundleByHandle` and `resolveRelease` are reached from **both** `exportRelease` and `serveFile`, so the `exportRelease:` literal was **false on the serving path** — a message whose truth depended on which entry point called it. Threading an operation string would make the pin depend on that too, so the form is fixed and entry-point-independent.
+
+  **It is invisible to the published-message surface by construction rather than by wording**: it is an `ExportReadError`, the route rethrows it, and the caller gets a generic 500 with no body from this module. **The seven forms a caller can observe are unchanged and still seven** — this eighth is the one a log sees.
 
   Not interpolating the caller's `path` into `"serveFile: no such file in this release."` is right — the published string is a literal and interpolating would red an exact-match pin. **And `"serveFile: recording the download failed."` is struck: a counter write that fails must not deny a legitimate download.** The serve succeeds, the failure is audited through T240, and the count is lost. A counter outage taking downloads offline is a worse product than an undercount, and B-14 makes the event explicit rather than load-bearing.
 
