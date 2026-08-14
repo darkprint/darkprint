@@ -158,6 +158,56 @@ First PASS surfaced to owner: t020 on 2026-08-14.
   being contract defects rather than code, which is convergence. Cycling without that fall is
   reported, not burned through.
 
+## Contract checklist — every task section is written against this before dispatch
+
+Derived from what the first six tasks cost. Wave 2's contracts had none of it and its tasks took
+four, five and six rounds; wave 3's had most of it and its implementers stopped and reported
+contract defects instead of implementing them. Roughly a third of all charged defects were in these
+documents rather than in code, so this list is the highest-leverage artefact in the run.
+
+**Interface**
+- [ ] A **Published signatures** block: every exported function and type, as signatures, never as
+      prose. Checked against the tree *and* against the schema columns it writes into — T010's
+      first block named the right functions and wrong columns, and the first insert would have
+      failed on a `NOT NULL`.
+- [ ] The **barrel path** each consumer imports (`@/lib/server/x`), stated. T000 published none and
+      23 of 64 blind tests never reached the code.
+- [ ] Every value the module **computes rather than accepts** is marked so in the signature, not
+      only in prose. `digest` was an input in prose-says-computed form for a whole round.
+- [ ] The **admissible message form per rejection path**, published *before* the implementation
+      exists. Written afterwards it is the contract following the code, and the pin it enables is
+      tautological.
+
+**Properties, not sites**
+- [ ] Each rule stated as a property **over the output**, quantified over a set defined by
+      **construction**, with a **closed** predicate. A blacklist of five named things is a site list
+      one level down.
+- [ ] Every **exception** to a rule states the *class* its motivating example instantiates, plus a
+      second example sharing the class and differing in the mechanism. Exceptions are conditions on
+      the input, so the output-property rule does not reach them.
+
+**Criteria**
+- [ ] Each criterion checked for whether it **can detect what it forbids**. AC5 forbade a
+      module-scope cache and stayed green under one; the converse clause is what has teeth.
+- [ ] Each criterion checked for **satisfiability against the declared schema**. `jsonb` preserves
+      neither key order nor number spelling, so byte-identity for a `jsonb` column is unsatisfiable
+      by any implementation — that cost T010 three rounds.
+- [ ] Each criterion reachable **through the published surface**, not only through a component. AC6
+      was satisfied by testing `inferOntologyBump` directly while the store's refusal path was
+      unobserved.
+
+**Dependencies**
+- [ ] Contract-only versus **compile-time** dependencies distinguished. A dynamic `import()`
+      specifier resolves at compile time, so "contract-only" is not a thing TypeScript supports, and
+      T030 could not gate green until T025 merged.
+- [ ] Anything **Forbidden** that the task nonetheless needs, named with the route to it —
+      `getTableConfig` reads `schema.ts` without editing it.
+
+**Inherited**
+- [ ] T-01 (raw control bytes), T-02 (2^n walk on shared substructure, and its remaining half at the
+      driver), T-03 (`jsonb` surrogate tests assert what Postgres already guarantees), T-04 (a
+      blacklist tell matching the fixture's own identifier) restated or explicitly excluded.
+
 ## The scope of a check is itself a claim, and it goes stale like any other
 
 T030's adversary's formulation, offered about its own two failures and declined as a compliment:
