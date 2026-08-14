@@ -269,9 +269,24 @@ without any ruling is the **other direction**: re-run the suite against the merg
 and report which reds cleared. That signal is real and **weaker**, and the reason is worth keeping
 — *a test can pass for the wrong reason where a deletion diff cannot.*
 
-The script itself carries the lesson of this file: it **refuses to report anything if its pattern
-matched no line**, so a silent no-op cannot read as a pass. Every instrument here should fail that
-way.
+The script itself was supposed to carry the lesson of this file — refusing to report anything if
+its pattern matched no line, so a silent no-op cannot read as a pass. **It did not, and its author
+found that by running it rather than re-reading it.** The refusal compared patched text to original
+with `!=`, and a trailing-newline difference made that true with no line deleted, so a no-op printed
+`IDENTICAL SETS — the guard is unobserved`. A silent no-op reading as a pass, inside the instrument
+built to detect silent no-ops reading as passes — and the claim that it refused had already been
+written into its docstring and reported to the orchestrator before it was true. It now counts
+removed lines and exits 2 at zero.
+
+Its second self-test is the one that generalises: the pattern `assertStorable\(` matches the
+guard's own `function` line as well as its two call sites, which **breaks the module** instead of
+removing the guard — 144 newly red rather than 2. A number that large is breakage wearing an
+observability result's clothes, so it now prints every deleted line and warns when the newly-red
+set is most of the suite. **The result depends on the deletion pattern, and 2 versus 144 is one
+anchor in a regex.** That is the strongest argument yet for two instruments rather than one shared:
+an adversary writing its own pattern will hit its own version of this, and two instruments
+disagreeing is how it surfaces, where one shared instrument yields a single confident wrong number.
+Whoever runs it reads the deleted lines, not just the count.
 
 **Test the suite before trusting its output, not after.** T030's adversary patched
 `expectSealedError` in a **scratch copy** to the amended clause and re-ran *before* reading the
@@ -1589,6 +1604,10 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   **Ruling: the digest covers `version` as well as the terms.** `lib/core/hash/digest.ts:26` states the convention outright — everything but `author` and `provenance` is inside the identity, "`version` and `ontologyVersion` among them" — so two ontology versions with identical term sets have **different** digests. `sha256:<hex>` over `canonicalJson`, computed in `lib/server/ontology/**` since `lib/core` is not this task's to extend.
 
   **Both of the above were ruled to the implementer by message on 2026-08-14 and written here only afterwards, which is the defect that cost T000 a round.** T030's blind test author asserted both anyway, having verified them against `digest.ts:26` and `core.ts:505` in the tree, and flagged that they had arrived by message and not by contract. A ruling that lives only in a transcript is not a ruling — the two sides cannot agree on what they were never both shown.
+
+  **Merge ordering, which "waits on T025" understated: T025 must merge BEFORE T030 can pass its gates.** I described the dependency as contract-only, and it is not — it is a **compile-time** dependency. The blind suite reaches AC6 through `import("@/lib/server/versioning")`, and its author handled the absence carefully at *runtime*, with a rejection handler quoting the contract and explaining that a red there is the missing dependency rather than a T030 defect. But **a dynamic import's specifier is still resolved at compile time**, so `tsc` fails at `tests/server/t030/contract.ts:78` with TS2307 before that handler can run: `npm run typecheck` exits 2 and `npm run build` exits 1. Verified directly rather than taken on report.
+
+  Neither side can fix it: `tests/server/**` is Forbidden to the implementer, `lib/server/versioning/**` is Forbidden to it too, and stubbing a barrel to green the gate would be the second bump implementation the partition exists to prevent. So T030 hands over and is reviewed with those two gates red **on that one documented cause**, and merges only after T025. The same will hit T020 if its blind suite reaches for T025 the same way. Stated here because an ordering constraint discovered at gate time reads as a defect.
 
   **AC6 is the one criterion that waits on T025.** `inferOntologyBump(previous: readonly OntologyTerm[], next: readonly OntologyTerm[]): BumpAnalysis` and `checkDeclaredBump("ontology", …)` are T025's published surface and do **not** exist in `lib/core` — unlike the card path, which is entirely self-contained. `ontology/version-bump-too-small` is already a `lib/core/diagnostics.ts` code, but nothing computes it for ontologies yet. Build everything else, and if `lib/server/versioning/**` has not merged by the time the gates run, leave AC6's call site as a single named function that reports the absent dependency, say so in the Log, and let the criterion stand red. Do **not** reimplement bump inference inside `lib/server/ontology/**` to make it green — two implementations of one rule is the defect the partition exists to prevent.
 
