@@ -770,6 +770,16 @@ flagged words means the deny side was genuinely fixed. Green with a bump refusal
 `cause === undefined` means the ordering is wrong **and** the whitelist result is vacuous — one test
 reporting a pass for two different reasons, neither of them the one its name claims.
 
+**A third instance, and the instrument was blind to the exact claim it was built for.** T090's
+blind author needed to check "each served file emits **one** download event" without naming a
+table, since `lib/db/schema.ts` is Forbidden to it and a test asserting against `target` would red
+an implementation entitled to record elsewhere. It derived the medium by diffing every row of every
+table — and **the event is an upsert onto a per-target row**, so recording twice changes one row
+twice and adds exactly one row either way. A row-delta comparison reports the identical shape for
+one event and for two. Correct for the shape it was written against, blind to the one the claim was
+about. It now locates the counter by **driving** it — once, then twice more, and the single field
+that goes 1 → 3 — still naming no column, and double-recording reds.
+
 **Confirmed by measurement, on the error that would have caused it.** T030's adversary drove all
 four paths directly:
 
@@ -792,6 +802,35 @@ runs only when the subject supplies a particular shape cannot test the subject t
 it. The block should assert unconditionally — for a causeless error, that the enumerable surface is
 still empty and the message still admissible — rather than treating the absence of a driver error
 as nothing to check.
+
+## A tolerance outlives the ambiguity it was written for
+
+T090's blind author left a refusal's exact form unasserted while two readings were defensible —
+correct, since choosing between them blind is a candidate list in a new hat. The form was then
+published. **The tolerance did not expire with the ambiguity.** Its own framing: *a tolerance kept
+after the thing it was tolerating got decided is an assertion quietly switched off* — it reads as
+unchanged and it has stopped checking. Tightening it made a mutation red 1 where it had reddened
+nothing.
+
+So an `either/or` in a suite carries a debt: **when the orchestrator rules, every tolerance written
+against that open question is re-read and tightened.** Same failure as a stale finding, in the one
+place that looks like caution rather than staleness. And the earlier form of this rule — *tolerate
+an unspecified answer, never a wrong one* — does not reach it: the tolerance was correct when
+written and became wrong without changing.
+
+## Read the skipped count, not only the failed count
+
+`Tests 75 failed | 3 passed | 7 skipped` was T090's suite with **seven criteria hidden behind one
+red hook**: `downloads.test.ts` derived its subject in `beforeAll`, which needs a dynamically
+imported module, so with the module absent the hook threw and vitest skipped everything under it.
+Lazy-loading inside each test prints `82 failed`, nothing skipped.
+
+The trap was already recorded — a hook failure runs no test and adds nothing to the failed column —
+and **the file that broke it was written after the rule, in a suite whose other five files already
+load lazily and say why in their own comments.** So the rule being written down did not stop the
+next file breaking it, which is the argument for reading the number rather than trusting the
+convention: **a run's skipped count is part of its result.** Zero failed and seven skipped is not a
+pass.
 
 ## Having the guard is not using it
 
