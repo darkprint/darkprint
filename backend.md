@@ -137,6 +137,15 @@ Three cheap guards, all now in force:
   files thought to be under test: `npm test` runs the whole repository, so an edit anywhere
   contaminates equally. Mtimes are a diagnostic for *which* file moved, never the detector for
   whether anything did.
+- Before trusting a **probe**, check that only the state being tested for could produce the
+  answer. Asked whether `/clear` sent over `SendMessage` resets a peer, the orchestrator probed
+  with "can you still recall why `assertNever` was chosen in `can.ts`" — a question the subject,
+  a *blind* test author, could never answer because it had never read that file, and which an
+  uncleared session could still answer plausibly by reconstructing it from its own notes. Both
+  states fail it and one can also fake passing it. The probe that works asks for something only
+  that session did: "what two over-assertions did you catch against the throwaway, and what did
+  you change them to?" (For the record: `/clear`, `/model` and `/effort` sent as messages arrive
+  as literal text and do nothing. Sessions carry their context across reassignment.)
 - Before carrying a **finding** forward into a later round, re-read the thing it is about.
   T010's adversary re-ran all six criteria rather than carrying them forward, then carried its
   AC1-contradiction claim into two further rounds without re-reading AC1, which had been
