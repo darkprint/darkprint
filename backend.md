@@ -30,7 +30,7 @@ serialisation point out, so the cap is now sessions rather than review capacity.
 | 2 | T060 | *(merged)* | **verified**, tag `t060-verified` at `eef7cce` | — |
 | 3 | T010 | *(merged)* | **verified**, tag `t010-verified` at `3fd050f` | — |
 | 4 | T025 | `../darkprint-wt-t025-versioning` | round 6, **adversary** at `c9dc75c` | `…versioning-f2`; impl `…versioning-3a` idle |
-| 5 | T020 | `../darkprint-wt-t020-cards` | round 2 fixed at `c5c2b0e`, gate triple clean, awaiting round 3 | `…policy-d0`; adversary `…policy-tests-9f` idle |
+| 5 | T020 | *(merged)* | **verified**, tag `t020-verified` at `aee6e07` | — |
 | 6 | T030 | `../darkprint-wt-t030-ontology` | round 2, implementer at `cbf02b0` | `…policy-c9`; adversary `…archive-28`, tests `…versioning-tests-eb` idle |
 
 `…policy-tests-9f` is held free as the next adversary. T060's and T000's worktrees stay on
@@ -534,8 +534,22 @@ This applies to **every task that hashes or stores caller-built content** — T0
 and `manifest`, T020's `cardDigest` and `body`, T030's term bodies — so the walk fix bounds the
 *guard's* cost and not the *request's*. Recorded rather than charged anywhere: `lib/core/**` is
 Forbidden to all three, and a depth cap belongs at the route boundary (T100/T080), which does not
-exist yet. **Whichever task first owns a route accepting caller-built objects owns this**, and it
-should arrive knowing the number is 13-15 s at depth 20 rather than discovering it. T010 ships without it deliberately; T020 and T030 copy the same walk and inherit
+exist yet. **Attribution corrected by T020's adversary, and it moves where the cap goes.** The framing is
+right and the breakdown is not — the residue is **not** mostly `canonicalJson`. Profiled at depth
+20 through `addCard`:
+
+    addCard total              11 752 ms
+      cardDigest                1 772 ms   (15%)
+      JSON.stringify(body)        278 ms   (2%)
+      bare db.insert, no guards  5 463 ms   (46%)   measured separately, same body
+
+The driver encoding the `jsonb` parameter, Postgres parsing and storing a materialised ~10⁶-node
+document, and the `returning` clause sending it back to be parsed again, together dominate. So
+optimising `canonicalJson` recovers about a seventh, and **a cap bounding only *depth* inside
+`lib/core` would leave the majority in place.** Whichever task first owns that route must bound
+the **materialised size of `body` before the driver sees it** — a different guard, in a different
+place, from the one this note first pointed at. The depth-22 `RangeError` did not reproduce for
+the adversary, which stored at 68 s; probably diamond shape, and it does not change the conclusion. T010 ships without it deliberately; T020 and T030 copy the same walk and inherit
 the same condition.
 
 ## A ruling is implemented as narrowly as its worked example
