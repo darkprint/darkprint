@@ -46,6 +46,7 @@ import {
   openDatabase,
   term,
   termWithSecret,
+  callerIdentifiers,
 } from "./fixtures";
 
 let t: TestDb;
@@ -67,7 +68,7 @@ beforeEach(async () => {
  * table names are deliberately not on either list, because a typed conflict may name the
  * constraint it matched and `ontology_version` is a substring of that constraint's name.
  */
-const NEVER_ECHOED = [SECRET];
+const NEVER_ECHOED = [SECRET, ...callerIdentifiers(BASE_VERSION, baseTerms()), "berti", "agent", "critic", "diamond", "bad", "deep", "nested"];
 
 describe("content that cannot round-trip is refused, not repaired", () => {
   it.each([
@@ -77,6 +78,25 @@ describe("content that cannot round-trip is refused, not repaired", () => {
     { name: "a deprecation note", build: () => term("berti/x", { deprecated: { since: "0.2.0", note: ILL_FORMED.reversedPair } }) },
     { name: "a `broader` pointer", build: () => term("berti/x", { broader: `agent${ILL_FORMED.loneHigh}` }) },
     { name: "the version string itself", build: () => term("berti/x") },
+  /**
+   * **T-03: five of these six cannot hold the guard, and say so here.**
+   *
+   * `term id`, `label`, `description`, `deprecation note` and `broader` all travel inside
+   * `body jsonb`, and Postgres rejects an unpaired surrogate in a `jsonb` parameter by itself.
+   * So those five assert an *outcome* the database already guarantees: they pass whether or not
+   * this module refuses first, and cannot distinguish a module that checks from one that does
+   * not. Measured, not assumed — deleting the well-formedness check from a throwaway reference
+   * reddened exactly one of the six.
+   *
+   * **`the version string itself` is the one that holds the guard.** `version` is a `text`
+   * column, and `pg` silently replaces a bad surrogate there with U+FFFD instead of refusing, so
+   * a module that does not check stores a version whose bytes are not the ones its digest names.
+   * For T030 that column is the whole of the observable surface; T010's is `dot`/`slug` and
+   * T020's is `source`.
+   *
+   * The five are kept rather than deleted: an outcome test still fails if the outcome changes,
+   * and the alternative is no coverage of those fields at all.
+   */
   ])("refuses an unpaired surrogate in $name", async ({ name, build }) => {
     const add = await bind("addOntologyVersion");
     const version = name === "the version string itself" ? `0.1.0${ILL_FORMED.loneHigh}` : BASE_VERSION;
