@@ -3731,6 +3731,28 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** T270
 - **Owns:** `lib/server/runs/**`, `app/api/runs/**`
 - **Forbidden:** `lib/server/ballot/**`, `lib/server/counters/**`
+- **Published signatures** (checked against `backend` at `d260c33`, against `lib/data/community.ts:34-43`'s `ReportedCost { runs, median, spread { p10, p90 }, model }`, and against `lib/core/config.ts`'s `telemetry.outlierZScore` (3) and `minRuns` (5), both **consumed, never restated**. **No run-report table exists** — a dependency on T000's owner. Barrel: `@/lib/server/runs`.)
+
+        interface RunReport {
+          releaseDigest: string; model: string; provider: string; hardware: string;
+          inputSize: number; harnessVersion: string; costUnits: number;
+          durationMs: number; occurredAt: Date;
+        }
+        interface ReportedCost { runs: number; median: number; spread: { p10: number; p90: number }; model: string; excluded: number; isSample: boolean }
+
+        submitReport(db: Db, actor: Actor, report: RunReport): Promise<void>
+        reportedCost(db: Db, actor: Actor, releaseDigest: string): Promise<ReportedCost | undefined>
+
+  **AC6 — "no response field is named as a measurement" — is a naming constraint on the published type and it is the whole architectural promise.** The platform never observes a run; the word is **`reported`** and never `measured`. So the type is `ReportedCost`, the field is `costUnits` submitted by the caller, and **a test asserts no key in the response shape contains `measured`, `observed`, `actual` or `verified`.** Checkable mechanically over `Object.keys`, which is the only way a naming rule survives a later contributor.
+
+  **AC4 makes `excluded` a published field rather than an internal detail.** "An outlier beyond 3σ is excluded **and the exclusion is visible in the count**" — `runs` is what survived, `excluded` is what did not, and a response carrying only `runs` satisfies the aggregate while failing the criterion. `isSample` is derived from `runs` against `minRuns`, as in T160.
+
+  **AC1 is deliberately weak and that weakness is a promise: acceptance on well-formedness and the digest existing, with no verification claimed.** State it as something the module asserts about itself, so nobody later adds plausibility checks that would amount to a claim the product does not make.
+
+  **AC5 needed a ruling and now has one: a report on one's own blueprint does not count toward `validated`.** Self-reported runs on one's own release are accepted and aggregated — they are honest data — but `validated` is a claim about *others* having used the thing. `submitReport` records the submitting account and T130's `validated` computation filters on it.
+
+  **Admissible message form:** `"submitReport: no release at digest `<digest>`."` — the caller's own digest, nothing else.
+
 - **Goal:** accept a CLI-submitted report about a run that happened on somebody else's machine, and aggregate accepted reports into the `reported` cost axis.
 - **Contract:** B-16 — the CLI submits, keyed by the release digest, carrying model, provider, hardware, input size, harness version, cost units, duration and timestamp; a report is accepted on well-formedness and the digest existing, with **no verification claimed**. The aggregate is `ReportedCost { runs, median, spread { p10, p90 }, model }` (`lib/data/community.ts:34-43`), with outliers beyond `telemetry.outlierZScore` (3) dropped and an aggregate below `minRuns` (5) presented as a sample. The architectural constraint is absolute: the platform never observes a run, the word is `reported` and never `measured` (`lib/types.ts:27-36`), and no field may be named or documented otherwise. `Profile.validated` counts a handle's accepted reports for *other* accounts' blueprints and never adds a run to any blueprint's own evidence layer.
 - **Acceptance criteria:** (1) a report against an unknown digest is refused; (2) an aggregate below five runs is marked a sample; (3) no aggregate returns without its run count and model; (4) an outlier beyond 3σ is excluded and the exclusion is visible in the count; (5) a report for one's own blueprint does not increment `validated`; (6) no response field is named as a measurement.
@@ -3746,6 +3768,28 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** T220, T260, T261
 - **Owns:** `lib/server/search/**`, `app/api/search/**`
 - **Forbidden:** `lib/server/registry/**`, `app/api/blueprints/**`
+- **Published signatures** (checked against `backend` at `d260c33`. The parameter sets are **fixed by the live URLs and may not change or shared links break**: `/blueprints` takes `q, tag, cat, phase, autonomy, df, forks, sort`; `/nodes` takes `q, type, phase, human, risk, sort`; `/ontology` takes `q, kind, origin`. The two prohibitions are pinned by `components/ui/autonomy-surfaces.test.ts` and are **consumed as existing tests, not restated**. `pgvector` is available per T000's environment contract. Barrel: `@/lib/server/search`.)
+
+        interface Hit<T> { item: T; evidence: readonly string[] }
+        interface Results<T> { hits: readonly Hit<T>[]; facets: Record<string, readonly string[]>; ordered: boolean }
+
+        searchBlueprints(db: Db, actor: Actor, params: Record<string, string>): Promise<Results<BlueprintRecord>>
+        searchCards(db: Db, actor: Actor, params: Record<string, string>): Promise<Results<CardVersionRecord>>
+        searchTerms(db: Db, actor: Actor, params: Record<string, string>): Promise<Results<OntologyTerm>>
+        reembedRelease(db: Db, bundleId: string, digest: string): Promise<void>
+
+  **AC5 is why `Hit` carries `evidence` and `Results` carries `ordered`, and it is the honesty clause.** "Each hit carries the evidence for its rank, **or the response declares itself unordered**" — those are the only two admissible states. `ordered: false` with empty `evidence` is legitimate and shippable; an unexplained ranking is not.
+
+  **AC3 returns facets on an empty result, so `facets` is computed from the vocabulary rather than from the hits.** A facet map derived from the result set is empty exactly when the user most needs it, and that implementation passes every test that searches for something present.
+
+  **AC1's "an unknown key is ignored rather than erroring" protects shared links**, which is why `params` is `Record<string, string>` rather than a typed shape per surface — a typed shape makes an unknown key a compile error at the call site and a 400 at the boundary, breaking exactly the URLs the contract says may not break.
+
+  **AC2 is enforced by tests that already exist.** Autonomy is a filter and never a sort key; popularity sorting stays out until event semantics are defined (D-31, D-57). Do not add a `sort` value for either, and do not weaken `components/ui/autonomy-surfaces.test.ts`.
+
+  **AC4 excludes even the operator, which contradicts T060's default on purpose.** Search is a discovery surface, and an operator discovering private content by query is not the break-glass case. State it explicitly, because it will otherwise be "fixed" by someone applying the general rule.
+
+  **AC6's idempotent re-embedding keys on the release digest**, so unchanged content re-embeds to the same vector and a repeated trigger writes nothing.
+
 - **Goal:** answer "which blueprints or cards fit this task, described in prose" and serve the three shelves' filters.
 - **Contract:** B-12 — embeddings over the manifest and card specs, re-embedded on every release, stored in a vector column. The parameter sets are fixed by the live URLs and may not change or shared links break: `/blueprints` takes `q`, `tag`, `cat`, `phase`, `autonomy`, `df=1`, `forks`, `sort`; `/nodes` takes `q`, `type`, `phase`, `human=1`, `risk=1`, `sort`; `/ontology` takes `q`, `kind`, `origin`. Two prohibitions hold: autonomy is a filter and never a sort key, and popularity sorting stays out until event semantics are defined (D-31, D-57, pinned by `components/ui/autonomy-surfaces.test.ts`). The ranking obligation is `/mcp`'s own and binds here: the ordering is explainable from the archive, or results return unordered with their evidence. Private content is excluded (D-82).
 - **Acceptance criteria:** (1) every listed query key filters, and an unknown key is ignored rather than erroring; (2) no ordering by autonomy or popularity is offered; (3) an empty result returns the facet vocabularies, not a 404; (4) private content never appears for any caller, including the operator's own search; (5) each hit carries the evidence for its rank, or the response declares itself unordered; (6) re-embedding is triggered by a release and is idempotent for unchanged content.
@@ -3761,6 +3805,25 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** —
 - **Owns:** `lib/server/terms/**`, `app/api/ontology-usage/**`
 - **Forbidden:** `lib/server/ontology/**`, `app/api/ontology/**`
+- **Published signatures** (checked against `backend` at `d260c33`, against the six reference sites per card — `phases`, `type`, `riskMarkers`, `tools`, and each port's `type` (`components/ontology/TermTable.tsx:190-215`) — and against `lib/core/config.ts:165-168`'s thresholds `distinctAuthors: 3`, `distinctBlueprints: 5`, **consumed not restated**. Barrel: `@/lib/server/terms`.)
+
+        interface TermUsage { termId: string; cards: number; blueprints: number; authors: number }
+        interface PromotionCandidate extends TermUsage { meetsAuthors: boolean; meetsBlueprints: boolean }
+
+        usageOf(db: Db, actor: Actor, termId: string): Promise<TermUsage>
+        candidates(db: Db, actor: Actor): Promise<readonly PromotionCandidate[]>
+        refreshUsage(db: Db, bundleId: string): Promise<void>
+
+  **AC4 is why `usageOf` returns `TermUsage` and never `undefined`.** "A term nothing names returns zero, not 404", and an abstract root counting zero **is not a defect**. A nullable return invites a 404 at the route and the criterion is lost one layer up.
+
+  **AC2's "a card naming a term twice counts it once" is the six sites collapsing to distinct cards**, which is why the record counts *distinct* cards, blueprints and authors rather than references. The discriminating fixture names one term in both `type` and a port's `type` on the same card.
+
+  **AC3 is a correctness constraint on the shared vocabulary, not a privacy nicety** (D-82): private blueprints and cards contribute to no count, **or the shared vocabulary can be steered with content nobody can see.** `refreshUsage` filters at the source, and the test asserts a private bundle naming a term moves no number.
+
+  **AC5's "exactly the terms meeting both thresholds" is why `PromotionCandidate` publishes both booleans** — a caller can see which threshold a near-miss failed, and the list is the conjunction. Returning only the qualifying list makes the thresholds untestable from outside.
+
+  **AC6 makes `refreshUsage` incremental and scoped to one bundle**, and the discriminating test publishes a second bundle and asserts the first's contribution is neither lost nor double-counted.
+
 - **Goal:** count who uses each term and serve promotion candidates against the configured thresholds.
 - **Contract:** usage accumulates over six reference sites per card — `phases`, `type`, `riskMarkers`, `tools`, and each port's `type` (`components/ontology/TermTable.tsx:190-215`) — yielding distinct cards, blueprints and authors per term. Thresholds are `distinctAuthors: 3`, `distinctBlueprints: 5` (`lib/core/config.ts:165-168`). Private blueprints and private cards are excluded, or the shared vocabulary can be steered with content nobody can see (`lib/core/config.ts:74-79`, D-82). A term nothing names counts zero, and an abstract root counting zero is not a defect. The index is a stored projection refreshed on publish and on ontology release (B-08).
 - **Acceptance criteria:** (1) a term named by one card in two blueprints reports one card and two blueprints; (2) a card naming a term twice counts it once; (3) private content contributes to no count; (4) a term nothing names returns zero, not 404; (5) the candidate list is exactly the terms meeting both thresholds; (6) the projection is consistent after a publish without a full rebuild.
@@ -3852,6 +3915,26 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** —
 - **Owns:** `lib/server/mcp/**`, `packages/mcp/**`
 - **Forbidden:** `app/mcp/page.tsx`, `components/mcp/**`, `lib/server/search/**`
+- **Published signatures** (checked against `backend` at `d260c33` and against `/mcp`'s four named operations (`app/mcp/page.tsx:85-110`), which are **the advertised contract and may not be renamed**. This task **composes** T080, T090 and T200 through their barrels and owns no storage. Barrel: `@/lib/server/mcp`.)
+
+        interface McpSearchHit { kind: "blueprint" | "card"; ref: string; author: string; digest: string }
+        interface Provenance { publishedBy: string; forkedFrom?: { owner: string; slug: string; version: string }; releases: readonly { version: string; digest: string }[] }
+
+        mcpSearch(db: Db, actor: Actor, task: string): Promise<{ hits: readonly McpSearchHit[]; ordered: boolean }>
+        mcpReadCard(db: Db, actor: Actor, ref: CardRef): Promise<string>
+        mcpProvenance(db: Db, actor: Actor, ownerHandle: string, slug: string): Promise<Provenance>
+        mcpFetchRelease(db: Db, actor: Actor, ownerHandle: string, slug: string, digest: string): Promise<readonly ExportedFile[]>
+
+  **AC1 — "no operation writes" — is structural: every verb is a read composed from read-only barrels, and this module takes no write path at all.** The discriminating test is not "a write was refused" but that the module's imports contain no writing function — a source-level assertion, in the shape T060's purity check established.
+
+  **`mcpFetchRelease` takes a `digest`, not a version, and that is the load-bearing distinction `/mcp` advertises.** By slug you get what the registry holds today; by digest, the bytes you tested against. AC2 asserts it still returns those bytes **after a newer release exists**, which is the whole reason an agent can trust a pinned reference.
+
+  **AC5 inherits T200's honesty clause** — evidence or `ordered: false` — republished here rather than dropped in translation, because an agent consuming a ranked list has no way to ask.
+
+  **AC6 is a usability criterion about a refusal**, which is unusual and deliberate: an unkeyed client is limited and told so **in a form an agent can act on**. So T230's 429 must reach the MCP client with the limit, the reset instant and the fact that a key exists. An opaque refusal makes the surface unusable for exactly the audience it was built for.
+
+  **AC3 spans four verbs, so it is one filter through T080/T090's `Actor`-taking readers**, never four checks. Same rule as T080's twelve.
+
 - **Goal:** let an agent read the registry from inside its own session, over MCP.
 - **Contract:** four operations, named on `/mcp` (`app/mcp/page.tsx:85-110`): `search` (the task in the agent's own words → blueprints and cards with kind, author and digest); `read a card` (a card id → the YAML as published); `inspect provenance` (a bundle → who published it, what it was forked from, every release digest); `fetch a release` (owner, slug and digest → `blueprint.dot`, `cards/*.yaml`, `README.md`, `AGENTS.md`). Scope is read access and nothing else. The slug/digest distinction is load-bearing: by slug you get what the registry holds today, by digest the bytes you tested against. Ships as the advertised stdio server over the same HTTP API (B-12). Rate limits apply and a key raises them (B-17).
 - **Acceptance criteria:** (1) no operation writes; (2) `fetch a release` by digest returns bytes identical to the stored release, including after a newer release exists; (3) private content is unreachable through every operation; (4) returned file names match what the exporter writes; (5) results carry evidence or declare themselves unordered; (6) an unkeyed client is limited and told so in a form an agent can act on.
@@ -3866,6 +3949,30 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** —
 - **Owns:** `scripts/import-seed.ts`, `lib/server/seed/**`, `content/**`
 - **Forbidden:** `lib/data/**`, `lib/content/**`
+- **Published signatures** (checked against `backend` at `d260c33`. Re-attribution is digest-safe **by construction**: `author` is excluded from `cardDigest` and the manifest is not part of `bundleDigest` (`lib/core/hash/digest.ts`). Composes T010, T020, T030, T050 and T130 through their barrels. Barrel: `@/lib/server/seed`; entry point `scripts/import-seed.ts`.)
+
+        interface ImportPlan {
+          bundles: readonly { slug: string; digest: string; releases: number }[];
+          cards: readonly { cardId: string; version: string; digest: string; visibility: "public" | "private" }[];
+          ontologyVersion: string; registryHandle: string;
+        }
+        interface ImportResult extends ImportPlan { created: number; skipped: number }
+
+        planImport(root: string): Promise<ImportPlan>
+        runImport(db: Db, plan: ImportPlan): Promise<ImportResult>
+
+  **`planImport` takes no `Db` and is pure over the content tree, which is what makes AC1 checkable before anything is written.** "Each of the nine bundles hashes to the digest the site prints today" is asserted against the **plan**, so a mismatch is caught without a database and without a partial import to unwind.
+
+  **AC2's idempotency is `created`/`skipped`, and the second run must report `created: 0`.** A re-run reporting success without distinguishing the two satisfies "is idempotent" while having silently done nothing, or everything.
+
+  **AC3 and AC5 are one promise from two directions and they are the point of the task.** No counted figure is written as a stored counter (T130's rule), and all imported counters read zero. The contract's reason, kept verbatim: *a registry printing 8,940 downloads nothing counted is the failure the codebase's whole design guards against.* The seeded figures in `lib/data/**` are fixtures and **do not travel**.
+
+  **The zero-counter rule stays `TBD:` pending owner confirmation** rather than being quietly settled — it is a product decision about what the registry looks like on day one, and this task must not decide it by shipping.
+
+  **AC4's "no fictional account exists" means the six invented authors do not become accounts** — everything imports under one registry handle, allocated through T070 like any other.
+
+  **AC6's two private cards import as private and are not published into the library**, the fixture that proves visibility survives the import rather than defaulting.
+
 - **Goal:** import the archive into the stores under one registry-owned handle, deterministically, without importing a number nobody measured.
 - **Contract:** B-20 — the nine bundles, 57 card files and the ontology overlay import re-attributed to a single registry handle; the six invented authors do not become accounts. Re-attribution is digest-safe: `author` is excluded from a card's digest and the manifest is not part of a bundle's, so the identities do not move. Seeded downloads, stars and votes import as **zero** (assumption, pending confirmation), because a registry printing 8,940 downloads nothing counted is the failure the codebase's whole design guards against. The import is idempotent and preserves every digest exactly, or every pinned reference and every printed version string changes.
 - **Acceptance criteria:** (1) after import each of the nine bundles hashes to the digest the site prints today; (2) re-running is idempotent; (3) no counted figure is written as a stored counter; (4) every imported bundle is owned by the registry handle and no fictional account exists; (5) all imported counters read zero; (6) the two private cards import as private and are not published into the library.
@@ -3951,6 +4058,26 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** —
 - **Owns:** `lib/server/notifications/**`, `app/api/account/notifications/**`, `app/api/internal/events/**`
 - **Forbidden:** `lib/server/accounts/**`, `app/api/account/route.ts`
+- **Published signatures** (checked against `backend` at `d260c33` and against `lib/data/account.ts:92-117`, which seeds the four events and their rules and is **the specification, consumed not paraphrased**. Preferences live in `account.notification_preferences`, `jsonb NOT NULL DEFAULT {}` — this task **owns that column's shape**, which T050 explicitly does not write. Barrel: `@/lib/server/notifications`.)
+
+        type EventKind = "repin" | "fork" | "deprecation" | "digest"
+        interface Preferences { repin: boolean; fork: boolean; deprecation: boolean; digest: boolean }
+
+        getPreferences(db: Db, actor: Actor, accountId: string): Promise<Preferences>
+        setPreferences(db: Db, actor: Actor, accountId: string, patch: Partial<Preferences>): Promise<Preferences>
+        enqueue(db: Db, event: { kind: EventKind; accountId: string; subject: Record<string, string> }): Promise<void>
+        unsubscribe(db: Db, token: string): Promise<{ kind: EventKind }>
+
+  **AC1 must hold under every preference, so it is a filter at the source and not at delivery.** "A private fork produces no email **under any preference**" — `enqueue` is never called for a private fork; the check does not live in the sender. A delivery-side filter passes the test and leaks the moment a second sender exists. Same invisibility property as T110's AC2/AC3, implemented once, in the task that owns the fork event.
+
+  **AC5's "retries without delivering twice" makes the queue row the idempotency key**, exactly as `target_actor` is for T150: a unique key on `(kind, accountId, subjectDigest)` and an insert whose conflict is caught. Retry built from a status column and a counter passes sequential tests and double-delivers under concurrent workers.
+
+  **AC4's "off by default" is a fact about the default, and the column defaults to `{}` rather than to four booleans.** `getPreferences` **fills from a published default constant**; `digest: false` lives there. A missing key must not read as `true` anywhere.
+
+  **AC6's unsubscribe token flips the matching preference and nothing else**, and names the kind rather than carrying an account id in the clear.
+
+  **Admissible message forms** carry no subject line, no recipient address and no part of the content: `"setPreferences: not this account's owner."` and `"unsubscribe: this link is no longer valid."` are the whole set.
+
 - **Goal:** email an account when something happens to its content, according to the four preferences already modelled.
 - **Contract:** B-19 — email only, no inbox. The four events and their rules are stated in the fixture that seeds them (`lib/data/account.ts:92-117`): `repin`, a card you pinned published a new version, "the one notification a version-pinned registry genuinely needs"; `fork`, **public forks only, a private fork is never announced to the upstream author**; `deprecation`, a term you authored was deprecated, carrying the successor pointer; `digest`, weekly, off by default. Preferences are four booleans keyed by those ids. `repin` needs a per-account list of pinned refs, derived from the account's own published bundles.
 - **Acceptance criteria:** (1) a private fork produces no email under any preference; (2) a public fork produces exactly one, only when the preference is on; (3) a deprecation email carries the successor id when one exists; (4) the weekly digest is off for a new account; (5) a fan-out failure retries without delivering twice; (6) every email carries a working unsubscribe that flips the matching preference.
