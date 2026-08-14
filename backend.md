@@ -15,6 +15,11 @@ were identical at `8a9801e` when this run started, the work and these three docu
 `backend`, and worktrees branched from `main` would not contain this file. Substitute `backend`
 wherever `docs/ORCHESTRATION.md` says `main`. Recorded here rather than assumed.
 
+**Wave 4, first dispatch (2026-08-14): T070, T080, T090.** Chosen by downstream value after the
+graph was recomputed — T070 unblocks T050, T080 unblocks T200 and T210, T090 unblocks T220 and
+T261. T040 and T240 are leaves and go second. Adversary sessions are **not started** until their
+implementer hands back: a round ends at the verdict, never at a slot release.
+
 **Gate-slot queue** (three consecutive full-suite runs only; targeted runs and probes are free):
 T020's implementer holds it, then T030's implementer, then T025's adversary. The queue
 moves on completed triples, never on seniority — T025's adversary was offered the chance to
@@ -2930,7 +2935,9 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T070, Namespace: handles, slugs, reservation
 
-- **State:** todo
+- **State:** claimed
+- **Worktree:** `../darkprint-wt-t070-naming` on `feat/t070-naming`
+- **Test worktree:** `../darkprint-wt-t070-naming-tests` on `test/t070-naming`
 - **Depends on:** T000 (contract: schema)
 - **Blocks:** T050, T100
 - **Owns:** `lib/server/naming/**`, `app/api/names/**`
@@ -3458,7 +3465,9 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T080, Registry read model and read API
 
-- **State:** todo
+- **State:** claimed
+- **Worktree:** `../darkprint-wt-t080-registry` on `feat/t080-registry`
+- **Test worktree:** `../darkprint-wt-t080-registry-tests` on `test/t080-registry`
 - **Depends on:** T010, T020, T030 (data)
 - **Blocks:** T130, T150, T160, T170, T180, T200, T210, T220, T260, T261
 - **Owns:** `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**`
@@ -3497,7 +3506,9 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T090, Distribution and export artefacts
 
-- **State:** todo
+- **State:** claimed
+- **Worktree:** `../darkprint-wt-t090-export` on `feat/t090-export`
+- **Test worktree:** `../darkprint-wt-t090-export-tests` on `test/t090-export`
 - **Depends on:** T010, T020, T030 (data)
 - **Blocks:** T100, T150, T220, T261, T270
 - **Owns:** `lib/server/export/**`, `app/api/files/**`
