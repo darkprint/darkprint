@@ -145,7 +145,11 @@ Three cheap guards, all now in force:
   `git status --porcelain` before and after, and report both. Whole-tree, never scoped to the
   files thought to be under test: `npm test` runs the whole repository, so an edit anywhere
   contaminates equally. Mtimes are a diagnostic for *which* file moved, never the detector for
-  whether anything did.
+  whether anything did. **Commit before the after-stamp**, so it reads clean at the
+  sha being handed over: T010's round 4 stamped honestly and byte-identically across three runs,
+  but on an uncommitted working tree — which establishes that the tree held still and *not* that
+  the gates ran on what got committed. Those are two different claims and only the second is
+  what a handover needs.
 - Before trusting a **probe**, check that only the state being tested for could produce the
   answer. Asked whether `/clear` sent over `SendMessage` resets a peer, the orchestrator probed
   with "can you still recall why `assertNever` was chosen in `can.ts`" — a question the subject,
