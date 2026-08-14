@@ -922,7 +922,7 @@ it does not decide differently inside a worktree.
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | impl-done | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
-| T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | tests-written | 147 blind tests on `test/t030-ontology`, all red on a missing module (140 on `@/lib/server/ontology`, 7 on T025's `@/lib/server/versioning` as AC6 provides for); 20 falsifications confirm they discriminate |
+| T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | tests-written | 151 blind tests on `test/t030-ontology`, all red on a missing module (144 on `@/lib/server/ontology`, 7 on T025's `@/lib/server/versioning` as AC6 provides for), exit 1 and 6 failed files; 23 falsifications confirm they discriminate; bound to the contract as amended at `2307c00` |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | — | — | todo | — |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | — | — | todo | — |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | — | — | todo | — |
@@ -2956,6 +2956,43 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     `.env.example`, they fail 20 of T000's own environment and session tests, which is
     pre-existing and reproduces with `tests/server/t030/` excluded. Every scratch database was
     dropped: `pg_database` holds no `darkprint_test%` row after the run.
+  - 2026-08-14 test author, **rebound to the amended error-hygiene clause and the two rulings**,
+    at `2307c00`. 147 tests became **151**, exit 1 over 6 failed files, and the two root causes
+    are unchanged. What moved, and one of it was a latent false red in my own suite:
+    `expectSealedError` bound the **superseded** wording — own properties exactly
+    `["message", "cause"]` — which can only be satisfied by deleting `stack`. It now binds the
+    replacement from the governance section: `Object.keys` empty, `JSON.stringify(err)` exactly
+    `"{}"`, `cause` non-enumerable checked through `propertyIsEnumerable` rather than inferred,
+    `stack` **retained**, and no rendering carrying the statement, a parameter, caller content, a
+    SQLSTATE or a `pg` internal. Two new tests name the parts that used to be inverted, so a
+    deleted `stack` reds under its own name. Measured: against a reference that deletes `stack`,
+    **26 tests red**. Had this not been caught, the implementer would have been reddened for
+    correcting the very thing the amendment asked it to correct.
+  - 2026-08-14 test author, **table and constraint names came off the forbidden list.** The
+    rejection tests scanned for `ontology_version`, which is a substring of
+    `ontology_version_version_key` — and this task's own contract ties that constraint literal to
+    `getTableConfig` rather than restating it, so a typed conflict may legitimately name the
+    constraint it matched. The list is now the caller's content only; statement fragments,
+    bound-parameter markers, SQLSTATEs and `pg` internals are checked for every rejection by
+    `expectSealedError` itself rather than repeated per call site.
+  - 2026-08-14 test author, **T-02's condition is this task's, and the first test of it was
+    vacuous.** "Any task whose input can be built in-process rather than parsed must add it" —
+    `terms` is a caller-built array, so T030 qualifies. The first version of the test put the
+    offending term second and measured nothing: the walk pops its stack LIFO, so the bad label
+    was found before the 24-level diamond was entered, and removing the `seen` set reddened
+    **zero** tests. Caught by falsifying it rather than by reading it. It now runs **both
+    arrangements** and asserts on the worse time, which holds for any deterministic traversal
+    order, and it reds correctly. A second test holds the other side: an ill-formed string
+    reachable only through shared substructure must still be refused, so the `seen` set cannot
+    become a way to skip a subtree that was never cleared.
+  - 2026-08-14 test author, **the two rulings are published now** (`95033be`), so the provenance
+    caveats are gone from the comments: the digest covering `version`, and the merged view's
+    title tied to `CORE_ONTOLOGY.title` by a colocated test, which is what the ruling asks for.
+    AC5's amendment needed no test changes — its converse was already the five tests the
+    amendment was written from. Re-falsified: **23 breakages**, all discriminating, `B11`
+    inverted (retaining `stack` is now correct, deleting it is the defect) and three added for
+    the new guards. Own scratch database per file; `pg_database` clean afterwards. Following the
+    hook note: read the exit code and the failed-file count, not the test total.
 
 ### T050, Accounts and sessions
 
