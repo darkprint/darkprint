@@ -35,4 +35,5 @@ export {
   MalformedContentError,
   OntologyStoreError,
   UnknownOntologyVersionError,
+  VersionBumpTooSmallError,
 } from "./errors";

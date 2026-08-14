@@ -67,6 +67,10 @@ InvalidVocabularyError.prototype.name = "InvalidVocabularyError";
 export class DuplicateOntologyVersionError extends OntologyStoreError {}
 DuplicateOntologyVersionError.prototype.name = "DuplicateOntologyVersionError";
 
+/** AC6: the declared version is a smaller bump than the terms themselves require. */
+export class VersionBumpTooSmallError extends OntologyStoreError {}
+VersionBumpTooSmallError.prototype.name = "VersionBumpTooSmallError";
+
 /** `openView` was asked for a version that is not in the store. */
 export class UnknownOntologyVersionError extends OntologyStoreError {}
 UnknownOntologyVersionError.prototype.name = "UnknownOntologyVersionError";

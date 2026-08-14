@@ -32,7 +32,9 @@ import {
   InvalidVocabularyError,
   MalformedContentError,
   OntologyStoreError,
+  VersionBumpTooSmallError,
 } from "./errors";
+import { checkOntologyBump } from "./bump";
 import { findMalformedInput } from "./input";
 import { validateVocabulary, vocabularyIsUnstorable } from "./validate";
 import { findUnrepresentable } from "./well-formed";
@@ -134,6 +136,16 @@ async function recordFor(
   return { ...row, terms: await termsFor(db, row.id) };
 }
 
+/** Existence alone, without loading the version's terms. */
+async function versionExists(db: Db, version: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: ontologyVersion.id })
+    .from(ontologyVersion)
+    .where(eq(ontologyVersion.version, version))
+    .limit(1);
+  return row !== undefined;
+}
+
 /** One published version, or `undefined`. Terms come back sorted by `term_id`. */
 export async function getOntologyVersion(
   db: Db,
@@ -215,6 +227,44 @@ export async function addOntologyVersion(
     throw new InvalidVocabularyError(
       `Ontology version \`${input.version}\` is not a valid vocabulary: ${codes.join(", ")}. Call \`validateVocabulary\` for the full diagnostics.`,
     );
+  }
+
+  /*
+   * AC6, and the ordering is ruled rather than chosen: **existence first, then the bump.**
+   *
+   * The two refusals answer different questions and only one is about the request. "This
+   * version already exists" is a fact about the store's state, true whatever the caller
+   * proposed — a published version is never rewritten (B-04), so no proposed content can make
+   * the write legal. "This bump is too small" is a judgement about proposed content *relative
+   * to its predecessor*, which only matters for a version that could otherwise be created.
+   *
+   * Checking the settled fact first is not a micro-optimisation. Putting the bump check ahead
+   * of it makes a republish fail the bump check before it ever reaches Postgres, so no 23505
+   * is raised and no driver `cause` exists — and the duplicate-version tests then pass on a
+   * bump refusal while their names still say they are about a version that already exists.
+   * Measured: that ordering took the blind suite from 7 red to 2, which looked like five fixes
+   * and was five tests passing for the wrong reason.
+   *
+   * So an existing version skips the bump check entirely and goes to the write, where the
+   * unique index raises the 23505 that a duplicate-version refusal is required to carry.
+   */
+  const alreadyPublished = await versionExists(db, input.version);
+  if (!alreadyPublished) {
+    const previous = await getLatestOntologyVersion(db);
+    if (previous !== undefined) {
+      const tooSmall = checkOntologyBump({
+        previous: previous.terms,
+        next: input.terms,
+        declaredVersion: input.version,
+        previousVersion: previous.version,
+      });
+      if (tooSmall.length > 0) {
+        const codes = [...new Set(tooSmall.map((d) => d.code))];
+        throw new VersionBumpTooSmallError(
+          `Ontology version \`${input.version}\` declares a smaller bump than its own changes require: ${codes.join(", ")}.`,
+        );
+      }
+    }
   }
 
   const digest = ontologyDigest({ version: input.version, terms: input.terms });
