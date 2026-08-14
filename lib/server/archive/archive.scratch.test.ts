@@ -12,7 +12,8 @@ import { addRelease, createBundle, getBundle, getRelease, listReleases } from ".
 const hasDb = Boolean(process.env.DATABASE_URL);
 
 describe.skipIf(!hasDb)("lib/server/archive", () => {
-  let testDb: TestDb;
+  /* `| undefined` is the honest type: `beforeAll` can fail before assigning it. */
+  let testDb: TestDb | undefined;
   let client: DbClient;
 
   beforeAll(async () => {
@@ -25,7 +26,14 @@ describe.skipIf(!hasDb)("lib/server/archive", () => {
   });
 
   afterAll(async () => {
-    await testDb.drop();
+    /* Optional-call, not `testDb.drop()`: when `beforeAll` fails — a scratch-database
+       create racing another worktree against the one shared compose stack is the way it
+       fails here — `testDb` was never assigned, and an unguarded deref throws
+       `TypeError: Cannot read properties of undefined` *out of the teardown*. Vitest then
+       reports that TypeError, so the second error buries the first and the cause on screen
+       is not the cause. Found by T030's implementer, whose five runs saw the masked form
+       four times. */
+    await testDb?.drop();
   });
 
   async function ownerId(githubLogin: string): Promise<string> {
