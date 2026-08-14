@@ -390,6 +390,10 @@ Three cheap guards, all now in force:
   match", which is a narrower question than "did the failures match". T025's adversary hashed
   the failing-file lines, got three different digests, and nearly filed a contention finding
   off it; stripped of durations and sorted, all three were the same.
+- Before reading a `typecheck` red in a **fresh worktree**, run `npm run build` once. `next` generates
+  the `PageProps` globals into `.next/types`, so a tree that has never been built reports 18
+  `Cannot find name 'PageProps'` errors in `app/**` that belong to nobody. Measured: red before the
+  first build, 0 after, with no source change between.
 - Before treating an env-dependent red as a result, check the worktree has the variables. Since
   `bca3930` `.env.example` ships values that work against the shared compose stack, so
   `set -a; . ./.env.example; set +a` before a gate turns those files green instead of
@@ -3526,6 +3530,19 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **D-80-04: reading `@/lib/db` directly is correct and the layering claim in `lib/server/archive/types.ts` does not hold for this task.** `blueprint(...ownerHandle...)` needs handle → accountId and the only mapping is `account.handle`; T050 and T070 are unmerged. And T010's barrel cannot serve T080 regardless — no list-all reader, `getBundle` takes an `ownerId` not a handle, and `ReleaseRecord` omits `scoredOntologyVersionId`. Merged T020 already reads `@/lib/db` directly in `visible-versions.ts`, so this is the established precedent rather than an exception. `lib/server/archive/**` stays Forbidden.
 
   **D-80-05 is a re-discovery and it is right.** `card_version.digest`'s schema comment claims two `(id, version)` rows can legitimately share a digest; they cannot, since `cardDigest` excludes only `author` and `provenance` so both id and version are inside the hash. Already recorded at `d465350` against T020, reached here independently from `registry.ts:122-129`'s statement in the other direction. Consequence for T080, which is new: **`duplicates()` cannot be built from the stored digest column** and is computed as core does it — canonical JSON of the body minus `id`, `version`, `author`, `provenance`.
+
+  **Six behaviours the contract left open, ruled at the implementer's report so a blind suite cannot bind differently.** Each was decided in the worktree and reported rather than left silent; a blind author binding the other way is where a round goes.
+
+  - **`BlueprintSummary.cardRefs` is filtered to cards the actor may read.** AC6 says no private card appears in any response, and a ref *is* the card appearing. The cost is stated: for a caller who cannot see every pin, `cardRefs` no longer reproduces `digest`'s input — the same price 404-over-403 already pays.
+  - **A card pinned only by a bundle the actor cannot see is not indexed for that actor.** The index is over the blueprints you can see, so a private bundle cannot advertise what it pins.
+  - **A bundle whose owner has no handle is excluded** — it has no `(owner, slug)` key to be addressed by.
+  - **`blueprints()` and `usersOf()` sort by slug, then by owner handle.** Slug leads so AC1's "the order the build produces today" survives; the handle is the tiebreak the two-part key now needs.
+  - **`scoresOf` is all four or nothing.** A half-written scorecard is not a scorecard.
+  - **Pins are canonicalised to `id@version` before use as a key**, so two blueprints spelling one pin differently are one card version, and a pin that does not parse is dropped — there is nothing to attach it to.
+
+  **AC4's inequality is a property of the DATA, not of the implementation, and a blind author must not assert it on a small fixture.** "Bucket sizes do not sum to the card count" is true of the 53-card archive and **false of plenty of small fixtures** — the implementer's own first attempt had one card in two buckets and one in none, which cancel exactly. Asserted on a balanced fixture, the inequality **reds against correct code** and reads as a defect. What holds universally is the two exhibits: **one card in two buckets, and one card in none.** Assert those; assert the sum only against the archive.
+
+  **The identical-404 guard cannot be falsified from the route, and that is the strongest form it can take.** The reader returns one value for "no such key" and for "not yours", and both routes read one constant — so there is no branch to break. A falsification report showing a red for it is evidence something is **wrong**, not evidence the guard works.
 
   **Every reader takes an `Actor`, for the reason T020's did.** AC6 — "no private bundle or private card appears in any response" — is twelve functions' worth of remembering unless it is one filter at the boundary. Import `visibleTo` from `@/lib/server/policy`. The discriminating test is not "a private row is absent from `blueprints()`" but **the same assertion across all twelve**, because the one that forgets is the one nobody wrote a test for.
 
