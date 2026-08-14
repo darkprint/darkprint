@@ -707,6 +707,51 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
     await db.update(schema.release).set({ autonomy: row.autonomy }).where(eq(schema.release.id, row.id));
   });
 
+  /**
+   * Found by the blind suite, not by me: my fixture always seeds `analysis` from
+   * `readContent()`, whose `autonomy` always carries `diagnostics`, so the whole class of
+   * partially-written scorecards was outside what my fixture could produce — the reachable
+   * set is the coverage claim, again.
+   *
+   * `release.autonomy` is `jsonb` and `ReleaseRecord` types it as `AutonomyResult` by
+   * assertion rather than by validation, so the column can hold a scorecard missing a
+   * field the type says is required. Spreading `stored.autonomy.diagnostics` then threw a
+   * bare `TypeError` out of the module — a 500 for a release whose folder is otherwise
+   * perfectly servable, and an unsealed throw where a fact about the release was meant.
+   */
+  it("a stored scorecard missing fields the type requires still serves, and seals nothing away", async () => {
+    const ids = seeded.get("frontline-triage")!;
+    const [row] = await db
+      .select()
+      .from(schema.release)
+      .where(and(eq(schema.release.bundleId, ids.bundleId), eq(schema.release.digest, ids.digest)));
+    const original = { autonomy: row.autonomy, security: row.security };
+
+    /* The two the README quotes, kept; the two the export never reads, removed — which is
+       exactly the shape a writer that stored only what it needed would produce. */
+    const strip = (value: unknown): unknown => {
+      const { diagnostics, ontologyVersion, ...rest } = value as Record<string, unknown>;
+      void diagnostics;
+      void ontologyVersion;
+      return rest;
+    };
+    await db
+      .update(schema.release)
+      .set({ autonomy: strip(row.autonomy), security: strip(row.security) })
+      .where(eq(schema.release.id, row.id));
+
+    const files = await exportRelease(db, ANONYMOUS, ids.bundleId, ids.digest);
+    expect(files.map((file) => file.path)).toContain("README.md");
+    /* And it still quotes the stored scores rather than silently recomputing them. */
+    const readme = files.find((file) => file.path === "README.md");
+    expect(readme?.text).toContain((row.autonomy as { label: string }).label);
+
+    await db
+      .update(schema.release)
+      .set({ autonomy: original.autonomy, security: original.security })
+      .where(eq(schema.release.id, row.id));
+  });
+
   it("the card ref helper and the export agree on where a card lives", () => {
     expect(cardFilePath(cardRef("planner", "1.0.0"))).toBe("cards/planner@1.0.0.yaml");
   });
