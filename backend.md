@@ -387,7 +387,32 @@ Not a criticism of the author — the difference between the two artefacts. If t
 both, that is strictly better than predicted and says a well-stated table generalises further than
 anyone credited.
 
-**Result to be recorded here after the experiment, whichever way it falls.**
+**Result, run by the orchestrator in a scratch worktree so no live tree moved. The prediction
+splits, and its premise was wrong in the direction that matters.**
+
+    baseline (correct implementation)          1 red   <- the coverage's own monotonicity defect
+    worstPairing narrowed to adjacent pairs    11 red  <- predicted green. CAUGHT.
+    unpaired-floor "gained" term deleted        1 red  <- predicted green. NOT caught.
+
+So one of the two predicted misses was caught and one was not. But the premise is the finding:
+**the author did not write example-derived coverage.** Told the *property* rather than the
+examples, it independently built an oracle — verified against the six hand-worked cases before
+being trusted, then run over an exhaustive 3136-pair domain — plus the monotonicity invariant as
+an exhaustive 900-triple sweep. The adversary scored its own prediction **wrong at the premise**
+and asked for it to be reported as stated anyway, on the ground that a prediction which dodges
+scoring because the world differed from its premise is worth nothing.
+
+**What the experiment actually answers.** Not "example-derived versus oracle" — both artefacts were
+oracles. It answers what an oracle's *domain* reaches: the cross-product narrowing changes answers
+across the whole leftover space and the sweep finds it eleven times over, while the gained-floor
+term is not exercised by any point in that domain and goes green. An oracle is exhaustive over the
+domain it enumerates and blind outside it, exactly as a worked example is exhaustive over itself.
+**The reachable set is the coverage claim**, which is the same lesson the 600 draws taught when an
+empty `after` sat outside what their generator could produce.
+
+And the answer to the question the prediction was really asking: told the property rather than the
+examples, a blind author reached for the same class of instrument as the adversary, independently.
+That is a better answer than either branch of the prediction would have given.
 
 ## Mutate behaviours chosen for NOT being on your list
 
