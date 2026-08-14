@@ -179,7 +179,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | claimed | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | impl-done | round 3: pin comparison rebuilt as a multiset (`e5e232d`) and version moves priced by magnitude, not direction (`4b8de07`); merged Agent B's rewrite (`78fcdf2`), confirmed `1.0.0-rc.1 ↔ 1.0.0` prices `patch` not major. typecheck/lint/build clean; `tests/server/t025`+scratch 201/201; full suite 3963/3963 on three consecutive runs |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | reverted | adversary round 3 FAIL: rounds 1-2 all fixed and 201/201 green, but the sorted position-wise walk misaligns when a duplicate of a non-largest version moves (a pure multiplicity change infers `major` with a fabricated repin), and `compareVersionStrings` ties on build metadata so a stable sort makes the answer order-dependent again — same multiset, `patch` not `none` |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | claimed | — |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -825,7 +825,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T025, Versioning service: semver, digest, bump, chains
 
-- **State:** impl-done
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t025-versioning` on `feat/t025-versioning`
 - **Test worktree:** `../darkprint-wt-t025-versioning-tests` on `test/t025-versioning`
 - **Depends on:** T000 (contract: types)
@@ -1193,6 +1193,65 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     `npx vitest run tests/server/t025 lib/server/versioning`: **201/201**. `npm test`,
     full suite, three consecutive runs: **3963/3963** each time, byte-identical. Reported
     result to orchestrator.
+  - 2026-08-14 adversary round 3: **FAIL.** Merged onto `bec6438`. Read the T025 section from
+    `backend` first, per `e8ab013`: this worktree's section is **identical to base apart from
+    `State`**, AC-6 included — both read "**A dangling successor is not refused here**", and
+    `tests/server/t025/ontology-bump.test.ts:222` holds the code to not refusing it. The
+    withdrawn clause is not live anywhere I can find; only that file's header comment (lines
+    6, 14-17) still quotes the old wording, and it says in the same breath that the test binds
+    to *not* refusing. Test-branch file, not mine to edit. Round 2's `backend.md:816`
+    indentation artifact is fixed.
+    Gates: typecheck 0, lint 0, build 0 with no bundle diff. `npm test` three times, identical:
+    `48 failed | 3904 passed | 11 skipped (3963)`. The 48 remain the unset-variable failures in
+    T000's `session`/`migrations`/`object-store`/`environment` files — this worktree has no
+    `.env` and `docker exec` against the shared Postgres is denied in my session, so I record
+    them **unverified rather than contradicting** the reported 3963/3963. `npx vitest run
+    tests/server/t025 lib/server/versioning`: **201/201**. Criteria by name: AC-1 (4), AC-2 (3),
+    AC-3 (3), AC-4 (4), AC-5 (9), AC-6 (5) — all PASS.
+    **Everything from rounds 1 and 2 is fixed, by execution.** café and uppercase repins ⇒
+    major; `[] → [""]` and `["not-a-ref"] → []` ⇒ patch; `@latest` ⇒ patch; the round-2 hidden
+    repin `["solver@1.0.0","solver@2.0.0"] → ["solver@1.0.0","solver@3.0.0"]` ⇒ **major**, and
+    `checkDeclaredBump("bundle","1.0.0","1.0.1", …)` now correctly returns one `error` at
+    `bundle/version-bump-too-small`. Order agreement on the two round-2 examples ⇒ both minor.
+    The magnitude-not-direction ruling holds and I confirmed the prerelease boundary
+    independently: `2.0.0 → 1.0.0` ⇒ major, `1.0.0 → 2.0.0` ⇒ major, `1.0.0-rc.1 ↔ 1.0.0` ⇒
+    patch **in both directions**, `rc.1 → rc.2` ⇒ patch, `1.0.0-alpha.1.2 → 1.0.0-alpha.1.10`
+    ⇒ patch (numeric identifiers, not code units), `1.9.9 → 2.0.0-rc.1` ⇒ major.
+    **NEW DEFECT 1, charged. The position-wise walk misaligns when a duplicate of a
+    non-largest version is added or removed, and fabricates a repin.** The leftover branch only
+    inspects the **tail** of the sorted list, but dropping a duplicate from the middle shifts
+    every later element left by one, so each subsequent position compares mismatched pairs.
+    Observed, `dot` held constant, one id: `{1.0.0, 1.0.0, 2.0.0} → {1.0.0, 2.0.0}` — one of two
+    nodes pinning `1.0.0` removed, nothing repinned — infers **`major`**, reason "card `solver`
+    repinned: 1.0.0 → 2.0.0". That repin never happened. Symmetric on the gain:
+    `{1.0.0, 2.0.0} → {1.0.0, 1.0.0, 2.0.0}` ⇒ major, "repinned: 2.0.0 → 1.0.0". And
+    `{1.0.0 ×3, 5.0.0} → {1.0.0 ×2, 5.0.0}` ⇒ major. The control cases are right, which is what
+    makes it a misalignment rather than a policy choice: dropping a copy of the **largest**
+    version ⇒ patch, and `{1.0.0 ×3} → {1.0.0 ×2}` alone ⇒ patch. So one pure multiplicity
+    change is priced patch or major purely by whether the duplicated version happens to be the
+    largest in its id's list. `compareVersions`'s own doc comment (lines 113-117) states the
+    intended rule — a leftover version that also appears on the shorter side "is a pure
+    multiplicity change … and is at least a `patch`" — and the code does not deliver it.
+    Direction is over-pricing, so it forces a major where a patch is owed rather than shipping
+    a breaking change quietly; it is still a wrong level and a reason that names a repin the
+    author did not make.
+    **NEW DEFECT 2, charged. Order dependence is back, through a tie in the sort comparator —
+    an AC-3 violation.** The sort exists so "which node happened to come first in the DOT cannot
+    change the answer", and that holds only if the comparator is a total order over the strings
+    actually present. It is not: `parseSemver` **deliberately discards build metadata**
+    (`lib/core/version/semver.ts:11-13,38-40`), so `compareVersionStrings("1.0.0",
+    "1.0.0+build")` returns **0** for two distinct strings, and `Array.prototype.sort` is stable
+    — tied elements keep their input order, so the "canonical" order is not canonical.
+    Observed: `["solver@1.0.0","solver@1.0.0+build"]` against
+    `["solver@1.0.0+build","solver@1.0.0"]` — same DOT, **same multiset** — infers **`patch`**
+    with two invented reasons ("repinned: 1.0.0 → 1.0.0+build" and back), where AC-3 requires
+    `none`. Same for two build tags (`+a`/`+b`), and for rotations and reversals of any list
+    containing one. Reachable: `REF_VERSION` (`lib/core/card/schema.ts:174`) permits `+`, and
+    `parseSemver` accepts build metadata by design. Rotations and reversals of plain-semver
+    lists are correctly order-independent, so the property holds everywhere except at the tie.
+    **Residue: none.** T025 stores nothing; the probe was in-process calls to the published
+    functions. No database, no objects, no `.env`, probe file deleted, tree clean.
+    No `git stash` at any point.
 
 ### T060, Authorization policy: owner and operator
 
