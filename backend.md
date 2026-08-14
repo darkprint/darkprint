@@ -1147,7 +1147,7 @@ it does not decide differently inside a worktree.
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | adversarial-pass | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | adversarial-pass | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | adversarial-pass | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
-| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
+| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | tests-written | blind suite at `tests/server/t070/**`: 119 tests over 6 files, all six criteria named; 119/119 green against a throwaway reference, 28 of 30 mutations caught |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | impl-done | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | adversarial-pass | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
@@ -2930,7 +2930,8 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T070, Namespace: handles, slugs, reservation
 
-- **State:** todo
+- **State:** tests-written
+- **Test worktree:** `../darkprint-wt-t070-naming-tests` on `test/t070-naming`
 - **Depends on:** T000 (contract: schema)
 - **Blocks:** T050, T100
 - **Owns:** `lib/server/naming/**`, `app/api/names/**`
@@ -2970,6 +2971,166 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Out of scope:** creating the account (T050) or the bundle (T100) the name is for.
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-05, B-09.
+  - 2026-08-14 blind test author: **suite written, `tests/server/t070/**`. 119 tests over
+    6 files.** Written from this section alone; `feat/t070-naming` was never read, merged
+    or logged. Every test binds through the barrel `@/lib/server/naming`; nothing calls a
+    deep path.
+
+        contract.ts        not a test file — bindings, the four message literals, the
+                           sealed-error clause, `refusalOf`
+        fixtures.ts        not a test file — scratch database, the `account`/`bundle` rows
+                           T050 and T100 will one day write, `handle_reservation` readback
+        surface.test.ts    11  the seven published names, and that the three pure ones are
+                               pure (no Db, synchronous)
+        grammar.test.ts    71  AC1's pure half (`isReservedSlug`), `validateCardId`,
+                               `validateNamespace`, and the two grammars against each other
+        slugs.test.ts      12  AC1 (7), AC2 (2), AC3 (3)
+        handles.test.ts    15  AC4 (6), plus allocate/check/release basics and the three
+                               sequences the contract does not rule on
+        concurrency.test.ts 5  AC5 — every one of them with concurrent callers
+        suggestion.test.ts  5  AC6
+
+    **AC5 is fired, not described.** Eight callers are issued synchronously and awaited with
+    `Promise.allSettled`, four rounds over four handles. Three assertions, because the count
+    alone cannot separate the shapes that produce "one success": exactly one FULFILLED (an
+    `ON CONFLICT DO NOTHING` resolves for all eight); the row's `account_id` is the winner's
+    (an `ON CONFLICT DO UPDATE` refuses nobody and gives the name to whoever committed last);
+    and **every loser's refusal carries a driver `cause`** — under a race every loser is past
+    any pre-check, so a causeless refusal *is* the read-then-write shape. Plus a control:
+    the same eight callers at eight *different* handles must all succeed, since "exactly one
+    of eight" is also what a module that refuses everything after its first allocation says.
+
+    **AC4's discriminating test is a second account**, per this section's own ruling; the row
+    check (row survives, `status` = `released`) is beside it rather than instead of it, and it
+    is the only thing that catches a release that is a silent no-op. AC6 asserts the
+    suggestion was free when returned and that **allocating it is allowed to fail** — the
+    permitted failure is pinned to `HandleTakenError`, and the invariant asserted after the
+    branch is that the name is not free either way. Nothing here asserts a suggestion can be
+    claimed.
+
+    **Message pins are literals in `contract.ts`, never imported from the module.** T070 is
+    the first task to publish an admissible form per path *before* the implementation, so the
+    exact-match pin is available and used. Flagged for whoever meets a red on one: deriving
+    the expected string from `@/lib/server/naming` deletes the assertion, it does not remove
+    duplication.
+
+    **Run against a correct throwaway reference first, in a detached scratch worktree, never
+    in this one: 119/119 green.** Then again with `checkSlug` written to the *other* reading
+    (raising rather than answering) — 119/119 green again, so both branches of the tolerant
+    refusal assertions are live rather than one being dead. Scratch worktree removed,
+    `git worktree list` clean.
+
+    **Then 30 mutations through the harness, 28 caught, 2 gaps.** Twelve targeted the six
+    criteria, twelve were picked *for not being on that list*, seven were inverses testing
+    whether the accept side has teeth. The harness refuses a mutation whose anchor did not
+    match or whose patch is a no-op, diffs failing sets in both directions, and flags a
+    newly-red set larger than half the suite as breakage rather than counting it. Sample:
+    select-then-insert 3 red; release-deletes-the-row 5; `checkHandle` reading
+    `status='active'` 3; reserved list built from tab *ids* 2; slug uniqueness made global 3;
+    driver prose in the message 7; enumerable `cause` 7; `available` as a truthy stand-in 4;
+    suggestion generator filtering on `active` 1; `isReservedSlug` by `startsWith` 2.
+
+    **The two gaps, both the contract's rather than the suite's, and both labelled in the
+    test that cannot see them:**
+      1. `releaseHandle` dropping its `accountId` condition — any account releasing any
+         account's handle — reds **nothing**, here included. The released row still occupies
+         the primary key, so the stranger is still refused and AC4 still holds. Closing it
+         needs a ruling on whether `releaseHandle` authorises.
+      2. A release that never stamps `released_at` reds nothing. §T070's ruling names
+         `status` only. Asserting it would be inventing a requirement.
+
+    **Seven contract questions, reported rather than resolved.** A candidate list papers over
+    a gap and then resolves to whichever name exists first, which is how D-08 picked the one
+    function that could not be isolated.
+      1. **`checkSlug` cannot be both.** It is published as `Promise<Availability>` *and* is
+         the operation in two of the four message forms. If it raises, `available` can only
+         ever be `true` and the declared return type is dead; if it answers, the two
+         `checkSlug:` forms belong to a writer this task does not publish. The suite asserts
+         the refusal unconditionally and pins the form on whichever shape arrives, and passes
+         against both readings — but the contract should pick one.
+      2. **No handle grammar is published anywhere.** `InvalidNameError` is published, and
+         nothing says which strings are invalid handles. The suite therefore asserts no
+         grammar refusal for handles; the one case it does test is the empty string, which is
+         outside every reading and which Postgres stores happily as a primary key.
+      3. **`<kind>` in `InvalidNameError` is unenumerated**, so that one path gets a
+         prefix-and-shape pin rather than an equality one. Stated rather than guessed.
+      4. **`<owner>` in `SlugTakenError`** is read as the `ownerId` the caller supplied —
+         `checkSlug` has no handle without a join it was not given. If the handle was meant,
+         say so and the pin moves.
+      5. **May an account reclaim its own released handle?** AC4 says "a second account" and
+         is silent on the first. The suite permits either and asserts the invariant that
+         survives both.
+      6. **`REF_VERSION` is cited by the Contract line and reached by no published
+         function** — nothing in the signature block takes a version.
+      7. **Nothing publishes what `checkHandle` should return for a name that is free** —
+         whether a `suggestion` may accompany `available: true`. Not asserted either way.
+
+    One reading the suite *did* take rather than report, flagged because it is a reading:
+    `checkHandle` must return a `suggestion` for a taken handle. `suggestion?` is optional in
+    the signature, but AC6 is a criterion and a module that never suggests leaves it with
+    nothing to observe — and relaxing that assertion turns every other AC6 test into a
+    conditional that switches itself off. If the implementer disagrees, that is a contract
+    question, not a test to loosen quietly.
+
+    **Inherited hazards, as this section requires.** T-01 **fired twice, and the second one is
+    worth more than the first.** Writing the deliberate-control-character fixture put a raw NUL
+    in `grammar.test.ts` and `file(1)` reported it as `data` — the third occurrence in this
+    run, and the third on the same kind of fixture. Replaced with a unicode escape sequence;
+    all eight files now report UTF-8, and the escaped form is used in the test titles too so no
+    control byte reaches the reporter. **Then it happened again writing this Log entry**, in
+    the sentence reporting it: `backend.md` came out carrying a raw NUL of its own.
+    `tests/no-raw-control-bytes.test.ts` scans `.ts` files rather than this document, so no
+    gate would have said so; it was caught by running `file(1)` on the document a minute after
+    writing the note about doing exactly that. **So T-01's scope is wider than the hazard
+    states.** It is not a property of writing a *fixture* — it is a property of writing **any**
+    file whose content names a control character, this document included, and the boundary
+    drawn around "a test file" is the stale-scope failure this file keeps recording.
+    T-02, T-03 and T-04 do not apply, per this section — and T-03's *species* is
+    checked for anyway rather than assumed absent: the three pure functions touch no
+    database, so no assertion in `grammar.test.ts` can be satisfied by an outcome Postgres
+    would have produced. The one place the trap could have landed is the empty-handle test,
+    and it does not: `''` is a legal Postgres primary key value, so a module with no check
+    writes it.
+
+    **A hook timeout in this suite, found by running it three times instead of once, and it is
+    the shared-stack note with a new way in.** All four database files reported
+    `Hook timed out in 10000ms` on one run and not on the next. vitest's default `hookTimeout`
+    is 10s — `testTimeout` is already raised to 20s in `vitest.config.ts` for exactly this
+    reason and hooks were left at the default — and under the load of ~100 agent processes on
+    one Postgres a `DROP DATABASE` in `afterAll` crossed it. Two consequences, and the second
+    is why it is a defect rather than a flake: **a failed hook runs no test, so it adds nothing
+    to the failed-test column** — the totals read 118/119 identically with and without it,
+    which is T030's run-4 shape exactly; and **a teardown that times out never drops its
+    scratch database**, so the suite becomes the residue the residue check is looking for.
+    Fixed by stamping 60s on `afterAll` and `beforeEach` in all four files, with the reason
+    written beside it. Re-verified against the reference (119/119 twice) and here (three runs,
+    zero hook timeouts, identical failing sets once sorted and stripped of durations).
+
+    **State of this worktree.** `npx vitest run tests/server/t070`, three consecutive runs:
+    **exit 1 each time, 6 failed files**,
+    118 failed and 1 passed of 119. Every red traces to one cause — eight distinct error
+    blocks, all `Cannot find package '@/lib/server/naming'`; zero syntax errors, zero
+    transform failures, zero bad paths. The single passing test needs no module: it is the
+    check that `components/profile/tabs.ts` still carries exactly the four segments this
+    section names. `npx eslint tests/server/t070` clean. `npm run typecheck` reports one error
+    from this suite — `TS2307` on the same absent barrel — which is the same fact the runner
+    reports and which closes when the module lands. (It also reports 18 pre-existing
+    `Cannot find name 'PageProps'` errors under `app/**`, which are Next's generated types and
+    predate anything here; `npm run build` generates them.) `pg_database` checked after every
+    run: **0 rows attributable to this suite**, and the qualification is the point rather than
+    hedging. Flat counts on the shared stack are not attribution: successive checks here read
+    2, 8, 10, 9, 3, 0 within a minute, with `pg_stat_activity` showing live connections into
+    them — another session's scratch databases arriving and dropping themselves. So the
+    measurement was narrowed to the claim: snapshot the `darkprint_test_%` set, run, snapshot
+    again, and look only at names that were not there before. That still over-reports, because
+    a name new to the second snapshot may be another session's created meanwhile *or* one of
+    mine still being dropped as the runner exits — both appeared, and re-sampling ten seconds
+    later showed all of them gone. **Two lessons worth more than the zero.** An agent that
+    tidies what it finds on this server takes out somebody's running suite. And a residue check
+    taken at the instant the runner exits catches teardown in flight and reports it as residue,
+    so the reading that settles it is repeated sampling plus `pg_stat_activity`, never one
+    count. Scratch worktree removed
+    (`git worktree list` back to 17), working tree clean but for this commit.
 
 ### T240, Observability and audit log
 
