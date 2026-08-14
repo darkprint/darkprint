@@ -302,8 +302,14 @@ construction*: it anchors on vitest's `FAIL` summary lines, which carry the full
 no path. But it chose those lines for legibility and got the stability for free — its words:
 "luck, not design". A future reporter putting a duration or a retry count on that line would make
 it silently report every row as new, reading 9 where the answer is 2, with nothing in the script
-to catch it. An explicit `re.sub(r"\s+\d+ms$", "", ...)` before the set comparison costs nothing
-and converts a property held by accident into one held on purpose. **A guarantee you did not know
+to catch it. An explicit normalisation before the set comparison costs nothing and
+converts a property held by accident into one held on purpose — **but `\d+ms` alone is not that
+normalisation.** Vitest switches units on slow tests and prints `2.09s`, which a millisecond
+pattern sails straight past, so the strip must cover `237ms`, `1523ms` *and* `2.09s`, plus ANSI
+escapes, and be idempotent. T030's adversary found this while testing a claim it had already
+made — it was stripping durations explicitly rather than relying on line choice, and checked that
+the strip actually worked instead of asserting it. The orchestrator had endorsed the
+millisecond-only form one message earlier. **A guarantee you did not know
 you had is one you cannot rely on keeping.**
 
 **And check that nothing went green.** The implementer did this and the blind author did not: a
