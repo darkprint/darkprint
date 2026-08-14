@@ -104,7 +104,7 @@ export async function addCard(db: Db, input: AddCardInput): Promise<CardRecord> 
     // is refused, not overwritten. The unique index doesn't distinguish by
     // content, so any second insert for one (cardId, version) lands here.
     if (pgErrorCode(cause) === "23505" && pgErrorConstraint(cause) === CARD_ID_VERSION_UNIQUE_CONSTRAINT) {
-      throw duplicateVersionError(cardId, version, cause);
+      throw duplicateVersionError(cardId, version, CARD_ID_VERSION_UNIQUE_CONSTRAINT, cause);
     }
     throw storageFailureError(cardId, version, cause);
   }
