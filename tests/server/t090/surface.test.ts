@@ -31,6 +31,15 @@ describe("T090 published surface", () => {
     expect(typeof fn).toBe("function");
   });
 
+  it("publishes recordDownload from the barrel the contract names", async () => {
+    /* Published at the blind suite's delivery, after this author reported that B-14's "one event
+       per served file" had no name, arity or table to bind to. It is the same signature T150
+       publishes, so the two tasks cannot grow two spellings of one event. */
+    const mod = await loadExport();
+    const fn = requiredFn(mod, "recordDownload");
+    expect(typeof fn).toBe("function");
+  });
+
   /**
    * Arity, because the two serving functions differ in it and a swap is silent.
    *
@@ -47,6 +56,7 @@ describe("T090 published surface", () => {
       exportRelease: 4,
       serveFile: 4,
       serveCard: 3,
+      recordDownload: 2,
     };
     for (const [name, expected] of Object.entries(arities)) {
       const fn = requiredFn(mod, name as keyof typeof PUBLISHED);

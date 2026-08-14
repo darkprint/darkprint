@@ -198,10 +198,13 @@ describe("AC4 — every served factory.dot passes parseDot and lintAttractor", (
      * the pattern it claims to be. `hasErrors(diagnostics)` is what separates the two, and
      * removing that one line reddened nothing before this test existed.
      *
-     * Which of the seven forms it refuses with is not asserted: "a card this release pins is
-     * unavailable." and "this release does not resolve." are both defensible readings and D-90-05
-     * scopes the first to a card the *actor* may not read. What is asserted is that it refuses —
-     * an unspecified answer is tolerated, a wrong one is not.
+     * The form was left unasserted when this test was written, because two of the seven were
+     * defensible readings and inventing a choice between them is a candidate list in a new hat.
+     * The contract has since settled it — "`exportRelease` refuses when the resolved blueprint
+     * carries error diagnostics, with the published form `exportRelease: this release does not
+     * resolve.`; deleting `hasErrors(diagnostics)` must red" — so the tolerance is gone and this
+     * pins the literal exactly. A tolerance kept after the thing it was tolerating got decided is
+     * an assertion quietly switched off.
      */
     const own = await scratchDatabase("attractor_degraded");
     try {
@@ -224,14 +227,11 @@ describe("AC4 — every served factory.dot passes parseDot and lintAttractor", (
             `blueprint missing a step — complete-looking and wrong.`,
         );
       }
-      if (outcome.kind === "throw") {
-        expect(
-          Object.values(ADMISSIBLE) as readonly string[],
-          `The refusal was ${JSON.stringify(outcome.message)}, which is none of the seven ` +
-            `published forms. Both "${ADMISSIBLE.doesNotResolve}" and ` +
-            `"${ADMISSIBLE.cardUnavailable}" are defensible here and either is accepted.`,
-        ).toContain(outcome.message);
-      }
+      expectThrewExactly(
+        outcome,
+        ADMISSIBLE.doesNotResolve,
+        "`exportRelease` on a release whose DOT pins a card its own refs omit",
+      );
     } finally {
       await own.drop();
     }
