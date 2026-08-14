@@ -208,7 +208,16 @@ worktree, with no stated owner, driven by ~100 agent processes on ten cores. Sam
 repo-global `git stash` and the shared worktree.
 
 **Operating rule until it is fixed properly: DB-touching gates are serialised at handover by the
-orchestrator rather than run concurrently.** The real fix is per-worktree ports, which is a
+orchestrator rather than run concurrently.** In practice that is a **gate slot**: probe work,
+targeted `npx vitest run tests/server/<task>` and scratch databases run freely and do not collide;
+the **three consecutive full-suite runs that decide a verdict** are taken one session at a time,
+released by the orchestrator. Worth stating because the orchestrator wrote this rule and then
+dispatched three adversaries in parallel an hour later, each ending in exactly that gate — a rule
+recorded is not a rule applied. The cost of skipping it is not lost time, it is an unfalsifiable
+verdict: T020's test author measured one run in five returning two extra failing files outside its
+own suite, unreproducible across four further runs, zero residue, `pg_stat_activity` clean during
+the stable ones. Without serialisation a non-identical triple cannot distinguish a nondeterministic
+implementation from a contended host, and that ambiguity lands in a report as a hedge. The real fix is per-worktree ports, which is a
 change to `compose.yaml` — T000's `Owns`, and not worth a mid-run repartition. Do not spend a
 round chasing whichever suite surfaces next.
 
