@@ -498,6 +498,24 @@ data" is properly *no decision depends on a property that is not the object's ow
 over every decision, not a list of fields. **Write the output property first. Enumerate sites
 only as commentary on it, never as the specification.**
 
+**Third clause: the output-property rule does not reach EXCEPTIONS, and that is where mechanism
+hides once you have adopted it.** T025's main property was already stated over the output — "the
+maximum over all residue-free explanations" — and what named a mechanism was its **carve-out**. An
+exception is not a property of the output; it is a condition on the *input*, so the rule slides
+past it. Nor is that bad luck: a carve-out is almost always discovered from **one** concrete
+counter-example, so its first statement describes *that example's mechanism* unless it is
+deliberately generalised afterwards. Here the example was `[rc.1]` versus `[rc.1, rc.1]`, whose
+mechanism is a forced **deletion**, and the clause was written as "unless the addition removes a
+forced deletion" — while the class is "unless the addition removes a forced **explanation**", of
+which a repin is another instance.
+
+So: **when an exception is derived from a counter-example, name the class the example instantiates
+before writing the clause, and check the clause against a second example that shares the class and
+differs in the mechanism.** `[rc.1, rc.1]` (deletion) and `[1.0.0] → [2.0.0, 1.0.1]` (repin) share
+the class; one of each would have caught it at the time. This is the same instrument as testing a
+ruling's shape on values where it must *not* fire, turned on the exception instead of on the
+implementation.
+
 **Second clause, and it is the half that makes the first one work: the property must quantify
 over a set defined by CONSTRUCTION, and its predicate must be CLOSED.** Moving the enumeration
 off the sites only relocates the incompleteness if the predicate is still a list. Compare the
@@ -1422,7 +1440,9 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
       per-length predicate (bl > al): FALSE — "unlicensed"
       per-value predicate  (surplus of 1.0.0 on the before side): TRUE — licensed
 
-  `bl < al` throughout, so no deletion is ever forced and the per-length clause never applies — yet the drop is correct: `1.0.0` had to be explained as a repin against `2.0.0`, which is major, and once `after` pins `1.0.0` it matches itself, leaving two cheap additions. Over 600 randomised additions the per-length predicate flags **seven** drops as violations and all seven are legitimate; the per-value predicate flags **zero**. The adversary's original defect is untouched by the carve-out and stays a defect: `[1.0.0] → [9.0.0]` against `[1.0.0] → [1.0.1, 9.0.0]` has no deficit on either side, so no deletion was ever forced and nothing was removed by the addition. The property test's generator must encode that boundary rather than excluding the case by name, so the carve-out is falsifiable rather than merely asserted.
+  `bl < al` throughout, so no deletion is ever forced and the per-length clause never applies — yet the drop is correct: `1.0.0` had to be explained as a repin against `2.0.0`, which is major, and once `after` pins `1.0.0` it matches itself, leaving two cheap additions. Over 600 randomised additions the per-length predicate flags **seven** drops as violations and all seven are legitimate; the per-value predicate flags **zero**.
+
+  **And the per-value predicate is exact rather than merely unfalsified — it is a theorem about the maximum, so a suite asserts it as an invariant rather than sampling it.** Adding a pin at value `V` changes the leftovers in exactly one of two ways. If `before` held a surplus of `V`, the addition cancels one leftover before-item: `bl` shrinks and an explanation that was forced stops being forced, so the level may drop. If `before` held no surplus of `V`, nothing cancels: `bl` is unchanged and `al` grows by one — and both terms are monotone non-decreasing under that, since the pair term is a maximum over `bl × al` and enlarging `al` only adds candidates, while the stranded-gained term is a maximum over a set that only grew. So the level cannot drop. "Drop ⟹ before-surplus of the added value" follows from the shape of the maximum; the 600-draw zero is confirmation, not the evidence. The adversary's original defect is untouched by the carve-out and stays a defect: `[1.0.0] → [9.0.0]` against `[1.0.0] → [1.0.1, 9.0.0]` has no deficit on either side, so no deletion was ever forced and nothing was removed by the addition. The property test's generator must encode that boundary rather than excluding the case by name, so the carve-out is falsifiable rather than merely asserted.
 
   **The second gap the implementer found is the more valuable half of the round**, because nothing asked for it: a pair `repinMagnitude` cannot read — one side not a semver, `@latest` being the live case — was floored at a flat `patch`, and that floor could sit *below* what the same item would have priced as genuinely lost. `[…, "latest"] → []` gave `major`; `[…, "latest"] → […, "1.0.1"]` gave `patch`, purely because something existed to pair against. Found by property testing rather than by assuming the first fix sufficed, which is the discipline the round-4 by-value fix did not get and needed.
 
