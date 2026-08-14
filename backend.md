@@ -115,6 +115,24 @@ the protocol rather than a decision inside it.
   from the other direction; by neither of the two orchestrator checks that should have caught
   it. Surfaced at T020's merge, late. **A governance clause with no mechanism is a reminder**,
   and this file has replaced every other reminder with structure.
+- **A PASS states what would falsify it.** Introduced by T025's adversary at its own first PASS
+  and now required of every verdict. A FAIL is self-justifying — the defect is the evidence. A
+  PASS is a claim about *absence*, so its worth is entirely in the shape of the search that found
+  nothing, and that shape is invisible unless it is stated. Its four: the oracle skips cases where
+  either leftover exceeds 5 (13-44 per 700-case pool, counted and reported, never silently); the
+  oracle and the implementation could still share a misreading of any ruling ambiguity nobody
+  probed, since checking the one named is evidence about *that sentence* and not the others;
+  Finding 2's coverage is not in-tree; and residue was recorded unchecked rather than clean.
+  **A verdict that cannot say what would overturn it is not calibrated, it is only confident.**
+- **A PASS is checked for even attention, not just for defects.** The same adversary noticed that
+  round 6's scrutiny had gone almost entirely to `inferBlueprintBump`, because that is where every
+  prior defect had been, leaving `inferOntologyBump` and `checkDeclaredBump` with regression-level
+  checks only. Defects attract attention to where defects already were, which is exactly the wrong
+  distribution for a verdict whose purpose is to show a bar for *done*. It went back and gave both
+  fresh adversarial attention before letting the PASS stand — self-`broader` termination, cycles,
+  reparenting that reports every ancestor lost, deprecation never reading as removal, set-semantics
+  duplicate collapse correctly differing from the blueprint half's multiset, unparseable inputs
+  refusing with exactly one diagnostic. No defects, and now the coverage matches the claim.
 - **The first PASS is still shown to the owner, once.** Not as a standing gate: as
   calibration. Across four rounds this adversary has returned FAIL every time, so there is
   strong evidence about its bar for *broken* and none at all about its bar for *done*, and
