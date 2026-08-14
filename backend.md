@@ -118,11 +118,29 @@ error, when the string sat in a Log entry quoting it. Three green totals were th
 totals — reading that as "the tree held still" was the error, when three runs measured three
 different trees.
 
-Two cheap guards, both now in force:
+The one-line form, from the same adversary after it caught this rule's own first version:
+**never let a claim be wider than the question its evidence answers.** The gap opens in two
+places, and it is one rule with two checks rather than two kinds of error — what the evidence
+**measures**, and what it **covers**. The split is worth refusing explicitly, because calling a
+coverage gap a second kind of error invites reading it as tidiness. It is not. A stamp scoped
+to `lib/server/versioning/**` returns clean while `lib/core/version/semver.ts` moves underneath
+the run, and that clean gets reported as the answer to "did the tree hold still" — a green
+light on a false statement, exactly what the grep and the three totals produced. An
+under-scoped gate is a passing gate on an unverified property, and those are the ones trusted
+longest.
+
+Three cheap guards, all now in force:
 - Before charging a **document** defect, diff the section against `backend` rather than
   grepping for the string.
-- Before claiming a **determinism** result, stamp what was measured: the commit sha, and the
-  mtimes of the files under test, before and after.
+- Before claiming a **determinism** result, stamp `git rev-parse HEAD` and
+  `git status --porcelain` before and after, and report both. Whole-tree, never scoped to the
+  files thought to be under test: `npm test` runs the whole repository, so an edit anywhere
+  contaminates equally. Mtimes are a diagnostic for *which* file moved, never the detector for
+  whether anything did.
+- Before carrying a **finding** forward into a later round, re-read the thing it is about.
+  T010's adversary re-ran all six criteria rather than carrying them forward, then carried its
+  AC1-contradiction claim into two further rounds without re-reading AC1, which had been
+  corrected at `070025c`. A finding is a measurement too, and it goes stale the same way.
 
 ## A ruling is implemented as narrowly as its worked example
 
@@ -857,6 +875,10 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   **A typed error names the constraint it matched.** `isUniqueViolation` testing only `cause.code === "23505"` makes either writer claim any unique violation as its own, so a second unique index added by a later migration produces an `ArchiveConflictError` asserting a slug collision that did not happen. Unreachable on today's schema and `kind` is exactly what downstream is being asked to branch on: a typed error that lies is worse than a raw one that does not. `pg` already carries `constraint`.
 
   **Refusal, not a stack overflow.** `vocabulary` is typed `unknown`, so it is the one input that takes arbitrary shapes, and a cyclic or 200k-deep value makes the well-formedness walk die with `RangeError`, which reaches a route as a 500. Same invariant T060 carries: a module whose job is to decide cannot answer by crashing. A seen-set closes it.
+
+  **Amendment, round 4: "a seen-set closes it" was wrong, and it is a contract defect of the exact class this file already names.** The sentence above names two hazards — cyclic **and 200k-deep** — and then prescribes a remedy that closes only the first. The seen-set was implemented correctly and completely; acyclic depth still exhausts the stack, measured at 1 000 accepted and 20 000 and 200 000 both `RangeError`. It is reachable rather than theoretical: `JSON.parse` is iterative in V8 and parses 100 000 deep without complaint, so a **120 KB request body yields a 20 000-deep object**, and `vocabulary` is `unknown`, which is exactly what a T100 route forwards. No corruption and no leak, but an uncaught `RangeError` and a 500 on a cheap payload. The adversary recorded this rather than charging it, on the correct-in-itself ground that its round-2 clear-list had not asked for it; the Contract asked for it three rounds earlier, so it is charged here against this sentence. **The walk becomes iterative** — an explicit stack, cycle detection preserved exactly as it is, including the path-scoped `finally` that keeps shared substructure from false-positiving. `well-formed.ts`'s comment currently promises the module refuses "rather than recursing until the call stack overflows and the whole request dies as an uncaught `RangeError`", which is true of cycles and false of depth; the fix makes the comment true rather than the comment being trimmed to match the gap.
+
+  **The constraint literals are tied to the schema, not restated beside it.** `ArchiveConflictError`'s `kind` is the value downstream branches on, and the index names it matches are declared in three places — `lib/db/schema.ts`, the migration SQL, and this module — with nothing checking them against each other. The drift degrades safely for integrity (renaming the index in a scratch database returned the generic sanitized error, no leak, still exactly one row) and unsafely for the contract: the typed `kind` silently stops arriving and nothing goes red. `getTableConfig(schema.bundle).indexes` exposes `["bundle_owner_slug_key"]` at runtime today and `bundle.ts` already imports `schema`, so this needs no change to a Forbidden file — reading `schema.ts` is not editing it. Falsify it from inside `Owns` by changing the literal in this module rather than the name in the schema, which is the same assertion from the other side.
 
   **Second amendment, same session.** `ReleaseRecord` carried only five fields and none of the content — so AC1 ("stored bytes read back byte-identical") had no function that could return the DOT to compare, and T080, T090 and T100 would have had no way to read a release's content at all, since they do not own `lib/db/schema.ts` and the layering rule forbids deep paths. It now mirrors what `addRelease` stores. The write side was fixed in the first amendment and the read side was left inconsistent with it, which is the same defect twice in one block.
 
