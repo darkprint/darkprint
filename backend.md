@@ -3475,6 +3475,22 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** T262
 - **Owns:** `lib/server/saves/**`, `app/api/account/saves/**`
 - **Forbidden:** `lib/server/accounts/**`, `components/ui/FavoriteStar.tsx`
+- **Published signatures** (checked against `backend` at `acaf8ff` and against `target`/`target_actor` as above. **`target_actor.kind` is the enum `star|note_vote` and has no `save` member**, which is deliberate: a save is private and a star is public, and B-10's contract says the two never merge. So saves need their own table and this task's `Owns` must gain the migration for it — `lib/db/schema.ts` is Forbidden here, so **this is a dependency on T000's owner, not something to work around.** Reported rather than resolved. Barrel: `@/lib/server/saves`.)
+
+        interface SaveRecord { targetKind: "blueprint" | "card" | "term"; refId: string; savedAt: Date }
+
+        listSaves(db: Db, actor: Actor, accountId: string): Promise<readonly SaveRecord[]>
+        saveTarget(db: Db, actor: Actor, accountId: string, target: { kind: "blueprint" | "card" | "term"; refId: string }): Promise<void>
+        unsaveTarget(db: Db, actor: Actor, accountId: string, target: { kind: "blueprint" | "card" | "term"; refId: string }): Promise<void>
+        countSaves(db: Db, actor: Actor, accountId: string): Promise<number>
+        migrateLocalSaves(db: Db, actor: Actor, accountId: string, targets: readonly { kind: "blueprint" | "card" | "term"; refId: string }[]): Promise<void>
+
+  **AC1 covers the count as well as the list, and the count is the one that leaks.** "A save is invisible to every caller but its owner and the operator, **including its count**" — so `countSaves` takes an `Actor` and is not a cheap public aggregate. A visitor gets `undefined`-equivalent behaviour, not zero: zero is an answer, and answering zero for a set you may not see tells the caller the set exists.
+
+  **AC3 needs a ruling and does not have one: what happens to a save whose target went private or was deleted?** Ruled: **the save row survives and the listing omits it**, with the count matching the listing. Deleting the row would make a target briefly private and later public again lose a bookmark permanently; returning a tombstone would tell the owner of the save that something exists which they may not see. So the row is retained, the read filters through `visibleTo`, and `listSaves` and `countSaves` **agree by construction because the count is derived from the same filtered query** — not a separate `COUNT(*)` that forgets the filter, which is the defect this criterion exists to catch.
+
+  **AC5's idempotent migration is `saveTarget` applied N times, and the discriminating test signs in twice with an overlapping local set**, asserting the second sign-in adds only what the first did not.
+
 - **Goal:** one bookmarks store keyed on `(account, target)`, replacing the two disjoint save sets that exist today.
 - **Contract:** a save is private and so is its count — a visitor sees neither the list nor its size, and the `saved` tab is owner-only (`app/u/[username]/saved/page.tsx`). A save is not a star and the two never merge (`lib/data/bundles.ts:528-534`). The target is the polymorphic `(kind, id)` of B-10, over blueprint, card and term. Browser-local favourites migrate into the account on first sign-in.
 - **Acceptance criteria:** (1) a save is invisible to every caller but its owner and the operator, including its count; (2) saving one target twice is idempotent; (3) a save whose target went private or was deleted is handled by a stated rule and does not break the list; (4) the three kinds round-trip distinguishably; (5) migration of a browser-local set is idempotent across repeated sign-ins.
@@ -3567,6 +3583,26 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** —
 - **Owns:** `lib/server/counters/**`, `app/api/signals/**`
 - **Forbidden:** `lib/server/saves/**`, `lib/server/ballot/**`
+- **Published signatures** (checked against `backend` at `acaf8ff`, against `lib/db/schema.ts`'s `target` — `kind` enum `blueprint|card|term`, `ref_id text`, three `numeric(12,0)` counters, unique on `(kind, ref_id)` — and `target_actor`, unique on `(target_id, account_id, kind)` with `kind` enum `star|note_vote`. Barrel: `@/lib/server/counters`.)
+
+        interface SignalState { starCount: number; downloadCount: number; noteCount: number; starredByCaller: boolean }
+
+        getSignals(db: Db, actor: Actor, target: { kind: "blueprint" | "card" | "term"; refId: string }): Promise<SignalState>
+        toggleStar(db: Db, actor: Actor, target: { kind: "blueprint" | "card" | "term"; refId: string }): Promise<SignalState>
+        recordDownload(db: Db, target: { kind: "blueprint" | "card" | "term"; refId: string }): Promise<void>
+
+  **The `target_actor` unique index IS the idempotency guarantee, not an index on top of one.** `target_actor_target_account_kind_key` on `(target_id, account_id, kind)` is what makes "twice yields one" true under concurrency; a `SELECT`-then-`INSERT` passes every sequential test and loses under two callers. So the write is a **single insert whose conflict is caught**, and the criterion is **tested with concurrent callers or it is not tested**. Same shape as T070's AC5 and T050's AC6 — this is now the third place in the run where a criterion is satisfied by an index and would otherwise be satisfied by code that only looks right.
+
+  **`target` is created on demand and `target_kind_ref_id_key` is what keeps it single.** Two callers acting on a target that has no row yet must not create two; upsert on the unique key rather than checking existence first.
+
+  **AC4 is why both functions return the same `SignalState` and neither returns `void`.** The toggle response carries the aggregate **and** the caller's own state (`components/ui/FavoriteStar.tsx:152-183`), so a client never has to issue a second read to render the star it just clicked. `starredByCaller` is `false` for an anonymous actor rather than absent — an optional field invites a client to treat missing as unknown and re-fetch.
+
+  **AC7 is the grain and it is a fact about `ref_id`, stated so nobody encodes a version into it.** Card counters aggregate per card **id**, never per `id@version`. So `refId` for a card is the bare `cardId`, and two versions of one card share every counter. A test asserts that directly.
+
+  **AC5's "no lost update" is not the same criterion as AC1's idempotency and needs a different test.** Idempotency is the unique index; an exact count under concurrency is the *increment*, which must be `SET star_count = star_count + 1` in the database rather than read-modify-write in the process. Many accounts starring at once is the discriminating case, and it fails against an implementation that passes AC1 perfectly.
+
+  **AC6 needs a ruling and does not have one: does a download of a private bundle by its owner count?** The contract says "follows a stated rule, asserted by a test" and states no rule. **Ruled: it counts.** The counter measures serving, not publicity, and an owner's own downloads are the honest denominator for a bundle that is later made public — an owner who tests their own release should not see the count jump when they publish. `recordDownload` therefore takes **no `Actor`**, which is what makes the rule structural: this function cannot discriminate on the caller because it is not given one. T090 emits the event at the serving edge after its own visibility check.
+
 - **Goal:** count public support and downloads against one polymorphic target, and let a signed-in reader toggle their star.
 - **Contract:** B-10 — one target table keyed `(kind, id)`; card counters aggregate per card **id**, not per version, which is the grain the UI already prints. A star is public and counted; a save is private and separate. The toggle response carries the aggregate and the caller's own state (`components/ui/FavoriteStar.tsx:152-183`). A download is counted from the explicit event `T090` emits at the serving edge, never derived from logs (B-14).
 - **Acceptance criteria:** (1) starring twice from one account yields 1; (2) unstarring restores the prior count; (3) an anonymous star is refused and moves nothing; (4) the response carries both aggregate and caller state; (5) concurrent stars from many accounts produce an exact count with no lost update; (6) a download of a private bundle by its owner follows a stated rule, asserted by a test; (7) two versions of one card share a download total.
@@ -3581,6 +3617,23 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** —
 - **Owns:** `lib/server/ballot/**`, `app/api/votes/**`
 - **Forbidden:** `lib/server/counters/**`
+- **Published signatures** (checked against `backend` at `acaf8ff`, and against `lib/core/config.ts:171-174`'s five-vote threshold, which is **consumed, never restated**. `account.validator_weight` is `numeric(6,3) NOT NULL DEFAULT 1`. **No ballot table exists** — a dependency on T000's owner, reported not worked around. Barrel: `@/lib/server/ballot`.)
+
+        interface Ballot { efficacy: number; reliability: number; transparency: number }
+        interface MetricAggregate { value: number; sampleSize: number; isSample: boolean }
+        interface Aggregate { efficacy: MetricAggregate; reliability: MetricAggregate; transparency: MetricAggregate }
+
+        castBallot(db: Db, actor: Actor, bundleId: string, ballot: Partial<Ballot>): Promise<Aggregate>
+        getAggregate(db: Db, actor: Actor, bundleId: string): Promise<Aggregate>
+
+  **AC1 is satisfied by the type, which is the third instance of that pattern in this run.** `Ballot` has exactly three members and no `autonomy` or `security`, so "a ballot cannot write autonomy or security" is not a validation rule that can be forgotten — those fields **cannot be passed**. Autonomy and static risk are `source: "auto"` and the engine's alone (`lib/types.ts:36`).
+
+  **AC3 is why `MetricAggregate` is a record and never a bare number.** "An aggregate never returns without its sample size, because the UI refuses to close the radar with a placeholder" — a `number` return makes the sample size an optional second field that a caller may omit; a record makes it impossible to have the value without it. `isSample` is derived from `sampleSize` against `lib/core/config.ts`'s threshold and returned rather than left to the caller to recompute, so the threshold lives in one place.
+
+  **AC5 is the criterion that forces recomputation and forbids a stored aggregate.** "Granting a validator badge changes an existing aggregate without any vote being recast" — so the aggregate is computed from stored votes and **current** weights at read time. A materialised aggregate column passes every other criterion and fails this one, and it is the natural optimisation someone will reach for. If it is ever wanted, it must be invalidated by weight changes, which is a harder thing to get right than recomputing.
+
+  **AC2's replace-not-accumulate is one ballot per account per blueprint carried across releases** — keyed `(account, bundleId)`, never `(account, releaseId)`, so a new release does not silently reset a blueprint's standing.
+
 - **Goal:** collect and aggregate efficacy, reliability and transparency, with validator votes weighted.
 - **Contract:** B-11 — 0–100 per metric, one ballot per account per blueprint carried across releases; the aggregate is recomputed from stored votes and *current* validator weights, so a badge granted later applies retroactively; below five votes the response says sample rather than figure, mirroring the threshold already configured for run reports (`lib/core/config.ts:171-174`). A ballot may write only these three: autonomy and static risk are `source: "auto"` and the engine's alone, and cost is `reported` (`lib/types.ts:36`). An aggregate never returns without its sample size, because the UI refuses to close the radar with a placeholder.
 - **Acceptance criteria:** (1) a ballot cannot write `autonomy` or `security`; (2) one account voting twice on one metric replaces rather than accumulates; (3) every aggregate response carries the sample size; (4) below five votes the response is marked a sample; (5) granting a validator badge changes an existing aggregate without any vote being recast; (6) an anonymous ballot is refused.
@@ -3596,6 +3649,27 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** —
 - **Owns:** `lib/server/notes/**`, `app/api/notes/**`
 - **Forbidden:** `lib/server/ballot/**`, `components/blueprint/Comments.tsx`
+- **Published signatures** (checked against `backend` at `acaf8ff`. The note row is `{ id, author, body, createdAt, votes }` keyed `(target, id)` (`lib/types.ts:182`), and votes use `target_actor.kind = "note_vote"`. **No `note` table exists in `lib/db/schema.ts`** — this task needs one and cannot add it, since that file is Forbidden. Reported as a dependency on T000's owner, not worked around. Barrel: `@/lib/server/notes`.)
+
+        interface NoteRecord { id: string; author: PublicAuthor; body: string; createdAt: Date; votes: number; deleted: boolean }
+        interface NotePage { notes: readonly NoteRecord[]; cursor: string | null }
+
+        listNotes(db: Db, actor: Actor, target: { kind: "blueprint" | "card"; refId: string }, cursor?: string): Promise<NotePage>
+        postNote(db: Db, actor: Actor, target: { kind: "blueprint" | "card"; refId: string }, body: string): Promise<NoteRecord>
+        editNote(db: Db, actor: Actor, noteId: string, body: string): Promise<NoteRecord>
+        deleteNote(db: Db, actor: Actor, noteId: string): Promise<void>
+        voteNote(db: Db, actor: Actor, noteId: string): Promise<NoteRecord>
+
+  **The `target_actor` unique index IS the idempotency guarantee, not an index on top of one.** `target_actor_target_account_kind_key` on `(target_id, account_id, kind)` is what makes "twice yields one" true under concurrency; a `SELECT`-then-`INSERT` passes every sequential test and loses under two callers. So the write is a **single insert whose conflict is caught**, and the criterion is **tested with concurrent callers or it is not tested**. Same shape as T070's AC5 and T050's AC6 — this is now the third place in the run where a criterion is satisfied by an index and would otherwise be satisfied by code that only looks right.
+
+  **`target` is created on demand and `target_kind_ref_id_key` is what keeps it single.** Two callers acting on a target that has no row yet must not create two; upsert on the unique key rather than checking existence first.
+
+  **AC2's "cursor stable across a concurrent insert" rules out offset pagination and the criterion is otherwise unfalsifiable.** An offset cursor shifts every row when a note is inserted above it, so a reader paging through sees one note twice and misses another. The cursor is **keyset** — `(createdAt, id)` of the last row returned, with `id` as the tiebreak because `createdAt` collides under concurrent inserts, which T010 measured directly: 32 concurrent inserts produced 12 distinct timestamps.
+
+  **AC6's tombstone is why `NoteRecord` publishes `deleted` and keeps `id`.** Counts and cursors stay honest because the row remains; the **`body` is emptied at delete rather than filtered at read**, so "its body is unreadable" is true of the storage and not only of the current reader. A filter-at-read implementation satisfies the test and leaves the body in the database for the next query someone writes.
+
+  **AC7's audit is T240's `writeAudit`**, called with `actorKind: "operator"` — the criterion is satisfied by the row existing, so this task depends on T240 rather than inventing a log.
+
 - **Goal:** let readers post notes on a blueprint or a card, list them with a cursor, vote on them, and remove them.
 - **Contract:** one polymorphic table over the `(kind, id)` target (B-10); the row is `{ id, author, body, createdAt, votes }` keyed `(target, id)` (`lib/types.ts:182`), with the author returned as an object the client renders as a chip. Page size is 10 with a cursor (`VISIBLE_NOTES`). B-18 — an author may edit and delete their own note, the operator may remove any, and deletion is a tombstone so counts and cursors stay honest. No report queue, no appeals.
 - **Acceptance criteria:** (1) a note posted on a blueprint never appears on a card; (2) the list returns at most 10 with a cursor stable across a concurrent insert; (3) an anonymous post is refused; (4) a vote from one account counts once; (5) a body over the length limit or empty is refused with the limit stated; (6) a deleted note leaves the cursor and the count consistent, and its body is unreadable; (7) an author cannot edit another author's note and the operator can remove one, audited.
