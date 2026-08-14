@@ -15,6 +15,12 @@ were identical at `8a9801e` when this run started, the work and these three docu
 `backend`, and worktrees branched from `main` would not contain this file. Substitute `backend`
 wherever `docs/ORCHESTRATION.md` says `main`. Recorded here rather than assumed.
 
+**Gate-slot queue** (three consecutive full-suite runs only; targeted runs and probes are free):
+T020's adversary holds it, then T030's adversary, then T025's implementer for round 6. The queue
+moves on completed triples, never on seniority — T025's adversary was offered the chance to
+re-run early to remove the last qualification from its own report and declined it, which is the
+only reason the rule is worth having.
+
 Five slots, not three: the owner left six sessions running and the gate removal took the
 serialisation point out, so the cap is now sessions rather than review capacity.
 
@@ -23,9 +29,9 @@ serialisation point out, so the cap is now sessions rather than review capacity.
 | 1 | T000 | *(merged)* | **verified**, tag `t000-verified` at `ec516fa` | — |
 | 2 | T060 | *(merged)* | **verified**, tag `t060-verified` at `eef7cce` | — |
 | 3 | T010 | *(merged)* | **verified**, tag `t010-verified` at `3fd050f` | — |
-| 4 | T025 | `../darkprint-wt-t025-versioning` | round 5, implementer | `…versioning-3a`, adversary `…versioning-f2` idle |
-| 5 | T020 | `../darkprint-wt-t020-cards` | round 1, implementer + blind tests | `…policy-d0`, tests `…archive-tests-67` |
-| 6 | T030 | `../darkprint-wt-t030-ontology` | round 1, implementer + blind tests | `…policy-c9`, tests `…versioning-tests-eb` |
+| 4 | T025 | `../darkprint-wt-t025-versioning` | round 6, implementer at `9d65553` | `…versioning-3a`; adversary `…versioning-f2` idle |
+| 5 | T020 | `../darkprint-wt-t020-cards` | round 1, **adversary** at `153b541` | `…policy-tests-9f`; impl `…policy-d0`, tests `…archive-tests-67` idle |
+| 6 | T030 | `../darkprint-wt-t030-ontology` | round 1, **adversary** at `f5fbaca` | `…archive-28`; impl `…policy-c9`, tests `…versioning-tests-eb` idle |
 
 `…policy-tests-9f` is held free as the next adversary. T060's and T000's worktrees stay on
 disk while sessions live in them, per the deferred-removal rule.
@@ -165,6 +171,17 @@ Three cheap guards, all now in force:
   that fails runs no test, so it adds nothing to the failed column. A handoff quoting that
   total would have claimed green on a red run, which is the three-green-totals shape again with
   a new way in.
+- Before calling two runs **identical**, compare the failing **file and test sets**, sorted —
+  never the raw output. Vitest varies both ordering (files are listed as they complete) and
+  per-test durations between identical runs, so hashing the output answers "did the timings
+  match", which is a narrower question than "did the failures match". T025's adversary hashed
+  the failing-file lines, got three different digests, and nearly filed a contention finding
+  off it; stripped of durations and sorted, all three were the same.
+- Before treating an env-dependent red as a result, check the worktree has the variables. Since
+  `bca3930` `.env.example` ships values that work against the shared compose stack, so
+  `set -a; . ./.env.example; set +a` before a gate turns those files green instead of
+  "recorded unverified". Every `DATABASE_URL`/`S3_*`/`SESSION_SECRET` failure in this run has
+  been an unset shell, never a defect — including two of the orchestrator's own.
 - Before carrying a **finding** forward into a later round, re-read the thing it is about.
   T010's adversary re-ran all six criteria rather than carrying them forward, then carried its
   AC1-contradiction claim into two further rounds without re-reading AC1, which had been
@@ -178,6 +195,48 @@ Three cheap guards, all now in force:
   - No rendering — `message`, `String(err)`, `JSON.stringify(err)`, `JSON.stringify({ detail: err.message })`, own-property enumeration — contains the SQL statement, a bound parameter, the caller's content, a SQLSTATE or a `pg` internal.
 
   T010 merged against the old wording and is unaffected: its adversary measured the property above across six paths and five renderings, which is the test that matters. The wording was wrong; the thing it verified was right.
+
+## A falsification has to break the path production takes
+
+T030's implementer broke its own store's error wrap — rethrowing the driver error unwrapped
+from `addOntologyVersion`'s catch — and **nothing reddened**. Its leak suite had four error
+classes × five leak classes × five renderings, and every one of those errors was **built by
+hand**; not one reached the catch path a caller actually hits. So the coverage was real and it
+was over a path production never takes.
+
+**A guard that cannot fail is worth less than no guard, because it reports safety it never
+tested.** The fix was a `Db` stub whose `transaction` rejects, which reaches the catch with no
+database at all; the same break now reds. Correctly it reds *one* test rather than three — the
+two unique-violation branches map before the generic wrap, so an unwrapped `cause` cannot reach
+them, and a falsification that reddened all three would have been the suspicious result.
+
+So: when falsifying a guard, break it and confirm the red arrives **through the entry point a
+caller uses**. A test that constructs the failure object directly proves the assertion works, not
+that the guard does. This sits underneath the whole falsification rule — every "I broke it and
+the right test reddened" report is only as good as whether the break was reachable.
+
+## The compose stack is shared and unowned, and chasing individual suites will not fix it
+
+Three suites were stabilised this run — `archive.scratch.test.ts`, `lib/db/schema.test.ts` and
+`stage-labels` — and each stopped failing. The flakiness then **reappeared in the two migration
+suites at a lower load than before**. That is the measurement that settles the diagnosis: fixing
+an individual suite moves the symptom, because the cause is one Postgres on 5432 shared by every
+worktree, with no stated owner, driven by ~100 agent processes on ten cores. Same class as the
+repo-global `git stash` and the shared worktree.
+
+**Operating rule until it is fixed properly: DB-touching gates are serialised at handover by the
+orchestrator rather than run concurrently.** In practice that is a **gate slot**: probe work,
+targeted `npx vitest run tests/server/<task>` and scratch databases run freely and do not collide;
+the **three consecutive full-suite runs that decide a verdict** are taken one session at a time,
+released by the orchestrator. Worth stating because the orchestrator wrote this rule and then
+dispatched three adversaries in parallel an hour later, each ending in exactly that gate — a rule
+recorded is not a rule applied. The cost of skipping it is not lost time, it is an unfalsifiable
+verdict: T020's test author measured one run in five returning two extra failing files outside its
+own suite, unreproducible across four further runs, zero residue, `pg_stat_activity` clean during
+the stable ones. Without serialisation a non-identical triple cannot distinguish a nondeterministic
+implementation from a contended host, and that ambiguity lands in a report as a hedge. The real fix is per-worktree ports, which is a
+change to `compose.yaml` — T000's `Owns`, and not worth a mid-run repartition. Do not spend a
+round chasing whichever suite surfaces next.
 
 ## Two hazards that recur across tasks rather than belonging to one
 
@@ -215,9 +274,27 @@ at all. In both cases the adversary charged the gap against the ruling rather th
 implementer, which is the correct attribution: an agent that implements exactly what it was
 told has not erred.
 
-So: **state the principle, then enumerate every site it reaches, or say explicitly that the
-list is not exhaustive and the principle governs.** A worked example is read as the scope,
-not as an illustration of it.
+The first fix was: state the principle, then enumerate every site it reaches. Better than
+nothing and still wrong, because an enumeration is a list and a list can be incomplete — which
+is how this recurred a third time, in T025 round 5, where the ruling named the pair term as a
+maximum and the other two terms as *contributions*, and the implementer replaced exactly the
+term named.
+
+**The durable fix, from T025's adversary: state the property over the OUTPUT, not distributed
+over the terms.** "The pair term is a maximum and the unpaired items contribute" has as many
+places to under-deliver as it has clauses. "**The level is the maximum over all residue-free
+explanations**" is one sentence, it binds every term at once *including terms nobody has thought
+of yet*, and it is falsifiable in a single place. That is exactly why a brute-force oracle over
+the output found this in one run while two rounds of worked examples did not: a worked example
+tests an instance, a property over the output tests the rule.
+
+The same rewrite applies to the other two, and both had already drifted toward it under pressure:
+T010's "no rejection carries the statement" became *nothing leaving this module through any
+rendering contains the statement, a parameter, caller content, a SQLSTATE or a `pg` internal* —
+a property over every output, not a list of SQLSTATEs. T060's "`Actor` and `Resource` are plain
+data" is properly *no decision depends on a property that is not the object's own* — a property
+over every decision, not a list of fields. **Write the output property first. Enumerate sites
+only as commentary on it, never as the specification.**
 
 ## Resolving `backend.md`: Log entries merge, contract text does not
 
@@ -1601,6 +1678,16 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   **The monotonicity property, corrected.** "Adding a pin to `next` cannot lower the level" is false as an absolute, and the counter-example is above. It holds as: *adding a pin cannot lower the level **unless that pin removes a forced deletion*** — that is, unless `|before| > |after|` and the addition reduces the deficit. The adversary's original defect is untouched by the carve-out and stays a defect: `[1.0.0] → [9.0.0]` against `[1.0.0] → [1.0.1, 9.0.0]` has no deficit on either side, so no deletion was ever forced and nothing was removed by the addition. The property test's generator must encode that boundary rather than excluding the case by name, so the carve-out is falsifiable rather than merely asserted.
 
   **The second gap the implementer found is the more valuable half of the round**, because nothing asked for it: a pair `repinMagnitude` cannot read — one side not a semver, `@latest` being the live case — was floored at a flat `patch`, and that floor could sit *below* what the same item would have priced as genuinely lost. `[…, "latest"] → []` gave `major`; `[…, "latest"] → […, "1.0.1"]` gave `patch`, purely because something existed to pair against. Found by property testing rather than by assuming the first fix sufficed, which is the discipline the round-4 by-value fix did not get and needed.
+
+  **Amendment, round 6, and it is my ruling's defect for the third time in the same shape.** The round-5 ruling said the level is "the largest `inferBump`-level over every `(before, after)` pair the leftovers permit, combined with the at-least-minor contribution of a genuinely added pin and the contribution of a genuinely removed one." The implementer took a true maximum over the **pairs** — its exactness argument for that term is sound, since the single worst pair is always achievable by pairing it first and pairing the remainder arbitrarily — and left the deletion and addition terms as the **sorted-tail slice `[n..]`**, whichever items happen to sort last. I named the pair term as a maximum and the other two as contributions, so the pair walk was replaced and the tails were not. Same failure as T010's typed-error rule and T060's never-inherit rule: I pointed at one site and the other sites kept the old behaviour.
+
+  **Every term is a maximum over its own admissible choices.** A residue-free explanation is a matching between the leftover multisets in which deletions and additions occur **only where the counts force them** — exactly `max(0, |before| - |after|)` deletions and `max(0, |after| - |before|)` additions. Within that, *which* item is stranded is a free choice, so the most expensive residue-free explanation strands the **worst candidate**, not the last-sorting one. Concretely: `[1.0.0, 1.0.1, 1.0.1] → [1.0.1, 1.0.2]` must be **major**, because pairing `1.0.1 → 1.0.2` (patch) strands `1.0.0`, which is pinned nowhere in `after`. It currently answers `patch`. The gained side is symmetric: `[1.0.1, 1.0.2] → [1.0.0, 1.0.1, 1.0.1]` answers `patch` where `1.0.0` is pinned nowhere in `before`.
+
+  **This costs no more than the current code.** Any single item can be among the stranded ones — choose it, then match the remainder arbitrarily — so the deletion term is `max` over the **whole** surplus-side leftover set rather than over a slice of it, and likewise for additions. O(n) each, beside the existing O(n·m) pair term. No permutation search, same as before.
+
+  **The evidence is a brute-force oracle rather than examples, which is why this is a defect and not a disagreement.** The adversary enumerated *every* residue-free explanation — which items pair, to which, which are stranded — and took the maximum: 21 under-priced of 600 on a narrow pool, 1 of 600 on a wide one, and **zero over-priced in either**. That one-sidedness is the signature of a positional choice standing in for a maximum: a wrong tie-break scatters both ways, a slice that misses the worst candidate can only ever answer low. Keep the oracle as a permanent regression test rather than as this round's evidence.
+
+  **The premise the one-sidedness heuristic rests on, recorded so it does not outlive it.** "All under-priced, none over-priced identifies a positional stand-in for a maximum" holds **only while the correct answer is itself a maximum** — true under the current ruling, and not a law. If a later ruling replaces "most expensive residue-free explanation" with a specific cheaper pairing policy — a live possibility, since the maximum is O(n·m) and someone will eventually want cheaper — the correct answer stops being an upper bound, legitimate divergences fall both ways, and zero over-pricing stops being diagnostic. **The oracle survives that change; the asymmetry heuristic does not.** Raised by the adversary that invented the heuristic, one message after inventing it, which is this file's central rule applied to its own instrument. Keep the oracle as the regression test — a property checked against an independent exhaustive implementation is worth more than any number of worked examples, and it is what found this after two rounds of examples did not.
 
   **Recorded, not charged:** `blueprint-bump.ts:190`'s `if (beforeLeftover[i] === afterLeftover[i]) continue;` is unreachable — by-value cancellation makes the two lists disjoint by construction. Harmless, and the comment above it is correct about why. Remove it or keep it, but do not let it survive as a guard a later reader trusts.
   - 2026-08-14 implementer: implemented the ruling. `worstPairing` replaces the positional
