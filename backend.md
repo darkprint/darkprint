@@ -36,6 +36,15 @@ the lockfile serialisation point recorded under T000's log:
 - **Every new worktree runs `npm ci` before its first gate.** A worktree gets its own
   `node_modules`; branching does not carry one.
 
+## Worktree removal is deferred while sessions live in them
+
+`docs/ORCHESTRATION.md` Phase 3 removes a worktree on merge. That is deferred here for a
+reason the protocol did not anticipate: a session's working directory is fixed when it is
+launched, and the orchestrator can resume a session but cannot start one. Removing a merged
+task's worktree therefore strands the two or three sessions living in it, which are the only
+sessions available to staff the next wave. T060's worktrees stay on disk after merge until
+their sessions have somewhere to go. The branches are deleted; the directories are not.
+
 ## How this run is governed
 
 Owner-stated, 2026-08-13, amending `docs/ORCHESTRATION.md`'s human gate. The protocol says
@@ -871,7 +880,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T060, Authorization policy: owner and operator
 
-- **State:** adversarial-pass
+- **State:** merged
 - **Worktree:** `../darkprint-wt-t060-policy` on `feat/t060-policy`
 - **Test worktree:** `../darkprint-wt-t060-policy-tests` on `test/t060-policy`
 - **Depends on:** T000 (contract: identity type)
