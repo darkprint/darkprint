@@ -390,6 +390,22 @@ being careful.
 This is also why an amendment is announced to both sides rather than left to be discovered on
 the next rebase: the file they read may not be the file that was amended.
 
+**Announcing it is not enough, and the orchestrator broke this rule the same day it was written.**
+The `stack` amendment landed at `40a1f15` (09:29:34). T020's implementer had rebased onto
+`6045613` (09:11:49) and committed at `153b541` (09:40:09) — and `40a1f15` is **not** an ancestor
+of it. It implemented the only wording in its tree, correctly, said so in its log, and was charged
+a defect for it. T030's implementer *was* told and corrected within the hour; T020's was not,
+because the announcement went to whoever happened to be in front of me. An announcement that
+depends on the orchestrator remembering which sessions are live is a reminder, and reminders are
+what this file keeps replacing with structure.
+
+**So: the final gate run happens on a tree rebased onto current `backend`, and the handover states
+the `backend` sha it was rebased onto.** That makes a stale contract *visible at handover* rather
+than discoverable by an adversary two hours later — the receiving side can compare that sha
+against the tip and see what it missed, instead of inferring it from a contradiction. The same
+shape as every other fix here: replace "the orchestrator will remember" with something the
+evidence itself carries.
+
 ## Never use `git stash` in a worktree
 
 **The stash is repo-global, not per-worktree.** T025's implementer stashed to check whether
