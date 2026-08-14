@@ -16,7 +16,7 @@ were identical at `8a9801e` when this run started, the work and these three docu
 wherever `docs/ORCHESTRATION.md` says `main`. Recorded here rather than assumed.
 
 **Gate-slot queue** (three consecutive full-suite runs only; targeted runs and probes are free):
-T020's adversary holds it, then T030's adversary, then T025's implementer for round 6. The queue
+T020's implementer holds it, then T030's implementer, then T025's adversary. The queue
 moves on completed triples, never on seniority — T025's adversary was offered the chance to
 re-run early to remove the last qualification from its own report and declined it, which is the
 only reason the rule is worth having.
@@ -29,9 +29,9 @@ serialisation point out, so the cap is now sessions rather than review capacity.
 | 1 | T000 | *(merged)* | **verified**, tag `t000-verified` at `ec516fa` | — |
 | 2 | T060 | *(merged)* | **verified**, tag `t060-verified` at `eef7cce` | — |
 | 3 | T010 | *(merged)* | **verified**, tag `t010-verified` at `3fd050f` | — |
-| 4 | T025 | `../darkprint-wt-t025-versioning` | round 6, implementer at `9d65553` | `…versioning-3a`; adversary `…versioning-f2` idle |
-| 5 | T020 | `../darkprint-wt-t020-cards` | round 1, **adversary** at `153b541` | `…policy-tests-9f`; impl `…policy-d0`, tests `…archive-tests-67` idle |
-| 6 | T030 | `../darkprint-wt-t030-ontology` | round 1, **adversary** at `f5fbaca` | `…archive-28`; impl `…policy-c9`, tests `…versioning-tests-eb` idle |
+| 4 | T025 | `../darkprint-wt-t025-versioning` | round 6, **adversary** at `c9dc75c` | `…versioning-f2`; impl `…versioning-3a` idle |
+| 5 | T020 | `../darkprint-wt-t020-cards` | round 2, implementer, **holds gate slot** | `…policy-d0`; adversary `…policy-tests-9f` idle |
+| 6 | T030 | `../darkprint-wt-t030-ontology` | round 2, implementer at `cbf02b0` | `…policy-c9`; adversary `…archive-28`, tests `…versioning-tests-eb` idle |
 
 `…policy-tests-9f` is held free as the next adversary. T060's and T000's worktrees stay on
 disk while sessions live in them, per the deferred-removal rule.
@@ -244,6 +244,36 @@ refuse that input". A guard can be correct, unit-tested, and load-bearing nowher
 cheap and total — delete the guard, run the whole suite, diff the sorted failing sets; if they are
 identical the guard is unobserved.
 
+**The experiment yields a number, and the number is a usable acceptance criterion.** T030's blind
+test author ran the identical experiment against its own reference — which checks `version` as
+well as `terms` — and got **2 of 151 red**: the surrogate-in-the-version-string test and the T-02
+timing test, exactly the two its annotation names as holding the guard. The adversary ran it
+against the implementation and got **0**. The two results do not conflict; the gap between them
+*is* the defect, and it converts a clause into a measurement. So T030 round 2 has a stated
+expectation rather than a hope: after the fix the experiment must red **2, not 0**, and a 0 means
+the fix did not reach the published surface however green the suite looks.
+
+**Test the suite before trusting its output, not after.** T030's adversary patched
+`expectSealedError` in a **scratch copy** to the amended clause and re-ran *before* reading the
+suite's 32 reds — 32 fell to 17, so fifteen were the superseded wording and none was a defect.
+Triaging 32 reds afterwards would have reached the same place slowly and with far more chances to
+charge one of the fifteen as real.
+
+## The default failure of writing a test against a description
+
+Four independent authors produced the same species in one day, and it is worth naming as a class
+rather than as four incidents: **an assertion aimed at what the author expected rather than at what
+the thing is.** `ontology_version` matching inside `ontology_version_version_key`; a diamond probe
+whose offending node was never reached because the walk pops LIFO; a leak sentinel planted in the
+one field the module renders on purpose; `view.version` where `OntologyView` exposes
+`ontology.version`; `/shadow/i` where core reports `bundle/ontology-mismatch`; a bad-version list
+containing `1.0`, which `REF_VERSION` accepts. None was caught by re-reading, and every one was
+caught the same way: **running a correct implementation first**, and treating any red against it as
+a defect in the test rather than in the code. That is now the standing first step for a blind
+suite, before it is offered as evidence about anything.
+
+
+
 ## The compose stack is shared and unowned, and chasing individual suites will not fix it
 
 Three suites were stabilised this run — `archive.scratch.test.ts`, `lib/db/schema.test.ts` and
@@ -252,6 +282,15 @@ suites at a lower load than before**. That is the measurement that settles the d
 an individual suite moves the symptom, because the cause is one Postgres on 5432 shared by every
 worktree, with no stated owner, driven by ~100 agent processes on ten cores. Same class as the
 repo-global `git stash` and the shared worktree.
+
+**A released gate slot is not a finished round, and the orchestrator conflated them.** T020's
+adversary released the slot after its triple and kept probing — which is correct, since the slot
+governs *machine contention* and the round governs *tree ownership*. The orchestrator read the
+release as the round ending and dispatched round 2 to the implementer, which then edited
+`add-card.ts` and `errors.ts` inside the worktree the adversary was still measuring, and rebased
+that worktree out from under it mid-probe. Two one-writer breaches from one misreading. **A round
+ends when the adversary delivers its verdict, never when it releases the slot**; the two are
+independent and are now stated as such wherever either appears.
 
 **Operating rule until it is fixed properly: DB-touching gates are serialised at handover by the
 orchestrator rather than run concurrently.** In practice that is a **gate slot**: probe work,
@@ -2147,7 +2186,11 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
   **Ruling: `addCard` requires a strict semver, which is narrower than `REF_VERSION`.** `REF_VERSION` is `/^[0-9][0-9A-Za-z.+-]*$/`, so `1.0` and `1.0.0.0` are references the engine **accepts** — and `compareSemver` cannot order either, which would leave "latest" undefined for that id the moment one is stored. The two grammars answer different questions and only one of them mints: citing a version may stay loose, storing one may not. So `addCard` refuses a version that `parseSemver` cannot parse, even though `parseCardRef` would accept it. Reads keep the looser grammar — `resolveCardRef` still parses any well-formed ref, and one naming a non-semver simply finds nothing, because nothing non-semver can have been stored. Raised by the blind test author, who found the gap by filtering its own fixtures through `parseCardRef` instead of trusting a list written from memory.
 
-  **"Latest" is the highest semver, not the most recent row.** `created_at` is insertion time and versions are not inserted in order — a backfilled `1.0.9` after `1.1.0` would win on time and lose on meaning. Order with `compareSemver` from `lib/core`, and give every list a total order (a `, id` tiebreak behind the semver comparison) so two reads of one set never disagree. T010 shipped `listReleases` without a tiebreak and it is still an open inherited defect; do not add a second one.
+  **Ruling: the chain check validates the new entry against its neighbours, not the whole chain.** T020's adversary demonstrated the consequence rather than arguing it: two rows inserted directly into `card_version` forming an already-inconsistent chain — which `addCard` can never produce, but which a backfill and **T250's seed import** both do — then a legitimate `addCard` of `1.0.2` is refused, with a message naming a version *the caller never submitted*: "Version `1.0.1` is only a patch bump on `1.0.0` … Publish `2.0.0` or higher." An author whose own bump is correct is told to publish a major, over a defect in rows they did not write. T020 blocks T250, so this is live rather than theoretical. **A write is judged on what it adds**: check the new version against its immediate predecessor by semver order, and — since a mid-chain insert has a successor too — against its immediate successor. A pre-existing inconsistency elsewhere in the chain is not this write's fault and must not refuse it. And no refusal names a version the caller did not submit; that is the visible symptom and it is independently wrong.
+
+  **T-02 is charged here rather than recorded, because the condition is met.** `addCard`'s `body` is an in-process object the module never re-parses, so shared substructure survives: measured at 14→123 ms, 18→1948 ms, 20→11305 ms, **22→75034 ms, and all of them stored**. The parsed door is genuinely shut — `loadCard` strips unknown top-level keys, and YAML aliases inside `params` do not survive as shared references — but the object door is open and that is the one `addCard` uses. **Two fixes, not one:** add the `seen` set of containers fully walked and found clean, *and* stop allocating `new Set(ancestors)` per container. This walk is ×50 slower than T010's at equal depth (75 s against 1523 ms at n=22) because T010 keeps one mutable set with enter/leave bookkeeping at O(1) per visit while this one hands a fresh copy to every child, so each of the 2^n visits also pays O(depth). Either fix alone leaves the other multiplier standing.
+
+  **"Latest" is the highest semver, not the most recent row.**  **"Latest" is the highest semver, not the most recent row.** `created_at` is insertion time and versions are not inserted in order — a backfilled `1.0.9` after `1.1.0` would win on time and lose on meaning. Order with `compareSemver` from `lib/core`, and give every list a total order (a `, id` tiebreak behind the semver comparison) so two reads of one set never disagree. T010 shipped `listReleases` without a tiebreak and it is still an open inherited defect; do not add a second one.
 
 - **Goal:** store one immutable document per `(id, version)` with its digest and its owner, public or private, and refuse a version that breaks its chain.
 - **Contract:** `CardRef` is `id@version`; ids match `CARD_ID` and versions `REF_VERSION`, so an unversioned or `@latest` reference is refused at the write site (`lib/core/card/schema.ts:187`). `cardDigest` is sha256 over canonical JSON minus `author` and `provenance` (`hash/digest.ts:47`), which is what lets two authors' identical cards dedup. A published version is never edited in place. Private cards exist and are validated identically to public ones (B-07) — a card carries `owner` and `visibility`, and the same schema applies either way. Chain checking for **cards** is this task's own, using `lib/core`'s `checkVersionChain` (`lib/core/card/validate.ts:847`) — an earlier draft of this sentence delegated it to T025 and was stale from the moment the Published signatures block established that the card bump path is complete in `lib/core` and that T025 generalises it to blueprints and ontologies without owning it. AC6 only makes sense as this module's own check. Flagged by the implementer, which implemented the newer twice-stated guidance and reported the contradiction rather than blocking on it; correct on both counts. The wire schema is `CARD_KNOWN_KEYS` with unknown keys accepted at `info` and ignored (`card/validate.ts:69-100,251-258`).
