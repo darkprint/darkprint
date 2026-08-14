@@ -229,6 +229,21 @@ caller uses**. A test that constructs the failure object directly proves the ass
 that the guard does. This sits underneath the whole falsification rule — every "I broke it and
 the right test reddened" report is only as good as whether the break was reachable.
 
+**Refinement, from T030 round 1, where this recurred one level out in the report that named it.**
+The implementer falsified its surrogate guard and watched tests red — but the tests that reddened
+were its own **colocated** ones, which call `findUnrepresentable` directly. So the break was
+confirmed against the *function*, not against the *behaviour*. The adversary deleted the guard
+outright, ran the whole suite, and compared sorted failing sets: **identical**. Removing it reddens
+zero tests through the published surface, because the only inputs it guards travel in a `jsonb`
+column and Postgres rejects the unpaired escape itself (T-03).
+
+**So the red must arrive through the PUBLISHED surface, not through a direct call to the guard.**
+A colocated unit test on the guard function is a fine thing to have and is not a falsification: it
+answers "does this function return false for that input", where the claim is "does this module
+refuse that input". A guard can be correct, unit-tested, and load-bearing nowhere. The check is
+cheap and total — delete the guard, run the whole suite, diff the sorted failing sets; if they are
+identical the guard is unobserved.
+
 ## The compose stack is shared and unowned, and chasing individual suites will not fix it
 
 Three suites were stabilised this run — `archive.scratch.test.ts`, `lib/db/schema.test.ts` and
@@ -319,7 +334,19 @@ objects**, a clean ×4 per +2. `n = 30` is about six and a half minutes from 31 
 
 **Not currently reachable, which is why it is recorded rather than charged**: `JSON.parse` cannot
 produce shared references (`JSON.parse('{"a":{"x":1},"b":{"x":1}}')` yields `a !== b`), so a
-parsed request body is always a tree. `structuredClone` *does* preserve sharing. The fix is the
+parsed request body is always a tree. `structuredClone` *does* preserve sharing.
+
+**Premise correction for T030, measured by its adversary against the orchestrator's wrong guess.**
+The orchestrator predicted this would be *more* reachable in T030 because `extensions` is a
+caller-supplied parameter rather than a parsed body. It is not: `openView` **never walks
+`extensions`** — `view.ts` calls `getOntologyVersion` and `ontologyView` and nothing else — so the
+walk is unreachable from that parameter entirely. Its only caller is `addOntologyVersion` over
+`terms`, and `OntologyTerm` is flat and closed, deepest declared nesting `terms[i].deprecated.<field>`,
+three levels, eight visits. The walk is still `seen`-less and still O(2^n) — n=20 at 370-488 ms,
+matching T010's curve — but reachability through the **declared** type is nil. It becomes reachable
+only through **undeclared** properties on a term, which is exactly what T030's D-17 shows the store
+accepts. So the two are one finding: close D-17 and the input side closes with it; add the `seen`
+set and it closes regardless of D-17. The fix is the
 other half of the bookkeeping already present — a `seen` set of containers **fully walked and
 found clean**, checked beside `open`, which is sound precisely because `open` handles cycles, and
 turns 16.7 M visits into 25. **Any task whose input can be built in-process rather than parsed
