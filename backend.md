@@ -1240,7 +1240,7 @@ it does not decide differently inside a worktree.
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | — | — | todo | — |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | — | — | todo | — |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | impl-done | — |
-| T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | claimed | — |
+| T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | impl-done | seven contract defects reported before implementing, all ruled at `a037587`; 32 colocated tests; **18 mutations, every guard observed through the published surface, nothing ever went green**; AC4's lint refusal measured **reachable**, against the amendment |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | — | — | todo | — |
 | T100 | Publishing and releases | T010, T020, T025, T040, T050, T060, T070, T090 | `lib/server/publish/**`, `app/api/bundles/**` | — | — | todo | — |
@@ -3672,7 +3672,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T090, Distribution and export artefacts
 
-- **State:** claimed
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t090-export` on `feat/t090-export`
 - **Test worktree:** `../darkprint-wt-t090-export-tests` on `test/t090-export`
 - **Depends on:** T010, T020, T030 (data)
@@ -3750,6 +3750,48 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Out of scope:** who may download (T060), counting (T150), publishing (T100).
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-09.
+  - 2026-08-14 implementer: **impl-done**. Rebased onto `backend` at `a037587` (fast-forward from `52bab4a`, which predated the wave-4 claim; no local commits, so nothing to replay and no conflict). Seven contract defects reported **before** a line was written and all seven ruled at `a037587` — D-90-03 and the struck download-failure form changed what I built, the other five confirmed it. Nothing was implemented against a clause I had questioned.
+
+    **What it is.** `@/lib/server/export` publishes `ServedFile`, `exportRelease`, `serveFile`, `serveCard` and `ExportError`. `ExportedFile`, `bundleFilePaths`, `cardFilePath` and `bundleHref` are **not** re-exported: they are `lib/content/bundle-export.ts`'s and a consumer imports them from there, so the barrel cannot come to look like the author of a file set it only consumes. Every input `exportBundle` needs is in Postgres — `release.dot`, `release.manifest`, `card_version.source`, `release.local_vocabulary` — so this task touches object storage nowhere, as D-90-07 settled.
+
+    **AC7 is by construction.** `path` is compared by exact string equality against the names `exportBundle` produced. Measured, not asserted: replacing the membership check with a normalise-then-prefix-guard reds **one** test — the one exhibiting `./README.md`, `cards/../README.md`, `ontology/../README.md` and `/README.md` — and leaves the `../../etc/passwd` test **green**. That is the contract's own claim ("a test asserting `../../etc/passwd` is refused passes against a naive `path.join` guard too") turned into a number.
+
+    **AC4 was passing for the wrong reason and I found it by tightening the assertion, not by re-reading.** The first version mutated the stored DOT so a node id became a reserved boundary word; it reddened, and it reddened as `exportRelease: this release does not resolve.` — `resolveBundle` lints the source DOT, so anything that breaks the source is caught before AC4's check is reached, and a `not.toBe("served")` tolerance would have called that a pass.
+
+    **`emitAttractorDot` is not total, and the amendment above is wrong on that point. Measured, pasted, not narrated.** The amendment concludes that no `ResolvedBlueprint` can emit invalid Attractor DOT, from `toAttractorIdentifier` closing the node ids and `quoteAttractorString` closing the string values. Both are true. The gap is the one attribute the emitter writes **unquoted**, and it comes from `card.params` rather than from the DOT — so none of the four hostile *source* DOTs could reach it:
+
+        mutated card                : spec-planner@1.0.0
+        blueprint resolves          : true
+        hasErrors(diagnostics)      : false
+        error diagnostics           : []
+        files exportBundle produced : 9
+        emitted max_retries line    : planner [label="Spec Planner", shape=box, prompt="…",
+                                        llm_model="claude-opus-5", max_retries=1e+23,
+                                        card="spec-planner@1.0.0"];
+        parseDot graph defined      : false
+        parseDot errors             : dot/parse-error: Expected `=` after the attribute `e`, found `+`.
+
+    The input is one card carrying `max_iterations: 100000000000000000000000`. `readIterationCap` admits any non-negative integer, `Number.isInteger(1e23)` is `true`, and `emit.ts` writes `String(cap)` — which renders `1e+23` past 1e21. The release resolves clean, scores, and produces a **nine-file folder** whose `factory.dot` does not parse. Deleting `checkFactoryDot` reds exactly that test and nothing else; keeping it is what stops the folder being served. **So the published refusal has a reachable input and the check stays.** This is the boundary rule this file already states: the amendment's search was sound inside the region it drew — source-DOT hostility — and the value arrives from the card, which that region does not contain.
+
+    **`String(cap)` past 1e21 is a defect in `lib/core/attractor/emit.ts`, which is Forbidden here: reported, not fixed.** It is also exactly what AC4 says this check exists for — something upstream lets through, arriving at the serving edge.
+
+    **The other half of AC4, which the amendment named and my suite did not have, is now covered.** A release whose `cardRefs` omit a card its DOT pins stores fine (both arrays lose an entry together, so T010's parity check is satisfied), resolves with `bundle/missing-card`, and would otherwise be served as a complete-looking folder one card short. `hasErrors(loaded.diagnostics)` refuses it with the published form; deleting that line reds exactly the new test. Both halves of AC4 are load-bearing and both are observed.
+
+    **`recordDownload` adopted at its published signature** — `recordDownload(db, { kind, refId })`, exported from the barrel, called once each by `serveFile` and `serveCard` and never by `exportRelease`. Not swallowing versus not denying: a failed write is logged and the serve succeeds, per D-90-02.
+
+    **Falsification: 18 distinct mutations over 23 runs, whole-suite, sorted failing sets both directions.** Instrument in the scratchpad; it refuses to report if the patch changed no bytes, prints every changed line, and strips ANSI plus `237ms`/`1523ms`/`2.09s` explicitly rather than relying on `FAIL` lines happening to carry no duration. Run with `--no-file-parallelism` after a first pass returned six failed **files** and one failed **test** — five `Hook timed out in 10000ms`, 24 connections and 17 scratch databases on the one shared Postgres, including this task's own blind author's. Serialised, the baseline is 151/151 files and exit 0.
+
+    Twelve mutations of guards I built: AC7 membership, AC6 digest-before-version, AC4's check, the actor-scoped card read, the uuid guard, the download event, the stored-vocabulary shape, export order-independence, the stored scorecard, the policy filter, the throw-versus-`undefined` split, and AC4's second half, the error-diagnostics refusal. **Each reddened exactly the tests whose names claim the behaviour, all through the published surface, and nothing went green in any run.**
+
+    **The count is 18 and my first statement of it was 19**, recomputed from the harness's own `orig-*` and `fail-*` rows rather than from memory, after `7eff61e` landed. Four mutations were **re-measured** after a test was added or rewritten — `m3` once the AC4 test stopped passing for the wrong reason, and `n2`/`n3`/`n8` once their gaps were closed — and one of those re-measurements had been counted as a second mutation. One mutation with two results is one mutation. Nothing about the findings moves; the number was wrong in the direction that flatters, and it had already reached a commit message.
+
+    Six more mutations of behaviours chosen **for not being on that list**, which is where the value was: **two reddened nothing.** (1) Building `serveCard`'s `path` from the caller's spelling instead of the stored row — while `serve-card.ts` carried a comment claiming it mattered, since `parseCardRef` trims and a padded ref would otherwise put its padding into a filename the route hands to `content-disposition`. (2) Resolving "current release" as the last row written rather than the highest semver — my AC6 test wrote `2.0.0` after `1.0.0`, so the two orderings agreed and a `created_at` implementation passed it, which is T080's D-80-03 gap arriving in my suite. A third, ignoring the handle in the bundle lookup, reddened only incidentally through a `nobody`-handle case that a slug-only query also satisfies whenever one bundle carries the slug. Three tests added — a padded ref, a **lower** semver written last, and two owners holding one slug — and all three mutations re-run against them: **each now reds, expectation stated before the measurement.**
+
+    **Route coverage sits under `lib/` and that is not tidiness.** `vitest.config.ts` collects `lib/**`, `components/**`, `scripts/**` and `tests/**` — **not `app/**`** — so a test beside the route files it covers is never collected, and an uncollected suite reports zero tests and calls it green, which is that config's own recorded failure with `.test.tsx`. It belongs to no task's `Owns`. `routes.scratch.test.ts` therefore drives the three handlers from `lib/server/export/`, against a scratch database of its own: `getSharedDbClient()` is lazy and cached on `globalThis`, so `DATABASE_URL` is pointed at the scratch database before the first handler call and put back after. Its first run **left a database behind** — the cached pool was still open, `DROP DATABASE` failed with "is being accessed by other users", and the teardown reported that instead. Closed and evicted now; the leaked database was dropped by name and `darkprint_test_%` is empty. **T080 and all four cutover tasks inherit the same constraint.**
+
+    **Two things owed and not done here, both deliberately.** `docs/ARCHITECTURE.md` needs the three routes in §4, a SEAM id in §8 and `lib/server/export/**` in §6's tree — CLAUDE.md asks for that in the same commit, and this run's own evidence is that implementers do not touch that file and the orchestrator records merged code in its own `docs:` commits (`9411199`, `5ce9361`); four wave-4 worktrees editing it would also conflict on every merge. Reported rather than resolved. And the `TBD:` about whether T100 persists export artefacts to object storage stays open; no storage verb was invented.
+
+    **Gates**, on a committed tree with `set -a; . ./.env.example; set +a`: typecheck 0, lint 0, build 0, and `npm test` three consecutive serialised runs compared by sorted failing file and test sets. Stamps and the run detail are in the handback.
 
 ### T140, Saves (private bookmarks)
 
