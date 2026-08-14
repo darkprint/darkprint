@@ -354,6 +354,36 @@ The three that reddened nothing, because each is a distinct trap:
 - **An invariant asserted on one return path and not its twin.** Sorted order checked on
   `getOntologyVersion`'s result and never on `addOntologyVersion`'s own.
 
+**The tell is often in the test's own name.** T030's author had a test called *"refuses a NUL byte,
+**which Postgres text cannot hold either**"* — it wrote down the reason the storage layer guarantees
+the outcome, in the name, and then asserted the outcome anyway. A name containing "which the
+database also does", "as Postgres already rejects", "which cannot be stored regardless" is a name
+describing why the test cannot discriminate. Grep your own suite for that shape before mutating
+anything; it is free.
+
+**And the fix is not always "assert harder".** Where the storage layer genuinely is the thing doing
+the refusing, the honest move is T-03's: label the test, say what it can and cannot distinguish,
+and keep it. A weak test known to be weak is worth having; the failure is the unlabelled one.
+
+## Having the guard is not using it
+
+The sharpest self-catch of the run, and a category the rest of this file does not cover. Every rule
+above is about *building* the right check. This one is about a check that existed and was bypassed.
+
+T030's author built the `len(newly) > len(after)/2` warning into `guard-observability.py` — the one
+that says *"likely BREAKAGE, not observability"* — and then ran its next mutation sweep as **a raw
+loop without the instrument**, because wiring up the script felt more expensive than a quick loop.
+Two of the five results came back 144 red, which is not a measurement at all: removing a single
+`if (…) {` line leaves a dangling brace and the module fails to load. Re-run properly, by removing
+the whole block, **N3 flipped from "caught" to "gap"** — so one of the two numbers it would have
+reported was wrong *in the direction that hides a hole*.
+
+It had the guard, knew exactly why it existed, and did not reach for it. **Not a missing safeguard
+but an unused one**, and the reason was that the correct instrument had a setup cost and the wrong
+one did not. The rule that follows is dull and it is the one that would have prevented this:
+**when an instrument exists for a measurement, the measurement goes through the instrument.** A
+result produced by a quicker path is not a cheaper version of the same result.
+
 **Standing question for any suite before it is offered as evidence: if the fix were reverted, would
 this test red?** If the answer is not known, mutate and find out. It is minutes, and it is the only
 method here that has found gaps in suites their authors had already falsified.
