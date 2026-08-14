@@ -288,6 +288,14 @@ an adversary writing its own pattern will hit its own version of this, and two i
 disagreeing is how it surfaces, where one shared instrument yields a single confident wrong number.
 Whoever runs it reads the deleted lines, not just the count.
 
+**Independence is about the choice, not the arithmetic.** Two instruments should be free to
+disagree on *judgment* — which lines the pattern deletes, what counts as the guard — and must not
+disagree on *correctness*. Vitest prints per-run millisecond suffixes in its failing lines, so an
+instrument that does not normalise them before diffing reports every line as new: 9 instead of 2,
+for the same tree and the same fix. That is not a second opinion, it is one of the two being
+wrong. So normalisation is shared and the deletion pattern is not — and where two instruments do
+disagree, the first question is whether both normalised, before anyone reads the gap as a finding.
+
 **Test the suite before trusting its output, not after.** T030's adversary patched
 `expectSealedError` in a **scratch copy** to the amended clause and re-ran *before* reading the
 suite's 32 reds — 32 fell to 17, so fifteen were the superseded wording and none was a defect.
