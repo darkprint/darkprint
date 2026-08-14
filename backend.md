@@ -805,6 +805,29 @@ accumulates where someone has already looked** — so the second pass is not dil
 only pass aimed at the places the first one could not have covered. Count the distribution, name
 the zeros, and go there.
 
+## A validator cannot be falsified against a correct module — measure it two-factor
+
+T080's blind author mutated two of its own `contract.ts` helpers and got **0** from each, then read
+rather than reported: both are **validators**, and mutating a validator against a **correct** module
+cannot red by construction, because it only fires on a wrong shape. A zero there is not evidence of
+anything. So it measured them on **two axes** instead — defect in the module × state of the
+validator:
+
+    asCardSummary: module publishes bare slugs in usedIn, validator intact  ->  44 red
+                   same module defect, validator neutered                  ->  17 red
+
+The validator accounts for 27 of those reds and is load-bearing, which no single-axis mutation
+could have shown. Same for T-04's `assertTellsCannotOverMatch`: planting a tell that **is** a
+substring of admissible content makes the suite say *this is a broken test* and stop — and without
+the guard, **nine tests report a leak against a correct implementation**. T-04 as a measurement
+rather than an argument.
+
+**And the untested-region rule reaches a suite's own instrument.** Every sweep that author had run
+mutated the *module*; `contract.ts`'s helpers had never been touched once — and a broken leak
+scanner makes every AC6 sweep pass **vacuously**. `findTokens` always answering `[]` reds 16;
+`collectStrings` never descending into arrays reds 13. So the sweep cannot pass by silence, measured
+rather than hoped.
+
 ## A fix for an unseen defect lands unobserved by construction
 
 The second-order form of the rule below, spotted by T080's adversary from a number it had already
