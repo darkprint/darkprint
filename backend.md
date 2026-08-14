@@ -555,6 +555,23 @@ flagged words means the deny side was genuinely fixed. Green with a bump refusal
 `cause === undefined` means the ordering is wrong **and** the whitelist result is vacuous — one test
 reporting a pass for two different reasons, neither of them the one its name claims.
 
+**Confirmed by measurement, on the error that would have caused it.** T030's adversary drove all
+four paths directly:
+
+    republish 0.1.0 with a term removed  -> DuplicateOntologyVersionError | cause: DrizzleQueryError, 23505 down the chain
+    new version 0.2.0 dropping a term    -> VersionBumpTooSmallError      | cause: UNDEFINED, no sqlstate
+    same removal declared as 1.0.0       -> accepted
+    same term id twice                   -> InvalidVocabularyError        | cause: DrizzleQueryError, 23505 down the chain
+
+The first is the ordering: both refusals apply and the duplicate wins. The second is the trap that
+did not spring — a bump refusal carries **no driver cause at all**, so had it arrived for a
+duplicate, the `if (cause !== undefined)` guard would have skipped the whole whitelist block and
+those five tests would have gone green **with the assertion switched off**. Predicted from reading,
+then measured on exactly the error that would have caused it. The discriminator returns the good
+answer: every whitelist-tested rejection carries a live `DrizzleQueryError` cause, so the assertion
+is genuinely running and the 7 reds are real over-matches. **A 2 would have been the ordering
+defect; a 7 with driver causes intact is the ordering working.**
+
 **The general defect is the conditional itself**, independent of the ordering: a suite whose check
 runs only when the subject supplies a particular shape cannot test the subject that does not supply
 it. The block should assert unconditionally — for a causeless error, that the enumerable surface is
