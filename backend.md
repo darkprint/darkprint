@@ -1062,11 +1062,47 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T020, Card library: versions, digests, private cards
 
-- **State:** todo
+- **State:** claimed
+- **Worktree:** `../darkprint-wt-t020-cards` on `feat/t020-cards`
+- **Test worktree:** `../darkprint-wt-t020-cards-tests` on `test/t020-cards`
 - **Depends on:** T000 (contract), T025 (contract: bump and chain)
 - **Blocks:** T080, T090, T100, T190, T250
 - **Owns:** `lib/server/cards/**`
 - **Forbidden:** `lib/server/versioning/**`, `lib/db/schema.ts`, `app/**`
+- **Published signatures** (checked against `backend` at `41c0447`, against `lib/db/schema.ts`'s `card_version` — `card_id`, `version`, `digest`, `owner_id`, `visibility`, `body jsonb`, `source text`, all `NOT NULL` — and against `lib/core`, which already carries every bump primitive cards need. **T020 has no code dependency on T025**: `inferBump(previous: NodeCard, next: NodeCard)` is `lib/core/version/bump.ts:303`, `checkVersionChain` is `lib/core/card/validate.ts:847`, and `card/version-bump-too-small` is already a `lib/core/diagnostics.ts` code. T025 generalises these to blueprints and ontologies; it does not own the card path. Do not wait for it and do not import from `lib/server/versioning/**`, which is Forbidden here.)
+
+        interface CardRecord {
+          id: string; cardId: string; version: string; digest: string;
+          ownerId: string; visibility: "public" | "private";
+          body: NodeCard;      // jsonb: VALUE-identical on read-back, never byte-identical
+          source: string;      // text: BYTE-identical on read-back, verbatim YAML
+          createdAt: Date;
+        }
+
+        addCard(db: Db, input: {
+          cardId: string; version: string; ownerId: string;
+          visibility?: "public" | "private";
+          body: NodeCard; source: string;
+        }): Promise<CardRecord>              // digest is COMPUTED here, never supplied
+
+        getCard(db: Db, actor: Actor, cardId: string, version: string): Promise<CardRecord | undefined>
+        getLatestCard(db: Db, actor: Actor, cardId: string): Promise<CardRecord | undefined>
+        listCardVersions(db: Db, actor: Actor, cardId: string): Promise<CardRecord[]>
+        resolveCardRef(db: Db, actor: Actor, ref: CardRef): Promise<CardRecord | undefined>
+        findCardsByDigest(db: Db, actor: Actor, digest: string): Promise<CardRecord[]>
+
+  **Every read takes an `Actor` and filters through T060, which is merged and available.** AC4 ("a private card is unreadable by anyone but its owner and the operator") is enforced at this boundary rather than left to callers, for the same reason T010 computes its digest here: a criterion that depends on every future caller remembering it is not testable, and T080/T090/T190 are all downstream readers. Import `can` and `visibleTo` from `@/lib/server/policy` — the published barrel, never a deep path — and build the resource as `{ kind: "card", ownerId, visibility }`. A denied read returns `undefined` or omits the row; it never throws and never returns a 403, because mapping a denial to 404 is the route's job (B-03).
+
+  **`source` is `text` and `body` is `jsonb`, and they round-trip differently.** This is T010's AC1 defect written down before it costs a round rather than after: `jsonb` preserves neither key order nor number spelling, so `body` can only be **value-identical** on read-back, while `source` holds bytes exactly and is **byte-identical**. `source` is the authoritative artefact a consumer receives; `body` is the parsed projection. Never reconstruct `source` by re-serialising `body`.
+
+  **Content that cannot survive storage is refused, not repaired.** Identical to T010's D-12, and it applies here with more force because `cardDigest` is the identity: `pg` encodes parameters as UTF-8, an unpaired UTF-16 surrogate has no UTF-8 encoding and is silently replaced with U+FFFD, so a card whose `source` carries one stores a digest naming bytes it does not hold. Refuse `source`, `body` and every string reachable inside `body` that fails `String.prototype.isWellFormed()`. **Write the walk iteratively from the start** — an explicit stack with path-scoped cycle detection, not recursion. T010 shipped a recursive walk that closed cycles and still died with `RangeError` at 20 000 deep, and a 120 KB request body reaches that depth; do not repeat it. Do not make it a blanket unicode ban: ZWJ emoji, Arabic, CJK and combining marks must still round-trip.
+
+  **No rejection carries the statement or its parameters, whatever its SQLSTATE.** T010 paid two rounds for this. A `DrizzleQueryError` opens with the whole INSERT and every bound parameter — here that is the caller's entire card source. Every error leaving this module is a typed `Error` whose own properties are exactly `["message", "cause"]`, with `cause` non-enumerable so `JSON.stringify` cannot reach it, and a `message` built only from the caller's own identifiers. That covers the duplicate `(card_id, version)`, and equally a NUL byte (22021), a foreign-key violation on `owner_id` (23503) and a malformed uuid (22P02).
+
+  **A typed conflict names the constraint it matched, and the literal is tied to the schema.** `card_version_id_version_key` is declared in `lib/db/schema.ts`, in the migration SQL, and in this module. Assert them equal at runtime through `getTableConfig(schema.cardVersion).indexes` rather than restating the string a third time — reading `schema.ts` is not editing it, so no Forbidden file is touched. Falsify by moving the literal in this module, not the name in the schema.
+
+  **"Latest" is the highest semver, not the most recent row.** `created_at` is insertion time and versions are not inserted in order — a backfilled `1.0.9` after `1.1.0` would win on time and lose on meaning. Order with `compareSemver` from `lib/core`, and give every list a total order (a `, id` tiebreak behind the semver comparison) so two reads of one set never disagree. T010 shipped `listReleases` without a tiebreak and it is still an open inherited defect; do not add a second one.
+
 - **Goal:** store one immutable document per `(id, version)` with its digest and its owner, public or private, and refuse a version that breaks its chain.
 - **Contract:** `CardRef` is `id@version`; ids match `CARD_ID` and versions `REF_VERSION`, so an unversioned or `@latest` reference is refused at the write site (`lib/core/card/schema.ts:187`). `cardDigest` is sha256 over canonical JSON minus `author` and `provenance` (`hash/digest.ts:47`), which is what lets two authors' identical cards dedup. A published version is never edited in place. Private cards exist and are validated identically to public ones (B-07) — a card carries `owner` and `visibility`, and the same schema applies either way. Chain checking is delegated to `T025`. The wire schema is `CARD_KNOWN_KEYS` with unknown keys accepted at `info` and ignored (`card/validate.ts:69-100,251-258`).
 - **Acceptance criteria:** (1) storing `x@1.0.0` twice with different bytes is refused, not overwritten; (2) two cards differing only in `author` or `provenance` share a digest; (3) a private card failing the version grammar is refused exactly as a public one is; (4) a private card is unreadable by anyone but its owner and the operator; (5) a bare id resolves to the newest version, an exact ref to that version; (6) publishing a version whose declared bump is too small is refused with the engine's reasons.
@@ -1076,11 +1112,41 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T030, Ontology store, merged view, versioned releases
 
-- **State:** todo
+- **State:** claimed
+- **Worktree:** `../darkprint-wt-t030-ontology` on `feat/t030-ontology`
+- **Test worktree:** `../darkprint-wt-t030-ontology-tests` on `test/t030-ontology`
 - **Depends on:** T000 (contract), T025 (contract: version chains)
 - **Blocks:** T040, T080, T090, T210, T250
 - **Owns:** `lib/server/ontology/**`
 - **Forbidden:** `lib/server/versioning/**`, `lib/db/schema.ts`, `app/**`
+- **Published signatures** (checked against `backend` at `41c0447`, against `lib/db/schema.ts`'s `ontology_version` and `ontology_term`, and against `lib/core/ontology/resolve.ts`, whose `ontologyView(base: Ontology, extensions?: readonly OntologyTerm[]): OntologyView` is the merge and is **consumed, never reimplemented**.)
+
+        interface OntologyVersionRecord {
+          id: string; version: string; digest: string;
+          terms: readonly OntologyTerm[];
+          createdAt: Date;
+        }
+
+        addOntologyVersion(db: Db, input: {
+          version: string; terms: readonly OntologyTerm[];
+        }): Promise<OntologyVersionRecord>   // digest is COMPUTED here, never supplied
+
+        getOntologyVersion(db: Db, version: string): Promise<OntologyVersionRecord | undefined>
+        getLatestOntologyVersion(db: Db): Promise<OntologyVersionRecord | undefined>
+        listOntologyVersions(db: Db): Promise<OntologyVersionRecord[]>
+        openView(db: Db, version: string, extensions?: readonly OntologyTerm[]): Promise<OntologyView>
+        validateVocabulary(terms: readonly OntologyTerm[]): Diagnostic[]
+
+  **`openView` is named for what AC5 requires: one instance, held by the caller.** `isA` memoizes per view instance, and two bundles' scores are only comparable when they were resolved against the same instance (`lib/content/read.ts:104-154`). A function that builds a fresh view per call cannot satisfy AC5 no matter how it is tested, so the verb is `open` rather than `get` — the caller opens one and reuses it for a resolution batch. Do **not** add a module-scope cache keyed by version: that turns a per-batch guarantee into a process-lifetime one, and an ontology released mid-batch would then serve two callers different vocabularies under one version. If a cache is wanted it is T080's projection concern, not this module's.
+
+  **Terms are rows, not a blob.** `ontology_term` is one row per `(ontology_version_id, term_id)` with the full `OntologyTerm` in `body jsonb` — so a version's terms are written as N rows in one transaction and read back sorted by `term_id` for a total order. `body` being `jsonb` means a term round-trips **value-identically**, never byte-identically; the same distinction T010's AC1 needed and did not have.
+
+  **Core terms only.** A bundle's local overlay is not a global row here — it travels on the release that declares it (`release.local_vocabulary`, exposed by T010's `addRelease` as `vocabulary`; the column name and the API name differ and that is deliberate, not drift). `openView`'s `extensions` parameter is how an overlay reaches the merge, supplied by the caller per bundle. T030 never reads the `release` table and `lib/server/archive/**` is not its dependency.
+
+  **AC6 is the one criterion that waits on T025.** `inferOntologyBump(previous: readonly OntologyTerm[], next: readonly OntologyTerm[]): BumpAnalysis` and `checkDeclaredBump("ontology", …)` are T025's published surface and do **not** exist in `lib/core` — unlike the card path, which is entirely self-contained. `ontology/version-bump-too-small` is already a `lib/core/diagnostics.ts` code, but nothing computes it for ontologies yet. Build everything else, and if `lib/server/versioning/**` has not merged by the time the gates run, leave AC6's call site as a single named function that reports the absent dependency, say so in the Log, and let the criterion stand red. Do **not** reimplement bump inference inside `lib/server/ontology/**` to make it green — two implementations of one rule is the defect the partition exists to prevent.
+
+  **The same three inherited hardening rules apply as to T020**, and for the same reasons: content that cannot round-trip is refused rather than repaired (unpaired surrogates in a term id, label or any nested string), the well-formedness walk is **iterative from the start**, and no rejection carries the statement or its parameters — typed `Error`, own properties exactly `["message", "cause"]`, `cause` non-enumerable. The constraint literals `ontology_version_version_key` and `ontology_term_version_term_key` are tied to `getTableConfig` rather than restated.
+
 - **Goal:** hold the curated core and every local overlay as versioned artefacts, serve one merged view per version, and validate a vocabulary before anything resolves against it.
 - **Contract:** a merged view keeps the **base** version; an overlay term sharing an id replaces the base term in place and the shadowing is reported (`lib/core/ontology/resolve.ts:125-127`). `validate()` returns `ontology/phase-not-extensible` and `ontology/local-term-unrooted` as errors, the two local-marker weight defects as warnings, and `dangling-pointer`/`cyclic-broader` as errors. `broader` is at most one parent, acyclic. Deprecation is a redirect followed at most one hop, never across kinds. One view instance is shared per resolution batch, because `isA` memoizes per instance and that is what makes two bundles' scores comparable (`lib/content/read.ts:104-154`). Ontology versions are now first-class artefacts with chains (B-04), and a release triggers a re-score of every affected bundle (B-08). Terms stay public (B-07).
 - **Acceptance criteria:** (1) a merged view of core plus overlay reports the base version; (2) a shadowing overlay term is reported and keeps the shadowed term's position; (3) an unrooted local term fails as an error; (4) a local marker with a negative or non-finite weight counts zero and warns; (5) `isA` answers identically for one view across consecutive resolutions; (6) publishing an ontology version that removes a term is inferred major and refused if declared minor.
