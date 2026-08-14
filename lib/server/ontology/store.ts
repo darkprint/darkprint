@@ -33,6 +33,7 @@ import {
   MalformedContentError,
   OntologyStoreError,
 } from "./errors";
+import { findMalformedInput } from "./input";
 import { validateVocabulary, vocabularyIsUnstorable } from "./validate";
 import { findUnrepresentable } from "./well-formed";
 
@@ -177,17 +178,31 @@ export async function listOntologyVersions(db: Db): Promise<OntologyVersionRecor
 /**
  * Publish a vocabulary as a new version. The digest is **computed here, never supplied**.
  *
- * Refuses, in order, before touching the database: content that cannot survive storage
- * (an unpaired surrogate, a non-finite number, a cycle), then a vocabulary whose own
- * structure is broken. A caller wanting the diagnostics behind the second calls
- * `validateVocabulary` — they are not attached to the error, because an error here carries
- * exactly `message` and `cause` and nothing else.
+ * Refuses, in order, before touching the database: input whose *shape* is not what the
+ * signature says (a numeric version, a non-string term id, an unknown kind — the shapes a
+ * YAML loader produces, not a hostile caller); then content that cannot survive storage, over
+ * the version **and** the terms; then a vocabulary whose own structure is broken. A caller
+ * wanting the diagnostics behind the last calls `validateVocabulary` — they are not attached
+ * to the error, because nothing enumerable is.
  */
 export async function addOntologyVersion(
   db: Db,
   input: { version: string; terms: readonly OntologyTerm[] },
 ): Promise<OntologyVersionRecord> {
-  const unrepresentable = findUnrepresentable(input.terms);
+  // Shape first: a numeric version or a non-string term id makes everything below meaningless,
+  // and until this existed those shapes reached the driver and stored (D-17).
+  const malformed = findMalformedInput(input);
+  if (malformed !== undefined) {
+    throw new MalformedContentError(
+      `Ontology version input is malformed: \`${malformed.path}\` ${malformed.reason}. It is refused rather than coerced.`,
+    );
+  }
+
+  // `version` is walked with the terms, not left out of it. It is stored in a `text` column,
+  // so an unpaired surrogate there is rewritten to U+FFFD by `pg` exactly as it would be in a
+  // term — and worse, the digest is computed over what was supplied while the row holds what
+  // was stored, so the two disagree and no lookup can reveal it (D-15).
+  const unrepresentable = findUnrepresentable({ version: input.version, terms: input.terms });
   if (unrepresentable !== undefined) {
     throw new MalformedContentError(
       `Ontology version \`${input.version}\` holds a ${unrepresentable.reason} at \`${unrepresentable.path}\`, which cannot be stored. It is refused rather than rewritten.`,

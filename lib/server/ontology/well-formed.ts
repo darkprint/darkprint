@@ -70,6 +70,17 @@ function joinPath(path: string, key: string): string {
  * as values — a key is a string that round-trips through `jsonb` exactly as a value does.
  */
 export function findUnrepresentable(root: unknown): Unrepresentable | undefined {
+  /**
+   * Nodes already walked to completion or in progress. Without it the walk is O(2^n) over a
+   * shared graph — a term list where every entry points at the same substructure re-walks it
+   * once per path that reaches it, measured at 370-488 ms for n=20 and unbounded beyond.
+   *
+   * It does not weaken the cycle rule, because skipping and rejecting are different answers:
+   * a node reached again by a *different* path was already checked and is clean, so skipping
+   * it is the same verdict arrived at faster. Only `onPath` rejects, and it still holds only
+   * the nodes between the root and the cursor.
+   */
+  const seen = new Set<object>();
   const onPath = new Set<object>();
   const stack: Step[] = [{ kind: "visit", value: root, path: "" }];
 
@@ -100,10 +111,15 @@ export function findUnrepresentable(root: unknown): Unrepresentable | undefined 
     if (value === null || typeof value !== "object") continue;
 
     const node = value as object;
+    // Order matters: a node between the root and the cursor is a cycle, and a node reached
+    // again from anywhere else is merely shared. Checking `seen` first would report a cycle
+    // as clean.
     if (onPath.has(node)) {
       return { path: path === "" ? "(root)" : path, reason: "circular-reference" };
     }
+    if (seen.has(node)) continue;
 
+    seen.add(node);
     onPath.add(node);
     // Pushed before the children so it pops *after* all of them: the node leaves the current
     // path only once its whole subtree is walked, which is what makes the guard path-scoped
