@@ -52,14 +52,7 @@ function splitRef(ref: string): { id: string; version: string } | undefined {
   return { id: trimmed.slice(0, at), version: trimmed.slice(at + 1) };
 }
 
-/**
- * Every parseable ref's version, grouped by id and sorted. Sorted so that
- * which node happened to come first in the DOT cannot change the answer —
- * comparing two id-keyed lists position by position is only order-independent
- * once both are in the same canonical order — and never deduplicated, because
- * two nodes pinning one id at one version are two entries, the same reason
- * `bundleDigest` never deduplicates `cardDigests`.
- */
+/** Every parseable ref's version, grouped by id. Order and duplicates preserved as given. */
 function versionsById(refs: readonly string[]): Map<string, string[]> {
   const map = new Map<string, string[]>();
   for (const ref of refs) {
@@ -69,7 +62,6 @@ function versionsById(refs: readonly string[]): Map<string, string[]> {
     if (versions) versions.push(parsed.version);
     else map.set(parsed.id, [parsed.version]);
   }
-  for (const versions of map.values()) versions.sort(compareVersionStrings);
   return map;
 }
 
@@ -87,17 +79,34 @@ function sameCounts(a: ReadonlyMap<string, number>, b: ReadonlyMap<string, numbe
 }
 
 /**
+ * `compareVersionStrings` orders by semver *precedence*, and two distinct
+ * strings can carry equal precedence — build metadata is excluded from it
+ * by spec, so `"1.0.0"` and `"1.0.0+build"` compare equal. A comparator
+ * that returns 0 for two unequal strings is not a total order over the
+ * strings themselves, only over what they mean; pairing depends on a
+ * genuinely canonical order, so a code-unit tiebreak (which never fires
+ * between two versions `compareVersionStrings` already tells apart) breaks
+ * the tie deterministically regardless of which one a node happened to
+ * write first.
+ */
+function compareVersionsCanonical(a: string, b: string): number {
+  const byPrecedence = compareVersionStrings(a, b);
+  if (byPrecedence !== 0) return byPrecedence;
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/**
  * The size of the change between two version strings, independent of which
- * one is `beforeVersions[i]` and which is `afterVersions[i]`. `declaredBump`
- * is asymmetric by design — it prices what a *declared* release may claim,
- * and a downgrade declares nothing (`bump.ts`'s
- * `compareSemver(after, before) <= 0` branch returns `"none"`), which is
- * right for deciding whether an author's own version bump is big enough and
- * wrong for pricing an arbitrary pair a sorted multiset happened to align.
- * An author repinning back to a known-good older card still moves
- * `cardDigests` and the bundle digest exactly as much as repinning forward
- * would, so the pair is ordered by `compareSemver` first and `declaredBump`
- * is asked for the magnitude, never handed a direction to declare against.
+ * one is `a` and which is `b`. `declaredBump` is asymmetric by design — it
+ * prices what a *declared* release may claim, and a downgrade declares
+ * nothing (`bump.ts`'s `compareSemver(after, before) <= 0` branch returns
+ * `"none"`), which is right for deciding whether an author's own version
+ * bump is big enough and wrong for pricing an arbitrary pair a multiset
+ * comparison happened to line up. An author repinning back to a known-good
+ * older card still moves `cardDigests` and the bundle digest exactly as
+ * much as repinning forward would, so the pair is ordered by
+ * `compareSemver` first and `declaredBump` is asked for the magnitude,
+ * never handed a direction to declare against.
  */
 function repinMagnitude(a: string, b: string): BumpLevel {
   const parsedA = parseSemver(a);
@@ -107,17 +116,64 @@ function repinMagnitude(a: string, b: string): BumpLevel {
 }
 
 /**
- * One id's sorted version list, before and after, compared position by
- * position up to the shorter length — a version that moved there, priced by
- * `declaredBump` — and then whatever the longer list has left over: a
- * version that also appears somewhere on the shorter side is a pure
- * multiplicity change (a second node now pinning, or no longer pinning,
- * what another node already pins) and is at least a `patch`, since the
- * bytes and the digest both moved even though the declared surface did not;
- * a version that appears nowhere on the other side is a pin genuinely
+ * One id's before/after version lists, reduced to what actually moved.
+ *
+ * A naive "sort both lists and compare position by position" breaks the
+ * moment a *duplicate* count changes anywhere but the very end of the
+ * sorted range: dropping one of three `1.0.0` pins while a `5.0.0` pin sits
+ * untouched shifts `5.0.0` from index 3 to index 2, and a positional
+ * comparison reads that shift as `5.0.0` having been repinned *from*
+ * `1.0.0` — a repin that never happened, priced at whatever `declaredBump`
+ * says about a pair neither side actually pinned.
+ *
+ * So values are matched by count first, per distinct version string, and
+ * only the leftover — what could not be cancelled out — is paired for
+ * repin pricing. `matched = min(before-count, after-count)` for each
+ * version leaves each side with only the copies the other side cannot
+ * account for; a version can never have leftover on both sides at once,
+ * since one side's leftover is exactly what the smaller count could not
+ * match. This is also what makes the whole comparison count-based rather
+ * than order-based, so it needs no sort of its own to be order-independent
+ * — only the two leftover lists need a canonical order, to pair
+ * deterministically for magnitude pricing.
+ */
+function leftoverVersions(
+  beforeVersions: readonly string[],
+  afterVersions: readonly string[],
+): { beforeLeftover: string[]; afterLeftover: string[] } {
+  const beforeCounts = refCounts(beforeVersions);
+  const afterCounts = refCounts(afterVersions);
+  const allVersions = new Set([...beforeCounts.keys(), ...afterCounts.keys()]);
+
+  const beforeLeftover: string[] = [];
+  const afterLeftover: string[] = [];
+  for (const version of allVersions) {
+    const before = beforeCounts.get(version) ?? 0;
+    const after = afterCounts.get(version) ?? 0;
+    const matched = Math.min(before, after);
+    for (let i = matched; i < before; i++) beforeLeftover.push(version);
+    for (let i = matched; i < after; i++) afterLeftover.push(version);
+  }
+  beforeLeftover.sort(compareVersionsCanonical);
+  afterLeftover.sort(compareVersionsCanonical);
+  return { beforeLeftover, afterLeftover };
+}
+
+/**
+ * One id's version lists, before and after. Reduced to the leftover only
+ * `leftoverVersions` could not cancel out, then compared position by
+ * position up to the shorter leftover length — a version that moved
+ * there, priced by `repinMagnitude` — and then whatever the longer
+ * leftover has left over still: a version that also appears anywhere in
+ * the *full* list on the other side is a pure multiplicity change (a
+ * second node now pinning, or no longer pinning, what another node
+ * already pins) and is at least a `patch`, since the bytes and the digest
+ * both moved even though the declared surface did not; a version that
+ * appears nowhere on the other side, at any count, is a pin genuinely
  * gained (minor) or genuinely lost (major). An id absent from one side
  * supplies an empty list here, which this same logic reads correctly as
- * "every occurrence gained" or "every occurrence lost" with no extra branch.
+ * "every occurrence gained" or "every occurrence lost" with no extra
+ * branch.
  */
 function compareVersions(
   id: string,
@@ -125,28 +181,29 @@ function compareVersions(
   afterVersions: readonly string[],
   push: (level: Reason["level"], message: string) => void,
 ): void {
-  const n = Math.min(beforeVersions.length, afterVersions.length);
+  const { beforeLeftover, afterLeftover } = leftoverVersions(beforeVersions, afterVersions);
   const beforeSet = new Set(beforeVersions);
   const afterSet = new Set(afterVersions);
 
+  const n = Math.min(beforeLeftover.length, afterLeftover.length);
   for (let i = 0; i < n; i++) {
-    if (beforeVersions[i] === afterVersions[i]) continue;
+    if (beforeLeftover[i] === afterLeftover[i]) continue;
     // A version half that is not semver at all (`@latest`) prices no
     // magnitude of its own; the repin itself still changed something, so it
     // falls to "patch otherwise" rather than going unreported.
-    const level = repinMagnitude(beforeVersions[i], afterVersions[i]);
-    push(level === "none" ? "patch" : level, `card \`${id}\` repinned: ${beforeVersions[i]} → ${afterVersions[i]}`);
+    const level = repinMagnitude(beforeLeftover[i], afterLeftover[i]);
+    push(level === "none" ? "patch" : level, `card \`${id}\` repinned: ${beforeLeftover[i]} → ${afterLeftover[i]}`);
   }
-  for (let i = n; i < afterVersions.length; i++) {
-    const version = afterVersions[i];
+  for (let i = n; i < afterLeftover.length; i++) {
+    const version = afterLeftover[i];
     if (beforeSet.has(version)) {
       push("patch", `card \`${id}\`'s pin count at \`${version}\` changed`);
     } else {
       push("minor", `card \`${id}\` gained a pin at ${version}`);
     }
   }
-  for (let i = n; i < beforeVersions.length; i++) {
-    const version = beforeVersions[i];
+  for (let i = n; i < beforeLeftover.length; i++) {
+    const version = beforeLeftover[i];
     if (afterSet.has(version)) {
       push("patch", `card \`${id}\`'s pin count at \`${version}\` changed`);
     } else {

@@ -122,6 +122,46 @@ describe("inferBlueprintBump, the pin collection is a multiset, compared order-i
     const result = inferBlueprintBump(before, after);
     expect(result.level).not.toBe("none");
   });
+
+  it("does not fabricate a repin when a duplicate ahead of an untouched larger pin drops out", () => {
+    // Sorted: before = [1.0.0, 1.0.0, 1.0.0, 5.0.0], after = [1.0.0, 1.0.0, 5.0.0].
+    // A naive positional walk aligns index 2 as "1.0.0 -> 5.0.0", a repin that
+    // never happened — 5.0.0 was never touched, one duplicate 1.0.0 pin was.
+    const before = next({ dot: "digraph {}", cardRefs: ["a@1.0.0", "a@1.0.0", "a@1.0.0", "a@5.0.0"] });
+    const after = next({ dot: "digraph {}", cardRefs: ["a@1.0.0", "a@1.0.0", "a@5.0.0"] });
+    const result = inferBlueprintBump(before, after);
+    expect(result.level).toBe("patch");
+    expect(result.reasons.join(" ")).not.toMatch(/repinned/);
+  });
+
+  it("does not fabricate a repin when the whole list shrinks by one duplicate at the front", () => {
+    const before = next({ dot: "digraph {}", cardRefs: ["a@1.0.0", "a@1.0.0", "a@2.0.0", "a@3.0.0"] });
+    const after = next({ dot: "digraph {}", cardRefs: ["a@1.0.0", "a@2.0.0", "a@3.0.0"] });
+    const result = inferBlueprintBump(before, after);
+    expect(result.level).toBe("patch");
+    expect(result.reasons.join(" ")).not.toMatch(/repinned/);
+  });
+});
+
+describe("inferBlueprintBump, sorting is canonical even when precedence ties", () => {
+  it("reads the same two build-metadata variants as unchanged regardless of which was written first", () => {
+    const forward = next({ dot: "digraph {}", cardRefs: ["a@1.0.0", "a@1.0.0+build"] });
+    const reversed = next({ dot: "digraph {}", cardRefs: ["a@1.0.0+build", "a@1.0.0"] });
+    expect(inferBlueprintBump(forward, reversed).level).toBe("none");
+    expect(inferBlueprintBump(reversed, forward).level).toBe("none");
+  });
+
+  it("reads two distinct build tags as unchanged regardless of order", () => {
+    const forward = next({ dot: "digraph {}", cardRefs: ["a@1.0.0+x", "a@1.0.0+y"] });
+    const reversed = next({ dot: "digraph {}", cardRefs: ["a@1.0.0+y", "a@1.0.0+x"] });
+    expect(inferBlueprintBump(forward, reversed).level).toBe("none");
+  });
+
+  it("agrees across a rotation of a longer precedence-tied list", () => {
+    const base = next({ dot: "digraph {}", cardRefs: ["a@1.0.0", "a@1.0.0+x", "a@2.0.0"] });
+    const rotated = next({ dot: "digraph {}", cardRefs: ["a@1.0.0+x", "a@2.0.0", "a@1.0.0"] });
+    expect(inferBlueprintBump(base, rotated).level).toBe("none");
+  });
 });
 
 describe("inferBlueprintBump, a version move is priced by magnitude, not direction", () => {
