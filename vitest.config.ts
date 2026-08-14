@@ -32,6 +32,11 @@ export default defineConfig({
       "lib/**/*.test.ts",
       "components/**/*.test.{ts,tsx}",
       "scripts/**/*.test.ts",
+      /* `app/**` was absent until T090 reported it, and its absence is this file's own recorded
+         failure mode: an uncollected suite runs zero tests and reads as green. Four tasks own route
+         files under `app/` and any colocated test beside one was never going to be collected.
+         Added before a task relies on it rather than after. */
+      "app/**/*.test.{ts,tsx}",
       /* The backend's test tree, and the one glob that is not beside the code it tests.
          `docs/ORCHESTRATION.md` has the tests for a backend task written blind, in a
          separate worktree branched before the implementation exists, so they cannot sit
