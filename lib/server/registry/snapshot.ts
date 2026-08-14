@@ -164,8 +164,21 @@ export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapsh
     pinsByBlueprint.set(keyOf(bp.key), pins);
   }
 
+  // Two sets, and the difference between them is the whole of D-80-06. `wantedIds` is what
+  // the query asks Postgres for; `pinnedRefs` is what may enter the index. Selecting by id
+  // alone returns **every** version of a pinned id, including versions no release pins —
+  // and keying those into the index put a card nothing instantiates into `cards()`,
+  // `versionsOf()`, `card()` and `latestCards()`, while `cardRefs` still (correctly) omitted
+  // it, so the read model contradicted itself. The tell was that such a record carries an
+  // empty `usedIn`, which the indexing rule makes impossible.
   const wantedIds = new Set<string>();
-  for (const pins of pinsByBlueprint.values()) for (const { id } of pins.values()) wantedIds.add(id);
+  const pinnedRefs = new Set<CardRef>();
+  for (const pins of pinsByBlueprint.values()) {
+    for (const [ref, { id }] of pins) {
+      wantedIds.add(id);
+      pinnedRefs.add(ref);
+    }
+  }
 
   const cardRows =
     wantedIds.size === 0
@@ -178,9 +191,16 @@ export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapsh
         ).filter((row) => readable(actor, row));
 
   // Only cards a DOT node instantiates are indexed (contract), and only the ones this actor
-  // may read: `rowsByRef` is the set of pins that resolve to a visible row.
+  // may read: `rowsByRef` is the set of pins that resolve to a visible row. The query above
+  // is deliberately a superset — one `IN` over ids rather than one over every `id@version`
+  // pair — so the narrowing to the pin set happens here, and it is the line that makes the
+  // comment true rather than aspirational.
   const rowsByRef = new Map<CardRef, (typeof cardRows)[number]>();
-  for (const row of cardRows) rowsByRef.set(cardRef(row.cardId, row.version), row);
+  for (const row of cardRows) {
+    const ref = cardRef(row.cardId, row.version);
+    if (!pinnedRefs.has(ref)) continue;
+    rowsByRef.set(ref, row);
+  }
 
   const usedIn = new Map<CardRef, BlueprintKey[]>();
   const blueprints: BlueprintSummary[] = [];

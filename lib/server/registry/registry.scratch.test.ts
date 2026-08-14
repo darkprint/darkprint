@@ -181,6 +181,12 @@ beforeAll(async () => {
   await cardVersion(aliceId, "mirror", "1.1.0", ["planning"], "public");
   await cardVersion(aliceId, "intake", "1.0.0", [], "public", "receive");
   await cardVersion(aliceId, "probe", "1.0.0", [], "public", "probe");
+  // `solver@2.0.0` is a published row that **no release pins**, declaring a phase nothing
+  // else declares. Added after the adversary charged D-80-06: this harness selected rows by
+  // pinned *id* and could not see a version nobody pins, and neither could the blind suite
+  // (its fixtures use ids that never enter the query) nor `build-parity` (every row in the
+  // archive is pinned). A regression here is invisible to any test built from the archive.
+  await cardVersion(aliceId, "solver", "2.0.0", ["debugging"], "public");
   await cardVersion(aliceId, "ghost", "1.0.0", ["deployment"], "private", "hide");
   await cardVersion(aliceId, "legacy", "1.0.0", ["planning"], "public", "retire");
   await cardVersion(aliceId, "hidden", "1.0.0", ["testing"], "public", "vault");
@@ -312,6 +318,8 @@ describe("the query surface, as an anonymous caller sees it", () => {
   });
 
   it("AC3: an undeclared phase is an empty list, and so is an arbitrary string", async () => {
+    // `debugging` is declared by `solver@2.0.0`, which nothing pins — so it is undeclared
+    // *by the index*, which is the only sense that matters here.
     expect(await cardsByPhase(db, ANON, "debugging")).toEqual([]);
     expect(await cardsByPhase(db, ANON, "not-a-phase-at-all")).toEqual([]);
     expect(await cardsByPhase(db, ANON, "")).toEqual([]);
@@ -342,6 +350,30 @@ describe("the query surface, as an anonymous caller sees it", () => {
     const list = await blueprints(db, ANON);
     expect(Object.isFrozen(list)).toBe(true);
     expect(Object.isFrozen(list[0])).toBe(true);
+  });
+});
+
+describe("D-80-06: a version of a pinned id that nothing pins", () => {
+  it("is absent from every reader that lists or looks up a card", async () => {
+    expect(refs(await cards(db, ANON))).not.toContain("solver@2.0.0");
+    expect(refs(await versionsOf(db, ANON, "solver"))).toEqual(["solver@1.1.0", "solver@1.0.0"]);
+    expect(await card(db, ANON, "solver@2.0.0")).toBeUndefined();
+    expect(refs(await latestCards(db, ANON))).toContain("solver@1.1.0");
+    expect(refs(await latestCards(db, ANON))).not.toContain("solver@2.0.0");
+  });
+
+  it("does not reach the derived indexes either", async () => {
+    expect(await phases(db, ANON)).not.toContain("debugging");
+    expect(await cardsByPhase(db, ANON, "debugging")).toEqual([]);
+    expect(keys(await usersOf(db, ANON, "solver"))).toEqual(["alice/atlas", "bob/atlas"]);
+  });
+
+  it("holds the invariant the leak violated: every indexed card has a user", async () => {
+    // The tell, and it is better than any single absence assertion: a record reaching the
+    // index without a pin carries `usedIn: []`, which the indexing rule makes impossible.
+    // Quantified over the whole index rather than over the one row this fixture plants.
+    for (const rec of await cards(db, ANON)) expect(rec.usedIn.length).toBeGreaterThan(0);
+    for (const rec of await cards(db, alice)) expect(rec.usedIn.length).toBeGreaterThan(0);
   });
 });
 

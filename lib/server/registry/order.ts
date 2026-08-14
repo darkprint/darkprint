@@ -53,9 +53,15 @@ export function cmpCards(a: CardSummary, b: CardSummary): number {
 }
 
 /**
- * Release order within one bundle: highest semver first, tiebroken on row id (D-80-03).
- * The head is the current release. Matches T020's merged rule — "latest is the highest
- * semver, not the most recent row" — rather than T010's `created_at` ordering.
+ * Release order within one bundle: highest semver first, then **highest** row id (D-80-03,
+ * direction ruled at D-80-08). The head is the current release. Matches T020's merged rule —
+ * "latest is the highest semver, not the most recent row" — rather than T010's `created_at`
+ * ordering.
+ *
+ * The tiebreak buys **determinism, not recency**: `release.id` is `uuid().defaultRandom()`,
+ * so ordering by it is arbitrary rather than chronological. It fires only where two releases
+ * of one bundle differ solely in build metadata, and its job is that two reads of one set
+ * never disagree — not that the later row wins.
  */
 export function cmpReleasesCurrentFirst(
   a: { version: string; id: string },
@@ -63,5 +69,5 @@ export function cmpReleasesCurrentFirst(
 ): number {
   const byVersion = compareVersionStrings(b.version, a.version);
   if (byVersion !== 0) return byVersion;
-  return cmpString(a.id, b.id);
+  return cmpString(b.id, a.id);
 }
