@@ -235,6 +235,28 @@ line is what Phase 0 recorded; this section is what is true. Where they disagree
 the one that decides a dispatch — and the disagreement is itself the useful artefact, since it
 shows which dependencies were discovered rather than planned.
 
+## An amendment writes signatures against a tree that already exists
+
+The checklist below says a Published signatures block is checked against the tree **at the moment
+it is written**. An **amendment** writes new signatures against a tree that is already built, and
+nothing re-runs that check — which is exactly how `Availability.reason` and two `/api/names/**`
+routes were published into T070 at `impl-done` and then read as satisfied by everyone downstream.
+T070's adversary found all three absent and named the mechanism: a stale-scope instance rather than
+anyone's slip.
+
+**So: an amendment to a Published signatures block for a task at `impl-done` or later either
+re-runs the signature-versus-tree check, or sets the State back to `claimed`.** Its wording, and it
+is the same move this file makes everywhere else — replace "someone will notice" with something the
+evidence carries.
+
+**And the latency is not the cause, which the dates settle.** T080's five defects were ruled seven
+minutes after the claim and T090's seven within eleven — both **during** implementation. T070's
+seven were ruled **thirty-three minutes after `impl-done`**, because its implementer **batched all
+seven to handback** rather than stopping at the first, which is a deviation from *stop and report an
+ambiguous contract*. Batching converts every ruling into contract that arrives after the code **and
+after the blind suite**, so three of T070's landed with no coverage by construction and are held by
+colocated tests alone.
+
 ## Contract checklist — every task section is written against this before dispatch
 
 Derived from what the first six tasks cost. Wave 2's contracts had none of it and its tasks took
@@ -399,6 +421,13 @@ Three cheap guards, all now in force:
   other line for the same accidental reason. **A tie between two places holding one fact has no
   local tiebreak.** Run at introduction it found **three** disagreements, not the two known: T060's
   row still read `adversarial-pass` and T020's `impl-done`, both merged hours earlier.
+- **`impl-done` and `tests-written` are parallel, not sequential, and one `State` field cannot hold
+  both.** The implementer and the blind author work simultaneously and finish in either order, so a
+  merge bringing the second one forward looks like a regression and is not: it is the field being
+  narrower than the fact. **The field records the later arrival**, which is also the one that means
+  *ready for an adversary*. The orchestrator read T070's `impl-done → tests-written` as a merge
+  walking the state backwards; T070's adversary corrected it, having resolved that merge itself and
+  set row and section together.
 - Before recording a task's `State`, write the **row and the section together**. `9eac04a` fixed
   three rows that lagged their sections and created two rows that **led** them — the same drift in
   the opposite direction, in the commit that fixed it. Caught by T080's blind author during a
@@ -408,6 +437,11 @@ Three cheap guards, all now in force:
   **two guards parse that file** — `tests/wave-dependencies.test.ts` and
   `first-pass-calibration.test.ts`. Prose in `backend.md` is not inert, so re-gate after the rebase
   rather than carrying a triple over it. Raised by T080's implementer about its own handover.
+- **Read the exit code of the command you mean, not of the pipeline you typed.** T080's adversary
+  reported "build exit 0" from a compound command whose last element was `tail`, while the log said
+  `Failed to type check.` twenty-five lines up. It corrected itself and named the rule it had broken
+  while quoting it. In `zsh`, `$?` after `a | tail` is `tail`'s; use `${pipestatus[1]}`, `set -o
+  pipefail`, or run the command alone.
 - Before reading a `typecheck` red in a **fresh worktree**, run `npm run build` once. `next` generates
   the `PageProps` globals into `.next/types`, so a tree that has never been built reports 18
   `Cannot find name 'PageProps'` errors in `app/**` that belong to nobody. Measured: red before the
@@ -750,6 +784,49 @@ The implementer also declined to settle the underlying question by shipping the 
 greener, and escalated instead. That is the correct handling of a fix whose merit depends on a
 ruling nobody has made.
 
+## A fix for an unseen defect lands unobserved by construction
+
+The second-order form of the rule below, spotted by T080's adversary from a number it had already
+taken rather than from a new measurement. Against the module **with** D-80-06 present, the blind
+suite ran `7 failed / 239 passed` and **not one of the seven was about the indexing rule** — the
+suite was *green on the defect*. It follows without further work that once the fix lands, reverting
+it reds **0**: the fix is correct, freshly ruled, and observed by nothing.
+
+That is not a coincidence, it is entailment. **A suite that could not see a defect cannot see its
+fix**, so every charged defect carries a second obligation: the blind suite gains a witness for it,
+or the repair is unobservable the moment it is made. The acceptance number for such a round is
+therefore the reverse mutation — **deleting the fix must red at least one blind test** — and a 0
+there is the *expected* result unless the witness was written first.
+
+**Outcome: the witness landed and the number is 8, not 0.** Deleting the pin-set narrowing now reds
+eight blind tests, reproduced on **both** route layouts. The spread is the interesting part — the
+`id@version` exhibit, the two-directional property, `latestCards()`, the unpinned-only phase in
+`phases()` **and** `cardsByPhase()`, `cards()` ordering, and the lifecycle-order test, because an
+extra row changes a **sequence** as well as a set. The blind author's own note on how it got there:
+what made the gap visible was not writing more tests of the same shape but **being handed the two
+clauses and asked what fixture each requires**, and it kept that reasoning in the file rather than
+only the assertions.
+
+**The invariant it derived is better than the fixture it was asked for**: *no indexed card has
+`usedIn === []`* — quantified over the index rather than over a planted row, so it catches the class
+rather than the instance. Its own words: the assertion it would keep if it could keep only one.
+
+**And the layout-agnosticism claim was proven against two layouts, not one.** Its first reference
+had nine route files with the catch-all serving both sub-resources; it built the eleven-file shape
+too, same commit, same suite, no edits between runs — **254/254 on both**. Layout-agnosticism is the
+entire claim of binding by URL, and demonstrating it against a single layout demonstrates nothing.
+
+**A third guard-that-cannot-fail, found only because the binding that broke the build was being
+replaced.** The precedence test — *"`/api/cards/duplicates` is not shadowed by `[...ref]`"* —
+**imported the duplicates module directly**, so no shadowing was reachable by it in either
+direction. Deleting that route file now reds 2; before, it reddened nothing. A guard about routing
+that never went near the router.
+
+**And the witness is derived from the clause, never from the report.** The adversary withdrew its
+probe with the rest of its residue and asked that the blind author be pointed at the specification
+instead — a fix that satisfies a probe it was shown proves nothing, and neither does a test written
+to match one. Its own framing: it is the wrong party to be shaping that suite.
+
 ## A ruling can be implemented correctly and still be unobserved
 
 T030's implementer shipped the existence-first AC6 enforcement, then ran the total method against
@@ -849,6 +926,23 @@ red hook**: `downloads.test.ts` derived its subject in `beforeAll`, which needs 
 imported module, so with the module absent the hook threw and vitest skipped everything under it.
 Lazy-loading inside each test prints `82 failed`, nothing skipped.
 
+**Three distinct ways this suite prints green while measuring less than it claims, and no single
+number catches all three.** T080's implementer found the third and measured it: four files guard
+themselves with `describe.skipIf` — `lib/db/{migrate,schema,storage}.test.ts` and
+`lib/server/archive/archive.scratch.test.ts` — so an **unsourced shell converts real assertions into
+silence**. Running the three `lib/db` ones with `DATABASE_URL` unset:
+
+    exit=0
+    Test Files  1 passed | 2 skipped (3)
+    Tests       8 passed | 11 skipped (19)
+
+**Exit 0 on a run that measured almost nothing.** The other two are a hook failure (`Tests 3954
+passed` beside two failed files and exit 1) and a pipeline whose exit code belongs to `tail` rather
+than to the command. Exit code catches the second, failed-file count catches the first, and **only
+the skipped count catches the third** — which is why all three are read together. It also built the
+detector and then **confirmed it fires** rather than assuming it would, which is the executed
+instance behind "a set that can only be empty is not a measurement".
+
 The trap was already recorded — a hook failure runs no test and adds nothing to the failed column —
 and **the file that broke it was written after the rule, in a suite whose other five files already
 load lazily and say why in their own comments.** So the rule being written down did not stop the
@@ -934,6 +1028,33 @@ an individual suite moves the symptom, because the cause is one Postgres on 5432
 worktree, with no stated owner, driven by ~100 agent processes on ten cores. Same class as the
 repo-global `git stash` and the shared worktree.
 
+**A third time, at T090, and this one has a structural cause rather than a lapse.** The
+orchestrator told the adversary to hold the tree at `0b85bcf` **and called the implementer back in
+the same message**, so the handover went one direction: nothing told the implementer the adversary
+had not finished. It began the fix inside a tree still being measured, and the adversary found four
+files under `git diff --stat` with its own `backend.md` write timestamped **between two of theirs**.
+
+**So a handover names the commit AND who holds it, in both directions.** Telling the receiving side
+it may start is half a handover; the releasing side has to be told it has released, and until both
+messages exist the tree has two owners who each believe they are alone. Every instance of this
+failure so far has been the orchestrator sending one of the two.
+
+**The adversary's handling is the model for what to do when it happens**: it committed
+**path-limited** to `backend.md` with the staged file list verified by name, so the implementer's
+in-progress work and its untracked test file stayed out of the commit; it did not touch, revert or
+move another agent's files; and it reported the one run that **straddled** the edits even though
+that run imports nothing from the module and stands — *"the totals never moved so nothing looked
+wrong" is how the last one stayed invisible.*
+
+**And it happened again, worse, at T080 — dispatched on an INTERIM report.** T080's adversary sent
+a mid-round interim and the orchestrator called the implementer back on the strength of it, so
+round 2 began inside a tree the adversary was still measuring. Its route battery measured the
+**pre-fix** tree and its leak sweep the **post-fix** tree, and it caught that only because one
+endpoint answered differently on two calls. **The rule already said a round ends at the verdict;
+an interim report is not even a slot release.** The stamp is what caught it, which is the argument
+for the stamp — and the adversary labelled every result by which tree it was measured on rather
+than discarding the round.
+
 **A released gate slot is not a finished round, and the orchestrator conflated them.** T020's
 adversary released the slot after its triple and kept probing — which is correct, since the slot
 governs *machine contention* and the round governs *tree ownership*. The orchestrator read the
@@ -947,7 +1068,14 @@ independent and are now stated as such wherever either appears.
 orchestrator rather than run concurrently.** In practice that is a **gate slot**: probe work,
 targeted `npx vitest run tests/server/<task>` and scratch databases run freely and do not collide;
 the **three consecutive full-suite runs that decide a verdict** are taken one session at a time,
-released by the orchestrator. Worth stating because the orchestrator wrote this rule and then
+released by the orchestrator. **Tightened at T090's report: "targeted runs are free" was free of
+*wall-clock contention for the slot*, not free of *database contention*.** Two consecutive
+`pg_database` reads minutes apart returned seven then four `darkprint_test_*` databases, different
+names, all with live connections and none belonging to the reporting session — at least two other
+sessions driving the host **during someone else's slot**. So a triple taken then still cannot
+distinguish a nondeterministic implementation from a contended host, which is the exact ambiguity
+the slot exists to remove. **While a slot is held, DB-touching targeted runs pause too**; in-process
+probes and reading remain free. Worth stating because the orchestrator wrote this rule and then
 dispatched three adversaries in parallel an hour later, each ending in exactly that gate — a rule
 recorded is not a rule applied. The cost of skipping it is not lost time, it is an unfalsifiable
 verdict: T020's test author measured one run in five returning two extra failing files outside its
@@ -1019,6 +1147,16 @@ thought of**, and the handover protocol rests on porcelain being meaningful, so 
 directory is not a tidiness issue — it removes the signal the next agent's stamp depends on.
 Handled correctly on the other side: T030's implementer did **not** delete another agent's files and
 reported "clean but for that directory" rather than claiming clean.
+
+**T-01 has now fired eight times across four authors, always on the same fixture, and the fix is
+that nobody should have to type the byte.** It has caught an implementer, a blind test author
+writing a Log entry, an adversary writing an attack list, and the **orchestrator writing the shared
+fixture file intended to stop it** — that last one blocked by the tool layer rather than by any
+guard here, and the only occurrence so far **prevented rather than detected**. So the hazard's own
+wording, "any author writing a fixture", was too narrow: it is anyone who types the byte, and they
+type it because there was nowhere to import it from. **`tests/support/control-bytes.ts` now exports
+`NUL`, `LONE_HIGH_SURROGATE`, `LONE_LOW_SURROGATE`, `nulInside` and `surrogateInside`. Import them;
+do not retype them.**
 
 **T-01 recurred a fifth and sixth time, and the guard structurally could not see either.**
 `tests/no-raw-control-bytes.test.ts` enumerated `git ls-files`, which lists **tracked files only** —
@@ -1279,7 +1417,7 @@ it does not decide differently inside a worktree.
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
-| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | impl-done | — |
+| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | reverted | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
@@ -3062,7 +3200,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T070, Namespace: handles, slugs, reservation
 
-- **State:** impl-done
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t070-naming` on `feat/t070-naming`
 - **Test worktree:** `../darkprint-wt-t070-naming-tests` on `test/t070-naming`
 - **Depends on:** T000 (contract: schema)
@@ -3115,16 +3253,15 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **Admissible message forms**, published before the implementation exists:
 
         HandleTakenError      "allocateHandle: the handle `<handle>` is not available."
-        SlugTakenError        "checkSlug: `<owner>` already has a bundle at `<slug>`."
-        ReservedSlugError     "checkSlug: `<slug>` is reserved by the profile tabs."
+        NamingStoreError      "<operation>: the database call failed."
         InvalidNameError      "<operation>: `<value>` is not a valid <kind>."
 
-  Nothing else may appear in any rendering: the operation, the caller's own value, and the four fixed forms above. `cause` carries the driver error and is non-enumerable; `stack` is retained. The four reserved slugs are `blueprints`, `cards`, `saved`, `terms` (`components/profile/tabs.ts`) — read them from that module rather than restating the list, so the profile tabs and this guard cannot drift.
+  Nothing else may appear in any rendering: the operation, the caller's own value, and the fixed forms above. **`SlugTakenError` and `ReservedSlugError` were struck by D-70-01** — `checkSlug` is a query and returns `{ available: false, reason }`; they are gone from this block rather than left standing beside the ruling that removed them. `cause` carries the driver error and is non-enumerable; `stack` is retained. The four reserved slugs are `blueprints`, `cards`, `saved`, `terms` (`components/profile/tabs.ts`) — read them from that module rather than restating the list, so the profile tabs and this guard cannot drift.
 
   **Inherited hazards.** T-01 applies to any fixture carrying a control character. T-02, T-03 and T-04 do **not**: this task stores no caller-built object, has no `jsonb` column, and its errors carry no driver prose. Stated rather than left silent.
 
 - **Goal:** allocate and check every user-chosen identifier — handles, bundle slugs, card ids, term namespaces — and keep reservations permanent.
-- **Contract:** a handle is chosen at sign-up, independent of the GitHub login (B-05); it is unique across the registry, permanently reserved once used, and a rename keeps the old one reserved because every published card carries the handle inside its own bytes (`app/settings/page.tsx:258-265`). A slug is unique **per owner** (B-09). Four slugs stay permanently reserved as bundle names because the profile tabs occupy them: `blueprints`, `cards`, `saved`, `terms` (`components/profile/tabs.ts`). Ids must satisfy the engine's grammars (`CARD_ID`, `REF_VERSION`, `lib/core/card/schema.ts:167,174`) so a stored id is one a DOT node can pin. Availability answers `{ available, suggestion? }`.
+- **Contract:** a handle is chosen at sign-up, independent of the GitHub login (B-05); it is unique across the registry, permanently reserved once used, and a rename keeps the old one reserved because every published card carries the handle inside its own bytes (`app/settings/page.tsx:258-265`). A slug is unique **per owner** (B-09). Four slugs stay permanently reserved as bundle names because the profile tabs occupy them: `blueprints`, `cards`, `saved`, `terms` (`components/profile/tabs.ts`). Ids must satisfy the engine's grammars (`CARD_ID`, `REF_VERSION`, `lib/core/card/schema.ts:167,174`) so a stored id is one a DOT node can pin. Availability answers `{ available, reason?, suggestion? }` — the `reason` added by D-70-01 when the two error classes were struck, since a caller that can no longer catch a class needs the discriminator in the value.
 - **Acceptance criteria:** (1) each reserved slug is refused as a bundle name; (2) two owners may both hold `frontline-triage`; (3) one owner may not hold it twice; (4) a released handle cannot be claimed by a second account, ever; (5) two concurrent allocations of one name yield exactly one success; (6) a suggestion returned for a taken name is itself free at the moment it is returned.
 - **Out of scope:** creating the account (T050) or the bundle (T100) the name is for.
 - **Log:**
@@ -3699,6 +3836,35 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   - **An owner and an operator DO see their own private content, and AC6 means cross-account.** "No private bundle or private card appears in any response" reads absolutely, and the signature block routes every reader through `visibleTo`, which answers `"all"` for both — so the two disagreed and the author asserted only what both readings share. Ruled by consequence: T130's AC2 requires an **owner's card count to include private rows** and a visitor's not to, so an owner blind to their own private content makes the profile owner view unimplementable. AC6 is therefore *no account sees another account's private content*, and the signed-in sweeps may be tightened to assert an owner sees their own.
   - **A `cardRefs` entry whose `card_version` row is missing is omitted, by the same rule that filters unreadable ones.** "Refs of every card it pins" reads both ways; one rule is better than two, and a row that does not exist is not a card the actor may read. No `CardSummary` is invented for it either, which is what the suite already asserts.
 
+  **Round-2 result: the fix landed and the blind suite reds ZERO on it, exactly as predicted.** Reverting the pin-set narrowing reds **10, none green** — and all ten are in the implementer's **scratch harness**. The blind suite's `ORPHAN_CARD` and `SUPERSEDED_CARD` are ids pinned by nothing, so they never enter `wantedIds`; the defect is an unpinned **version of a pinned id**. So the only in-tree observer of a load-bearing fix is a scratch file, which is exactly the shape recorded above. **The witness is still owed**, and the implementer named the general form better than the fixture does: **`usedIn` non-empty for every record in `cards()`**, quantified over the index rather than over a planted row.
+
+  **D-80-08 is observed by the blind suite** — reversing the tiebreak reds exactly 1, `records.test.ts > AC1 current release (D-80-03) > breaks a precedence tie on row id`. Ruled and witnessed, unlike D-80-06.
+
+  **Round-2 rulings, from the adversary's interim report.**
+
+  **D-80-06 (defect, charged): an unpinned version of a pinned id is indexed and served.** `snapshot.ts` selects `card_version` by `cardId` **alone** and keys every returned row into `rowsByRef`; the pin set only ever builds `visibleRefs`/`usedIn` and never restricts the rows. The comment directly below claims `rowsByRef` is the set of pins that resolve to a visible row, and the code does not do that. Measured with a card pinned at `1.0.0` and a `2.0.0` row nothing pins: `cards()` and `versionsOf()` both return the unpinned row, `card("…@2.0.0")` returns a record, and **`latestCards()` returns the unpinned version** — while `cardRefs` correctly returns only `1.0.0`, so **the read model contradicts itself**. It spreads: a phase only the unpinned row declares is reported by `phases()` with a non-empty bucket. The tell is exact — the leaked record carries `usedIn=[]`, which the indexing rule makes impossible. Violates "Only cards a DOT node instantiates are indexed", inflates both AC1 numbers, and is reachable the moment an author publishes `foo@2.0.0` before any blueprint pins it: the browse list flips to a version nothing uses. **Restrict the row set to the pinned refs, not the pinned ids.**
+
+  **Correction, at round 2: D-80-07's premise was wrong and the gate block is cleared by implementation.** `[id]` and `[...ref]` are **separate fields** in Next's route tree — `sorted-routes.js` calls `handleSlug` on `slugName` for a dynamic segment and on `restSlugName` for a catch-all, and E337 fires only when two of the **same kind** disagree. They are legal siblings. So both exist: the `[id]` folder serves a single-segment id and the namespaced id, which no literal `[id]` folder can express, still routes to the catch-all. Measured on the merged tree, **each command run alone with its exit code read directly** rather than through a pipeline: `tsc --noEmit` 0, `npm run build` 0, `eslint` 0.
+
+  My conclusion — that a suite binding to route modules is unfixable from the implementation side — did not follow from my premise. **The ruling that tests reach routes by URL still stands on its own merits**, and it is better for a blind suite to bind to behaviour than to a file layout, but it is **no longer blocking**: the blind author makes that change deliberately rather than under a red gate.
+
+**Superseded reasoning, kept because the mechanism is real: D-80-07 is gate-blocking, not test-local, and that changes who must fix it.** Measured after the
+adversary corrected its own exit-code error: `tsc --noEmit` and `npm run build` **both fail** on
+`tests/server/t080/contract.ts` importing `@/app/api/cards/[id]/versions/route` and `.../users/route`.
+A dynamic `import()` specifier resolves at compile time — this file's own point from the
+dependency-graph section — so a suite that binds to **route modules** cannot be worked around by the
+implementation. **Ruled: the blind suite reaches routes by URL and imports no route module.** That
+is a suite fix, it is required before any gate can go green, and it is the second time in this run
+that a test binding to a module path rather than to behaviour has blocked a build.
+
+**D-80-07 (contract, mine): the published route paths are URLs, not App Router folder names.** I wrote them in folder syntax, and `CARD_ID` admits an `owner/name` namespace, so a literal `[id]` folder **cannot express every valid id** — `/api/cards/berti/solver-a/versions` needs the catch-all and returns 200 through it. **The URLs are the contract; the file layout is the implementation's.** So the implementer's single catch-all is correct and the blind suite's six reds are a **suite defect**: it binds to route module paths rather than to URLs. Tests reach routes by URL.
+
+  **D-80-08 (contract gap, mine): D-80-03 never stated the tie-break direction**, and the two sides read it opposite ways — blind author highest row id, implementer lowest. **Ruled: highest.** It matches "latest", and a suite already binds to it. Stated plainly, because it affects how much the rule can be trusted: `release.id` is `uuid().defaultRandom()`, so **ordering by it is arbitrary rather than chronological** — the tiebreak buys determinism, not recency, and it fires only where two releases differ solely in build metadata. If recency is ever wanted there, it needs `created_at` and a second tiebreak, since T010 measured 32 concurrent inserts collapsing onto 12 distinct timestamps.
+
+  **Two corrections to the orchestrator's brief, both measured by the adversary.** The disjointness result is about the **widening** mutations, not the filter ones — bundle-widening 12 reds, card-widening 20, intersection **0**; removing the filters outright gives 40/44 with intersection 18, a different pair rather than a refutation. And **"the visibility filter is the only place it is applied" is false**: `scores.ts` applies `readable` itself, a second site, and it is observed — removing it reds 4.
+
+  **And the implementer's scorecard zero does not reproduce against the blind suite** — the adversary's pattern reds 1 (`scores.test.ts > one axis present and two null`). The implementer's 0 was against its own scratch fixture, which is exactly why the blind suite exists.
+
   **Every reader takes an `Actor`, for the reason T020's did.** AC6 — "no private bundle or private card appears in any response" — is twelve functions' worth of remembering unless it is one filter at the boundary. Import `visibleTo` from `@/lib/server/policy`. The discriminating test is not "a private row is absent from `blueprints()`" but **the same assertion across all twelve**, because the one that forgets is the one nobody wrote a test for.
 
   **AC4 is the criterion I would otherwise have got wrong, and it is stated as an assertion rather than an absence.** "Bucket sizes do not sum to the card count, **and a test asserts that as intended**" — phase buckets cover without partitioning: a card in two phases is in both, a card in none is in no bucket. So a suite that checks the sums *match* is asserting the opposite of the contract, and one that checks nothing leaves a partitioning implementation passing. The test asserts the inequality **and** exhibits one card in two buckets and one in none.
@@ -3766,7 +3932,33 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **D-90-07: the "Inherited from T000" note is aimed at a guard that is already upstream, and it is wrong twice.** T010's merged `getRelease` already validates through `keyForDigest` and returns `undefined`, so a digest guard here deletes to no red — **an unfalsifiable guard described as a guard, which is exactly what that note charges T010 for.** And **T090 as published never reaches object storage at all**: every input `exportBundle` needs is in Postgres, and no storage verb is in its block. The reachable, falsifiable edge guard at this layer is a **uuid shape check on `bundleId`**, caller input going into a `uuid` column, without which a malformed id raises 22P02 as a raw `DrizzleQueryError` quoting the statement. That is the guard; the inherited note is struck.
 
-  **`TBD:` left open rather than invented — whether export artefacts are also persisted to object storage at publish.** T010's contract says object storage holds the generated distribution artefacts "written at publish by T090", and T090's published surface has no storage verb and does not need one, since it generates from Postgres. Either T100 persists them when it calls `exportRelease`, or object storage holds nothing for this path and B-01's split needs restating. **This is not T090's to settle and it must not invent a verb.**
+  **D-90-A (defect, charged): a database read failure is served to the client as a 404.** `lookup.ts` wraps every driver error from `bundleById`, `bundleByHandle` and both branches of `resolveRelease` in `readFailed(err)`, which returns an **`ExportError`** — and `app/api/files/serve.ts` maps `instanceof ExportError` to `fileNotFound(request)`, **under a comment stating that a Postgres outage is a 500 and must not be dressed up as a missing file.** The comment and the code cannot both hold.
+
+  Measured on a scratch database with one table dropped, so exactly one statement fails and the connection stays live: control 200, then during the outage **route status 404** with a `problem+json` body reading `"Not found."`. The **error hygiene is correct** — `Object.keys` empty, `JSON.stringify` `"{}"`, `cause` non-enumerable, `stack` retained, nothing from the driver in the message. The leak clause is satisfied; the defect is purely the **classification**.
+
+  Three distinct harms, not one: alerting on 5xx sees an outage as traffic to missing files; B-03 reserves 404 for *absent or invisible* so existence does not leak, and this widens it to "or our database is down" with no way for a caller to tell; and **a client holding a pinned digest — the case AC6 exists for — concludes the release was withdrawn and stops retrying**, where a 500 says retry. The one reference the contract promises never moves is the one an outage makes look deleted.
+
+  **The tell that it is a slip rather than a decision is that the module contradicts itself**: a driver failure inside `resolveCardRef` or `openView` is **not** wrapped, escapes raw, and becomes a 500. The same outage answers 404 or 500 depending on which statement fails first.
+
+  **Ruled: `readFailed` returns a sibling class, not an `ExportError`.** So `respondWithFile`'s `throw err` reaches it and the 500 is structural rather than a string match, and the route's `instanceof` check becomes correct by construction. `ExportError` means *a fact about the release* — absent, invisible, refused. A driver failure is a different kind and must not share the type that the route reads as "not found".
+
+  **And it was unobserved for a reason that is my rule arriving in the one path where it changed an HTTP status.** `"exportRelease: reading this release failed."` is an **eighth** message form: D-90-02 published five, the block published two, the blind author pinned exactly those seven as literals and asserted the struck eighth absent. It could not know about this one, because this one was **invented in the implementation after the forms were ruled** — *a message form written after the implementation is the contract following the code*.
+
+  **`TBD:` CLOSED, and the answer was forced by a measurement rather than chosen. Export artefacts ARE persisted to object storage at publish.** T090's adversary measured AC6's digest promise decaying under a **B-08 re-score** rather than under a newer release:
+
+        digest unchanged            sha256:69bcfb1e…
+        README bytes before/after   4735 / 4770
+        README identical            false
+
+  `release.autonomy`/`security` are columns on the row the digest names, B-08 re-scores them on an ontology release, and `bundle-export.ts` quotes both into `README.md`. So **one digest serves different bytes over time**, at the address `/mcp` calls load-bearing *precisely because it does not move*. The adversary's reading is right and it settles the open question: persisting the artefacts is **not tidiness, it is the only mechanism by which "the bytes of that release" stay the bytes of that release.** T100 writes them at publish; T090 serves what was written. B-01's split then reads coherently — Postgres holds the canonical record and the current projection, object storage holds the frozen artefact.
+
+  **Charged against the criterion, not the implementer**, which built exactly what B-08 makes authoritative.
+
+  **Second defect, needing an owner: the README names the wrong ontology version.** It prints `Both were read against ontology v${manifest.ontologyVersion}` — the **declared** version, which a re-score does not move — beside scores computed under the newer one. `release.scored_ontology_version_id` exists to record exactly that disagreement **and nothing reads it.** `lib/content/bundle-export.ts` is Forbidden to T090, so this is reported rather than fixed and it outlives the freeze: a frozen artefact still carries a sentence that was false when it was written if the scores were re-computed before publish.
+
+  **`TBD:` OPEN and for the owner — a blueprint's download count is not comparable to another's.** "Each served file emits one download event" is implemented exactly as published, and one run of `bundleDownloadCommand`'s own curl glob leaves `download_count` at **12** for a twelve-file bundle. Folder sizes run 9-13 across the nine, so T150's blueprint "downloads" is a **file-fetch count inflated by folder size**. Coherent, correctly implemented, and a number a registry would print beside another that means something different. Never an amendment, which is why the surfacing rule never caught it.
+
+ T010's contract says object storage holds the generated distribution artefacts "written at publish by T090", and T090's published surface has no storage verb and does not need one, since it generates from Postgres. Either T100 persists them when it calls `exportRelease`, or object storage holds nothing for this path and B-01's split needs restating. **This is not T090's to settle and it must not invent a verb.**
 
   **AC7 — "a path outside the release is refused, not traversed" — is the security criterion and it is satisfied by construction or not at all.** `path` is **matched against the release's own file list** from `bundleFilePaths`, never joined onto a directory. There is no normalisation step to get right, because no filesystem path is built from caller input: an unknown `path` is simply not in the set. A test asserting `../../etc/passwd` is refused passes against a naive `path.join` guard too; the discriminating test asserts the **membership check** by exhibiting a path that normalises to a legal file and is still refused because it is not the string the export produced.
 
