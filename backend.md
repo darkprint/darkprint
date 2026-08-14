@@ -315,7 +315,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | adversarial-pass | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | impl-done | round 5 fix: worst-case pairing over the full leftover cross product (`worstPairing`) replaces positional pairing, restoring monotonicity; an unpaired-floor check fixes a second monotonicity gap for pairs `repinMagnitude` cannot read. Falsified via 3 seeded property tests (200 trials each). typecheck/lint/build clean; `tests/server/t025`+scratch 217/217; full suite 4151/4151 on three consecutive runs, stamped before/after |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | reverted | adversary round 5 FAIL: `worstPairing` is exact for the pair term and the carve-out is a genuine boundary condition, but the **unpaired** term is still positional — a forced deletion is charged to whichever leftover sorts last, not to the worst candidate, so the level under-prices; brute-force oracle over all residue-free pairings finds 22/1200, all under, none over |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | adversarial-pass | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -1043,7 +1043,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T025, Versioning service: semver, digest, bump, chains
 
-- **State:** impl-done
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t025-versioning` on `feat/t025-versioning`
 - **Test worktree:** `../darkprint-wt-t025-versioning-tests` on `test/t025-versioning`
 - **Depends on:** T000 (contract: types)
@@ -1655,6 +1655,75 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     `git status --porcelain` empty (matches the orchestrator's external check that
     dispatched this round). After-stamp taken on the committed tree per `6045613`, in
     the commit this Log entry ships with; reported to the orchestrator alongside it.
+  - 2026-08-14 adversary round 5: **FAIL.** Handover verified from inside the tree, not taken:
+    `a146c50a8f0a…`, porcelain empty. Merged `backend` (through `2307c00`, the round-5 ruling);
+    everything below measured at **`239b6a77…`**. Whole-tree stamp `239b6a77…` + clean
+    **before** the three runs and `239b6a77…` + clean **after**. Gates: typecheck 0, lint 0,
+    build 0. Three consecutive full-suite runs, read per the new rule as exit code and
+    failed-file count rather than the test total: **exit 1, 7 failed files, 109 failed tests on
+    each**, and the failing file and test **sets are identical across all three** once sorted.
+    The 7 are `migrations`, `object-store`, `session`, `environment` and T010's
+    `bundle`/`release`/`integrity` — all DB/S3/env-dependent, failing on unset
+    `DATABASE_URL`/`SESSION_SECRET`/`S3_ENDPOINT`, since this worktree has no `.env`; recorded
+    **unverified, not contradicting**. The jump from 48 is T010's suite arriving with the merge,
+    not a regression. No T025 red in any run. `npx vitest run tests/server/t025
+    lib/server/versioning`: **217/217**. AC-1 (4), AC-2 (3), AC-3 (3), AC-4 (4), AC-5 (9), AC-6
+    (5) — all PASS.
+    **Assigned target 1 — the carve-out is a boundary condition, not a named exemption. PASS.**
+    `compareVersions` branches only on leftover counts; there is no literal-value or `rc` case
+    anywhere. Tested by running the ruling's *shape* on unrelated values, where the exemption
+    must not fire: `[2.0.0,1.0.0] → [0.5.0]` ⇒ major and `→ [0.5.0,0.5.0]` ⇒ **still major**;
+    `[1.0.0+a,3.0.0] → [7.0.0]` ⇒ major and `→ [7.0.0,7.0.0]` ⇒ **still major**. Only the
+    ruling's own example drops major → minor, and it drops because its cross-product maximum is
+    minor, which is the boundary doing the work rather than the name.
+    **Assigned target 2 — no leak of the kind described. PASS.** The level is
+    `max(worstPair, unpaired)`; adding to `after` only *adds* pairs, so the pair term is
+    monotone non-decreasing, and the level can never fall below what the pairs alone justify.
+    The round-4 defect is fully fixed and the whole proximity set is now major
+    (`{1.0.1,9.0.0}`, `{1.1.0,9.0.0}`, `{2.0.0,3.0.0}`, `{9.0.0,9.0.1}` — all major).
+    `unpairedFloor` holds: `[latest] → [1.0.1]` is now **major**, not patch.
+    Order-independence still 0 failures over 400 randomised permutation pairs.
+    **NEW DEFECT, charged. `worstPairing` is exact for the pair term; the unpaired term is
+    still positional, so a forced deletion is charged to the wrong candidate.** The exactness
+    argument — the single worst pair is achievable by some valid pairing, so the maximum is
+    exact — is **sound, and it covers only half the level.** The level is
+    `max(pair term, unpaired term)`, and each maximum has to be taken over the admissible
+    choices independently. When the counts force `|beforeLeftover| − |afterLeftover|` deletions,
+    *any* leftover item can be the deleted one, so the most expensive residue-free explanation
+    charges the worst candidate — but `compareVersions` still takes the sorted-tail slice
+    `[n..]`, i.e. whichever items happen to sort last.
+    Observed, `dot` constant, one id: `[1.0.0, 1.0.1, 1.0.1] → [1.0.1, 1.0.2]` ⇒ **`patch`**,
+    though `1.0.0` is pinned nowhere in `after`. The most expensive residue-free explanation
+    pairs `1.0.1 → 1.0.2` (patch) and deletes `1.0.0` (**major**). Controls confirm the engine
+    knows that deletion is major when it reaches the tail: `[1.0.0, 1.0.1] → [1.0.1]` ⇒ major,
+    and `[1.0.0, 1.0.1, 1.0.1] → [1.0.1, 1.0.1]` ⇒ major. Symmetric on the gained side:
+    `[1.0.1, 1.0.2] → [1.0.0, 1.0.1, 1.0.1]` ⇒ **`patch`** where `1.0.0` is pinned nowhere in
+    `before`, against a control of `[1.0.1] → [1.0.0, 1.0.1]` ⇒ minor.
+    **General, not hand-picked.** A brute-force oracle enumerating *every* residue-free pairing
+    of the two leftover lists — every choice of which items pair, to which, and which are left
+    unpaired — and taking the maximum, compared against the implementation on random inputs:
+    narrow pool `{1.0.0,1.0.1,1.0.2,1.0.3}`, 600 cases ⇒ **21 under-priced, 0 over-priced**;
+    wider pool `{1.0.0,1.0.1,1.1.0,1.1.1,2.0.0}`, 600 cases ⇒ 1 under-priced. Worked by hand
+    from the oracle's output: `["1.0.1","1.0.2","1.0.2"] → ["1.0.3","1.0.2"]` leaves leftover
+    `[1.0.1, 1.0.2]` against `[1.0.3]`; pairing `1.0.2 ↔ 1.0.3` (patch) strands `1.0.1`, which
+    appears nowhere in `after` ⇒ major, while the implementation pairs its worst pair (patch)
+    and then tails `1.0.2`, which *is* in the after set ⇒ patch. Every divergence is
+    under-pricing and none is over-pricing, which is the signature of a positional choice
+    standing in for a maximum.
+    This is round 4's defect class surviving in the half the fix did not reach: the level
+    decided by sorted position rather than by the worst valid explanation. The pair walk was
+    replaced; the tails were not.
+    **Method note, because it nearly cost me a false finding.** My first run-identity check
+    hashed the failing-file lines and returned three different digests — which looks exactly
+    like the cross-session contention the serialisation rule exists to catch. Those lines carry
+    per-test durations, and vitest also lists files in completion order, so the hash was
+    answering "did the timings and ordering match", not "did the failures match". Stripping
+    durations and sorting shows all three runs identical. Worth folding into the stamp rule:
+    compare failing **sets**, never raw run output.
+    **Residue: none.** Four probes this round, all in-process calls to the published functions;
+    no database, no objects, no `.env`, every probe file deleted, and the after-stamp is the
+    proof. Sole writer throughout; the three full-suite runs were taken in the serialised gate
+    slot and released to T020 and T030 as soon as they finished.
 
 ### T060, Authorization policy: owner and operator
 
