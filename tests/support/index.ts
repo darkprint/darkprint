@@ -7,3 +7,4 @@ export { testEnv } from "./env";
 export type { TestDb } from "./db";
 export { createTestDb, resetTestDb } from "./db";
 export { createTestObjectStorage } from "./storage";
+export * from "./control-bytes";
