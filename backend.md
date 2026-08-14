@@ -296,6 +296,20 @@ for the same tree and the same fix. That is not a second opinion, it is one of t
 wrong. So normalisation is shared and the deletion pattern is not — and where two instruments do
 disagree, the first question is whether both normalised, before anyone reads the gap as a finding.
 
+**Fortunate is not robust.** The blind author's script turns out to be duration-free *by
+construction*: it anchors on vitest's `FAIL` summary lines, which carry the full
+`file > describe > test` path and **no** duration, where the inline `×` lines carry durations and
+no path. But it chose those lines for legibility and got the stability for free — its words:
+"luck, not design". A future reporter putting a duration or a retry count on that line would make
+it silently report every row as new, reading 9 where the answer is 2, with nothing in the script
+to catch it. An explicit `re.sub(r"\s+\d+ms$", "", ...)` before the set comparison costs nothing
+and converts a property held by accident into one held on purpose. **A guarantee you did not know
+you had is one you cannot rely on keeping.**
+
+**And check that nothing went green.** The implementer did this and the blind author did not: a
+deletion that reds two tests while quietly *greening* a third is a worse state than either number
+suggests, and neither the count nor the newly-red list shows it. The diff runs both directions.
+
 **Test the suite before trusting its output, not after.** T030's adversary patched
 `expectSealedError` in a **scratch copy** to the amended clause and re-ran *before* reading the
 suite's 32 reds — 32 fell to 17, so fifteen were the superseded wording and none was a defect.
@@ -1615,7 +1629,11 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
   **Merge ordering, which "waits on T025" understated: T025 must merge BEFORE T030 can pass its gates.** I described the dependency as contract-only, and it is not — it is a **compile-time** dependency. The blind suite reaches AC6 through `import("@/lib/server/versioning")`, and its author handled the absence carefully at *runtime*, with a rejection handler quoting the contract and explaining that a red there is the missing dependency rather than a T030 defect. But **a dynamic import's specifier is still resolved at compile time**, so `tsc` fails at `tests/server/t030/contract.ts:78` with TS2307 before that handler can run: `npm run typecheck` exits 2 and `npm run build` exits 1. Verified directly rather than taken on report.
 
-  Neither side can fix it: `tests/server/**` is Forbidden to the implementer, `lib/server/versioning/**` is Forbidden to it too, and stubbing a barrel to green the gate would be the second bump implementation the partition exists to prevent. So T030 hands over and is reviewed with those two gates red **on that one documented cause**, and merges only after T025. The same will hit T020 if its blind suite reaches for T025 the same way. Stated here because an ordering constraint discovered at gate time reads as a defect.
+  Neither side can fix it: `tests/server/**` is Forbidden to the implementer, `lib/server/versioning/**` is Forbidden to it too, and stubbing a barrel to green the gate would be the second bump implementation the partition exists to prevent. So T030 hands over and is reviewed with those two gates red **on that one documented cause**, and merges only after T025.
+
+  **The error count is 2 → 1 → 0, so a run showing one error is progress and not a regression.** Until T030's own implementation merges, `tsc` fails on **two** lines of `contract.ts`, 55 and 78; once T030 lands only 78 remains; once T025 lands, none. Stated because "expect exactly one error" would otherwise read as a failed expectation at the one point in the sequence where it is the correct one.
+
+  The blind author could have dodged this with a non-literal specifier and deliberately did not: T000's precedent requires the literal so the `@` alias resolves at runtime, and trading a real runtime binding for a quiet compile is the wrong side of that trade. Merge ordering is the right resolution, not a workaround for a missing one. The same will hit T020 if its blind suite reaches for T025 the same way. Stated here because an ordering constraint discovered at gate time reads as a defect.
 
   **AC6 is the one criterion that waits on T025.** `inferOntologyBump(previous: readonly OntologyTerm[], next: readonly OntologyTerm[]): BumpAnalysis` and `checkDeclaredBump("ontology", …)` are T025's published surface and do **not** exist in `lib/core` — unlike the card path, which is entirely self-contained. `ontology/version-bump-too-small` is already a `lib/core/diagnostics.ts` code, but nothing computes it for ontologies yet. Build everything else, and if `lib/server/versioning/**` has not merged by the time the gates run, leave AC6's call site as a single named function that reports the absent dependency, say so in the Log, and let the criterion stand red. Do **not** reimplement bump inference inside `lib/server/ontology/**` to make it green — two implementations of one rule is the defect the partition exists to prevent.
 
