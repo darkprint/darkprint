@@ -962,7 +962,7 @@ it does not decide differently inside a worktree.
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | impl-done | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
-| T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | tests-written | 151 blind tests on `test/t030-ontology`, all red on a missing module (144 on `@/lib/server/ontology`, 7 on T025's `@/lib/server/versioning` as AC6 provides for), exit 1 and 6 failed files; 23 falsifications confirm they discriminate; bound to the contract as amended at `2307c00` |
+| T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | tests-written | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | — | — | todo | — |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | — | — | todo | — |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | — | — | todo | — |
@@ -3102,6 +3102,43 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     experiment reds zero — which is the adversary's measurement and the reason round 2 extends
     the check to `version`. The annotation stays after that fix: it will still be true of the
     five `jsonb` tests. Every falsification in this suite has been run this way from the start —
+  - 2026-08-14 test author, **the five-part landing**, all measured against a reference rather
+    than argued. Correct reference: **0 red of 155**. Each mutation below is a change to the
+    *module*, run through the whole suite with sorted-set diffs.
+    (a) **The whitelist deny side now derives from the driver's values, not its English.** It read
+    every word of the driver's rendering, which made a module's fixed message depend on
+    PostgreSQL's wording — `"is already published"` flagged because `detail` says `"already
+    exists"`. Five `already` reds and two `term`. It now reads only `code`, `constraint`, `table`,
+    `column`, `schema`, `routine`, `file`, `query` and the bound `params`; `severity` is excluded
+    because its value is the word "ERROR". **The two words clear because the predicate stopped
+    over-matching, not because the block stopped running** — proved separately: leaking
+    `cause.query` still reds 8.
+    (b) **The allow side splits schema names into components.** `WORD` keeps underscores, so
+    `getTableConfig` gave `ontology_term` and never bare `term`, making a component of a schema
+    name inadmissible while the name itself was admissible.
+    (c) **The admissibility pass is unconditional.** It sat inside `if (cause !== …)`, so every
+    refusal raised before the database — most of the validation surface — went unexamined, and
+    silently, since a sealed error defines `cause` even when nothing was passed. The pass now
+    always runs and only its *source* varies. Mutation: a causeless refusal echoing the caller's
+    content reds 1.
+    (d) **M1/M2/M6.** M6 (sorted order asserted on the read path and not on `addOntologyVersion`'s
+    own return) reds 1. M2's two genuine members red 1 and 2. The four M1 members are **annotated
+    rather than strengthened**, per the T-03 ruling: the storage layer does the refusing, so the
+    tests keep their outcome and say what they cannot distinguish.
+    (e) **AC6 through the store, three tests.** The existing six bind `inferOntologyBump` and
+    `checkDeclaredBump` directly and never reach `addOntologyVersion` — the composition was
+    untested while its components were. Deleting the store's enforcement reds 1; the control
+    (the same removal declared as a major, accepted) is what makes it measure the bump rule
+    rather than "removals are refused".
+  - 2026-08-14 test author, **the ordering guard could not fail, and measuring is what showed it.**
+    `expectCausePresent` used `hasOwnProperty("cause")`, which is true on *every* sealed error
+    because the constructor defines the property whether or not anything was passed. A variant
+    making a republish refusal causeless reddened **nothing**. It now requires the property's
+    *value* to be defined; the same variant reds 2. Two earlier attempts at that mutation also
+    reddened nothing and were **bad probes rather than a bad guard** — the module's outer catch
+    re-wrapped them and supplied a cause. Recorded because the three outcomes are
+    indistinguishable from the count alone: a guard that cannot fail, and a probe that cannot
+    reach it, both read as zero.
     a patched module, the whole suite through vitest, never a direct call to the thing broken.
   - 2026-08-14 implementer, **AC6 wired, and the compile-time count reached 0.** Rebased onto `backend` at `17d221e`. `npm run typecheck` exits **0 with zero diagnostics** and `npm run build` exits **0** — the `@/lib/server/versioning` TS2307 is gone with T025's merge, which is the 0 of "2 → 1 → 0". `checkOntologyBump` now calls `inferOntologyBump` and `checkDeclaredBump("ontology", previousVersion, declaredVersion, inferred)` and returns the `Diagnostic[]`; it was built to take the arguments the real call needs, so this was a body change with the parameters untouched. `VersioningUnavailableError` is **removed** from `errors.ts` and the barrel: it existed to assert a dependency was absent, and the assertion is now false, so keeping it would be a claim the code no longer supports. Neither it nor `checkOntologyBump` is in the blind suite's tested surface — AC6's tests bind T025's two functions directly and use this store only to publish the baseline they compare against.
   - 2026-08-14 implementer, **the triple is met and every remaining red is the whitelist, but it is TWO words, not one.** Three identical runs at `88a435b`: exit 1 each, 149 files with 2 failed, **4444 tests with 4437 passed and 7 failed**. All seven come from `expectSealedError` in `tests/server/t030/contract.ts:353`, and they split into two flagged words. Six flag **"already"**, which the orchestrator has already ruled the suite's to fix and instructed me not to dodge. **One flags "term"** — *writes no version at all when one of its terms cannot be written* — and that word has not been named. It is the same class and I measured it rather than assuming: the allow set is built by tokenising the schema's own names with `WORD = /[a-z_][a-z0-9_]{3,}/g`, which keeps underscores, so `getTableConfig` yields `ontology_term`, `term_id` and `ontology_term_version_term_key` and **never the bare token `term`**. My message — `Ontology version \`X\` declares the same term id twice.` — is a fixed template with only the caller's own version interpolated, and "term" in it is the domain noun from the published signature (`OntologyTerm`, the `terms` parameter, the `ontology_term` table). So a word that is a *component* of a schema name is inadmissible while the schema name itself is admissible: the same granularity mismatch as "already", one level down. Not reworded, per the standing instruction.

@@ -272,7 +272,16 @@ export function of(ds: readonly Diagnostic[], code: string): Diagnostic[] {
  * `forbidden` list is what the caller planted: a sentinel it put in a field that is not an
  * identifier, so a message legitimately naming the caller's own version or term id still passes.
  */
-export function expectSealedError(err: unknown, supplied: readonly string[], where: string): Error {
+export function expectSealedError(
+  err: unknown,
+  supplied: readonly string[],
+  where: string,
+): Error {
+  // The clause admits identifiers the caller supplied and refuses its content. A `SENTINEL-`
+  // string is content by convention in this suite; everything else the test hands over is an
+  // identifier it legitimately expects to be named back.
+  const content = supplied.filter((x) => x.startsWith("SENTINEL-"));
+  const identifiers = supplied.filter((x) => !x.startsWith("SENTINEL-"));
   if (!(err instanceof Error)) {
     throw new Error(`${where} rejected with ${describe_(err)}; the contract requires a typed Error.`);
   }
@@ -336,39 +345,49 @@ export function expectSealedError(err: unknown, supplied: readonly string[], whe
     "own-property enumeration": keys.join(" "),
   };
 
+  // **The pass is unconditional; only its SOURCE varies.**
+  //
+  // This used to sit inside `if (cause !== undefined && cause !== null)`, which meant the whole
+  // admissibility check existed only for errors that had reached the database. Every refusal
+  // raised *before* the driver — which is most of the validation surface — went unexamined, and
+  // silently, because a sealed error defines `cause` as a non-enumerable own property even when
+  // nothing was passed. That is the M1 species in the helper rather than in a test: a check that
+  // cannot examine the subject that does not supply the shape it keys on.
+  //
+  // So the deny set is a union of two derived halves, and an empty half is empty by
+  // construction rather than skipped by a branch:
+  //
+  //   driver values   what the driver error identifies, when there is one (empty otherwise)
+  //   caller content  what the caller handed over that is NOT an identifier — its `description`
+  //                   here — which no message may echo whether or not a database was touched
   const cause: unknown = (err as { cause?: unknown }).cause;
-  if (cause !== undefined && cause !== null) {
-    // Structural scaffolding, derived rather than listed: `Error.prototype.name` puts "error"
-    // into every rendering on both sides, and `JSON.stringify({ detail })` puts "detail" into
-    // one. Those are shapes, not content, and a baseline `Error` is what says which they are.
-    const admissible = new Set([
-      ...moduleIdentifiers(),
-      ...structuralWords(),
-      ...wordsOf(supplied.join(" ")),
-    ]);
-    const fromDriver = [...wordsOf(renderCause(cause))].filter((word) => !admissible.has(word));
-    for (const [name, text] of Object.entries(renderings)) {
-      const echoed = [...wordsOf(text)].filter((word) => fromDriver.includes(word));
-      if (echoed.length > 0) {
-        throw new Error(
-          `${where}: \`${name}\` carries ${JSON.stringify(echoed.join(" "))}, which came from the ` +
-            `driver error on \`cause\` and is neither an identifier the caller supplied nor a ` +
-            `name \`getTableConfig\` reports for this task's tables. The clause admits only a ` +
-            `fixed message naming the operation, the caller's own identifiers, and counts of the ` +
-            `caller's own inputs — "no value derived from the driver error reaches any enumerable ` +
-            `output; \`cause\` carries all of it and is non-enumerable".`,
-        );
-      }
+  const admissible = new Set([...moduleIdentifiers(), ...wordsOf(identifiers.join(" "))]);
+  const deny = new Map<string, string>();
+  for (const word of driverValues(cause)) {
+    if (!admissible.has(word)) deny.set(word, "the driver error on `cause`");
+  }
+  for (const word of wordsOf(content.join(" "))) {
+    if (!admissible.has(word)) deny.set(word, "the caller's own content");
+  }
+
+  for (const [name, text] of Object.entries(renderings)) {
+    const echoed = [...wordsOf(text)].filter((word) => deny.has(word));
+    if (echoed.length > 0) {
+      throw new Error(
+        `${where}: \`${name}\` carries ${JSON.stringify(echoed.join(" "))}, which came from ` +
+          `${deny.get(echoed[0])} and is neither an identifier the caller supplied nor a name ` +
+          `\`getTableConfig\` reports for this task's tables. The clause admits only a fixed ` +
+          `message naming the operation, the caller's own identifiers, and counts of the ` +
+          `caller's own inputs.`,
+      );
     }
   }
 
-  // The caller's own *content*, as opposed to its identifiers. A nonce, so this one substring
-  // check cannot over-match anything by construction — which is the property the fragment list
-  // it replaced did not have.
-  for (const nonce of supplied) {
-    if (!nonce.startsWith("SENTINEL-")) continue;
+  // Content is also checked whole, not only word by word: a nonce is one token to `wordsOf` only
+  // if it happens to tokenise that way, and a substring check on a nonce cannot over-match.
+  for (const nonce of content) {
     for (const [name, text] of Object.entries(renderings)) {
-      if (text.includes(nonce)) {
+      if (nonce !== "" && text.includes(nonce)) {
         throw new Error(
           `${where}: \`${name}\` echoes the caller's content back. Only identifiers the caller ` +
             `supplied are admissible, and this was planted in a description.`,
@@ -387,78 +406,72 @@ function wordsOf(text: string): Set<string> {
 }
 
 /**
- * The words any sealed error carries for structural reasons, whatever it says. Computed from a
- * baseline `Error` so nothing is hand-listed: `String(new Error(""))` is `"Error"`, and the
- * `detail` rendering the clause enumerates contributes its own key.
- */
-function structuralWords(): Set<string> {
-  const baseline = new Error("");
-  return new Set([
-    ...wordsOf(renderCause(baseline)),
-    ...wordsOf(String(baseline)),
-    ...wordsOf(JSON.stringify({ detail: "" })),
-  ]);
-}
-
-/**
- * Every identifier this module may legitimately name, read from the schema rather than listed.
+ * Every identifier this module may legitimately name, read from the schema rather than listed,
+ * **including the components of each name**.
  *
  * "A constraint name the module ties to `getTableConfig` is the module's own identifier and is
- * **not** a leak." Reading `schema.ts` is not editing it, so no Forbidden file is touched.
+ * not a leak." `WORD` keeps underscores, so the schema contributes `ontology_term` and
+ * `term_id` and never the bare token `term` — which made a word that is a *component* of a
+ * schema name inadmissible while the schema name itself was admissible, and reddened a module
+ * message for using the domain noun from its own published signature. Splitting closes it.
  */
 function moduleIdentifiers(): Set<string> {
   const out = new Set<string>();
+  const add = (name: string) => {
+    for (const word of wordsOf(name)) out.add(word);
+    for (const part of name.toLowerCase().split(/[^a-z0-9]+/)) if (part.length >= 3) out.add(part);
+  };
   for (const table of [schema.ontologyVersion, schema.ontologyTerm]) {
     const config = getTableConfig(table);
-    for (const word of wordsOf(config.name)) out.add(word);
-    for (const index of config.indexes) {
-      for (const word of wordsOf(index.config.name ?? "")) out.add(word);
-    }
-    for (const column of config.columns) {
-      for (const word of wordsOf(column.name)) out.add(word);
-    }
+    add(config.name);
+    for (const index of config.indexes) add(index.config.name ?? "");
+    for (const column of config.columns) add(column.name);
   }
   return out;
 }
 
-/** Everything the driver put in its own error, whatever shape it took. */
-function renderCause(cause: unknown): string {
-  const parts: string[] = [];
-  if (cause instanceof Error) {
-    parts.push(cause.name, cause.message, String(cause));
-    for (const key of Object.getOwnPropertyNames(cause)) {
-      if (key === "stack") continue;
-      try {
-        parts.push(key, String((cause as unknown as Record<string, unknown>)[key]));
-      } catch {
-        /* a throwing getter tells us nothing */
+/**
+ * What the driver error *identifies*, never what it says.
+ *
+ * The deny set used to be every word in the driver's rendering, prose included, which made a
+ * module's fixed English depend on PostgreSQL's English. `"…is already published"` was flagged
+ * because `detail` says `"Key (version)=(0.1.0) already exists"` — two ordinary sentences about
+ * the same situation sharing an ordinary word, read as derivation because they co-occurred.
+ * Neither the contract nor the module controls that wording, and it moves with a server upgrade
+ * or an `lc_messages` change.
+ *
+ * So this reads only the structured fields and the statement: the things that identify *this*
+ * error and could reach an output only by leaking. `severity` is deliberately absent — its value
+ * is the word "ERROR", which identifies nothing and collides with every `Error`.
+ */
+const IDENTIFYING = ["code", "constraint", "table", "column", "schema", "routine", "file", "query", "sql"] as const;
+
+function driverValues(cause: unknown): Set<string> {
+  const out = new Set<string>();
+  const seen = new Set<unknown>();
+  const stack: unknown[] = [cause];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (current === null || typeof current !== "object" || seen.has(current)) continue;
+    seen.add(current);
+    const record = current as Record<string, unknown>;
+    for (const key of IDENTIFYING) {
+      const value = record[key];
+      if (typeof value === "string" || typeof value === "number") {
+        for (const word of wordsOf(String(value))) out.add(word);
       }
     }
-    const nested: unknown = (cause as { cause?: unknown }).cause;
-    if (nested !== undefined && nested !== null && nested !== cause) parts.push(renderCause(nested));
-  } else {
-    try {
-      parts.push(String(cause), JSON.stringify(cause) ?? "");
-    } catch {
-      /* unserialisable */
+    for (const key of ["params", "parameters"]) {
+      const value = record[key];
+      if (Array.isArray(value)) for (const p of value) for (const word of wordsOf(String(p))) out.add(word);
     }
+    if (record.cause !== undefined) stack.push(record.cause);
   }
-  return parts.join(" ");
+  return out;
 }
 
 /** The one path where a `cause` genuinely exists to carry: a refusal the database raised. */
-export function expectCausePresent(err: Error, where: string): void {
-  if (!Object.prototype.hasOwnProperty.call(err, "cause")) {
-    throw new Error(
-      `${where} rejected with an Error carrying no \`cause\`, and the clause requires it present ` +
-        `but non-enumerable. Asserted only where a driver error exists to wrap: a refusal this ` +
-        `module raised for itself has nothing underneath it, and requiring one there would be ` +
-        `reading the clause past what it settles.`,
-    );
-  }
-}
-
-/** Run `call`, require it to reject, and hold the rejection to the sealed-error contract. */
+/** Run `call`, require it to reject, and hold the rejection to the whole error-hygiene clause. */
 export async function rejects(
   call: () => Promise<unknown>,
   supplied: readonly string[],
@@ -471,6 +484,25 @@ export async function rejects(
     return expectSealedError(err, supplied, where);
   }
   throw new Error(`${where} resolved with ${describe_(result)} where the contract requires a refusal.`);
+}
+
+/** The one path where a `cause` genuinely exists to carry: a refusal the database raised. */
+export function expectCausePresent(err: Error, where: string): void {
+  // `hasOwnProperty` is not enough and this was measured, not reasoned: a sealed error defines
+  // `cause` as a non-enumerable own property *even when nothing was passed*, so the property
+  // exists on every refusal this module raises. A variant that checked existence before the bump
+  // — making a republish refusal causeless, which is the exact defect this test guards — reddened
+  // **nothing**. The guard could not fail. The value has to be defined, not merely the key.
+  const descriptor = Object.getOwnPropertyDescriptor(err, "cause");
+  if (descriptor === undefined || descriptor.value === undefined) {
+    throw new Error(
+      `${where} rejected with an Error carrying no \`cause\` value` +
+        `${descriptor === undefined ? "" : " (the property is defined, but it is `undefined`)"}.\n` +
+        `  A refusal the database raised carries the driver error underneath it; one this module ` +
+        `raised for itself does not. So this distinguishes *which* refusal arrived, which is the ` +
+        `only observable difference between the duplicate rule and the bump rule when both apply.`,
+    );
+  }
 }
 
 /**
@@ -491,7 +523,7 @@ export async function swallow(call: () => unknown): Promise<void> {
 /**
  * A stack overflow is never an acceptable answer.
  *
- * "**Write the walk iteratively from the start** — an explicit stack with path-scoped cycle
+ * "Write the walk iteratively from the start — an explicit stack with path-scoped cycle
  * detection, not recursion. T010 shipped a recursive walk that closed cycles and still died with
  * `RangeError` at 20 000 deep, and a 120 KB request body reaches that depth."
  */
@@ -502,4 +534,13 @@ export function notARangeError(err: unknown, where: string): void {
         `has to be iterative from the start.`,
     );
   }
+}
+
+/** Freeze an object and everything under it, so a mutation shows up as a throw. */
+export function deepFreeze<T>(value: T): T {
+  if (value !== null && typeof value === "object" && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const inner of Object.values(value as Record<string, unknown>)) deepFreeze(inner);
+  }
+  return value;
 }
