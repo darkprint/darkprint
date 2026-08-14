@@ -58,7 +58,19 @@
    1124 and 390 gives 314, both read off the running page.
    ============================================================ */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+/* Not a loosened assertion: every label-overlap, crop and legibility check below is
+   untouched, and this only changes how long they are allowed to take. The 64 layout
+   assertions here cost ~10 s together on an idle machine; `vitest.config.ts` raised the
+   global budget from 5 s to 20 s when six concurrent worktree agents pushed one past 5 s.
+   This run now carries ~100 agent processes on ten cores and T030's implementer measured
+   this file at 97.6 s wall at load 90, so 20 s reds a test that is not wrong — the exact
+   failure the earlier raise was meant to stop, one order of magnitude further out.
+   Scoped to this file rather than raised globally again, so a genuine hang anywhere else
+   still surfaces in 20 s. Put it back to the global budget when the parallel backend run
+   is over: this number describes a machine, not the code. */
+vi.setConfig({ testTimeout: 180_000 });
 
 import { getBezierPath, Position } from "@xyflow/react";
 

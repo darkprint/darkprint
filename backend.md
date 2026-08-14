@@ -159,6 +159,12 @@ Three cheap guards, all now in force:
   that session did: "what two over-assertions did you catch against the throwaway, and what did
   you change them to?" (For the record: `/clear`, `/model` and `/effort` sent as messages arrive
   as literal text and do nothing. Sessions carry their context across reassignment.)
+- Before reporting a suite result, read the **exit code and the failed-file count**, never the
+  test total. T030's run 4 printed `Tests 3954 passed (3954)` **with two failed files and exit
+  1**, because the failures were in `beforeAll`/`afterAll` hooks rather than in tests — a hook
+  that fails runs no test, so it adds nothing to the failed column. A handoff quoting that
+  total would have claimed green on a red run, which is the three-green-totals shape again with
+  a new way in.
 - Before carrying a **finding** forward into a later round, re-read the thing it is about.
   T010's adversary re-ran all six criteria rather than carrying them forward, then carried its
   AC1-contradiction claim into two further rounds without re-reading AC1, which had been

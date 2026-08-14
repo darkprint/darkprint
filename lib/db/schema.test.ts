@@ -11,7 +11,8 @@ describe.skipIf(!hasDb)("lib/db/schema", () => {
   // Created in `beforeAll` rather than at describe scope: `describe.skipIf` still runs
   // this factory to discover the suite, and a promise built there would start a real
   // connection (and go unhandled) even when the suite is skipped.
-  let testDb: TestDb;
+  /* `| undefined` is the honest type: `beforeAll` can fail before assigning it. */
+  let testDb: TestDb | undefined;
   let client: DbClient;
 
   beforeAll(async () => {
@@ -24,7 +25,14 @@ describe.skipIf(!hasDb)("lib/db/schema", () => {
   });
 
   afterAll(async () => {
-    await testDb.drop();
+    /* Optional-call, not `testDb.drop()`: when `beforeAll` fails — a scratch-database
+       create racing another worktree against the one shared compose stack is the way it
+       fails here — `testDb` was never assigned, and an unguarded deref throws
+       `TypeError: Cannot read properties of undefined` *out of the teardown*. Vitest then
+       reports that TypeError, so the second error buries the first and the cause on screen
+       is not the cause. Found by T030's implementer, whose five runs saw the masked form
+       four times. */
+    await testDb?.drop();
   });
 
   it("round-trips one row through every table, respecting the foreign keys between them", async () => {
