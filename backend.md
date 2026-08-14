@@ -2993,6 +2993,37 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   - 2026-08-14 implementer, **two self-checks taken from T020's handover, and the first one goes against me.** (1) **My colocated tests cannot discriminate the T-02 fix at all.** Deleting the `seen` set and running `lib/server/ontology/**` alone leaves it **44/44 green** — measured, not reasoned. The reason is that my *does not false-positive on a wide shared graph* case is a flat array of 1000 references to one object, which is O(n) with or without the set; the exponential blow-up needs a *chain* of diamonds, and I never wrote one. So the only thing in the repository that catches T-02 is the blind suite's timing test, and my falsification of that fix is **confirmatory rather than independent** — it is D-16's own lesson recurring inside the fix that answered D-16, which is worth stating plainly rather than leaving for the adversary. (2) **No expected-message tautology.** Every string assertion in the four colocated files has a hard literal on the expected side (`"unpaired-surrogate"`, `"non-finite-number"`, `"circular-reference"`, `"{}"`, `"1.0.0"`, `"57P01"`, `"insert into"`, `"DuplicateOntologyVersionError"`). The only two non-literal expectations are `vocabulary.test.ts:27` and `:32`, both against `CORE_ONTOLOGY.title` — and that is the *independent* side of the drift tie rather than a tautology, since the whole point is to compare two literals maintained in different modules. A tautology would be asserting a message against the constant the code builds it from; none does.
   - 2026-08-14 implementer, **T020's depth-ceiling result, recorded so it is not re-found as a defect here.** T020 measured that a depth-20 diamond still costs 13-15 s through its whole write path even with the walk at O(1) per visit, because `canonicalJson` and the driver's own serialisation of the `jsonb` parameter each re-expand shared substructure — JSON has no reference concept, so one object reached twice must be materialised twice. T030 hashes and stores caller-built term bodies through the same shape, so the same ceiling applies here: **the `seen` set bounds the guard's cost, not the request's.** That is not a defect in the set and not something this task can fix — `lib/core/**` is Forbidden and a depth cap belongs at the route boundary, which `335d607` assigns to whichever task first owns a route accepting caller-built objects. Noted here so a slow deep case measured against this module lands as a known ceiling.
 
+  - 2026-08-14 test author, **the error clause is asserted as a whitelist now**, landed after the
+    adversary's round rather than during it so the suite under examination did not move. A
+    whitelist clause asserted with `output.includes(fragment)` is still a blacklist and keeps the
+    over-match hazard; only that one instance of it had gone. Both sides are derived now and
+    neither is hand-written: the deny set is every word in the **actual driver error carried on
+    `cause`**, and the allow set is the caller's own identifiers plus every table, index and
+    column name `getTableConfig` reports for this task's two tables — which is what the clause
+    means by the module's own identifier. Comparison is **word by word, not substring**, so
+    `ontology_version` and `ontology_version_version_key` are different tokens and the over-match
+    cannot recur even if someone puts the table name back.
+  - 2026-08-14 test author, **curation crept back in twice and running found it both times.**
+    First attempt: a hand-written fragment list. Second: a hand-written list of structural words,
+    needed because `Error.prototype.name` puts `error` into both renderings and a *correct*
+    reference went red on it — now derived by subtracting the words a baseline `Error` produces.
+    Measured on the landed version: a correct reference reds 7 (AC6 only, no false reds); the
+    driver message interpolated into ours reds 8 beyond that; and a **constant** driver phrase
+    with no caller data in it, `duplicate key value violates unique constraint`, is caught —
+    which matters because an invariance test ("the message varies only with caller inputs")
+    passes that one, and an invariance test was the first design.
+  - 2026-08-14 test author, **T-03 annotated, and then measured under the new falsification
+    rule** (`e67c4f9`: the red must arrive through the published surface, not through a direct
+    call to the guard). Deleting the well-formedness guard outright from a reference and diffing
+    sorted failing sets over the whole suite reds **2 of 151** — `refuses an unpaired surrogate
+    in 'the version string itself'` and the T-02 timing test. Both are the tests the annotation
+    already named as the ones that hold the guard, and the other five surrogate tests are
+    unobserved exactly as it says, because they travel in `body jsonb` where Postgres refuses by
+    itself. Against an implementation that does **not** run the check over `version`, the same
+    experiment reds zero — which is the adversary's measurement and the reason round 2 extends
+    the check to `version`. The annotation stays after that fix: it will still be true of the
+    five `jsonb` tests. Every falsification in this suite has been run this way from the start —
+    a patched module, the whole suite through vitest, never a direct call to the thing broken.
 
 ### T050, Accounts and sessions
 
