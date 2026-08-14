@@ -331,6 +331,33 @@ suite's 32 reds — 32 fell to 17, so fifteen were the superseded wording and no
 Triaging 32 reds afterwards would have reached the same place slowly and with far more chances to
 charge one of the fifteen as real.
 
+## Mutate behaviours chosen for NOT being on your list
+
+T030's blind author ran seven mutations against its own 151-test suite — six minutes — and **three
+reddened nothing**, in a suite that had already survived 23 falsifications, an adversary round and
+four rebinds. Its diagnosis is the transferable part: **a falsification set built from the author's
+own list of what matters cannot find what the author did not think of.** All 23 passed because the
+author chose them, and each targeted a behaviour already considered. What surfaced the gaps was
+mutating behaviours picked *for not being on that list*. Same root as T025's blind suite having no
+coverage of a defect nobody anticipated.
+
+The three that reddened nothing, because each is a distinct trap:
+
+- **A test asserting an outcome the database already guarantees.** `answers 'undefined' for the
+  empty string` passes with the guard removed, because the query then matches no row and returns
+  `undefined` anyway. T-03's species, written eleven tests after the author discovered T-03.
+- **A tolerance that admitted the broken answer.** `openView` with a non-array `extensions` was
+  allowed to *either* throw or return a view with the base intact; with validation removed,
+  iterating a string yields characters, nothing throws, and the base is intact — so the permitted
+  outcome was the silently-wrong one. Tolerate an unspecified answer, never a wrong one: "either,
+  **and** the overlay must not be silently dropped".
+- **An invariant asserted on one return path and not its twin.** Sorted order checked on
+  `getOntologyVersion`'s result and never on `addOntologyVersion`'s own.
+
+**Standing question for any suite before it is offered as evidence: if the fix were reverted, would
+this test red?** If the answer is not known, mutate and find out. It is minutes, and it is the only
+method here that has found gaps in suites their authors had already falsified.
+
 ## The default failure of writing a test against a description
 
 Four independent authors produced the same species in one day, and it is worth naming as a class
