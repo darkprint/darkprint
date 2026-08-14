@@ -192,7 +192,9 @@ Three cheap guards, all now in force:
   - `Object.keys(err)` is empty and `JSON.stringify(err)` is exactly `"{}"`.
   - `cause` is present but **non-enumerable**, which is what keeps `JSON.stringify` from reaching it. Check with `propertyIsEnumerable`, never by inference.
   - `stack` is **retained**, not deleted.
-  - No rendering — `message`, `String(err)`, `JSON.stringify(err)`, `JSON.stringify({ detail: err.message })`, own-property enumeration — contains the SQL statement, a bound parameter, the caller's content, a SQLSTATE or a `pg` internal.
+  - **Whitelist, not blacklist.** Across every rendering — `message`, `String(err)`, `JSON.stringify(err)`, `JSON.stringify({ detail: err.message })`, own-property enumeration — the only things that may appear are a fixed message naming the **operation**, identifiers the **caller itself supplied**, and counts of the caller's own inputs. **No value derived from the driver error reaches any enumerable output**; `cause` carries all of it and is non-enumerable. Stated as a whitelist so it fails closed — the earlier form forbade five named things and left the sixth unenumerated, which is a site list moved one level down. A constraint name the module ties to `getTableConfig` is the module's own identifier and is **not** a leak: two blind suites independently put table names on a forbidden list and would have reddened an implementation for naming its own constraint, since `ontology_version` is a substring of `ontology_version_version_key`.
+
+  **The sixth-leak prediction was tested against T010 rather than argued about, and it does not hold there.** Every throw in the merged module, enumerated: two surrogate refusals carrying fixed literals with no interpolation; a length mismatch interpolating two `.length` **numbers**; two conflicts interpolating the caller's own `slug`/`version`; and `sanitizedWriteError`, whose message is `${operation}: the write failed.` with `operation` a module literal. No driver-derived value reaches any output on any path, so T010's implementation is whitelist-by-construction and was already **stronger than the clause that governed it**. The clause was the weak thing, which is why it is fixed here — for T020 and T030, which inherit it and are still building.
 
   T010 merged against the old wording and is unaffected: its adversary measured the property above across six paths and five renderings, which is the test that matters. The wording was wrong; the thing it verified was right.
 
@@ -295,6 +297,23 @@ a property over every output, not a list of SQLSTATEs. T060's "`Actor` and `Reso
 data" is properly *no decision depends on a property that is not the object's own* — a property
 over every decision, not a list of fields. **Write the output property first. Enumerate sites
 only as commentary on it, never as the specification.**
+
+**Second clause, and it is the half that makes the first one work: the property must quantify
+over a set defined by CONSTRUCTION, and its predicate must be CLOSED.** Moving the enumeration
+off the sites only relocates the incompleteness if the predicate is still a list. Compare the
+three: T025's "the maximum over all residue-free explanations" quantifies over a set that is
+exhaustively enumerable by construction, which is exactly why an oracle can compute it. T060's
+"no decision depends on a property that is not the object's own" quantifies over decisions and
+tests **provenance**, a closed test rather than a list of forbidden fields. T010's "no rendering
+contains the statement, a parameter, the caller's content, a SQLSTATE or a `pg` internal"
+quantifies correctly and then applies a **blacklist of five** — and the sixth is unenumerated.
+A table name, a connection string, a constraint name embedding a column: the original failure
+moved one level down rather than removed.
+
+A **blacklist predicate is incomplete for the same reason a site list is**; a whitelist is
+complete by construction and fails closed when someone invents a sixth thing. The error clause
+is restated as a whitelist below. Raised by T025's adversary, which also predicted a sixth leak
+in T010 — merged and tagged at the time it said so.
 
 ## Resolving `backend.md`: Log entries merge, contract text does not
 
