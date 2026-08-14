@@ -145,6 +145,161 @@ export async function scratchDatabase(tag: string): Promise<Scratch> {
   };
 }
 
+/* --------------------- observing a write whose medium is not published --------------------- */
+
+/**
+ * Every row in every user table of this scratch database, as `table -> JSON of its rows`.
+ *
+ * `recordDownload(db, target)` is published as a signature and **nothing published says which
+ * table it writes to**. A test that guessed `target` would be asserting against a schema detail
+ * the contract does not state, and would red an implementation that recorded somewhere else for
+ * a reason it was entitled to.
+ *
+ * So the medium is *derived*: snapshot everything, call `recordDownload` once, diff. Whatever
+ * moved is the medium, by construction — and the same diff then measures what `serveFile`,
+ * `serveCard` and `exportRelease` each do. Neither side of that comparison is hand-written, which
+ * is the shape backend.md reached for when a blind author had no published wording to pin.
+ *
+ * Rows rather than counts, because "exactly once per served file" needs the row and `refId` needs
+ * its contents. Ordered by the text of the row so two snapshots compare stably.
+ */
+export async function snapshotRows(scratch: Scratch): Promise<Map<string, string[]>> {
+  const tables = await scratch.pool.query<{ table_name: string }>(
+    "select table_name from information_schema.tables " +
+      "where table_schema = 'public' and table_type = 'BASE TABLE' order by table_name",
+  );
+  const snapshot = new Map<string, string[]>();
+  for (const { table_name: name } of tables.rows) {
+    const rows = await scratch.pool.query(`select to_jsonb(t) as row from "${name}" t`);
+    snapshot.set(
+      name,
+      rows.rows.map((r) => JSON.stringify((r as { row: unknown }).row)).sort(),
+    );
+  }
+  return snapshot;
+}
+
+/** One table's rows that are in `after` and not in `before`, per table, dropping empty entries. */
+export function rowsAdded(
+  before: Map<string, string[]>,
+  after: Map<string, string[]>,
+): Map<string, string[]> {
+  const added = new Map<string, string[]>();
+  for (const [table, rows] of after) {
+    const seen = new Map<string, number>();
+    for (const row of before.get(table) ?? []) seen.set(row, (seen.get(row) ?? 0) + 1);
+    const fresh: string[] = [];
+    for (const row of rows) {
+      const left = seen.get(row) ?? 0;
+      if (left > 0) seen.set(row, left - 1);
+      else fresh.push(row);
+    }
+    if (fresh.length > 0) added.set(table, fresh);
+  }
+  return added;
+}
+
+/** Total rows added across every table — the check that the write is observable at all. */
+export function totalRowsAdded(added: Map<string, string[]>): number {
+  let total = 0;
+  for (const rows of added.values()) total += rows.length;
+  return total;
+}
+
+/**
+ * Where a download count lives, derived by counting rather than by naming a column.
+ *
+ * Counting *rows* is not enough and finding that out is the point: a download event is almost
+ * certainly an upsert onto a per-target row, so recording twice changes the same row twice and
+ * adds exactly one row either way. A row-delta instrument therefore cannot tell one event from
+ * two — which is precisely the defect "each served file emits **one** download event" exists to
+ * forbid, invisible to the instrument built to check it.
+ *
+ * So the counter is located by driving it: call `recordDownload` once on a refId nothing else
+ * uses, then twice more, and look for the field that went from 1 to 3. Nothing here names
+ * `target` or `download_count`; `lib/db/schema.ts` is Forbidden to this task and where the event
+ * lands is not T090's to declare.
+ */
+export interface DownloadCounter {
+  table: string;
+  field: string;
+}
+
+export async function deriveDownloadCounter(
+  scratch: Scratch,
+  record: (target: { kind: "blueprint" | "card"; refId: string }) => Promise<unknown>,
+  probeRefId: string,
+): Promise<DownloadCounter> {
+  await record({ kind: "blueprint", refId: probeRefId });
+  const one = await rowContaining(scratch, probeRefId);
+  await record({ kind: "blueprint", refId: probeRefId });
+  await record({ kind: "blueprint", refId: probeRefId });
+  const three = await rowContaining(scratch, probeRefId);
+
+  if (one === undefined || three === undefined) {
+    throw new Error(
+      `No row in any table carries the probe refId \`${probeRefId}\` after recordDownload, so ` +
+        `the download counter cannot be located and nothing about "exactly once" is measurable.`,
+    );
+  }
+  if (one.table !== three.table) {
+    throw new Error(`The probe row moved tables between calls: ${one.table} -> ${three.table}.`);
+  }
+
+  const candidates = Object.keys(three.row).filter((key) => {
+    const a = Number(one.row[key]);
+    const b = Number(three.row[key]);
+    return Number.isFinite(a) && Number.isFinite(b) && a === 1 && b === 3;
+  });
+  if (candidates.length !== 1) {
+    throw new Error(
+      `Expected exactly one field to go 1 -> 3 across three recordDownload calls on \`` +
+        `${probeRefId}\`; found [${candidates.join(", ")}]. One row: ${JSON.stringify(one.row)}. ` +
+        `Three: ${JSON.stringify(three.row)}. Without a single unambiguous counter, an ` +
+        `"exactly once" assertion would be measuring something adjacent to the claim.`,
+    );
+  }
+  return { table: one.table, field: candidates[0] as string };
+}
+
+async function rowContaining(
+  scratch: Scratch,
+  needle: string,
+): Promise<{ table: string; row: Record<string, unknown> } | undefined> {
+  const tables = await scratch.pool.query<{ table_name: string }>(
+    "select table_name from information_schema.tables " +
+      "where table_schema = 'public' and table_type = 'BASE TABLE' order by table_name",
+  );
+  for (const { table_name: name } of tables.rows) {
+    const rows = await scratch.pool.query<{ row: Record<string, unknown> }>(
+      `select to_jsonb(t) as row from "${name}" t where to_jsonb(t)::text like $1`,
+      [`%${needle}%`],
+    );
+    if (rows.rows.length === 1) return { table: name, row: rows.rows[0]!.row };
+    if (rows.rows.length > 1) {
+      throw new Error(`${rows.rows.length} rows in "${name}" carry \`${needle}\`; expected one.`);
+    }
+  }
+  return undefined;
+}
+
+/** The derived counter's value for one refId, or 0 when nothing has recorded it. */
+export async function downloadsFor(
+  scratch: Scratch,
+  counter: DownloadCounter,
+  refId: string,
+): Promise<number> {
+  const rows = await scratch.pool.query<{ row: Record<string, unknown> }>(
+    `select to_jsonb(t) as row from "${counter.table}" t where to_jsonb(t)::text like $1`,
+    [`%${refId}%`],
+  );
+  if (rows.rows.length === 0) return 0;
+  if (rows.rows.length > 1) {
+    throw new Error(`${rows.rows.length} counter rows carry \`${refId}\`; expected at most one.`);
+  }
+  return Number(rows.rows[0]!.row[counter.field]);
+}
+
 /* --------------------- rows no published function owns --------------------- */
 
 export interface SeededAccount {

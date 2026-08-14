@@ -82,6 +82,10 @@ export const PUBLISHED = {
     "serveFile(db: Db, actor: Actor, ref: { ownerHandle: string; slug: string; version?: string; " +
     "digest?: string }, path: string): Promise<ServedFile | undefined>",
   serveCard: "serveCard(db: Db, actor: Actor, ref: CardRef): Promise<ServedFile | undefined>",
+  recordDownload:
+    'recordDownload(db: Db, target: { kind: "blueprint" | "card"; refId: string }): Promise<void>' +
+    " — called by serveFile and serveCard exactly once each, and NOT by exportRelease; " +
+    "`refId` is `bundle.id` for a release file and the bare `cardId` for a card",
 } as const;
 
 /**
