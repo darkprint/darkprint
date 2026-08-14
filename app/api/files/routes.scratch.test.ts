@@ -2,14 +2,9 @@
  * Scratch coverage of `app/api/files/**`, run by the implementer only — does not count as
  * verification (docs/ORCHESTRATION.md, Agent A).
  *
- * ── Why a test about `app/` lives under `lib/` ──
- * `vitest.config.ts` collects `lib/**`, `components/**`, `scripts/**` and `tests/**` —
- * **not `app/**`** — so a test placed beside the route files it covers would never be
- * collected, and a suite that is never collected reports zero tests and calls it green,
- * which is the exact failure that config's own comment records about `.test.tsx`. The
- * config belongs to neither task's `Owns` and is not editable from here, so the choice is
- * between coverage in the wrong directory and no coverage at all. Reported to the
- * orchestrator; every cutover task and T080 inherit the same constraint.
+ * It sat under `lib/server/export/` for one round, because `vitest.config.ts` did not
+ * collect `app/**` and an uncollected suite runs zero tests and reads as green. Reported,
+ * and `3c8d395` added the glob, so it now lives beside the files it covers.
  *
  * ── Why this does not touch the shared database ──
  * `getSharedDbClient()` is lazy and cached on `globalThis`, so pointing `DATABASE_URL` at
@@ -172,5 +167,50 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
     expect(withSuffix.headers.get("content-disposition")).toBe(
       `inline; filename="${pinned}.yaml"`,
     );
+  });
+
+  /**
+   * D-90-A, end to end and by the total method: control, then an outage, on the same
+   * request.
+   *
+   * The outage is one dropped table, so exactly one statement fails and the connection
+   * stays live — a killed connection would take the whole pool down and prove something
+   * weaker. Before the fix this returned **404 with a `problem+json` body reading "Not
+   * found."**; a caller holding a pinned digest would read that as "withdrawn" and stop
+   * retrying, which is the harm AC6's whole promise is about.
+   *
+   * The assertion is that the failure **escapes the route**, not that it is literally a
+   * 500: converting an uncaught throw into a 500 is Next's job and there is no server
+   * here. What this file owns is that `respondWithFile` does not swallow it, and that is
+   * exactly what the type split decides.
+   */
+  it("a driver failure escapes as a read error, and is never dressed up as a 404", async () => {
+    const { GET } = await import(
+      "@/app/api/files/blueprints/[owner]/[slug]/v/[version]/[...path]/route"
+    );
+    const { ExportError, ExportReadError } = await import("@/lib/server/export");
+    const call = (): Promise<Response> =>
+      GET(new Request("http://x/api/files/..."), {
+        params: Promise.resolve({ owner: "routes", slug, version: "1.0.0", path: ["README.md"] }),
+      });
+
+    const control = await call();
+    expect(control.status).toBe(200);
+
+    /* `bundle` is what `bundleByHandle` joins against, so this is the first statement the
+       request makes. CASCADE because `release` references it; both come back below. */
+    await testDb!.client.query('DROP TABLE "release", "bundle" CASCADE');
+
+    const thrown: unknown = await call().then(
+      (response) => `returned ${response.status}`,
+      (err: unknown) => err,
+    );
+    expect(thrown).toBeInstanceOf(ExportReadError);
+    expect(thrown).not.toBeInstanceOf(ExportError);
+    expect((thrown as Error).message).toBe("export: reading this release failed.");
+    /* The driver error is on `cause` and nowhere a rendering can reach. */
+    expect(Object.keys(thrown as object)).toEqual([]);
+    expect(JSON.stringify(thrown)).toBe("{}");
+    expect((thrown as Error).cause).toBeDefined();
   });
 });

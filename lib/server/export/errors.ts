@@ -45,6 +45,40 @@ Object.defineProperty(ExportError.prototype, "name", {
   configurable: true,
 });
 
+/**
+ * A read against Postgres failed for a reason that is not "no such row".
+ *
+ * **A sibling of `ExportError`, deliberately not a subclass** (D-90-A). The two are
+ * different kinds of fact and the route reads the difference: `ExportError` is a fact
+ * about the *release* — absent, invisible, refused — and maps to 404; this is a fact
+ * about the *infrastructure* and must reach the caller as a 500. Sharing the type made
+ * a Postgres outage answer 404 under a comment saying it must not, and made the same
+ * outage answer 404 or 500 depending on which statement failed first, since a driver
+ * error raised inside `resolveCardRef` or `openView` was never wrapped at all.
+ *
+ * The three harms were not cosmetic: alerting on 5xx reads an outage as traffic to
+ * missing files; B-03 reserves 404 for absent-or-invisible so existence does not leak,
+ * and a 404 for "the database is down" widens it with no way for a caller to tell; and
+ * **a client holding a pinned digest concludes the release was withdrawn and stops
+ * retrying**, where a 500 tells it to retry. The one reference AC6 promises never moves
+ * is the one an outage made look deleted.
+ *
+ * Extending `Error` rather than `ExportError` is what makes the route's `instanceof`
+ * correct **by construction** instead of by anyone remembering to check a second class.
+ */
+export class ExportReadError extends Error {
+  constructor(message: string, cause?: unknown) {
+    super(message, { cause });
+  }
+}
+
+Object.defineProperty(ExportReadError.prototype, "name", {
+  value: "ExportReadError",
+  enumerable: false,
+  writable: true,
+  configurable: true,
+});
+
 /* --------------------- the two published forms --------------------- */
 
 /**
@@ -125,11 +159,20 @@ export function malformedStoredVocabulary(cause?: unknown): ExportError {
    logged here and nothing more. See `downloads.ts`. */
 
 /**
- * A read this module made against Postgres failed for a reason that is not "no such row".
+ * The eighth message form, and the one a caller never sees.
  *
- * The driver error opens with the whole statement and every bound parameter; it travels
- * on `cause` and never in the message.
+ * Named for the **module** rather than for a verb, which is the correction that came with
+ * D-90-A: `bundleById`, `bundleByHandle` and `resolveRelease` are reached from
+ * `exportRelease` *and* from `serveFile`, so `"exportRelease: …"` was simply false on the
+ * serving path — a literal whose truth depended on which entry point happened to call.
+ * Threading an operation string would make the pin depend on that too.
+ *
+ * It is invisible to the published-message surface by construction, not by wording: this
+ * is an `ExportReadError`, the route rethrows it, and the caller gets a generic 500 with
+ * no body from here. The message goes to logs, for an operator. The driver error opens
+ * with the whole statement and every bound parameter; it travels on `cause`, never in the
+ * message, and `cause` is non-enumerable.
  */
-export function readFailed(cause?: unknown): ExportError {
-  return new ExportError("exportRelease: reading this release failed.", cause);
+export function readFailed(cause?: unknown): ExportReadError {
+  return new ExportReadError("export: reading this release failed.", cause);
 }

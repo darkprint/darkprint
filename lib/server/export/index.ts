@@ -19,7 +19,11 @@
    ============================================================ */
 
 export type { ReleaseRef, ServedFile } from "./types";
-export { ExportError } from "./errors";
+/* Two classes, and the split is load-bearing rather than tidy (D-90-A): `ExportError` is a
+   fact about the release and a route answers it 404; `ExportReadError` is a driver failure
+   and must reach the caller as a 500. They are siblings, not parent and child, so a route
+   that checks one cannot accidentally swallow the other. */
+export { ExportError, ExportReadError } from "./errors";
 
 export { exportRelease } from "./export-release";
 /* B-14's event, published at the blind suite's delivery: the clause said one event per

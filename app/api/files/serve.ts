@@ -63,12 +63,21 @@ export function fileResponse(file: ServedFile): Response {
 }
 
 /**
- * Runs a served-file lookup and turns every way it can fail into the same 404.
+ * Runs a served-file lookup and turns every way the **release** can be unavailable into
+ * the same 404, while letting everything else out as a 500.
  *
  * `ExportError` is caught and a driver failure is not: a release that does not resolve,
  * names an unpublished ontology version or pins an unreadable card is a fact about that
  * release and the caller gets 404 either way, while a Postgres outage is a 500 and must
  * not be dressed up as a missing file.
+ *
+ * **That sentence was here while the code did the opposite** (D-90-A). `readFailed`
+ * returned an `ExportError`, so a driver failure matched this `instanceof` and answered
+ * 404 — and the same outage answered 500 instead whenever it happened to be raised inside
+ * `resolveCardRef` or `openView`, which were never wrapped. The fix is not a second
+ * `instanceof` here: `ExportReadError` is a **sibling** of `ExportError`, so this line is
+ * right by construction and cannot be made wrong again by someone adding a third read
+ * path. A comment agreeing with the code is not the guard; the type is.
  */
 export async function respondWithFile(
   request: Request,
