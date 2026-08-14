@@ -948,6 +948,16 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 - **Log:**
   - 2026-08-13 orchestrator: created from B-04.
 
+  **Ruling, round 5: an ambiguous pairing infers the *most* expensive plausible reading, never the cheapest.** `cardRefs` carries no node identity, so when one card id both loses and gains versions there is no fact about which pin moved where — some policy must be chosen and the contract named none. The choice is settled by B-04's purpose and by round 1's sibling ruling, which already went this way: never answer less than you can justify for input you could not read. Refusing an under-declared bump is the whole reason this check exists, so of the readings the data permits, the inference takes the one that demands the largest declared bump. Over-answering costs an author a version number they did not strictly need; under-answering ships a breaking change as a patch, and nothing downstream re-checks it.
+
+  This also **subsumes the monotonicity defect rather than merely coexisting with it**, which is the reason to prefer it over any tie-break rule that happens to fix the reported case. Adding a pin to `next` enlarges the set of plausible pairings, and a maximum over a superset cannot be smaller than a maximum over the subset — so `after` gaining a pin can never lower the level, structurally, for every input rather than for the two the adversary exhibited. A fix that made `[solver@1.0.0] → [solver@1.0.1, solver@9.0.0]` answer `major` by special-casing it would leave the property untested everywhere else.
+
+  **Do not enumerate pairings.** The level is a maximum, not an assignment: for leftover versions of one id, it is the largest `inferBump`-level over every `(before, after)` pair the leftovers permit, combined with the at-least-minor contribution of a genuinely added pin and the contribution of a genuinely removed one. That is O(n·m) per id and needs no permutation search. The by-value cancellation from round 4 stays exactly as it is and runs first; this ruling governs only the leftover tail it produces.
+
+  **Scope, stated because a ruling gets implemented as narrowly as its example:** this governs every place an ambiguous multiplicity change is priced, not only the same-id-loses-and-gains case worked above. If another site prices a change from an ambiguous reading, it takes the most expensive plausible one too.
+
+  **Recorded, not charged:** `blueprint-bump.ts:190`'s `if (beforeLeftover[i] === afterLeftover[i]) continue;` is unreachable — by-value cancellation makes the two lists disjoint by construction. Harmless, and the comment above it is correct about why. Remove it or keep it, but do not let it survive as a guard a later reader trusts.
+
 ### T060, Authorization policy: owner and operator
 
 - **State:** merged
