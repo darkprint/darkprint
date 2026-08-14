@@ -235,6 +235,28 @@ line is what Phase 0 recorded; this section is what is true. Where they disagree
 the one that decides a dispatch — and the disagreement is itself the useful artefact, since it
 shows which dependencies were discovered rather than planned.
 
+## An amendment writes signatures against a tree that already exists
+
+The checklist below says a Published signatures block is checked against the tree **at the moment
+it is written**. An **amendment** writes new signatures against a tree that is already built, and
+nothing re-runs that check — which is exactly how `Availability.reason` and two `/api/names/**`
+routes were published into T070 at `impl-done` and then read as satisfied by everyone downstream.
+T070's adversary found all three absent and named the mechanism: a stale-scope instance rather than
+anyone's slip.
+
+**So: an amendment to a Published signatures block for a task at `impl-done` or later either
+re-runs the signature-versus-tree check, or sets the State back to `claimed`.** Its wording, and it
+is the same move this file makes everywhere else — replace "someone will notice" with something the
+evidence carries.
+
+**And the latency is not the cause, which the dates settle.** T080's five defects were ruled seven
+minutes after the claim and T090's seven within eleven — both **during** implementation. T070's
+seven were ruled **thirty-three minutes after `impl-done`**, because its implementer **batched all
+seven to handback** rather than stopping at the first, which is a deviation from *stop and report an
+ambiguous contract*. Batching converts every ruling into contract that arrives after the code **and
+after the blind suite**, so three of T070's landed with no coverage by construction and are held by
+colocated tests alone.
+
 ## Contract checklist — every task section is written against this before dispatch
 
 Derived from what the first six tasks cost. Wave 2's contracts had none of it and its tasks took
@@ -3189,16 +3211,15 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **Admissible message forms**, published before the implementation exists:
 
         HandleTakenError      "allocateHandle: the handle `<handle>` is not available."
-        SlugTakenError        "checkSlug: `<owner>` already has a bundle at `<slug>`."
-        ReservedSlugError     "checkSlug: `<slug>` is reserved by the profile tabs."
+        NamingStoreError      "<operation>: the database call failed."
         InvalidNameError      "<operation>: `<value>` is not a valid <kind>."
 
-  Nothing else may appear in any rendering: the operation, the caller's own value, and the four fixed forms above. `cause` carries the driver error and is non-enumerable; `stack` is retained. The four reserved slugs are `blueprints`, `cards`, `saved`, `terms` (`components/profile/tabs.ts`) — read them from that module rather than restating the list, so the profile tabs and this guard cannot drift.
+  Nothing else may appear in any rendering: the operation, the caller's own value, and the fixed forms above. **`SlugTakenError` and `ReservedSlugError` were struck by D-70-01** — `checkSlug` is a query and returns `{ available: false, reason }`; they are gone from this block rather than left standing beside the ruling that removed them. `cause` carries the driver error and is non-enumerable; `stack` is retained. The four reserved slugs are `blueprints`, `cards`, `saved`, `terms` (`components/profile/tabs.ts`) — read them from that module rather than restating the list, so the profile tabs and this guard cannot drift.
 
   **Inherited hazards.** T-01 applies to any fixture carrying a control character. T-02, T-03 and T-04 do **not**: this task stores no caller-built object, has no `jsonb` column, and its errors carry no driver prose. Stated rather than left silent.
 
 - **Goal:** allocate and check every user-chosen identifier — handles, bundle slugs, card ids, term namespaces — and keep reservations permanent.
-- **Contract:** a handle is chosen at sign-up, independent of the GitHub login (B-05); it is unique across the registry, permanently reserved once used, and a rename keeps the old one reserved because every published card carries the handle inside its own bytes (`app/settings/page.tsx:258-265`). A slug is unique **per owner** (B-09). Four slugs stay permanently reserved as bundle names because the profile tabs occupy them: `blueprints`, `cards`, `saved`, `terms` (`components/profile/tabs.ts`). Ids must satisfy the engine's grammars (`CARD_ID`, `REF_VERSION`, `lib/core/card/schema.ts:167,174`) so a stored id is one a DOT node can pin. Availability answers `{ available, suggestion? }`.
+- **Contract:** a handle is chosen at sign-up, independent of the GitHub login (B-05); it is unique across the registry, permanently reserved once used, and a rename keeps the old one reserved because every published card carries the handle inside its own bytes (`app/settings/page.tsx:258-265`). A slug is unique **per owner** (B-09). Four slugs stay permanently reserved as bundle names because the profile tabs occupy them: `blueprints`, `cards`, `saved`, `terms` (`components/profile/tabs.ts`). Ids must satisfy the engine's grammars (`CARD_ID`, `REF_VERSION`, `lib/core/card/schema.ts:167,174`) so a stored id is one a DOT node can pin. Availability answers `{ available, reason?, suggestion? }` — the `reason` added by D-70-01 when the two error classes were struck, since a caller that can no longer catch a class needs the discriminator in the value.
 - **Acceptance criteria:** (1) each reserved slug is refused as a bundle name; (2) two owners may both hold `frontline-triage`; (3) one owner may not hold it twice; (4) a released handle cannot be claimed by a second account, ever; (5) two concurrent allocations of one name yield exactly one success; (6) a suggestion returned for a taken name is itself free at the moment it is returned.
 - **Out of scope:** creating the account (T050) or the bundle (T100) the name is for.
 - **Log:**
