@@ -235,6 +235,73 @@ line is what Phase 0 recorded; this section is what is true. Where they disagree
 the one that decides a dispatch — and the disagreement is itself the useful artefact, since it
 shows which dependencies were discovered rather than planned.
 
+## A green against a reference is evidence only if the reference could have gone red
+
+T090's blind author checked its own oracle instead of banking it, and the check failed: its
+throwaway reference recomputes the analysis through `loadBundle`, so it never reads
+`release.autonomy`/`security` at all. The AC6 re-score test therefore passed against it **by
+accident** — the reference was immune to the defect rather than free of it. Pointed at a reference
+that quotes the *stored* analysis, which is what the real implementation does and what B-08
+re-scores, the same test reds. So the test discriminates and the reference was simply not an oracle
+for it.
+
+Its own accounting is the rule: **a 99/99 that includes one vacuous pass is a 98 plus a question**,
+and it declined to offer the green as evidence.
+
+This is the two-factor rule for validators — *a validator cannot be falsified against a correct
+module* — arriving one level up, at the oracle. A reference implementation is a measuring
+instrument, and an instrument that cannot register the quantity reads zero for the same reason a
+broken one does. Before a reference's green counts for a test, that reference must be able to fail
+it: mutate the reference toward the defect and watch the test red. A reference built by a different
+route than the implementation is the *usual* case, not a rare one, so this is not a corner.
+
+## A sample that happens to contain the defect is still a sample
+
+The hygiene clause finding came from measuring **four** merged error classes. There are **eight**.
+The four in the sample were the ones the author had reason to touch; the other four were compliant,
+but that was discovered afterwards and by someone else — at the time, their compliance was assumed.
+
+The finding was real and the method was luck. Had the violation been in `MalformedContentError`
+rather than `ArchiveConflictError`, the identical procedure would have returned a clean bill.
+
+So the clause is now `tests/error-hygiene.test.ts`, whose domain is every directory under
+`lib/server`, every barrel that exists, and every export whose `prototype instanceof Error` — no
+name pattern, no list, and a floor assertion so a walk that stops reaching the classes reds instead
+of passing over an empty set. A module added next month is covered the day it is added.
+
+Note what no module's own suite could have caught: three modules satisfied the clause and one did
+not, so every module was **locally** correct. Cross-module invariants need a check that lives
+outside every module, or they are enforced by whoever happens to read two of them side by side.
+
+## B-21: the hygiene clause wins over the field it forbids
+
+`ArchiveConflictError` assigned `this.name` and `this.kind` in its constructor, making both
+enumerable, so it rendered as `{"name":"ArchiveConflictError","kind":"bundle-slug"}` against a
+clause requiring `{}`. T010 is merged and tagged, and its adversary's report accepts that shape.
+
+Ruled: **the clause is right and the class is wrong**, fixed on `backend` at the commit carrying
+this line. The clause's entire worth is that it is absolute and mechanically checkable, and an
+exception for "fields we published on purpose" reintroduces the hand-maintained list it replaced —
+the same move charged as a blacklist predicate everywhere else in this run. Three of the four
+classes already satisfied it, so it is satisfiable rather than aspirational.
+
+The fix costs nothing it was protecting: `kind` is still a readable property, still what callers
+branch on under D-14, and `instanceof` is untouched. Only its appearance in a *rendering* changes,
+which is what the clause was ever about.
+
+## A guard reading a shared file reports the state of its own tree's copy
+
+T090's author's suite reported T080's index row and section disagreeing, and named it correctly as
+the one red outside its tree and not its to touch. On `backend` those two read `merged` and
+`merged`: the disagreement is real in its worktree, which merged an older `backend.md`, and absent
+at base.
+
+Nothing went wrong here — it reported rather than edited, which is exactly right. The rule is for
+the reader: `backend.md` is mutable shared state, so a guard over it measures **the copy in the
+tree it ran in**. A cross-tree red against it is a question until it is re-measured at base, and a
+cross-tree *green* is worth even less. The scope of the check went stale in the guard written to
+catch staleness.
+
 ## An amendment writes signatures against a tree that already exists
 
 The checklist below says a Published signatures block is checked against the tree **at the moment
@@ -1495,7 +1562,7 @@ it does not decide differently inside a worktree.
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | — | — | todo | — |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | — | — | todo | — |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
-| T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | impl-done | — |
+| T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | adversarial-pass | — |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | — | — | todo | — |
 | T100 | Publishing and releases | T010, T020, T025, T040, T050, T060, T070, T090 | `lib/server/publish/**`, `app/api/bundles/**` | — | — | todo | — |
@@ -3980,7 +4047,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   - 2026-08-15 implementer, round 2: **three defects addressed, two falsified, and the gate block cleared by implementation rather than by a suite rewrite.** Took the adversary's tree at `a2cac88` rather than re-merging, then merged `backend` at `110dd6b`.
 ### T090, Distribution and export artefacts
 
-- **State:** impl-done
+- **State:** adversarial-pass
 - **Worktree:** `../darkprint-wt-t090-export` on `feat/t090-export`
 - **Test worktree:** `../darkprint-wt-t090-export-tests` on `test/t090-export`
 - **Depends on:** T010, T020, T030 (data)
