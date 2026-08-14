@@ -2352,6 +2352,43 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     a predicate labelled sampled invites the next sweep, one labelled exact does not. That is the
     cost of the stronger claim and it is mine, not the orchestrator's for accepting it.
 
+  - 2026-08-14 adversary, **follow-up to the revert experiment: the unpaired-floor `gained`
+    term is unreachable in every domain currently guarding this task, and I have found what a
+    domain needs to reach it.** No implementation defect — the term is present and correct.
+    This is a coverage finding of the same class as Finding 2.
+    **The discriminating input:** `["1.0.0","1.0.0"] → ["1.0.0","1.0.0+b"]`. Correct answer
+    **`minor`**; with the `gained` term deleted, **`patch`**. It needs three things at once, and
+    all three: a leftover pair of **equal semver precedence but different strings**, which only
+    build metadata produces, to reach the `magnitude === "none"` branch at all; a **duplicate**,
+    so that cancellation leaves a before-item whose value is still pinned in the full after list
+    and the `lost` half of the floor is only `patch` rather than `major` masking everything; and
+    the after-value absent from the full before list, so the `gained` half is `minor` and is the
+    maximum. Controls: `["1.0.0"] → ["1.0.0+b"]` answers `major` because the `lost` half masks
+    it, and `["1.0.0","1.0.0"] → ["1.0.0","1.0.1"]` produces no equal-precedence pair at all.
+    **With the term deleted, both existing guards stay green**: `tests/server/t025` 157/157 and
+    `lib/server/versioning` 67/67, the latter including the implementer's own exhaustive oracle.
+    **What a domain needs, measured rather than argued.** Exhaustive sweeps of my oracle against
+    the implementation with the term deleted, multisets to length 3:
+    | pool | pairs | divergences |
+    | --- | --- | --- |
+    | `1.0.0, 1.0.1, 2.0.0` (no build metadata) | 399 | **0** |
+    | `1.0.0, 1.0.0+b, 1.0.1` | 399 | **14** |
+    | `1.0.0, 1.0.0+b, 1.0.1`, length ≤ 2 | 99 | **2** |
+    Same point count, 399 either way: the plain-semver pool cannot detect the deletion at any
+    length, and the build-metadata pool detects it at 99 points. **Domain reach is decided by
+    which value *relations* the pool can express, not by how many points it enumerates.** An
+    oracle over 3136 pairs of distinct plain semvers cannot reach a branch that only fires when
+    two versions compare equal and are not identical, however many pairs it adds.
+    **The generalisation, which is the useful half:** an oracle's coverage claim is over the
+    equivalence classes of the comparator its subject uses, and the pool must carry a witness
+    for each. Here that is at least: equal-precedence-but-different-string (build metadata),
+    prerelease-versus-release, unparseable-versus-parseable (`latest`), and
+    present-versus-absent-in-the-full-opposite-list (which needs duplicates, since without them
+    cancellation never leaves a leftover whose value survives elsewhere). This is the same
+    lesson as the `(1/3)^8` generator and as the implementer's two-disjoint-pools note, stated
+    as a construction rule rather than as a hazard to remember.
+    Guard experiment reverted by byte copy; tree clean, 223/223 green after restore.
+
 ### T060, Authorization policy: owner and operator
 
 - **State:** merged
