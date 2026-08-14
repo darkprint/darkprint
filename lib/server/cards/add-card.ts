@@ -17,7 +17,7 @@
 
 import { eq } from "drizzle-orm";
 import { schema, type Db } from "@/lib/db";
-import { cardDigest, checkVersionChain, parseSemver } from "@/lib/core";
+import { cardDigest, checkVersionChain, compareVersionStrings, parseSemver } from "@/lib/core";
 import type { NodeCard } from "@/lib/server/types";
 import type { CardRecord } from "./types";
 import { toCardRecord } from "./to-card-record";
@@ -73,23 +73,45 @@ export async function addCard(db: Db, input: AddCardInput): Promise<CardRecord> 
     throw storageFailureError(cardId, version, cause);
   }
 
-  // AC6: check the declared bump against the whole existing chain, not just
-  // whatever happens to be "latest" — checkVersionChain sorts by version and
-  // checks every adjacent pair, so a version inserted into the middle of an
-  // existing chain is held to the same rule a version appended at the end is.
+  // AC6, ruling (2026-08-14): a write is judged on what it adds. Check the new
+  // version only against its immediate predecessor and immediate successor by
+  // semver order — never the whole chain. A pre-existing inconsistency between
+  // two rows this write did not touch (a backfill, T250's seed import, both of
+  // which can write rows addCard itself never produces) is not this write's
+  // fault and must not refuse it; and since only the new version's own
+  // neighbours ever enter the check, no refusal can name a version the caller
+  // did not submit.
   const existing = await db.select().from(schema.cardVersion).where(eq(schema.cardVersion.cardId, cardId));
   if (existing.length > 0) {
-    const chain = [...existing.map((row) => ({ card: row.body as NodeCard })), { card: body }];
-    const bumpDiagnostics = checkVersionChain(chain).filter((d) => d.code === "card/version-bump-too-small");
-    if (bumpDiagnostics.length > 0) {
-      // `message` is the summary sentence ("only a patch bump... requires a major
-      // bump"); the itemized per-field reasons ("required input `extra` was
-      // added") are in `hint`. AC6 asks for the engine's reasons, which means both.
-      throw bumpTooSmallError(
-        cardId,
-        version,
-        bumpDiagnostics.flatMap((d) => (d.hint !== undefined ? [d.message, d.hint] : [d.message])),
-      );
+    type ExistingRow = (typeof existing)[number];
+    let predecessor: ExistingRow | undefined;
+    let successor: ExistingRow | undefined;
+    for (const row of existing) {
+      const cmp = compareVersionStrings(row.version, version);
+      if (cmp < 0 && (predecessor === undefined || compareVersionStrings(row.version, predecessor.version) > 0)) {
+        predecessor = row;
+      } else if (cmp > 0 && (successor === undefined || compareVersionStrings(row.version, successor.version) < 0)) {
+        successor = row;
+      }
+    }
+
+    const neighbors: { card: NodeCard }[] = [];
+    if (predecessor !== undefined) neighbors.push({ card: predecessor.body as NodeCard });
+    neighbors.push({ card: body });
+    if (successor !== undefined) neighbors.push({ card: successor.body as NodeCard });
+
+    if (neighbors.length > 1) {
+      const bumpDiagnostics = checkVersionChain(neighbors).filter((d) => d.code === "card/version-bump-too-small");
+      if (bumpDiagnostics.length > 0) {
+        // `message` is the summary sentence ("only a patch bump... requires a major
+        // bump"); the itemized per-field reasons ("required input `extra` was
+        // added") are in `hint`. AC6 asks for the engine's reasons, which means both.
+        throw bumpTooSmallError(
+          cardId,
+          version,
+          bumpDiagnostics.flatMap((d) => (d.hint !== undefined ? [d.message, d.hint] : [d.message])),
+        );
+      }
     }
   }
 
