@@ -29,7 +29,7 @@ serialisation point out, so the cap is now sessions rather than review capacity.
 | 1 | T000 | *(merged)* | **verified**, tag `t000-verified` at `ec516fa` | — |
 | 2 | T060 | *(merged)* | **verified**, tag `t060-verified` at `eef7cce` | — |
 | 3 | T010 | *(merged)* | **verified**, tag `t010-verified` at `3fd050f` | — |
-| 4 | T025 | `../darkprint-wt-t025-versioning` | round 6, **adversary** at `c9dc75c` | `…versioning-f2`; impl `…versioning-3a` idle |
+| 4 | T025 | `../darkprint-wt-t025-versioning` | **adversarial-pass** at `c1bf813` — merge **held** for Finding 2's blind coverage | adversary `…versioning-f2` idle; coverage `…archive-c2` writing |
 | 5 | T020 | *(merged)* | **verified**, tag `t020-verified` at `aee6e07` | — |
 | 6 | T030 | `../darkprint-wt-t030-ontology` | round 2, implementer at `cbf02b0` | `…policy-c9`; adversary `…archive-28`, tests `…versioning-tests-eb` idle |
 
@@ -108,6 +108,13 @@ the protocol rather than a decision inside it.
   file cannot drift apart.
 - **Nothing is pushed.** `backend` tracks `origin/backend`; a local merge is reversible in a
   way that publishing is not. `git push` waits for the owner, every time.
+- **This carve-out was broken.** Three PASSes — T060, T010, T020 — merged and tagged without
+  being surfaced. The owner removed the gate and went to bed within the hour, and the clause
+  written to survive an unattended loop was skipped by the unattended loop, which is the only
+  way a calibration step ever fails. Raised by T020's adversary, then independently by T025's
+  from the other direction; by neither of the two orchestrator checks that should have caught
+  it. Surfaced at T020's merge, late. **A governance clause with no mechanism is a reminder**,
+  and this file has replaced every other reminder with structure.
 - **The first PASS is still shown to the owner, once.** Not as a standing gate: as
   calibration. Across four rounds this adversary has returned FAIL every time, so there is
   strong evidence about its bar for *broken* and none at all about its bar for *done*, and
