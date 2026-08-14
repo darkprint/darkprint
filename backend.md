@@ -1078,7 +1078,7 @@ it does not decide differently inside a worktree.
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | impl-done | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
-| T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | — | — | todo | — |
+| T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | adversarial-pass | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | — | — | todo | — |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | — | — | todo | — |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | — | — | todo | — |
@@ -3010,7 +3010,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T030, Ontology store, merged view, versioned releases
 
-- **State:** claimed
+- **State:** adversarial-pass
 - **Worktree:** `../darkprint-wt-t030-ontology` on `feat/t030-ontology`
 - **Test worktree:** `../darkprint-wt-t030-ontology-tests` on `test/t030-ontology`
 - **Depends on:** T000 (contract), T025 (contract: version chains)
@@ -3081,6 +3081,192 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Out of scope:** usage counting and promotion (T210), the re-score job's scheduling (T080 owns the projection).
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-04, B-07, B-08.
+  - 2026-08-14 test author: 147 blind tests in `tests/server/t030/**`, all red on a missing
+    module and none on a syntax error or a bad path — verified by grouping every failure by its
+    root cause, which yields exactly two: `Cannot find package '@/lib/server/ontology'` (140)
+    and `Cannot find package '@/lib/server/versioning'` (7). Per file, with the criterion each
+    covers: `surface.test.ts` 11 (the six published names, plus identity checks that
+    `ontologyView`/`partitionTerms`/`splitTermId` are consumed and not forked, plus that no
+    export reads a release); `store.test.ts` 27 (no criterion — the digest being computed and
+    not supplied, value-identical round trips, sorted reads, latest/list, the unique version,
+    concurrent writers, and the one-transaction rule); `view.test.ts` 22 (**AC1** 6, **AC2** 7,
+    **AC5** 9); `validate.test.ts` 34 (**AC3** 11, **AC4** 12, `validateVocabulary` 11);
+    `bump.test.ts` 7 (**AC6**); `robustness.test.ts` 46 (the three inherited hardening rules,
+    plus absent and malformed input, wrong types, surplus arguments, empty term sets, unicode,
+    duplicate calls and concurrent readers). `contract.ts` and `fixtures.ts` are not collected.
+  - 2026-08-14 test author: **AC6 is red on T025, and the file is arranged so it says so.**
+    With the base published in a `beforeEach`, all seven AC6 tests reddened on
+    `@/lib/server/ontology` and the criterion that "waits on T025" named T025 nowhere. Every
+    AC6 test now binds `inferOntologyBump` before it touches the store, so the red names the
+    module the contract says the criterion is waiting for, and `contract.ts` gives that red a
+    message saying whose module it is and that it is not a reason to grow a second bump
+    inference inside `lib/server/ontology/**`.
+  - 2026-08-14 test author: the guards were falsified before hand-off. A throwaway reference
+    implementation in the scratchpad turned 140 of 147 green on the first run, the other seven
+    being AC6. Twenty deliberate breakages then each reddened tests beyond that baseline, and
+    each hit the property it broke. **The one worth naming is the module-scope cache AC5
+    forbids**: under it, all three tests of AC5 *as written* — identical answers across
+    consecutive resolutions, across an interleaved reverse question, and under concurrent
+    callers — stayed **green**, while all five converse tests went red. The criterion as
+    literally stated cannot catch the thing the contract spends a paragraph forbidding; only
+    the converse can. The others: the view reporting a non-base version (2), the overlay
+    appended instead of replaced in place (17), `validateVocabulary` treating its array as an
+    overlay (4), no transaction (1, exactly the atomicity test), a recursive well-formedness
+    walk (140 — it dies before anything else runs), a surrogate repaired instead of refused (1,
+    and instructively: only the version string, because `pg` rejects a bad surrogate inside
+    `body` and silently replaces one in a `text` column), a blanket unicode ban (87), the
+    driver's error escaping unwrapped (6), `cause` enumerable (25), `stack` left on (25), a
+    caller-supplied digest honoured (1), the digest ignoring the version (1), unsorted reads
+    (5), latest-by-arrival (1), `openView` answering for an unpublished version (1), a declared
+    weight of `0` dropped (1), `createdAt` as a string (6), the overlay sorted in place (1),
+    and `openView` ignoring the overlay (24).
+  - 2026-08-14 test author: **three assertions are derived rather than published**, each
+    isolated in one test so a ruling moves one thing. (a) `getLatestOntologyVersion` orders by
+    semver, not by arrival — the contract does not say, and this is the rule the card path
+    already states in `lib/core/card/validate.ts` ("the last published one is a fact about the
+    numbers and not about a directory listing"). (b) Two versions with identical term sets get
+    different digests, from `lib/core/hash/digest.ts:26`. (c) The merged view's `title` equals
+    `CORE_ONTOLOGY.title`, read from `lib/core` rather than restated. (b) and (c) reached this
+    suite by message and are **not in backend.md** — a transcribed contract is what cost T000
+    a round, so they are recorded here. `listOntologyVersions`'s ordering is left unasserted
+    beyond being stable across calls, because nothing states a direction.
+  - 2026-08-14 test author: two environment findings, neither this task's to fix.
+    `tests/support/env.ts` still says `tests/server/**` must not import it because that tree is
+    "written blind, in a worktree branched before this file exists" — stale since T000 merged,
+    and the harness is used, since reimplementing create-migrate-drop per test branch is the
+    duplication it exists to prevent. Its live consequence: `testEnv()` demands all five
+    variables, so this suite cannot run without `S3_*` exported and it never touches object
+    storage. Separately, the full tree is **3997 tests**: 147 red here and 3850 green, once
+    `SESSION_SECRET`, `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are set — left blank in
+    `.env.example`, they fail 20 of T000's own environment and session tests, which is
+    pre-existing and reproduces with `tests/server/t030/` excluded. Every scratch database was
+    dropped: `pg_database` holds no `darkprint_test%` row after the run.
+  - 2026-08-14 test author, **rebound to the amended error-hygiene clause and the two rulings**,
+    at `2307c00`. 147 tests became **151**, exit 1 over 6 failed files, and the two root causes
+    are unchanged. What moved, and one of it was a latent false red in my own suite:
+    `expectSealedError` bound the **superseded** wording — own properties exactly
+    `["message", "cause"]` — which can only be satisfied by deleting `stack`. It now binds the
+    replacement from the governance section: `Object.keys` empty, `JSON.stringify(err)` exactly
+    `"{}"`, `cause` non-enumerable checked through `propertyIsEnumerable` rather than inferred,
+    `stack` **retained**, and no rendering carrying the statement, a parameter, caller content, a
+    SQLSTATE or a `pg` internal. Two new tests name the parts that used to be inverted, so a
+    deleted `stack` reds under its own name. Measured: against a reference that deletes `stack`,
+    **26 tests red**. Had this not been caught, the implementer would have been reddened for
+    correcting the very thing the amendment asked it to correct.
+  - 2026-08-14 test author, **table and constraint names came off the forbidden list.** The
+    rejection tests scanned for `ontology_version`, which is a substring of
+    `ontology_version_version_key` — and this task's own contract ties that constraint literal to
+    `getTableConfig` rather than restating it, so a typed conflict may legitimately name the
+    constraint it matched. The list is now the caller's content only; statement fragments,
+    bound-parameter markers, SQLSTATEs and `pg` internals are checked for every rejection by
+    `expectSealedError` itself rather than repeated per call site.
+  - 2026-08-14 test author, **T-02's condition is this task's, and the first test of it was
+    vacuous.** "Any task whose input can be built in-process rather than parsed must add it" —
+    `terms` is a caller-built array, so T030 qualifies. The first version of the test put the
+    offending term second and measured nothing: the walk pops its stack LIFO, so the bad label
+    was found before the 24-level diamond was entered, and removing the `seen` set reddened
+    **zero** tests. Caught by falsifying it rather than by reading it. It now runs **both
+    arrangements** and asserts on the worse time, which holds for any deterministic traversal
+    order, and it reds correctly. A second test holds the other side: an ill-formed string
+    reachable only through shared substructure must still be refused, so the `seen` set cannot
+    become a way to skip a subtree that was never cleared.
+  - 2026-08-14 test author, **the two rulings are published now** (`95033be`), so the provenance
+    caveats are gone from the comments: the digest covering `version`, and the merged view's
+    title tied to `CORE_ONTOLOGY.title` by a colocated test, which is what the ruling asks for.
+    AC5's amendment needed no test changes — its converse was already the five tests the
+    amendment was written from. Re-falsified: **23 breakages**, all discriminating, `B11`
+    inverted (retaining `stack` is now correct, deleting it is the defect) and three added for
+    the new guards. Own scratch database per file; `pg_database` clean afterwards. Following the
+    hook note: read the exit code and the failed-file count, not the test total.
+  - 2026-08-14 test author, **the error clause is asserted as a whitelist now**, landed after the
+    adversary's round rather than during it so the suite under examination did not move. A
+    whitelist clause asserted with `output.includes(fragment)` is still a blacklist and keeps the
+    over-match hazard; only that one instance of it had gone. Both sides are derived now and
+    neither is hand-written: the deny set is every word in the **actual driver error carried on
+    `cause`**, and the allow set is the caller's own identifiers plus every table, index and
+    column name `getTableConfig` reports for this task's two tables — which is what the clause
+    means by the module's own identifier. Comparison is **word by word, not substring**, so
+    `ontology_version` and `ontology_version_version_key` are different tokens and the over-match
+    cannot recur even if someone puts the table name back.
+  - 2026-08-14 test author, **curation crept back in twice and running found it both times.**
+    First attempt: a hand-written fragment list. Second: a hand-written list of structural words,
+    needed because `Error.prototype.name` puts `error` into both renderings and a *correct*
+    reference went red on it — now derived by subtracting the words a baseline `Error` produces.
+    Measured on the landed version: a correct reference reds 7 (AC6 only, no false reds); the
+    driver message interpolated into ours reds 8 beyond that; and a **constant** driver phrase
+    with no caller data in it, `duplicate key value violates unique constraint`, is caught —
+    which matters because an invariance test ("the message varies only with caller inputs")
+    passes that one, and an invariance test was the first design.
+  - 2026-08-14 test author, **T-03 annotated, and then measured under the new falsification
+    rule** (`e67c4f9`: the red must arrive through the published surface, not through a direct
+    call to the guard). Deleting the well-formedness guard outright from a reference and diffing
+    sorted failing sets over the whole suite reds **2 of 151** — `refuses an unpaired surrogate
+    in 'the version string itself'` and the T-02 timing test. Both are the tests the annotation
+    already named as the ones that hold the guard, and the other five surrogate tests are
+    unobserved exactly as it says, because they travel in `body jsonb` where Postgres refuses by
+    itself. Against an implementation that does **not** run the check over `version`, the same
+    experiment reds zero — which is the adversary's measurement and the reason round 2 extends
+    the check to `version`. The annotation stays after that fix: it will still be true of the
+    five `jsonb` tests. Every falsification in this suite has been run this way from the start —
+  - 2026-08-14 test author, **the five-part landing**, all measured against a reference rather
+    than argued. Correct reference: **0 red of 155**. Each mutation below is a change to the
+    *module*, run through the whole suite with sorted-set diffs.
+    (a) **The whitelist deny side now derives from the driver's values, not its English.** It read
+    every word of the driver's rendering, which made a module's fixed message depend on
+    PostgreSQL's wording — `"is already published"` flagged because `detail` says `"already
+    exists"`. Five `already` reds and two `term`. It now reads only `code`, `constraint`, `table`,
+    `column`, `schema`, `routine`, `file`, `query` and the bound `params`; `severity` is excluded
+    because its value is the word "ERROR". **The two words clear because the predicate stopped
+    over-matching, not because the block stopped running** — proved separately: leaking
+    `cause.query` still reds 8.
+    (b) **The allow side splits schema names into components.** `WORD` keeps underscores, so
+    `getTableConfig` gave `ontology_term` and never bare `term`, making a component of a schema
+    name inadmissible while the name itself was admissible.
+    (c) **The admissibility pass is unconditional.** It sat inside `if (cause !== …)`, so every
+    refusal raised before the database — most of the validation surface — went unexamined, and
+    silently, since a sealed error defines `cause` even when nothing was passed. The pass now
+    always runs and only its *source* varies. Mutation: a causeless refusal echoing the caller's
+    content reds 1.
+    (d) **M1/M2/M6.** M6 (sorted order asserted on the read path and not on `addOntologyVersion`'s
+    own return) reds 1. M2's two genuine members red 1 and 2. The four M1 members are **annotated
+    rather than strengthened**, per the T-03 ruling: the storage layer does the refusing, so the
+    tests keep their outcome and say what they cannot distinguish.
+    (e) **AC6 through the store, three tests.** The existing six bind `inferOntologyBump` and
+    `checkDeclaredBump` directly and never reach `addOntologyVersion` — the composition was
+    untested while its components were. Deleting the store's enforcement reds 1; the control
+    (the same removal declared as a major, accepted) is what makes it measure the bump rule
+    rather than "removals are refused".
+  - 2026-08-14 test author, **the ordering guard could not fail, and measuring is what showed it.**
+    `expectCausePresent` used `hasOwnProperty("cause")`, which is true on *every* sealed error
+    because the constructor defines the property whether or not anything was passed. A variant
+    making a republish refusal causeless reddened **nothing**. It now requires the property's
+    *value* to be defined; the same variant reds 2. Two earlier attempts at that mutation also
+    reddened nothing and were **bad probes rather than a bad guard** — the module's outer catch
+    re-wrapped them and supplied a cause. Recorded because the three outcomes are
+    indistinguishable from the count alone: a guard that cannot fail, and a probe that cannot
+    reach it, both read as zero.
+  - 2026-08-14 test author, **the whitelist could not see a SQLSTATE, and the fix is the
+  - 2026-08-14 adversary, round 4: **PASS**, `State: adversarial-pass`. Tree received at `f259570` with an empty porcelain, verified here. Merged the blind suite through its three landings (`b9c8be3`, `8d72449`, `4027895`), resolving each to the branch's copy byte-for-byte and keeping both sides' Log entries; merged `backend` rather than rebasing, because a rebase replays my merge commits into add/add conflicts and would invent a history the tree never had — checked first that `backend` touched only `backend.md`. **Final triple at `03d671f`, stamped empty before and after with `HEAD` unmoved: three runs, exit 0 each, 149/149 files, 4448/4448 tests, sorted failing sets identical and empty, zero scratch databases after each.** `typecheck` 0, `lint` 0, `build` 0. The shared-stack flakiness that cost earlier rounds is at zero across a 149-file suite.
+  - 2026-08-14 adversary, **the three round-2 defects are closed, and I reproduced each number with my own pattern rather than the implementer's.** D-15: the version is walked, and neutering the surrogate predicate now reds the blind suite's *refuses an unpaired surrogate in 'the version string itself'*. **D-16's number is 2**, as the blind author predicted from a reference built without sight of the module — my measurement was 6, of which exactly 2 are blind and 4 are the colocated harness, which is the distinction D-16 was about. My first attempt at that pattern deleted the `if` lines and produced **139** newly red; that is an orphaned body, not a result, and my instrument said so rather than reporting it. D-17: `findMalformedInput` reds **4**, not the 3 predicted — the fourth is *refuses 'an object with no version'*, reported as a disagreement and normalisation checked first, which is where I found and fixed a double-count of my own. T-02: the `seen` set reds exactly **1**, the blind timing test, confirming that the implementer's own harness could not catch it.
+  - 2026-08-14 adversary, **AC6's enforcement was unobserved and now is not, and I cleared the three-causes bar rather than trusting a count.** With the enforcement in place I reproduced the implementer's **7-and-7** independently — `if (false && tooSmall.length > 0)`, my substitution, 0 newly red and 0 cleared. After the blind tests landed the same mutation reds **1**, and liveness is confirmed separately: under the mutation my own probe shows `0.2.0` dropping a term go from `refused: VersionBumpTooSmallError` to **accepted**. So the module loaded, the path was reached, the behaviour changed and a test saw it — the three causes of a zero, separated. **The ordering is bound by name**: disabling the existence check reds *AC6 gives a republish the duplicate refusal, not the bump one* and *carries a non-enumerable `cause` on a refusal the database raised*. Verified by direct invocation too, because the suite could not: both refusals applying yields `DuplicateOntologyVersionError` carrying a `DrizzleQueryError` with 23505 down the chain, while a bump refusal on a new version carries **no cause at all** — which is precisely why a bump refusal arriving for a duplicate would have switched `expectSealedError`'s whitelist block off and turned five reds green with the assertion not running.
+  - 2026-08-14 adversary, **even attention, checked because my rounds had pooled on the guards.** `openView`'s per-batch guarantee and the merged-view semantics had the least scrutiny from me, so I mutated them by the same total method: adding the module-scope cache the contract forbids reds **30**; ignoring `extensions` reds **28**; folding `extensions` into the base, so a term stops being local by the channel it arrived through, reds **16**, including the AC3 tests that bind exactly that rule. Each newly-red set is coherent with its mutation rather than import noise, which is what separates an observability result from a broken module at those magnitudes. The view semantics are the best-defended part of this task.
+  - 2026-08-14 adversary, **three defects found in this task, all in the blind suite, none in the module, and no module message was reworded to accommodate any of them.** (1) The whitelist read co-occurrence as derivation: the module's fixed message *"is already published"* was refused for the word **already**, which Postgres also uses, on a deny set built from the driver's English prose — 5 `already` and 2 `term`, counted across all seven rather than read off one error text. (2) After the deny side was rederived from the driver's **values**, the `WORD` regex still required a leading `[a-z_]`, so `"23505"` tokenised to `[]` and a leaked SQLSTATE was **invisible to the assertion whose clause names it** — planting `${code}` reds 1, and that 1 is the colocated harness, not the blind suite. The set was widened; the tokenizer that has to represent its members was not re-derived. (3) The bare `rejects.toThrow()` on the AC6 store test, which could not tell a bump refusal from any other throw — raised, then retired when the ordering got its own test, and tightened anyway. I checked the fix in both directions: `${code}` now reds 8, `${query}` reds 8, and `${constraint}` — the name the contract requires the module to be able to say — correctly reds **0**.
+  - 2026-08-14 adversary, **what would falsify this PASS.** Any of: a surrogate reaching Postgres through a path I did not walk; a rejection carrying the statement, a bound parameter, a SQLSTATE or the caller's content through any of the five renderings; a duplicate arriving as a bump refusal, or a bump refusal carrying a driver `cause`; `openView` handing two callers one instance, or an overlay from one call visible in another; a cycle read as clean, or shared substructure read as a cycle; the `seen` set removed without the timing test reddening; the enforcement removed without an AC6 test reddening; or a triple that is not identical by sorted set on a tree stamped clean at both ends. I ran each of those and none holds. The known ceiling stays open and is not this task's: with the walk at O(1) per visit a deep diamond is still expensive end-to-end, because `canonicalJson` and the driver's `jsonb` serialisation each re-expand shared substructure — the `seen` set bounds the guard's cost, not the request's, and a depth cap belongs at a route that does not exist yet.
+  - 2026-08-14 adversary, **my own errors this task, all corrected and all recorded**: three probe assertions in round 1 aimed at what I expected rather than at what the thing is (`OntologyView`'s shape, AC2's diagnostic code, a leak sentinel planted inside the one field the module renders on purpose); a parser that double-counted every failure because vitest's nested `×` lines omit the file prefix; and `.t030-probes/`, five untracked files I left in this worktree across two rounds while reporting zero residue — I had checked `pg_database` and the object store for four rounds of T010 and never the working tree I was sitting in. That last one is the rule now, in the form that generalises: **a standard applied rigorously inside a boundary that was never itself examined**, and the boundary is a claim like any other.
+    boundary rule applied to itself.** `WORD` was `[a-z_][a-z0-9_]{3,}`, built for identifiers, so
+    `"23505"` produced **no token at all** and could never appear on either side of the
+    comparison — while the clause names a SQLSTATE among the things no rendering may carry. The
+    deny set had already been widened to include the driver's `code`; the tokenizer that has to
+    *find* those values in a rendering was not re-derived alongside it. Widening what you look for
+    is inert if the thing doing the looking cannot represent it. One character: the leading class
+    now admits a digit. **Checked in three directions, not one** — `${code}` interpolated reds 8
+    where it reddened 0 before; `${constraint}`, which this contract *requires* the module to be
+    able to name, still reds 0, so the fix does not over-correct; and the existing `${query}` case
+    still reds 8. Nothing admissible tokenises as digit-leading: `0.1.0` splits into single
+    characters and yields no token, and every table, column and constraint name is alphabetic.
+    Also tightened: the AC6 store test's bare `rejects.toThrow()` became the shared `rejects`
+    helper, which holds the whole error-hygiene clause rather than accepting any throw at all.
+    a patched module, the whole suite through vitest, never a direct call to the thing broken.
 
 ### T050, Accounts and sessions
 
