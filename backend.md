@@ -3151,6 +3151,20 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     re-wrapped them and supplied a cause. Recorded because the three outcomes are
     indistinguishable from the count alone: a guard that cannot fail, and a probe that cannot
     reach it, both read as zero.
+  - 2026-08-14 test author, **the whitelist could not see a SQLSTATE, and the fix is the
+    boundary rule applied to itself.** `WORD` was `[a-z_][a-z0-9_]{3,}`, built for identifiers, so
+    `"23505"` produced **no token at all** and could never appear on either side of the
+    comparison — while the clause names a SQLSTATE among the things no rendering may carry. The
+    deny set had already been widened to include the driver's `code`; the tokenizer that has to
+    *find* those values in a rendering was not re-derived alongside it. Widening what you look for
+    is inert if the thing doing the looking cannot represent it. One character: the leading class
+    now admits a digit. **Checked in three directions, not one** — `${code}` interpolated reds 8
+    where it reddened 0 before; `${constraint}`, which this contract *requires* the module to be
+    able to name, still reds 0, so the fix does not over-correct; and the existing `${query}` case
+    still reds 8. Nothing admissible tokenises as digit-leading: `0.1.0` splits into single
+    characters and yields no token, and every table, column and constraint name is alphabetic.
+    Also tightened: the AC6 store test's bare `rejects.toThrow()` became the shared `rejects`
+    helper, which holds the whole error-hygiene clause rather than accepting any throw at all.
     a patched module, the whole suite through vitest, never a direct call to the thing broken.
 
 ### T050, Accounts and sessions
