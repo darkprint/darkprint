@@ -2916,6 +2916,28 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** —
 - **Owns:** `lib/server/observability/**`
 - **Forbidden:** every route file, `lib/server/limits/**`
+- **Published signatures** (checked against `backend` at `b1f67d6` and against `lib/db/schema.ts`'s `audit` — `actor_id` nullable uuid, `actor_kind` enum `owner|operator|system`, `action`, `target_kind`, `target_id`, `decision` enum `allowed|denied|error`, `detail jsonb NOT NULL DEFAULT {}`, `occurred_at`. Barrel: `@/lib/server/observability`.)
+
+        interface AuditEntry {
+          actorId: string | null; actorKind: "owner" | "operator" | "system";
+          action: string; targetKind?: string; targetId?: string;
+          decision: "allowed" | "denied" | "error";
+          detail?: Record<string, string | number | boolean>;
+        }
+
+        writeAudit(db: Db, entry: AuditEntry): Promise<void>
+        listAudit(db: Db, actor: Actor, filter: { targetKind?: string; targetId?: string; since?: Date }): Promise<AuditEntry[]>
+
+  **`detail` is `Record<string, string | number | boolean>`, not `unknown`, and that is AC3 made structural.** "No log field carries run content or a credential" cannot be enforced by remembering — one caller spreading a request body in and it ships. A scalar-only map cannot hold a nested object, so a DOT source, a card body or a driver error **cannot be passed** rather than merely being discouraged. The type is the guard; the test asserts the type rejects a nested value, which is a compile-time test in the shape T060's `Exact<>` check already established.
+
+  **AC2 is `actor_kind`, already in the schema, and AC5 is `decision`.** Neither needs inventing: an operator action is distinguishable because the column exists, and refused-by-policy is `denied` while a fault is `error`. State it so nobody adds a parallel `isOperator` boolean or encodes the distinction in `action` strings.
+
+  **AC1's "exactly one row" is a counting criterion and it is the one that will be tested wrong.** A test asserting a row *exists* passes when three are written. It asserts **the count**, before and after, over one operation — and the discriminating case is an operation that fails partway, which must write exactly one row saying so rather than one saying `allowed` and another saying `error`.
+
+  **The absolute constraint restated because it is a product promise, not an engineering preference.** The registry holds the bundle and who owns it, and not "a run, a key, or any telemetry about either" (`components/bundle/Aside.tsx:33-36`). So there is no audit action naming a blueprint *run*, and download counts come from an explicit event at the serving edge (T150), never derived from request logs. A test asserts no `action` value in the enum's live set refers to a run.
+
+  **Admissible message forms:** this module writes rows rather than raising, so the whitelist applies to `listAudit`'s refusal only — `"listAudit: not permitted."` Nothing about the target, since naming a target the caller may not see is itself a leak (B-03's 404-not-403, one layer down).
+
 - **Goal:** record what the registry did, without ever observing a blueprint run.
 - **Contract:** B-14 — every state change writes an audit row of actor, action, target and time; request logs are operational and expire at about 90 days; downloads are counted by an explicit event at the serving edge and never derived from logs, so logs never become product data. One constraint is absolute and comes from the product's own copy: the registry holds the bundle and who owns it, and not "a run, a key, or any telemetry about either" (`components/bundle/Aside.tsx:33-36`). Error responses carry no stack, no query and no internal path (B-03).
 - **Acceptance criteria:** (1) each state-changing operation writes exactly one audit row naming actor, action, target and time; (2) an operator action is audited and distinguishable from an owner's; (3) no log field carries run content or a credential; (4) a `problem+json` body contains no internal path or stack; (5) a refused-by-policy operation is distinguishable in the log from one that errored.
@@ -3379,6 +3401,31 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** T130, T150, T160, T170, T180, T200, T210, T220, T260, T261
 - **Owns:** `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**`
 - **Forbidden:** `app/api/bundles/**`, `app/api/search/**`, `lib/server/archive/**`
+- **Published signatures** (checked against `backend` at `b1f67d6`, against `lib/core/archive/registry.ts:49-92`'s `Registry` interface and its `CardVersionRecord`/`BlueprintRecord` types — **consumed, never restated** — and against `release`'s `autonomy`, `security`, `phase_coverage` and `scored_ontology_version_id` columns. Barrel: `@/lib/server/registry`.)
+
+        blueprints(db: Db, actor: Actor): Promise<readonly BlueprintRecord[]>
+        blueprint(db: Db, actor: Actor, ownerHandle: string, slug: string): Promise<BlueprintRecord | undefined>
+        cards(db: Db, actor: Actor): Promise<readonly CardVersionRecord[]>
+        latestCards(db: Db, actor: Actor): Promise<readonly CardVersionRecord[]>
+        versionsOf(db: Db, actor: Actor, cardId: string): Promise<readonly CardVersionRecord[]>
+        card(db: Db, actor: Actor, ref: CardRef): Promise<CardVersionRecord | undefined>
+        usersOf(db: Db, actor: Actor, cardId: string): Promise<readonly BlueprintRecord[]>
+        duplicates(db: Db, actor: Actor): Promise<readonly (readonly CardVersionRecord[])[]>
+        phases(db: Db, actor: Actor): Promise<readonly string[]>
+        cardsByPhase(db: Db, actor: Actor, phase: string): Promise<readonly CardVersionRecord[]>
+        tags(db: Db, actor: Actor): Promise<readonly string[]>
+        categories(db: Db, actor: Actor): Promise<readonly string[]>
+
+  **Every reader takes an `Actor`, for the reason T020's did.** AC6 — "no private bundle or private card appears in any response" — is twelve functions' worth of remembering unless it is one filter at the boundary. Import `visibleTo` from `@/lib/server/policy`. The discriminating test is not "a private row is absent from `blueprints()`" but **the same assertion across all twelve**, because the one that forgets is the one nobody wrote a test for.
+
+  **AC4 is the criterion I would otherwise have got wrong, and it is stated as an assertion rather than an absence.** "Bucket sizes do not sum to the card count, **and a test asserts that as intended**" — phase buckets cover without partitioning: a card in two phases is in both, a card in none is in no bucket. So a suite that checks the sums *match* is asserting the opposite of the contract, and one that checks nothing leaves a partitioning implementation passing. The test asserts the inequality **and** exhibits one card in two buckets and one in none.
+
+  **AC3's empty bucket is a fact about the index, not a 404.** An undeclared phase returns `[]`. Stated because "returns an empty list, not a 404" is the kind of clause an implementation satisfies for the *known* phases and fails for an arbitrary string.
+
+  **AC7 is the only write-adjacent criterion here and it belongs to a job this task does not own.** The two engine axes are read from stored columns stamped with `scored_ontology_version_id`; an ontology release re-scores and rewrites them. **T080 owns the projection and the read; it does not own the trigger.** So AC7 is tested by writing rows at two ontology versions and asserting the reader returns the new values and no trace of the old — never by invoking a re-score, which belongs to whichever task publishes the ontology release.
+
+  **Admissible message forms:** readers return `undefined` or `[]` rather than raising. The one refusal is `"blueprint: no such bundle."` for an unknown `(owner, slug)` — **identical in wording** to the answer for a private bundle the caller may not see, since B-03 requires 404 over 403 and a different message reinstates the leak the status code closed.
+
 - **Goal:** answer every list, join and reverse-index question the browsing pages ask, and hold the stored scorecard projection.
 - **Contract:** the query surface is the one the engine already states — `blueprints()`, `blueprint(owner, slug)`, `cards()`, `versionsOf(id)`, `latestCards()`, `card(ref)`, `usersOf(id)`, `duplicates()`, `phases()`, `cardsByPhase(phase)`, `tags()`, `categories()` (`lib/core/archive/registry.ts:49-92`), with the blueprint key now two-part (B-09). Only cards a DOT node instantiates are indexed. Phase buckets cover without partitioning: a card in two phases is in both, a card in none is in no bucket, and an undeclared phase returns an empty bucket, which is a fact about the index and not an error. The two engine axes are read from stored columns written at publish and stamped with their ontology version (B-08); an ontology release re-scores and rewrites them. Private content is absent from every response here.
 - **Acceptance criteria:** (1) the nine blueprints and fifty-three cards return the fields and order the build produces today; (2) `usersOf` for a card pinned by two blueprints returns both, sorted and distinct; (3) a phase no card declares returns an empty list, not a 404; (4) bucket sizes do not sum to the card count, and a test asserts that as intended; (5) an unknown owner/slug pair returns 404; (6) no private bundle or private card appears in any response; (7) after an ontology release the stored scores carry the new version and the old values are gone.
@@ -3394,6 +3441,26 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Owns:** `lib/server/export/**`, `app/api/files/**`
 - **Forbidden:** `lib/content/bundle-export.ts` (consume, never edit), `scripts/generate-bundles.ts`
 - **Inherited from T000, reassigned from T010:** `keyForDigest` throws a plain `Error` quoting caller input, and this is the task that actually reaches object storage. **Validate a digest at the edge**, so a bad path parameter is a 404 rather than a 500 echoing what was sent. Unlike at T010's layer this guard is falsifiable: disable it and a malformed digest reaches the S3 client.
+- **Published signatures** (checked against `backend` at `b1f67d6` and against `lib/content/bundle-export.ts`, whose `exportBundle(input: BundleExportInput): readonly ExportedFile[]`, `bundleFilePaths`, `cardFilePath` and `bundleHref` are **consumed, never restated** — the file set is that module's decision. Barrel: `@/lib/server/export`.)
+
+        interface ServedFile { path: string; bytes: Uint8Array; contentType: string }
+
+        exportRelease(db: Db, actor: Actor, bundleId: string, digest: string): Promise<readonly ExportedFile[]>
+        serveFile(db: Db, actor: Actor, ref: { ownerHandle: string; slug: string; version?: string; digest?: string }, path: string): Promise<ServedFile | undefined>
+        serveCard(db: Db, actor: Actor, ref: CardRef): Promise<ServedFile | undefined>
+
+  **AC7 — "a path outside the release is refused, not traversed" — is the security criterion and it is satisfied by construction or not at all.** `path` is **matched against the release's own file list** from `bundleFilePaths`, never joined onto a directory. There is no normalisation step to get right, because no filesystem path is built from caller input: an unknown `path` is simply not in the set. A test asserting `../../etc/passwd` is refused passes against a naive `path.join` guard too; the discriminating test asserts the **membership check** by exhibiting a path that normalises to a legal file and is still refused because it is not the string the export produced.
+
+  **AC2's byte-identity is `exportBundle`'s promise, and this task's job is not to break it.** Generation is pure and sorted upstream. So the criterion tests **two calls through `exportRelease`**, and the way to fail it is to add anything time-, order- or environment-dependent at this layer — a timestamp in `README.md`, a `Map` iterated by insertion, a `Date` in a header. State that, since "byte-identical" reads as satisfied by the module that already guarantees it.
+
+  **AC6 is why the digest path exists and it is the one that decays silently.** "Fetching by digest returns the bytes of that release even after a newer one exists" — so `serveFile` resolves `digest` **before** `version`, and a `version` reference is a convenience that moves while a digest reference never does. `/mcp` calls that distinction load-bearing.
+
+  **AC4 makes this task the last check on emitted Attractor input.** Every served `factory.dot` passes `parseDot` and `lintAttractor` before it is served — not at publish, here, because a release stored before a lint rule changed would otherwise be served unchecked forever.
+
+  **Download events are emitted here and counted by T150 (B-14).** One event per served file. Not derived from request logs, which is T240's absolute constraint.
+
+  **Admissible message forms:** `"serveFile: no such file in this release."` and `"exportRelease: no such release."` The path the caller asked for is the caller's own input and may be echoed; nothing about what the release *does* contain may be, since that is a listing the caller has not been granted.
+
 - **Goal:** serve the downloadable form of a release — the folder, its generated files, and each card at its own address — at stable, digest-addressable URLs.
 - **Contract:** the file set is decided by `lib/content/bundle-export.ts` and consumed, not restated: `blueprint.dot` as authored, `factory.dot` compiled for Attractor, `cards/<ref>.yaml` per pinned card, `README.md`, `AGENTS.md`, and `ontology/extensions.yaml` when and only when the bundle's cards declare a local term. Generation is pure and sorted, so two exports of one release are byte-identical. An emitted `factory.dot` must lex, parse and lint as Attractor input before it is served. Paths carry the owner (B-09), and a release is addressable by digest as well as by version, which is the distinction `/mcp` calls load-bearing. Each served file emits one download event (B-14, counted by T150).
 - **Acceptance criteria:** (1) the file list for each of the nine bundles equals what `public/bundles/<slug>/` holds today, name for name; (2) two exports of one release are byte-identical; (3) a bundle with no local term is served without `extensions.yaml`, one with a local term is served with it; (4) every served `factory.dot` passes `parseDot` and `lintAttractor`; (5) a card URL resolves naming no blueprint; (6) fetching by digest returns the bytes of that release even after a newer one exists; (7) a path outside the release is refused, not traversed.
@@ -3438,6 +3505,39 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Owns:** `lib/server/publish/**`, `app/api/bundles/**`
 - **Forbidden:** `app/api/blueprints/**`, `lib/server/archive/**`, `lib/server/versioning/**`
 - **Inherited from T010's amendment:** refusing a release whose diagnostics carry an error severity is **this task's** responsibility, not the persistence layer's. T010 cannot decide it — that needs full card bodies and an `OntologyView` from T020 and T030, both outside its Owns — so the gate lives here, where the bundle has already been resolved.
+- **Published signatures** (checked against `backend` at `b1f67d6`. This task **composes** and owns no storage: it calls `@/lib/server/engine` (T040), `@/lib/server/archive` (T010), `@/lib/server/cards` (T020), `@/lib/server/versioning` (T025), `@/lib/server/naming` (T070), `@/lib/server/policy` (T060) and `@/lib/server/export` (T090), all through their barrels. Barrel: `@/lib/server/publish`.)
+
+        interface PublishInput {
+          ownerHandle: string; slug: string; version: string;
+          manifest: BundleManifest; dot: string;
+          cardFiles: Record<string, string>; vocabulary?: readonly OntologyTerm[];
+          visibility?: "public" | "private";
+          lineage?: { ownerHandle: string; slug: string; version: string };
+        }
+        interface PublishResult { bundleId: string; releaseId: string; digest: string; created: boolean }
+
+        publish(db: Db, actor: Actor, input: PublishInput): Promise<PublishResult>
+
+  **One verb, because B-06 says one endpoint serves the wizard, the bundle page and the CLI.** `created` distinguishes a new bundle from an appended release; it is not two functions, and a caller does not choose which act it is performing — the slug's availability decides.
+
+  **AC5 is the criterion that makes this a transaction and not a sequence.** "A card version whose bump is too small aborts the whole publish, bundle included" — so every card is published, the bundle row created and the release appended **inside one transaction**, and any refusal rolls all of it back. The discriminating test publishes a bundle whose *second* card fails its chain check and asserts that **the first card is not stored either**, which a step-by-step implementation fails while passing every other criterion.
+
+  **The three refusal shapes are distinguishable because the UI writes three different sentences** (`components/upload/UploadFlow.tsx:1176-1201`). AC1 is *unfinished* with its counts, AC2 is *in error* with its error count, and a conflict is neither. A single `PublishRefusedError` carrying a `kind` of `"unfinished" | "in-error" | "conflict" | "not-owner" | "version-not-higher"` is the shape; a generic refusal satisfies "is refused" and loses the sentence the UI needs.
+
+  **AC4 is a non-effect and non-effects are the ones that go untested.** "Publishing a fork leaves the upstream's bytes, digest and releases untouched" — asserted by capturing the upstream's release digest before and after and comparing, not by observing that no error occurred.
+
+  **AC6's conflict must name the existing release**, which means republishing identical bytes is detected by **digest**, not by version. So the digest is computed before the write is attempted, and the refusal carries the version the existing release holds.
+
+  **Admissible message forms:**
+
+        PublishRefusedError  "publish: <kind> — <n> of <m> nodes carded."     (unfinished)
+                             "publish: <kind> — <n> errors."                  (in-error)
+                             "publish: <kind> — release `<version>` already holds these bytes."
+                             "publish: <kind> — not this bundle's owner."
+                             "publish: <kind> — `<declared>` is not higher than `<previous>`."
+
+  The operation, the `kind`, counts of the caller's own submission, and version strings the caller either sent or already owns. **No diagnostic text from the engine appears in the message** — diagnostics travel in the 200-with-diagnostics envelope (B-03), and a refusal that inlines them is a second rendering of the same content in a place the whitelist has to police separately.
+
 - **Goal:** turn validated bytes into a bundle and its first release, or append a release to one that exists.
 - **Contract:** B-06 — one endpoint serves the wizard, the bundle page and the CLI: create if the slug is free for that owner, append a release if it is not. Publishing runs the validator, computes the digest, stores the scorecard with its ontology version, and generates the export artefacts. It does not touch the upstream and the lineage line stays (`components/bundle/Aside.tsx:92-95`). A bundle that does not resolve cannot be published, and the refusal distinguishes *unfinished* from *in error*, because the UI writes three different sentences (`components/upload/UploadFlow.tsx:1176-1201`). Every pinned card version must exist or be published in the same act, each passing its chain check through `T025`. A release carries the author's semver and the computed digest (B-04).
 - **Acceptance criteria:** (1) publishing a bundle with an unresolved node is refused with the unfinished reason and its counts, not an error count; (2) publishing with an error diagnostic is refused with the error count; (3) the stored digest equals the engine's over the submitted bytes; (4) publishing a fork leaves the upstream's bytes, digest and releases untouched; (5) a card version whose bump is too small aborts the whole publish, bundle included; (6) republishing identical bytes is refused as a conflict naming the existing release; (7) a non-owner publishing to an existing `(owner, slug)` is refused; (8) a declared semver lower than the previous release is refused.
