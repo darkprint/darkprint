@@ -880,6 +880,23 @@ red hook**: `downloads.test.ts` derived its subject in `beforeAll`, which needs 
 imported module, so with the module absent the hook threw and vitest skipped everything under it.
 Lazy-loading inside each test prints `82 failed`, nothing skipped.
 
+**Three distinct ways this suite prints green while measuring less than it claims, and no single
+number catches all three.** T080's implementer found the third and measured it: four files guard
+themselves with `describe.skipIf` — `lib/db/{migrate,schema,storage}.test.ts` and
+`lib/server/archive/archive.scratch.test.ts` — so an **unsourced shell converts real assertions into
+silence**. Running the three `lib/db` ones with `DATABASE_URL` unset:
+
+    exit=0
+    Test Files  1 passed | 2 skipped (3)
+    Tests       8 passed | 11 skipped (19)
+
+**Exit 0 on a run that measured almost nothing.** The other two are a hook failure (`Tests 3954
+passed` beside two failed files and exit 1) and a pipeline whose exit code belongs to `tail` rather
+than to the command. Exit code catches the second, failed-file count catches the first, and **only
+the skipped count catches the third** — which is why all three are read together. It also built the
+detector and then **confirmed it fires** rather than assuming it would, which is the executed
+instance behind "a set that can only be empty is not a measurement".
+
 The trap was already recorded — a hook failure runs no test and adds nothing to the failed column —
 and **the file that broke it was written after the rule, in a suite whose other five files already
 load lazily and say why in their own comments.** So the rule being written down did not stop the
