@@ -21,6 +21,10 @@ moves on completed triples, never on seniority — T025's adversary was offered 
 re-run early to remove the last qualification from its own report and declined it, which is the
 only reason the rule is worth having.
 
+**Wave 3 is complete. Six tasks merged and verified: T000, T060, T010, T020, T025, T030.** The
+first fully green suite of the run landed with T030 — 149/149 files, 4448/4448 tests, typecheck,
+lint and build all 0, zero database residue. Twenty-one tasks remain.
+
 Five slots, not three: the owner left six sessions running and the gate removal took the
 serialisation point out, so the cap is now sessions rather than review capacity.
 
@@ -31,7 +35,7 @@ serialisation point out, so the cap is now sessions rather than review capacity.
 | 3 | T010 | *(merged)* | **verified**, tag `t010-verified` at `3fd050f` | — |
 | 4 | T025 | *(merged)* | **verified**, tag `t025-verified` at `87dffd8` | — |
 | 5 | T020 | *(merged)* | **verified**, tag `t020-verified` at `aee6e07` | — |
-| 6 | T030 | `../darkprint-wt-t030-ontology` | round 2, implementer at `cbf02b0` | `…policy-c9`; adversary `…archive-28`, tests `…versioning-tests-eb` idle |
+| 6 | T030 | *(merged)* | **verified**, tag `t030-verified` at `1d76c53` | — |
 
 `…policy-tests-9f` is held free as the next adversary. T060's and T000's worktrees stay on
 disk while sessions live in them, per the deferred-removal rule.
