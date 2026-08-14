@@ -199,6 +199,13 @@ describe.skipIf(!hasDb)("lib/server/naming", () => {
     expect(err.message).toBe("allocateHandle: `Mara Veil` is not a valid handle.");
     expect(Object.prototype.hasOwnProperty.call(err, "cause")).toBe(false);
 
+    /* The round-trip half of the grammar, observed at the store rather than only at
+       `validateNamespace`: `parseCardRef` trims, so a bare parse would let " mara-veil"
+       through and reserve `mara-veil` — a different primary key from the one asked for,
+       with nothing anywhere reporting the substitution. */
+    await expect(allocateHandle(client.db, owner, " mara-veil")).rejects.toBeInstanceOf(InvalidNameError);
+    expect(await checkHandle(client.db, " mara-veil")).toEqual({ available: false });
+
     /* Nothing was written, and the check path answers rather than throwing. */
     const rows = await client.db.select().from(schema.handleReservation);
     expect(rows).toHaveLength(0);
