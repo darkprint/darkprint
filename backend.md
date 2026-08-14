@@ -444,7 +444,12 @@ Three cheap guards, all now in force:
   **two guards parse that file** — `tests/wave-dependencies.test.ts` and
   `first-pass-calibration.test.ts`. Prose in `backend.md` is not inert, so re-gate after the rebase
   rather than carrying a triple over it. Raised by T080's implementer about its own handover.
-- **Read the exit code of the command you mean, not of the pipeline you typed.** T080's adversary
+- **Read the exit code of the command you mean, not of the pipeline you typed.** The orchestrator
+  committed **twice** over a red guard by chaining `&& git commit` after `npx vitest … | grep -E
+  "Tests "` — the grep matches its line whether the run passed or failed, so `$?` was always 0. Same
+  error T080's adversary made with `tail` and corrected while quoting the rule. In `zsh`:
+  `set -o pipefail`, or `${pipestatus[1]}`, or run the command alone.
+- **Superseded phrasing:** read the exit code of the command you mean, not of the pipeline you typed. T080's adversary
   reported "build exit 0" from a compound command whose last element was `tail`, while the log said
   `Failed to type check.` twenty-five lines up. It corrected itself and named the rule it had broken
   while quoting it. In `zsh`, `$?` after `a | tail` is `tail`'s; use `${pipestatus[1]}`, `set -o
