@@ -22,7 +22,7 @@ serialisation point out, so the cap is now sessions rather than review capacity.
 |---|---|---|---|---|
 | 1 | T000 | *(merged)* | **verified**, tag `t000-verified` at `ec516fa` | — |
 | 2 | T060 | *(merged)* | **verified**, tag `t060-verified` at `eef7cce` | — |
-| 3 | T010 | `../darkprint-wt-t010-archive` | round 4, implementer | `…archive-c2`, adversary `…archive-28` idle |
+| 3 | T010 | *(merged)* | **verified**, tag `t010-verified` at `3fd050f` | — |
 | 4 | T025 | `../darkprint-wt-t025-versioning` | round 5, implementer | `…versioning-3a`, adversary `…versioning-f2` idle |
 | 5 | T020 | `../darkprint-wt-t020-cards` | round 1, implementer + blind tests | `…policy-d0`, tests `…archive-tests-67` |
 | 6 | T030 | `../darkprint-wt-t030-ontology` | round 1, implementer + blind tests | `…policy-c9`, tests `…versioning-tests-eb` |
@@ -172,6 +172,30 @@ Three cheap guards, all now in force:
   - No rendering — `message`, `String(err)`, `JSON.stringify(err)`, `JSON.stringify({ detail: err.message })`, own-property enumeration — contains the SQL statement, a bound parameter, the caller's content, a SQLSTATE or a `pg` internal.
 
   T010 merged against the old wording and is unaffected: its adversary measured the property above across six paths and five renderings, which is the test that matters. The wording was wrong; the thing it verified was right.
+
+## Two hazards that recur across tasks rather than belonging to one
+
+**T-01: a raw NUL lands in a test file while writing a deliberate-control-character fixture.**
+Twice in two tasks now, on the 22021 fixture both times — `file(1)` reports the file as `data`
+rather than UTF-8 text. It is a property of *writing the file*, not of either task. Any author
+writing a fixture that contains a deliberate control character checks `file(1)` on it before
+committing, and uses an escape (`\u0000`) rather than a literal byte.
+
+**T-02: the well-formedness walk is O(2^n) on shared substructure, in every task that copies it.**
+`isWellFormedDeep`'s `open` set is path-scoped, which is what makes shared substructure legal
+rather than a false cycle — and it also means a value reached by two paths is re-walked in full
+each time. Measured on T010's iterative version by its adversary: 14 levels of diamond → 5 ms,
+18 → 85 ms, 20 → 383 ms, 22 → 1 523 ms, **24 → 6 025 ms for 16 777 216 visits over 25 distinct
+objects**, a clean ×4 per +2. `n = 30` is about six and a half minutes from 31 objects.
+
+**Not currently reachable, which is why it is recorded rather than charged**: `JSON.parse` cannot
+produce shared references (`JSON.parse('{"a":{"x":1},"b":{"x":1}}')` yields `a !== b`), so a
+parsed request body is always a tree. `structuredClone` *does* preserve sharing. The fix is the
+other half of the bookkeeping already present — a `seen` set of containers **fully walked and
+found clean**, checked beside `open`, which is sound precisely because `open` handles cycles, and
+turns 16.7 M visits into 25. **Any task whose input can be built in-process rather than parsed
+must add it.** T010 ships without it deliberately; T020 and T030 copy the same walk and inherit
+the same condition.
 
 ## A ruling is implemented as narrowly as its worked example
 
