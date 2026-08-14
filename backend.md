@@ -202,6 +202,10 @@ Three cheap guards, all now in force:
 
   This matters most to a **blind** author, who cannot see the implementation and so cannot tell an over-match from a genuine leak: it presents as a real red, and the cheapest way to make it green is to change correct code. Two blind suites reached the same wrong predicate independently, which is evidence it is the obvious thing to write rather than a slip either author made.
 
+  **When no message template is published, derive BOTH sides instead of curating either.** The exact-match pin above is unavailable to a blind author while the contract publishes no admissible wording — inventing one reds every implementation that phrased it differently. T030's test author built the better substitute and measured it: compare **word by word rather than by substring**, with the deny set derived as *every word appearing in the actual driver error carried on `cause`*, and the allow set derived as the caller's own identifiers plus every table, index and column name `getTableConfig` reports for the task's tables. Neither side is hand-written, so a seventh thing nobody enumerated is caught the moment the driver puts it in its own error, and `ontology_version` versus `ontology_version_version_key` are simply different tokens — the over-match is gone structurally rather than by curation.
+
+  Two results from building it that are worth more than the technique. A **constant** driver phrase carrying no caller data — `duplicate key value violates unique constraint` — is caught; an invariance test ("the message varies only with caller inputs") passes it, and that was the author's first design before testing. And the token `error` was a false red, because `Error.prototype.name` puts it in both renderings structurally; it is now subtracted by deriving the scaffolding from a baseline `Error` rather than by listing it. Curation crept back in twice and was removed twice by deriving instead.
+
   **The sixth-leak prediction was tested against T010 rather than argued about, and it does not hold there.** Every throw in the merged module, enumerated: two surrogate refusals carrying fixed literals with no interpolation; a length mismatch interpolating two `.length` **numbers**; two conflicts interpolating the caller's own `slug`/`version`; and `sanitizedWriteError`, whose message is `${operation}: the write failed.` with `operation` a module literal. No driver-derived value reaches any output on any path, so T010's implementation is whitelist-by-construction and was already **stronger than the clause that governed it**. The clause was the weak thing, which is why it is fixed here — for T020 and T030, which inherit it and are still building.
 
   T010 merged against the old wording and is unaffected: its adversary measured the property above across six paths and five renderings, which is the test that matters. The wording was wrong; the thing it verified was right.
@@ -224,6 +228,21 @@ So: when falsifying a guard, break it and confirm the red arrives **through the 
 caller uses**. A test that constructs the failure object directly proves the assertion works, not
 that the guard does. This sits underneath the whole falsification rule — every "I broke it and
 the right test reddened" report is only as good as whether the break was reachable.
+
+**Refinement, from T030 round 1, where this recurred one level out in the report that named it.**
+The implementer falsified its surrogate guard and watched tests red — but the tests that reddened
+were its own **colocated** ones, which call `findUnrepresentable` directly. So the break was
+confirmed against the *function*, not against the *behaviour*. The adversary deleted the guard
+outright, ran the whole suite, and compared sorted failing sets: **identical**. Removing it reddens
+zero tests through the published surface, because the only inputs it guards travel in a `jsonb`
+column and Postgres rejects the unpaired escape itself (T-03).
+
+**So the red must arrive through the PUBLISHED surface, not through a direct call to the guard.**
+A colocated unit test on the guard function is a fine thing to have and is not a falsification: it
+answers "does this function return false for that input", where the claim is "does this module
+refuse that input". A guard can be correct, unit-tested, and load-bearing nowhere. The check is
+cheap and total — delete the guard, run the whole suite, diff the sorted failing sets; if they are
+identical the guard is unobserved.
 
 ## The compose stack is shared and unowned, and chasing individual suites will not fix it
 
@@ -315,7 +334,19 @@ objects**, a clean ×4 per +2. `n = 30` is about six and a half minutes from 31 
 
 **Not currently reachable, which is why it is recorded rather than charged**: `JSON.parse` cannot
 produce shared references (`JSON.parse('{"a":{"x":1},"b":{"x":1}}')` yields `a !== b`), so a
-parsed request body is always a tree. `structuredClone` *does* preserve sharing. The fix is the
+parsed request body is always a tree. `structuredClone` *does* preserve sharing.
+
+**Premise correction for T030, measured by its adversary against the orchestrator's wrong guess.**
+The orchestrator predicted this would be *more* reachable in T030 because `extensions` is a
+caller-supplied parameter rather than a parsed body. It is not: `openView` **never walks
+`extensions`** — `view.ts` calls `getOntologyVersion` and `ontologyView` and nothing else — so the
+walk is unreachable from that parameter entirely. Its only caller is `addOntologyVersion` over
+`terms`, and `OntologyTerm` is flat and closed, deepest declared nesting `terms[i].deprecated.<field>`,
+three levels, eight visits. The walk is still `seen`-less and still O(2^n) — n=20 at 370-488 ms,
+matching T010's curve — but reachability through the **declared** type is nil. It becomes reachable
+only through **undeclared** properties on a term, which is exactly what T030's D-17 shows the store
+accepts. So the two are one finding: close D-17 and the input side closes with it; add the `seen`
+set and it closes regardless of D-17. The fix is the
 other half of the bookkeeping already present — a `seen` set of containers **fully walked and
 found clean**, checked beside `open`, which is sound precisely because `open` handles cycles, and
 turns 16.7 M visits into 25. **Any task whose input can be built in-process rather than parsed
