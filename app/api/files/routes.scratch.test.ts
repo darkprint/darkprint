@@ -210,41 +210,58 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
     expect((await getFile()).status).toBe(200);
     expect((await getCard()).status).toBe(200);
 
-    /* Outage one: the ontology read, which `buildExport` reaches through `openView` and
-       which `serveCard` does not reach at all. Ordered first because `openView` runs
-       before the pinned-card loop, so this is the statement that fails while every other
-       read still works — without it the `openView` wrap would be an unobserved guard. */
-    await testDb!.client.query('DROP TABLE "ontology_version" CASCADE');
-    const viaOntology = await outcome(getFile);
-    expect(viaOntology).toBeInstanceOf(ExportReadError);
-    expect(viaOntology).not.toBeInstanceOf(ExportError);
-    expect((viaOntology as Error).message).toBe("export: reading this release failed.");
-    /* And the card route is untouched by it, which is what says the outage was located
-       where this test claims rather than anywhere in the request. */
+    /**
+     * Each outage is a **rename away and back**, not a drop, and the order is no longer
+     * load-bearing — which it was, wrongly, until the mutation sweep found it.
+     *
+     * Dropping `ontology_version` first and then `card_version` looked like it observed
+     * two sites and observed one: `openView` runs **before** the pinned-card loop, so
+     * after the first outage the blueprint route never reached the second, and the
+     * assertion labelled "via pinned cards" was still measuring `openView`. Unwrapping
+     * the pinned-card catch then reddened **nothing** — a probe that could not reach the
+     * guard, wearing the label of one that could.
+     *
+     * A rename is reversible, so each site is isolated: break one statement, measure,
+     * put it back, and assert the route is 200 again before moving on. That restoration
+     * assertion is what makes the next measurement mean anything.
+     */
+    const breakTable = async (name: string): Promise<void> => {
+      await testDb!.client.query(`ALTER TABLE "${name}" RENAME TO "${name}_hidden"`);
+    };
+    const fixTable = async (name: string): Promise<void> => {
+      await testDb!.client.query(`ALTER TABLE "${name}_hidden" RENAME TO "${name}"`);
+    };
+    const expectReadError = (thrown: unknown, where: string): void => {
+      expect(thrown, where).toBeInstanceOf(ExportReadError);
+      expect(thrown, where).not.toBeInstanceOf(ExportError);
+      expect((thrown as Error).message, where).toBe("export: reading this release failed.");
+      expect(Object.keys(thrown as object), where).toEqual([]);
+      expect(JSON.stringify(thrown), where).toBe("{}");
+      expect((thrown as Error).cause, where).toBeDefined();
+      expect(Object.prototype.propertyIsEnumerable.call(thrown, "cause"), where).toBe(false);
+    };
+
+    /* The ontology read, reached only through `buildExport`'s `openView`. */
+    await breakTable("ontology_version");
+    expectReadError(await outcome(getFile), "openView");
+    /* Untouched by it, which says the outage was where this test claims. */
+    expect((await getCard()).status).toBe(200);
+    await fixTable("ontology_version");
+    expect((await getFile()).status).toBe(200);
+
+    /* The card read: `serveCard` reaches it directly, `buildExport` through the pinned-card
+       loop. Both were unwrapped, and both are separately observed only because `openView`
+       is working again above. */
+    await breakTable("card_version");
+    expectReadError(await outcome(getCard), "serveCard -> resolveCardRef");
+    expectReadError(await outcome(getFile), "buildExport -> pinnedCards");
+    await fixTable("card_version");
+    expect((await getFile()).status).toBe(200);
     expect((await getCard()).status).toBe(200);
 
-    /* Outage two: the card read, which `serveCard` reaches directly and `serveFile`
-       reaches through `buildExport`'s pinned-card loop. Both were unwrapped. */
-    await testDb!.client.query('DROP TABLE "card_version" CASCADE');
-    for (const [name, thrown] of [
-      ["card route", await outcome(getCard)],
-      ["blueprint route via pinned cards", await outcome(getFile)],
-    ] as const) {
-      expect(thrown, name).toBeInstanceOf(ExportReadError);
-      expect(thrown, name).not.toBeInstanceOf(ExportError);
-      expect((thrown as Error).message, name).toBe("export: reading this release failed.");
-      expect(Object.keys(thrown as object), name).toEqual([]);
-      expect(JSON.stringify(thrown), name).toBe("{}");
-      expect((thrown as Error).cause, name).toBeDefined();
-      expect(Object.prototype.propertyIsEnumerable.call(thrown, "cause"), name).toBe(false);
-    }
-
-    /* Outage three: the bundle lookup itself, the first statement the request makes and
-       the one that was answering 404. */
+    /* And the bundle lookup itself: the first statement the request makes, and the one
+       that was answering 404. Dropped rather than renamed, because nothing follows it. */
     await testDb!.client.query('DROP TABLE "release", "bundle" CASCADE');
-    const first = await outcome(getFile);
-    expect(first).toBeInstanceOf(ExportReadError);
-    expect(first).not.toBeInstanceOf(ExportError);
-    expect((first as Error).message).toBe("export: reading this release failed.");
+    expectReadError(await outcome(getFile), "lookup -> bundleByHandle");
   });
 });
