@@ -805,6 +805,15 @@ accumulates where someone has already looked** — so the second pass is not dil
 only pass aimed at the places the first one could not have covered. Count the distribution, name
 the zeros, and go there.
 
+## A borrowed suite leaves a file that `git checkout` cannot undo
+
+T090's implementer borrowed the newer blind suite to test against, then cleaned up — and named the
+half that a revert misses: `git checkout HEAD -- tests/server/t090` restores modified files and
+**leaves a new one behind**. `hygiene.test.ts` exists only on the test branch, so it would have sat
+in the adversary's tree looking like the implementer's own work. It removed it explicitly and said
+so. **A borrow is undone by restoring what changed *and* deleting what arrived**; the second half
+has no command that does it for you.
+
 ## A validator cannot be falsified against a correct module — measure it two-factor
 
 T080's blind author mutated two of its own `contract.ts` helpers and got **0** from each, then read
@@ -1480,7 +1489,7 @@ it does not decide differently inside a worktree.
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | — | — | todo | — |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | — | — | todo | — |
-| T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | impl-done | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
+| T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | impl-done | — |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | — | — | todo | — |
@@ -3811,7 +3820,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T080, Registry read model and read API
 
-- **State:** impl-done
+- **State:** merged
 - **Worktree:** `../darkprint-wt-t080-registry` on `feat/t080-registry`
 - **Test worktree:** `../darkprint-wt-t080-registry-tests` on `test/t080-registry`
 - **Depends on:** T010, T020, T030 (data)
