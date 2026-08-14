@@ -351,6 +351,53 @@ describe("the three routes D-90-04 published", () => {
     expect((await asOwner.text()).length).toBeGreaterThan(0);
   }, 120_000);
 
+  it("refuses a FORGED session cookie, which tests the route's choice and not T000's crypto", async () => {
+    /*
+     * Worth being exact about what this does and does not test, because the naive reading makes it
+     * an outcome another layer already guarantees — T-03's species.
+     *
+     * It is NOT a test of HMAC verification. `decodeSession` is T000's, merged and verified, and
+     * asserting that a bad signature fails would be asserting what that module already promises.
+     *
+     * It IS a test of this route's composition. A handler that reached for `parseCookieHeader` and
+     * then `JSON.parse`d the payload — which is a perfectly natural thing to write, and reads as
+     * "get the session out of the cookie" — would hand an unsigned body straight through and let
+     * anybody mint an owner. The two implementations are indistinguishable on every legitimate
+     * request and differ only here. So this discriminates *which function the route called*, which
+     * is squarely T090's.
+     *
+     * The forged value is built to be exactly what a hand-rolled parser would accept: the same
+     * base64url body the real encoder produces, with a signature that is not the real one.
+     */
+    const real = encodeSession({
+      accountId: privateOwner.accountId,
+      handle: privateOwner.handle,
+    });
+    const body = real.slice(0, real.lastIndexOf("."));
+    const forged = `${body}.${"0".repeat(43)}`;
+    expect(forged, "The forgery is the genuine token, so it proves nothing.").not.toBe(real);
+    expect(
+      forged.slice(0, forged.lastIndexOf(".")),
+      "The forgery does not carry the real payload, so a hand-rolled parser would reject it for " +
+        "the wrong reason and this test would pass against the implementation it is meant to catch.",
+    ).toBe(body);
+
+    const response = await getByDigest(
+      privateRelease.digest,
+      "README.md",
+      privateOwner.handle,
+      PRIVATE_SLUG,
+      `${SESSION_COOKIE_NAME}=${forged}`,
+    );
+    expect(
+      response.status,
+      `A cookie carrying the owner's payload with a bad signature opened their private bundle ` +
+        `(got ${response.status}). That is what a route that parses the cookie instead of ` +
+        `verifying it does, and it is indistinguishable from a correct route on every legitimate ` +
+        `request.`,
+    ).toBe(404);
+  }, 120_000);
+
   it("answers 500, not 404, when the read itself fails", async () => {
     /*
      * Ruled at the implementation's handback, and it became testable only once `readFailed`
