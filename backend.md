@@ -816,7 +816,7 @@ it does not decide differently inside a worktree.
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | adversarial-pass | — |
-| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | claimed | — |
+| T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | tests-written | blind coverage for the round-6 leftover-pricing gap landed, `tests/server/t025/leftover-pricing.test.ts`, 174 tests total; see Live slots and the task section for the adversary's own `adversarial-pass` verdict, held for this coverage |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | adversarial-pass | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
@@ -1756,6 +1756,34 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **The premise the one-sidedness heuristic rests on, recorded so it does not outlive it.** "All under-priced, none over-priced identifies a positional stand-in for a maximum" holds **only while the correct answer is itself a maximum** — true under the current ruling, and not a law. If a later ruling replaces "most expensive residue-free explanation" with a specific cheaper pairing policy — a live possibility, since the maximum is O(n·m) and someone will eventually want cheaper — the correct answer stops being an upper bound, legitimate divergences fall both ways, and zero over-pricing stops being diagnostic. **The oracle survives that change; the asymmetry heuristic does not.** Raised by the adversary that invented the heuristic, one message after inventing it, which is this file's central rule applied to its own instrument. Keep the oracle as the regression test — a property checked against an independent exhaustive implementation is worth more than any number of worked examples, and it is what found this after two rounds of examples did not.
 
   **Recorded, not charged:** `blueprint-bump.ts:190`'s `if (beforeLeftover[i] === afterLeftover[i]) continue;` is unreachable — by-value cancellation makes the two lists disjoint by construction. Harmless, and the comment above it is correct about why. Remove it or keep it, but do not let it survive as a guard a later reader trusts.
+  - 2026-08-14 blind test author, closing the round-6 gap reported by T025's adversary (a
+    regression guarded only inside `lib/server/versioning/**`, never in `tests/server/t025/**`):
+    new file `tests/server/t025/leftover-pricing.test.ts`, 17 tests. Stopped once before
+    writing any of it — my own derivation of the gained-side symmetric example contradicted
+    "symmetric" meaning "same level", and I reported the contradiction rather than guess; the
+    per-item contribution table now recorded above is the answer, at `2d0f728`. Three things
+    closed: (1) the worst-candidate defect itself, both directions plus the two must-stay-major
+    controls, **and** a verified brute-force oracle (independent implementation of the leftover
+    rule, checked against six hand-worked cases before being trusted, then run against the real
+    function over an exhaustive 5-version, length-≤3 multiset domain — 3136 `(before, after)`
+    pairs); (2) the per-value monotonicity theorem, asserted as an invariant over a bounded,
+    deterministic, exhaustive sweep (4-version pool, length-≤2 multisets, every candidate
+    addition — 900 triples) rather than sampled, since round 6 states it as exact; (3) the
+    carve-out's class — "the addition removes a forced explanation" — with one instance of each
+    mechanism (a forced deletion, a repin) plus the two must-not-fire controls. Verified
+    discrimination without a scratch implementation of the full module: a hand-built
+    "sorted-tail-slice" model of the round-6 defect, run outside this worktree, diverges from
+    the correct (true-max) model on exactly the cases this file targets (`major`→`patch` and
+    `minor`→`patch` on the two worst-candidate cases, `major`→`minor` on the repin baseline) and
+    agrees with it on every control and every carve-out case — the ten hardcoded expected values
+    in this file all match the correct model exactly. Rebased onto `backend` at `c4fc8f2`.
+    `npx tsc --noEmit` and `npx eslint tests/server/t025/leftover-pricing.test.ts` both clean.
+    Targeted run, `npx vitest run tests/server/t025/`: 174 tests (157 prior + 17 new), 168 red
+    on the absent module — the honest shape, none a broken-test crash — and 6 green, which are
+    this file's own oracle-verification cases and touch no import from `lib/server/versioning`
+    at all. No full-suite triple run: outside a test worktree's own scope and the gate queue was
+    three deep at hand-off. `State: tests-written`, unchanged — this supplements the existing
+    blind suite rather than advancing it through a round.
 
 ### T060, Authorization policy: owner and operator
 
