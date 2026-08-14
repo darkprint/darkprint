@@ -1027,6 +1027,16 @@ directory is not a tidiness issue — it removes the signal the next agent's sta
 Handled correctly on the other side: T030's implementer did **not** delete another agent's files and
 reported "clean but for that directory" rather than claiming clean.
 
+**T-01 has now fired eight times across four authors, always on the same fixture, and the fix is
+that nobody should have to type the byte.** It has caught an implementer, a blind test author
+writing a Log entry, an adversary writing an attack list, and the **orchestrator writing the shared
+fixture file intended to stop it** — that last one blocked by the tool layer rather than by any
+guard here, and the only occurrence so far **prevented rather than detected**. So the hazard's own
+wording, "any author writing a fixture", was too narrow: it is anyone who types the byte, and they
+type it because there was nowhere to import it from. **`tests/support/control-bytes.ts` now exports
+`NUL`, `LONE_HIGH_SURROGATE`, `LONE_LOW_SURROGATE`, `nulInside` and `surrogateInside`. Import them;
+do not retype them.**
+
 **T-01 recurred a fifth and sixth time, and the guard structurally could not see either.**
 `tests/no-raw-control-bytes.test.ts` enumerated `git ls-files`, which lists **tracked files only** —
 and a blind test author's entire output is untracked until it commits, so the guard was one commit
