@@ -2863,6 +2863,35 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** T050, T100
 - **Owns:** `lib/server/naming/**`, `app/api/names/**`
 - **Forbidden:** `lib/server/accounts/**`, `lib/db/schema.ts`
+- **Published signatures** (checked against `backend` at `9411199`, against `lib/db/schema.ts`'s `handle_reservation` — `handle` is the **primary key**, plus `account_id`, `status` enum `active|released`, `reserved_at`, `released_at` — and against `bundle`'s `bundle_owner_slug_key` on `(owner_id, slug)`. Barrel: `@/lib/server/naming`.)
+
+        interface Availability { available: boolean; suggestion?: string }
+
+        checkHandle(db: Db, handle: string): Promise<Availability>
+        allocateHandle(db: Db, accountId: string, handle: string): Promise<void>
+        releaseHandle(db: Db, accountId: string, handle: string): Promise<void>
+        checkSlug(db: Db, ownerId: string, slug: string): Promise<Availability>
+        isReservedSlug(slug: string): boolean          // pure, no Db — the four profile tabs
+        validateCardId(id: string): Diagnostic[]       // pure, grammar only
+        validateNamespace(namespace: string): Diagnostic[]   // pure
+
+  **AC5 is satisfied by the unique index, not by code, and the contract requires that shape.** "Two concurrent allocations of one name yield exactly one success" cannot be met by `SELECT` then `INSERT` — two callers both read free and both write. `allocateHandle` is a **single insert** whose conflict is caught and translated; the primary key is the arbiter. Same for a slug against `bundle_owner_slug_key`. A read-then-write implementation passes every sequential test and fails only under concurrency, which is exactly the defect this criterion exists to catch, so **the criterion is tested with concurrent callers or it is not tested**.
+
+  **AC4 is structural for the same reason and it is why `handle` is the primary key rather than a column.** A released handle keeps its row — `status` moves to `released`, the row is never deleted — so the key stays occupied and a second account's insert fails. `releaseHandle` therefore **updates**; it never deletes. An implementation that deletes on release passes AC4's happy path and reopens the name forever.
+
+  **A suggestion is advisory and carries no reservation, and AC6 must say what it can mean.** "Free at the moment it is returned" is the strongest claim available: nothing holds it, so it may be taken between the answer and the caller's attempt. State that in the returned shape's comment rather than letting a caller read `suggestion` as a promise. The honest criterion is that the suggestion was free when computed **and that allocating it is still allowed to fail**.
+
+  **Admissible message forms**, published before the implementation exists:
+
+        HandleTakenError      "allocateHandle: the handle `<handle>` is not available."
+        SlugTakenError        "checkSlug: `<owner>` already has a bundle at `<slug>`."
+        ReservedSlugError     "checkSlug: `<slug>` is reserved by the profile tabs."
+        InvalidNameError      "<operation>: `<value>` is not a valid <kind>."
+
+  Nothing else may appear in any rendering: the operation, the caller's own value, and the four fixed forms above. `cause` carries the driver error and is non-enumerable; `stack` is retained. The four reserved slugs are `blueprints`, `cards`, `saved`, `terms` (`components/profile/tabs.ts`) — read them from that module rather than restating the list, so the profile tabs and this guard cannot drift.
+
+  **Inherited hazards.** T-01 applies to any fixture carrying a control character. T-02, T-03 and T-04 do **not**: this task stores no caller-built object, has no `jsonb` column, and its errors carry no driver prose. Stated rather than left silent.
+
 - **Goal:** allocate and check every user-chosen identifier — handles, bundle slugs, card ids, term namespaces — and keep reservations permanent.
 - **Contract:** a handle is chosen at sign-up, independent of the GitHub login (B-05); it is unique across the registry, permanently reserved once used, and a rename keeps the old one reserved because every published card carries the handle inside its own bytes (`app/settings/page.tsx:258-265`). A slug is unique **per owner** (B-09). Four slugs stay permanently reserved as bundle names because the profile tabs occupy them: `blueprints`, `cards`, `saved`, `terms` (`components/profile/tabs.ts`). Ids must satisfy the engine's grammars (`CARD_ID`, `REF_VERSION`, `lib/core/card/schema.ts:167,174`) so a stored id is one a DOT node can pin. Availability answers `{ available, suggestion? }`.
 - **Acceptance criteria:** (1) each reserved slug is refused as a bundle name; (2) two owners may both hold `frontline-triage`; (3) one owner may not hold it twice; (4) a released handle cannot be claimed by a second account, ever; (5) two concurrent allocations of one name yield exactly one success; (6) a suggestion returned for a taken name is itself free at the moment it is returned.
@@ -3061,6 +3090,43 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Owns:** `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/route.ts`, `app/api/account/profile/route.ts`, `app/api/account/handle/route.ts`, `app/api/account/email/route.ts`, `app/api/account/default-visibility/route.ts`
 - **Forbidden:** `app/api/account/{notifications,saves,delete,keys}/**`, `lib/server/naming/**`, `lib/db/schema.ts`
 - **Inherited from T000** (recorded at its PASS): the session has expiry, **not revocation**. A stolen cookie stays valid until `exp`, and signing out clears only the browser's copy. The expiry bound is enforced at mint, so anything signed outside `encodeSession` bypasses it — acceptable only because minting needs the key. Meet this deliberately rather than discovering it: if true sign-out invalidation is wanted it needs server-side session state, which is a storage and scale decision the owner has not taken and which is recorded as open in T000's contract.
+- **Published signatures** (checked against `backend` at `9411199`, against `lib/db/schema.ts`'s `account` — `github_id` and `handle` each carry a unique index, `handle` is **nullable**, `notification_preferences` is `jsonb NOT NULL DEFAULT {}` and belongs to T190 — and against T000's `SessionPayload`, which is `{ accountId, handle: string | null }`. Barrel: `@/lib/server/accounts`.)
+
+        interface PublicAuthor {
+          handle: string; displayName: string | null; avatarHue: number | null;
+          validator: boolean; bio?: string;
+        }
+        interface AccountRecord {
+          accountId: string; author: PublicAuthor;
+          email: string | null; joinedAt: Date;
+          validatorSince?: Date; validatorWeight: number;
+          defaultVisibility: "public" | "private";
+        }
+
+        upsertFromGitHub(db: Db, input: { githubId: string; githubLogin: string }): Promise<{ accountId: string; handle: string | null }>
+        getAccount(db: Db, actor: Actor, accountId: string): Promise<AccountRecord | undefined>
+        getPublicAuthor(db: Db, handle: string): Promise<PublicAuthor | undefined>
+        updateProfile(db: Db, actor: Actor, accountId: string, patch: { displayName?: string | null; bio?: string | null; avatarHue?: number | null }): Promise<AccountRecord>
+        changeHandle(db: Db, actor: Actor, accountId: string, handle: string): Promise<AccountRecord>
+        setEmail(db: Db, actor: Actor, accountId: string, email: string | null): Promise<AccountRecord>
+        setDefaultVisibility(db: Db, actor: Actor, accountId: string, visibility: "public" | "private"): Promise<AccountRecord>
+
+  **AC2 is satisfied by the type, not by a filter, and that is the point of publishing two record shapes.** "`email` is absent from every response a non-owner can obtain" is unachievable by remembering to omit it — one forgotten call site and it ships. `PublicAuthor` **has no `email` field at all**, and it is the only shape any non-owner path returns; `AccountRecord` carries `email` and is reachable only through `getAccount`, which takes an `Actor` and returns `undefined` when `can(actor, "read", { kind: "account", accountId })` is false. So the criterion holds structurally, and the test that matters asserts the *key set* of what a visitor receives rather than the value of one field.
+
+  **AC1 needs a ruling and here it is: a session with `handle: null` is signed in and incomplete.** `account.handle` is nullable and T000's `SessionPayload` already publishes `handle: string | null`, so first sign-in mints a real session before a handle exists — that is settled by the schema, not open. What was open is what a handle-requiring route does with it. **It refuses with `problem+json` 403 and `type` `https://darkprint.dev/problems/handle-required`**, which is distinguishable from 401 (no session at all) and from 404 (a resource you may not see). Every route that writes anything owned by an account checks it. Allocation itself is T070's; this task calls it.
+
+  **`upsertFromGitHub` is keyed on `github_id`, never on `github_login`.** AC3 — "a GitHub rename leaves the handle and every attribution untouched" — is exactly this: the login is a display value that moves, the id does not. And AC6 — "two GitHub identities cannot map to one account" — is `account_github_id_key`, enforced by the index and tested with concurrent callers for the same reason as T070's AC5.
+
+  **Admissible message forms:**
+
+        HandleRequiredError   "<operation>: this account has no handle yet."
+        NotAccountOwnerError  "<operation>: not this account's owner."
+        InvalidProfileError   "<operation>: `<field>` is not valid."
+
+  The operation, the caller's own field name, nothing else. No `email` value appears in any rejection, including one *about* the email — that is the whole point of AC2 and a validation error is a rendering like any other.
+
+  **Inherited hazards.** T-01 applies. T-03 applies to `notification_preferences` if this task ever writes it — it does not; T190 owns it. T-02 applies only if a caller-built object reaches storage, which it does not here: every writable field is a scalar. Stated rather than assumed.
+
 - **Goal:** sign in through GitHub, hold one account per handle, and serve and mutate the account's own fields.
 - **Contract:** GitHub OAuth establishes credentials; the handle is chosen at sign-up and stored independently (B-02, B-05), so the OAuth subject and the handle are separate columns and a GitHub rename moves neither. The record is `Account { author: Author, email, joinedAt, validatorSince?, validatorWeight, defaultVisibility, notifications[] }` (`lib/data/account.ts:51-73`) with `Author { username, displayName, avatarHue, validator, bio? }`. `email` never appears on a public surface. The three profile fields the settings form edits live are `displayName`, `bio`, `avatarHue`. A handle change reserves the old one through `T070`.
 - **Acceptance criteria:** (1) a first sign-in with no handle cannot complete until one is chosen and allocated; (2) `email` is absent from every response a non-owner can obtain; (3) a GitHub rename leaves the handle and every attribution untouched; (4) a handle change makes the old handle permanently unclaimable; (5) reading the account without a session returns `problem+json` 401, never a fixture; (6) two GitHub identities cannot map to one account.
@@ -3075,6 +3141,34 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** T100, T263, T270
 - **Owns:** `lib/server/engine/**`, `app/api/validate/**`
 - **Forbidden:** `lib/core/**` (consume, never edit), `lib/db/**`, `components/**`
+- **Published signatures** (checked against `backend` at `9411199` and against `lib/core/index.ts`, which exports `loadBundle` and the `LoadBundleResult` type — both are **consumed, never reimplemented**, and `lib/core/**` is Forbidden here. Barrel: `@/lib/server/engine`. This task touches no database and takes no `Db`.)
+
+        interface EngineLimits { maxBytes: number; maxCards: number; maxNodes: number }
+
+        validateBundle(input: {
+          manifest: BundleManifest; dot: string;
+          cardFiles: Record<string, string>; vocabulary?: readonly OntologyTerm[];
+        }, limits?: EngineLimits): LoadBundleResult
+        validateDot(dot: string, limits?: EngineLimits): Diagnostic[]
+        validateCardSource(yaml: string, limits?: EngineLimits): Diagnostic[]
+        validateVocabularySource(yaml: string, limits?: EngineLimits): Diagnostic[]
+
+  **Every function is synchronous and pure.** No `Db`, no I/O, no clock, no randomness — the same bytes give the same answer in the same process and in the next one. That is what makes AC5 testable at all, and it is structural rather than a promise: this module's only import is `@/lib/core`.
+
+  **AC5 is a determinism criterion and it names diagnostic ORDER, which is the part an implementation will get wrong.** "Identical bytes return identical output including diagnostic order" fails the moment anything iterates a `Record` whose key order depends on insertion, or merges results from `Object.entries(cardFiles)` without sorting. **Diagnostics are ordered by (source, line, column, code), sorted explicitly before return**, and `cardFiles` is iterated in sorted key order. Stated because "identical output" reads as satisfied by any correct implementation and is not.
+
+  **AC4's "before parsing" is the criterion, not the refusal.** An oversized submission refused *after* parsing still refuses, still names the limit, and still passes a test that only checks the response — while having done exactly the work the limit exists to prevent. The check is on `input` byte length before `loadBundle` is called, and the test that discriminates measures that **no parse occurred**, not that a refusal came back.
+
+  **Degradation is the contract's hardest clause and its three verdicts must stay distinguishable.** A bundle whose DOT parsed returns an analysis over the nodes that resolved: `resolves`, `unfinished` (n of m nodes carded), `rejected` (`components/upload/progress.ts`). So a partial result is a **200 with diagnostics** (B-03), never an error — and AC2's three-of-eight case must assert the analysis is present *and computed over the three*, not merely that the call did not throw.
+
+  **Admissible message forms.** This module returns diagnostics rather than throwing, so the whitelist applies to the one place it does throw:
+
+        LimitExceededError  "<operation>: <what> exceeds the limit of <n> <units>."
+
+  The operation, the measured quantity, and the limit. Never the input, never a fragment of it — an oversized submission's own bytes are the last thing a refusal about size should carry.
+
+  **Inherited hazards.** T-02 applies **fully and is not closed by anyone else**: `vocabulary` and `cardFiles` are caller-built objects, this module walks them, and the depth ceiling recorded at `81a4642` sits at the driver for the storage tasks but at `canonicalJson` here. T-01 applies. T-03 and T-04 do not — no database, no driver error.
+
 - **Goal:** run the engine's parse-resolve-analyze pass authoritatively over submitted bytes, returning the same diagnostics and readings the browser already produces.
 - **Contract:** accepts `{ manifest, dot, cardFiles: Record<string,string>, vocabulary? }`, returns `LoadBundleResult` — `{ blueprint?, analysis?, diagnostics: Diagnostic[] }` — at 200 (B-03), because a bundle that resolves with errors is an answer. Resolution **degrades**: a bundle whose DOT parsed returns an analysis over the nodes that resolved, and the three verdicts stay distinct — `resolves`, `unfinished` (n of m nodes carded), `rejected` (`components/upload/progress.ts`). Vocabulary defects are reported separately from bundle defects. Sibling endpoints validate a lone DOT buffer, a lone card and a lone vocabulary. Nothing is persisted. Limits are enforced here and stated in the refusal (T230 owns the numbers).
 - **Acceptance criteria:** (1) the nine archive bundles return the diagnostics, autonomy class and security level the build computes today; (2) a bundle with three of eight nodes carded returns `unfinished` with an analysis over the three, not an error; (3) a DOT that fails to parse returns a diagnostic carrying line and column; (4) an oversized submission is refused before parsing, with the limit named; (5) identical bytes return identical output including diagnostic order; (6) a card naming a term the supplied vocabulary lacks returns `card/unknown-term`, never silence.
