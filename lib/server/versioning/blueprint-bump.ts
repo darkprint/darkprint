@@ -19,12 +19,23 @@
    parses out where it can, for a repin priced by semver, and the raw
    refs are always compared by count on top, so a member cannot
    vanish just because it did not parse.
+
+   `cardRefs` carries no node identity, so once more than one node
+   pins one id, which before-version became which after-version is
+   genuinely unknowable — and B-04's "never answer less than you can
+   justify" resolves that ambiguity toward the most expensive
+   plausible reading, never the cheapest. `worstPairing` takes the
+   largest bump any pairing the leftover versions permit could
+   justify, rather than assuming one arbitrary pairing; see its own
+   comment for why this also fixes a real monotonicity bug a flat
+   positional pairing had (adding a pin to `next` could *lower* the
+   inferred bump).
    ============================================================ */
 
 import type { BumpAnalysis, BumpLevel } from "@/lib/core";
 import { compareSemver, compareVersionStrings, declaredBump, parseSemver } from "@/lib/core";
 
-import { summarize, type Reason } from "./reasons";
+import { LEVEL_RANK, summarize, type Reason } from "./reasons";
 
 /** The two fields that decide a blueprint's version, per backend.md T025. */
 export interface BlueprintSnapshot {
@@ -160,20 +171,101 @@ function leftoverVersions(
 }
 
 /**
+ * What a single leftover version prices at if it turns out this pairing is
+ * wrong and the two sides are unrelated — `before` genuinely lost (still
+ * pinned somewhere else in the full `after` list is only a patch;
+ * genuinely gone is major) or `after` genuinely gained (still present
+ * somewhere in the full `before` list is only a patch; genuinely new is
+ * at least minor). Used to floor a pair `repinMagnitude` could not read.
+ */
+function unpairedFloor(version: string, seenElsewhere: boolean, kind: "lost" | "gained"): Exclude<BumpLevel, "none"> {
+  if (seenElsewhere) return "patch";
+  return kind === "lost" ? "major" : "minor";
+}
+
+/**
+ * The worst repin size a `beforeLeftover`/`afterLeftover` pairing could
+ * justify, over every `(before, after)` pair the leftovers permit —
+ * `cardRefs` carries no node identity, so which specific before-version
+ * became which specific after-version is genuinely unknowable, and B-04's
+ * "never answer less than you can justify" settles the ambiguity toward
+ * the most expensive plausible reading rather than the cheapest.
+ *
+ * This is a maximum over the full cross product, not a search over
+ * assignments: taking the single worst `(b, a)` pair is always achievable
+ * by *some* valid pairing (pair that one, then pair whatever is left of
+ * both lists arbitrarily — pairing the remainder can only add reasons at
+ * or below that same worst level, never remove it), so the cross-product
+ * max is exactly the maximum level any full pairing could reach, computed
+ * in O(n·m) with no permutation search. `undefined` when either leftover
+ * list is empty — there is no pair to price, only the structural
+ * gained/lost leftover `compareVersions` handles on its own.
+ *
+ * A pair `repinMagnitude` cannot read (one side is not semver at all, e.g.
+ * `@latest`) is not floored at a flat `patch`: with nothing to measure a
+ * distance against, "these two happen to be unrelated" is exactly as
+ * plausible a reading as "this is a repin", so the floor is the worse of
+ * `patch` and what each side would price as genuinely lost/gained on its
+ * own (`unpairedFloor`, checked against the *full* original opposite-side
+ * list). Skipping this for a pair `repinMagnitude` *can* read is what
+ * keeps an ordinary minor or patch repin from being inflated to major just
+ * because it is, definitionally, a leftover — that escalation is reserved
+ * for pairs with no measured distance to trust instead.
+ */
+function worstPairing(
+  beforeLeftover: readonly string[],
+  afterLeftover: readonly string[],
+  beforeSet: ReadonlySet<string>,
+  afterSet: ReadonlySet<string>,
+): { level: Exclude<BumpLevel, "none">; before: string; after: string } | undefined {
+  let worst: { level: Exclude<BumpLevel, "none">; before: string; after: string } | undefined;
+  for (const before of beforeLeftover) {
+    for (const after of afterLeftover) {
+      const raw = repinMagnitude(before, after);
+      const level =
+        raw === "none"
+          ? [
+              "patch" as const,
+              unpairedFloor(before, afterSet.has(before), "lost"),
+              unpairedFloor(after, beforeSet.has(after), "gained"),
+            ].reduce((a, b) => (LEVEL_RANK[b] > LEVEL_RANK[a] ? b : a))
+          : raw;
+      if (worst === undefined || LEVEL_RANK[level] > LEVEL_RANK[worst.level]) {
+        worst = { level, before, after };
+      }
+    }
+  }
+  return worst;
+}
+
+/**
  * One id's version lists, before and after. Reduced to the leftover only
- * `leftoverVersions` could not cancel out, then compared position by
- * position up to the shorter leftover length — a version that moved
- * there, priced by `repinMagnitude` — and then whatever the longer
- * leftover has left over still: a version that also appears anywhere in
- * the *full* list on the other side is a pure multiplicity change (a
- * second node now pinning, or no longer pinning, what another node
- * already pins) and is at least a `patch`, since the bytes and the digest
- * both moved even though the declared surface did not; a version that
- * appears nowhere on the other side, at any count, is a pin genuinely
- * gained (minor) or genuinely lost (major). An id absent from one side
- * supplies an empty list here, which this same logic reads correctly as
- * "every occurrence gained" or "every occurrence lost" with no extra
- * branch.
+ * `leftoverVersions` could not cancel out, then priced two ways.
+ *
+ * First, the pairable portion — `worstPairing` over the *whole* leftover
+ * cross product, not a positional walk. A flat "sort both lists and
+ * compare position by position" was tried and failed a monotonicity
+ * check: adding a pin to `next` can insert itself into the sorted middle
+ * and shift every later position, so which before-version a given
+ * after-version was compared against depended on how many *other* pins
+ * happened to exist, and a bigger `next` could make the inferred bump
+ * *smaller*. The cross-product maximum does not have that failure mode —
+ * adding a pin only ever adds more candidate pairs, and a maximum over a
+ * superset of pairs cannot go down.
+ *
+ * Second, whatever `worstPairing` did not price at all: once the shorter
+ * leftover list is exhausted, the longer one still has
+ * `|beforeLeftover.length − afterLeftover.length|` entries no pairing
+ * could consume in *any* assignment — a version that also appears
+ * anywhere in the *full* list on the other side is a pure multiplicity
+ * change (a second node now pinning, or no longer pinning, what another
+ * node already pins) and is at least a `patch`, since the bytes and the
+ * digest both moved even though the declared surface did not; a version
+ * that appears nowhere on the other side, at any count, is a pin
+ * genuinely gained (minor) or genuinely lost (major). An id absent from
+ * one side supplies an empty leftover list here, which this same logic
+ * reads correctly as "every occurrence gained" or "every occurrence
+ * lost" with no extra branch.
  */
 function compareVersions(
   id: string,
@@ -185,15 +277,12 @@ function compareVersions(
   const beforeSet = new Set(beforeVersions);
   const afterSet = new Set(afterVersions);
 
-  const n = Math.min(beforeLeftover.length, afterLeftover.length);
-  for (let i = 0; i < n; i++) {
-    if (beforeLeftover[i] === afterLeftover[i]) continue;
-    // A version half that is not semver at all (`@latest`) prices no
-    // magnitude of its own; the repin itself still changed something, so it
-    // falls to "patch otherwise" rather than going unreported.
-    const level = repinMagnitude(beforeLeftover[i], afterLeftover[i]);
-    push(level === "none" ? "patch" : level, `card \`${id}\` repinned: ${beforeLeftover[i]} → ${afterLeftover[i]}`);
+  const worst = worstPairing(beforeLeftover, afterLeftover, beforeSet, afterSet);
+  if (worst !== undefined) {
+    push(worst.level, `card \`${id}\` may have repinned: ${worst.before} → ${worst.after}`);
   }
+
+  const n = Math.min(beforeLeftover.length, afterLeftover.length);
   for (let i = n; i < afterLeftover.length; i++) {
     const version = afterLeftover[i];
     if (beforeSet.has(version)) {

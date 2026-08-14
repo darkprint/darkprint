@@ -13,7 +13,10 @@ export interface Reason {
   message: string;
 }
 
-const LEVEL_RANK: Record<BumpLevel, number> = { none: 0, patch: 1, minor: 2, major: 3 };
+/** Exported so a caller that has to find the strongest of several *candidate* levels
+ * before it has reasons to attach to them (e.g. a worst-case pairing search) can rank
+ * them the same way `summarize` ranks finished reasons, without a second rank table. */
+export const LEVEL_RANK: Record<BumpLevel, number> = { none: 0, patch: 1, minor: 2, major: 3 };
 
 /** Strongest reason wins; ties keep the order they were pushed in. */
 export function summarize(reasons: readonly Reason[]): BumpAnalysis {
