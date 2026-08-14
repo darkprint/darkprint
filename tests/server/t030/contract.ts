@@ -398,8 +398,21 @@ export function expectSealedError(
   return err;
 }
 
-/** Words long enough to mean something. Compared as words, never as substrings. */
-const WORD = /[a-z_][a-z0-9_]{3,}/g;
+/**
+ * Words long enough to mean something. Compared as words, never as substrings.
+ *
+ * **The leading character admits a digit, and that is not cosmetic.** The first form was
+ * `[a-z_][a-z0-9_]{3,}`, built for identifiers, so `"23505"` produced *no token at all* and a
+ * SQLSTATE could never appear on either side of the comparison — while the clause names "a
+ * SQLSTATE" among the things no rendering may carry. Widening the deny set to include the
+ * driver's `code` did nothing on its own: widening what you look for is inert if the thing that
+ * does the looking cannot represent it.
+ *
+ * Checked in both directions rather than one. Admitting digits does not over-correct, because
+ * nothing admissible tokenises this way: a version like `0.1.0` splits into single characters and
+ * yields no token, and every table, column and constraint name is alphabetic with underscores.
+ */
+const WORD = /[a-z0-9_][a-z0-9_]{3,}/g;
 
 function wordsOf(text: string): Set<string> {
   return new Set(text.toLowerCase().match(WORD) ?? []);

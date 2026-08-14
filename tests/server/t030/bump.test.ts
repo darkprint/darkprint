@@ -146,10 +146,14 @@ describe("AC6: removing a term is a major ontology version", () => {
     await add(db(t), { version: BASE_VERSION, terms: baseTerms() });
 
     // 0.1.0 -> 0.2.0 is a minor; dropping a term requires a major.
-    await expect(
-      add(db(t), { version: "0.2.0", terms: baseTerms().filter((x) => x.id !== "validation") }) as Promise<unknown>,
-      "a removal declared as a minor has to be refused by the store, not only by the primitives",
-    ).rejects.toThrow();
+    // Through `rejects` rather than a bare `.rejects.toThrow()`: that form cannot tell this
+    // refusal from any other throw, and it would pass on a module that fell over for an
+    // unrelated reason. This holds the whole error-hygiene clause on the way past.
+    await rejects(
+      () => add(db(t), { version: "0.2.0", terms: baseTerms().filter((x) => x.id !== "validation") }) as Promise<unknown>,
+      ["0.2.0", BASE_VERSION, ...baseTerms().map((x) => x.id)],
+      "addOntologyVersion (removal declared as a minor)",
+    );
   });
 
   it("AC6 accepts the same removal when it is declared as a major", async () => {
