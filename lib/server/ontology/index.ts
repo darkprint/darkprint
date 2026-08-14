@@ -25,7 +25,7 @@ export { validateVocabulary } from "./validate";
 /* --------------------- identity --------------------- */
 export { ontologyDigest } from "./digest";
 
-/* --------------------- AC6, pending T025 --------------------- */
+/* --------------------- AC6 --------------------- */
 export { checkOntologyBump } from "./bump";
 
 /* --------------------- rejections --------------------- */
@@ -35,5 +35,4 @@ export {
   MalformedContentError,
   OntologyStoreError,
   UnknownOntologyVersionError,
-  VersioningUnavailableError,
 } from "./errors";

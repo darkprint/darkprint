@@ -20,37 +20,44 @@
    does not. So this file is a single named function that reports
    the absent dependency and nothing else.
 
-   **When T025 merges**, this becomes: infer the bump between the
-   latest stored version's terms and the candidate's, then hand
-   both the inference and the declared version to
-   `checkDeclaredBump`, and refuse on
-   `ontology/version-bump-too-small`. The call belongs in
-   `addOntologyVersion`, after `validateVocabulary` and before the
-   digest.
+   **T025 has merged**, so this is now the real call: infer the
+   bump between the previously published terms and the candidate's,
+   hand both the inference and the declared version to
+   `checkDeclaredBump("ontology", …)`, and return what it says. The
+   inference and the refusal are still T025's; this file only knows
+   which two term lists to compare and that the subject is an
+   ontology.
+
+   Four of `inferOntologyBump`'s behaviours are not obvious from its
+   signature and are depended on here, confirmed by T025's own
+   adversary: duplicate term ids collapse **first-wins**, which is
+   set semantics and deliberately unlike the blueprint half's
+   multiset; cutting a middle `broader` link propagates major to
+   **every** descendant rather than the edited term alone; a
+   `broader` pointing at a term that does not exist reads as a
+   gained ancestor and so minor, because a dangling pointer is
+   `lib/core`'s to catch and not this path's; and deprecating a term
+   is never a removal, while deprecating *and* removing it is
+   major.
    ============================================================ */
 
-import type { OntologyTerm } from "@/lib/core";
-
-import { VersioningUnavailableError } from "./errors";
+import type { Diagnostic, OntologyTerm } from "@/lib/core";
+import { checkDeclaredBump, inferOntologyBump } from "@/lib/server/versioning";
 
 /**
- * Refuse a declared version whose bump is smaller than the terms imply.
+ * Whether `declaredVersion` is a large enough bump for what changed between `previous` and
+ * `next`. Empty means it is; otherwise the diagnostics say why, and
+ * `ontology/version-bump-too-small` is the code AC6 names.
  *
- * Throws `VersioningUnavailableError` until T025 ships. It takes the arguments it will need
- * so the shape of the call site is fixed now and the seam is a body change rather than a
- * signature change — and so a caller wiring it today fails loudly rather than silently
- * skipping the check.
+ * The arguments are the ones the real call always needed, which is why the seam survived
+ * T025's absence as a body change rather than a signature change.
  */
 export function checkOntologyBump(input: {
   previous: readonly OntologyTerm[];
   next: readonly OntologyTerm[];
   declaredVersion: string;
   previousVersion: string;
-}): never {
-  // Referenced rather than prefixed with `_`: this repo's eslint warns on an unused argument
-  // whatever it is named, and the argument has to stay so the seam is a body change later.
-  void input;
-  throw new VersioningUnavailableError(
-    "Ontology bump inference is T025's `lib/server/versioning/**`, which has not shipped. AC6 cannot be satisfied from this module, and inferring the bump here would be a second implementation of one rule.",
-  );
+}): Diagnostic[] {
+  const inferred = inferOntologyBump(input.previous, input.next);
+  return checkDeclaredBump("ontology", input.previousVersion, input.declaredVersion, inferred);
 }

@@ -70,7 +70,3 @@ DuplicateOntologyVersionError.prototype.name = "DuplicateOntologyVersionError";
 /** `openView` was asked for a version that is not in the store. */
 export class UnknownOntologyVersionError extends OntologyStoreError {}
 UnknownOntologyVersionError.prototype.name = "UnknownOntologyVersionError";
-
-/** A dependency this module consumes rather than implements has not shipped yet. */
-export class VersioningUnavailableError extends OntologyStoreError {}
-VersioningUnavailableError.prototype.name = "VersioningUnavailableError";
