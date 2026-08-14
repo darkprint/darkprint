@@ -487,6 +487,30 @@ anything; it is free.
 the refusing, the honest move is T-03's: label the test, say what it can and cannot distinguish,
 and keep it. A weak test known to be weak is worth having; the failure is the unlabelled one.
 
+## A green suite is not evidence that the thing the tests name got better
+
+T030's implementer built AC6 enforcement into `addOntologyVersion`, measured it, and **took the
+suite from 7 red to 2 — then did not ship it.** Its reasoning is the finding: a republish of an
+existing version string now meets the bump check *before* reaching Postgres, so no 23505 is raised,
+no driver `cause` exists, and the flagged word never enters any rendering. Five tests go green
+because **the rejection changed identity** — a bump refusal standing in for a duplicate-version
+refusal — under test names that still read *refuses a version string that is already published*.
+
+**That is dodging a failing check structurally rather than lexically, and it is worse than
+rewording, because it is invisible in the diff.** A reworded message is visible as a reworded
+message. A refusal that arrives from a different branch, earlier, for a different reason, looks
+like a fix and reads as five tests passing. Nothing in the suite, the diff or the gate distinguishes
+it from the honest version.
+
+The general rule, and it is the mirror of *"if the fix were reverted, would this test red?"*:
+**when a change makes tests go green, check that each one now passes for the reason its name
+claims.** A drop from 7 to 2 is a result to be explained before it is a result to be reported —
+and the explanation has to name which branch each newly-green test is now exercising.
+
+The implementer also declined to settle the underlying question by shipping the version that looked
+greener, and escalated instead. That is the correct handling of a fix whose merit depends on a
+ruling nobody has made.
+
 ## Having the guard is not using it
 
 The sharpest self-catch of the run, and a category the rest of this file does not cover. Every rule
@@ -2817,6 +2841,12 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   Same family as the rest of this file: an error that suppresses measurement downstream of itself reports silence as cleanliness. The general point stands; it simply does not bite here.
 
   The blind author could have dodged this with a non-literal specifier and deliberately did not: T000's precedent requires the literal so the `@` alias resolves at runtime, and trading a real runtime binding for a quiet compile is the wrong side of that trade. Merge ordering is the right resolution, not a workaround for a missing one. The same will hit T020 if its blind suite reaches for T025 the same way. Stated here because an ordering constraint discovered at gate time reads as a defect.
+
+  **Ruling: yes, `addOntologyVersion` enforces AC6 — and existence is checked FIRST, so a duplicate version is refused as a duplicate.** The ordering was unspecified and it decides what the duplicate-version tests measure, which is why it had to be settled before the enforcement shipped rather than after.
+
+  Existence wins because the two refusals answer different questions and only one of them is about the *request*. "This version already exists" is a fact about the store's state, true regardless of what the caller proposed — a published version is never rewritten (B-04), so nothing about the proposed content can make the write legal. "This bump is too small" is a judgement about the proposed content **relative to its predecessor**, which only matters for a version that could otherwise be created. Checking the settled fact before the judgement is both more specific and cheaper, and it keeps the duplicate-version tests measuring what their names say.
+
+  So: existence check, then bump check, then the write. AC6 refusals apply only to versions that do not yet exist. A test asserting a duplicate is refused must still see a duplicate-version refusal with its 23505-derived `cause`, not a bump refusal arriving earlier.
 
   **AC6 is the one criterion that waits on T025.** `inferOntologyBump(previous: readonly OntologyTerm[], next: readonly OntologyTerm[]): BumpAnalysis` and `checkDeclaredBump("ontology", …)` are T025's published surface and do **not** exist in `lib/core` — unlike the card path, which is entirely self-contained. `ontology/version-bump-too-small` is already a `lib/core/diagnostics.ts` code, but nothing computes it for ontologies yet. Build everything else, and if `lib/server/versioning/**` has not merged by the time the gates run, leave AC6's call site as a single named function that reports the absent dependency, say so in the Log, and let the criterion stand red. Do **not** reimplement bump inference inside `lib/server/ontology/**` to make it green — two implementations of one rule is the defect the partition exists to prevent.
 
