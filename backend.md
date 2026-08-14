@@ -15,6 +15,12 @@ were identical at `8a9801e` when this run started, the work and these three docu
 `backend`, and worktrees branched from `main` would not contain this file. Substitute `backend`
 wherever `docs/ORCHESTRATION.md` says `main`. Recorded here rather than assumed.
 
+**Gate-slot queue** (three consecutive full-suite runs only; targeted runs and probes are free):
+T020's adversary holds it, then T030's adversary, then T025's implementer for round 6. The queue
+moves on completed triples, never on seniority — T025's adversary was offered the chance to
+re-run early to remove the last qualification from its own report and declined it, which is the
+only reason the rule is worth having.
+
 Five slots, not three: the owner left six sessions running and the gate removal took the
 serialisation point out, so the cap is now sessions rather than review capacity.
 
@@ -23,7 +29,7 @@ serialisation point out, so the cap is now sessions rather than review capacity.
 | 1 | T000 | *(merged)* | **verified**, tag `t000-verified` at `ec516fa` | — |
 | 2 | T060 | *(merged)* | **verified**, tag `t060-verified` at `eef7cce` | — |
 | 3 | T010 | *(merged)* | **verified**, tag `t010-verified` at `3fd050f` | — |
-| 4 | T025 | `../darkprint-wt-t025-versioning` | round 5, **adversary** at `a146c50` | `…versioning-f2`; impl `…versioning-3a` idle |
+| 4 | T025 | `../darkprint-wt-t025-versioning` | round 6, implementer at `9d65553` | `…versioning-3a`; adversary `…versioning-f2` idle |
 | 5 | T020 | `../darkprint-wt-t020-cards` | round 1, **adversary** at `153b541` | `…policy-tests-9f`; impl `…policy-d0`, tests `…archive-tests-67` idle |
 | 6 | T030 | `../darkprint-wt-t030-ontology` | round 1, **adversary** at `f5fbaca` | `…archive-28`; impl `…policy-c9`, tests `…versioning-tests-eb` idle |
 
