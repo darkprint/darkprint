@@ -15,11 +15,20 @@ were identical at `8a9801e` when this run started, the work and these three docu
 `backend`, and worktrees branched from `main` would not contain this file. Substitute `backend`
 wherever `docs/ORCHESTRATION.md` says `main`. Recorded here rather than assumed.
 
-| Slot | Task | Worktree | State |
-|---|---|---|---|
-| 1 | T060 | `../darkprint-wt-t060-policy` | adversarial-pass |
-| 2 | T010 | `../darkprint-wt-t010-archive` | claimed |
-| 3 | T025 | `../darkprint-wt-t025-versioning` | claimed |
+Five slots, not three: the owner left six sessions running and the gate removal took the
+serialisation point out, so the cap is now sessions rather than review capacity.
+
+| Slot | Task | Worktree | State | Session |
+|---|---|---|---|---|
+| 1 | T000 | *(merged)* | **verified**, tag `t000-verified` at `ec516fa` | — |
+| 2 | T060 | *(merged)* | **verified**, tag `t060-verified` at `eef7cce` | — |
+| 3 | T010 | `../darkprint-wt-t010-archive` | round 4, implementer | `…archive-c2`, adversary `…archive-28` idle |
+| 4 | T025 | `../darkprint-wt-t025-versioning` | round 5, implementer | `…versioning-3a`, adversary `…versioning-f2` idle |
+| 5 | T020 | `../darkprint-wt-t020-cards` | round 1, implementer + blind tests | `…policy-d0`, tests `…archive-tests-67` |
+| 6 | T030 | `../darkprint-wt-t030-ontology` | round 1, implementer + blind tests | `…policy-c9`, tests `…versioning-tests-eb` |
+
+`…policy-tests-9f` is held free as the next adversary. T060's and T000's worktrees stay on
+disk while sessions live in them, per the deferred-removal rule.
 
 **T000 is merged and tagged `t000-verified` (`ec516fa`). Wave 2 is open**: T010, T025, T060,
 T070 and T240 are all ready, with disjoint `Owns` sets, and three of the five may run at once.
