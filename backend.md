@@ -177,6 +177,12 @@ It is the through-line of this whole run, and nearly every rule below is an inst
 - A leak assertion built by hand, never reaching the catch path a caller hits.
 - A whitelist block inside `if (cause !== undefined)`, absent for every error raised before the
   database is touched.
+- A deny set correctly widened to the driver's values **including `code`** — while the tokenizer
+  that has to find those values, `/[a-z_][a-z0-9_]{3,}/g`, requires a leading letter and so produces
+  **no token at all** from `"23505"`. The clause names a SQLSTATE among the things no rendering may
+  carry, and the assertion enforcing it is vacuous for exactly that value. **Widening what you look
+  for does nothing if the thing that does the looking cannot represent it** — the boundary rule
+  inside the fix for its own previous instance.
 
 In each, the *method* was sound and applied honestly. What was never re-examined was the boundary
 the method ran inside — and a boundary is a claim: *"everything that could matter is in here."*
