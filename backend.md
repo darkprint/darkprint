@@ -511,6 +511,33 @@ The implementer also declined to settle the underlying question by shipping the 
 greener, and escalated instead. That is the correct handling of a fix whose merit depends on a
 ruling nobody has made.
 
+## A conditional assertion is a guard that switches itself off
+
+Predicted from reading by T030's adversary, before any measurement and labelled as such.
+`expectSealedError` derives its deny set **from the driver error on `cause`**, inside
+`if (cause !== undefined && cause !== null)`. So the whitelist check exists **only when there is a
+driver error to derive it from** — and an error raised *before* the database is touched carries no
+`cause`, so the entire block is skipped.
+
+That is the convergence hazard with a mechanism: ship AC6 enforcement without the existence-first
+ordering, and a bump refusal reaches the caller without going to Postgres, so it has no `cause`, so
+the deny set is never built, so `already` and `term` are never looked for. Five tests go green
+**because the assertion stopped running** — not because the message changed, and not because the
+deny side was fixed. Two independent fixes appearing to converge, where one has simply been
+switched off.
+
+**So the discriminator is not the count.** For each whitelist red: *which error class arrived, and
+did it carry a `cause`?* Green with a duplicate-version error carrying a driver `cause` and no
+flagged words means the deny side was genuinely fixed. Green with a bump refusal and
+`cause === undefined` means the ordering is wrong **and** the whitelist result is vacuous — one test
+reporting a pass for two different reasons, neither of them the one its name claims.
+
+**The general defect is the conditional itself**, independent of the ordering: a suite whose check
+runs only when the subject supplies a particular shape cannot test the subject that does not supply
+it. The block should assert unconditionally — for a causeless error, that the enumerable surface is
+still empty and the message still admissible — rather than treating the absence of a driver error
+as nothing to check.
+
 ## Having the guard is not using it
 
 The sharpest self-catch of the run, and a category the rest of this file does not cover. Every rule
