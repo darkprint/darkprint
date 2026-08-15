@@ -8,7 +8,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { and, eq } from "drizzle-orm";
 import { RESERVED_PROFILE_SEGMENTS } from "@/components/profile/tabs";
-import { schema, type DbClient } from "@/lib/db";
+import { createDbClient, schema, type DbClient } from "@/lib/db";
 import { createTestDb, resetTestDb, type TestDb } from "../../../tests/support/db";
 import { HANDLE_PRIMARY_KEY_CONSTRAINT } from "./constraint";
 import { MAX_NAME_LENGTH } from "./grammar";
@@ -356,12 +356,21 @@ describe.skipIf(!hasDb)("lib/server/naming", () => {
   });
 
   it("D-70-11: checkHandle's read fault arrives, and the rendering carries nothing", async () => {
-    /* Its own scratch database, closed under it: `checkHandle` takes no id to malform, so
-       the reachable fault is infrastructural. A closed pool is the one a deployment meets. */
-    const doomed = await createTestDb();
-    await doomed.client.close();
-    const err = (await checkHandle(doomed.client.db, "mara-veil").catch((e: unknown) => e)) as Error;
-    await doomed.drop().catch(() => undefined);
+    /* A database that is not there, which is the fault `NamingStoreError` was admitted for
+       in the first place — "a database being down must not be swallowed as a conflict"
+       (D-70-05). `checkHandle` takes no id to malform, so the reachable fault is
+       infrastructural rather than an input.
+     *
+     * The first version of this case used a second scratch database and closed the client
+     * under it, and it **leaked that database on every run**: `TestDb.drop()` begins with
+     * `client.close()`, `pool.end()` raises on a pool already ended, and the `.catch` I had
+     * put around `drop()` swallowed it before the `DROP DATABASE` ever ran. Fifteen
+     * abandoned databases on the shared server, one per full-suite run, produced by the
+     * test written to prove faults are not swallowed. A refused connection needs no
+     * database at all, so there is nothing left to clean up. */
+    const down = createDbClient("postgres://darkprint:darkprint@127.0.0.1:1/darkprint");
+    const err = (await checkHandle(down.db, "mara-veil").catch((e: unknown) => e)) as Error;
+    await down.close();
 
     expect(err).toBeInstanceOf(NamingStoreError);
     expect(err.message).toBe("checkHandle: the database call failed.");
