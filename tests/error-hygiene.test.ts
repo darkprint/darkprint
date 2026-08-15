@@ -131,6 +131,23 @@ describe("no published error class carries an enumerable own property (D-13)", (
               `JSON.stringify=${json}`,
           );
         }
+
+        /* The clause's fourth part, and the only one that is not a statement about enumerability.
+           The first three are satisfiable by deleting `stack` — which is precisely how the
+           *previous* wording of this clause ("own properties exactly [message, cause]") could be
+           satisfied at all, at the cost of every real failure's trace. So the one shape the
+           amendment exists to prevent is the one shape the other three assertions cannot see: a
+           class that drops `stack` renders as `{}` and passes them all.
+
+           Found by T070's blind author, which falsified this guard four ways against its own module
+           rather than trusting its green, and reported the one mutation that survived. */
+        if (typeof instance.stack !== "string" || instance.stack === "") {
+          violations.push(
+            `${barrel}/${name} with ${args.length} arg(s): stack is ` +
+              `${instance.stack === undefined ? "absent" : JSON.stringify(instance.stack)}, ` +
+              `not a non-empty string`,
+          );
+        }
       }
     }
 
