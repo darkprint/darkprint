@@ -16,14 +16,31 @@
 export type ArchiveConflictKind = "bundle-slug" | "release-version";
 
 export class ArchiveConflictError extends Error {
-  readonly kind: ArchiveConflictKind;
+  /**
+   * `declare` plus `defineProperty`, not a field assignment, and `name` on the prototype rather
+   * than in the constructor — both so the enumerable surface stays empty.
+   *
+   * The hygiene clause says `Object.keys(err)` is `[]` and `JSON.stringify(err)` is exactly `"{}"`.
+   * A constructor assignment makes its property **enumerable**, so this class gave
+   * `["name","kind"]` and `{"name":"ArchiveConflictError","kind":"bundle-slug"}` while the three
+   * other merged error classes satisfied the clause exactly. Neither value is caller or driver data,
+   * so it was never a *leak* — but the clause's worth is that it is absolute and mechanically
+   * checkable, and an exception for "fields we meant to publish" reintroduces the list it replaced.
+   *
+   * Nothing downstream loses anything: `kind` is still a readable property and still what callers
+   * branch on (D-14), and `instanceof` is untouched. Only its appearance in a *rendering* changes,
+   * which is the whole point. Found by T090's blind author measuring all four merged classes
+   * against the clause rather than against its own module.
+   */
+  declare readonly kind: ArchiveConflictKind;
 
   constructor(kind: ArchiveConflictKind, detail: string) {
     super(detail);
-    this.name = "ArchiveConflictError";
-    this.kind = kind;
+    Object.defineProperty(this, "kind", { value: kind, enumerable: false, writable: false });
   }
 }
+
+ArchiveConflictError.prototype.name = "ArchiveConflictError";
 
 /**
  * D-14: `cause.code === "23505"` alone says *a* unique constraint was
