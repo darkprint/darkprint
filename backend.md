@@ -334,10 +334,40 @@ the class described above — exported, sealed, unfirable, and named in a test t
 shape. That is the blacklist-predicate move charged repeatedly in this run, and it would launder an
 unmeasured claim into a passing test.
 
-The instrument that actually answers it is mutation-based: for each published error class, neuter
-its throw sites and require the suite to red. Bounded today (8 classes), too slow for `npm test`,
-so it belongs out-of-suite as a script with its results recorded. Owned by the orchestrator on
-base, not by any task.
+The instrument is mutation-based, and my first specification of it — *neuter each published class's
+throw sites and require the suite to red* — **is wrong**, corrected by T070's blind author from a
+measurement rather than an opinion: it had already run that exact shape.
+
+Neutering `throw handleTakenError(...)` to `return;` reds hard, because AC5's "exactly one
+fulfilled" breaks the moment `allocateHandle` resolves for all sixteen callers. **That red says the
+branch is observed. It says nothing about whether the class is** — a suite asserting only "this
+rejects" produces the identical red. So the instrument would have licensed "`HandleTakenError` is
+distinguishable" from evidence that answers a strictly wider question. The over-claim this file
+keeps charging, arriving inside the instrument built to catch it.
+
+**Removal changes whether the caller gets an error; substitution changes which error.** Only the
+second is the property "this class is distinguishable", so the mutation is: replace the class at
+each throw site with a different one carrying the **same message** — a bare `new Error(msg)` will
+do. A suite that pins the class (`instanceof`, or branching on it) reds; a suite that only asserts
+rejection stays green, **correctly**; and control flow is untouched, so nothing reds for a reason
+unrelated to the question.
+
+**And the question is three questions.** T070's three zeros map onto them exactly:
+
+| | | |
+| --- | --- | --- |
+| **arrival** | does anything require the fault to *reach* the caller? | B6, B12 — 0 red |
+| **identity** | can any test tell this class from another? | substitution answers this |
+| **message** | is the message pinned, or free to interpolate? | B13 — 0 red |
+
+A class can be distinguishable and still carry an unpinned message; it can have a pinned message on
+one path and be unfirable on another. Critically, **arrival is not a source mutation at all** — no
+test constructs a `NamingStoreError`, so substitution at a site nothing reaches reds nothing, for
+the same reason removal does. Arrival needs a **driver-level fault injected at the call site**,
+which is why T070's probes caught all three and a source-mutation sweep caught none.
+
+Bounded today (8 classes), too slow for `npm test`, so it belongs out-of-suite as a script with its
+results recorded. Owned by the orchestrator on base, not by any task.
 
 ## A sample that happens to contain the defect is still a sample
 
