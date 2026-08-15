@@ -255,6 +255,40 @@ broken one does. Before a reference's green counts for a test, that reference mu
 it: mutate the reference toward the defect and watch the test red. A reference built by a different
 route than the implementation is the *usual* case, not a rare one, so this is not a corner.
 
+## A guard must not demand what its own reader is forbidden to write
+
+`tests/architecture-current.test.ts` read the **working tree** for its domain, so it reddened in
+every implementer worktree the moment that task's module existed — and the session it reddened at
+could not fix it, because the guard's own header says `docs/ARCHITECTURE.md` is in no task's `Owns`
+set. It demanded a row only the orchestrator may write, from a session forbidden to write it.
+
+T070's implementer hit it, declined the partition breach **and** the workaround, and asked. Its
+sentence is the rule: *I am not going to work around a rule by breaking a different one.* It also
+priced the consequence exactly — it would have been at three reds once D-70-09's routes existed,
+all three the same structural fact, which makes "any failing test other than the named one stops
+your round" unsatisfiable for most of the twenty-three tasks left.
+
+**Fixed by making the domain the shipped tree**: `git ls-tree backend`, not the working tree. The
+document describes the merged system, so a module in a worktree has not merged, is not part of that
+system, and is not owed a row until the merge commit — which is when the orchestrator writes that
+row anyway. On base the answer is unchanged, because HEAD *is* `backend`.
+
+Two things came free. Both halves now share **one** function answering "what has shipped", so the
+domain asymmetry T080 found is gone rather than patched. And the rule the guard enforces is now the
+one it always meant: not "every module is documented" but "every **shipped** module is documented".
+
+**A second defect surfaced while falsifying the fix, and it is the more instructive one.** Renaming
+§6.2's `server/export/` row left the guard **green**, because §12's revision log says
+"`lib/server/export/` added" and the substring was still there. The directory-tree row could be
+deleted outright and the guard would report the module recorded, on the strength of a log entry
+saying it once was — **a check satisfiable by the record of a change rather than by the change**.
+Now scoped to §6.2 itself, and the section's absence is an error rather than an empty string.
+
+Note how it was found: the *fix* was falsified, not just the original defect. Test A (an unmerged
+module must not be required) passed and would have been reported as the fix working. Test B (a
+shipped module removed must still red) is the one that failed, and it was only run because a fix
+changes what a guard can see in **both** directions and only one of them is the thing being fixed.
+
 ## Base carries exactly one expected red, and its identity is the point
 
 As of T090's merge, `npm test` on `backend` is **exit 1, `1 failed | 4890 passed (4891)`**, and the

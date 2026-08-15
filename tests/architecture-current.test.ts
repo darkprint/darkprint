@@ -35,7 +35,7 @@
 
 import { describe, expect, it } from "vitest";
 import { execFileSync, spawnSync } from "node:child_process";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -59,48 +59,69 @@ const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
 const TREE_DOC = fileURLToPath(new URL("../docs/ARCHITECTURE.md", import.meta.url));
 const SITEMAP_DOC = fileURLToPath(new URL("../docs/architecture/routes.md", import.meta.url));
 
-/** Every `lib/server/<name>/` on disk. The filesystem is the domain, so a new module is covered. */
-function serverModules(): readonly string[] {
-  return readdirSync(fileURLToPath(new URL("../lib/server", import.meta.url)), {
-    withFileTypes: true,
+/**
+ * The paths tracked on the `backend` branch — the code that has actually **shipped**.
+ *
+ * This is the domain, not the working tree, and the distinction is the whole correctness of this
+ * guard. `docs/ARCHITECTURE.md` describes the merged system; a module sitting in an implementer's
+ * worktree has not merged, is not part of that system, and is not owed a row yet.
+ *
+ * The first version read the working tree, which made the guard **red by construction in every
+ * implementer worktree from the moment the module landed** — and unfixable there, because the guard's
+ * own header says `docs/ARCHITECTURE.md` is in no task's `Owns` set. It demanded a row that only the
+ * orchestrator may write, from a session forbidden to write it. T070's implementer hit it, declined
+ * both the partition breach and a workaround, and asked instead.
+ *
+ * Reading `backend` fixes it from both ends: on base the answer is unchanged, because HEAD is
+ * `backend`; in a worktree the new module is absent from `backend` and correctly not required, and
+ * it becomes required the moment the merge commit lands — which is exactly when the orchestrator is
+ * writing that row anyway.
+ *
+ * Fails CLOSED: if the ref does not resolve, that is an error rather than an empty domain.
+ */
+function shippedPaths(): readonly string[] {
+  const ref = spawnSync("git", ["rev-parse", "--verify", "--quiet", "backend"], { cwd: REPO_ROOT });
+  if (ref.status !== 0) {
+    throw new Error(
+      "The `backend` branch does not resolve, so this guard cannot tell shipped code from code " +
+        "that only exists in a worktree. That distinction is the whole check: without it this " +
+        "either demands rows for unmerged modules or demands none at all.",
+    );
+  }
+  return execFileSync("git", ["ls-tree", "-r", "--name-only", "backend"], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+    maxBuffer: 32 * 1024 * 1024,
   })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort();
+    .split("\n")
+    .filter((line) => line.length > 0);
+}
+
+/** Every `lib/server/<name>/` that has merged. */
+function serverModules(): readonly string[] {
+  return [
+    ...new Set(
+      shippedPaths().flatMap((p) => {
+        const m = /^lib\/server\/([^/]+)\//.exec(p);
+        return m ? [m[1]!] : [];
+      }),
+    ),
+  ].sort();
 }
 
 /**
- * Every routable `/api/...` path, derived from where `route.ts` files actually are rather than from
- * a list.
+ * Every routable `/api/...` path that has merged, from the same shipped set as the modules.
  *
- * `--cached --others --exclude-standard`, so an **untracked** route counts. The first version was
- * `git ls-files` alone, which made the two halves of this guard disagree about their own domain:
- * the module check walks the filesystem and covers a module the moment it exists, while the route
- * check covered a route only one `git add` later. The normal order is write the route, run the
- * gates, then stage — so a route written and gated before staging passed a check whose failure
- * message reads "A sitemap missing routes is worse than no sitemap: it reads as complete", while
- * the tree was in exactly that state.
- *
- * This repo has paid for this precise blind spot before: `tests/no-raw-control-bytes.test.ts` was
- * `git ls-files`-only, was blind to a blind author's uncommitted work, and T-01 recurred twice
- * inside that window before the same one-flag fix.
- *
- * Found by T080's session falsifying the *forward-looking* claim rather than the one demonstrated
- * — not "a recorded row was renamed" but "a new module or route lands unrecorded", which is the
- * claim that has to hold for the next twenty tasks. `--exclude-standard` still keeps genuinely
- * ignored paths out, so a build artefact is not mistaken for a shipped route.
+ * Both halves now share one domain, which they did not before. T080's session found the two
+ * disagreeing — the module half walked the filesystem, the route half read `git ls-files`, so a
+ * route was covered one `git add` later than a module. That asymmetry is gone here rather than
+ * patched: one function answers "what has shipped" and both checks ask it.
  */
 function apiRoutes(): readonly string[] {
-  const out = execFileSync(
-    "git",
-    ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "app/api"],
-    { cwd: REPO_ROOT, encoding: "utf8" },
-  );
   return [
     ...new Set(
-      out
-        .split("\0")
-        .filter((p) => p.endsWith("/route.ts"))
+      shippedPaths()
+        .filter((p) => p.startsWith("app/api/") && p.endsWith("/route.ts"))
         .map((p) => p.replace(/^app/, "").replace(/\/route\.ts$/, "")),
     ),
   ].sort();
@@ -108,7 +129,25 @@ function apiRoutes(): readonly string[] {
 
 describe("docs/ARCHITECTURE.md records what the tree actually contains", () => {
   it("every lib/server module appears in section 6.2's directory tree", () => {
-    const doc = readFileSync(TREE_DOC, "utf8");
+    /*
+     * Section 6.2 only, not the whole file — and this is not tidiness.
+     *
+     * Falsifying the whole-file version by renaming §6.2's `server/export/` row left it GREEN,
+     * because §12's revision log says "`lib/server/export/` added" and the substring was still
+     * present. So the directory-tree row could be deleted outright and the guard would report the
+     * module as recorded, on the strength of a log entry saying it once was. A check satisfiable by
+     * the record of a change rather than by the change is a check that cannot fail.
+     */
+    const whole = readFileSync(TREE_DOC, "utf8");
+    const start = whole.indexOf("### 6.2");
+    const after = whole.indexOf("\n## ", start);
+    const doc = start === -1 ? "" : whole.slice(start, after === -1 ? undefined : after);
+    expect(
+      doc.length,
+      "Section 6.2 was not found in docs/ARCHITECTURE.md. Its heading moved or the section is " +
+        "gone; either way the assertion below would pass over an empty string.",
+    ).toBeGreaterThan(0);
+
     const modules = serverModules();
 
     expect(
