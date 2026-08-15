@@ -356,15 +356,19 @@ describe.skipIf(!hasDb)("lib/server/naming", () => {
 
   /* ---------- D-70-18: a well-formed refusal is OWED a suggestion ---------- */
 
-  it("D-70-18: a suggestion survives a window of variants all being held", async () => {
+  it("D-70-18: a suggestion survives the first window of variants being wholly held", async () => {
     const owner = await accountId("gh-window");
     await allocateHandle(client.db, owner, "busy");
-    /* The old generator stopped at eight and answered nothing beyond it, which is the
-       case D-70-18 forbids and which needed only eight rows to reach. */
-    for (let n = 2; n <= 40; n++) await allocateHandle(client.db, owner, `busy-${n}`);
+    /* Enough variants to exhaust the FIRST window, which is the whole point of the case.
+       Its first version held 39 of them and reddened nothing when the widening loop was
+       cut to a single window — 39 fits inside one window, so the test asserted an outcome
+       the first query already produced and could not distinguish the loop from its
+       absence. Found by mutating `WINDOWS` to 1 and reading a zero rather than filing it:
+       64 held variants is what makes the second window load-bearing. */
+    for (let n = 2; n <= 65; n++) await allocateHandle(client.db, owner, `busy-${n}`);
 
     const answer = await checkHandle(client.db, "busy");
-    expect(answer).toEqual({ available: false, reason: "taken", suggestion: "busy-41" });
+    expect(answer).toEqual({ available: false, reason: "taken", suggestion: "busy-66" });
 
     /* AC6 still binds whenever one is returned: free at the moment it was returned, and
        proved free by taking it rather than by asking the same question twice. */
