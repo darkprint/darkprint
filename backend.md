@@ -1697,6 +1697,7 @@ it does not decide differently inside a worktree.
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
+| T005 | Schema extension: the community and account tables | T000 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**` | — | — | todo | — |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
@@ -2268,6 +2269,40 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
     **Recorded, not charged — the standing trade-offs a later task inherits.** There is still no revocation: a stolen cookie is valid until it expires and sign-out clears only the browser's copy. That is now stated in the code and open in this contract, and it is a storage and scale decision rather than a T000 defect, but T050 builds sessions on this and should meet it deliberately. The mint bound is mint-only, per above. `keyForDigest` throws a plain `Error` quoting the caller's input verbatim; no route consumes it yet, and T010 should validate a digest at the edge so a bad path parameter becomes a 404 rather than a 500.
 
     **Verdict.** Every acceptance criterion passes, every earlier defect stays closed, the suite is green and deterministic across eight runs, and the guards that produce that green are demonstrably load-bearing. I found no new defect. **PASS.** My probes complied with amendment 4: three scratch databases created and dropped, nine objects written and deleted, `pg_database` clean, working tree clean.
+
+### T005, Schema extension: the community and account tables
+
+- **State:** todo
+- **Depends on:** T000 (merged)
+- **Owns:** `lib/db/schema.ts` (**extension only** — no existing table may be altered or dropped), `lib/db/migrations/**`
+- **Forbidden:** every `lib/server/**` module, every `app/**` route. This task ships tables and migrations and consumes none of them.
+- **Contract:** six tables that five already-written contracts require and `lib/db/schema.ts` does not have. T000 owned that file and has merged, so the need belongs to no existing task and every consumer has it Forbidden — which is why this exists rather than being folded into T050 or T140.
+
+  The tables, each derived from its consumer's contract as written and from nothing else:
+
+  | Table | For | Shape the consumer's contract already fixes |
+  | --- | --- | --- |
+  | `save` | T140 | account + the polymorphic `(kind, id)` target of B-10, over blueprint, card and term |
+  | `ballot` | T160 | account + **bundle** (not release — B-11 carries one ballot across releases), one 0–100 value per writable metric |
+  | `note` | T170 | `{ id, author, body, createdAt, votes }` keyed `(target, id)` over the same B-10 target, with a **tombstone** column, since B-18 requires deletion to keep counts and cursors honest |
+  | `note_vote` | T170 | account + note |
+  | `run_report` | T180 | keyed by **release digest**, carrying model, provider, hardware, input size, harness version, cost units, duration, timestamp |
+  | `api_key` | T230 | account + a revocation state that is immediate |
+
+- **Acceptance criteria:** the criteria are about **what the database enforces**, not about what columns exist, because four of the five consuming tasks have an acceptance criterion that only a constraint can deliver. A column list satisfied by convention would let every one of those four pass its own tests against a store that permits the thing it forbids.
+
+  (1) **T140 AC2 — "saving one target twice is idempotent"** is a unique constraint on `(account, target_kind, target_id)`, enforced by the database: a second insert must fail at the driver, and a test that inserts twice through raw SQL must see it fail.
+  (2) **T160 AC2 — "one account voting twice on one metric replaces rather than accumulates"** is a unique constraint on `(account, bundle, metric)`. Same standard: raw SQL, not the module.
+  (3) **T170 AC4 — "a vote from one account counts once"** is a unique constraint on `(account, note)`.
+  (4) **T180 AC1 — "a report against an unknown digest is refused"** is a foreign key to the release, not a lookup the module performs first. A `run_report` row naming a digest no release holds must fail at the driver.
+  (5) **T160 AC1 — "a ballot cannot write `autonomy` or `security`"** is expressible in the schema and must be: the writable metric set is constrained by the column shape or a check constraint, so the refusal does not depend on every future caller remembering it.
+  (6) Every migration is **paired up/down and reversible against a scratch database**: apply, roll back, apply again, and the schema is identical at both applications — compared structurally, not by the migration file.
+  (7) **No existing table is altered, renamed or dropped**, and the ten tables T000 shipped are byte-identical in the schema after this task. Eight tasks have merged against them.
+  (8) Every unique constraint above is **named**, and the name is derived from the schema at runtime wherever a module will match on it — T010's D-14 established that a bare `23505` says *a* unique constraint was violated and not which, and `lib/server/archive/constraints.ts` already derives its names rather than restating them. A consumer that has to hardcode a constraint name is a defect in this task.
+
+- **Out of scope:** any read or write path over these tables; that is each consuming task's. Seed data. `T150`'s counters, which the wave-4 audit did not find missing a table and which are not invented here.
+- **Note on sequencing:** all five consumers sit behind T050, which sits behind T070, so this is needed roughly two waves out rather than immediately. It is written now because the need is known now, and because a task that exists can be dispatched the moment a slot opens.
+- **Log:**
 
 ### T010, Archive persistence: bundles, releases, bytes
 
