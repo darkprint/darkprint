@@ -11,6 +11,7 @@ import { RESERVED_PROFILE_SEGMENTS } from "@/components/profile/tabs";
 import { schema, type DbClient } from "@/lib/db";
 import { createTestDb, resetTestDb, type TestDb } from "../../../tests/support/db";
 import { HANDLE_PRIMARY_KEY_CONSTRAINT } from "./constraint";
+import { MAX_NAME_LENGTH } from "./grammar";
 import { pgErrorCode, pgErrorConstraint } from "./pg-error";
 import {
   allocateHandle,
@@ -18,8 +19,24 @@ import {
   checkSlug,
   HandleTakenError,
   InvalidNameError,
+  NamingStoreError,
   releaseHandle,
 } from "./index";
+
+/**
+ * A well-formed uuid no `account` row can carry, used to fire a **real** foreign-key
+ * violation rather than to stand in for one. `account.id` is `uuid().defaultRandom()`,
+ * a v4 uuid whose version nibble is always `4`; the nil uuid's is `0`.
+ */
+const NO_SUCH_ACCOUNT = "00000000-0000-0000-0000-000000000000";
+
+/** A legal name of exactly `length` characters, deterministic so a red is reproducible. */
+function nameOfLength(length: number): string {
+  const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let out = "";
+  for (let i = 0; i < length; i++) out += alphabet[i % alphabet.length];
+  return out;
+}
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 
@@ -211,6 +228,156 @@ describe.skipIf(!hasDb)("lib/server/naming", () => {
     expect(rows).toHaveLength(0);
     expect(await checkHandle(client.db, invalid)).toEqual({ available: false });
     expect(await checkSlug(client.db, owner, invalid)).toEqual({ available: false });
+  });
+
+  /* ---------- D-70-08: `Availability.reason` ---------- */
+
+  it("D-70-08: a refusal says which of the two published reasons it is", async () => {
+    const owner = await accountId("gh-reason");
+    await allocateHandle(client.db, owner, "mara-veil");
+    await giveBundle(owner, "frontline-triage");
+
+    expect(await checkHandle(client.db, "mara-veil")).toEqual({
+      available: false,
+      reason: "taken",
+      suggestion: "mara-veil-2",
+    });
+    expect(await checkSlug(client.db, owner, "frontline-triage")).toEqual({
+      available: false,
+      reason: "taken",
+      suggestion: "frontline-triage-2",
+    });
+    expect(await checkSlug(client.db, owner, "saved")).toEqual({
+      available: false,
+      reason: "reserved",
+      suggestion: "saved-2",
+    });
+
+    /* `reason` is absent when there is nothing to explain, rather than set to a falsy
+       member — `toEqual` here is exact, so a stray key reds. */
+    expect(await checkHandle(client.db, "k0bra")).toEqual({ available: true });
+    expect(await checkSlug(client.db, owner, "incident-commander")).toEqual({ available: true });
+
+    /* D-70-14: an illegal name is a third refusal kind and the published union
+       `"taken" | "reserved"` has no member for it, so it answers with no reason at all.
+       Pinned so the gap is visible rather than inferred, and so the day the union gains a
+       member this test is what says the answer changed. */
+    expect(await checkHandle(client.db, "Mara Veil")).toEqual({ available: false });
+    expect(await checkSlug(client.db, owner, "Mara Veil")).toEqual({ available: false });
+  });
+
+  /* ---------- D-70-13: the check may not promise what the store cannot hold ---------- */
+
+  it("D-70-13: everything the grammar admits, the store accepts", async () => {
+    const owner = await accountId("gh-maxlen");
+    const atLimit = nameOfLength(MAX_NAME_LENGTH);
+    expect(atLimit).toHaveLength(MAX_NAME_LENGTH);
+
+    /* The invariant, driven end to end rather than asserted about the constant: whatever
+       `MAX_NAME_LENGTH` is set to, a name of exactly that length must survive the write.
+       Raising it past what a btree index tuple can hold reds here rather than reaching a
+       user as `checkHandle` promising a name `allocateHandle` answers 54000 for. */
+    expect(await checkHandle(client.db, atLimit)).toEqual({ available: true });
+    await expect(allocateHandle(client.db, owner, atLimit)).resolves.toBeUndefined();
+
+    const overLimit = nameOfLength(MAX_NAME_LENGTH + 1);
+    expect(await checkHandle(client.db, overLimit)).toEqual({ available: false });
+    const err = (await allocateHandle(client.db, owner, overLimit).catch((e: unknown) => e)) as Error;
+    /* `InvalidNameError`, not `NamingStoreError`: the two answers agree, and the refusal
+       names the caller's mistake instead of reporting a fault. */
+    expect(err).toBeInstanceOf(InvalidNameError);
+    expect(err).not.toBeInstanceOf(NamingStoreError);
+    expect(err.message).toBe(`allocateHandle: \`${overLimit}\` is not a valid handle.`);
+
+    /* And nothing over the bound reached the driver: one row, the one at the limit. */
+    const rows = await client.db.select().from(schema.handleReservation);
+    expect(rows.map((row) => row.handle)).toEqual([atLimit]);
+  });
+
+  /* ---------- D-70-11: the fault door, on all four operations ----------
+     Three questions, and the count alone answers none of them (T070's adversary):
+     ARRIVAL — does anything require the fault to reach the caller at all;
+     IDENTITY — can a test tell this class from a bare `Error` or from a sibling;
+     MESSAGE — is the message pinned, or free to start interpolating the driver's.
+     Every fault below is a REAL driver error at the call site a caller uses — a
+     malformed uuid, a foreign key that does not resolve, a pool that has been closed.
+     None is a hand-built error object: a test that constructs the failure proves the
+     assertion works, not that the guard does. */
+
+  it("D-70-11: checkSlug's read fault arrives, is identifiable, and says nothing else", async () => {
+    const err = (await checkSlug(client.db, "not-a-uuid", "frontline-triage").catch(
+      (e: unknown) => e,
+    )) as Error;
+
+    /* ARRIVAL: the answer must not be an answer. Swallowing this and returning
+       `{available:true}` would report an unavailable name as free. */
+    expect(err).toBeInstanceOf(Error);
+    expect(err).toBeInstanceOf(NamingStoreError);
+    /* IDENTITY: distinguishable from the module's other classes and from a bare Error.
+       `instanceof NamingStoreError` is what a substitution — same message, plain
+       `new Error` — has to fail. */
+    expect(err).not.toBeInstanceOf(HandleTakenError);
+    expect(err).not.toBeInstanceOf(InvalidNameError);
+    expect(Object.getPrototypeOf(err)).not.toBe(Error.prototype);
+    /* MESSAGE: an exact literal. Interpolating `String(cause)` reds here, and that is
+       D-13 — `DrizzleQueryError.message` opens with the statement and every parameter. */
+    expect(err.message).toBe("checkSlug: the database call failed.");
+    expect(pgErrorCode(err.cause)).toBe("22P02");
+  });
+
+  it("D-70-11: allocateHandle's write fault arrives rather than resolving", async () => {
+    /* The serious door. Swallowing this and resolving tells the caller it holds a handle
+       no row exists for — a sign-up that reports success and reserved nothing. */
+    const err = (await allocateHandle(client.db, NO_SUCH_ACCOUNT, "orphaned").catch(
+      (e: unknown) => e,
+    )) as Error;
+
+    expect(err).toBeInstanceOf(NamingStoreError);
+    expect(err).not.toBeInstanceOf(HandleTakenError);
+    expect(err.message).toBe("allocateHandle: the database call failed.");
+    expect(pgErrorCode(err.cause)).toBe("23503");
+
+    /* And the fault is real rather than decorative: no row was written. */
+    const rows = await client.db.select().from(schema.handleReservation);
+    expect(rows).toEqual([]);
+  });
+
+  it("D-70-11: releaseHandle's write fault arrives rather than passing silently", async () => {
+    /* `releaseHandle` resolves for a handle nobody holds, by ruling (D-70-02), so a
+       swallowed fault here is invisible by construction — which is exactly why it needs
+       a case of its own rather than being read off the other three. */
+    const err = (await releaseHandle(client.db, "not-a-uuid", "held").catch(
+      (e: unknown) => e,
+    )) as Error;
+
+    expect(err).toBeInstanceOf(NamingStoreError);
+    expect(err.message).toBe("releaseHandle: the database call failed.");
+    expect(pgErrorCode(err.cause)).toBe("22P02");
+  });
+
+  it("D-70-11: checkHandle's read fault arrives, and the rendering carries nothing", async () => {
+    /* Its own scratch database, closed under it: `checkHandle` takes no id to malform, so
+       the reachable fault is infrastructural. A closed pool is the one a deployment meets. */
+    const doomed = await createTestDb();
+    await doomed.client.close();
+    const err = (await checkHandle(doomed.client.db, "mara-veil").catch((e: unknown) => e)) as Error;
+    await doomed.drop().catch(() => undefined);
+
+    expect(err).toBeInstanceOf(NamingStoreError);
+    expect(err.message).toBe("checkHandle: the database call failed.");
+
+    /* The whitelist, pinned by exact match rather than scanned for forbidden substrings.
+       The driver error on `cause` carries the statement and the parameters; none of it
+       may appear in any rendering a route or a log reaches for. */
+    expect(Object.keys(err)).toEqual([]);
+    expect(JSON.stringify(err)).toBe("{}");
+    expect(JSON.stringify({ detail: err.message })).toBe(
+      '{"detail":"checkHandle: the database call failed."}',
+    );
+    expect(String(err)).toBe("NamingStoreError: checkHandle: the database call failed.");
+    expect(err.propertyIsEnumerable("cause")).toBe(false);
+    expect(err.cause).toBeDefined();
+    expect(typeof err.stack).toBe("string");
   });
 
   it("releaseHandle is scoped to the account that holds the handle", async () => {

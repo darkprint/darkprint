@@ -74,6 +74,9 @@ async function existingHandles(db: Db, handles: readonly string[]): Promise<Set<
  * reservation — see `Availability.suggestion`.
  */
 export async function checkHandle(db: Db, handle: string): Promise<Availability> {
+  /* No `reason`: the published union is `"taken" | "reserved"` and an illegal name is
+     neither. Reported as D-70-14 rather than answered with a third member this contract
+     does not have. */
   if (!isNameSegment(handle)) return { available: false };
 
   const candidates = suggestionCandidates(handle);
@@ -81,7 +84,9 @@ export async function checkHandle(db: Db, handle: string): Promise<Availability>
   if (!existing.has(handle)) return { available: true };
 
   const suggestion = candidates.find((candidate) => !existing.has(candidate));
-  return suggestion === undefined ? { available: false } : { available: false, suggestion };
+  return suggestion === undefined
+    ? { available: false, reason: "taken" }
+    : { available: false, reason: "taken", suggestion };
 }
 
 /**

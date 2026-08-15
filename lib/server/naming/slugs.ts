@@ -57,12 +57,21 @@ async function existingSlugs(db: Db, ownerId: string, slugs: readonly string[]):
  * `isReservedSlug` rather than argued from the current four not being hyphenated.
  */
 export async function checkSlug(db: Db, ownerId: string, slug: string): Promise<Availability> {
+  /* No `reason`: the published union is `"taken" | "reserved"` and an illegal name is
+     neither. Reported as D-70-14 rather than answered with a third member. */
   if (!isNameSegment(slug)) return { available: false };
 
   const candidates = suggestionCandidates(slug, (candidate) => !isReservedSlug(candidate));
   const existing = await existingSlugs(db, ownerId, [slug, ...candidates]);
-  if (!existing.has(slug) && !isReservedSlug(slug)) return { available: true };
+  const reserved = isReservedSlug(slug);
+  if (!existing.has(slug) && !reserved) return { available: true };
 
+  /* `reserved` wins when a row somehow exists at a reserved slug too. The tabs occupy that
+     segment permanently, so it is the answer that stays true after the row is gone, and a
+     caller told `taken` would reasonably wait for it to free up. */
+  const reason = reserved ? "reserved" : "taken";
   const suggestion = candidates.find((candidate) => !existing.has(candidate));
-  return suggestion === undefined ? { available: false } : { available: false, suggestion };
+  return suggestion === undefined
+    ? { available: false, reason }
+    : { available: false, reason, suggestion };
 }
