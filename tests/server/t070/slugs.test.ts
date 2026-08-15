@@ -278,3 +278,73 @@ describe('checkSlug answers reason "illegal" for a name the grammar refuses', ()
     );
   });
 });
+
+/* ============================================================
+   D-70-18: which refusals carry a suggestion
+   ============================================================ */
+
+describe("D-70-18: a suggestion accompanies exactly the well-formed refusals", () => {
+  /* `unavailable()` enforces this over every refusal in the suite, which is what makes it bind
+     rather than depend on somebody remembering. These are the named cases, because a criterion
+     nobody can point at in a test list is a criterion nobody reviews.
+
+     The ruling's own reasoning is the part worth keeping: AC6 said *a suggestion returned for a
+     taken name is itself free*, a conditional that a module returning no suggestion satisfies
+     completely while observing nothing. A guard that cannot fail, inside an acceptance
+     criterion, since the contract was written. */
+
+  for (const segment of RESERVED_PROFILE_SEGMENTS) {
+    it(`offers an alternative to the reserved \`${segment}\`, which is free and not itself reserved`, async () => {
+      /* The half that was held by nothing before D-70-18. `reserved` is a refusal of a
+         perfectly legal name — the tab occupies it, the grammar does not object — so an
+         alternative can be offered, and AC6's freeness clause binds it once it is. */
+      const check = await bind("checkSlug");
+      const isReserved = await bind("isReservedSlug");
+      const owner = await createAccount(t);
+
+      const answer = await unavailable(
+        () => check(db(t), owner, segment),
+        `checkSlug(db, owner, "${segment}")`,
+        "reserved",
+      );
+      const suggestion = answer.suggestion as string;
+      expect(suggestion).not.toBe(segment);
+      expect(isReserved(suggestion), `suggested \`${suggestion}\`, which is itself a tab`).toBe(
+        false,
+      );
+      await availableNow(
+        () => check(db(t), owner, suggestion),
+        `checkSlug(db, owner, "${suggestion}")`,
+      );
+    });
+  }
+
+  it("offers nothing for an illegal slug", async () => {
+    /* The direction a "suggestion is required" assertion PASSES rather than catches, which is
+       why it is written out separately: substitution, not removal. You can only offer an
+       alternative to a name that is itself legal, so a module that suggests here has answered a
+       question the caller did not ask and put a name where the refusal needed to be. */
+    const check = await bind("checkSlug");
+    const owner = await createAccount(t);
+    for (const slug of ["Not A Slug", "frontline/triage", " frontline-triage", ""]) {
+      const answer = await unavailable(
+        () => check(db(t), owner, slug),
+        `checkSlug(db, owner, ${JSON.stringify(slug)})`,
+        "illegal",
+      );
+      expect(answer.suggestion, `for ${JSON.stringify(slug)}`).toBeUndefined();
+    }
+  });
+
+  it("offers nothing for an illegal handle either", async () => {
+    const check = await bind("checkHandle");
+    for (const handle of ["Not A Handle", "mara/veil", "-mara", ""]) {
+      const answer = await unavailable(
+        () => check(db(t), handle),
+        `checkHandle(db, ${JSON.stringify(handle)})`,
+        "illegal",
+      );
+      expect(answer.suggestion, `for ${JSON.stringify(handle)}`).toBeUndefined();
+    }
+  });
+});

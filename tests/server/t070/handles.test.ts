@@ -391,6 +391,10 @@ describe("allocateHandle refuses a name the grammar refuses", () => {
     ["mara-veil ", "a trailing space, the same way"],
     ["mara.veil", "a dot"],
     ["márá", "a character outside `[a-z0-9-]`"],
+    ["mara/veil", "a separator: D-70-16 — a handle is ONE path segment in `/u/{handle}`"],
+    ["mara/veil/deep", "two separators"],
+    ["/mara-veil", "a leading separator"],
+    ["mara-veil/", "a trailing separator"],
   ];
 
   for (const [handle, why] of ILLEGAL) {

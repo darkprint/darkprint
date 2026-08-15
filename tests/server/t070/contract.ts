@@ -120,10 +120,25 @@ function asFn(value: unknown, name: string, clause: string): UnknownFn {
   return value as UnknownFn;
 }
 
-/** The seven bindings T070 publishes. `Availability` is a type and has no runtime binding. */
+/** The seven function bindings. `Availability` is a type and has no runtime binding. */
 export async function bind(name: PublishedName): Promise<UnknownFn> {
   const mod = await loadNaming();
   return asFn(requireFrom(mod, name, PUBLISHED[name]), name, PUBLISHED[name]);
+}
+
+/**
+ * D-70-17 published `MAX_NAME_LENGTH` into the signature block, so it is a name this suite
+ * must bind — but deliberately NOT one it may use as a bound. The block says so itself: "Do
+ * NOT import it into a boundary test: a test that imports the constant it bounds moves with
+ * it." So this reads the value to compare it against a literal, and `fixtures.ts` keeps its
+ * own 255 for every assertion about what is storable.
+ */
+export const PUBLISHED_MAX_NAME_LENGTH =
+  "const MAX_NAME_LENGTH = 255   // D-70-15/D-70-16. A STORAGE bound, not a product one.";
+
+export async function bindMaxNameLength(): Promise<unknown> {
+  const mod = await loadNaming();
+  return requireFrom(mod, "MAX_NAME_LENGTH", PUBLISHED_MAX_NAME_LENGTH);
 }
 
 /* --------------------- the shape the contract publishes back --------------------- */
@@ -233,6 +248,44 @@ export async function unavailable(
         `Every refusal carries one of ${REASONS.map((r) => JSON.stringify(r)).join(" | ")}.`,
     );
   }
+  /* **D-70-18, quantified over the refusals.** "A suggestion accompanies exactly those
+     refusals where the name asked for is well-formed. Required when `reason` is `"taken"` or
+     `"reserved"`; **forbidden** when `"illegal"` — you can only offer an alternative to a name
+     that is itself legal."
+
+     Written here rather than per case because that is what makes it bind. AC6 was a
+     conditional — *a suggestion returned for a taken name is itself free* — which a module
+     that never returns one satisfies completely while observing nothing; the guard-that-cannot-
+     fail shape, sitting inside an acceptance criterion since the contract was written. Round 2
+     required a suggestion for `taken` and got that right for the wrong reason: the argument
+     offered was that AC6 needed something to observe, which is an argument about testability.
+     The orchestrator's is stronger and is the one recorded — a criterion satisfiable by never
+     doing the thing it constrains is not a criterion.
+
+     Note which half is the new one. "Required for taken" was already held; **"forbidden for
+     illegal" was held by nothing**, and it is the half a "suggestion is required" assertion
+     passes rather than catches. */
+  const suggestion = availability.suggestion;
+  if (availability.reason === "illegal" && suggestion !== undefined) {
+    throw new Error(
+      `${where} answered \`{ available: false, reason: "illegal", suggestion: ` +
+        `${JSON.stringify(suggestion)} }\`.\n` +
+        `  D-70-18 forbids a suggestion on an illegal name: an alternative can only be offered ` +
+        `to a name that is itself legal. Offering one here answers a question the caller did ` +
+        `not ask and hands it a name in place of the refusal it needed to see.`,
+    );
+  }
+  if (availability.reason !== "illegal" && suggestion === undefined) {
+    throw new Error(
+      `${where} answered \`{ available: false, reason: ${JSON.stringify(availability.reason)} }\` ` +
+        `with no \`suggestion\`.\n` +
+        `  D-70-18 requires one whenever the name asked for is well-formed — \`taken\` and ` +
+        `\`reserved\` both. AC6 as originally written was a conditional a never-suggesting ` +
+        `module satisfied completely, which is why the requirement is stated over the set ` +
+        `rather than left to the one case somebody remembered to test.`,
+    );
+  }
+
   if (expected !== undefined && availability.reason !== expected) {
     throw new Error(
       `${where} answered \`{ available: false, reason: ${JSON.stringify(availability.reason)} }\` ` +
@@ -240,6 +293,44 @@ export async function unavailable(
         `  D-70-14a: the reason exists so "a caller could tell 'not legal' from 'I did not say'". ` +
         `An absent reason on a refusal is the defect that ruling was written for; a wrong one is ` +
         `the same defect with a value in it.`,
+    );
+  }
+  return availability;
+}
+
+/**
+ * A refusal at exactly `MAX_NAME_LENGTH`, where D-70-18 and D-70-15 INTERACT and nothing rules
+ * the interaction.
+ *
+ * D-70-18 requires a suggestion for every refusal of a well-formed name. A name of exactly
+ * `MAX_NAME_LENGTH` is well-formed — `length.test.ts` allocates one through the published
+ * surface, which is the assertion D-70-15 exists for — and **no suffix fits**: every
+ * `<name>-2` is `MAX_NAME_LENGTH + 2` and therefore illegal. So a generator that appends
+ * cannot satisfy D-70-18 here, and one that satisfies it must SHORTEN the name it was given.
+ *
+ * Neither ruling mentions the other, so which of these is true is unruled:
+ *   (a) a suggestion at the bound must be formed by shortening, and an appending generator is
+ *       a defect; or
+ *   (b) D-70-18 needs a carve-out — no suggestion is owed when no legal alternative exists.
+ *
+ * Reported rather than resolved. This helper is the ONE place the suggestion requirement is
+ * not applied, it is used at exactly one call site, and it says so — a weak test known to be
+ * weak is worth having and the failure mode this run keeps recording is the unlabelled one.
+ * Everything else `unavailable` checks still applies here, including the reason's value.
+ */
+export async function unavailableAtLengthBound(
+  call: () => unknown,
+  where: string,
+  expected: Reason,
+): Promise<Availability> {
+  const availability = asAvailability(await call(), where);
+  if (availability.available) {
+    throw new Error(`${where} answered \`{ available: true }\` for a name that is taken.`);
+  }
+  if (availability.reason !== expected) {
+    throw new Error(
+      `${where} answered reason ${JSON.stringify(availability.reason)}; expected ` +
+        `${JSON.stringify(expected)}.`,
     );
   }
   return availability;

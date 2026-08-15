@@ -4157,6 +4157,56 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     instrument from mine by design, and two instruments disagreeing is how a gap surfaces where
     one confident number hides it.
 
+  - 2026-08-15 blind test author, **D-70-16/17/18's cells. 215 tests over 9 files, from 203.**
+    Merged `5a8e084`. Scope was the cells the amendment adds and nothing else.
+
+    **Three of the four uncontested cells are now held**, and the property is quantified in
+    `unavailable()` rather than written per case, so it binds every refusal in the suite at
+    once: `reserved` carries a suggestion, `illegal` carries none. D-70-16's separator rule is
+    asserted for handles as well as slugs. D-70-17's `MAX_NAME_LENGTH` is bound and pinned to a
+    literal **255 written in the test** — read to CHECK it, never to use it, since the block
+    itself says a test that imports the constant it bounds moves with it; `length.test.ts` keeps
+    its own copy and `surface.test.ts` is what stops the two drifting apart.
+
+    **Falsified by SUBSTITUTION as well as removal, because that is the half the ruling adds.**
+    A suggestion *present* on an `illegal` refusal is exactly the case a "suggestion is
+    required" assertion passes. Seven mutations, 7 caught: no suggestion on `reserved` 9 red, on
+    a taken slug 3; a suggestion offered on an illegal slug 12 and on an illegal handle 5; a
+    reserved suggestion that is itself a tab 5; D-70-16 reverted 6; `MAX_NAME_LENGTH` moved 5.
+
+    **A red against a correct reference, which is a defect in the test by the standing rule —
+    and it turned out to be a contract gap.** D-70-18 and D-70-15 **interact and nothing rules
+    the interaction**. A handle of exactly `MAX_NAME_LENGTH` is well-formed, and D-70-15's own
+    criterion allocates one; D-70-18 then requires a suggestion for its refusal. **No suffix
+    fits** — every `<name>-2` is `MAX_NAME_LENGTH + 2` and therefore illegal — so a generator
+    that appends cannot satisfy D-70-18 at the bound, and one that satisfies it must SHORTEN the
+    name it was given. Unruled either way: (a) shortening is required and an appending generator
+    is a defect, or (b) D-70-18 owes a carve-out where no legal alternative exists. Reported.
+    One call site uses `unavailableAtLengthBound`, which drops the suggestion requirement and
+    nothing else, and says why — the single labelled weak spot in the suite.
+
+    **The sixth cell is NOT a missing cell and I have not implemented it. It contradicts an
+    assertion this suite already carries and which two rounds accepted.** `reserved x handle`
+    rests on "a released handle is permanently reserved, so `checkHandle` on one must answer
+    `reserved`". This suite asserts that a released handle answers **`taken`**, and has since
+    round 2. Both cannot be right. D-70-18 as ruled (§"the three readings, ruled") governs only
+    which reasons carry a suggestion and says nothing about which reason a released handle gets;
+    the only definition of `reserved` anywhere in this contract is "reserved by the profile
+    tabs", which is a slug concept. So this is an amendment to an existing ruling rather than a
+    cell of a new one, and by the two-holders rule written in the same commit it needs both
+    holders told — flipping it here alone is the "round of false failures" half.
+
+    **And the enumeration-by-product argument cuts both ways.** A cross product is a domain by
+    construction only if every cell is REACHABLE. If a released handle is `taken`, then
+    `reserved x handle` is unreachable and the product has five live cells rather than six —
+    asserting the sixth would manufacture coverage of behaviour that does not exist, which is
+    the same error as omitting a live one, in the other direction. Which it is depends on a
+    ruling nobody has made. Held at `taken` pending it, stated rather than hedged.
+
+    **Still open, unchanged:** `<kind>` in `InvalidNameError` is unenumerated; `released_at` is
+    unruled and unasserted; and whether an `available` answer may carry a `suggestion` — D-70-18
+    quantifies over refusals and says nothing about the other side, so nothing asserts it.
+
 ### T240, Observability and audit log
 
 - **State:** todo

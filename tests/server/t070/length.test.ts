@@ -50,6 +50,7 @@ import {
   invalidNamePrefix,
   rejects,
   unavailable,
+  unavailableAtLengthBound,
 } from "./contract";
 import {
   MAX_NAME_LENGTH,
@@ -123,7 +124,12 @@ describe("a name of exactly MAX_NAME_LENGTH is a name", () => {
     const handle = nameOfLength(MAX_NAME_LENGTH);
 
     await allocate(db(t), account, handle);
-    await unavailable(() => check(db(t), handle), "checkHandle(long, taken)", "taken");
+    /* `unavailableAtLengthBound`, not `unavailable`, and the difference is a reported contract
+       gap rather than a convenience: at exactly `MAX_NAME_LENGTH` no suffix fits, so D-70-18's
+       "a suggestion accompanies every refusal of a well-formed name" can only be satisfied by a
+       generator that SHORTENS. Whether that is required, or whether D-70-18 owes a carve-out,
+       is unruled — see the helper. Everything else, including the reason, is still pinned. */
+    await unavailableAtLengthBound(() => check(db(t), handle), "checkHandle(long, taken)", "taken");
   });
 });
 
