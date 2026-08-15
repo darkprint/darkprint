@@ -1977,7 +1977,7 @@ it does not decide differently inside a worktree.
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
-| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | impl-done | round 2 at `1f7cbc8`, onto base by **merge** (`e65db9e`, then `0f6d46e`). D-70-08, 09, 11 and 13 closed; D-70-12 answered with a measurement rather than a fix, since a blind test cannot be written from here. typecheck/lint/build 0; three consecutive full-suite runs in the gate slot, identical sorted failing sets, **1 failed file — t090's `serve.test.ts`, the expected red on base** — 182 files, 5037 tests, whole-tree stamp clean both ends; 12 mutations, every one observed, none greening anything; **0 scratch databases and 0 live connections** after the triple, having found and closed a leak of my own. D-70-14a then implemented at `87c2880` (`reason` gains `"illegal"`), falsified by removal **and** by substitution; D-70-15 open and the owner's |
+| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | impl-done | round 2 at `1f7cbc8`, onto base by **merge** (`e65db9e`, then `0f6d46e`). D-70-08, 09, 11 and 13 closed; D-70-12 answered with a measurement rather than a fix, since a blind test cannot be written from here. typecheck/lint/build 0; three consecutive full-suite runs in the gate slot, identical sorted failing sets, **1 failed file — t090's `serve.test.ts`, the expected red on base** — 182 files, 5037 tests, whole-tree stamp clean both ends; 12 mutations, every one observed, none greening anything; **0 scratch databases and 0 live connections** after the triple, having found and closed a leak of my own. D-70-14a implemented at `87c2880`; **D-70-16 through D-70-21 answered at `91cb435`, all six measured** — 16 and 21 already held, 17, 18, 19 and 20 needed code. 9 further mutations, every one observed, **two of them reddening BLIND tests** for the first time. Reported: D-70-06 is unimplemented contract and D-70-19's reasoning assumes it is not; D-70-18…21 live only in the preamble while AC6 still reads as the conditional they overturned |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
@@ -4508,6 +4508,106 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     tests** every time, identical by sorted failing file and test sets. The one failure is
     `tests/server/t090/serve.test.ts`, the expected red on base. Residue sampled three times over
     16 seconds after the triple: **0 scratch databases, 0 live connections.**
+
+  - 2026-08-15 implementer: **D-70-16 through D-70-21 answered, five measured rather than
+    recalled.** Code at `91cb435`. Merged `b7b6787`, `5a8e084` and `35d5f06`; every merge clean.
+
+    Each answer below was produced by driving the published surface against a scratch database
+    and reading the JSON, before any code was written. The measurements are the reason two of the
+    six needed nothing and three needed more than they looked like they would.
+
+    - **D-70-16 — already satisfied, no change.** `checkHandle`, `checkSlug`, `allocateHandle` and
+      `releaseHandle` all refuse `berti/solver-a`, with `handle_reservation` at 0 rows after, and
+      `validateNamespace` reports one diagnostic. `isNameSegment` already asked `splitTermId`
+      whether a namespace was present, which is the single-segment rule under another name. The
+      **converse** is now asserted beside it, because a narrowing can over-reach as easily as
+      under-reach: `validateCardId("berti/solver-a")` is still `[]`, since `CARD_ID`'s namespace
+      form is for card ids and D-70-16 narrowed handles and slugs only.
+    - **D-70-17 — needed a change.** The constant was module-internal; the published block lists
+      it under this barrel. Exported. Its value is pinned in a test as the **literal 255** rather
+      than by importing it, which is the block's own warning obeyed: a boundary test that imports
+      the bound moves with it.
+    - **D-70-18 — needed code on two paths.** A window of held variants exhausted the generator
+      and answered nothing, which is the case the ruling forbids and which eight rows could reach;
+      the search now widens. And a name at the bound had no legal variant at all. **Each window is
+      an exact membership question about exact strings.** An earlier sketch used `LIKE` with a
+      `LIMIT`, which returns an arbitrary subset — so a candidate absent from it may still be held,
+      and the module would have offered a suggestion that was not free: satisfying D-70-18 by
+      breaking AC6, with nothing on either side to show it.
+    - **D-70-19 — needed a change, and it was a dead cell.** Measured first: a released handle
+      answered `taken`, identically to an active one, so `reserved x handle` was unreachable and
+      the enum was half-live for handles. The `status` column already stored the distinction and
+      the module was collapsing it.
+    - **D-70-20 — needed a change, and my first version met the ruling's purpose but not its
+      strategy.** I had already cut the stem, but by a **fixed** reserved width, which returns
+      `<245 chars>-2` where the ruling asks for `<253 chars>-2` — shorter than the caller's name by
+      more than it has to be. Now cut per suffix, since `-2` and `-10` need different room. It
+      costs nothing because each window asks about exact strings rather than a shared prefix. Both
+      failure directions are falsified: an appending-only generator, and an over-eager one.
+    - **D-70-21 — already satisfied, now asserted.** Both checks returned a bare
+      `{ available: true }`; nothing had ever pinned it.
+
+    **The product test is rebuilt from the ruling's own reasons x name kinds**, not from the
+    assertions that existed — which is how the enumeration that missed `reserved x handle` was
+    assembled. Eight cells, and every one is **reachable**: that is the other half of the rule, since
+    a case nobody can produce is a green reporting coverage of nothing, and asserting a dead cell is
+    the same mistake as omitting a live one.
+
+    **Falsification, nine mutations this round, every one against the whole suite, diffed both
+    ways. Every one observed; none greened anything.**
+
+        N14 the widening loop cut to one window          1 red   (see below)
+        N15 the stem is never cut                        1 red
+        N16 MAX_NAME_LENGTH leaves the barrel no more    3 red
+        N17 isNameSegment stops asking about a namespace 3 red, TWO OF THEM BLIND
+        N18 validateCardId refuses the namespaced form  10 red, EIGHT OF THEM BLIND
+        N19 a released handle collapses back to taken    1 red
+        N20 the generator only appends                   1 red
+        N21 an available answer carries a suggestion     5 red
+        N22 shortens, but by a fixed width               1 red
+
+    **N14 came back zero, and it was my test rather than an unobservable behaviour.** The case held
+    39 variants; `WINDOW` is 64, so 39 fits inside the first window and cutting the loop to a single
+    window changed nothing — it asserted an outcome the first query already produced and could not
+    distinguish the loop from its absence. Read what the mutation did before treating the zero as a
+    result: the module loaded, reached the path, and genuinely behaved the same for that input, so
+    the zero meant unobserved. The case now holds 64 and expects `busy-66`, and the same mutation
+    reds it.
+
+    **N17 and N18 are the first mutations this task has run that red BLIND tests.** D-70-16's
+    behaviour and its converse are held by `tests/server/t070/grammar.test.ts`, not only by my
+    colocated files — the first cells of D-70-12's gap to close from the other side, and they closed
+    because the blind author was briefed with the ruling rather than because I wrote a test.
+
+    **Two things I am reporting rather than acting on.**
+
+    - **D-70-06 is unimplemented contract, and D-70-19's reasoning rests on it being implemented.**
+      The message ruling D-70-19 states that "the previous holder still reclaims and still wins every
+      race, which is what your eight-account race asserts". Measured, both halves are wrong about
+      this module: the original holder re-allocating its own released handle is **`REFUSED
+      HandleTakenError`**, because `allocateHandle` is the single plain insert the contract asked
+      for and it refuses everyone; and the eight-account race asserts one winner among eight
+      **distinct** accounts on a **fresh** handle, which says nothing about reclaiming. D-70-06 ruled
+      that the original holder may reclaim and then flagged itself **for owner review** as a product
+      decision, so it has never been implemented and I am not implementing it on the back of a
+      premise correction — it changes `allocateHandle`'s statement shape, which is AC5's arbiter and
+      which an adversary has already passed in its current form. **D-70-19's conclusion is unaffected**:
+      `checkHandle` takes no actor, so `reserved` is the answer to everyone either way. This is the
+      "a false claim that supports a true finding" shape, with the claim about my module rather than
+      about arithmetic.
+    - **D-70-18 through D-70-21 live only in the preamble; T070's own criteria still read as
+      before.** AC6 is still *"a suggestion returned for a taken name is itself free at the moment it
+      is returned"* — the conditional D-70-18 ruled vacuous — and the published block still gives
+      `reason` no per-kind meaning, so nothing in this section says a released handle is `reserved`.
+      That is this file's own rule about a ruling that leaves its criterion standing, and the reader
+      it costs is T050's implementer next.
+
+    **Gates**, whole-tree stamp, porcelain empty before and after, `set -a; . ./.env.example; set +a`.
+    typecheck 0, lint 0, build 0. `npm test` three consecutive times in the gate slot with 0 other
+    `vitest` processes at the start: **exit 1, 1 failed file, 182 files, 5042 tests** each time,
+    identical by sorted failing file and test sets. The one failure is `tests/server/t090/serve.test.ts`,
+    the expected red on base. Residue sampled three times after the triple: **0 scratch databases, 0
+    live connections.**
 
 ### T240, Observability and audit log
 
