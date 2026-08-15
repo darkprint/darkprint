@@ -111,10 +111,14 @@ function branchState(task: string): string | undefined {
   return SECTION_STATE.exec(body)?.[1]?.replaceAll("*", "").trim();
 }
 
-/** Branches that exist for in-flight tasks. A task absent here is one nothing has claimed. */
+/**
+ * Branches for tasks **in flight**. A task absent here is one nothing has claimed — and a task
+ * that has **merged** is removed, because its branch stops being the evidence the moment `backend`
+ * holds the work: the branch then reports whatever it said at handback while the truth is `merged`.
+ * Leaving T080 here after its merge reddened this guard against a correct file.
+ */
 const TASK_BRANCH: Readonly<Record<string, string>> = {
   T070: "feat/t070-naming",
-  T080: "feat/t080-registry",
   T090: "feat/t090-export",
 };
 
