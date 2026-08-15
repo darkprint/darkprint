@@ -289,6 +289,42 @@ The blind author's instinct was right and its stated reason was not: it wrote th
 something to observe*, which is an argument about testability. The stronger argument is that a
 criterion satisfiable by never doing the thing it constrains is not a criterion.
 
+## An amendment has TWO holders, and telling only the implementer manufactures D-70-12
+
+The rule as I wrote it — *tell the implementer in the same window, or record the amendment as owed*
+— is half a rule, and T070's blind author found the missing half within the hour by noticing that my
+own ruling had done it to them.
+
+D-70-18 landed after their round closed. The module was about to match the new criterion and **the
+blind suite was the thing that would not**, so two thirds of a freshly-ruled acceptance criterion
+was about to be held by the implementer's colocated tests alone. That is **D-70-12's exact shape,
+manufactured by the amendment that closed a different defect** — the same species as the post-round
+amendment rule itself, one level up.
+
+**A published surface has two holders: the module that implements it and the suite that holds it.**
+An amendment reaching only the first produces a module that is correct and unwitnessed. An
+amendment reaching only the second produces a round of false failures. Reaching neither is the
+window the previous rule already names. So: **an amendment names both holders and says what each
+owes**, and if the blind author's round has closed, the amendment re-opens it by exactly the cells
+it adds — not by a whole round.
+
+Their formulation of their half of the delivery failure belongs beside mine, because it is the same
+sentence with a different subject: *a message I composed is evidence that I composed it, not that
+anyone received it.* Mine was *a dispatch is evidence that I sent a message, not that work is
+happening.* Both are the run's through-line — the scope of a check is itself a claim — applied to
+the channel rather than to the code.
+
+**One gap in their own enumeration of D-70-18's cells, which I am charging rather than fixing
+silently.** They listed four rows: taken×handle (held), taken×slug (held), reserved×slug (not held),
+illegal×both (not held). The ruling has **six** cells, and the missing one is **reserved × handle** —
+which is the case AC4 makes load-bearing, since a released handle is permanently reserved and can
+never be reclaimed by a second account, ever. A `checkHandle` on a released handle must answer
+`reserved` **with** a suggestion, and nothing in the enumeration reaches it.
+
+The enumeration was built from the assertions that exist rather than from the ruling's own product
+of reasons and name kinds. Same shape as everything else here: a domain derived from what is there
+rather than by construction.
+
 ## A peer's reply text does not reach the orchestrator, and silence is ambiguous
 
 T070's blind author's round sat finished and unreported for over an hour. Cause, in its words: **two
