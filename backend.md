@@ -255,6 +255,53 @@ broken one does. Before a reference's green counts for a test, that reference mu
 it: mutate the reference toward the defect and watch the test red. A reference built by a different
 route than the implementation is the *usual* case, not a rare one, so this is not a corner.
 
+## A ruling that amends a signature after a round closes IS unimplemented contract
+
+I ruled D-70-14a — the `reason` union gains `"illegal"` — **after** T070's round 2 closed, edited
+the published block, and then briefed the blind author with the amended contract. That is exactly
+the shape D-70-08 was charged as, created by the ruling that closed a different instance of it.
+
+T070's implementer caught it and implemented rather than acknowledged, which was right: had it
+waited, the blind author's suite would have been correct against the contract and the module wrong
+against both, and a whole round would have been spent discovering a defect that existed only
+because of when I wrote a sentence.
+
+**The rule: an amendment to a published signature is not done when it is written. It is done when
+the module matches it or when someone is holding a ticket to make it match.** A contract amended
+between rounds has a window in which the contract and the code disagree by construction, and the
+next brief issued in that window measures a module against a surface nobody has built. The window
+is invisible because both documents are individually correct.
+
+Practically: when a ruling amends a signature, either the implementer still holds the tree and gets
+told in the same message, or the amendment is recorded as **owed** and the next brief says so. What
+must not happen is a brief that quotes the new surface as though it were the built one.
+
+## Removal and substitution are different questions for a VALUE, not only for a class
+
+T070's adversary established this for error classes: removal changes *whether* the caller gets an
+error, substitution changes *which* one, and only the second measures identity. Its implementer
+found the same distinction one level down, at a field.
+
+`reason` dropped entirely (**N12**) reds 4. `reason` returned as `"taken"` for an illegal name —
+wrong but present (**N13**) — reds 2. **A test asserting only that `reason` is defined passes
+N13.** So a suite can hold the presence of a field while holding nothing about its value, and the
+two look identical in a passing run.
+
+The generalisation worth carrying: any assertion of the form *"the answer has a `reason`"* is a
+presence check wearing an identity check's clothes. Pin the value, then falsify by substituting a
+**wrong but well-formed** value — not by removing it, which any presence check catches.
+
+Its second move is the one to copy: an assertion quantified over the refusals rather than written
+per case — *every refusal carries a reason and every available answer carries none* — so a fourth
+refusal path added later with no reason reds instead of answering `undefined` to a caller branching
+on it. The output-property rule, applied to a field.
+
+**And an additive field is not a safe change to a suite.** Three of its own round-1 cases broke on
+`reason` arriving, because an exact-equality assertion on a whole answer object is precisely the
+shape a new key breaks. Nothing but running the blind suite could have settled that — 119/119
+before and after is the check that mattered before committing, not the reasoning that the field was
+additive.
+
 ## D-70-14 and D-70-12, ruled
 
 **D-70-14a — the `reason` union was missing its third member. Contract defect, mine.** A name that
