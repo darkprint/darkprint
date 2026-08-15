@@ -333,6 +333,80 @@ silent on the other side, so nothing asserted it. There is nothing to offer an a
 the name is free. Now total on both axes: every refusal of a well-formed name carries a suggestion,
 every refusal of an ill-formed one carries none, and every available answer carries none.
 
+## A false premise can carry a true conclusion, and the premise still has to be retracted
+
+I justified D-70-19 partly with: *the previous holder still reclaims and still wins every race, which
+is what your eight-account race asserts.* T070's implementer measured both halves and both are wrong
+about this module. The original holder re-allocating its own released handle is **refused** —
+`allocateHandle` is the single plain insert the contract asked for and it refuses everyone. And the
+eight-account race is about one winner among eight **distinct** accounts on a **fresh** handle; it
+says nothing about reclaiming.
+
+The conclusion is untouched: `checkHandle` takes no actor, so `reserved` is the answer to every
+caller either way. That is exactly why this needs writing down — **a true finding resting on a false
+claim reads as confirmed**, and the claim survives into the next person's reasoning because the
+ruling it supported was accepted.
+
+The cause: D-70-06 ruled the original holder may reclaim **and flagged itself for owner review** as a
+product decision, so it has never been implemented. I read a ruling's text as a description of the
+module. **A ruling flagged for owner review is not a fact about the code**, and this file now holds
+several of them.
+
+The implementer declining to implement it off the back of a premise correction was right — it
+changes `allocateHandle`'s statement shape, which is AC5's arbiter and which an adversary has already
+passed in its present form. **D-70-06 stays open and stays the owner's.**
+
+## A fix for one criterion can break another with nothing on either side to show it
+
+The implementer's near-miss, reported rather than buried. An early sketch of its suggestion search
+used `LIKE` with a `LIMIT`, which returns an **arbitrary subset** — a candidate absent from that
+subset may still be held, so the module would have offered a suggestion that was not free.
+
+**That satisfies D-70-18 by breaking AC6.** D-70-18 asks that a suggestion be present; AC6 asks that
+it be free. A module can pass the first by violating the second, and neither criterion's own tests
+look at the other. The two are one criterion now for exactly this reason.
+
+The general shape: when a new criterion constrains the same value an existing one constrains, the
+cheapest way to satisfy the new one is often to break the old one, and **each criterion's tests are
+scoped to itself**. Rulings that touch a value already governed elsewhere must be written into the
+same criterion rather than added beside it.
+
+## A ruling that does not reach the acceptance criteria has not landed
+
+Charged against me for the second time in this run, by the implementer. D-70-18 through D-70-21 lived
+only in the preamble: T070's own AC6 still read *"a suggestion returned for a taken name is itself
+free"* — the conditional D-70-18 ruled vacuous — and the published block gave `reason` no per-kind
+meaning, so nothing in the task's own section said a released handle is `reserved`.
+
+Both are fixed in the commit carrying this line. The reader it was costing is named and specific:
+**T050's implementer**, which `Blocks` points at that section next.
+
+The preamble is where a ruling is **argued**. The criteria and the published block are where it is
+**binding**. A ruling that reaches only the first is a decision nobody downstream is required to
+honour, and it reads as settled to the person who wrote it.
+
+## A domain ruling is falsified by COLLAPSE and by SATURATION, and the second is the one nobody writes
+
+T070's blind author falsified D-70-19 in both directions because the reachability rule now demands
+it, and the pair is worth more than either:
+
+- **T1, collapse** — a released handle answering `taken` again. The ruled value never appears. Reds 4.
+- **T2, saturation** — an **active** handle answering `reserved`. The ruled value appears
+  *everywhere*. Reds 9.
+
+T2 is the mutation nobody writes. `reserved` everywhere is **present, well-formed, and passes every
+presence check** — and it loses the distinction just as completely as `taken` everywhere does. A
+suite that only falsifies by collapse holds "the value can appear" while holding nothing about
+*when*, which is the value-versus-presence rule raised from a field to a **partition**.
+
+The general form: a ruling that splits a domain is only held by a suite that reds when the split is
+erased in either direction. Collapse shows nothing live is missing; saturation shows nothing listed
+is dead. **Those are the same two demonstrations the reachability rule asks for**, arriving as
+mutations rather than as an argument — which is what makes them evidence.
+
+And it is why holding at five cells was right **then** and wrong **now**: the difference is a ruling
+about reachability, not a preference about coverage.
+
 ## A cross product is a domain by construction only if every cell is REACHABLE
 
 Their correction to my own enumeration argument, and it is the better statement of it.
@@ -3804,6 +3878,13 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Published signatures** (checked against `backend` at `9411199`, against `lib/db/schema.ts`'s `handle_reservation` — `handle` is the **primary key**, plus `account_id`, `status` enum `active|released`, `reserved_at`, `released_at` — and against `bundle`'s `bundle_owner_slug_key` on `(owner_id, slug)`. Barrel: `@/lib/server/naming`.)
 
         interface Availability { available: boolean; reason?: "taken" | "reserved" | "illegal"; suggestion?: string }
+        // `reason` per name kind, so this block answers it and no reader has to derive it:
+        //   handle  taken    -> status `active`: an account holds it now
+        //   handle  reserved -> status `released`: permanently unavailable to any other account (AC4)
+        //   slug    taken    -> this owner already holds a bundle at this slug (B-09, per owner)
+        //   slug    reserved -> one of the four profile-tab slugs: blueprints, cards, saved, terms
+        //   either  illegal  -> fails the grammar or the single-segment rule (D-70-16)
+        // `suggestion` is present for exactly `taken` and `reserved`, absent otherwise (D-70-18/21).
         const MAX_NAME_LENGTH = 255   // D-70-15/D-70-16. A STORAGE bound, not a product one.
         // 255 holds on every page size Postgres supports; this server stores to 2692 and raises
         // 54000 from 2700, but that is a property of an 8 KB BLCKSZ and a 4 KB build ceilings
@@ -3864,7 +3945,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 - **Goal:** allocate and check every user-chosen identifier — handles, bundle slugs, card ids, term namespaces — and keep reservations permanent.
 - **Contract:** a handle is chosen at sign-up, independent of the GitHub login (B-05); it is unique across the registry, permanently reserved once used, and a rename keeps the old one reserved because every published card carries the handle inside its own bytes (`app/settings/page.tsx:258-265`). A slug is unique **per owner** (B-09). Four slugs stay permanently reserved as bundle names because the profile tabs occupy them: `blueprints`, `cards`, `saved`, `terms` (`components/profile/tabs.ts`). Ids must satisfy the engine's grammars (`CARD_ID`, `REF_VERSION`, `lib/core/card/schema.ts:167,174`) so a stored id is one a DOT node can pin. Availability answers `{ available, reason?, suggestion? }` — the `reason` added by D-70-01 when the two error classes were struck, since a caller that can no longer catch a class needs the discriminator in the value.
-- **Acceptance criteria:** (1) each reserved slug is refused as a bundle name; (2) two owners may both hold `frontline-triage`; (3) one owner may not hold it twice; (4) a released handle cannot be claimed by a second account, ever; (5) two concurrent allocations of one name yield exactly one success; (6) a suggestion returned for a taken name is itself free at the moment it is returned.
+- **Acceptance criteria:** (1) each reserved slug is refused as a bundle name; (2) two owners may both hold `frontline-triage`; (3) one owner may not hold it twice; (4) a released handle cannot be claimed by a second account, ever; (5) two concurrent allocations of one name yield exactly one success; (6) **D-70-18/20/21, replacing the conditional this criterion used to be**, which a never-suggesting module satisfied completely: a refusal of a **well-formed** name — `reason` `taken` or `reserved` — carries a suggestion, and that suggestion is itself free at the moment it is returned; a refusal of an **ill-formed** name — `illegal` — carries none; an **available** answer carries none. Total on both axes, and the generator must **shorten** rather than only append, since at `MAX_NAME_LENGTH` no suffix fits. (7) **D-70-19:** a **released** handle answers `reason: "reserved"` and an **active** one answers `"taken"`, so both values are reachable for handles; erasing the split in either direction — never `reserved`, or `reserved` everywhere — is a defect.
 - **Out of scope:** creating the account (T050) or the bundle (T100) the name is for.
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-05, B-09.
