@@ -3827,6 +3827,138 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     count. Scratch worktree removed
     (`git worktree list` back to 17), working tree clean but for this commit.
 
+  - 2026-08-15 blind test author, **round 2, D-70-12. The suite is 203 tests over 9 files,
+    from 119 over 6.** Still blind: `feat/t070-naming` was not read, merged or logged, and
+    nothing under `lib/server/naming/**` or `app/api/names/**` was opened. Written against the
+    contract at `be5297f`, reached by **merge** (`7f85fb8`); the two conflicts in this file were
+    both contract text rather than Log entries and both resolved to `backend`, per the rule.
+
+        contract.ts        + the reason union, `unavailable`/`availableNow`, the fault form,
+                             route discovery and dispatch, `Scratch`
+        fixtures.ts        + `seatHandle` (both tables), `MAX_NAME_LENGTH`, `deadDb`
+        surface.test.ts    11  unchanged
+        grammar.test.ts    78  + D-70-04's round-trip cases on both pure grammars
+        slugs.test.ts      23  AC1/AC2/AC3 with the reason, + the illegal block
+        handles.test.ts    32  AC4, + D-70-06, D-70-02 and the write side of the grammar
+        concurrency.test.ts 5  AC5
+        suggestion.test.ts  5  AC6
+        length.test.ts      9  D-70-15
+        faults.test.ts     10  D-70-05
+        routes.test.ts     30  D-70-03 and D-70-14b
+
+    **The 27 are covered.** `reason` at both refusal sites and in all three of its values,
+    including the two cases where a wrong reason is the only observable difference: an illegal
+    slug whose *trimmed* form the owner really does hold — which a module with no round-trip
+    answers `taken` about, correctly, for a name nobody typed — and a reserved slug an owner
+    already has a bundle at. The length bound at 255, 256 and 100 000. Four fault doors. Both
+    routes. The sentinel.
+
+    **A round-1 assertion of mine is now WRONG and I deleted it.** Round 1 asserted that every
+    loser in an AC5 race carries a driver `cause`, reasoning that a causeless refusal under a
+    race is the read-then-write shape. **D-70-06 invalidates that**: the ruled mechanism is
+    `ON CONFLICT DO UPDATE ... WHERE account_id = excluded.account_id`, and a conflicting row
+    that fails the `WHERE` is not updated and raises nothing — so a correct implementation's
+    losers carry no cause at all and the assertion would have reddened the contract's own
+    design. Found by building the reference to the mechanism the **ruling** names rather than
+    to the one round 1 had in mind. Replaced with a better one: a released handle raced by
+    eight accounts, one of them the previous holder, who must win **every time** rather than by
+    timing — which a plain insert, a `DO UPDATE` with no `WHERE`, and a read-then-write each
+    fail differently. A finding is a measurement and it goes stale like the thing it measured.
+
+    **Round 1's first gap is closed and the second is not.** D-70-02 rules that release "updates
+    nothing because the UPDATE is scoped by `account_id`", so a stranger's release is now
+    asserted against the row's `status`, and the mutation that reddened nothing in round 1
+    reddens 2. `released_at` is still unruled and still unasserted, labelled in the test that
+    cannot see it.
+
+    **Tolerances removed rather than left standing.** D-70-01 settled `checkSlug` (a query,
+    returns; both error classes struck), so round 1's either-shape helper is gone and a throw
+    there now reds; the two struck message literals are deleted from `contract.ts` rather than
+    left beside the ruling that removed them. D-70-06 settled the reclaim, so round 1's
+    "either outcome" is now an assertion. D-70-04 settled the trimming question round 1
+    explicitly declined to assert, so surrounding whitespace is now refused on both grammars
+    **and** the substitution is checked directly: after asking for a leading-space name, the
+    trimmed key must not exist.
+
+    **Reference first, 203/203 — and then the reference was made to go red.** A green against a
+    reference is evidence only if the reference could have gone red, so all 30 mutations name
+    the test they are predicted to red and a mutation that reds something else is reported as a
+    MISS. **30 of 30 caught.** The fault doors are opened by real driver faults at a caller's
+    call site, never by a stub: 22P02 through `checkSlug` and `releaseHandle`, 23503 through
+    `allocateHandle`, and a refused connection through all four — the last being the shape a
+    SQLSTATE-keyed catch cannot classify, which the sweep confirms (keying on a SQLSTATE
+    *shape* reds 5).
+
+    **Four of the thirty were defective on their first run, and none was a suite result.** They
+    are three of this file's three causes of a zero, in one sweep, and the harness named each
+    rather than my re-reading it. Two replaced `await guard(op, () => db...)` with
+    `await (async () => db...)`, which yields a *function* and breaks the module: 199 of 203
+    red, flagged as breakage rather than counted. One keyed the fault classifier on "has a
+    `code` at all" — but Node's ECONNREFUSED error carries `code: "ECONNREFUSED"`, so the
+    mutation changed nothing and reported a gap; keyed on a five-character SQLSTATE shape it
+    reds 5. One made the unknown-owner response differ by `suggestion: undefined`, which
+    `JSON.stringify` drops, so the bodies stayed byte-identical: a no-op **at the wire**,
+    reported as a gap. And one was a defect in the *prediction* rather than the mutation — the
+    predicted word appears in the error message and in no test name, so a correct 10-red result
+    was reported as a MISS.
+
+    **Three readings taken rather than reported, each flagged as a reading.** (a) A slug
+    containing `/` is refused. D-70-04 says all three names use `CARD_ID`, and `CARD_ID` admits
+    one separator — but a slug with one cannot be expressed by `/blueprints/{owner}/{slug}` at
+    all, so `checkSlug` would be answering about a name no URL can carry. If the implementation
+    reads D-70-04 literally, this reds and the contract should say which. (b) `MAX_NAME_LENGTH`
+    is 255, read from D-70-15's prose because the constant is not in the Published signatures
+    block — deliberately not imported, since a boundary test that imports the constant it
+    bounds moves with it. (c) `checkHandle` must return a `suggestion` for a taken handle,
+    carried forward from round 1 for the same reason.
+
+    **Still open, unchanged from round 1:** `<kind>` in `InvalidNameError` is unenumerated, so
+    that one path keeps a prefix-and-shape pin rather than an equality one.
+
+    **Base agrees.** `npm test` at `7f85fb8` before any of this round's tests existed:
+    **5010 total, 119 failed** — this suite's 118 plus exactly one other, `tests/server/t090/serve.test.ts`
+    "returns the same bytes for one digest after a B-08 RE-SCORE", which reconciles to the
+    4891/4890 the hand-off states. No other failing file.
+
+    **State of this worktree.** `npx vitest run tests/server/t070`: exit 1, **9 failed files**,
+    201 failed and 2 passed of 203. Every red traces to one of two causes and nothing else —
+    9 blocks of `@/lib/server/naming does not load` and 17 of
+    `No route file exists under app/api/names/`, both of which are the correct blind state.
+    Zero syntax errors, zero transform failures, zero bad paths, zero hook timeouts. The two
+    passing tests need neither module nor route: the check that `components/profile/tabs.ts`
+    still carries exactly the four segments this section names, and the control asserting that
+    the indistinguishability pair really is a pair — one handle seated in `account`, the other
+    absent from both tables — which is the assertion that stops that property from being true
+    and untested. `npx eslint tests/server/t070` clean; `npm run typecheck` reports the one
+    expected `TS2307` on the absent barrel.
+
+    **The gate triple, taken in the serialised slot and released after.** Whole-tree stamps
+    taken **before and after**, `git status --porcelain` empty at both ends, on the **committed**
+    tree — the sha is reported to the orchestrator alongside this entry rather than written into
+    it, because a sha written into the entry is invalidated by the commit that carries the entry.
+    That is not pedantry: the first triple this round ran at `5afd32f` and an amend to this very
+    paragraph moved HEAD to a different sha, so the recorded stamp named a tree the gates had not
+    measured. Re-run on the final tree rather than explained away. Three consecutive
+    `npm test` runs, read as the count rather than the exit code: **5094 tests, 202 failed,
+    4892 passed** on each, and the failing **sets are identical across all three** once sorted
+    and stripped of ANSI and durations. Ten failing files: this suite's nine, plus
+    `tests/server/t090/serve.test.ts` with the one named failure and no other. Zero hook
+    timeouts on all three.
+
+    The arithmetic reconciles to the hand-off in both directions: base was 4891 with 4890
+    passing, this suite adds 203, and 4891 + 203 = 5094; 202 failed is this suite's 201 plus
+    T090's 1; 4892 passed is base's 4890 plus this suite's 2.
+
+    **Residue: none, and measured rather than glanced at.** `pg_database` was empty of
+    `darkprint_test_%` before the triple and sampled three times over 24 seconds after it — 0
+    each time, with `pg_stat_activity` showing no live connections into any. The sampling is the
+    method rather than the count: a single check taken as the runner exits catches teardown in
+    flight, and on this shared server a non-zero count is not evidence of your own residue.
+    Scratch worktree removed, `git worktree list` back to 17.
+
+    This row's `State` and `Evidence` are left to the orchestrator: the implementation exists
+    and `impl-done` is not mine to move.
+
 ### T240, Observability and audit log
 
 - **State:** todo

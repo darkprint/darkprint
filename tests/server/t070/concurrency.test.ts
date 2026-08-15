@@ -32,13 +32,40 @@
      WINNER                    an `ON CONFLICT DO UPDATE` refuses
                                nobody and hands the name to whoever
                                committed last.
-     every loser carries a
-     driver `cause`            a refusal the index raised carries
-                               the driver error underneath it; one a
-                               pre-check `SELECT` raised does not.
-                               Under a race every loser got past any
-                               pre-check, so a causeless refusal here
-                               is the read-then-write shape itself.
+     the previous HOLDER wins
+     a race it is in           D-70-06's `WHERE account_id =
+                               excluded.account_id` makes exactly one
+                               of eight callers privileged, and which
+                               one is not a matter of timing.
+
+   ── one round-1 assertion is GONE, and it was the one I was most
+      pleased with ──
+   Round 1 also asserted that every loser's refusal carried a driver
+   `cause`, reasoning that under a race every loser is past any
+   pre-check, so a causeless refusal is the read-then-write shape
+   itself. **That is invalid under D-70-06.** The ruled mechanism is
+   `ON CONFLICT DO UPDATE … WHERE account_id = excluded.account_id`:
+   a conflicting row that fails the `WHERE` is simply not updated and
+   PostgreSQL raises nothing at all, so the refusal comes from an
+   empty `returning` and carries no driver error. The assertion would
+   have reddened the implementation the contract asks for.
+
+   It was found by building the reference to the mechanism the RULING
+   names rather than to the one round 1 had in mind — which is the
+   whole reason a reference is built before a suite is offered. A
+   finding is a measurement too, and it goes stale exactly like the
+   thing it measured.
+
+   ── why every caller is a DIFFERENT account ──
+   D-70-06, ruled after this file was written, makes a same-account
+   race a different question: "the original holder may reclaim its
+   own released handle", implemented as
+   `ON CONFLICT DO UPDATE … WHERE account_id = excluded.account_id`.
+   Eight simultaneous calls from ONE account are eight legal reclaims
+   and the contract does not say how many of them succeed, so a race
+   built that way would be asserting a ruling nobody made. Eight
+   distinct accounts is the shape AC5 names, and it is the shape
+   where the `WHERE` has to do its work.
 
    ── and one control ──
    "Exactly one of N succeeded" is also satisfied by a module that
@@ -52,13 +79,13 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   asAvailability,
   bind,
-  expectCausePresent,
   expectSealedError,
   handleTakenMessage,
 } from "./contract";
 import {
-  type TestDb,
+  type Scratch,
   clean,
+  closeDatabase,
   createAccounts,
   db,
   freeHandle,
@@ -69,7 +96,7 @@ import {
 const CALLERS = 8;
 const ROUNDS = 4;
 
-let t: TestDb;
+let t: Scratch;
 
 beforeAll(async () => {
   t = await openDatabase();
@@ -84,7 +111,7 @@ beforeAll(async () => {
    scratch database, so the harness itself becomes the residue. `testTimeout` is already 20s
    for the same reason one level up. */
 afterAll(async () => {
-  await t?.drop();
+  await closeDatabase();
 }, 60_000);
 beforeEach(async () => {
   await clean(t);
@@ -162,25 +189,42 @@ describe("AC5: concurrent allocation of one handle", () => {
     }
   }, 60_000);
 
-  it("refuses every loser with the driver error underneath, not from a pre-check", async () => {
-    /* The discriminator the count cannot make, and the one this criterion is really about.
-       §T070: "`allocateHandle` is a **single insert** whose conflict is caught and translated;
-       the primary key is the arbiter." Under a genuine race every loser has already passed
-       whatever pre-check exists, so its refusal came back from the index and carries the
-       driver's error. A loser refused with no `cause` was refused by a read — which is the
-       implementation shape that passes every sequential test in this suite. */
+  it("gives a released handle back to its previous holder, whoever else is racing", async () => {
+    /* D-70-06 and AC5 in one call, and it replaces the causeless assertion this file used to
+       make. The row exists and is `released`, held by `holder`. Eight callers fire at once and
+       exactly one of them is privileged by the ruled `WHERE`, so the outcome is not a matter of
+       who committed first: the holder wins every time and the seven strangers are refused every
+       time.
+
+       Three implementations fail it and each fails differently. A plain single insert with a
+       caught conflict refuses the holder too, so B-05's rename cannot come back. An
+       `ON CONFLICT DO UPDATE` with no `WHERE` lets whichever stranger commits last take the
+       name, silently. A read-then-write hands it to several of them. */
     const allocate = await bind("allocateHandle");
+    const release = await bind("releaseHandle");
     const accounts = await createAccounts(t, CALLERS);
+    const holder = accounts[3];
     const handle = freeHandle();
+
+    await allocate(db(t), holder, handle);
+    await release(db(t), holder, handle);
 
     const results = await fireAll(CALLERS, (i) => allocate(db(t), accounts[i], handle));
 
-    const losers = results.flatMap((r) => (r.status === "rejected" ? [r.reason] : []));
-    expect(losers.length).toBe(CALLERS - 1);
-    for (const [i, reason] of losers.entries()) {
-      expect(reason).toBeInstanceOf(Error);
-      expectCausePresent(reason as Error, `allocateHandle, loser ${i}`);
+    const winners = results.flatMap((r, i) => (r.status === "fulfilled" ? [accounts[i]] : []));
+    expect(winners, "exactly one caller may be told it has the handle").toEqual([holder]);
+
+    for (const [i, result] of results.entries()) {
+      if (accounts[i] === holder) continue;
+      expect(result.status, `stranger ${i}`).toBe("rejected");
+      expectSealedError((result as PromiseRejectedResult).reason, `allocateHandle, stranger ${i}`, {
+        expectedMessage: handleTakenMessage(handle),
+      });
     }
+
+    const rows = await reservationsFor(t, handle);
+    expect(rows.map((r) => r.accountId)).toEqual([holder]);
+    expect(rows.map((r) => r.status), "and it is the holder's again, active").toEqual(["active"]);
   }, 60_000);
 
   it("leaves the handle unavailable to everyone afterwards", async () => {
