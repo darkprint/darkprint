@@ -412,6 +412,23 @@ describe("the three routes D-90-04 published", () => {
      * The failure is injected by renaming the table the read touches, so it arrives through the
      * path a caller takes rather than being constructed.
      */
+    /*
+     * The control, and it is here because its absence made this test VACUOUS. Accepting a throw as
+     * the ruled rethrow means an ABSENT route module — which throws from the loader — satisfied the
+     * assertion too, so the test passed with no implementation at all. Caught by recapturing the
+     * module-absent baseline and finding this test in the passing column, which is the only place
+     * it could have shown.
+     *
+     * So the route is proved to work first, and only then is the read broken. A module that does
+     * not load fails here, where it should, instead of quietly counting as a rethrow.
+     */
+    const control = await getByDigest(release.digest, "README.md");
+    expect(
+      control.status,
+      "The route did not serve a file that exists, so the failure injected below could not be " +
+        "attributed to the broken read — an absent module throws exactly like the ruled rethrow.",
+    ).toBe(200);
+
     await withRelease.pool.query('alter table "release" rename to "release_t090_hidden"');
     let answer: { kind: "status"; status: number } | { kind: "threw"; message: string };
     try {
