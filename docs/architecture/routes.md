@@ -38,6 +38,46 @@ by fixture`.
 
 A page reading both sources carries both tags with the split named.
 
+## The API routes
+
+Added 2026-08-15. These are `route.ts` handlers under `app/api/`, not pages, so the page status
+tags above do not apply to them: each is **backed by a real module and a real Postgres read**, which
+is what "LIVE" means everywhere else in this document. They are listed here because section 4 is the
+sitemap and a sitemap that records only `page.tsx` reads as complete while describing half the tree.
+
+Every response is B-03's envelope — `application/json` at 200, RFC 9457 `application/problem+json`
+on failure. Every registry read takes an `Actor` derived from the request and filters through
+`server/policy`, so "not visible to you" and "does not exist" are one answer by construction (B-03):
+a 404 detail that differed between them would reinstate the existence leak the status code closes.
+
+| Path | File | Method | Access | Purpose | Seam |
+|---|---|---|---|---|---|
+| `/api/auth/github/login` | `app/api/auth/github/login/route.ts` | GET | public | Starts the GitHub OAuth exchange (B-02): mints a CSRF state, stashes it in a short-lived cookie, redirects to GitHub. Touches no database — the identity does not exist yet, only the request for one | — |
+| `/api/auth/github/callback` | `app/api/auth/github/callback/route.ts` | GET | public | Finishes the exchange: verifies state, upserts a bare `account` row keyed by GitHub id, sets the session cookie. `handle` stays null until T070/T050 allocate one, which is why `SessionPayload.handle` is nullable. **Not exercisable end to end** — no real GitHub OAuth App credentials exist yet | — |
+| `/api/auth/logout` | `app/api/auth/logout/route.ts` | POST | public | Clears the session cookie. No database and no GitHub, so unlike the pair above this one is fully exercisable today | — |
+| `/api/auth/session` | `app/api/auth/session/route.ts` | GET | session required | The guarded-handler shape every later task's routes follow: no session reaches the handler, and the refusal is `problem+json` 401 with no body from the handler at all | — |
+| `/api/blueprints` | `app/api/blueprints/route.ts` | GET | public, actor-filtered | The gallery's list. Nothing on this route can 404: "no blueprints you may see" is an empty list, not a failure | SEAM-01 |
+| `/api/blueprints/[owner]/[slug]` | `app/api/blueprints/[owner]/[slug]/route.ts` | GET | public, actor-filtered | One blueprint under B-09's two-part key, with its scores. One 404 detail string for a key nothing holds and for a bundle the caller may not see — the reader returns one value for both, so no branch here could tell them apart even by accident | SEAM-03 (partial: two-part key, not `{slug}`) |
+| `/api/cards` | `app/api/cards/route.ts` | GET | public, actor-filtered | The node library. `cards()` rather than `latestCards()`: the published shape is every indexed version, and which of them to show is the caller's decision | SEAM-07 |
+| `/api/cards/[...ref]` | `app/api/cards/[...ref]/route.ts` | GET | public, actor-filtered | One card by ref, plus the namespaced forms of `versions` and `users`. A catch-all because `CARD_ID` admits one `owner/name` pair, so `berti/solver-a` spans two segments and a literal `[id]/versions` folder could not express it — the same reason `/nodes/[...id]` is a catch-all. Dispatch is total, not heuristic | SEAM-09 |
+| `/api/cards/[id]/versions` | `app/api/cards/[id]/versions/route.ts` | GET | public, actor-filtered | Every indexed version of one card id, newest first. Empty for an id nothing pins **and** for one whose every version is private to somebody else — the same value, for B-03's reason. Single-segment ids only; the catch-all beside it answers identically for namespaced ones | — |
+| `/api/cards/[id]/users` | `app/api/cards/[id]/users/route.ts` | GET | public, actor-filtered | Blueprints using any version of one card id, distinct and sorted | — |
+| `/api/cards/duplicates` | `app/api/cards/duplicates/route.ts` | GET | public, actor-filtered | Cards saying the same thing under different refs. A static segment, matched before the catch-all beside it, and it can never shadow a card because a pinned ref always carries `@version` and this path has none | SEAM-13 |
+| `/api/ontology/categories` | `app/api/ontology/categories/route.ts` | GET | public, actor-filtered | The gallery's category facet, over the blueprints the caller may see | — |
+| `/api/ontology/tags` | `app/api/ontology/tags/route.ts` | GET | public, actor-filtered | The gallery's tag facet, over the blueprints the caller may see | — |
+| `/api/ontology/phases` | `app/api/ontology/phases/route.ts` | GET | public, actor-filtered | The phases the indexed cards declare, in lifecycle order. Descriptive, never a score: the set of phases that are here, not a fraction of five | — |
+| `/api/ontology/phases/[phase]/cards` | `app/api/ontology/phases/[phase]/cards/route.ts` | GET | public, actor-filtered | Cards declaring one phase. A phase no card declares answers 200 with an empty list, never 404 — the bucket is a fact about the index, and that is as true of an arbitrary string as of one of the five, so nothing validates `phase` against a known set first | — |
+
+`TBD:` eleven of these fifteen routes carry no seam id. Four cite one in their own source
+(SEAM-01, 07, 09, 13) and are mapped above from that citation rather than from resemblance. The
+rest are real endpoints that the seam catalogue, written against the frontend's needs before any
+backend existed, has no entry for — the auth four because authentication was never a page-level
+seam, and the ontology and per-card facets because the pages that will consume them read `content/`
+at build time today. **Open question: does section 8 gain new seam ids for them, or is a route with
+no page consuming it deliberately outside the seam model?** Not answerable without deciding what a
+seam is for, so it is recorded rather than guessed.
+
+
 ## The routes
 
 | Path | File | Access | Purpose | Status | Linked from |
