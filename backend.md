@@ -3527,7 +3527,10 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Forbidden:** `lib/server/accounts/**`, `lib/db/schema.ts`
 - **Published signatures** (checked against `backend` at `9411199`, against `lib/db/schema.ts`'s `handle_reservation` — `handle` is the **primary key**, plus `account_id`, `status` enum `active|released`, `reserved_at`, `released_at` — and against `bundle`'s `bundle_owner_slug_key` on `(owner_id, slug)`. Barrel: `@/lib/server/naming`.)
 
-        interface Availability { available: boolean; suggestion?: string }
+        interface Availability { available: boolean; reason?: "taken" | "reserved"; suggestion?: string }
+        // `reason?` added by D-70-01. It was added to the amendment block below and NOT here,
+        // leaving two declarations of one interface in one contract, the published one missing
+        // the field. Charged as D-70-10 by T070's adversary and handed back to the orchestrator.
 
         checkHandle(db: Db, handle: string): Promise<Availability>
         allocateHandle(db: Db, accountId: string, handle: string): Promise<void>
