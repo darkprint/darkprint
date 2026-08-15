@@ -1735,7 +1735,7 @@ it does not decide differently inside a worktree.
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
-| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | reverted | adversary round 1 **FAIL** at `29f7a800`: all six criteria pass from commands; typecheck/lint/build 0; three consecutive full-suite runs exit 0, 0 failed files, 159/159 files, 4587/4587, **0 skipped**, identical sorted failing sets, whole-tree stamp clean both ends; 20 mutations, 16 observed, 0 greening anything. Six charged (D-70-08…13), five of them the contract's: `Availability.reason` and both `/api/names/**` routes unimplemented, three self-contradictions in the amended section, `NamingStoreError` unobserved on all three doors, six behaviours held only by colocated tests, and no length bound so `checkHandle` promises what `allocateHandle` refuses |
+| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | impl-done | round 2 at `1f7cbc8`, onto base by **merge** (`e65db9e`, then `0f6d46e`). D-70-08, 09, 11 and 13 closed; D-70-12 answered with a measurement rather than a fix, since a blind test cannot be written from here. typecheck/lint/build 0; three consecutive full-suite runs in the gate slot, identical sorted failing sets, **1 failed file — t090's `serve.test.ts`, the expected red on base** — 182 files, 5037 tests, whole-tree stamp clean both ends; 12 mutations, every one observed, none greening anything; **0 scratch databases and 0 live connections** after the triple, having found and closed a leak of my own. Two new items reported: D-70-14, D-70-15 |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
@@ -3552,7 +3552,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T070, Namespace: handles, slugs, reservation
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t070-naming` on `feat/t070-naming`
 - **Test worktree:** `../darkprint-wt-t070-naming-tests` on `test/t070-naming`
 - **Depends on:** T000 (contract: schema)
@@ -4087,6 +4087,137 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     length bound (D-70-13). D-70-10 is mine to hand back to the orchestrator rather than the
     implementer's to fix, and D-70-12 needs a decision about whether the blind suite is re-opened
     for the three behaviours ruled in after it was written.
+
+  - 2026-08-15 implementer: `reverted` → `impl-done`, **round 2**. Code at `1f7cbc8`. Got onto base
+    by **merge** rather than rebase, as instructed, so no cited sha is rewritten: `a06a26e` +
+    `e65db9e`, then + `0f6d46e` when the architecture guard was fixed. Both merges clean, no
+    conflict in any file. Four of the five items are closed; D-70-12 is not closable from here and
+    is answered with a measurement instead of a fix.
+
+    **D-70-08, `Availability.reason`.** Set at both refusal sites: `"taken"` for a name a row
+    holds, `"reserved"` for one of the tabs' four. `reserved` wins when both apply, because it is
+    the answer that stays true after the row is gone. Absent when there is nothing to explain, and
+    the tests use exact `toEqual` so a stray key reds. **An illegal name still answers with no
+    reason** — see D-70-14.
+
+    **D-70-09, the two routes.** `app/api/names/handles/[handle]/route.ts` and
+    `app/api/names/slugs/[owner]/[slug]/route.ts`, both 200 with the payload and no 404, because
+    "not found" is the available answer. Measured the way the charge was measured, off the build's
+    own route manifest rather than off a directory listing: `npm run build` exit 0 now lists
+    `ƒ /api/names/handles/[handle]` and `ƒ /api/names/slugs/[owner]/[slug]`.
+
+    **D-70-11, the fault door, in the three directions rather than as one count.** Taken from the
+    adversary's own method rather than reinvented. **Arrival** is not a source mutation — nothing
+    constructs a `NamingStoreError`, so substituting at a site nothing reaches reds nothing — so
+    each door is opened with a **real driver fault at the call site a caller uses**: a malformed
+    `ownerId` (22P02) through `checkSlug` and `releaseHandle`, an `accountId` with no `account` row
+    (23503) through `allocateHandle`, and a refused connection to `127.0.0.1:1` through
+    `checkHandle`. No stub, no hand-built error. **Identity** is `instanceof NamingStoreError` plus
+    `not.toBeInstanceOf` its two siblings, which is exactly what the prescribed substitution — same
+    message, bare `new Error` — has to fail. **Message** is an exact literal per door.
+    `allocateHandle`'s door also asserts **no row was written**, since the failure mode charged was
+    telling a caller it holds a handle no row exists for.
+
+    **D-70-13, the length bound.** `MAX_NAME_LENGTH` inside `isNameSegment`, which every entry
+    point already routes through, so one predicate closes both halves. **255, and the number is
+    mine rather than the contract's.** I measured this server's ceiling before choosing it — a
+    random `[a-z0-9]` handle stores up to **2692** characters and raises 54000 from 2700 — and
+    then did *not* use 2692, because it is a property of an 8 KB `BLCKSZ`: a 4 KB build ceilings
+    near 1300 and a 2 KB build near 640, so a bound read off this machine is a guarantee only on
+    this machine. 255 holds on every page size Postgres supports. **The test is what makes the
+    number safe, not the number**: it allocates a name of exactly `MAX_NAME_LENGTH` through the
+    published surface, so raising the constant past what a btree index tuple can hold reds here
+    instead of reaching a user as `checkHandle` promising what `allocateHandle` answers 54000 for.
+
+    **D-70-12 is not closable by me, and the honest answer is that round 2 made it bigger.** I
+    cannot write into `tests/server/**`, so every behaviour added here is colocated by
+    construction. Stated as a measurement rather than as a worry: across all twelve mutations
+    below, **every newly-red line is under `lib/server/naming/**` or `app/api/names/**`, and not
+    one is under `tests/server/t070/**`.** So `reason`, the length bound, all three fault doors,
+    both routes and the sentinel join the adversary's six as behaviours the blind suite does not
+    hold. That is the same mechanism the adversary named — a behaviour ruled in after the blind
+    suite was written arrives with no blind coverage, and nothing in the loop re-opens it — and
+    the decision remains the orchestrator's.
+
+    **Falsification: twelve mutations, each run against the WHOLE suite, diffed in both
+    directions. Every one observed; none greened anything.** Baseline is the one expected red, so
+    "newly red" is measured against that set rather than against zero.
+
+        N1  ARRIVAL  allocateHandle swallows a fault and resolves        1 red
+        N2  ARRIVAL  checkSlug swallows its SELECT fault, answers free   1 red
+        N11 ARRIVAL  checkHandle swallows its read fault, answers free   1 red
+        N3  IDENTITY the same message thrown as a bare Error             4 red
+        N4  MESSAGE  NamingStoreError interpolates String(cause)         4 red
+        N5  D-70-13  the length bound is removed                         1 red
+        N6  D-70-08  checkHandle never sets a reason                     2 red
+        N7  D-70-08  checkSlug calls a reserved slug taken               3 red
+        N8  D-70-09  the slug route short-circuits an unknown owner      2 red
+        N9  D-70-09  the handle route 404s a name nothing holds          2 red
+        N10 HARNESS  the route test's scratch-db injection misses        2 red
+
+    N10 is aimed at my own instrument rather than at the module. The route tests point
+    `getSharedDbClient()`'s well-known global slot at a scratch database, and an injection that
+    silently missed would put every question to the shared development database and still pass on
+    reads. Renaming the symbol reds two cases, so the harness reports its own failure instead of
+    quietly measuring the wrong server.
+
+    **A defect of mine, found by attributing residue instead of counting it.** The first version of
+    the `checkHandle` door used a second scratch database and closed the client under it —
+    and **leaked that database on every run**. `TestDb.drop()` begins with `client.close()`,
+    `pool.end()` raises on a pool already ended, and a `.catch` I had wrapped around `drop()`
+    swallowed it before the `DROP DATABASE` ran: a swallowed failure inside the test written to
+    prove failures are not swallowed. Fifteen abandoned databases on the shared server, ages
+    spanning exactly my run window, `pg_stat_activity` showing **0** live connections into any of
+    them across three samples. The count alone could not have said whose they were; a before/after
+    snapshot around my own two suites showed **+1 per run**, which is what attributed them. The
+    door now points at a refused connection, which needs no database at all — and is the fault
+    `NamingStoreError` was admitted for in the first place. Re-measured: 16 before, 16 after,
+    nothing new. Then dropped with a plain `DROP DATABASE`, never `WITH FORCE`, so Postgres itself
+    refuses any database another session is still using: **16 considered, 16 dropped, 0 refused, 0
+    remaining.** Residue after the reported triple, sampled three times over 16 seconds: **0
+    scratch databases, 0 live connections**, which is a stronger result than round 1's because it
+    holds after a full suite rather than after two files.
+
+    **Reported rather than decided, both new:**
+
+    - **D-70-14, `reason` has no member for the third refusal kind, and `[owner]` is a reading.**
+      The published union is `"taken" | "reserved"` and a name that is not legal at all is neither,
+      so it answers `{ available: false }` with no reason and a caller cannot tell "not a legal
+      name" from "I did not say". The adversary raised this inside D-70-08; I have implemented the
+      union as published and pinned the gap in a test rather than adding a third member. Separately
+      and in the same item: the route block publishes `[owner]` and `checkSlug` publishes
+      `ownerId`, so somebody has to join them. **I read `[owner]` as a handle** — every other route
+      in the tree spells that segment as a handle, and a uuid in a public URL is not something this
+      codebase does — and did the lookup in the route rather than adding a second module entry
+      point that takes a handle. One consequence is worth ruling on rather than inheriting: an
+      owner nobody is must still be refused the tabs' four, since a profile tab occupies that
+      segment for every handle, so an unknown owner is asked with a nil-uuid sentinel rather than
+      short-circuited to available. N8 is that behaviour's falsification.
+    - **D-70-15, the product length bound is still owed.** 255 is a correctness bound: it makes
+      `checkHandle` and `allocateHandle` agree on every page size. It is not a product bound. A
+      handle is a URL segment and the author field on every published card, and the longest one the
+      archive holds is 11 characters; the longest slug is 26. A 255-character permanent primary key
+      is smaller than the 100 000-character one D-70-13 charged and is the same shape of answer.
+      One constant changes it, and the test that pins the invariant does not care what it is.
+
+    **Gates**, on a committed tree, `set -a; . ./.env.example; set +a` throughout, whole-tree stamp
+    `1f7cbc8` with `git status --porcelain` **empty before and after**. `npm run typecheck` 0,
+    `npm run lint` 0, `npm run build` 0 with porcelain still empty. `npm test` three consecutive
+    times in the **gate slot**, taken while it was free and with `ps` showing **0** other `vitest`
+    processes at the start, load 10-20:
+
+        run 1  exit 1   182 files   1 failed file   5037 tests   1 failed
+        run 2  exit 1   182 files   1 failed file   5037 tests   1 failed
+        run 3  exit 1   182 files   1 failed file   5037 tests   1 failed
+
+    All three identical by sorted failing file and test sets, ANSI and durations stripped
+    (`237ms`, `1523ms` *and* `2.09s`). The single failure is
+    `tests/server/t090/serve.test.ts` → *"…after a B-08 RE-SCORE"*, T100's `persistArtefacts`
+    dependency, which is the expected red on base and is not this task's. **Read off the exit code
+    and the failed-file count; the totals are reported and reconciled rather than used as the
+    criterion.** Base is 4891 tests; this tree is 5037, and the delta of 146 is exactly the T070
+    suites — 119 blind, 22 colocated in `lib/server/naming/**`, 5 colocated in `app/api/names/**`.
+    The gap between 119 and 27 is the surface D-70-12 is about.
 
 ### T240, Observability and audit log
 
