@@ -221,6 +221,18 @@ export async function unavailable(
       `${where} answered \`{ available: true }\` where the name is not available.`,
     );
   }
+  /* **Quantified over the refusals, not written per case.** Every call that reaches here is a
+     refusal, so this one line says "every refusal carries a reason" — and a fourth refusal path
+     added later with no reason reds instead of answering `undefined` to a caller branching on
+     it. The output-property rule applied to a field; recorded on `backend` after round 2, from
+     T070's implementer. The per-case `expected` below is the identity half. */
+  if (availability.reason === undefined) {
+    throw new Error(
+      `${where} answered \`{ available: false }\` with no \`reason\`.\n` +
+        `  D-70-14a exists because "a caller could not tell 'not legal' from 'I did not say'". ` +
+        `Every refusal carries one of ${REASONS.map((r) => JSON.stringify(r)).join(" | ")}.`,
+    );
+  }
   if (expected !== undefined && availability.reason !== expected) {
     throw new Error(
       `${where} answered \`{ available: false, reason: ${JSON.stringify(availability.reason)} }\` ` +
@@ -240,6 +252,16 @@ export async function availableNow(call: () => unknown, where: string): Promise<
     throw new Error(
       `${where} answered \`{ available: false, reason: ${JSON.stringify(availability.reason)} }\` ` +
         `where the name is free.`,
+    );
+  }
+  /* The other half of the same property: every available answer carries NO reason. A module
+     that computes the reason before deciding the answer hands a caller a value it has no branch
+     for, and a per-case check would only catch it wherever somebody remembered to look. */
+  if (availability.reason !== undefined) {
+    throw new Error(
+      `${where} answered \`{ available: true, reason: ${JSON.stringify(availability.reason)} }\`. ` +
+        `A name that was not refused has nothing to explain, and \`reason\` is what a caller ` +
+        `switches on.`,
     );
   }
   return availability;

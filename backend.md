@@ -4006,6 +4006,63 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     This row's `State` and `Evidence` are left to the orchestrator: the implementation exists
     and `impl-done` is not mine to move.
 
+  - 2026-08-15 blind test author, **merged `d76111f` and answered its value-versus-presence
+    finding by measurement.** Merge clean, no conflicts. Base records: "`reason` dropped
+    entirely (N12) reds 4. `reason` returned as `"taken"` for an illegal name — wrong but
+    present (N13) — reds 2. A test asserting only that `reason` is defined passes N13." So the
+    question for this suite is whether it pins the VALUE, and the answer is a number rather than
+    a claim. Run against the reference:
+
+        N12   reason dropped entirely            11 red
+        N13   illegal reported as "taken"         6 red     <- the discriminator
+        N13b  illegal reported as "reserved"     12 red
+        N14   a reason on an AVAILABLE answer     5 red
+        N14b  the same on the slug side           8 red
+
+    Audited before measuring, and the audit agrees: **no assertion in this suite is of the form
+    "the answer has a reason"** — every one of the 30 `unavailable()` call sites passes the
+    expected value, so N13 was always going to red. Substitution, not removal, is what was run
+    to find that out.
+
+    **The property is now quantified rather than written per case**, which is base's second
+    move and the one worth copying: `unavailable()` requires a reason on *every* refusal and
+    `availableNow()` requires none on *every* available answer, so a fourth refusal path added
+    later reds instead of answering `undefined` to a caller branching on it. Honest about what
+    that bought: on the refusal side, nothing today — every call site already pinned a value, so
+    the quantifier guards future paths only. On the available side it bought coverage that did
+    not exist: the same mutation reddened **2** before the change and **13** after (5 + 8), and
+    the slug half had no case at all. Measured, not reasoned — which is base's own third point,
+    that running the suite is what settles an additive change and not the argument that it is
+    additive.
+
+  - 2026-08-15 blind test author, **on D-70-12's closing condition, stated as what I can and
+    cannot measure.** The item asks that the 27 be held by this suite rather than by colocated
+    tests alone, and names the settling measurement: mutate each and check the newly-red lines
+    now include `tests/server/t070/**`.
+
+    **I do not have that measurement and I cannot run it without ceasing to be blind.** It
+    mutates `lib/server/naming/**` and `app/api/names/**`, which requires finding the code,
+    which requires reading it — the same division this file already records for the
+    guard-observability experiment: the implementer runs it on its own tree, the adversary
+    reproduces it independently, and the blind author produces the analogue against its own
+    reference, which is precisely why it can.
+
+    **What I do have is that analogue, and it is real evidence with a named limit.** Thirty-five
+    mutations across a reference built to the rulings — module and both routes — each naming the
+    test it must red: 30 of 30 in the main sweep, 5 of 5 in the value-versus-presence pass, and
+    every newly-red line under `tests/server/t070/**`. That establishes this suite observes those
+    behaviours in **an** implementation of the rulings. It does not establish that it observes
+    them in **the** implementation, and the gap is not rhetorical: my reference is my own reading
+    of the same sentences, so a behaviour the implementation reaches by a different structure may
+    be reachable by a mutation I could not have written. A test can pass for the wrong reason
+    where a deletion diff cannot.
+
+    So: the item is **not** closed by this round on my evidence alone, and it should not be read
+    as closed. Whoever holds the implementation tree runs the twelve original mutations again and
+    reports whether the newly-red sets now reach `tests/server/t070/**`. That is a different
+    instrument from mine by design, and two instruments disagreeing is how a gap surfaces where
+    one confident number hides it.
+
 ### T240, Observability and audit log
 
 - **State:** todo
