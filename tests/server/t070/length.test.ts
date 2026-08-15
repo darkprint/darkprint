@@ -50,7 +50,6 @@ import {
   invalidNamePrefix,
   rejects,
   unavailable,
-  unavailableAtLengthBound,
 } from "./contract";
 import {
   MAX_NAME_LENGTH,
@@ -124,12 +123,16 @@ describe("a name of exactly MAX_NAME_LENGTH is a name", () => {
     const handle = nameOfLength(MAX_NAME_LENGTH);
 
     await allocate(db(t), account, handle);
-    /* `unavailableAtLengthBound`, not `unavailable`, and the difference is a reported contract
-       gap rather than a convenience: at exactly `MAX_NAME_LENGTH` no suffix fits, so D-70-18's
-       "a suggestion accompanies every refusal of a well-formed name" can only be satisfied by a
-       generator that SHORTENS. Whether that is required, or whether D-70-18 owes a carve-out,
-       is unruled — see the helper. Everything else, including the reason, is still pinned. */
-    await unavailableAtLengthBound(() => check(db(t), handle), "checkHandle(long, taken)", "taken");
+    /* **D-70-20 closed this and the weak spot went away rather than becoming an exception.**
+       At exactly `MAX_NAME_LENGTH` no SUFFIX fits — every `<name>-2` is two characters over —
+       so round 3 reported the interaction and used a helper that dropped the suggestion
+       requirement here. Ruled (a): "no suffix fits" is a property of one generation strategy
+       and not of the problem. Truncate to `MAX_NAME_LENGTH - 2` and append, and a legal
+       candidate always exists; the carve-out would have made D-70-18 unsatisfiable at exactly
+       the boundary D-70-15 exists to defend, which is the one place it is load-bearing.
+       So this is the ordinary `unavailable` again, and the suggestion is required here like
+       everywhere else. */
+    await unavailable(() => check(db(t), handle), "checkHandle(long, taken)", "taken");
   });
 });
 

@@ -175,7 +175,7 @@ describe(`${ROUTES.handle.url}`, () => {
     expect(payload.reason).toBe("taken");
   });
 
-  it("reports a RELEASED handle as taken, which is AC4 across the transport", async () => {
+  it("reports a RELEASED handle as reserved, which is AC4 across the transport", async () => {
     /* AC4 is a module criterion and this is where a caller actually reads it. The account that
        held `RELEASED_HANDLE` no longer carries it in `account.handle`, so a route that answers
        from the account table alone reports it free — and a sign-up form then offers a name the
@@ -184,7 +184,10 @@ describe(`${ROUTES.handle.url}`, () => {
     const answer = await answerOf("handle", ROUTES.handle.sample(RELEASED_HANDLE));
     const payload = payloadOf(answer, ROUTES.handle.url);
     expect(payload.available).toBe(false);
-    expect(payload.reason).toBe("taken");
+    /* D-70-19 across the transport. The route is where a sign-up form reads this, and the two
+       reasons are the difference between "try another" and "try again later" in the copy. */
+    expect(payload.reason).toBe("reserved");
+    expect(payload.suggestion, "D-70-18: a released name is well-formed").toBeTypeOf("string");
   });
 
   it('answers `{ available: false, reason: "illegal" }` for a name the grammar refuses', async () => {

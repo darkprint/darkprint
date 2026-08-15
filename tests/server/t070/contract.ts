@@ -298,44 +298,6 @@ export async function unavailable(
   return availability;
 }
 
-/**
- * A refusal at exactly `MAX_NAME_LENGTH`, where D-70-18 and D-70-15 INTERACT and nothing rules
- * the interaction.
- *
- * D-70-18 requires a suggestion for every refusal of a well-formed name. A name of exactly
- * `MAX_NAME_LENGTH` is well-formed — `length.test.ts` allocates one through the published
- * surface, which is the assertion D-70-15 exists for — and **no suffix fits**: every
- * `<name>-2` is `MAX_NAME_LENGTH + 2` and therefore illegal. So a generator that appends
- * cannot satisfy D-70-18 here, and one that satisfies it must SHORTEN the name it was given.
- *
- * Neither ruling mentions the other, so which of these is true is unruled:
- *   (a) a suggestion at the bound must be formed by shortening, and an appending generator is
- *       a defect; or
- *   (b) D-70-18 needs a carve-out — no suggestion is owed when no legal alternative exists.
- *
- * Reported rather than resolved. This helper is the ONE place the suggestion requirement is
- * not applied, it is used at exactly one call site, and it says so — a weak test known to be
- * weak is worth having and the failure mode this run keeps recording is the unlabelled one.
- * Everything else `unavailable` checks still applies here, including the reason's value.
- */
-export async function unavailableAtLengthBound(
-  call: () => unknown,
-  where: string,
-  expected: Reason,
-): Promise<Availability> {
-  const availability = asAvailability(await call(), where);
-  if (availability.available) {
-    throw new Error(`${where} answered \`{ available: true }\` for a name that is taken.`);
-  }
-  if (availability.reason !== expected) {
-    throw new Error(
-      `${where} answered reason ${JSON.stringify(availability.reason)}; expected ` +
-        `${JSON.stringify(expected)}.`,
-    );
-  }
-  return availability;
-}
-
 /** A name the module says is free. Asserted with the same shape checks, in the other direction. */
 export async function availableNow(call: () => unknown, where: string): Promise<Availability> {
   const availability = asAvailability(await call(), where);
@@ -353,6 +315,19 @@ export async function availableNow(call: () => unknown, where: string): Promise<
       `${where} answered \`{ available: true, reason: ${JSON.stringify(availability.reason)} }\`. ` +
         `A name that was not refused has nothing to explain, and \`reason\` is what a caller ` +
         `switches on.`,
+    );
+  }
+  /* **D-70-21.** The property is now total on both axes: every refusal of a well-formed name
+     carries a suggestion, every refusal of an ill-formed one carries none, and every available
+     answer carries none. This was the open question round 2 reported — D-70-18 quantified over
+     the refusals and was silent here — so it is an assertion rather than a reading now. An
+     alternative offered beside a name the caller can simply have is noise at best, and at worst
+     a sign-up form that shows a suggestion next to a green tick. */
+  if (availability.suggestion !== undefined) {
+    throw new Error(
+      `${where} answered \`{ available: true, suggestion: ` +
+        `${JSON.stringify(availability.suggestion)} }\`. D-70-21 forbids a suggestion beside an ` +
+        `available name: there is nothing to suggest an alternative to.`,
     );
   }
   return availability;

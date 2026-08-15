@@ -164,7 +164,7 @@ describe("AC4: a released handle cannot be claimed by a second account, ever", (
     });
   });
 
-  it("still answers `{ available: false, reason: \"taken\" }` after the release", async () => {
+  it('still answers `{ available: false, reason: "reserved" }` after the release', async () => {
     const allocate = await bind("allocateHandle");
     const release = await bind("releaseHandle");
     const check = await bind("checkHandle");
@@ -176,9 +176,16 @@ describe("AC4: a released handle cannot be claimed by a second account, ever", (
 
     /* The read side and the write side are two different code paths and only one of them is
        AC4's happy path. A `checkHandle` that filters on `status = 'active'` reports a released
-       handle as free, and every sign-up form in T050 reads this one, not `allocateHandle`. The
-       reason is asserted with it: a released handle is `taken`, not `illegal` and not absent. */
-    await unavailable(() => check(db(t), handle), "checkHandle after release", "taken");
+       handle as free, and every sign-up form in T050 reads this one, not `allocateHandle`.
+
+       **D-70-19: the reason is `reserved`, not `taken`, and this suite asserted `taken` for
+       three rounds.** The Contract line is where the word comes from — a handle is "permanently
+       reserved once used", and a rename "keeps the old one reserved" — which predates the
+       tab-slug sentence I had read as the only definition. The two reasons differ in whether
+       WAITING HELPS: `taken` is somebody having it now, `reserved` is nobody ever having it
+       again, and collapsing a released handle into `taken` loses exactly the permanence AC4
+       exists to establish. */
+    await unavailable(() => check(db(t), handle), "checkHandle after release", "reserved");
   });
 
   it("refuses a third account too — `ever` is not `the next one`", async () => {
@@ -224,6 +231,35 @@ describe("AC4: a released handle cannot be claimed by a second account, ever", (
        requirement. Carried forward from round 1 unchanged, because the ruling did not move. */
   });
 
+  it("offers an alternative to a released handle, which is free — the sixth D-70-18 cell", async () => {
+    /* `reserved x handle`, live only because D-70-19 made it so. Under the reading this suite
+       carried for three rounds — a released handle is `taken` — this cell was unreachable, and
+       asserting it would have manufactured coverage of behaviour that does not exist. A
+       constructed domain owes two demonstrations rather than one: nothing live missing, and
+       nothing listed dead. This is the first. */
+    const allocate = await bind("allocateHandle");
+    const release = await bind("releaseHandle");
+    const check = await bind("checkHandle");
+    const account = await createAccount(t);
+    const handle = freeHandle();
+
+    await allocate(db(t), account, handle);
+    await release(db(t), account, handle);
+
+    const answer = await unavailable(
+      () => check(db(t), handle),
+      "checkHandle(released)",
+      "reserved",
+    );
+    const suggestion = answer.suggestion as string;
+    expect(suggestion, "a released name is well-formed, so D-70-18 owes an alternative").toBeTypeOf(
+      "string",
+    );
+    expect(suggestion).not.toBe(handle);
+    /* And AC6's clause binds it once offered: free at the moment it is returned. */
+    await availableNow(() => check(db(t), suggestion), "checkHandle(suggestion)");
+  });
+
   it("survives a rename: the old handle stays reserved while the new one is taken", async () => {
     /* B-05, and the reason AC4 exists at all: "renameable with the old handle staying reserved,
        because every published card carries the handle inside its own bytes". A rename is
@@ -239,7 +275,11 @@ describe("AC4: a released handle cannot be claimed by a second account, ever", (
     await release(db(t), account, oldHandle);
     await allocate(db(t), account, newHandle);
 
-    await unavailable(() => check(db(t), oldHandle), "checkHandle(old)", "taken");
+    /* The two reasons in one assertion pair, which is the sharpest form D-70-19 has: the old
+       handle is `reserved` (nobody may ever have it) and the new one is `taken` (this account
+       has it now). A module answering the same reason for both has lost the distinction the
+       ruling is about, and the pair is the only place both are reachable at once. */
+    await unavailable(() => check(db(t), oldHandle), "checkHandle(old)", "reserved");
     await unavailable(() => check(db(t), newHandle), "checkHandle(new)", "taken");
     await rejects(() => allocate(db(t), stranger, oldHandle), "allocateHandle(stranger, old)", {
       expectedMessage: handleTakenMessage(oldHandle),

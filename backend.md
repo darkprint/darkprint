@@ -4268,6 +4268,55 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     unruled and unasserted; and whether an `available` answer may carry a `suggestion` — D-70-18
     quantifies over refusals and says nothing about the other side, so nothing asserts it.
 
+  - 2026-08-15 blind test author, **D-70-19/20/21. 216 tests over 9 files, from 215.** Merged
+    `35d5f06`. Scope was the three cells these rulings add.
+
+    **D-70-19, and my premise was wrong in a way worth recording.** I refused the sixth cell on
+    two grounds: that it contradicted an assertion three rounds had accepted, and that the only
+    definition of `reserved` in the contract was the profile tabs. **The first ground was right
+    and the second was false** — the Contract line says a handle is "permanently reserved once
+    used" and that a rename "keeps the old one reserved", and it predates the tab-slug sentence.
+    I searched the record for a *definition* of `reserved`, so a *use* of it was outside what
+    the search could return: the instrument answered the question I asked it, and my claim was
+    wider than the question. That is this run's own through-line arriving inside the check I
+    ran to avoid taking a peer's word. Checking the record rather than the message was still the
+    right move; asking it a narrower question than my claim was not.
+
+    Now asserted: a released handle answers `reserved`, an active one `taken`, and the **rename
+    test pins both at once** — the old handle `reserved`, the new one `taken` — which is the
+    only place both are reachable in one call sequence and the only shape that catches a module
+    answering one reason for everything.
+
+    **D-70-20 closed the interaction I reported and the labelled weak spot went away rather than
+    becoming a documented exception.** `unavailableAtLengthBound` is deleted; the bound test
+    uses the ordinary helper and the suggestion is required there like everywhere else. The
+    ruling's reasoning is the part to keep: "no suffix fits" was a property of one **generation
+    strategy**, not of the problem — truncate to `MAX_NAME_LENGTH - 2` and append and a legal
+    candidate always exists. A suite that had accepted my carve-out would have made D-70-18
+    unsatisfiable at exactly the boundary D-70-15 exists to defend.
+
+    **D-70-21 closes the last open question round 2 reported.** The property is now total on
+    both axes and enforced in the two helpers rather than per case: every refusal of a
+    well-formed name carries a suggestion, every refusal of an ill-formed one carries none, and
+    every available answer carries none.
+
+    **Six mutations, 6 caught, and D-70-19 falsified in BOTH directions** because that is what
+    the domain rule now requires. A released handle collapsed back to `taken` reds 4; an
+    **active** handle answering `reserved` reds 9 — the dead-cell direction, where the value is
+    present and well-formed and the distinction is gone just as completely. Appending-only
+    generator reds 1 at the bound; a suggestion beside an available name reds 12 on the slug
+    side and 5 on the handle side; the sixth cell removed reds 4.
+
+    **A constructed domain owes two demonstrations and this round ran both**: nothing live
+    missing (T6, the sixth cell) and nothing listed dead (T2, `reserved` where it does not
+    belong). Under the pre-D-70-19 reading the sixth cell was unreachable and asserting it would
+    have manufactured coverage of behaviour that does not exist — which is why holding at five
+    was right *then* and is wrong *now*, and the difference is a ruling rather than a
+    preference.
+
+    **Still open and still labelled, neither mine to close:** `<kind>` in `InvalidNameError`
+    needs the implementer's enumeration; `released_at` is a T100 question.
+
 ### T240, Observability and audit log
 
 - **State:** todo
