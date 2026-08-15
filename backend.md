@@ -255,6 +255,51 @@ broken one does. Before a reference's green counts for a test, that reference mu
 it: mutate the reference toward the defect and watch the test red. A reference built by a different
 route than the implementation is the *usual* case, not a rare one, so this is not a corner.
 
+## D-70-14 and D-70-12, ruled
+
+**D-70-14a — the `reason` union was missing its third member. Contract defect, mine.** A name that
+fails the grammar is neither `taken` nor `reserved`, so it answered `{ available: false }` with no
+reason and a caller could not tell "not legal" from "I did not say". The union gains `"illegal"`,
+and it is edited **in the published block itself** — adding a second declaration is D-70-10, which
+this contract has already been charged with once.
+
+**D-70-14b — `[owner]` is a handle, and the nil-uuid sentinel is right.** The route block publishes
+`[owner]` while `checkSlug` publishes `ownerId`, so somebody joins them; reading it as a handle and
+doing the lookup **in the route** is correct, because the module's parameter is an id and the
+translation belongs at the edge, not inside a second module entry point.
+
+The consequence the implementer asked about is ruled **as it implemented it**: an owner nobody is
+must still be refused the four profile-tab slugs. The reserved set is a property of the **URL
+space**, not of an owner — `/u/<handle>/blueprints` is a tab for every handle that exists or ever
+will, so answering `available` for an unknown owner is a promise the product breaks the moment that
+handle is created. Short-circuiting to available would be wrong at exactly the moment it mattered.
+
+A second property falls out and is worth stating because it was **not** the reason for the choice:
+an unknown owner becomes indistinguishable from an existing owner holding no bundles, so the route
+does not leak whether a handle exists. That is B-03's principle arriving for free. It is recorded
+as a consequence rather than a justification, because a design defended by a benefit it did not
+aim at is a design nobody has actually checked.
+
+**D-70-12 — the blind suite is RE-OPENED.** Round 2 made the gap bigger and the implementer
+measured it rather than leaving it to be noticed: across twelve mutations, **every newly-red line
+is under `lib/server/naming/**` or `app/api/names/**` and not one is under `tests/server/t070/**`**.
+So `reason`, the length bound, all three fault doors, both routes and the sentinel join the
+adversary's original six — 27 colocated behaviours against 119 blind tests that have seen none of
+them.
+
+The ruling is not close. This run's entire warrant is that behaviour is held by a suite whose author
+could not see the implementation; a behaviour held only by the implementer's own tests is a
+behaviour whose test and code were written by one party from one reading. That the implementer
+*could not* have done otherwise — `tests/server/**` is not its to write — is exactly why the fix is
+another blind round rather than a charge.
+
+**D-70-15 stays open and is the owner's.** 255 is a *storage* bound and the test is what makes it
+safe rather than the number: it allocates a name of exactly `MAX_NAME_LENGTH` through the published
+surface, so raising the constant past what a btree tuple holds reds there instead of reaching a
+user. Deliberately not 2692, which is a property of this server's 8 KB `BLCKSZ` and would ceiling
+near 1300 on a 4 KB build. The **product** bound is a different question and nobody owns it: the
+longest handle in the archive is 11 characters.
+
 ## A guard must not demand what its own reader is forbidden to write
 
 `tests/architecture-current.test.ts` read the **working tree** for its domain, so it reddened in
@@ -1735,7 +1780,7 @@ it does not decide differently inside a worktree.
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
-| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | reverted | — |
+| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | impl-done | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
@@ -3552,7 +3597,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T070, Namespace: handles, slugs, reservation
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t070-naming` on `feat/t070-naming`
 - **Test worktree:** `../darkprint-wt-t070-naming-tests` on `test/t070-naming`
 - **Depends on:** T000 (contract: schema)
@@ -3561,7 +3606,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Forbidden:** `lib/server/accounts/**`, `lib/db/schema.ts`
 - **Published signatures** (checked against `backend` at `9411199`, against `lib/db/schema.ts`'s `handle_reservation` — `handle` is the **primary key**, plus `account_id`, `status` enum `active|released`, `reserved_at`, `released_at` — and against `bundle`'s `bundle_owner_slug_key` on `(owner_id, slug)`. Barrel: `@/lib/server/naming`.)
 
-        interface Availability { available: boolean; reason?: "taken" | "reserved"; suggestion?: string }
+        interface Availability { available: boolean; reason?: "taken" | "reserved" | "illegal"; suggestion?: string }
         // `reason?` added by D-70-01. It was added to the amendment block below and NOT here,
         // leaving two declarations of one interface in one contract, the published one missing
         // the field. Charged as D-70-10 by T070's adversary and handed back to the orchestrator.
@@ -3578,7 +3623,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **D-70-01: `checkSlug` published `Promise<Availability>` and two error classes prefixed `checkSlug:`.** A taken slug cannot be both `{ available: false }` and a throw, and `Availability.available` is dead if it is the throw. **Ruled: `checkSlug` is a query and returns; both error classes are struck.** A query asked "is this available" answers, and one that throws to say "no" makes its own return type meaningless. AC1 and AC3 are checkable through the published surface **only** under this reading, since creating the bundle is out of scope here — which is what settles it rather than taste. `Availability` gains the reason so the caller need not infer it:
 
-        interface Availability { available: boolean; reason?: "taken" | "reserved"; suggestion?: string }
+        interface Availability { available: boolean; reason?: "taken" | "reserved" | "illegal"; suggestion?: string }
 
   The implementer took this reading, **defined neither class**, and said why: an exported error class nothing can raise is a guard that cannot fail. Right on both counts.
 
