@@ -333,6 +333,28 @@ silent on the other side, so nothing asserted it. There is nothing to offer an a
 the name is free. Now total on both axes: every refusal of a well-formed name carries a suggestion,
 every refusal of an ill-formed one carries none, and every available answer carries none.
 
+## A domain ruling is falsified by COLLAPSE and by SATURATION, and the second is the one nobody writes
+
+T070's blind author falsified D-70-19 in both directions because the reachability rule now demands
+it, and the pair is worth more than either:
+
+- **T1, collapse** — a released handle answering `taken` again. The ruled value never appears. Reds 4.
+- **T2, saturation** — an **active** handle answering `reserved`. The ruled value appears
+  *everywhere*. Reds 9.
+
+T2 is the mutation nobody writes. `reserved` everywhere is **present, well-formed, and passes every
+presence check** — and it loses the distinction just as completely as `taken` everywhere does. A
+suite that only falsifies by collapse holds "the value can appear" while holding nothing about
+*when*, which is the value-versus-presence rule raised from a field to a **partition**.
+
+The general form: a ruling that splits a domain is only held by a suite that reds when the split is
+erased in either direction. Collapse shows nothing live is missing; saturation shows nothing listed
+is dead. **Those are the same two demonstrations the reachability rule asks for**, arriving as
+mutations rather than as an argument — which is what makes them evidence.
+
+And it is why holding at five cells was right **then** and wrong **now**: the difference is a ruling
+about reachability, not a preference about coverage.
+
 ## A cross product is a domain by construction only if every cell is REACHABLE
 
 Their correction to my own enumeration argument, and it is the better statement of it.
