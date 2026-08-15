@@ -1780,7 +1780,7 @@ it does not decide differently inside a worktree.
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
-| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | impl-done | round 2 at `1f7cbc8`, onto base by **merge** (`e65db9e`, then `0f6d46e`). D-70-08, 09, 11 and 13 closed; D-70-12 answered with a measurement rather than a fix, since a blind test cannot be written from here. typecheck/lint/build 0; three consecutive full-suite runs in the gate slot, identical sorted failing sets, **1 failed file — t090's `serve.test.ts`, the expected red on base** — 182 files, 5037 tests, whole-tree stamp clean both ends; 12 mutations, every one observed, none greening anything; **0 scratch databases and 0 live connections** after the triple, having found and closed a leak of my own. Two new items reported: D-70-14, D-70-15 |
+| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | impl-done | round 2 at `1f7cbc8`, onto base by **merge** (`e65db9e`, then `0f6d46e`). D-70-08, 09, 11 and 13 closed; D-70-12 answered with a measurement rather than a fix, since a blind test cannot be written from here. typecheck/lint/build 0; three consecutive full-suite runs in the gate slot, identical sorted failing sets, **1 failed file — t090's `serve.test.ts`, the expected red on base** — 182 files, 5037 tests, whole-tree stamp clean both ends; 12 mutations, every one observed, none greening anything; **0 scratch databases and 0 live connections** after the triple, having found and closed a leak of my own. D-70-14a then implemented at `87c2880` (`reason` gains `"illegal"`), falsified by removal **and** by substitution; D-70-15 open and the owner's |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
@@ -4263,6 +4263,49 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     criterion.** Base is 4891 tests; this tree is 5037, and the delta of 146 is exactly the T070
     suites — 119 blind, 22 colocated in `lib/server/naming/**`, 5 colocated in `app/api/names/**`.
     The gap between 119 and 27 is the surface D-70-12 is about.
+
+  - 2026-08-15 implementer: **D-70-14a implemented**, code at `87c2880`. Merged `be5297f` and
+    read the ruling rather than the summary of it: `reason?: "taken" | "reserved" | "illegal"`,
+    edited in the published block itself. That amendment landed **after** this task's round 2, so
+    it was unimplemented contract in the module the moment it was ruled — the same shape D-70-08
+    was charged as, and the blind author is being briefed with it now, so leaving it would have
+    reddened a suite that was right and cost a round. Implemented rather than waited on.
+
+    `checkHandle` and `checkSlug` answer `{ available: false, reason: "illegal" }` for a name the
+    grammar refuses, and **no `suggestion` accompanies it**: nothing legal can be derived from a
+    name that is not, and offering one would be the module guessing at what the caller meant. It
+    is also the only one of the three refusals a caller can fix by rewording the input, which is
+    the reason the member is worth having rather than a tidiness.
+
+    **Falsified two ways, because removal and substitution answer different questions** — the
+    adversary's own distinction from D-70-11, applied to a value rather than to an error class.
+    **N12** drops the reason entirely: **4 red**. **N13** returns `"taken"` for an illegal slug, a
+    wrong-but-present value: **2 red**. A test asserting only that `reason` is defined would pass
+    N13, which is why the value is pinned and not its presence. One further assertion added while
+    here, quantified over the refusals rather than written per case: every refusal carries a
+    reason and every available answer carries none, so a fourth refusal path added later with no
+    reason reds instead of answering `undefined` to a caller branching on it.
+
+    **The blind suite is unaffected — 119/119 before and after**, which is the check that mattered
+    before committing: `reason` is additive, but an exact-equality assertion on a whole answer
+    object is exactly the shape a new key breaks, and that could only be settled by running it.
+
+    **Conflict resolution, recorded because this file's rule exists for it.** Merging `be5297f`
+    conflicted on **one** hunk, T070's own index row: both sides read `impl-done`, base carried an
+    empty Evidence cell, mine carried round 2's evidence. Kept mine. "Take base's version of
+    everything else" is there because a hand-resolution once reverted a corrected acceptance
+    criterion — there was no ruling on base's side of this hunk to lose, and the Evidence cell of
+    a task's own row is the one thing that rule is not about. Verified after resolving rather than
+    asserted: the amended `interface Availability` carries all three members in both places it
+    appears, and `git diff be5297f -- backend.md` is exactly this task's row plus this task's Log
+    entries and nothing else.
+
+    **Gates**, whole-tree stamp `87c2880`, porcelain **empty before and after**, base `be5297f`.
+    typecheck 0, lint 0, build 0 with porcelain still empty. `npm test` three consecutive times,
+    0 other `vitest` processes at the start, load 13-17: **exit 1, 1 failed file, 182 files, 5037
+    tests** every time, identical by sorted failing file and test sets. The one failure is
+    `tests/server/t090/serve.test.ts`, the expected red on base. Residue sampled three times over
+    16 seconds after the triple: **0 scratch databases, 0 live connections.**
 
 ### T240, Observability and audit log
 
