@@ -4690,6 +4690,35 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     the expected red on base. Residue sampled three times after the triple: **0 scratch databases, 0
     live connections.**
 
+  - 2026-08-15 implementer: **the rewritten AC6, the new AC7 and the five published `reason` lines
+    verified against the module, measured.** No code change was needed and I checked rather than
+    assumed it — a criterion rewritten after a round is exactly the window this file now has two
+    rules about, and "I implemented D-70-18 and D-70-19, so the new text must describe me" is the
+    same move as reading a ruling as a description of the code.
+
+    The published table reproduced from the module, one row per published line:
+
+        handle  taken    (status active)   => {"available":false,"reason":"taken","suggestion":"active-one-2"}
+        handle  reserved (status released) => {"available":false,"reason":"reserved","suggestion":"freed-one-2"}
+        slug    taken    (owner holds it)  => {"available":false,"reason":"taken","suggestion":"held-2"}
+        slug    taken    (other owner)     => {"available":true}
+        slug    reserved (profile tab)     => {"available":false,"reason":"reserved","suggestion":"terms-2"}
+        handle  illegal  (grammar)         => {"available":false,"reason":"illegal"}
+        handle  illegal  (separator)       => {"available":false,"reason":"illegal"}
+        slug    illegal  (separator)       => {"available":false,"reason":"illegal"}
+        handle  available                  => {"available":true}
+        slug    available                  => {"available":true}
+
+    Every row matches, including the one the table does not spell out and B-09 decides — a slug
+    another owner holds is `available`, since uniqueness is per owner.
+
+    **AC7 names a falsification I had not run.** It calls erasure a defect *in either direction*,
+    and N19 had only cut one: `reason` forced to `"taken"` everywhere reds 1. The other direction,
+    `"reserved"` everywhere, reds **5** — the asymmetry is itself informative, since collapsing to
+    `reserved` also breaks the route payload and both length cases, while collapsing to `taken`
+    only reaches the product test. Both directions are now observed, which is what a criterion
+    written as a split rather than as a value requires.
+
 ### T240, Observability and audit log
 
 - **State:** todo
