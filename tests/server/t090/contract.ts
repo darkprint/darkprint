@@ -109,7 +109,43 @@ export const ADMISSIBLE = {
   ontologyUnpublished: "exportRelease: the ontology version this release names is not published.",
   vocabularyNotTerms: "exportRelease: this release's stored vocabulary is not a term list.",
   noSuchFile: "serveFile: no such file in this release.",
+  /**
+   * The EIGHTH, and it arrived differently from the other seven.
+   *
+   * D-90-02 published five and the block published two; this one was invented in the
+   * implementation **after** the forms were ruled, which is the contract following the code and
+   * is why no blind suite could have pinned it. It is published now, so it is pinned now — and
+   * it is the second time a form arriving after the ruling has cost coverage.
+   *
+   * It is also the one form whose CLASS matters as much as its wording: ruled a **sibling** of
+   * `ExportError`, not an instance, so a driver failure reaches the route as a 500 rather than
+   * sharing the type the route reads as "not found". A client holding a pinned digest reads 404
+   * as *withdrawn, stop retrying*; an outage must not say that.
+   *
+   * And it is named `export:` rather than `exportRelease:`, because `bundleById`, `bundleByHandle`
+   * and `resolveRelease` are reached from **both** `exportRelease` and `serveFile` — so the
+   * `exportRelease:` prefix was simply **false on the serving path**. A message form that names
+   * the wrong operation is a rendering that lies, which is the thing every other pin here exists
+   * to prevent.
+   *
+   * It is not caller-observable: the route rethrows it and the caller gets a generic 500 with no
+   * body from this module. **The seven forms a caller can observe are still seven**, which is why
+   * the count assertion below is over `RELEASE_FACT_FORMS` and not over every literal this file
+   * knows.
+   */
+  readFailed: "export: reading this release failed.",
 } as const;
+
+/** The seven that mean "a fact about the release" — everything except the driver-failure sibling. */
+export const RELEASE_FACT_FORMS: readonly string[] = [
+  ADMISSIBLE.noSuchRelease,
+  ADMISSIBLE.doesNotResolve,
+  ADMISSIBLE.badFactoryDot,
+  ADMISSIBLE.cardUnavailable,
+  ADMISSIBLE.ontologyUnpublished,
+  ADMISSIBLE.vocabularyNotTerms,
+  ADMISSIBLE.noSuchFile,
+];
 
 /*
  * D-90-02 also STRUCK `"serveFile: recording the download failed."` — "a counter write that fails

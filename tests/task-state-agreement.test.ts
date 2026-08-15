@@ -119,7 +119,6 @@ function branchState(task: string): string | undefined {
  */
 const TASK_BRANCH: Readonly<Record<string, string>> = {
   T070: "feat/t070-naming",
-  T090: "feat/t090-export",
 };
 
 describe("backend.md records each task's State once, in effect", () => {

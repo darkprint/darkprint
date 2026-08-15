@@ -443,6 +443,102 @@ describe("AC6 — fetching by digest returns the bytes of that release even afte
     ).toContain(first.digest);
   }, 60_000);
 
+  it("returns the same bytes for one digest after a B-08 RE-SCORE, not only after a newer release", async () => {
+    /*
+     * THE SHARPER OF AC6'S TWO CASES, and until the `TBD:` closed it was tested by nobody —
+     * including by this suite, whose other AC6 tests all exercise the newer-release case.
+     *
+     * The newer-release case is the obvious reading of "even after a newer one exists" and it is
+     * the weaker one, because a second release has a second digest: an implementation that
+     * resolved a digest to its own row passes it without ever freezing anything. **A re-score
+     * moves the bytes at an UNCHANGED digest**, which no amount of correct digest resolution
+     * survives.
+     *
+     * The mechanism, measured by T090's adversary: `release.autonomy` and `release.security` are
+     * columns on the row the digest names, B-08 re-scores them when an ontology version is
+     * released, and `bundle-export.ts` quotes both verbatim into `README.md`. So one digest serves
+     * different bytes over time, at the address `/mcp` calls load-bearing precisely because it
+     * does not move.
+     *
+     * The re-score is performed here by writing the columns directly, because scoring is T040's
+     * and B-08's and no verb for it is published to this task. That is the honest way to exhibit
+     * the input: what AC6 constrains is the bytes a caller receives, not how the row came to be
+     * re-scored.
+     *
+     * ── RED BY DESIGN, and the dependency is named rather than gestured at ──
+     * Ruled after this test was written: AC6 splits, the newer-release half is keepable by the
+     * current interface and stays live, and **this half is red until persistence exists** — on
+     * the T030-AC6-waiting-on-T025 precedent, which worked. `persistArtefacts` is **T100's** and
+     * is the verb that would freeze these bytes; `readPersisted` is T090's and its `undefined` is
+     * the pre-persistence release, with generate-from-Postgres remaining the fallback. Neither is
+     * T090's to build in this round.
+     *
+     * So a red here is **the dependency, not a defect in T090**, and this suite must not be read
+     * as charging one. It is kept rather than deleted for the reason that precedent records: a
+     * named red with a stated dependency is worth more than a criterion nobody is measuring, and
+     * it turns green by itself the day T100 persists.
+     *
+     * It is also the reason the fixture does not persist anything before re-scoring: it *cannot*,
+     * because the write verb belongs to another task. Stating that here so nobody later reads the
+     * missing persist call as an oversight and "fixes" the test into vacuity.
+     */
+    const before = asServedFile(
+      await callServeFile(
+        { ownerHandle: owner.handle, slug: SUBJECT, digest: first.digest },
+        "README.md",
+      ),
+      "`serveFile` before the re-score",
+    );
+
+    /* A re-score that a reader would notice: the autonomy label and the security rationale are
+       both quoted into README.md verbatim. Only the analysis columns move — the DOT, the card
+       digests and therefore the release digest are all untouched. */
+    const rescored = await scratch.pool.query(
+      `update "release"
+          set autonomy = $1::jsonb, security = $2::jsonb
+        where bundle_id = $3 and digest = $4`,
+      [
+        JSON.stringify({
+          label: "Human-gated",
+          rationale: "re-scored under a later ontology (B-08)",
+          contributions: [],
+        }),
+        JSON.stringify({
+          level: 2,
+          rationale: "re-scored under a later ontology (B-08)",
+          findings: [],
+        }),
+        first.bundleId,
+        first.digest,
+      ],
+    );
+    expect(
+      rescored.rowCount,
+      "The re-score updated no row, so nothing below could distinguish a frozen artefact from a " +
+        "regenerated one.",
+    ).toBe(1);
+
+    const after = asServedFile(
+      await callServeFile(
+        { ownerHandle: owner.handle, slug: SUBJECT, digest: first.digest },
+        "README.md",
+      ),
+      "`serveFile` after the re-score",
+    );
+
+    expect(
+      decode(after.bytes),
+      `\`README.md\` at digest ${first.digest} changed after a B-08 re-score, with the digest ` +
+        `unchanged. AC6 is "fetching by digest returns the bytes of THAT release": one digest ` +
+        `must not serve two answers, and this is the case a newer release cannot exercise because ` +
+        `a newer release has a newer digest.\n` +
+        `  THIS RED IS THE NAMED DEPENDENCY, NOT A DEFECT IN T090. The bytes can only be frozen ` +
+        `by \`persistArtefacts\`, which is T100's, and read back by \`readPersisted\`, whose ` +
+        `\`undefined\` is the pre-persistence release. Neither is T090's to build in this round, ` +
+        `and this test turns green by itself once T100 persists.`,
+    ).toBe(decode(before.bytes));
+  }, 120_000);
+
   it("serves every file of the older release, not only the ones that happen to differ", async () => {
     /*
      * The first test would pass against an implementation that special-cased `README.md`, and a

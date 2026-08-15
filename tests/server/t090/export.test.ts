@@ -10,6 +10,7 @@ import type { Actor } from "@/lib/server/policy";
 
 import {
   ADMISSIBLE,
+  RELEASE_FACT_FORMS,
   EXPORT,
   PUBLISHED,
   describe as show,
@@ -503,6 +504,10 @@ describe("exportRelease refuses, with the message form the contract published", 
      */
     const admissible: readonly string[] = Object.values(ADMISSIBLE);
     expect(admissible).not.toContain("serveFile: recording the download failed.");
-    expect(admissible).toHaveLength(7);
+    /* Seven CALLER-OBSERVABLE forms, not seven literals. The eighth — the driver-failure sibling —
+       is rethrown by the route and never reaches a caller, so counting it here would assert a
+       number about this file rather than about the surface. */
+    expect(RELEASE_FACT_FORMS).toHaveLength(7);
+    expect(admissible).toHaveLength(8);
   });
 });

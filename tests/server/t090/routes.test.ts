@@ -31,8 +31,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import type { DbClient } from "@/lib/db";
+import { SESSION_COOKIE_NAME, encodeSession } from "@/lib/server/auth";
 
-import { describe as show } from "./contract";
+import { describe as show, loadExport, requiredFn } from "./contract";
 import {
   bundleBySlug,
   scratchDatabase,
@@ -63,12 +64,22 @@ let owner: SeededAccount;
 let release: SeededRelease;
 let previous: DbClient | undefined;
 
+/** A private bundle and its owner, for the half of the route surface that reads a session. */
+const PRIVATE_SLUG = "frontline-triage";
+let privateOwner: SeededAccount;
+let privateRelease: SeededRelease;
+
 beforeAll(async () => {
   withRelease = await scratchDatabase("routes");
   empty = await scratchDatabase("routes_empty");
   await seedOntology(withRelease.db);
   owner = await seedAccount(withRelease, "routes");
   release = await seedRelease(withRelease, owner, bundleBySlug(SUBJECT));
+
+  privateOwner = await seedAccount(withRelease, "routespriv");
+  privateRelease = await seedRelease(withRelease, privateOwner, bundleBySlug(PRIVATE_SLUG), {
+    visibility: "private",
+  });
 
   previous = (globalThis as GlobalWithSharedClient)[SHARED_CLIENT_KEY];
   useDatabase(withRelease);
@@ -157,13 +168,46 @@ function context(params: Record<string, unknown>): { params: Promise<unknown> } 
   return { params: Promise.resolve(params) };
 }
 
-async function getByDigest(digest: string, path: string, handle = owner.handle): Promise<Response> {
+async function getByDigest(
+  digest: string,
+  path: string,
+  handle = owner.handle,
+  slug = SUBJECT,
+  cookie?: string,
+): Promise<Response> {
   const handler = await loadRoute(BLUEPRINTS_BY_DIGEST);
-  const url = `${ORIGIN}/api/files/blueprints/${encodeURIComponent(handle)}/${SUBJECT}/d/${encodeURIComponent(digest)}/${path.split("/").map(encodeURIComponent).join("/")}`;
+  const url = `${ORIGIN}/api/files/blueprints/${encodeURIComponent(handle)}/${slug}/d/${encodeURIComponent(digest)}/${path.split("/").map(encodeURIComponent).join("/")}`;
   return handler(
-    new Request(url),
-    context({ owner: handle, slug: SUBJECT, digest, path: path.split("/") }),
+    new Request(url, cookie === undefined ? undefined : { headers: { cookie } }),
+    context({ owner: handle, slug, digest, path: path.split("/") }),
   );
+}
+
+/**
+ * The first file of this release whose UTF-8 byte length differs from its JS string length.
+ *
+ * Derived rather than named: 41 of the 101 files the nine bundles ship differ, because the
+ * generated `README.md` and `AGENTS.md` carry `—`, `§`, `→` and `·` — but which file differs is a
+ * property of the archive, and hardcoding one would make this test silently non-discriminating
+ * the day that file's prose changed.
+ */
+async function aFileWhoseByteLengthDiffers(): Promise<string> {
+  const mod = await loadExport();
+  const files = (await requiredFn(mod, "exportRelease")(
+    withRelease.db,
+    { kind: "anonymous" },
+    release.bundleId,
+    release.digest,
+  )) as readonly { path: string; text: string }[];
+  const found = files.find((f) => new TextEncoder().encode(f.text).byteLength !== f.text.length);
+  if (found === undefined) {
+    throw new Error(
+      `No file in \`${SUBJECT}\` has a byte length differing from its string length, so the ` +
+        `content-length test would pass against an implementation sending either. Pick a bundle ` +
+        `whose README carries a non-ASCII character.`,
+    );
+  }
+  return found.path;
 }
 
 async function getByVersion(version: string, path: string): Promise<Response> {
@@ -227,6 +271,202 @@ describe("the three routes D-90-04 published", () => {
       "The DOT file is served as JSON. Its content type is the file's own (D-90-04).",
     ).not.toContain("json");
   }, 60_000);
+
+  it("sends the file's BYTE length as content-length, not its string length", async () => {
+    /*
+     * Asserted nowhere in either suite until now, and the input is real: 41 of the 101 files the
+     * nine shipped bundles contain have a UTF-8 byte length that differs from their JS string
+     * length, because `README.md` and `AGENTS.md` carry `—`, `§`, `→` and `·`. `ServedFile`
+     * publishes `bytes`, and the clause is that what a caller receives is those bytes, entire.
+     *
+     * A wrong `content-length` is not cosmetic. It is the header a client uses to decide the
+     * response is complete: too small and a `curl` writes a truncated file and exits 0, too large
+     * and it hangs waiting for bytes that never come. `bundleDownloadCommand` hands readers a
+     * curl glob, so this is the path the product actually ships.
+     *
+     * The witness is DERIVED — the first served file whose two lengths differ — and the premise
+     * that they differ is asserted before anything is concluded from it. A file where the two
+     * happen to agree would make this test pass against an implementation that sends either.
+     */
+    const path = await aFileWhoseByteLengthDiffers();
+    const response = await getByDigest(release.digest, path);
+    expect(response.status).toBe(200);
+
+    const body = new Uint8Array(await response.arrayBuffer());
+    const text = new TextDecoder().decode(body);
+    expect(
+      body.byteLength,
+      `\`${path}\` has ${body.byteLength} bytes and ${text.length} characters, so this test ` +
+        `cannot tell a byte count from a string count. Pick a file where they differ.`,
+    ).not.toBe(text.length);
+
+    const header = response.headers.get("content-length");
+    expect(header, "The route sends no `content-length` for a file body.").toBeTruthy();
+    expect(
+      Number(header),
+      `\`content-length\` is ${header} for \`${path}\`, whose body is ${body.byteLength} ` +
+        `bytes and ${text.length} characters. Sending the string length truncates every file ` +
+        `carrying a non-ASCII character — and every README in this archive does.`,
+    ).toBe(body.byteLength);
+  }, 120_000);
+
+  it("serves a private bundle to its owner and not to an anonymous caller", async () => {
+    /*
+     * No test in this suite authenticated through a route until now: collapsing the route's actor
+     * derivation to always-anonymous reddened nothing, because every fixture was public. Every
+     * reader in T090's contract takes an `Actor` and the route is where one is derived from a
+     * request, so an unexercised derivation is an unexercised parameter on all three functions.
+     *
+     * Both halves are needed and neither alone says anything. The 404 alone passes against a
+     * route that refuses everything private, including to its owner; the 200 alone passes against
+     * one that ignores visibility entirely. Together they say the route reads the session.
+     *
+     * B-03: the anonymous answer is 404 and not 403, so existence does not leak through the
+     * status code either.
+     */
+    const anonymous = await getByDigest(privateRelease.digest, "README.md", privateOwner.handle, PRIVATE_SLUG);
+    expect(
+      anonymous.status,
+      "A private bundle answered an anonymous caller with something other than 404. B-03: a " +
+        "private resource the caller may not see returns 404, never 403, so existence does not " +
+        "leak through the status code.",
+    ).toBe(404);
+
+    const cookie = `${SESSION_COOKIE_NAME}=${encodeSession({
+      accountId: privateOwner.accountId,
+      handle: privateOwner.handle,
+    })}`;
+    const asOwner = await getByDigest(
+      privateRelease.digest,
+      "README.md",
+      privateOwner.handle,
+      PRIVATE_SLUG,
+      cookie,
+    );
+    expect(
+      asOwner.status,
+      `The owner's own session did not open their own private bundle (got ${asOwner.status}). ` +
+        `Every reader in this contract takes an \`Actor\`; the route is where one comes from.`,
+    ).toBe(200);
+    expect((await asOwner.text()).length).toBeGreaterThan(0);
+  }, 120_000);
+
+  it("refuses a FORGED session cookie, which tests the route's choice and not T000's crypto", async () => {
+    /*
+     * Worth being exact about what this does and does not test, because the naive reading makes it
+     * an outcome another layer already guarantees — T-03's species.
+     *
+     * It is NOT a test of HMAC verification. `decodeSession` is T000's, merged and verified, and
+     * asserting that a bad signature fails would be asserting what that module already promises.
+     *
+     * It IS a test of this route's composition. A handler that reached for `parseCookieHeader` and
+     * then `JSON.parse`d the payload — which is a perfectly natural thing to write, and reads as
+     * "get the session out of the cookie" — would hand an unsigned body straight through and let
+     * anybody mint an owner. The two implementations are indistinguishable on every legitimate
+     * request and differ only here. So this discriminates *which function the route called*, which
+     * is squarely T090's.
+     *
+     * The forged value is built to be exactly what a hand-rolled parser would accept: the same
+     * base64url body the real encoder produces, with a signature that is not the real one.
+     */
+    const real = encodeSession({
+      accountId: privateOwner.accountId,
+      handle: privateOwner.handle,
+    });
+    const body = real.slice(0, real.lastIndexOf("."));
+    const forged = `${body}.${"0".repeat(43)}`;
+    expect(forged, "The forgery is the genuine token, so it proves nothing.").not.toBe(real);
+    expect(
+      forged.slice(0, forged.lastIndexOf(".")),
+      "The forgery does not carry the real payload, so a hand-rolled parser would reject it for " +
+        "the wrong reason and this test would pass against the implementation it is meant to catch.",
+    ).toBe(body);
+
+    const response = await getByDigest(
+      privateRelease.digest,
+      "README.md",
+      privateOwner.handle,
+      PRIVATE_SLUG,
+      `${SESSION_COOKIE_NAME}=${forged}`,
+    );
+    expect(
+      response.status,
+      `A cookie carrying the owner's payload with a bad signature opened their private bundle ` +
+        `(got ${response.status}). That is what a route that parses the cookie instead of ` +
+        `verifying it does, and it is indistinguishable from a correct route on every legitimate ` +
+        `request.`,
+    ).toBe(404);
+  }, 120_000);
+
+  it("answers 500, not 404, when the read itself fails", async () => {
+    /*
+     * Ruled at the implementation's handback, and it became testable only once `readFailed`
+     * returned a sibling class rather than an `ExportError`: while both shared a type, catching
+     * everything as 404 changed nothing and this suite's zero was explained rather than open.
+     *
+     * The distinction is not pedantry. A client holding a pinned digest — the case AC6 exists
+     * for — reads 404 as *withdrawn, stop retrying*, where 500 says retry. So a database outage
+     * that answers 404 tells every pinned consumer the release was deleted, at the one address
+     * the contract promises never moves.
+     *
+     * The failure is injected by renaming the table the read touches, so it arrives through the
+     * path a caller takes rather than being constructed.
+     */
+    /*
+     * The control, and it is here because its absence made this test VACUOUS. Accepting a throw as
+     * the ruled rethrow means an ABSENT route module — which throws from the loader — satisfied the
+     * assertion too, so the test passed with no implementation at all. Caught by recapturing the
+     * module-absent baseline and finding this test in the passing column, which is the only place
+     * it could have shown.
+     *
+     * So the route is proved to work first, and only then is the read broken. A module that does
+     * not load fails here, where it should, instead of quietly counting as a rethrow.
+     */
+    const control = await getByDigest(release.digest, "README.md");
+    expect(
+      control.status,
+      "The route did not serve a file that exists, so the failure injected below could not be " +
+        "attributed to the broken read — an absent module throws exactly like the ruled rethrow.",
+    ).toBe(200);
+
+    await withRelease.pool.query('alter table "release" rename to "release_t090_hidden"');
+    let answer: { kind: "status"; status: number } | { kind: "threw"; message: string };
+    try {
+      const response = await getByDigest(release.digest, "README.md");
+      answer = { kind: "status", status: response.status };
+    } catch (err) {
+      answer = { kind: "threw", message: err instanceof Error ? err.message : String(err) };
+    } finally {
+      await withRelease.pool.query('alter table "release_t090_hidden" rename to "release"');
+    }
+
+    /*
+     * Two admissible shapes, one forbidden outcome. The contract says the route **rethrows** the
+     * read failure and "the caller gets a generic 500 with no body from this module" — the
+     * framework turns an uncaught throw into a 500, and a handler called directly in a test
+     * therefore throws rather than returning one. Published as `-> file bytes | problem+json 404`,
+     * so a 500 Response is not in the route's own vocabulary either.
+     *
+     * So a throw and a 500 are both the ruled behaviour and neither is asserted over the other.
+     * What is forbidden is 404, and the reason is the product one rather than a status-code
+     * preference: a client holding a pinned digest reads 404 as *withdrawn, stop retrying*, so an
+     * outage answering 404 tells every pinned consumer the release was deleted at the one address
+     * the contract promises never moves.
+     */
+    if (answer.kind === "status") {
+      expect(
+        answer.status,
+        `A failed read answered ${answer.status}. 404 means absent or invisible (B-03), and a ` +
+          `client with a pinned digest reads that as withdrawn; an outage must say retry.`,
+      ).toBe(500);
+    } else {
+      expect(
+        answer.message,
+        "The read failure was rethrown, which is the ruled behaviour — the framework renders it " +
+          "as a 500. Recorded here so the throw is not mistaken for a broken test.",
+      ).toBeTruthy();
+    }
+  }, 120_000);
 
   it("does not let a digest resolve through the version segment", async () => {
     /*
