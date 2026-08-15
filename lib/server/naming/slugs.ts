@@ -57,9 +57,9 @@ async function existingSlugs(db: Db, ownerId: string, slugs: readonly string[]):
  * `isReservedSlug` rather than argued from the current four not being hyphenated.
  */
 export async function checkSlug(db: Db, ownerId: string, slug: string): Promise<Availability> {
-  /* No `reason`: the published union is `"taken" | "reserved"` and an illegal name is
-     neither. Reported as D-70-14 rather than answered with a third member. */
-  if (!isNameSegment(slug)) return { available: false };
+  /* D-70-14a: the grammar's refusal is its own reason, and it is the only one of the three
+     the caller can fix by rewording the input. No `suggestion` goes with it. */
+  if (!isNameSegment(slug)) return { available: false, reason: "illegal" };
 
   const candidates = suggestionCandidates(slug, (candidate) => !isReservedSlug(candidate));
   const existing = await existingSlugs(db, ownerId, [slug, ...candidates]);

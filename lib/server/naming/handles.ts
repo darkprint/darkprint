@@ -74,10 +74,10 @@ async function existingHandles(db: Db, handles: readonly string[]): Promise<Set<
  * reservation — see `Availability.suggestion`.
  */
 export async function checkHandle(db: Db, handle: string): Promise<Availability> {
-  /* No `reason`: the published union is `"taken" | "reserved"` and an illegal name is
-     neither. Reported as D-70-14 rather than answered with a third member this contract
-     does not have. */
-  if (!isNameSegment(handle)) return { available: false };
+  /* D-70-14a: the grammar's refusal is its own reason. No `suggestion` goes with it —
+     nothing legal can be derived from a name that is not, and offering one would be the
+     module guessing at what the caller meant. */
+  if (!isNameSegment(handle)) return { available: false, reason: "illegal" };
 
   const candidates = suggestionCandidates(handle);
   const existing = await existingHandles(db, [handle, ...candidates]);

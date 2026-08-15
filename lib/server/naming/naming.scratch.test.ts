@@ -221,18 +221,18 @@ describe.skipIf(!hasDb)("lib/server/naming", () => {
        through and reserve `mara-veil` — a different primary key from the one asked for,
        with nothing anywhere reporting the substitution. */
     await expect(allocateHandle(client.db, owner, " mara-veil")).rejects.toBeInstanceOf(InvalidNameError);
-    expect(await checkHandle(client.db, " mara-veil")).toEqual({ available: false });
+    expect(await checkHandle(client.db, " mara-veil")).toEqual({ available: false, reason: "illegal" });
 
     /* Nothing was written, and the check path answers rather than throwing. */
     const rows = await client.db.select().from(schema.handleReservation);
     expect(rows).toHaveLength(0);
-    expect(await checkHandle(client.db, invalid)).toEqual({ available: false });
-    expect(await checkSlug(client.db, owner, invalid)).toEqual({ available: false });
+    expect(await checkHandle(client.db, invalid)).toEqual({ available: false, reason: "illegal" });
+    expect(await checkSlug(client.db, owner, invalid)).toEqual({ available: false, reason: "illegal" });
   });
 
   /* ---------- D-70-08: `Availability.reason` ---------- */
 
-  it("D-70-08: a refusal says which of the two published reasons it is", async () => {
+  it("D-70-08/D-70-14a: a refusal says which of the three published reasons it is", async () => {
     const owner = await accountId("gh-reason");
     await allocateHandle(client.db, owner, "mara-veil");
     await giveBundle(owner, "frontline-triage");
@@ -258,12 +258,31 @@ describe.skipIf(!hasDb)("lib/server/naming", () => {
     expect(await checkHandle(client.db, "k0bra")).toEqual({ available: true });
     expect(await checkSlug(client.db, owner, "incident-commander")).toEqual({ available: true });
 
-    /* D-70-14: an illegal name is a third refusal kind and the published union
-       `"taken" | "reserved"` has no member for it, so it answers with no reason at all.
-       Pinned so the gap is visible rather than inferred, and so the day the union gains a
-       member this test is what says the answer changed. */
-    expect(await checkHandle(client.db, "Mara Veil")).toEqual({ available: false });
-    expect(await checkSlug(client.db, owner, "Mara Veil")).toEqual({ available: false });
+    /* D-70-14a: the third refusal kind, ruled into the union after round 2. It carries no
+       suggestion, and that is asserted by `toEqual` being exact rather than stated in prose. */
+    expect(await checkHandle(client.db, "Mara Veil")).toEqual({
+      available: false,
+      reason: "illegal",
+    });
+    expect(await checkSlug(client.db, owner, "Mara Veil")).toEqual({
+      available: false,
+      reason: "illegal",
+    });
+
+    /* Every refusal now carries a reason, and every availability carries none. Asserted over
+       the three kinds together rather than one at a time, so a fourth refusal path added
+       later with no reason reds here instead of answering `undefined` to a caller
+       branching on it. */
+    for (const answer of [
+      await checkHandle(client.db, "mara-veil"),
+      await checkHandle(client.db, "Mara Veil"),
+      await checkSlug(client.db, owner, "frontline-triage"),
+      await checkSlug(client.db, owner, "saved"),
+      await checkSlug(client.db, owner, "Mara Veil"),
+    ]) {
+      expect(answer.available).toBe(false);
+      expect(answer.reason, JSON.stringify(answer)).toBeDefined();
+    }
   });
 
   /* ---------- D-70-13: the check may not promise what the store cannot hold ---------- */
@@ -281,7 +300,10 @@ describe.skipIf(!hasDb)("lib/server/naming", () => {
     await expect(allocateHandle(client.db, owner, atLimit)).resolves.toBeUndefined();
 
     const overLimit = nameOfLength(MAX_NAME_LENGTH + 1);
-    expect(await checkHandle(client.db, overLimit)).toEqual({ available: false });
+    expect(await checkHandle(client.db, overLimit)).toEqual({
+      available: false,
+      reason: "illegal",
+    });
     const err = (await allocateHandle(client.db, owner, overLimit).catch((e: unknown) => e)) as Error;
     /* `InvalidNameError`, not `NamingStoreError`: the two answers agree, and the refusal
        names the caller's mistake instead of reporting a fault. */

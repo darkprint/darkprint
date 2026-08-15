@@ -90,7 +90,7 @@ describe.skipIf(!hasDb)("app/api/names", () => {
 
     const illegal = await handleRoute("Mara Veil");
     expect(illegal.status).toBe(200);
-    expect(illegal.body).toEqual({ available: false });
+    expect(illegal.body).toEqual({ available: false, reason: "illegal" });
   });
 
   it("D-70-09: the slug route reads [owner] as a handle and scopes by that owner", async () => {
