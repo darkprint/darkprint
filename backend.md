@@ -255,6 +255,59 @@ broken one does. Before a reference's green counts for a test, that reference mu
 it: mutate the reference toward the defect and watch the test red. A reference built by a different
 route than the implementation is the *usual* case, not a rare one, so this is not a corner.
 
+## D-70-16, D-70-17, D-70-18: the three readings, ruled
+
+T070's blind author reported three places where a red would be **its test rather than the code**,
+and flagged them as readings it took rather than resolved. All three are contract defects of mine.
+Ruled here, and the implementer is told in the same window, which is what the rule below requires.
+
+**D-70-16 — a slug or handle may not contain a separator, and D-70-04 is narrowed.** D-70-04 said
+all three names use `CARD_ID`, which admits one `owner/name` pair. That is right about the
+**character grammar** and wrong about the **segment count**: a handle appears as one path segment
+in `/u/{handle}` and a slug as one in `/blueprints/{owner}/{slug}`, so a name carrying `/` is
+unaddressable by the routes that already exist. **Ruled: `CARD_ID`'s namespace form is for card ids
+only; handles and slugs must additionally be a single URL segment.** The blind author's test is
+correct and the contract was wrong.
+
+**D-70-17 — `MAX_NAME_LENGTH` is published**, at 255, with the reasoning that made it right recorded
+beside it: a storage bound rather than a product one, and the test is what makes the number safe.
+This creates no unimplemented contract, because the module already carries it — the defect was that
+a blind suite had to read a constant out of prose.
+
+**D-70-18 — AC6 is vacuous as written, and that is the defect behind the third reading.** It says *a
+suggestion returned for a taken name is itself free at the moment it is returned* — a conditional. A
+module that never returns a suggestion satisfies it completely and observes nothing, which is the
+guard-that-cannot-fail shape charged four times in this run, sitting unnoticed in an acceptance
+criterion since the contract was written.
+
+**Ruled: a suggestion accompanies exactly those refusals where the name asked for is well-formed.**
+Required when `reason` is `"taken"` or `"reserved"`; **forbidden** when `"illegal"`, which is the
+ruling already made for D-70-14a and now has its general form — you can only offer an alternative to
+a name that is itself legal. AC6's existing clause still binds whenever one is returned.
+
+The blind author's instinct was right and its stated reason was not: it wrote that AC6 *needs
+something to observe*, which is an argument about testability. The stronger argument is that a
+criterion satisfiable by never doing the thing it constrains is not a criterion.
+
+## A peer's reply text does not reach the orchestrator, and silence is ambiguous
+
+T070's blind author's round sat finished and unreported for over an hour. Cause, in its words: **two
+previous handbacks went out as reply text, which does not reach me.** Only `SendMessage` crosses
+sessions. The work was done and gated the whole time.
+
+Two failures, and the orchestrator's is the larger.
+
+Its own: a handback is not delivered because it was composed. There is no delivery receipt in this
+loop, so the sender cannot distinguish "sent" from "written", and every role must use `SendMessage`
+for anything the run depends on.
+
+**Mine: I reported the round as "in flight" to the owner on the strength of having dispatched it.**
+A dispatch is evidence that I sent a message, not that work is happening. The owner asked "is that
+really in flight?" and it was not — the commit was already an hour old. **Silence is ambiguous
+between working, finished-and-unreported, and stopped**, and nothing in this loop distinguishes
+them; the branch and the worktree porcelain do, and they cost one command. Check the tree before
+reporting a peer's state, every time.
+
 ## A ruling that amends a signature after a round closes IS unimplemented contract
 
 I ruled D-70-14a — the `reason` union gains `"illegal"` — **after** T070's round 2 closed, edited
@@ -3654,6 +3707,11 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Published signatures** (checked against `backend` at `9411199`, against `lib/db/schema.ts`'s `handle_reservation` — `handle` is the **primary key**, plus `account_id`, `status` enum `active|released`, `reserved_at`, `released_at` — and against `bundle`'s `bundle_owner_slug_key` on `(owner_id, slug)`. Barrel: `@/lib/server/naming`.)
 
         interface Availability { available: boolean; reason?: "taken" | "reserved" | "illegal"; suggestion?: string }
+        const MAX_NAME_LENGTH = 255   // D-70-15/D-70-16. A STORAGE bound, not a product one.
+        // 255 holds on every page size Postgres supports; this server stores to 2692 and raises
+        // 54000 from 2700, but that is a property of an 8 KB BLCKSZ and a 4 KB build ceilings
+        // near 1300. Published because a suite was reading it out of prose. Do NOT import it into
+        // a boundary test: a test that imports the constant it bounds moves with it.
         // `reason?` added by D-70-01. It was added to the amendment block below and NOT here,
         // leaving two declarations of one interface in one contract, the published one missing
         // the field. Charged as D-70-10 by T070's adversary and handed back to the orchestrator.
