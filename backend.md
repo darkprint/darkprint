@@ -333,6 +333,23 @@ silent on the other side, so nothing asserted it. There is nothing to offer an a
 the name is free. Now total on both axes: every refusal of a well-formed name carries a suggestion,
 every refusal of an ill-formed one carries none, and every available answer carries none.
 
+## The two directions of an erasure are not equally observed
+
+T070's implementer ran AC7's both-directions clause against its own suite and the numbers are
+lopsided: forcing `reason` to `"taken"` everywhere reds **1**; forcing `"reserved"` everywhere reds
+**5**. Collapsing to `reserved` also breaks the route payload and both length cases, while collapsing
+to `taken` reaches only the product test.
+
+So a suite can hold one direction of a split forty times over and the other by a single assertion,
+and **nothing in a passing run distinguishes those two states**. Its own N19 had cut only one
+direction, and it did not discover that by re-reading its mutations — AC7 said "in either direction"
+and it went looking for the second.
+
+Which is the argument for writing a criterion as a **split** rather than as a value: the shape of the
+sentence is what told a reader there were two falsifications owed. A criterion that said "a released
+handle answers reserved" licenses exactly one mutation, and the weak direction stays weak and
+invisible.
+
 ## T-01 has escaped the repository, and the place it escaped to is one no guard can see
 
 Ninth occurrence, first outside the tree: writing a `" -no-such-anchor- "` literal into the shared
