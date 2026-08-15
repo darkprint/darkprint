@@ -94,8 +94,8 @@ const SHAPES: readonly (readonly unknown[])[] = [
   ["probe detail", { code: "23505", constraint: "probe_constraint" }],
 ];
 
-describe("no published error class carries an enumerable own property (D-13)", () => {
-  it("every error class exported from a lib/server barrel renders as {}", async () => {
+describe("every published error class satisfies D-13's four-part hygiene clause", () => {
+  it("each renders as {} and keeps its stack, at every arity", async () => {
     const classes = await publishedErrorClasses();
 
     /* A zero here has three causes and only one of them is good news. This rules out the two bad
@@ -108,7 +108,8 @@ describe("no published error class carries an enumerable own property (D-13)", (
         "removed, lower this floor in the same commit; if one was added, raise it.",
     ).toBeGreaterThanOrEqual(8);
 
-    const violations: string[] = [];
+    const rendered: string[] = [];
+    const traceless: string[] = [];
     for (const { barrel, name, ctor } of classes) {
       for (const args of SHAPES) {
         let instance: Error;
@@ -118,7 +119,7 @@ describe("no published error class carries an enumerable own property (D-13)", (
           /* Also not a skip: an unconstructible class is one this guard did not measure. */
           throw new Error(
             `${barrel}/${name} could not be constructed with ${args.length} argument(s), so its ` +
-              `enumerable surface is unmeasured. Give the probe a shape it accepts.`,
+              `hygiene is unmeasured. Give the probe a shape it accepts.`,
             { cause },
           );
         }
@@ -126,22 +127,58 @@ describe("no published error class carries an enumerable own property (D-13)", (
         const keys = Object.keys(instance);
         const json = JSON.stringify(instance);
         if (keys.length > 0 || json !== "{}") {
-          violations.push(
+          rendered.push(
             `${barrel}/${name} with ${args.length} arg(s): Object.keys=${JSON.stringify(keys)}, ` +
               `JSON.stringify=${json}`,
+          );
+        }
+
+        /* The clause's fourth part, and the only one that is not a statement about enumerability.
+           The first three are satisfiable by deleting `stack` — which is precisely how the
+           *previous* wording of this clause ("own properties exactly [message, cause]") could be
+           satisfied at all, at the cost of every real failure's trace. So the one shape the
+           amendment exists to prevent is the one shape the other three assertions cannot see: a
+           class that drops `stack` renders as `{}` and passes them all.
+
+           Found by T070's blind author, which falsified this guard four ways against its own module
+           rather than trusting its green, and reported the one mutation that survived. */
+        if (typeof instance.stack !== "string" || instance.stack === "") {
+          traceless.push(
+            `${barrel}/${name} with ${args.length} arg(s): stack is ` +
+              `${instance.stack === undefined ? "absent" : JSON.stringify(instance.stack)}, ` +
+              `not a non-empty string`,
           );
         }
       }
     }
 
     expect(
-      violations,
+      rendered,
       "A published error class has an enumerable own property, so anything that renders it — a " +
         "log line, a JSON body, a spread into a response — carries that property with it. Assign " +
         "on the prototype (`X.prototype.name = ...`) or with `Object.defineProperty(this, ..., " +
         "{ enumerable: false })`; a plain `this.x =` in a constructor is always enumerable. The " +
         "field stays readable and `instanceof` is unaffected: only its appearance in a rendering " +
         "changes, which is the entire point of the clause.",
+    ).toEqual([]);
+
+    /* Reported separately, and not because two lists are tidier. While these shared one assertion,
+       a missing `stack` printed under a name saying "enumerable own property" and advice saying to
+       use `enumerable: false` — a defect the author does not have and a remedy that does nothing
+       for the one they do. The reader of a failure message is by construction someone who has just
+       made a mistake, and pointing them at a different one costs more than saying nothing.
+
+       Found by T090's implementer, falsifying the new assertion against its own class: the
+       assertion was widened and the surface that reports it was not. */
+    expect(
+      traceless,
+      "A published error class has no usable `stack`, so every real failure it names loses its " +
+        "trace. This is NOT an enumerability problem and `enumerable: false` does not address it: " +
+        "something is deleting or overwriting `stack`. Note why the clause names it at all — the " +
+        "previous wording of D-13 (own properties exactly [message, cause]) could be satisfied " +
+        "ONLY by deleting `stack`, so this is the precise shape the amendment exists to prevent, " +
+        "and the other three parts of the clause cannot see it: a class with no `stack` still " +
+        "renders as {}.",
     ).toEqual([]);
   });
 });
