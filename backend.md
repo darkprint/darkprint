@@ -255,6 +255,44 @@ broken one does. Before a reference's green counts for a test, that reference mu
 it: mutate the reference toward the defect and watch the test red. A reference built by a different
 route than the implementation is the *usual* case, not a rare one, so this is not a corner.
 
+## A merge strategy is per-record-shape, and "keep both" is only correct where both can coexist
+
+T090's blind author's rebase helper falls back to emitting **both sides** of an unresolved hunk.
+For a Log — an append-only list where two entries are two facts — that is right. For a row in the
+task index it is wrong, because a row is a **unique record keyed by its task id**: emitting both
+does not merge it, it duplicates it. Six rebases left three T080 rows and two T090 rows, 35 where
+base has 32, and the state-agreement guard was faithfully reading duplicates.
+
+The conflict resolution was correct for the file and wrong for the record. `backend.md` holds both
+shapes, so no single strategy is right for the whole file.
+
+**And the misattribution has a mechanism worth naming.** It reported the red as T080's after
+comparing **the two halves of its own tree to each other and never to base** — the one-tree reading
+that this file's own scope note warns about, arriving inside a report *of* that guard's finding.
+
+I made the same error one level up and should own it: I diagnosed the red as its copy having merged
+an older `backend.md`. That conclusion was right and the mechanism was invented — the cause was
+duplicated rows from a broken helper. I checked whether the rows agreed **at base** and then
+asserted **how they came to disagree elsewhere**, which is the identical move charged against me
+over the `app/**` glob's provenance. Confirming a state does not license a claim about its history.
+
+## A count is part of a result, and it is the part a name cannot fake
+
+Recapturing a baseline turned up a test of this run's own that had gone **vacuous inside the fix
+that made it correct**. Accepting a throw as the ruled rethrow — which the contract requires — meant
+an **absent route module**, which throws from the loader, satisfied the 500 test as well. It sat in
+the passing column with no implementation behind it at all.
+
+Nothing in the test's own text showed this, and no reading of it would have. What showed it was the
+**module-independent count moving from three to four** while its author was recapturing a baseline
+for an unrelated reason.
+
+So a suite's numbers are evidence in their own right and not decoration on the pass/fail: names
+tell you which assertions ran, counts tell you whether the set you think you are quantifying over
+is the set that ran. This is the third time in this run a count has caught something no name did.
+Report counts. Diff counts across a change. A test that starts passing for a new reason moves a
+count before it changes a name.
+
 ## A repo-wide check and a module-local suite are blind in opposite directions
 
 Two misses, one day apart, pointing opposite ways — and the pair is the rule, not either one.
