@@ -255,6 +255,37 @@ broken one does. Before a reference's green counts for a test, that reference mu
 it: mutate the reference toward the defect and watch the test red. A reference built by a different
 route than the implementation is the *usual* case, not a rare one, so this is not a corner.
 
+## Base carries exactly one expected red, and its identity is the point
+
+As of T090's merge, `npm test` on `backend` is **exit 1, `1 failed | 4890 passed (4891)`**, and the
+one failure is:
+
+`tests/server/t090/serve.test.ts` → *"returns the same bytes for one digest after a B-08 RE-SCORE,
+not only after a newer release"*
+
+It is red **by design**, on the T030-AC6-waiting-on-T025 precedent. `persistArtefacts` is T100's
+and is the verb that would freeze those bytes; `readPersisted` is T090's, and its `undefined` is
+the pre-persistence release. The red is the dependency, not a defect in T090, and it turns green by
+itself the day T100 persists.
+
+**Why it was kept red rather than made to pass.** The obvious alternative is `it.fails`, which
+would make base green and red again when the behaviour becomes correct. Rejected: `it.fails` passes
+for **any** failure, including one that has nothing to do with T100, so it would convert a specific
+named dependency into a green that cannot distinguish its own causes — the exact move charged
+repeatedly in this run. A red that names its reason is worth more than a green that cannot.
+
+**What this costs, stated so nobody pays it by accident.** Every gate report from here reads exit 1,
+and the danger is not panic — it is the opposite: a session shrugging at exit 1 and missing a
+*second* red inside it. So the standing rule for every session:
+
+> **Base is `1 failed | 4890 passed (4891)`. Report the count, not the exit code.** Any total other
+> than 4890 passed, or any failing test other than the one named above, is a finding and stops the
+> round. "Exit 1, as expected" is not a gate result; the numbers are.
+
+This is the counts-are-part-of-a-result rule doing load-bearing work rather than illustrating a
+point: with base at exit 1, the count is now the **only** signal that distinguishes a clean tree
+from a broken one.
+
 ## A merge strategy is per-record-shape, and "keep both" is only correct where both can coexist
 
 T090's blind author's rebase helper falls back to emitting **both sides** of an unresolved hunk.

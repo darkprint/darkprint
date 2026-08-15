@@ -70,15 +70,32 @@ function serverModules(): readonly string[] {
 }
 
 /**
- * Every routable `/api/...` path, derived from where `route.ts` files actually are rather than
- * from a list. `git ls-files` rather than a walk, so an untracked scratch route is not mistaken
- * for a shipped one.
+ * Every routable `/api/...` path, derived from where `route.ts` files actually are rather than from
+ * a list.
+ *
+ * `--cached --others --exclude-standard`, so an **untracked** route counts. The first version was
+ * `git ls-files` alone, which made the two halves of this guard disagree about their own domain:
+ * the module check walks the filesystem and covers a module the moment it exists, while the route
+ * check covered a route only one `git add` later. The normal order is write the route, run the
+ * gates, then stage — so a route written and gated before staging passed a check whose failure
+ * message reads "A sitemap missing routes is worse than no sitemap: it reads as complete", while
+ * the tree was in exactly that state.
+ *
+ * This repo has paid for this precise blind spot before: `tests/no-raw-control-bytes.test.ts` was
+ * `git ls-files`-only, was blind to a blind author's uncommitted work, and T-01 recurred twice
+ * inside that window before the same one-flag fix.
+ *
+ * Found by T080's session falsifying the *forward-looking* claim rather than the one demonstrated
+ * — not "a recorded row was renamed" but "a new module or route lands unrecorded", which is the
+ * claim that has to hold for the next twenty tasks. `--exclude-standard` still keeps genuinely
+ * ignored paths out, so a build artefact is not mistaken for a shipped route.
  */
 function apiRoutes(): readonly string[] {
-  const out = execFileSync("git", ["ls-files", "-z", "app/api"], {
-    cwd: REPO_ROOT,
-    encoding: "utf8",
-  });
+  const out = execFileSync(
+    "git",
+    ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "app/api"],
+    { cwd: REPO_ROOT, encoding: "utf8" },
+  );
   return [
     ...new Set(
       out
