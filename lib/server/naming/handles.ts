@@ -41,7 +41,7 @@ import { HANDLE_PRIMARY_KEY_CONSTRAINT } from "./constraint";
 import { handleTakenError, invalidNameError, namingStoreError } from "./errors";
 import { isNameSegment } from "./grammar";
 import { isUniqueViolationOn } from "./pg-error";
-import { suggestionCandidates } from "./suggest";
+import { firstFreeSuggestion, firstWindow } from "./suggest";
 import type { Availability } from "./types";
 
 /**
@@ -79,11 +79,20 @@ export async function checkHandle(db: Db, handle: string): Promise<Availability>
      module guessing at what the caller meant. */
   if (!isNameSegment(handle)) return { available: false, reason: "illegal" };
 
-  const candidates = suggestionCandidates(handle);
+  const candidates = firstWindow(handle);
   const existing = await existingHandles(db, [handle, ...candidates]);
   if (!existing.has(handle)) return { available: true };
 
-  const suggestion = candidates.find((candidate) => !existing.has(candidate));
+  /* D-70-18: a well-formed taken name is owed a suggestion, so the search widens rather
+     than giving up after one window. The common case is still one statement in total —
+     `existing` already answers the first window, which is what keeps AC6's "free at the
+     moment it is returned" decided by the same read that decided `available`. */
+  const suggestion = await firstFreeSuggestion(
+    handle,
+    () => true,
+    (names) => existingHandles(db, names),
+    { candidates, taken: existing },
+  );
   return suggestion === undefined
     ? { available: false, reason: "taken" }
     : { available: false, reason: "taken", suggestion };

@@ -11,7 +11,7 @@ import { RESERVED_PROFILE_SEGMENTS } from "@/components/profile/tabs";
 import { createDbClient, schema, type DbClient } from "@/lib/db";
 import { createTestDb, resetTestDb, type TestDb } from "../../../tests/support/db";
 import { HANDLE_PRIMARY_KEY_CONSTRAINT } from "./constraint";
-import { MAX_NAME_LENGTH } from "./grammar";
+
 import { pgErrorCode, pgErrorConstraint } from "./pg-error";
 import {
   allocateHandle,
@@ -19,8 +19,11 @@ import {
   checkSlug,
   HandleTakenError,
   InvalidNameError,
+  MAX_NAME_LENGTH,
   NamingStoreError,
   releaseHandle,
+  validateCardId,
+  validateNamespace,
 } from "./index";
 
 /**
@@ -285,6 +288,41 @@ describe.skipIf(!hasDb)("lib/server/naming", () => {
     }
   });
 
+  /* ---------- D-70-16: a handle or slug is ONE URL segment ---------- */
+
+  it("D-70-16: a separator is refused for a handle and a slug, and still legal in a card id", async () => {
+    const owner = await accountId("gh-sep");
+    const namespaced = "berti/solver-a";
+
+    /* A handle is one segment of `/u/{handle}` and a slug one of
+       `/blueprints/{owner}/{slug}`, so a name carrying `/` is unaddressable by routes
+       that already exist. Refused at every entry point, not only at the validator. */
+    expect(await checkHandle(client.db, namespaced)).toEqual({ available: false, reason: "illegal" });
+    expect(await checkSlug(client.db, owner, namespaced)).toEqual({ available: false, reason: "illegal" });
+    await expect(allocateHandle(client.db, owner, namespaced)).rejects.toBeInstanceOf(InvalidNameError);
+    await expect(releaseHandle(client.db, owner, namespaced)).rejects.toBeInstanceOf(InvalidNameError);
+    expect(validateNamespace(namespaced)).toHaveLength(1);
+    expect(await client.db.select().from(schema.handleReservation)).toEqual([]);
+
+    /* The converse, which is what keeps the narrowing from over-reaching: `CARD_ID`'s
+       namespace form is for card ids, and D-70-16 narrowed handles and slugs only. A
+       `validateCardId` that started refusing this would be the fix going too far. */
+    expect(validateCardId(namespaced)).toEqual([]);
+    expect(validateCardId("solver-a")).toEqual([]);
+  });
+
+  /* ---------- D-70-17: the bound is published, so it is pinned as a literal ---------- */
+
+  it("D-70-17: MAX_NAME_LENGTH is 255 and reaches callers through the barrel", () => {
+    /* Written as a literal on purpose. The published block's own warning is that a test
+       importing the constant it bounds moves with it — so the *value* is pinned here
+       against the number the contract publishes, and the relative assertion below is
+       the one that is allowed to move. */
+    expect(MAX_NAME_LENGTH).toBe(255);
+    expect(validateNamespace("a".repeat(255))).toEqual([]);
+    expect(validateNamespace("a".repeat(256))).toHaveLength(1);
+  });
+
   /* ---------- D-70-13: the check may not promise what the store cannot hold ---------- */
 
   it("D-70-13: everything the grammar admits, the store accepts", async () => {
@@ -314,6 +352,67 @@ describe.skipIf(!hasDb)("lib/server/naming", () => {
     /* And nothing over the bound reached the driver: one row, the one at the limit. */
     const rows = await client.db.select().from(schema.handleReservation);
     expect(rows.map((row) => row.handle)).toEqual([atLimit]);
+  });
+
+  /* ---------- D-70-18: a well-formed refusal is OWED a suggestion ---------- */
+
+  it("D-70-18: a suggestion survives a window of variants all being held", async () => {
+    const owner = await accountId("gh-window");
+    await allocateHandle(client.db, owner, "busy");
+    /* The old generator stopped at eight and answered nothing beyond it, which is the
+       case D-70-18 forbids and which needed only eight rows to reach. */
+    for (let n = 2; n <= 40; n++) await allocateHandle(client.db, owner, `busy-${n}`);
+
+    const answer = await checkHandle(client.db, "busy");
+    expect(answer).toEqual({ available: false, reason: "taken", suggestion: "busy-41" });
+
+    /* AC6 still binds whenever one is returned: free at the moment it was returned, and
+       proved free by taking it rather than by asking the same question twice. */
+    const second = await accountId("gh-window-2");
+    await expect(allocateHandle(client.db, second, answer.suggestion!)).resolves.toBeUndefined();
+  });
+
+  it("D-70-18: a name at the length bound is still owed a suggestion that fits", async () => {
+    const owner = await accountId("gh-bound-suggest");
+    const atLimit = nameOfLength(MAX_NAME_LENGTH);
+    await allocateHandle(client.db, owner, atLimit);
+
+    /* The boundary is where "required" would otherwise be unsatisfiable: every variant of
+       a full-length name overflows, so the stem is cut to leave room for the suffix. */
+    const answer = await checkHandle(client.db, atLimit);
+    expect(answer.available).toBe(false);
+    expect(answer.reason).toBe("taken");
+    expect(answer.suggestion).toBeDefined();
+    expect(answer.suggestion!.length).toBeLessThanOrEqual(MAX_NAME_LENGTH);
+    expect(validateNamespace(answer.suggestion!)).toEqual([]);
+    /* And it is a real name, not merely a legal string: the store takes it. */
+    const second = await accountId("gh-bound-suggest-2");
+    await expect(allocateHandle(client.db, second, answer.suggestion!)).resolves.toBeUndefined();
+  });
+
+  it("D-70-18: exactly the well-formed refusals carry a suggestion", async () => {
+    const owner = await accountId("gh-owed");
+    await allocateHandle(client.db, owner, "mara-veil");
+    await giveBundle(owner, "frontline-triage");
+
+    /* Quantified over the refusal kinds rather than written per case, so a fifth path
+       added later lands in one of the two buckets instead of being unasserted. */
+    for (const answer of [
+      await checkHandle(client.db, "mara-veil"),
+      await checkSlug(client.db, owner, "frontline-triage"),
+      await checkSlug(client.db, owner, "saved"),
+    ]) {
+      expect(answer.reason, JSON.stringify(answer)).not.toBe("illegal");
+      expect(answer.suggestion, JSON.stringify(answer)).toBeDefined();
+    }
+    for (const answer of [
+      await checkHandle(client.db, "Mara Veil"),
+      await checkSlug(client.db, owner, "Mara Veil"),
+      await checkHandle(client.db, nameOfLength(MAX_NAME_LENGTH + 1)),
+    ]) {
+      expect(answer.reason, JSON.stringify(answer)).toBe("illegal");
+      expect(answer.suggestion, JSON.stringify(answer)).toBeUndefined();
+    }
   });
 
   /* ---------- D-70-11: the fault door, on all four operations ----------

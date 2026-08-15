@@ -1,41 +1,123 @@
 /* ============================================================
    DarkPrint backend — naming: candidate names for a taken one
    AC6: "a suggestion returned for a taken name is itself free at
-   the moment it is returned". So the candidates are produced here
-   and their freedom is decided by the *same query* that decided
-   the answer — one round trip, never one query per candidate, and
-   never a second trip whose result is older than the first.
+   the moment it is returned". So candidates are produced here and
+   their freedom is decided by the *same query* that decided the
+   answer — never one query per candidate, and never a second trip
+   whose result is older than the first.
+
+   D-70-18 turned AC6 from a conditional into an obligation: a
+   suggestion accompanies exactly those refusals where the name
+   asked for is well-formed — required for `taken` and `reserved`,
+   forbidden for `illegal`. The first version of this file capped
+   the search at eight variants and answered nothing when all eight
+   were held, which is the case the ruling forbids and which was
+   reachable with eight rows. Two things changed: the search widens
+   until it finds one, and the stem is cut short enough that a
+   suffix still fits inside `MAX_NAME_LENGTH`.
+
+   **The window is queried exactly, never sampled.** An earlier
+   design fetched "the taken variants" with a `LIKE` and a `LIMIT`,
+   which is wrong in a way that would not have shown up in a test:
+   a limited result is an arbitrary subset, so a candidate absent
+   from it may still be held, and the module would have offered a
+   suggestion that was not free — breaking AC6 while appearing to
+   satisfy D-70-18. Each window is an exact membership question
+   about the exact strings in it.
    ============================================================ */
 
-import { isNameSegment } from "./grammar";
+import { isNameSegment, MAX_NAME_LENGTH } from "./grammar";
+
+/** Candidates asked about per round trip. One round trip covers the realistic case. */
+const WINDOW = 64;
 
 /**
- * `base-2` … `base-9`. Eight is a cap rather than a fact about anything: a name
- * whose first eight variants are all taken gets no suggestion, which is a smaller
- * lie than an unbounded scan. The caller is told by absence, never by silence
- * dressed as a free name.
+ * How many rounds before the module gives up and answers without a suggestion.
+ * 16 windows is 1024 consecutive variants, so reaching it needs 1024 held names
+ * sharing one stem. Bounded rather than unbounded on purpose: the name is caller
+ * input, and "loop until success" over caller input is a request that never ends.
  */
-const SUGGESTION_DEPTH = 8;
+const WINDOWS = 16;
 
 /**
- * Every candidate is filtered through the grammar rather than assumed to inherit
- * it. Appending `-2` to a legal segment does produce a legal segment today, and
- * that is precisely the kind of thing that stops being true when the grammar is
- * tightened somewhere else — "after widening a set, check that every member of the
- * new set is representable by whatever consumes it" (`backend.md`).
+ * Room reserved for `-` plus the numeric suffix when a name is long enough that a
+ * suffix would overflow. Nine digits is far past `WINDOW * WINDOWS`, so the stem is
+ * cut once and every candidate fits — rather than the stem changing length as the
+ * suffix grows, which would make two windows disagree about what they are asking.
+ */
+const SUFFIX_ROOM = 10;
+
+/**
+ * The part of `name` a suggestion is built from.
  *
- * `admissible` is the caller's extra condition: a slug also has to not be one of
- * the profile tabs' four. Passed in rather than referenced here so this file does
- * not have to know which of the two callers it is serving.
+ * Identical to `name` for everything shorter than the bound, which is every real
+ * handle and slug — the archive's longest are 11 and 26 characters. It matters only
+ * at the boundary, where D-70-18's "required" clause would otherwise be unsatisfiable:
+ * every variant of a 255-character name overflows `MAX_NAME_LENGTH`, so the module
+ * could not offer one however long it searched. Trailing hyphens are trimmed because
+ * the cut can land on one and `a-` is not a legal segment.
  */
-export function suggestionCandidates(
-  base: string,
-  admissible: (candidate: string) => boolean = () => true,
+export function suggestionStem(name: string): string {
+  const room = MAX_NAME_LENGTH - SUFFIX_ROOM;
+  return name.length <= room ? name : name.slice(0, room).replace(/-+$/, "");
+}
+
+/**
+ * `WINDOW` candidates starting at `from`, filtered through the grammar and the
+ * caller's own condition.
+ *
+ * Both filters are applied rather than assumed: appending `-2` to a legal segment
+ * does yield a legal segment today, and that is exactly the property that stops
+ * holding when the grammar is tightened somewhere else.
+ */
+export function suggestionWindow(
+  name: string,
+  from: number,
+  admissible: (candidate: string) => boolean,
 ): string[] {
+  const stem = suggestionStem(name);
   const candidates: string[] = [];
-  for (let n = 2; n < 2 + SUGGESTION_DEPTH; n++) {
-    const candidate = `${base}-${n}`;
+  for (let n = from; n < from + WINDOW; n++) {
+    const candidate = `${stem}-${n}`;
     if (isNameSegment(candidate) && admissible(candidate)) candidates.push(candidate);
   }
   return candidates;
+}
+
+/** The first window, which the caller has already asked about to answer the question itself. */
+export interface AskedWindow {
+  candidates: readonly string[];
+  taken: ReadonlySet<string>;
+}
+
+/**
+ * The first free variant of `name`, or `undefined` when `WINDOW * WINDOWS`
+ * consecutive variants are all held.
+ *
+ * `asked` is the window the caller already spent a query on, so the common case — a
+ * taken name whose first variant is free — costs exactly one statement in total and
+ * the suggestion's freedom is decided by the same read that decided `available`.
+ */
+export async function firstFreeSuggestion(
+  name: string,
+  admissible: (candidate: string) => boolean,
+  lookup: (names: readonly string[]) => Promise<Set<string>>,
+  asked: AskedWindow,
+): Promise<string | undefined> {
+  for (let window = 0; window < WINDOWS; window++) {
+    const candidates =
+      window === 0 ? asked.candidates : suggestionWindow(name, 2 + window * WINDOW, admissible);
+    const taken = window === 0 ? asked.taken : await lookup(candidates);
+    const free = candidates.find((candidate) => !taken.has(candidate));
+    if (free !== undefined) return free;
+  }
+  return undefined;
+}
+
+/** The candidates a caller asks about alongside the name itself, on the first trip. */
+export function firstWindow(
+  name: string,
+  admissible: (candidate: string) => boolean = () => true,
+): string[] {
+  return suggestionWindow(name, 2, admissible);
 }

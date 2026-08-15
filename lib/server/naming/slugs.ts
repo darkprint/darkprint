@@ -24,7 +24,7 @@ import { schema, type Db } from "@/lib/db";
 import { namingStoreError } from "./errors";
 import { isNameSegment } from "./grammar";
 import { isReservedSlug } from "./reserved";
-import { suggestionCandidates } from "./suggest";
+import { firstFreeSuggestion, firstWindow } from "./suggest";
 import type { Availability } from "./types";
 
 /** Which of `slugs` this owner already has a bundle at, in one statement. */
@@ -61,7 +61,8 @@ export async function checkSlug(db: Db, ownerId: string, slug: string): Promise<
      the caller can fix by rewording the input. No `suggestion` goes with it. */
   if (!isNameSegment(slug)) return { available: false, reason: "illegal" };
 
-  const candidates = suggestionCandidates(slug, (candidate) => !isReservedSlug(candidate));
+  const admissible = (candidate: string): boolean => !isReservedSlug(candidate);
+  const candidates = firstWindow(slug, admissible);
   const existing = await existingSlugs(db, ownerId, [slug, ...candidates]);
   const reserved = isReservedSlug(slug);
   if (!existing.has(slug) && !reserved) return { available: true };
@@ -70,7 +71,16 @@ export async function checkSlug(db: Db, ownerId: string, slug: string): Promise<
      segment permanently, so it is the answer that stays true after the row is gone, and a
      caller told `taken` would reasonably wait for it to free up. */
   const reason = reserved ? "reserved" : "taken";
-  const suggestion = candidates.find((candidate) => !existing.has(candidate));
+  /* D-70-18, same obligation as the handle side: both refusals here are well-formed names
+     and both are owed a suggestion, so the search widens rather than stopping at one
+     window. A candidate that is itself a profile tab is never offered, and that is derived
+     from `isReservedSlug` rather than argued from the current four having no hyphen. */
+  const suggestion = await firstFreeSuggestion(
+    slug,
+    admissible,
+    (names) => existingSlugs(db, ownerId, names),
+    { candidates, taken: existing },
+  );
   return suggestion === undefined
     ? { available: false, reason }
     : { available: false, reason, suggestion };
