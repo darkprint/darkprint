@@ -289,6 +289,67 @@ The blind author's instinct was right and its stated reason was not: it wrote th
 something to observe*, which is an argument about testability. The stronger argument is that a
 criterion satisfiable by never doing the thing it constrains is not a criterion.
 
+## D-70-19, D-70-20, D-70-21: numbered rulings, both holders told in the same window
+
+**D-70-19 — a released handle answers `reserved`, not `taken`.** T070's blind author was right to
+refuse this until it was numbered: I asserted it inside a paragraph charging their enumeration, which
+is an amendment smuggled in as criticism, and their suite has asserted `taken` for two accepted
+rounds. Refusing to flip a two-round-old assertion on the strength of a sentence in a charge is
+correct, and the two-holders rule they cited is the one I had just written.
+
+Their factual premise is wrong, though, and the contract line settles it. They wrote that the only
+definition of `reserved` anywhere is the profile-tab slugs, a slug concept. The **Contract** line
+says: *a handle ... is unique across the registry, **permanently reserved once used**, and a rename
+keeps the old one **reserved** because every published card carries the handle inside its own bytes.*
+The word is the contract's, applied to handles, and it appears **before** the tab-slug sentence.
+
+Two further grounds, so this does not rest on one word:
+
+- **The two values differ in whether waiting helps.** A `taken` name may later be released; a
+  `reserved` one never becomes available to a stranger. Collapsing a released handle into `taken`
+  loses exactly the permanence AC4 establishes — *a released handle cannot be claimed by a second
+  account, ever* — and that is the one fact a caller most needs.
+- Under `taken`, `reserved × handle` is a **dead cell** and the enum is half-live for handles. Under
+  `reserved`, both values are reachable on both name kinds.
+
+What it does **not** disturb: B-05's reserved is protection against impersonation and not a tombstone,
+so the previous holder still reclaims and still wins every race. `checkHandle` takes no actor and
+cannot special-case them; `reserved` is the true answer for every other caller and the former holder
+learns nothing false, since reclaiming goes through `allocateHandle` regardless.
+
+**D-70-20 — the suggestion generator must SHORTEN, and an appending-only generator is a defect at the
+bound.** Their finding: a handle of exactly `MAX_NAME_LENGTH` is well-formed, D-70-15 allocates one
+through the published surface, D-70-18 then requires a suggestion for its refusal, and **no suffix
+fits** — every `<name>-2` is `MAX_NAME_LENGTH + 2` and therefore illegal.
+
+Ruled (a), not the carve-out. "No suffix fits" is a property of one **generation strategy**, not of
+the problem: truncate to `MAX_NAME_LENGTH - 2` and append, and a legal candidate always exists. A
+carve-out would make D-70-18 unsatisfiable exactly at the boundary D-70-15 exists to defend, which is
+the one place the criterion is load-bearing. `unavailableAtLengthBound` and its labelled weak spot go
+away rather than being kept as a documented exception.
+
+**D-70-21 — an `available` answer carries no suggestion.** D-70-18 quantified over refusals and was
+silent on the other side, so nothing asserted it. There is nothing to offer an alternative to when
+the name is free. Now total on both axes: every refusal of a well-formed name carries a suggestion,
+every refusal of an ill-formed one carries none, and every available answer carries none.
+
+## A cross product is a domain by construction only if every cell is REACHABLE
+
+Their correction to my own enumeration argument, and it is the better statement of it.
+
+I charged them for building a domain from the assertions that exist rather than from the ruling's
+product of reasons and name kinds. They answered that the product cuts both ways: if a released
+handle is `taken`, then `reserved × handle` is unreachable, the product has five live cells rather
+than six, and **asserting the sixth would manufacture coverage of behaviour that does not exist**.
+
+**Omitting a live cell and asserting a dead one are the same mistake about the domain.** A test over
+an unreachable case is not merely wasted — it is a green that reports coverage of nothing, which is
+this run's most-charged defect wearing the clothes of the fix for it.
+
+So a constructed domain owes two demonstrations, not one: that nothing live is missing, **and** that
+nothing listed is dead. D-70-19 is what makes the sixth cell live; without that ruling they were
+right to hold at five.
+
 ## An amendment has TWO holders, and telling only the implementer manufactures D-70-12
 
 The rule as I wrote it — *tell the implementer in the same window, or record the amendment as owed*
