@@ -255,6 +255,52 @@ broken one does. Before a reference's green counts for a test, that reference mu
 it: mutate the reference toward the defect and watch the test red. A reference built by a different
 route than the implementation is the *usual* case, not a rare one, so this is not a corner.
 
+## A repo-wide check and a module-local suite are blind in opposite directions
+
+Two misses, one day apart, pointing opposite ways — and the pair is the rule, not either one.
+
+`ArchiveConflictError` violated the hygiene clause while **every module was locally correct**:
+three satisfied it, one did not, and no module's own suite could compare itself to another. Only a
+check living outside all of them could see it.
+
+Then T070's blind author falsified that outside check four ways against its own module and found
+the reverse. The clause has **four** parts, and the guard enforced the three that are statements
+about **enumerability**. The fourth — `stack` is retained — is not a property of the class's shape,
+so a class that deletes `stack` renders as `{}` and passes all three. T070's own
+`expectSealedError` reds 10 on that mutation. On this axis the **module-local** suite is the
+stronger instrument.
+
+So: a clause each module can satisfy differently needs a check outside every module. A clause with
+a part that is not structural needs a check that knows **the clause**, not the shape. A repo-wide
+guard derives its domain by construction and is therefore tempted to assert only what it can
+compute from the domain — which is exactly the part of a clause that generalises, and exactly not
+the part that was amended in because someone found a way to satisfy the rest while defeating it.
+
+The general form: **when a guard is built from a rule, check the guard against the rule's text, not
+against the guard's own idea of the rule.** The three enumerability parts were what the instrument
+made easy. The fourth was why the amendment existed.
+
+## PENDING-OWNER-REVIEW: a check for error classes no test can make fire
+
+T070's blind author's proposal, recorded as offered rather than assigned — it declined to write it
+into a task that is not its, which is right.
+
+`NamingStoreError` is exported, correct, sealed, and **no test can distinguish it from a class that
+does nothing**. The hygiene guard makes "no error class leaks" impossible to satisfy
+locally-and-wrongly; nothing yet makes "every rejection path is observed" impossible to satisfy
+locally-and-wrongly. Same instrument, aimed one step further.
+
+The design constraint, and the reason this is not a quick addition: **the cheap version is worse
+than nothing.** A check that some test file *mentions* the class by name goes green on precisely
+the class described above — exported, sealed, unfirable, and named in a test that only asserts its
+shape. That is the blacklist-predicate move charged repeatedly in this run, and it would launder an
+unmeasured claim into a passing test.
+
+The instrument that actually answers it is mutation-based: for each published error class, neuter
+its throw sites and require the suite to red. Bounded today (8 classes), too slow for `npm test`,
+so it belongs out-of-suite as a script with its results recorded. Owned by the orchestrator on
+base, not by any task.
+
 ## A sample that happens to contain the defect is still a sample
 
 The hygiene clause finding came from measuring **four** merged error classes. There are **eight**.
