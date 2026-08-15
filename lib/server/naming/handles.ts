@@ -52,14 +52,17 @@ import type { Availability } from "./types";
  * primary key will refuse — availability and allocation would then disagree, which
  * is worse than either answer alone.
  */
-async function existingHandles(db: Db, handles: readonly string[]): Promise<Set<string>> {
-  if (handles.length === 0) return new Set();
+async function existingHandles(
+  db: Db,
+  handles: readonly string[],
+): Promise<Map<string, "active" | "released">> {
+  if (handles.length === 0) return new Map();
   try {
     const rows = await db
-      .select({ handle: schema.handleReservation.handle })
+      .select({ handle: schema.handleReservation.handle, status: schema.handleReservation.status })
       .from(schema.handleReservation)
       .where(inArray(schema.handleReservation.handle, [...handles]));
-    return new Set(rows.map((row) => row.handle));
+    return new Map(rows.map((row) => [row.handle, row.status]));
   } catch (err) {
     throw namingStoreError("checkHandle", err);
   }
@@ -81,21 +84,30 @@ export async function checkHandle(db: Db, handle: string): Promise<Availability>
 
   const candidates = firstWindow(handle);
   const existing = await existingHandles(db, [handle, ...candidates]);
-  if (!existing.has(handle)) return { available: true };
+  const status = existing.get(handle);
+  if (status === undefined) return { available: true };
 
-  /* D-70-18: a well-formed taken name is owed a suggestion, so the search widens rather
-     than giving up after one window. The common case is still one statement in total —
+  /* D-70-18's sixth cell. A `released` row is not somebody's handle — it is a name AC4
+     keeps out of everyone's reach forever, which is what B-05 calls reserved and what
+     this table is named for. `taken` and `reserved` are both permanent refusals here and
+     the difference is what a caller can say about them: "somebody has that one" against
+     "that one can never be had". Reporting both as `taken` collapsed a distinction the
+     schema already stores. */
+  const reason = status === "released" ? "reserved" : "taken";
+
+  /* D-70-18: a well-formed refusal is owed a suggestion, so the search widens rather than
+     giving up after one window. The common case is still one statement in total —
      `existing` already answers the first window, which is what keeps AC6's "free at the
      moment it is returned" decided by the same read that decided `available`. */
   const suggestion = await firstFreeSuggestion(
     handle,
     () => true,
-    (names) => existingHandles(db, names),
-    { candidates, taken: existing },
+    async (names) => new Set((await existingHandles(db, names)).keys()),
+    { candidates, taken: new Set(existing.keys()) },
   );
   return suggestion === undefined
-    ? { available: false, reason: "taken" }
-    : { available: false, reason: "taken", suggestion };
+    ? { available: false, reason }
+    : { available: false, reason, suggestion };
 }
 
 /**

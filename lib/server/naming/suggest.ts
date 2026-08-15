@@ -40,26 +40,29 @@ const WINDOW = 64;
 const WINDOWS = 16;
 
 /**
- * Room reserved for `-` plus the numeric suffix when a name is long enough that a
- * suffix would overflow. Nine digits is far past `WINDOW * WINDOWS`, so the stem is
- * cut once and every candidate fits — rather than the stem changing length as the
- * suffix grows, which would make two windows disagree about what they are asking.
- */
-const SUFFIX_ROOM = 10;
-
-/**
- * The part of `name` a suggestion is built from.
+ * The candidate `name` yields for suffix `-n`: **shortened, not only appended** (D-70-20).
  *
- * Identical to `name` for everything shorter than the bound, which is every real
- * handle and slug — the archive's longest are 11 and 26 characters. It matters only
- * at the boundary, where D-70-18's "required" clause would otherwise be unsatisfiable:
- * every variant of a 255-character name overflows `MAX_NAME_LENGTH`, so the module
- * could not offer one however long it searched. Trailing hyphens are trimmed because
- * the cut can land on one and `a-` is not a legal segment.
+ * Identical to appending for everything shorter than the bound, which is every real
+ * handle and slug — the archive's longest are 11 and 26 characters. It matters at the
+ * boundary, where D-70-18's "required" clause is otherwise unsatisfiable: a name of
+ * exactly `MAX_NAME_LENGTH` is well-formed, D-70-15 allocates one through the published
+ * surface, and every `<name>-2` is two characters too long. "No suffix fits" is a
+ * property of an appending-only generator, not of the problem.
+ *
+ * The cut is measured **per suffix** rather than once for the longest one could be.
+ * `-2` and `-10` need different room, and a single reserved width would return
+ * `<245 chars>-2` where the ruling asks for `<253 chars>-2` — a suggestion shorter than
+ * the caller's name by more than it has to be. Each window asks about exact strings, so
+ * a stem that varies with the suffix costs nothing.
+ *
+ * Trailing hyphens are trimmed because the cut can land on one and `a-` is not a legal
+ * segment.
  */
-export function suggestionStem(name: string): string {
-  const room = MAX_NAME_LENGTH - SUFFIX_ROOM;
-  return name.length <= room ? name : name.slice(0, room).replace(/-+$/, "");
+export function suggestionCandidate(name: string, n: number): string {
+  const suffix = `-${n}`;
+  const room = MAX_NAME_LENGTH - suffix.length;
+  const stem = name.length <= room ? name : name.slice(0, room).replace(/-+$/, "");
+  return `${stem}${suffix}`;
 }
 
 /**
@@ -75,10 +78,9 @@ export function suggestionWindow(
   from: number,
   admissible: (candidate: string) => boolean,
 ): string[] {
-  const stem = suggestionStem(name);
   const candidates: string[] = [];
   for (let n = from; n < from + WINDOW; n++) {
-    const candidate = `${stem}-${n}`;
+    const candidate = suggestionCandidate(name, n);
     if (isNameSegment(candidate) && admissible(candidate)) candidates.push(candidate);
   }
   return candidates;

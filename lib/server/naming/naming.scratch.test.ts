@@ -10,6 +10,7 @@ import { and, eq } from "drizzle-orm";
 import { RESERVED_PROFILE_SEGMENTS } from "@/components/profile/tabs";
 import { createDbClient, schema, type DbClient } from "@/lib/db";
 import { createTestDb, resetTestDb, type TestDb } from "../../../tests/support/db";
+import type { Availability } from "./index";
 import { HANDLE_PRIMARY_KEY_CONSTRAINT } from "./constraint";
 
 import { pgErrorCode, pgErrorConstraint } from "./pg-error";
@@ -389,33 +390,60 @@ describe.skipIf(!hasDb)("lib/server/naming", () => {
     expect(answer.suggestion).toBeDefined();
     expect(answer.suggestion!.length).toBeLessThanOrEqual(MAX_NAME_LENGTH);
     expect(validateNamespace(answer.suggestion!)).toEqual([]);
+    /* D-70-20: the generator SHORTENS rather than only appending, and it shortens by
+       exactly as much as the suffix needs — `<253 chars>-2`, not a stem cut to some fixed
+       reserved width. Pinned as an equality against the caller's own name so an
+       appending-only generator and an over-eager one both red. */
+    expect(answer.suggestion).toBe(`${atLimit.slice(0, MAX_NAME_LENGTH - 2)}-2`);
+    expect(answer.suggestion).toHaveLength(MAX_NAME_LENGTH);
     /* And it is a real name, not merely a legal string: the store takes it. */
     const second = await accountId("gh-bound-suggest-2");
     await expect(allocateHandle(client.db, second, answer.suggestion!)).resolves.toBeUndefined();
   });
 
-  it("D-70-18: exactly the well-formed refusals carry a suggestion", async () => {
-    const owner = await accountId("gh-owed");
+  it("D-70-18/19/21: the whole reason x name-kind product, every cell reachable", async () => {
+    const owner = await accountId("gh-product");
+    const other = await accountId("gh-product-2");
     await allocateHandle(client.db, owner, "mara-veil");
+    await allocateHandle(client.db, other, "was-mine");
+    await releaseHandle(client.db, other, "was-mine");
     await giveBundle(owner, "frontline-triage");
 
-    /* Quantified over the refusal kinds rather than written per case, so a fifth path
-       added later lands in one of the two buckets instead of being unasserted. */
-    for (const answer of [
-      await checkHandle(client.db, "mara-veil"),
-      await checkSlug(client.db, owner, "frontline-triage"),
-      await checkSlug(client.db, owner, "saved"),
-    ]) {
-      expect(answer.reason, JSON.stringify(answer)).not.toBe("illegal");
-      expect(answer.suggestion, JSON.stringify(answer)).toBeDefined();
-    }
-    for (const answer of [
-      await checkHandle(client.db, "Mara Veil"),
-      await checkSlug(client.db, owner, "Mara Veil"),
-      await checkHandle(client.db, nameOfLength(MAX_NAME_LENGTH + 1)),
-    ]) {
-      expect(answer.reason, JSON.stringify(answer)).toBe("illegal");
-      expect(answer.suggestion, JSON.stringify(answer)).toBeUndefined();
+    /* Built from the ruling's own product of reasons and name kinds rather than from the
+       assertions that happen to exist — the enumeration that missed `reserved x handle`
+       was assembled the second way. Every cell below is REACHABLE, which is the other
+       half of that rule: a case nobody can produce is a green reporting coverage of
+       nothing, and asserting a dead cell is the same mistake as omitting a live one. */
+    const cells: ReadonlyArray<readonly [string, Availability]> = [
+      ["taken x handle", await checkHandle(client.db, "mara-veil")],
+      ["reserved x handle (D-70-19, released)", await checkHandle(client.db, "was-mine")],
+      ["taken x slug", await checkSlug(client.db, owner, "frontline-triage")],
+      ["reserved x slug", await checkSlug(client.db, owner, "saved")],
+      ["illegal x handle", await checkHandle(client.db, "Mara Veil")],
+      ["illegal x slug", await checkSlug(client.db, owner, "Mara Veil")],
+      ["available x handle", await checkHandle(client.db, "k0bra")],
+      ["available x slug", await checkSlug(client.db, owner, "incident-commander")],
+    ];
+
+    const seen = new Map(cells.map(([label, answer]) => [label, answer]));
+    expect(seen.get("taken x handle")!.reason).toBe("taken");
+    /* D-70-19: a released row is not somebody's handle, it is a name AC4 keeps out of
+       everyone's reach forever. Under `taken` this cell was dead and the enum was half
+       live for handles. */
+    expect(seen.get("reserved x handle (D-70-19, released)")!.reason).toBe("reserved");
+    expect(seen.get("taken x slug")!.reason).toBe("taken");
+    expect(seen.get("reserved x slug")!.reason).toBe("reserved");
+
+    for (const [label, answer] of cells) {
+      if (answer.available) {
+        /* D-70-21: the other side of the quantifier, which D-70-18 left silent. */
+        expect(answer.reason, label).toBeUndefined();
+        expect(answer.suggestion, label).toBeUndefined();
+      } else if (answer.reason === "illegal") {
+        expect(answer.suggestion, label).toBeUndefined();
+      } else {
+        expect(answer.suggestion, label).toBeDefined();
+      }
     }
   });
 
