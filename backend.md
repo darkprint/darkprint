@@ -333,6 +333,43 @@ silent on the other side, so nothing asserted it. There is nothing to offer an a
 the name is free. Now total on both axes: every refusal of a well-formed name carries a suggestion,
 every refusal of an ill-formed one carries none, and every available answer carries none.
 
+## The two directions of an erasure are not equally observed
+
+T070's implementer ran AC7's both-directions clause against its own suite and the numbers are
+lopsided: forcing `reason` to `"taken"` everywhere reds **1**; forcing `"reserved"` everywhere reds
+**5**. Collapsing to `reserved` also breaks the route payload and both length cases, while collapsing
+to `taken` reaches only the product test.
+
+So a suite can hold one direction of a split forty times over and the other by a single assertion,
+and **nothing in a passing run distinguishes those two states**. Its own N19 had cut only one
+direction, and it did not discover that by re-reading its mutations — AC7 said "in either direction"
+and it went looking for the second.
+
+Which is the argument for writing a criterion as a **split** rather than as a value: the shape of the
+sentence is what told a reader there were two falsifications owed. A criterion that said "a released
+handle answers reserved" licenses exactly one mutation, and the weak direction stays weak and
+invisible.
+
+## T-01 has escaped the repository, and the place it escaped to is one no guard can see
+
+Ninth occurrence, first outside the tree: writing a `" -no-such-anchor- "` literal into the shared
+mutation runner's self-test put two raw NUL bytes into `runner.py`, which then did not parse.
+
+**The location is the point, and it is mine.** I put that directory outside every worktree so
+`tests/no-raw-control-bytes.test.ts` could not see it — correct, because anything inside a worktree
+becomes something every session's gates read. The same property means **a control byte there is
+caught by nothing**. The trade is real and I would make it again; making it silently is not.
+
+So the hazard's own wording is wrong for the third time. It has said "any author writing a fixture",
+then "anyone who types the byte". Its actual scope: **T-01 is a property of writing any file whose
+content names a control character**, in any language, anywhere on disk, including artefacts that
+exist to test other things and that no guard in this repository will ever read.
+`tests/support/control-bytes.ts` fixes it for TypeScript inside the tree and reaches none of that.
+
+The mitigation available outside the tree is the one it used: **compile or decode the artefact before
+handing it over.** Both files verified UTF-8 clean, NUL-free and compiling on this machine's Python
+3.9 before an adversary was pointed at them — by me, independently, not on report.
+
 ## A false premise can carry a true conclusion, and the premise still has to be retracted
 
 I justified D-70-19 partly with: *the previous holder still reclaims and still wins every race, which
@@ -1108,7 +1145,7 @@ refuse that input". A guard can be correct, unit-tested, and load-bearing nowher
 cheap and total — delete the guard, run the whole suite, diff the sorted failing sets; if they are
 identical the guard is unobserved.
 
-**But a zero has three causes and the count cannot separate them.** T030's blind author hit all
+**But a zero has FOUR causes and the count cannot separate them.** T030's blind author hit all
 three in one round: **a guard that cannot fail** (`expectCausePresent` tested
 `hasOwnProperty("cause")`, true on *every* sealed error because the constructor defines the property
 whether or not anything was passed — the trap built into the check written to catch it); **a probe
@@ -1117,6 +1154,21 @@ re-wrapped them and supplied a cause, so the intended input never arrived); and 
 unobservable behaviour** (the AC6 enforcement's real 7-and-7). It also reported a 152-red result
 that was its own patch breaking the module, and a 0-red baseline that was T025 merging underneath
 it.
+
+**The fourth was found by T070's blind author while falsifying its own mutation runner, and it is the
+one that reads as good news.** A mutation reddened nothing **and greened one test**. The runner's
+first version labelled that *"GAP: nothing observes this"* — the single conclusion the evidence rules
+out, since something demonstrably changed. It is now `SILENT GREEN`, and it is the worst result on
+the board and the easiest to skim past **precisely because the red count is zero**.
+
+A red count of zero is compatible with observable change, so the sign of a zero is not "nothing
+happened". Any instrument reporting mutation results must diff the failing set in **both**
+directions; one reporting only new reds cannot distinguish "nothing observes this" from "a test that
+was failing now passes because the mutation removed what it was failing on".
+
+It would not have found this by re-reading the runner. It found it by running the runner against a
+synthetic subject built to exhibit each outcome — the instrument falsified on demand rather than
+inspected.
 
 So: **a zero is not a result until you have read what the mutation actually did to the module.**
 Confirm the mutated code still loads, still reaches the path under test, and changed the behaviour
