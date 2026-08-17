@@ -40,6 +40,7 @@ import {
   assertNoDriverLeak,
   availableNow,
   bind,
+  expectNoCausePassed,
   expectSealedError,
   handleTakenMessage,
   invalidNamePrefix,
@@ -162,6 +163,44 @@ describe("AC4: a released handle cannot be claimed by a second account, ever", (
     await rejects(() => allocate(db(t), second, handle), "allocateHandle after release", {
       expectedMessage: handleTakenMessage(handle),
     });
+  });
+
+  it("keeps the released row's original account_id after a losing claim", async () => {
+    /* AC5(c), and the only assertion here that catches a `WHERE` which is **present and
+       wrong**. Every other test in this block reads the REFUSAL — did the stranger get an
+       error — and a refusal can be correct while the row underneath it is not. An
+       implementation that refuses the stranger and then touches the row on the way out (a
+       "mark the attempt" write, a cleanup, a `set` applied before the filter) passes every
+       count and every message pin in this suite and quietly reassigns a handle AC4 says is
+       reserved forever.
+
+       Falsified by SUBSTITUTION rather than removal, per the rule this suite has now hit
+       twice: REMOVING the `WHERE` makes the stranger WIN, which the refusal assertion above
+       already catches. It is the wrong-but-present case that needs its own eyes. */
+    const allocate = await bind("allocateHandle");
+    const release = await bind("releaseHandle");
+    const [holder, stranger] = [await createAccount(t), await createAccount(t)];
+    const handle = freeHandle();
+
+    await allocate(db(t), holder, handle);
+    await release(db(t), holder, handle);
+
+    const before = await reservationsFor(t, handle);
+    expect(before.map((r) => r.accountId), "premise: the row is the holder's").toEqual([holder]);
+
+    await rejects(() => allocate(db(t), stranger, handle), "allocateHandle(stranger, released)", {
+      expectedMessage: handleTakenMessage(handle),
+    });
+
+    const after = await reservationsFor(t, handle);
+    expect(after.length, "and no second row was written for the loser").toBe(1);
+    expect(
+      after[0].accountId,
+      `a losing claim on a released handle moved the row from the original holder to the ` +
+        `account that was just refused. The refusal was right and the row is wrong, which is ` +
+        `the one combination no count and no message assertion can see.`,
+    ).toBe(holder);
+    expect(after[0].status, "and it is still released, not quietly reactivated").toBe("released");
   });
 
   it('still answers `{ available: false, reason: "reserved" }` after the release', async () => {
@@ -446,6 +485,10 @@ describe("allocateHandle refuses a name the grammar refuses", () => {
         expectedPrefix: invalidNamePrefix("allocateHandle", handle),
       });
       assertNoDriverLeak(err, [account, handle], where);
+      /* The adversary's R3: the four rendering checks cannot tell a dropped driver error from
+         one that was never passed, so the descriptor is asserted here where there is nothing
+         to carry. */
+      expectNoCausePassed(err, where);
       expect(
         await reservationsFor(t, handle),
         "and nothing was written for a name that is not a name",
@@ -509,5 +552,6 @@ describe("allocateHandle refuses a name the grammar refuses", () => {
     expectSealedError(err, "allocateHandle(illegal)", {
       expectedPrefix: invalidNamePrefix("allocateHandle", "Not A Handle"),
     });
+    expectNoCausePassed(err as Error, "allocateHandle(illegal)");
   });
 });

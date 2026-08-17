@@ -47,6 +47,7 @@ import {
   assertNoDriverLeak,
   availableNow,
   bind,
+  expectNoCausePassed,
   invalidNamePrefix,
   rejects,
   unavailable,
@@ -167,9 +168,12 @@ describe("one character past the bound is not a name", () => {
     const handle = nameOfLength(OVER);
     const where = `allocateHandle(db, id, ${OVER} chars)`;
 
-    await rejects(() => allocate(db(t), account, handle), where, {
+    const err = await rejects(() => allocate(db(t), account, handle), where, {
       expectedPrefix: invalidNamePrefix("allocateHandle", handle),
     });
+    /* Same class, same assertion: a name refused for its length is refused before any
+       statement is sent, so no driver error exists to be carried. */
+    expectNoCausePassed(err, where);
     expect(await reservationsFor(t, handle)).toEqual([]);
 
     /* And nothing was stored under a TRUNCATED key either, which the row count above cannot

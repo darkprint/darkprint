@@ -4598,6 +4598,55 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     **Still open and still labelled, neither mine to close:** `<kind>` in `InvalidNameError`
     needs the implementer's enumeration; `released_at` is a T100 question.
 
+  - 2026-08-17 blind test author, **the adversary's R3 and AC5(c). 217 tests over 9 files.**
+    Merged `138a682`. Scope was those two assertions.
+
+    **R3 held.** `expectNoCausePassed` asserts the DESCRIPTOR, not a rendering, at the three
+    `InvalidNameError` sites: `Object.getOwnPropertyDescriptor(err, "cause")` must be absent
+    where the module raises for itself. The four hygiene clauses cannot see this — a dropped
+    driver error and one never passed render identically, as nothing — so a constructor calling
+    `super(message, { cause })` unconditionally satisfies all four while carrying nothing.
+    Falsified: that constructor reds **16**, and the count is exactly the number of tests that
+    call the new assertion (14 grammar cases + the sealed test + the over-bound refusal), so
+    every red is the assertion firing and none is collateral. **The control is the part that
+    matters**: under the same mutation the four fault-path tests stay GREEN, so this is not
+    "no error may carry a cause" — it is scoped to the paths where there is nothing to carry,
+    and `expectCausePresent` still holds the other direction (dropping the driver error on the
+    fault paths reds 8).
+
+    **The obsolete AC5 assertion was already gone, and two agents reached that by different
+    routes.** The hand-off asked me to swap `expectCausePresent` out of
+    `concurrency.test.ts`; round 2 had already deleted it, for the same reason, on the same
+    ruling. I found it by building the reference to the mechanism D-70-06 names; the adversary
+    found it by measuring `ON CONFLICT DO UPDATE … WHERE` against a real database. Convergence
+    from two instruments, which is worth more than either finding alone.
+
+    **AC5(a)'s ownership half was already held** — the race asserts the surviving row belongs
+    to the caller that won, not merely that one caller won. (b) is the released-handle race
+    added in round 2. **(c) is new and it is genuinely new.**
+
+    **(c) falsified three ways, and the predicted discriminator does not discriminate.**
+
+        V1  the WHERE present and TAUTOLOGICAL          12 red
+        V3  the WHERE REMOVED entirely (the control)    12 red
+        V2  refusal right, row wrong                     5 red
+
+    **V1 and V3 red identically**, and the reason is arithmetic rather than measurement luck:
+    `excluded.account_id = excluded.account_id` is always true, so a tautological `WHERE` *is*
+    an absent `WHERE`. The stranger wins in both, and the refusal assertions catch both. So the
+    hand-off's claim — that only (c) sees the tautological case — does not hold; that case was
+    already covered several times over, and (c) is not what covers it.
+
+    **What (c) actually catches is V2: a refusal that is correct while the row underneath it is
+    not.** And the gap it closes is narrower than "nobody had it": the ACTIVE-handle
+    counterpart has been in this suite since round 1 ("leaves the first account's reservation
+    intact after refusing the second"), and V2 reds it too. What was missing was the RELEASED
+    half — where AC4's permanence lives and where a stray write is worst — and that is now
+    (c). Stated at its real size rather than at the size it was requested at.
+
+    **The three D-70-06 tests are untouched**, as instructed; the owner's ruling matches the
+    reading they were written against.
+
 ### T240, Observability and audit log
 
 - **State:** todo
