@@ -4901,6 +4901,42 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     **The three D-70-06 tests are untouched**, as instructed; the owner's ruling matches the
     reading they were written against.
 
+  - 2026-08-18 blind test author, **D-70-22. 219 tests over 9 files.** Merged `a1153e9`.
+
+    **The gap this suite carried for three rounds is closed, and by a ruling rather than by me
+    deciding it.** Since round 1 the AC4 row test said `released_at` was unruled and unasserted
+    and that asserting it would be inventing a requirement. D-70-22 rules it, so the label is
+    deleted and the column's three states are pinned: **null** before any release, **set** by a
+    release, **retained** through a reclaim. Each is mutated and each reds only its own test.
+
+    **The reclaimed row is the whole ruling in one assertion**: `status = 'active'` with a
+    non-null `released_at`, simultaneously — legal, expected, and the only trace the reclaim
+    path ran at all.
+
+    **The trap is the behavioural half, and this suite could not see it. Found by measuring
+    rather than by reading the ruling.** A module deciding the reason from
+    `released_at IS NOT NULL` answers `reserved` for a handle its owner actively holds. Mutated
+    in, it reddened **one** test — and the wrong one: `routes.test.ts`'s released-handle case,
+    which caught it **by accident**. The route fixture marked a row `status = 'released'`
+    without setting `released_at`, a state D-70-22 says cannot occur, and the mutation was
+    caught only because that impossible row made the proxy read the other way. Every honest
+    path was blind to it: **no test in this suite called `checkHandle` on a reclaimed handle.**
+
+    Both halves fixed. The fixture now sets `released_at` with the status, so it stops
+    manufacturing a row production never supplies; and the assertion that was missing is
+    written — after a reclaim, `checkHandle` answers `taken`. Re-measured: the mutation now
+    reds exactly that one test and no longer touches the route. **A test that passes for the
+    wrong reason and a test that passes are the same colour**, and the only thing that
+    separated them here was mutating the module and reading *which* test objected.
+
+    **A self-error worth recording because it is the third instance.** Three of the four
+    mutations reported MISS on a correct result, because I again named a predicted string that
+    appears in the error message and in no test name. My own `mutations.example.py` — written
+    for the adversary — warns about exactly this. Writing the warning did not stop me making
+    the mistake, which is its own small finding about where warnings help and where they do
+    not: the instrument caught it every time, and the instrument is why the results are still
+    trustworthy.
+
 ### T240, Observability and audit log
 
 - **State:** todo
