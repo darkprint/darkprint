@@ -355,6 +355,97 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## When a check contradicts a premise you were handed, re-examine the premise
+
+T070's blind author's rule, from its second instance of the same shape in one day, and it is the
+sharpest thing to come out of the slot collision.
+
+It sampled the stack **before** starting its triple, watched scratch databases climb 0 → 1 → 6, and
+concluded *"another session is working, so I will separate my numbers from the contention."* The
+correct conclusion from that exact signal was *"another session is running a **suite** — ask who
+holds the slot before starting mine."* It had the disconfirming evidence in hand and **used it to
+adjust its method instead of to doubt the premise I had handed it.**
+
+Its earlier instance was the delivery failure: it had the evidence that its handbacks had not
+arrived, because I asked twice, and read it as me being early rather than as its channel being
+wrong.
+
+**Sampling was the right instrument; "so I will account for it" was the wrong question to ask it.**
+A measurement that conflicts with something you were told is evidence about the telling, and the
+cheapest response — calibrate around it — is the one that preserves the false premise intact.
+
+This is the orchestrator-facing half too. Both instances trace to something I said: *the slot is
+free*, and *dispatched, therefore in flight*. **An agent that calibrates around a bad premise leaves
+no trace**, which is why this is worth a rule rather than an apology: the failure produces adjusted
+numbers rather than an error.
+
+## A gate chained on exit code cannot gate a tree with an expected red
+
+Immediately after writing *a gate and a commit must be one chain*, I chained them — and the commit
+could never run, because base carries one **expected** failure and `npm test` therefore always exits
+1. The correct chain does not test the exit code at all; it tests the **count**, which is the rule
+this file already states for every session's handback: *report the count, not the exit code.*
+
+    npm test 2>&1 | grep -E "^ +Tests +" | tail -1 | tee /dev/stderr | grep -q "1 failed | 4890 passed (4891)" && git commit …
+
+A tree with a known red needs an **expected-result** gate, not a pass/fail one. Anything else forces
+whoever is committing to bypass the chain by hand, which is how the bypass became habitual in the
+first place.
+
+## One slot announced to two parties is not a slot
+
+Both T070 sessions ran gate triples at the same time — load 105, eleven `vitest` processes, scratch
+databases climbing 0 → 1 → 6 while one of them sampled. Neither breached anything: **I told each of
+them, in separate messages, that the slot was free.** "Free" is a fact about the past tense by the
+time a second reader acts on it.
+
+The blind author caught it from its own instrument before I did: its triple was **not identical**, it
+refused to report it as a result, and it named the disjunction correctly — *a non-identical triple
+cannot distinguish a nondeterministic suite from a contended host*. It was the second, and the
+climbing scratch-database count was the other session's signature.
+
+**The rule: the slot is granted to a named session, never announced as available.** A grant says who
+holds it; an announcement says only that nobody held it at the moment of writing, and two
+announcements are two grants. When one session releases, the next is told **by name** that it now
+holds it.
+
+The cost was not just wasted runs. It corrupted three parties' numbers at once — including mine, two
+commits earlier — and every one of us initially read our own contention as a possible defect.
+
+## I committed over a red and wrote a gate line that was false
+
+`eada7b0` carries the line *"full suite 4890 passed / 1 failed"*. **The run printed 2 failed.** The
+second was `lib/core/dot/graph.test.ts > answers a small lookup in time independent of how large the
+graph is`, at 22503ms.
+
+Two errors, and the second is worse.
+
+**The mechanical one:** I chained `npm test | grep …` and then `git add -A && git commit` on a
+**separate line**. `set -o pipefail` makes the pipeline exit 1, and a `&&` chain does not span lines,
+so the commit ran anyway. This is the third instance of the same class in this run — twice before
+with `grep -E "Tests "` matching whether the run passed or failed. **A gate and a commit must be one
+chain, or the gate is decoration.**
+
+**The one that matters:** the commit message asserted a number I had not read. Nothing in this run is
+worth less than a gate line that reports a different result from the run it names, because every
+later reader takes it as evidence and no later run can contradict a claim about a tree that has
+moved on.
+
+**The failure itself was contention, verified after the fact rather than assumed:** load average
+**65**, the implementer running its own suites in parallel, and the test passes twice in isolation at
+the same load. So it is a parallel-worker contention artifact inside a full-suite run, not a
+regression and not host load alone — the distinction matters because only the first is invisible to
+a single re-run of the whole suite.
+
+Which is the argument for the instrument this run already requires: **three consecutive runs compared
+by identical sorted failing sets.** One run cannot tell a contention artifact from a defect; three
+can, because the artifact moves and the defect does not. I ran one, and I ran it while another
+session was running its own.
+
+`eada7b0`'s content is correct and stands. Its gate line is retracted here rather than by amending
+the commit, because base commits are cited by name in this run and rewriting one to fix my own
+reporting is the wrong trade.
+
 ## Reasoning printed beside output reads as output
 
 T070's adversary retracted its own claim before anyone acted further on it. I chose the predicate
@@ -1376,7 +1467,7 @@ refuse that input". A guard can be correct, unit-tested, and load-bearing nowher
 cheap and total — delete the guard, run the whole suite, diff the sorted failing sets; if they are
 identical the guard is unobserved.
 
-**But a zero has FOUR causes and the count cannot separate them.** T030's blind author hit all
+**But a zero has FIVE causes and the count cannot separate them.** T030's blind author hit all
 three in one round: **a guard that cannot fail** (`expectCausePresent` tested
 `hasOwnProperty("cause")`, true on *every* sealed error because the constructor defines the property
 whether or not anything was passed — the trap built into the check written to catch it); **a probe
@@ -1400,6 +1491,15 @@ was failing now passes because the mutation removed what it was failing on".
 It would not have found this by re-reading the runner. It found it by running the runner against a
 synthetic subject built to exhibit each outcome — the instrument falsified on demand rather than
 inspected.
+
+**The fifth is an EQUIVALENT MUTANT, and no instrument can name it.** T070's blind author mutated the
+ruled predicate to its null-safe form, `IS NOT DISTINCT FROM`, and the suite reddened nothing — the
+runner reported `GAP: nothing observes this`, which is **false**. For non-null values the two
+predicates *are the same predicate*, so there was nothing to observe. An equivalent mutant and an
+unobserved behaviour produce **identical failing sets**, and no guard inside a tool can separate
+them: the separating question is not about the run at all but about the patch — **did this change
+what the code does, or only how it reads?** It goes in the runner's docstring rather than its logic,
+because it is the one question the runner cannot ask itself.
 
 So: **a zero is not a result until you have read what the mutation actually did to the module.**
 Confirm the mutated code still loads, still reaches the path under test, and changed the behaviour
@@ -2334,7 +2434,7 @@ it does not decide differently inside a worktree.
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
-| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | reverted | — |
+| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | impl-done | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
@@ -4152,7 +4252,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T070, Namespace: handles, slugs, reservation
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t070-naming` on `feat/t070-naming`
 - **Test worktree:** `../darkprint-wt-t070-naming-tests` on `test/t070-naming`
 - **Depends on:** T000 (contract: schema)
