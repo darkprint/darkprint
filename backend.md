@@ -355,6 +355,46 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## Reasoning printed beside output reads as output
+
+T070's adversary retracted its own claim before anyone acted further on it. I chose the predicate
+`account_id = excluded.account_id` over the null-safe form on its sentence *"under W5 it would
+instead be claimable by a second null-owner caller"* — and its sweep had only ever claimed with a
+**non-null** account, so it could not have measured that cell either way. Its words: **reasoning
+presented next to output**.
+
+That is the most easily missed shape in this whole file, because nothing about it looks wrong. A
+message that carries a table of measured results and a sentence of inference reads uniformly as
+measurement; the reader has no marker to tell which line was run. The tell is not in the writing, it
+is in the **coverage**: the sweep's inputs did not include the case the sentence was about.
+
+Re-measured, the claim holds and the ruling now rests on it. **But the fix is not "be careful" — it
+is that a claim about a cell no run covered must be labelled as inference in the same breath**, the
+way this run already labels `read, not measured`.
+
+## A discriminator can be designed out of reach, and saying so in advance is the whole of it
+
+The re-measurement showed W0 and W5 differ in **exactly one** of four cells: stored NULL, claim NULL.
+That converts my round-3 item *"confirm the shipped predicate"* from a **code read** into a
+**behavioural** check — reserve with an undefined `accountId`, release, reserve again: W0 refuses,
+W5 claims. Worth having, because every other criterion in T070 is checked from a command and this
+would have been the only clause whose evidence is a source line.
+
+The caveat is the valuable half, and it flagged it **before** the round rather than discovering it
+mid-round: that path reaches the store only because nothing rejects an `accountId` the signature
+types as `string`. **If the implementer adds a runtime guard — which is the right thing to do — the
+discriminating cell becomes unreachable and the two predicates are behaviourally identical through
+the published surface.** At that point a source read is the only way to tell them apart.
+
+Ruled: **add the guard, and report the predicate check as `read, not measured` when it applies.** Its
+pre-commitment to saying which is exactly right, and is the opposite of quietly falling back to a
+grep while still calling it a measurement.
+
+And the durable answer belongs to neither: **T005 gains `handle_reservation.account_id NOT NULL`**
+(AC7a). A guard in `allocateHandle` closes T070's path and leaves T050's open; a `NOT NULL` makes the
+NULL-owner row unstorable, which makes the W0/W5 difference **provably unreachable** rather than
+merely unreached — and then the predicate choice stops needing evidence at all.
+
 ## When two independent readers reach the same false premise, it is the premise
 
 I justified AC5's third property by writing that a vacuous `WHERE` — `excluded.account_id =
@@ -2890,7 +2930,8 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   (4) **T180 AC1 — "a report against an unknown digest is refused"** is a foreign key to the release, not a lookup the module performs first. A `run_report` row naming a digest no release holds must fail at the driver.
   (5) **T160 AC1 — "a ballot cannot write `autonomy` or `security`"** is expressible in the schema and must be: the writable metric set is constrained by the column shape or a check constraint, so the refusal does not depend on every future caller remembering it.
   (6) Every migration is **paired up/down and reversible against a scratch database**: apply, roll back, apply again, and the schema is identical at both applications — compared structurally, not by the migration file.
-  (7) **No existing table is altered, renamed or dropped**, and the ten tables T000 shipped are byte-identical in the schema after this task. Eight tasks have merged against them.
+  (7) **No existing table is altered, renamed or dropped — with exactly one named exception**, and the ten tables T000 shipped are otherwise byte-identical in the schema after this task. Eight tasks have merged against them.
+  (7a) **The exception: `handle_reservation.account_id` becomes `NOT NULL`.** It is currently `uuid("account_id").references(...)` with no `.notNull()`, and `0001_init.up.sql` agrees, so a reservation row with a NULL owner is storable. Such a row is garbage that can never be claimed or released: under T070's ruled predicate `handle_reservation.account_id = excluded.account_id`, `NULL = NULL` is `NULL`, so it refuses **everyone forever**. T070 cannot fix it — `lib/db/schema.ts` is Forbidden there — and a runtime guard in `allocateHandle` closes only T070's own path while T050 and any later writer keep theirs open. The criterion: after this task, a direct `INSERT` of a NULL-owner reservation **fails at the driver**, not at a caller. Measured by raw SQL, as with every other constraint here.
   (8) Every unique constraint above is **named**, and the name is derived from the schema at runtime wherever a module will match on it — T010's D-14 established that a bare `23505` says *a* unique constraint was violated and not which, and `lib/server/archive/constraints.ts` already derives its names rather than restating them. A consumer that has to hardcode a constraint name is a defect in this task.
 
 - **Out of scope:** any read or write path over these tables; that is each consuming task's. Seed data. `T150`'s counters, which the wave-4 audit did not find missing a table and which are not invented here.
