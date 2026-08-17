@@ -355,6 +355,53 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## Evidence that predates a request cannot answer it
+
+I told T070's implementer its triple was contaminated and to re-run. Its next message released the
+slot with a triple attached — quiet host, load 25, three identical runs — and **I accepted it.** That
+triple was run **before** my request. It caught this; I did not.
+
+Nothing about the numbers was wrong. That is the whole hazard: a good result attached to a message
+answering a request reads as responsive to it, and **the ordering is invisible in the artefact.** The
+check is not on the numbers but on the timeline — *could this have been produced after the thing it
+is offered as an answer to?*
+
+Same family as the run's through-line. There, the scope of a check was a claim that went stale; here
+the **time** of a check is a claim, and it goes stale in the other direction — the evidence is fine
+and the question it is offered against is one it never saw.
+
+Two things follow. A re-run request must name what it expects to be different, so an unchanged
+answer is visibly unresponsive rather than merely identical. And an acceptance must state **which**
+run it accepts, by stamp, which I did not do.
+
+## Sample contention DURING a run, not at its start
+
+The implementer's instrument, and it is strictly better than what this file has been asking for.
+
+*"0 other `vitest` processes"* measured once is a claim about an **instant**. A run that starts quiet
+and is joined at second 20 is exactly the collision the stamp exists to detect, and a
+before-and-after pair still misses it if the intruder arrives and leaves between them. It sampled
+throughout each run instead, counting foreign processes by **excluding any whose command line names
+its own worktree** — so the count is other sessions, not its own workers.
+
+```
+run 1   identical set   peak foreign vitest during run:  1
+run 2   identical set   peak foreign vitest during run: 11
+run 3   identical set   peak foreign vitest during run:  1
+```
+
+**Run 2 passed through an eleven-process window and returned the identical set.** That is the same
+property the blind author demonstrated from the other side, and the two together are what separate
+*the host was loaded* from *a suite is nondeterministic* — a distinction no single quiet run can
+make, because a quiet run cannot show robustness to a collision that did not happen.
+
+Its own caveat is the right one: one data point, not a proof, and it declined to lean further.
+
+And its reconciliation is the form to copy: base reads `1 failed | 4890 passed (4891)`, its tree reads
+`1 failed | 5139 passed (5140)`, the delta is **249**, and the T070 suites measured **alone** are
+`249 passed (249)`. The non-T070 set is base's set exactly, with the same single failure and nothing
+added — which a delta alone never shows.
+
 ## D-70-22: `released_at` is a history field, not a status proxy
 
 T070's implementer raised it as the last unstated thing in its module: the ruled `SET` names
