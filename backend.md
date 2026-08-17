@@ -333,6 +333,220 @@ silent on the other side, so nothing asserted it. There is nothing to offer an a
 the name is free. Now total on both axes: every refusal of a well-formed name carries a suggestion,
 every refusal of an ill-formed one carries none, and every available answer carries none.
 
+## A paragraph that rules and defers in the same block produces two correct readings
+
+D-70-06 opened *"needed a product ruling and now has one"* and closed *"Flagged for owner review"*.
+T070's blind author read the opening, wrote three tests, and said why in its header: *"It is now
+ruled, so the tolerance is gone. Keeping it would be a suite carrying a withdrawn clause."* The
+implementer read the closing and left `allocateHandle` a plain insert. **Neither made a mistake.**
+The merged tree was red on three blind tests and no party had misbehaved.
+
+Its adversary is the one that surfaced it, and how it did so is the point: it had been told D-70-06
+was open and not its to charge, and it **did not charge the feature's absence**. It reported that one
+paragraph produced two opposite readings and that "do not charge its absence" therefore could not
+make the suite green. A constraint on what may be charged is not a constraint on what may be
+reported.
+
+**A block may rule or defer. It may not do both**, and the tell is that the two halves are separated
+by argument rather than by a state word. Every deferral now carries `PENDING-OWNER-REVIEW` as its
+own line and nothing else in the block may assert the decision.
+
+The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into AC4 as one criterion
+in two halves, because an implementation satisfying either alone is wrong in a different direction —
+the lesson AC6 already taught, applied before it could cost a round.
+
+## A whitelist over renderings cannot see a property that renders as nothing
+
+T070's adversary's R3, and the only real gap its settling measurement left open. Reinstating T030's
+trap — `super(message, { cause })` **unconditionally** — gives every error an own, **non-enumerable**
+`cause` whose value is `undefined`. That satisfies all four clauses of the hygiene check: `Object.keys`
+empty, `JSON.stringify` exactly `"{}"`, `cause` non-enumerable, `stack` retained.
+
+So the module can stop carrying the driver error entirely and **every rendering-based assertion still
+passes**, because a dropped cause and a cause that was never passed render identically: as nothing.
+The clause was built to prove nothing leaks *out*; it cannot prove anything arrived *in*.
+
+The distinguishing observation is not about the rendering at all:
+`Object.getOwnPropertyDescriptor(err, "cause")` is **`undefined`** when no cause was passed, and a
+**descriptor whose `value` is `undefined`** when one was passed as `undefined`. Presence and value are
+separate questions — the value-versus-presence rule again, now on a property that has no rendering to
+be present *in*.
+
+**Note where this sits relative to `tests/error-hygiene.test.ts`.** That guard is not wrong: its
+clause is about leakage, and a `cause` of `undefined` leaks nothing. The defect is in what a *task*
+may conclude from it. A green hygiene check is evidence that nothing escapes and is **no** evidence
+that the diagnostic chain is intact, and T070's blind suite was reading it as both.
+
+**And the adversary found it as a MISS, not as a red.** It predicted the blind hygiene test and the
+mutation reddened something else; the prediction failing *was* the finding. Four of its five MISSes
+were its own predictions being wrong. A red count alone reports all five as caught.
+
+## The shared runner's DID NOT LOAD cannot fire against a lazily-loading suite
+
+Found by T070's adversary running `--self-test` because it was told to, on an instrument that had
+already been self-tested by its author against a synthetic subject.
+
+`DID NOT LOAD` keys on the **absence of a run summary**. This tree's blind suite loads the module
+lazily **inside each test**, deliberately, so replacing `grammar.ts` with garbage prints
+`Tests 212 failed | 4 passed (216)` — a summary — and the guard cannot fire. The runner's logic is
+right; its premise about the subject is wrong. Its author's synthetic subject imported at the top,
+which is the shape the guard was written for, so the self-test passed against a subject that could
+not exhibit the failure.
+
+**The sharper edge underneath:** `failing_set` keeps only `FAIL` lines containing `" > "`, and the
+same run emits three **file-level** `FAIL` lines with no test path. Those are structurally invisible
+to the instrument, so a mutation whose only effect is a collection abort or a failed hook in a
+statically-importing file reds the suite, exits 1, and contributes **zero to the diff** — reported as
+`GAP: nothing observes this`. A new door into the misreport the runner exists to prevent, inside the
+runner.
+
+It did not bite: all fifteen of the adversary's mutations reddened something, so there was no GAP to
+misread, and it ran the shared normalisation **unmodified** so its numbers stay comparable to the
+blind author's — the right call, since a fixed instrument and an unfixed one produce numbers nobody
+can put side by side. Fix owed, its own: key `DID NOT LOAD` on **exit code plus a zero diff** rather
+than on the summary's presence, and count file-level `FAIL` lines alongside.
+
+## A handover that names one holder in the message that appoints another is not a handover
+
+Fourth one-writer error of this run, all mine. In a single turn I told T070's adversary to merge both
+trees in `../darkprint-wt-t070-naming`, and told its implementer *"your tree stays at `71de52a` and
+you will hear the verdict before anything writes in it"* — about the same worktree, in the same
+minute. Both sessions share that directory; the run has always serialised them by handover, which is
+why the rule says a handover names **the commit and the holder, in both directions**.
+
+I named the commit correctly to both and the holder to neither. The implementer caught it, checked
+read-only, and stopped: `git status`, `git show`, `git diff --name-only`, `git clean -nd`. Its
+sentence is the fix — *the tree has one writer and it is no longer me* — and it is the second time
+this run that a peer has enforced the partition against an instruction of mine rather than following
+it.
+
+**The corrected form: an appointment message says who is losing the tree, and the losing party is
+told in the same turn.** "Nothing will write in your tree" is a claim about other agents, and it must
+never be made in a turn that dispatches one of them.
+
+## Verifying a claim is not matching the digit string that carried it
+
+The implementer confirmed my byte-identical claim about T070's section by hashing it at both commits
+**with a different tool** and getting `59a939db985e20a2` twice — a different value from the
+`334774859448281f` I reported, and the correct confirmation, because the claim was *the two agree
+with each other*, not *the digest is this string*.
+
+Matching my string would have verified that it could reproduce my tool. Reproducing the **agreement**
+under an independent instrument is what makes the second measurement worth taking, and it is the same
+argument as stripping the anchors out of the shared mutation runner: a second instrument that inherits
+the first one's parameters is one instrument reporting twice.
+
+## The two directions of an erasure are not equally observed
+
+T070's implementer ran AC7's both-directions clause against its own suite and the numbers are
+lopsided: forcing `reason` to `"taken"` everywhere reds **1**; forcing `"reserved"` everywhere reds
+**5**. Collapsing to `reserved` also breaks the route payload and both length cases, while collapsing
+to `taken` reaches only the product test.
+
+So a suite can hold one direction of a split forty times over and the other by a single assertion,
+and **nothing in a passing run distinguishes those two states**. Its own N19 had cut only one
+direction, and it did not discover that by re-reading its mutations — AC7 said "in either direction"
+and it went looking for the second.
+
+Which is the argument for writing a criterion as a **split** rather than as a value: the shape of the
+sentence is what told a reader there were two falsifications owed. A criterion that said "a released
+handle answers reserved" licenses exactly one mutation, and the weak direction stays weak and
+invisible.
+
+## T-01 has escaped the repository, and the place it escaped to is one no guard can see
+
+Ninth occurrence, first outside the tree: writing a `" -no-such-anchor- "` literal into the shared
+mutation runner's self-test put two raw NUL bytes into `runner.py`, which then did not parse.
+
+**The location is the point, and it is mine.** I put that directory outside every worktree so
+`tests/no-raw-control-bytes.test.ts` could not see it — correct, because anything inside a worktree
+becomes something every session's gates read. The same property means **a control byte there is
+caught by nothing**. The trade is real and I would make it again; making it silently is not.
+
+So the hazard's own wording is wrong for the third time. It has said "any author writing a fixture",
+then "anyone who types the byte". Its actual scope: **T-01 is a property of writing any file whose
+content names a control character**, in any language, anywhere on disk, including artefacts that
+exist to test other things and that no guard in this repository will ever read.
+`tests/support/control-bytes.ts` fixes it for TypeScript inside the tree and reaches none of that.
+
+The mitigation available outside the tree is the one it used: **compile or decode the artefact before
+handing it over.** Both files verified UTF-8 clean, NUL-free and compiling on this machine's Python
+3.9 before an adversary was pointed at them — by me, independently, not on report.
+
+## A false premise can carry a true conclusion, and the premise still has to be retracted
+
+I justified D-70-19 partly with: *the previous holder still reclaims and still wins every race, which
+is what your eight-account race asserts.* T070's implementer measured both halves and both are wrong
+about this module. The original holder re-allocating its own released handle is **refused** —
+`allocateHandle` is the single plain insert the contract asked for and it refuses everyone. And the
+eight-account race is about one winner among eight **distinct** accounts on a **fresh** handle; it
+says nothing about reclaiming.
+
+The conclusion is untouched: `checkHandle` takes no actor, so `reserved` is the answer to every
+caller either way. That is exactly why this needs writing down — **a true finding resting on a false
+claim reads as confirmed**, and the claim survives into the next person's reasoning because the
+ruling it supported was accepted.
+
+The cause: D-70-06 ruled the original holder may reclaim **and flagged itself for owner review** as a
+product decision, so it has never been implemented. I read a ruling's text as a description of the
+module. **A ruling flagged for owner review is not a fact about the code**, and this file now holds
+several of them.
+
+The implementer declining to implement it off the back of a premise correction was right — it
+changes `allocateHandle`'s statement shape, which is AC5's arbiter and which an adversary has already
+passed in its present form. **D-70-06 stays open and stays the owner's.**
+
+## A fix for one criterion can break another with nothing on either side to show it
+
+The implementer's near-miss, reported rather than buried. An early sketch of its suggestion search
+used `LIKE` with a `LIMIT`, which returns an **arbitrary subset** — a candidate absent from that
+subset may still be held, so the module would have offered a suggestion that was not free.
+
+**That satisfies D-70-18 by breaking AC6.** D-70-18 asks that a suggestion be present; AC6 asks that
+it be free. A module can pass the first by violating the second, and neither criterion's own tests
+look at the other. The two are one criterion now for exactly this reason.
+
+The general shape: when a new criterion constrains the same value an existing one constrains, the
+cheapest way to satisfy the new one is often to break the old one, and **each criterion's tests are
+scoped to itself**. Rulings that touch a value already governed elsewhere must be written into the
+same criterion rather than added beside it.
+
+## A ruling that does not reach the acceptance criteria has not landed
+
+Charged against me for the second time in this run, by the implementer. D-70-18 through D-70-21 lived
+only in the preamble: T070's own AC6 still read *"a suggestion returned for a taken name is itself
+free"* — the conditional D-70-18 ruled vacuous — and the published block gave `reason` no per-kind
+meaning, so nothing in the task's own section said a released handle is `reserved`.
+
+Both are fixed in the commit carrying this line. The reader it was costing is named and specific:
+**T050's implementer**, which `Blocks` points at that section next.
+
+The preamble is where a ruling is **argued**. The criteria and the published block are where it is
+**binding**. A ruling that reaches only the first is a decision nobody downstream is required to
+honour, and it reads as settled to the person who wrote it.
+
+## A domain ruling is falsified by COLLAPSE and by SATURATION, and the second is the one nobody writes
+
+T070's blind author falsified D-70-19 in both directions because the reachability rule now demands
+it, and the pair is worth more than either:
+
+- **T1, collapse** — a released handle answering `taken` again. The ruled value never appears. Reds 4.
+- **T2, saturation** — an **active** handle answering `reserved`. The ruled value appears
+  *everywhere*. Reds 9.
+
+T2 is the mutation nobody writes. `reserved` everywhere is **present, well-formed, and passes every
+presence check** — and it loses the distinction just as completely as `taken` everywhere does. A
+suite that only falsifies by collapse holds "the value can appear" while holding nothing about
+*when*, which is the value-versus-presence rule raised from a field to a **partition**.
+
+The general form: a ruling that splits a domain is only held by a suite that reds when the split is
+erased in either direction. Collapse shows nothing live is missing; saturation shows nothing listed
+is dead. **Those are the same two demonstrations the reachability rule asks for**, arriving as
+mutations rather than as an argument — which is what makes them evidence.
+
+And it is why holding at five cells was right **then** and wrong **now**: the difference is a ruling
+about reachability, not a preference about coverage.
+
 ## A cross product is a domain by construction only if every cell is REACHABLE
 
 Their correction to my own enumeration argument, and it is the better statement of it.
@@ -1034,7 +1248,7 @@ refuse that input". A guard can be correct, unit-tested, and load-bearing nowher
 cheap and total — delete the guard, run the whole suite, diff the sorted failing sets; if they are
 identical the guard is unobserved.
 
-**But a zero has three causes and the count cannot separate them.** T030's blind author hit all
+**But a zero has FOUR causes and the count cannot separate them.** T030's blind author hit all
 three in one round: **a guard that cannot fail** (`expectCausePresent` tested
 `hasOwnProperty("cause")`, true on *every* sealed error because the constructor defines the property
 whether or not anything was passed — the trap built into the check written to catch it); **a probe
@@ -1043,6 +1257,21 @@ re-wrapped them and supplied a cause, so the intended input never arrived); and 
 unobservable behaviour** (the AC6 enforcement's real 7-and-7). It also reported a 152-red result
 that was its own patch breaking the module, and a 0-red baseline that was T025 merging underneath
 it.
+
+**The fourth was found by T070's blind author while falsifying its own mutation runner, and it is the
+one that reads as good news.** A mutation reddened nothing **and greened one test**. The runner's
+first version labelled that *"GAP: nothing observes this"* — the single conclusion the evidence rules
+out, since something demonstrably changed. It is now `SILENT GREEN`, and it is the worst result on
+the board and the easiest to skim past **precisely because the red count is zero**.
+
+A red count of zero is compatible with observable change, so the sign of a zero is not "nothing
+happened". Any instrument reporting mutation results must diff the failing set in **both**
+directions; one reporting only new reds cannot distinguish "nothing observes this" from "a test that
+was failing now passes because the mutation removed what it was failing on".
+
+It would not have found this by re-reading the runner. It found it by running the runner against a
+synthetic subject built to exhibit each outcome — the instrument falsified on demand rather than
+inspected.
 
 So: **a zero is not a result until you have read what the mutation actually did to the module.**
 Confirm the mutated code still loads, still reaches the path under test, and changed the behaviour
@@ -1977,7 +2206,7 @@ it does not decide differently inside a worktree.
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
-| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | impl-done | — |
+| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | reverted | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
@@ -3794,7 +4023,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T070, Namespace: handles, slugs, reservation
 
-- **State:** impl-done
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t070-naming` on `feat/t070-naming`
 - **Test worktree:** `../darkprint-wt-t070-naming-tests` on `test/t070-naming`
 - **Depends on:** T000 (contract: schema)
@@ -3804,6 +4033,13 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Published signatures** (checked against `backend` at `9411199`, against `lib/db/schema.ts`'s `handle_reservation` — `handle` is the **primary key**, plus `account_id`, `status` enum `active|released`, `reserved_at`, `released_at` — and against `bundle`'s `bundle_owner_slug_key` on `(owner_id, slug)`. Barrel: `@/lib/server/naming`.)
 
         interface Availability { available: boolean; reason?: "taken" | "reserved" | "illegal"; suggestion?: string }
+        // `reason` per name kind, so this block answers it and no reader has to derive it:
+        //   handle  taken    -> status `active`: an account holds it now
+        //   handle  reserved -> status `released`: permanently unavailable to any other account (AC4)
+        //   slug    taken    -> this owner already holds a bundle at this slug (B-09, per owner)
+        //   slug    reserved -> one of the four profile-tab slugs: blueprints, cards, saved, terms
+        //   either  illegal  -> fails the grammar or the single-segment rule (D-70-16)
+        // `suggestion` is present for exactly `taken` and `reserved`, absent otherwise (D-70-18/21).
         const MAX_NAME_LENGTH = 255   // D-70-15/D-70-16. A STORAGE bound, not a product one.
         // 255 holds on every page size Postgres supports; this server stores to 2692 and raises
         // 54000 from 2700, but that is a property of an 8 KB BLCKSZ and a 4 KB build ceilings
@@ -3842,7 +4078,9 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **D-70-05: `NamingStoreError` is accepted as a fifth form.** `"<operation>: the database call failed."` A fault has to leave and must not carry `DrizzleQueryError.message` (D-13). One form covering reads and writes is right: a malformed `ownerId` raises 22P02 from `checkSlug`'s SELECT, and a sealed write path beside a leaking read path is the same defect with a different door.
 
-  **D-70-06 needed a product ruling and now has one: the original holder may reclaim its own released handle; a different account never may.** AC4 forbids a *second* account claiming and is silent on the first, and the single insert the contract asked for refuses everyone — so an account could not rename back. B-05's "reserved" is protection against **impersonation**, not a tombstone, and reclaiming your own former identity is not the thing being prevented. `ON CONFLICT DO UPDATE … WHERE account_id = excluded.account_id` is equally atomic and preserves AC5. **Flagged for owner review**, since it is a product decision rather than a technical one; T050 owns rename and would have hit it.
+  **D-70-06 needed a product ruling and now has one: the original holder may reclaim its own released handle; a different account never may.** AC4 forbids a *second* account claiming and is silent on the first, and the single insert the contract asked for refuses everyone — so an account could not rename back. B-05's "reserved" is protection against **impersonation**, not a tombstone, and reclaiming your own former identity is not the thing being prevented. `ON CONFLICT DO UPDATE … WHERE account_id = excluded.account_id` is equally atomic and preserves AC5. **OWNER-CONFIRMED 2026-08-17.** The owner ruled it in conversation: the original holder may reclaim; a different account never may. It is no longer flagged and no longer open.
+
+    Until that ruling this paragraph opened *"needed a product ruling and now has one"* and closed *"Flagged for owner review"* — a ruling and a not-yet-ruling in one block. T070's blind author read the opening and wrote three tests, saying so in its header: *"It is now ruled, so the tolerance is gone."* The implementer read the closing and left `allocateHandle` a plain insert. **Both behaved correctly against their reading**, and the merged tree was red on three blind tests because of it. Found by T070's adversary, which reported it as one paragraph producing two readings rather than charging the feature's absence it had been told not to charge. T050 owns rename and would have hit it next.
 
   **D-70-07 is a document defect of the orchestrator's.** The claim commit `8f01945` updated the three task **sections** and none of the three **index rows**, which the protocol requires to agree. T070's implementer corrected its own and told me to check the other two — both were wrong the same way. All three fixed here.
 
@@ -3864,7 +4102,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 - **Goal:** allocate and check every user-chosen identifier — handles, bundle slugs, card ids, term namespaces — and keep reservations permanent.
 - **Contract:** a handle is chosen at sign-up, independent of the GitHub login (B-05); it is unique across the registry, permanently reserved once used, and a rename keeps the old one reserved because every published card carries the handle inside its own bytes (`app/settings/page.tsx:258-265`). A slug is unique **per owner** (B-09). Four slugs stay permanently reserved as bundle names because the profile tabs occupy them: `blueprints`, `cards`, `saved`, `terms` (`components/profile/tabs.ts`). Ids must satisfy the engine's grammars (`CARD_ID`, `REF_VERSION`, `lib/core/card/schema.ts:167,174`) so a stored id is one a DOT node can pin. Availability answers `{ available, reason?, suggestion? }` — the `reason` added by D-70-01 when the two error classes were struck, since a caller that can no longer catch a class needs the discriminator in the value.
-- **Acceptance criteria:** (1) each reserved slug is refused as a bundle name; (2) two owners may both hold `frontline-triage`; (3) one owner may not hold it twice; (4) a released handle cannot be claimed by a second account, ever; (5) two concurrent allocations of one name yield exactly one success; (6) a suggestion returned for a taken name is itself free at the moment it is returned.
+- **Acceptance criteria:** (1) each reserved slug is refused as a bundle name; (2) two owners may both hold `frontline-triage`; (3) one owner may not hold it twice; (4) **D-70-06, owner-confirmed 2026-08-17, one criterion in two halves:** a released handle cannot be claimed by a second account, ever, **and can be reclaimed by its original holder**. Both halves or neither — an implementation satisfying only the first refuses a rename its own author wants to undo, and one satisfying only the second is the impersonation B-05 exists to prevent. The statement is `ON CONFLICT (handle) DO UPDATE … WHERE handle_reservation.account_id = excluded.account_id`, which is equally atomic and so preserves AC5; (5) two concurrent allocations of one name yield exactly one success; (6) **D-70-18/20/21, replacing the conditional this criterion used to be**, which a never-suggesting module satisfied completely: a refusal of a **well-formed** name — `reason` `taken` or `reserved` — carries a suggestion, and that suggestion is itself free at the moment it is returned; a refusal of an **ill-formed** name — `illegal` — carries none; an **available** answer carries none. Total on both axes, and the generator must **shorten** rather than only append, since at `MAX_NAME_LENGTH` no suffix fits. (7) **D-70-19:** a **released** handle answers `reason: "reserved"` and an **active** one answers `"taken"`, so both values are reachable for handles; erasing the split in either direction — never `reserved`, or `reserved` everywhere — is a defect.
 - **Out of scope:** creating the account (T050) or the bundle (T100) the name is for.
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-05, B-09.
