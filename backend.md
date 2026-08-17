@@ -355,6 +355,49 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## An assertion outlives the implementation shape it was written against
+
+The mirror of *a tolerance outlives the ambiguity it was written for*, and it has the same tell: **it
+does not change, so nothing draws attention to it.**
+
+T070's adversary measured D-70-06's ruled statement before the implementer wrote it, outside the
+worktree, against its own scratch database — created and dropped, `pg_database` back to 0:
+
+```
+reclaim by the ORIGINAL holder       rowCount=1   no error
+claim by a DIFFERENT account         rowCount=0   no error
+bare INSERT on a held key            RAISES 23505
+16 concurrent UPSERTs of one name    0 raised, 1 rowCount=1, 15 rowCount=0, 1 row
+16 concurrent bare INSERTs           15 raised (all 23505), 1 succeeded
+```
+
+**`ON CONFLICT DO UPDATE … WHERE` never raises.** Two consequences. The loud one: `allocateHandle`
+must read `rowCount` and raise `HandleTakenError` itself, or all sixteen callers resolve and AC5's
+"exactly one" reds.
+
+The quiet one is the rule. `concurrency.test.ts > refuses every loser with the driver error
+underneath, not from a pre-check` calls `expectCausePresent`, and its stated rationale is *"a loser
+refused with no cause was refused by a read — which is the implementation shape that passes every
+sequential test."* **That reasoning is sound for a bare insert and false for the ruled upsert**: the
+loser is refused by the index arbitrating the conflict, no driver error exists, and causelessness
+stops separating index-arbitrated from read-then-write. **A correct implementation reds it**, and the
+cheapest way to green it would be to fabricate a cause — worse than the test.
+
+Note what the ruling did to the *defect* the assertion was guarding, which is why weakening is not
+what is happening here: under an atomic upsert a redundant pre-check is harmless, so read-then-write
+is no longer the failure mode. The criterion keeps its teeth by moving them — (a), (b) and (c) in AC5
+above — and (c) is the one nobody had: **a losing claim must leave the row's original `account_id`
+intact**, which is the only assertion that catches a `WHERE` that is present and wrong.
+
+**And the adversary's own commitment is the right generalisation:** in round 3 it will treat a
+**green** `expectCausePresent` as a **finding**, not a pass, because under `DO UPDATE` the only ways
+it goes green are a manufactured cause or a shape that did not actually change. An assertion known to
+be obsolete is more informative failing than passing.
+
+The whole thing arrived **before** the implementer wrote a line, from an agent that did not touch the
+tree it was reasoning about. The alternative was an implementer meeting a red it could not correctly
+fix and reasonably suspecting its own code.
+
 ## A whitelist over renderings cannot see a property that renders as nothing
 
 T070's adversary's R3, and the only real gap its settling measurement left open. Reinstating T030's
@@ -4102,7 +4145,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 - **Goal:** allocate and check every user-chosen identifier — handles, bundle slugs, card ids, term namespaces — and keep reservations permanent.
 - **Contract:** a handle is chosen at sign-up, independent of the GitHub login (B-05); it is unique across the registry, permanently reserved once used, and a rename keeps the old one reserved because every published card carries the handle inside its own bytes (`app/settings/page.tsx:258-265`). A slug is unique **per owner** (B-09). Four slugs stay permanently reserved as bundle names because the profile tabs occupy them: `blueprints`, `cards`, `saved`, `terms` (`components/profile/tabs.ts`). Ids must satisfy the engine's grammars (`CARD_ID`, `REF_VERSION`, `lib/core/card/schema.ts:167,174`) so a stored id is one a DOT node can pin. Availability answers `{ available, reason?, suggestion? }` — the `reason` added by D-70-01 when the two error classes were struck, since a caller that can no longer catch a class needs the discriminator in the value.
-- **Acceptance criteria:** (1) each reserved slug is refused as a bundle name; (2) two owners may both hold `frontline-triage`; (3) one owner may not hold it twice; (4) **D-70-06, owner-confirmed 2026-08-17, one criterion in two halves:** a released handle cannot be claimed by a second account, ever, **and can be reclaimed by its original holder**. Both halves or neither — an implementation satisfying only the first refuses a rename its own author wants to undo, and one satisfying only the second is the impersonation B-05 exists to prevent. The statement is `ON CONFLICT (handle) DO UPDATE … WHERE handle_reservation.account_id = excluded.account_id`, which is equally atomic and so preserves AC5; (5) two concurrent allocations of one name yield exactly one success; (6) **D-70-18/20/21, replacing the conditional this criterion used to be**, which a never-suggesting module satisfied completely: a refusal of a **well-formed** name — `reason` `taken` or `reserved` — carries a suggestion, and that suggestion is itself free at the moment it is returned; a refusal of an **ill-formed** name — `illegal` — carries none; an **available** answer carries none. Total on both axes, and the generator must **shorten** rather than only append, since at `MAX_NAME_LENGTH` no suffix fits. (7) **D-70-19:** a **released** handle answers `reason: "reserved"` and an **active** one answers `"taken"`, so both values are reachable for handles; erasing the split in either direction — never `reserved`, or `reserved` everywhere — is a defect.
+- **Acceptance criteria:** (1) each reserved slug is refused as a bundle name; (2) two owners may both hold `frontline-triage`; (3) one owner may not hold it twice; (4) **D-70-06, owner-confirmed 2026-08-17, one criterion in two halves:** a released handle cannot be claimed by a second account, ever, **and can be reclaimed by its original holder**. Both halves or neither — an implementation satisfying only the first refuses a rename its own author wants to undo, and one satisfying only the second is the impersonation B-05 exists to prevent. The statement is `ON CONFLICT (handle) DO UPDATE … WHERE handle_reservation.account_id = excluded.account_id`, which is equally atomic and so preserves AC5; (5) **restated for D-70-06's statement shape, measured not assumed:** `ON CONFLICT DO UPDATE … WHERE` **never raises** — a refused claim is `rowCount = 0` and a *successful* statement — so `allocateHandle` must read `rowCount` and raise `HandleTakenError` itself, and the three discriminating properties are: (a) exactly one caller sees `rowCount = 1` **and the surviving row belongs to that caller**, which kills a `DO UPDATE` with no `WHERE` (it refuses nobody and hands the name to whoever commits last); (b) a **different** account racing a *released* handle never wins it, which is what the `WHERE` exists for; (c) **a released handle's row keeps its original `account_id` after a losing claim**, which kills a subtly wrong `WHERE` such as `excluded.account_id = excluded.account_id` that passes every count test. The old cause-presence assertion is **withdrawn** for this criterion — see below; (6) **D-70-18/20/21, replacing the conditional this criterion used to be**, which a never-suggesting module satisfied completely: a refusal of a **well-formed** name — `reason` `taken` or `reserved` — carries a suggestion, and that suggestion is itself free at the moment it is returned; a refusal of an **ill-formed** name — `illegal` — carries none; an **available** answer carries none. Total on both axes, and the generator must **shorten** rather than only append, since at `MAX_NAME_LENGTH` no suffix fits. (7) **D-70-19:** a **released** handle answers `reason: "reserved"` and an **active** one answers `"taken"`, so both values are reachable for handles; erasing the split in either direction — never `reserved`, or `reserved` everywhere — is a defect.
 - **Out of scope:** creating the account (T050) or the bundle (T100) the name is for.
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-05, B-09.
