@@ -333,6 +333,36 @@ silent on the other side, so nothing asserted it. There is nothing to offer an a
 the name is free. Now total on both axes: every refusal of a well-formed name carries a suggestion,
 every refusal of an ill-formed one carries none, and every available answer carries none.
 
+## A handover that names one holder in the message that appoints another is not a handover
+
+Fourth one-writer error of this run, all mine. In a single turn I told T070's adversary to merge both
+trees in `../darkprint-wt-t070-naming`, and told its implementer *"your tree stays at `71de52a` and
+you will hear the verdict before anything writes in it"* — about the same worktree, in the same
+minute. Both sessions share that directory; the run has always serialised them by handover, which is
+why the rule says a handover names **the commit and the holder, in both directions**.
+
+I named the commit correctly to both and the holder to neither. The implementer caught it, checked
+read-only, and stopped: `git status`, `git show`, `git diff --name-only`, `git clean -nd`. Its
+sentence is the fix — *the tree has one writer and it is no longer me* — and it is the second time
+this run that a peer has enforced the partition against an instruction of mine rather than following
+it.
+
+**The corrected form: an appointment message says who is losing the tree, and the losing party is
+told in the same turn.** "Nothing will write in your tree" is a claim about other agents, and it must
+never be made in a turn that dispatches one of them.
+
+## Verifying a claim is not matching the digit string that carried it
+
+The implementer confirmed my byte-identical claim about T070's section by hashing it at both commits
+**with a different tool** and getting `59a939db985e20a2` twice — a different value from the
+`334774859448281f` I reported, and the correct confirmation, because the claim was *the two agree
+with each other*, not *the digest is this string*.
+
+Matching my string would have verified that it could reproduce my tool. Reproducing the **agreement**
+under an independent instrument is what makes the second measurement worth taking, and it is the same
+argument as stripping the anchors out of the shared mutation runner: a second instrument that inherits
+the first one's parameters is one instrument reporting twice.
+
 ## The two directions of an erasure are not equally observed
 
 T070's implementer ran AC7's both-directions clause against its own suite and the numbers are
