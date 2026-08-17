@@ -355,6 +355,111 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A rule that fails after being written needs an instrument, not a restatement
+
+*The preamble is where a ruling is argued; the criteria and the published block are where it binds*
+was written **because** D-70-18…21 landed preamble-only. Then D-70-22 landed preamble-only too.
+
+Both were caught by the same session, running the same private check: T070's implementer diffs its
+contract section on every base move. **Nobody downstream runs that check**, and the two states a
+ruling can be in — argued, and binding — are indistinguishable to anyone who reads only one of the
+two places. That is why restating it a third time would have been worth nothing.
+
+`tests/rulings-bind.test.ts` now reds when a ruling with its own preamble heading is absent from its
+task's section. Two design points earned by getting them wrong first:
+
+**The trigger is a heading that OPENS with the id.** Triggering on any mention made the *rule*
+heading `## An amendment has TWO holders, … manufactures D-70-12` demand a citation for a ruling it
+was using as an example. Opening position is the document's own convention for "this heading is about
+this ruling".
+
+**The escape hatch is a marker, not a list.** A process ruling — D-70-12 re-opened a blind suite,
+executed and over, binding no future reader — carries `(process)` **directly after its id**, which
+exempts that id and no other. A list would live in the test file, away from the ruling, maintained by
+whoever hits the red. A marker lives in the heading and is written by the author at the moment they
+know which kind of ruling they are making, and unmarked means binding, so the default is the safe
+one.
+
+**It found three more the moment it ran, and they were citation defects rather than missing rulings.**
+AC6 cited `D-70-18/20/21` — and `D-70-20` is not findable in that string. **A compressed range is not
+a citation.** `MAX_NAME_LENGTH` was published by D-70-17 and its comment cited D-70-15/16. D-70-14's
+content had landed and its id never had.
+
+**What it cannot do, stated so nobody reads more into a green:** it checks the id is *present*, not
+that the section says what the preamble ruled. A citation is not a semantic check. It closes the
+failure that actually happened three times — the ruling never arriving at all — and claims nothing
+further.
+
+## A fixture that manufactures an impossible row makes a trap "covered" while nothing observes it
+
+T070's blind author, closing D-70-22, and it is the sharpest instance of *a test that passes for the
+wrong reason* this run has produced.
+
+It mutated the module to decide the reason exactly the way the ruling forbids — `released_at IS NOT
+NULL` as a proxy for "released". The mutation reddened **one** test, and **the wrong one**: a route
+case. The cause is that its route fixture marked a row `status = 'released'` **without setting
+`released_at`** — a state D-70-22 says cannot occur — so the impossible row made the proxy read the
+other way and the mutation was caught by accident.
+
+**Every honest path was blind: no test called `checkHandle` on a reclaimed handle at all.** The trap
+was "covered" by a fixture manufacturing a row production never supplies. Reading that green as
+coverage would have reported the ruling as held while the behaviour it is about went unobserved.
+
+The separating instrument is the one this run keeps arriving at: **mutate, then read WHICH test
+objected, not how many.** A test that passes for the wrong reason and a test that passes are the same
+colour.
+
+And the fixture defect and the missing assertion are one finding, not two — the fixture could only be
+wrong because nothing exercised the real state, and nothing exercised the real state because the
+fixture made it look exercised.
+
+## Evidence that predates a request cannot answer it
+
+I told T070's implementer its triple was contaminated and to re-run. Its next message released the
+slot with a triple attached — quiet host, load 25, three identical runs — and **I accepted it.** That
+triple was run **before** my request. It caught this; I did not.
+
+Nothing about the numbers was wrong. That is the whole hazard: a good result attached to a message
+answering a request reads as responsive to it, and **the ordering is invisible in the artefact.** The
+check is not on the numbers but on the timeline — *could this have been produced after the thing it
+is offered as an answer to?*
+
+Same family as the run's through-line. There, the scope of a check was a claim that went stale; here
+the **time** of a check is a claim, and it goes stale in the other direction — the evidence is fine
+and the question it is offered against is one it never saw.
+
+Two things follow. A re-run request must name what it expects to be different, so an unchanged
+answer is visibly unresponsive rather than merely identical. And an acceptance must state **which**
+run it accepts, by stamp, which I did not do.
+
+## Sample contention DURING a run, not at its start
+
+The implementer's instrument, and it is strictly better than what this file has been asking for.
+
+*"0 other `vitest` processes"* measured once is a claim about an **instant**. A run that starts quiet
+and is joined at second 20 is exactly the collision the stamp exists to detect, and a
+before-and-after pair still misses it if the intruder arrives and leaves between them. It sampled
+throughout each run instead, counting foreign processes by **excluding any whose command line names
+its own worktree** — so the count is other sessions, not its own workers.
+
+```
+run 1   identical set   peak foreign vitest during run:  1
+run 2   identical set   peak foreign vitest during run: 11
+run 3   identical set   peak foreign vitest during run:  1
+```
+
+**Run 2 passed through an eleven-process window and returned the identical set.** That is the same
+property the blind author demonstrated from the other side, and the two together are what separate
+*the host was loaded* from *a suite is nondeterministic* — a distinction no single quiet run can
+make, because a quiet run cannot show robustness to a collision that did not happen.
+
+Its own caveat is the right one: one data point, not a proof, and it declined to lean further.
+
+And its reconciliation is the form to copy: base reads `1 failed | 4890 passed (4891)`, its tree reads
+`1 failed | 5139 passed (5140)`, the delta is **249**, and the T070 suites measured **alone** are
+`249 passed (249)`. The non-T070 set is base's set exactly, with the same single failure and nothing
+added — which a delta alone never shows.
+
 ## D-70-22: `released_at` is a history field, not a status proxy
 
 T070's implementer raised it as the last unstated thing in its module: the ruled `SET` names
@@ -927,7 +1032,7 @@ shape a new key breaks. Nothing but running the blind suite could have settled t
 before and after is the check that mattered before committing, not the reasoning that the field was
 additive.
 
-## D-70-14 and D-70-12, ruled
+## D-70-14 and D-70-12 (process), ruled
 
 **D-70-14a — the `reason` union was missing its third member. Contract defect, mine.** A name that
 fails the grammar is neither `taken` nor `reserved`, so it answered `{ available: false }` with no
@@ -4301,9 +4406,15 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Blocks:** T050, T100
 - **Owns:** `lib/server/naming/**`, `app/api/names/**`
 - **Forbidden:** `lib/server/accounts/**`, `lib/db/schema.ts`
-- **Published signatures** (checked against `backend` at `9411199`, against `lib/db/schema.ts`'s `handle_reservation` — `handle` is the **primary key**, plus `account_id`, `status` enum `active|released`, `reserved_at`, `released_at` — and against `bundle`'s `bundle_owner_slug_key` on `(owner_id, slug)`. Barrel: `@/lib/server/naming`.)
+- **Published signatures** (checked against `backend` at `9411199`, against `lib/db/schema.ts`'s `handle_reservation` — `handle` is the **primary key**, plus `account_id`, `status` enum `active|released`, `reserved_at`, `released_at` — and against `bundle`'s `bundle_owner_slug_key` on `(owner_id, slug)`.
+
+  **D-70-22, what `released_at` means, stated here because this is where a reader looks the column up:** it is **history** — *when this handle was last released, if ever* — and D-70-06's ruled `SET` deliberately does **not** clear it on a reclaim. So `status = 'active'` **with a non-null `released_at` is a legal, expected row**: it is the only trace that the reclaim path was taken.
+
+  **The trap, for T050 first (`Blocks` names it): `released_at IS NOT NULL` is NOT a test for "released".** After a reclaim it is true of an **active** row. **`status` is the sole authority on current state.** A reader reaching for `released_at` as a shortcut is wrong in exactly the case D-70-06 exists to allow — the case that did not exist when this section was last read. Barrel: `@/lib/server/naming`.)
 
         interface Availability { available: boolean; reason?: "taken" | "reserved" | "illegal"; suggestion?: string }
+        // `illegal` added by D-70-14a; `[owner]` is a handle and an unknown owner is still refused
+        // the four tab slugs, by D-70-14b.
         // `reason` per name kind, so this block answers it and no reader has to derive it:
         //   handle  taken    -> status `active`: an account holds it now
         //   handle  reserved -> status `released`: permanently unavailable to any other account (AC4)
@@ -4311,7 +4422,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         //   slug    reserved -> one of the four profile-tab slugs: blueprints, cards, saved, terms
         //   either  illegal  -> fails the grammar or the single-segment rule (D-70-16)
         // `suggestion` is present for exactly `taken` and `reserved`, absent otherwise (D-70-18/21).
-        const MAX_NAME_LENGTH = 255   // D-70-15/D-70-16. A STORAGE bound, not a product one.
+        const MAX_NAME_LENGTH = 255   // Published by D-70-17. A STORAGE bound, not a product one; the product bound is D-70-15.
         // 255 holds on every page size Postgres supports; this server stores to 2692 and raises
         // 54000 from 2700, but that is a property of an 8 KB BLCKSZ and a 4 KB build ceilings
         // near 1300. Published because a suite was reading it out of prose. Do NOT import it into
@@ -4373,7 +4484,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 - **Goal:** allocate and check every user-chosen identifier — handles, bundle slugs, card ids, term namespaces — and keep reservations permanent.
 - **Contract:** a handle is chosen at sign-up, independent of the GitHub login (B-05); it is unique across the registry, permanently reserved once used, and a rename keeps the old one reserved because every published card carries the handle inside its own bytes (`app/settings/page.tsx:258-265`). A slug is unique **per owner** (B-09). Four slugs stay permanently reserved as bundle names because the profile tabs occupy them: `blueprints`, `cards`, `saved`, `terms` (`components/profile/tabs.ts`). Ids must satisfy the engine's grammars (`CARD_ID`, `REF_VERSION`, `lib/core/card/schema.ts:167,174`) so a stored id is one a DOT node can pin. Availability answers `{ available, reason?, suggestion? }` — the `reason` added by D-70-01 when the two error classes were struck, since a caller that can no longer catch a class needs the discriminator in the value.
-- **Acceptance criteria:** (1) each reserved slug is refused as a bundle name; (2) two owners may both hold `frontline-triage`; (3) one owner may not hold it twice; (4) **D-70-06, owner-confirmed 2026-08-17, one criterion in two halves:** a released handle cannot be claimed by a second account, ever, **and can be reclaimed by its original holder**. Both halves or neither — an implementation satisfying only the first refuses a rename its own author wants to undo, and one satisfying only the second is the impersonation B-05 exists to prevent. The statement is `ON CONFLICT (handle) DO UPDATE … WHERE handle_reservation.account_id = excluded.account_id`, which is equally atomic and so preserves AC5; (5) **restated for D-70-06's statement shape, measured not assumed:** `ON CONFLICT DO UPDATE … WHERE` **never raises** — a refused claim is `rowCount = 0` and a *successful* statement — so `allocateHandle` must read `rowCount` and raise `HandleTakenError` itself, and there are **two** discriminating axes, not three, established by running six candidate predicates rather than by reasoning about them: (a) exactly one caller sees `rowCount = 1` **and the surviving row belongs to that caller** — this trips an absent `WHERE`, a **vacuous** one (`excluded.account_id = excluded.account_id`, which yields **sixteen** winners because every concurrent `DO UPDATE` matches) and a self-comparison; (b) a **different** account racing a *released* handle never wins it — this is the only axis that catches a `WHERE` keyed on `status = 'released'` rather than on ownership, which gives exactly one winner who **does** own the row and so passes (a) cleanly, and which is the plausible wrong predicate because it reads as half of what the ruling says. A third check — *a released handle's row keeps its original `account_id` after a losing claim* — caught the identical set as (b) on every predicate tested, so it is a **sequential, race-free form of (b)** worth having for being cheap and deterministic and **not** countable as independent coverage. The predicate is `handle_reservation.account_id = excluded.account_id`, **not** the null-safe `IS NOT DISTINCT FROM` form: both pass all the properties, but under the former a row with a NULL `account_id` is permanently unclaimable (`NULL = NULL` is `NULL`), which is coherent, while under the latter a second null-owner caller could take it. The old cause-presence assertion is **withdrawn** for this criterion — see below; (6) **D-70-18/20/21, replacing the conditional this criterion used to be**, which a never-suggesting module satisfied completely: a refusal of a **well-formed** name — `reason` `taken` or `reserved` — carries a suggestion, and that suggestion is itself free at the moment it is returned; a refusal of an **ill-formed** name — `illegal` — carries none; an **available** answer carries none. Total on both axes, and the generator must **shorten** rather than only append, since at `MAX_NAME_LENGTH` no suffix fits. (7) **D-70-19:** a **released** handle answers `reason: "reserved"` and an **active** one answers `"taken"`, so both values are reachable for handles; erasing the split in either direction — never `reserved`, or `reserved` everywhere — is a defect.
+- **Acceptance criteria:** (1) each reserved slug is refused as a bundle name; (2) two owners may both hold `frontline-triage`; (3) one owner may not hold it twice; (4) **D-70-06, owner-confirmed 2026-08-17, one criterion in two halves:** a released handle cannot be claimed by a second account, ever, **and can be reclaimed by its original holder**. Both halves or neither — an implementation satisfying only the first refuses a rename its own author wants to undo, and one satisfying only the second is the impersonation B-05 exists to prevent. The statement is `ON CONFLICT (handle) DO UPDATE … WHERE handle_reservation.account_id = excluded.account_id`, which is equally atomic and so preserves AC5; (5) **restated for D-70-06's statement shape, measured not assumed:** `ON CONFLICT DO UPDATE … WHERE` **never raises** — a refused claim is `rowCount = 0` and a *successful* statement — so `allocateHandle` must read `rowCount` and raise `HandleTakenError` itself, and there are **two** discriminating axes, not three, established by running six candidate predicates rather than by reasoning about them: (a) exactly one caller sees `rowCount = 1` **and the surviving row belongs to that caller** — this trips an absent `WHERE`, a **vacuous** one (`excluded.account_id = excluded.account_id`, which yields **sixteen** winners because every concurrent `DO UPDATE` matches) and a self-comparison; (b) a **different** account racing a *released* handle never wins it — this is the only axis that catches a `WHERE` keyed on `status = 'released'` rather than on ownership, which gives exactly one winner who **does** own the row and so passes (a) cleanly, and which is the plausible wrong predicate because it reads as half of what the ruling says. A third check — *a released handle's row keeps its original `account_id` after a losing claim* — caught the identical set as (b) on every predicate tested, so it is a **sequential, race-free form of (b)** worth having for being cheap and deterministic and **not** countable as independent coverage. The predicate is `handle_reservation.account_id = excluded.account_id`, **not** the null-safe `IS NOT DISTINCT FROM` form: both pass all the properties, but under the former a row with a NULL `account_id` is permanently unclaimable (`NULL = NULL` is `NULL`), which is coherent, while under the latter a second null-owner caller could take it. The old cause-presence assertion is **withdrawn** for this criterion — see below; (6) **D-70-18, D-70-20 and D-70-21, replacing the conditional this criterion used to be**, which a never-suggesting module satisfied completely: a refusal of a **well-formed** name — `reason` `taken` or `reserved` — carries a suggestion, and that suggestion is itself free at the moment it is returned; a refusal of an **ill-formed** name — `illegal` — carries none; an **available** answer carries none. Total on both axes, and the generator must **shorten** rather than only append, since at `MAX_NAME_LENGTH` no suffix fits. (7) **D-70-19:** a **released** handle answers `reason: "reserved"` and an **active** one answers `"taken"`, so both values are reachable for handles; erasing the split in either direction — never `reserved`, or `reserved` everywhere — is a defect.
 - **Out of scope:** creating the account (T050) or the bundle (T100) the name is for.
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-05, B-09.
