@@ -8,33 +8,38 @@
    with AC4 and AC5 quietly unmet. D-14's argument, applied to a
    primary key.
 
-   Drizzle records a column-level `.primaryKey()` as a flag on the
-   column, not as an entry in `primaryKeys` (which is for the
-   composite `primaryKey()` helper), so there is no name to read
-   off the schema the way `getTableConfig(...).indexes` gives one.
-   What *is* readable is the table name and which column carries
-   the key, and `0001_init.up.sql` declares the key inline with no
-   name — so Postgres names it `<table>_pkey`. Both halves are
-   checked at import time, and the assembled name is checked
-   against a real 23505 in `naming.scratch.test.ts`, because a
-   convention is a claim and this file is where it would rot.
+   **The constraint NAME is gone and only the shape is checked.**
+   D-70-06 replaced the bare insert with
+   `ON CONFLICT (handle) DO UPDATE … WHERE`, so a duplicate no
+   longer raises 23505 at all — the refusal is an empty `returning`.
+   Matching `handle_reservation_pkey` against a driver error became
+   a branch nothing can take, and a derivation whose only consumer
+   is unreachable is a guard that cannot fail, so it was removed
+   rather than kept for symmetry.
+
+   What remains is the assumption the statement itself rests on:
+   `ON CONFLICT (handle)` needs `handle` to carry a unique
+   constraint. If the schema moved the key, Postgres would raise
+   42P10 on the next allocation; asserting it at import turns that
+   into a loud configuration error at load instead of a fault a
+   caller meets. Drizzle records a column-level `.primaryKey()` as a
+   flag on the column rather than in `primaryKeys`, so the columns
+   are what gets read.
    ============================================================ */
 
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { schema } from "@/lib/db";
 
-function handlePrimaryKeyConstraintName(): string {
+function assertHandleIsTheKey(): void {
   const config = getTableConfig(schema.handleReservation);
   const primary = config.columns.filter((column) => column.primary).map((column) => column.name);
   if (primary.length !== 1 || primary[0] !== "handle") {
     throw new Error(
       `lib/server/naming: handle_reservation's primary key is (${primary.join(", ")}), not (handle) — ` +
-        "lib/db/schema.ts has drifted from what this module assumes, and a duplicate handle would " +
-        "stop being recognised as one.",
+        "lib/db/schema.ts has drifted from what this module assumes, and `ON CONFLICT (handle)` " +
+        "would raise 42P10 at allocation time instead of failing here.",
     );
   }
-  return `${config.name}_pkey`;
 }
 
-/** `handle_reservation_pkey` — the unique constraint AC4 and AC5 both rest on. */
-export const HANDLE_PRIMARY_KEY_CONSTRAINT = handlePrimaryKeyConstraintName();
+assertHandleIsTheKey();

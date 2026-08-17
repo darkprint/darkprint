@@ -11,7 +11,6 @@ import { RESERVED_PROFILE_SEGMENTS } from "@/components/profile/tabs";
 import { createDbClient, schema, type DbClient } from "@/lib/db";
 import { createTestDb, resetTestDb, type TestDb } from "../../../tests/support/db";
 import type { Availability } from "./index";
-import { HANDLE_PRIMARY_KEY_CONSTRAINT } from "./constraint";
 
 import { pgErrorCode, pgErrorConstraint } from "./pg-error";
 import {
@@ -175,20 +174,64 @@ describe.skipIf(!hasDb)("lib/server/naming", () => {
     expect(RESERVED_PROFILE_SEGMENTS).not.toContain(answer.suggestion);
   });
 
-  it("the primary key is the arbiter: a duplicate arrives as 23505 on the derived name", async () => {
-    /* The one claim `constraint.ts` cannot check by reading: `handle_reservation_pkey`
-       is Postgres's default name for the unnamed inline key, and a wrong guess would
-       turn every duplicate into a generic store error with AC4 and AC5 quietly unmet.
-       Reaching `HandleTakenError` at all is that check. */
+  it("AC4/AC5: the key still arbitrates, and the refusal carries NO driver error", async () => {
+    /* This case used to assert a 23505 on the derived constraint name. D-70-06 replaced the
+       bare insert with `ON CONFLICT (handle) DO UPDATE … WHERE`, so a conflicting row that
+       fails the `setWhere` is simply not updated and Postgres raises nothing: the refusal is
+       an empty `returning`. Rewritten rather than deleted, because the claim it was making —
+       the key decides, not code — is still the one that matters; only its evidence moved. */
     const first = await accountId("gh-pkey-1");
     const second = await accountId("gh-pkey-2");
     await allocateHandle(client.db, first, "taken-twice");
     const err = (await allocateHandle(client.db, second, "taken-twice").catch((e: unknown) => e)) as Error;
+
     expect(err).toBeInstanceOf(HandleTakenError);
-    expect(HANDLE_PRIMARY_KEY_CONSTRAINT).toBe("handle_reservation_pkey");
-    expect(pgErrorCode(err.cause)).toBe("23505");
-    expect(pgErrorConstraint(err.cause)).toBe(HANDLE_PRIMARY_KEY_CONSTRAINT);
     expect(String(err)).toBe("HandleTakenError: allocateHandle: the handle `taken-twice` is not available.");
+
+    /* **The own property must be absent, not present-and-undefined.** `super(message, { cause })`
+       passed unconditionally gives every error an own non-enumerable `cause` holding `undefined`,
+       which satisfies all four hygiene clauses — so a module that stopped carrying the driver
+       error entirely would render identically to one that never had a cause to carry. A dropped
+       cause and a cause never passed are indistinguishable in every rendering; only the
+       descriptor separates them. (T030's trap, reinstated here by the one refusal in this module
+       that legitimately has no cause.) */
+    expect(Object.getOwnPropertyDescriptor(err, "cause")).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(err, "cause")).toBe(false);
+
+    /* And the row did not move: the loser changed nothing. */
+    const rows = await client.db
+      .select()
+      .from(schema.handleReservation)
+      .where(eq(schema.handleReservation.handle, "taken-twice"));
+    expect(rows.map((row) => row.accountId)).toEqual([first]);
+    expect(rows.map((row) => row.status)).toEqual(["active"]);
+  });
+
+  it("AC4 second half: the original holder reclaims, and the descriptor check has a control", async () => {
+    const holder = await accountId("gh-reclaim");
+    await allocateHandle(client.db, holder, "mine-again");
+    await releaseHandle(client.db, holder, "mine-again");
+    expect((await checkHandle(client.db, "mine-again")).reason).toBe("reserved");
+
+    await expect(allocateHandle(client.db, holder, "mine-again")).resolves.toBeUndefined();
+
+    const rows = await client.db
+      .select()
+      .from(schema.handleReservation)
+      .where(eq(schema.handleReservation.handle, "mine-again"));
+    expect(rows, "reclaiming updates the one row rather than adding a second").toHaveLength(1);
+    expect(rows[0].status).toBe("active");
+    expect(rows[0].accountId).toBe(holder);
+    expect((await checkHandle(client.db, "mine-again")).reason).toBe("taken");
+
+    /* The control the descriptor assertion above needs: an error that DOES carry a cause must
+       show a descriptor. Without it, `toBeUndefined()` would pass against a module that never
+       attaches a cause anywhere, which is the state it exists to detect. */
+    const withCause = (await checkSlug(client.db, "not-a-uuid", "frontline-triage").catch(
+      (e: unknown) => e,
+    )) as Error;
+    expect(Object.getOwnPropertyDescriptor(withCause, "cause")).toBeDefined();
+    expect(withCause.cause).toBeDefined();
   });
 
   it("a rejection renders as the published form and nothing else", async () => {
@@ -206,9 +249,22 @@ describe.skipIf(!hasDb)("lib/server/naming", () => {
     expect(JSON.stringify({ detail: err.message })).toBe(
       '{"detail":"allocateHandle: the handle `sealed` is not available."}',
     );
-    expect(err.propertyIsEnumerable("cause")).toBe(false);
-    expect(err.cause).toBeDefined();
     expect(typeof err.stack).toBe("string");
+
+    /* This case asserted `err.cause` was DEFINED until D-70-06. That was true of the bare
+       insert, where the refusal was a translated 23505; under `ON CONFLICT … WHERE` the
+       loser is refused by the index with no driver error in existence, so a correct
+       implementation has nothing to carry. Inverted rather than deleted — the claim worth
+       keeping is that the property is genuinely **absent**, not present holding `undefined`.
+     *
+     * `propertyIsEnumerable` is the line this replaces and it can no longer tell those
+     * apart: it answers false for an absent property and a non-enumerable one alike. The
+     * descriptor is the only rendering that separates them, which is the point — a module
+     * that stopped carrying driver errors everywhere would pass every other assertion in
+     * this file unchanged. Its control is in the reclaim case, where an error that does
+     * have a cause must show a descriptor. */
+    expect(Object.getOwnPropertyDescriptor(err, "cause")).toBeUndefined();
+    expect(err.cause).toBeUndefined();
   });
 
   it("an invalid name is refused before the driver is reached", async () => {

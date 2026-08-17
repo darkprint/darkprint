@@ -9,18 +9,21 @@
    contract says so before this file existed:
 
    - **AC5 is satisfied by the primary key, not by code.**
-     `allocateHandle` is a single insert whose conflict is caught
-     and translated. `SELECT` then `INSERT` cannot meet it — two
-     callers both read free and both write — and would pass every
-     sequential test in the suite while failing only under
-     concurrency, which is the one thing the criterion exists to
-     catch.
+     `allocateHandle` is one statement whose conflict the key
+     arbitrates. `SELECT` then `INSERT` cannot meet it — two callers
+     both read free and both write — and would pass every sequential
+     test in the suite while failing only under concurrency, which is
+     the one thing the criterion exists to catch.
    - **AC4 is why `handle` is the primary key rather than a
-     column.** A released handle keeps its row: `status` moves to
-     `released` and the row is never deleted, so the key stays
-     occupied and a second account's insert fails. `releaseHandle`
-     updates; nothing here deletes. An implementation that deleted
-     would pass AC4's happy path and reopen the name forever.
+     column, and it has two halves (D-70-06, owner-confirmed
+     2026-08-17).** A released handle keeps its row: `status` moves
+     to `released` and the row is never deleted, so the key stays
+     occupied. A **second** account's allocation is refused by the
+     `setWhere`; the **original holder's** is not, so a rename can be
+     undone. Both halves or neither — satisfying only the first
+     refuses a rename its own author wants back, and satisfying only
+     the second is the impersonation B-05 exists to prevent.
+     `releaseHandle` updates; nothing here deletes.
 
    The grammar is checked before the driver is reached, on every
    path. That is not only input hygiene: `handle` is a `text`
@@ -37,10 +40,9 @@
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { schema, type Db } from "@/lib/db";
-import { HANDLE_PRIMARY_KEY_CONSTRAINT } from "./constraint";
-import { handleTakenError, invalidNameError, namingStoreError } from "./errors";
+import "./constraint";
+import { handleTakenError, HandleTakenError, invalidNameError, namingStoreError } from "./errors";
 import { isNameSegment } from "./grammar";
-import { isUniqueViolationOn } from "./pg-error";
 import { firstFreeSuggestion, firstWindow } from "./suggest";
 import type { Availability } from "./types";
 
@@ -111,27 +113,52 @@ export async function checkHandle(db: Db, handle: string): Promise<Availability>
 }
 
 /**
- * One insert. The primary key is the arbiter, so of two concurrent callers exactly
- * one commits and the loser's 23505 becomes `HandleTakenError` — matched by
- * constraint name (D-14) rather than by SQLSTATE alone, so a unique index a later
- * migration adds to this table cannot be mislabelled as this one. Anything else
- * still leaves, sanitized: a database being down must not be swallowed as a
- * conflict, and `DrizzleQueryError.message` opens with the statement and every
- * bound parameter (D-13).
+ * One statement, and the primary key is still the arbiter (AC5): of N concurrent
+ * callers Postgres serialises the conflict on the key, so exactly one row exists
+ * afterwards however many fired.
  *
- * A released handle is refused for **every** account, its previous holder included.
- * The contract's AC4 forbids a second account and says nothing about the first, and
- * B-05's rename keeps the old handle reserved without saying whether its owner may
- * come back to it — so the single insert the contract asks for is what ships, and
- * the question is in this task's Log rather than answered here.
+ * **Which** caller wins is no longer a matter of who committed first, and that is
+ * AC4's second half. `setWhere` privileges the account already on the row, so a
+ * released handle goes back to its original holder even when seven strangers are
+ * racing for it, and an active handle never moves.
+ *
+ * **The refusal carries no driver error, by construction.** A conflicting row that
+ * fails the `setWhere` is not updated and Postgres raises nothing at all, so the
+ * refusal is an empty `returning` rather than a 23505. That is why the constraint-name
+ * match this function used to make is gone rather than retained: with the conflict
+ * handled in the statement, no 23505 on the key can reach the catch, and a branch that
+ * cannot be taken is worse than no branch — it reports a check nobody runs. A 23505
+ * from some *other* unique index a later migration adds still arrives, and correctly
+ * leaves as a fault rather than as "the handle is taken".
+ *
+ * Anything else still leaves sanitized: a database being down must not be swallowed as
+ * a conflict, and `DrizzleQueryError.message` opens with the statement and every bound
+ * parameter (D-13).
  */
 export async function allocateHandle(db: Db, accountId: string, handle: string): Promise<void> {
   if (!isNameSegment(handle)) throw invalidNameError("allocateHandle", handle, "handle");
 
   try {
-    await db.insert(schema.handleReservation).values({ handle, accountId, status: "active" });
+    const [row] = await db
+      .insert(schema.handleReservation)
+      .values({ handle, accountId, status: "active" })
+      .onConflictDoUpdate({
+        target: schema.handleReservation.handle,
+        set: { accountId, status: "active" },
+        /* `setWhere`, never the deprecated `where`: the latter is ambiguous between the
+           index predicate and the DO UPDATE's own condition, and picking the wrong one
+           moves the guard silently from "may this account reclaim" to "which rows does
+           the conflict target cover". */
+        setWhere: eq(schema.handleReservation.accountId, accountId),
+      })
+      .returning({ handle: schema.handleReservation.handle });
+
+    /* The refusal has no driver error to carry, and that is the mechanism rather than an
+       omission: a conflicting row failing the `setWhere` is simply not updated and
+       Postgres raises nothing, so an empty `returning` **is** the refusal. */
+    if (row === undefined) throw handleTakenError(handle);
   } catch (err) {
-    if (isUniqueViolationOn(err, HANDLE_PRIMARY_KEY_CONSTRAINT)) throw handleTakenError(handle, err);
+    if (err instanceof HandleTakenError) throw err;
     throw namingStoreError("allocateHandle", err);
   }
 }
