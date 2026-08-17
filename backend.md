@@ -4685,9 +4685,35 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     **What (c) actually catches is V2: a refusal that is correct while the row underneath it is
     not.** And the gap it closes is narrower than "nobody had it": the ACTIVE-handle
     counterpart has been in this suite since round 1 ("leaves the first account's reservation
-    intact after refusing the second"), and V2 reds it too. What was missing was the RELEASED
-    half — where AC4's permanence lives and where a stray write is worst — and that is now
-    (c). Stated at its real size rather than at the size it was requested at.
+    intact after refusing the second"), and V2 reds it too.
+
+    **Then the six predicates were run against THIS suite, and (c) is smaller still.** The
+    hand-off's table was measured against the adversary's own reference, which answers "what
+    does each predicate do"; re-running it here answers the different question "which of MY
+    tests trips on each", and that is the only one that decides whether (c) is coverage.
+
+        W1 absent            12 red    W1 = W2 = W3, identical sets
+        W2 vacuous           12 red    a vacuous WHERE IS an absent WHERE; every caller matches
+        W3 self              12 red
+        W4 status=released    4 red    the one that gets past (a) — 1 winner, right ownership
+        W5 IS NOT DISTINCT    0 red    equivalent to W0 for non-null ids
+
+    **Every predicate that trips (c) already tripped a test written before it.** W4's four are
+    (b), (c), and the two AC4 refusal tests that have been here since round 1. So (c) adds
+    **no new predicate coverage**, and on V2 it co-tripped with four others. The hand-off is
+    right that (b) and (c) are one axis and not two, and the honest version is stronger than
+    that: (c)'s value is that it is **deterministic and race-free** where (b) needs eight
+    concurrent callers on a contended host, and that it names the invariant in one place. That
+    is worth keeping and it is not coverage. Recorded at its measured size rather than the size
+    it was requested at.
+
+    **And W5 is a fourth cause of a zero that this suite's own instrument cannot name.** It
+    reds nothing and it should — `a = b` and `a IS NOT DISTINCT FROM b` are the same predicate
+    for non-null values — but the runner reports "GAP: nothing observes this", which is false:
+    there was nothing to observe. An **equivalent mutant** and an unobserved behaviour produce
+    identical failing sets, and no guard inside the tool can separate them; it takes the human
+    question *did this patch change what the code does, or only how it reads*. Added to the
+    runner handed to the adversary, since it now carries a fourth question rather than three.
 
     **The three D-70-06 tests are untouched**, as instructed; the owner's ruling matches the
     reading they were written against.
