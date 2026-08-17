@@ -355,6 +355,73 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## Two kinds of mechanisation: preventing the mistake, and refusing to let it pass as a result
+
+T070's blind author's distinction, offered about its own third repetition of a mistake it had
+written the warning against, and it is the taxonomy this file has been missing while accumulating
+guards.
+
+`tests/rulings-bind.test.ts` **prevents**: a ruling that does not bind is a property of an artefact
+sitting in the tree, so a gate can see it before anyone acts on it. Its own predicted-string mistake
+**cannot** be prevented that way — naming a string that appears in an error message and in no test
+name is a judgement made *while writing a mutation*, and nothing in the tree encodes what the author
+meant to predict. Its harness catches it only afterwards, by reporting `MISS` rather than a pass.
+
+**Both beat restating the rule. Only one beats making the mistake.**
+
+The consequence for how this run spends effort: when a defect recurs, ask first whether it is visible
+in an artefact. If it is, a gate can stop it and the rule can be retired into the gate. If it is not,
+the achievable target is narrower and must be said out loud — **not "this will not happen again" but
+"this will not be reported as a success"** — and the instrument has to be one the author cannot
+skip while believing their own result.
+
+That is also the honest reading of `MISS`-over-pass, `SILENT GREEN`, the three-then-five causes of a
+zero, and the identical-failing-sets triple. **None of them prevents anything.** Every one exists to
+stop a wrong result being read as a right one, which is a different and lesser claim than the guards
+that fail closed on a file.
+
+## A reconciliation is a claim about a base that moves
+
+The blind author flagged its own published arithmetic as stale the moment base gained a test, and
+re-derived what an adversary should expect — **labelled as arithmetic, not measurement**, with what
+each outcome would mean stated in advance:
+
+> if it measures 5111 that is the guard; if it measures 5110 the guard did not collect, and that is a
+> finding about the guard rather than about my suite.
+
+That is a pre-registration, and it is the second time in this run one has paid: a number predicted
+before the run makes a miss informative instead of ambiguous. It also declined to run it — the slot
+was not its — so the whole thing is derivation offered as derivation.
+
+The general point: **a reconciliation is only valid against the base line it was computed from**, and
+base moves. A handback carrying arithmetic must name the base line it used, or the next reader
+subtracts the wrong number and finds an unexplained arrival that is really a stale premise.
+
+## D-70-23: an enumeration nobody can see is a fact about today's call sites
+
+T070's implementer closed the `<kind>` item I had parked, read-only, while not holding the tree.
+`InvalidNameError`'s `<kind>` is `"handle"` and nothing else, and `<operation>` is closed to
+`allocateHandle` and `releaseHandle` — **because the two functions that could have produced a second
+value do not throw at all.** `checkHandle` and `checkSlug` are queries returning
+`{ available: false, reason: "illegal" }`, which is D-70-01's own ruling. The single member is
+*structural*, not incidental, and that is what made it publishable rather than merely observed.
+
+**The reason it needed publishing is the part worth keeping.** `kind` is typed as a bare `string`, so
+nothing in the type system holds the enumeration. Until the block states it, "one member" is a fact
+about the call sites that happen to exist, and any later path can add a second value **by passing a
+different literal** — no review, no diff anyone would flag. Published, it has to be added
+deliberately.
+
+It declined to propose narrowing the type, on the grounds that the contract is not its while another
+session holds the tree. Correct, and worth noting as the second time it has separated *reporting a
+finding* from *acting on it* by ownership rather than by whether it could.
+
+**And the amendment is scoped rather than dropped in.** The blind suite's prefix pin is correct and
+is **not** a defect; the equality pin is owed at the next blind round, not at the adversary round in
+flight. An amendment landing mid-round says what each holder owes **and when** — this one owes
+nothing today. That is the two-holders rule with a clock on it, which is what was missing when
+D-70-18 landed after a round closed.
+
 ## A rule that fails after being written needs an instrument, not a restatement
 
 *The preamble is where a ruling is argued; the criteria and the published block are where it binds*
@@ -4409,6 +4476,12 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Published signatures** (checked against `backend` at `9411199`, against `lib/db/schema.ts`'s `handle_reservation` — `handle` is the **primary key**, plus `account_id`, `status` enum `active|released`, `reserved_at`, `released_at` — and against `bundle`'s `bundle_owner_slug_key` on `(owner_id, slug)`.
 
   **D-70-22, what `released_at` means, stated here because this is where a reader looks the column up:** it is **history** — *when this handle was last released, if ever* — and D-70-06's ruled `SET` deliberately does **not** clear it on a reclaim. So `status = 'active'` **with a non-null `released_at` is a legal, expected row**: it is the only trace that the reclaim path was taken.
+
+  **D-70-23, `InvalidNameError`'s `<kind>` is a one-member enumeration: `"handle"`.** Measured across the shipped module rather than recalled — the only two call sites are `allocateHandle` and `releaseHandle`, and `<operation>` is closed to exactly those two. Nothing else raises it, because the two functions that could have produced a second value **do not throw at all**: `checkHandle` and `checkSlug` are queries and answer `{ available: false, reason: "illegal" }` for a malformed name, which is D-70-01's ruling. So the published message form is exactly ``<operation>: `<value>` is not a valid handle.`` for both paths.
+
+  Published because `kind` is typed as a bare `string`, so **nothing in the type system holds this** — it is a fact about today's call sites until the block says otherwise, and a later path wanting `"slug"` must then add it deliberately rather than by passing a different literal. The signature is **not** narrowed; T070's implementer raised this and explicitly declined to propose a type change while it did not hold the tree, which was right.
+
+  **Scope, so this cannot ambush a round in flight: the blind suite's current prefix pin is CORRECT and is not a defect.** An equality pin is the stronger assertion and is owed at the next blind round on this task, not at the adversary round now under way. An amendment that lands mid-round names what each holder owes and when — this one owes nothing to anybody today.
 
   **The trap, for T050 first (`Blocks` names it): `released_at IS NOT NULL` is NOT a test for "released".** After a reclaim it is true of an **active** row. **`status` is the sole authority on current state.** A reader reaching for `released_at` as a shortcut is wrong in exactly the case D-70-06 exists to allow — the case that did not exist when this section was last read. Barrel: `@/lib/server/naming`.)
 
