@@ -2648,7 +2648,7 @@ it does not decide differently inside a worktree.
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
-| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | impl-done | **round 3 at `3c97c4b`: D-70-06 implemented**, `ON CONFLICT (handle) DO UPDATE … setWhere` with the empty `returning` as the refusal; generated SQL read rather than assumed, `setWhere` not the deprecated `where`. Two removals it forced: the unreachable constraint-name branch and the two pg-error helpers it orphaned. 4 predicate mutations, all observed — **F3 `status = 'released'` reds 4, every one an ownership case and no count test among them**. typecheck/lint/build 0; three consecutive runs in the **held** gate slot, identical sorted failing sets, **1 failed file — t090's `serve.test.ts`, T100's dependency** — 185 files, 5140 tests, porcelain empty both ends |
+| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | adversarial-pass | adversary round 3 **PASS** at `26eef93`: all seven criteria driven from commands; **AC5 re-fired at N=16 x3 against the new `ON CONFLICT DO UPDATE` shape** — one winner, the row is the winner's, **0 of 45 losers carry a driver cause**; axis (b) verified independently of the blind suite; **the shipped predicate confirmed as W0 by behaviour, not by reading**; D-70-22's three states including the reclaimed one nothing had tested. typecheck/lint/build 0; two triples, six runs, identical sorted failing sets, 0 skipped, 186 files, 5144 tests, the only red T090's own; **peak foreign vitest 0 after I found and fixed my own detector counting its launcher**. **D-70-12 closes 5 of 6** — R3 and R6 closed this round; R2 is unobservable through the published surface because `released_at` is on no published return |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
@@ -4466,7 +4466,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T070, Namespace: handles, slugs, reservation
 
-- **State:** impl-done
+- **State:** adversarial-pass
 - **Worktree:** `../darkprint-wt-t070-naming` on `feat/t070-naming`
 - **Test worktree:** `../darkprint-wt-t070-naming-tests` on `test/t070-naming`
 - **Depends on:** T000 (contract: schema)
@@ -6010,6 +6010,169 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     the mistake, which is its own small finding about where warnings help and where they do
     not: the instrument caught it every time, and the instrument is why the results are still
     trustworthy.
+
+  - 2026-08-18 adversary: `impl-done` → `adversarial-pass`. **Round 3, PASS.** Measured at
+    `26eef93` = `be7f8be` merged with `test/t070-naming` (`39c8a70`) and then with `backend`
+    (`181c636`), **merged and never rebased**. Both merges conflicted on `backend.md` **and
+    nothing else**, so no partition error. Log entries from both sides kept in order, base's text
+    everywhere else, row and section set together.
+
+    **The whole suite, three consecutive runs, and then three more after I found my own
+    contention detector wrong:**
+
+        run 1  exit 1   186 files   1 failed file   5144 tests   5143 passed   0 skipped   28.2s   peak foreign vitest 0
+        run 2  exit 1   186 files   1 failed file   5144 tests   5143 passed   0 skipped   23.4s   peak foreign vitest 0
+        run 3  exit 1   186 files   1 failed file   5144 tests   5143 passed   0 skipped   25.8s   peak foreign vitest 0
+
+    Sorted failing **file** and **test** sets identical across all three, ANSI and durations
+    stripped. The single failure is `tests/server/t090/serve.test.ts > … after a B-08 RE-SCORE`,
+    base's own red awaiting T100 — **no T070 test fails**. Exit code is reported and is **not**
+    the signal: `npm test` exits 1 here whatever happens, so any chain keyed on it is inert; the
+    failed-**file** count and the **skipped** count are what carry the claim, and skipped is 0.
+    Whole-tree stamp `26eef93`, `git status --porcelain --untracked-files=all` **empty before and
+    after** both triples. `npm run typecheck` 0, `npm run lint` 0, `npm run build` 0.
+
+    **The count reconciles exactly, and against my own two measurements rather than against a
+    number I was given.** Whole suite 5144; the T070-scoped run — `tests/server/t070`,
+    `lib/server/naming`, `app/api/names` — is 252; 5144 − 252 = **4892**, which is base's
+    published line. The blind author pre-registered **5111** for *its* worktree, `4892 + 219`,
+    and that is right for a tree carrying base plus the blind suite; mine also carries the
+    implementation's colocated and route tests, which are the other 33. So the arrival is
+    explained without appeal to either party's arithmetic, and `tests/rulings-bind.test.ts` did
+    collect — a tree missing it would have reconciled to 4891.
+
+    **I corrected an instrument of my own mid-round, and the correction is the more useful
+    result.** The implementer's improvement — sample foreign `vitest` **during** a run rather
+    than at its edges — is adopted, and my first version counted processes whose command line did
+    not name this worktree. Every run reported a peak of 1. Falsified by running a targeted suite
+    and *reading the line it had flagged*: `node /opt/homebrew/bin/npx vitest run …`, my own
+    launcher, which names neither the worktree nor anything else identifying. **The number was
+    small, stable and plausible, which is exactly why nothing about it drew attention.** Counting
+    by process group instead gives **0 foreign `vitest` across all three runs**, and the first
+    triple is reported above only in that it produced the identical failing sets. A determinism
+    claim resting on a contention figure is only as good as the figure, and mine was manufacturing
+    contention rather than missing it — the harmless direction this time, and it would not have
+    been next time.
+
+    **AC5, re-fired against the new statement shape, because the previous pass did not inherit.**
+    `allocateHandle` is now `ON CONFLICT (handle) DO UPDATE … setWhere account_id = $account`
+    with an explicit empty-`returning` check. N=16, three rounds:
+
+        round 0  winners 1  losers 15  all HandleTakenError  losers carrying a driver cause: 0  row owner: the winner
+        round 1  winners 1  losers 15  all HandleTakenError  losers carrying a driver cause: 0  row owner: the winner
+        round 2  winners 1  losers 15  all HandleTakenError  losers carrying a driver cause: 0  row owner: the winner
+
+    **Axis (a) holds on both halves** — exactly one caller sees a success *and* the surviving row
+    belongs to that caller, which is what a vacuous `WHERE` fails by producing sixteen winners.
+    **Axis (b), written from the criterion rather than from the blind suite**: a released handle
+    raced by its holder and fifteen strangers, three rounds, and the only winner is the holder
+    every time, with the row still the holder's and `released_at` preserved. Sequentially, a
+    stranger's losing claim leaves owner and `status` untouched. Two instruments, and they agree.
+
+    **A green `expectCausePresent` would have been a finding and there is none.** Under
+    `DO UPDATE … WHERE` no driver error exists, so a loser carrying one would mean a manufactured
+    cause or a shape that had not actually changed. Measured 0 of 45 losers across three rounds,
+    and the assertion is correctly gone from AC5 while remaining in `faults.test.ts`, where a
+    driver error genuinely does arrive.
+
+    **The shipped predicate is W0, and it is measured rather than read.** I pre-committed to
+    saying which. `handle_reservation.account_id = excluded.account_id` and
+    `IS NOT DISTINCT FROM` differ in exactly one cell — a stored NULL owner reclaimed by a NULL
+    claimant — so the check is behavioural: seed a row through `allocateHandle` with no
+    `accountId`, release it, claim it the same way.
+
+        seeded row -> {"account_id":null,"status":"active","released_at":null}
+        a NULL claimant on a NULL-owner released row -> HandleTakenError, status still released
+        => the predicate is `=` (W0). IS NOT DISTINCT FROM would have claimed it.
+
+    The discriminating cell is reachable only because nothing guards `accountId` at runtime; had
+    it been guarded, this would have been a source read and would have been reported as one.
+
+    **D-70-22, attacked from the side the blind author could not reach — the state nobody had
+    called `checkHandle` on:**
+
+        state 1  fresh      status=active    released_at=null  ->  reason "taken"
+        state 2  released   status=released  released_at=set   ->  reason "reserved"
+        state 3  RECLAIMED  status=active    released_at=set   ->  reason "taken"
+
+    State 3 is the trap: `released_at IS NOT NULL` is **not** a test for "released", and anything
+    deciding by that column would answer `reserved` for a handle its owner currently holds. The
+    module decides by `status` and answers `taken`, the reclaim leaves `released_at` standing as
+    the ruling requires, and a stranger is still refused afterwards.
+
+    ---
+
+    **D-70-12's settling measurement closes five of six, and the sixth cannot be closed by a
+    blind suite at all.** Same six mutations, my own anchors, unchanged since round 1 so the three
+    rounds are comparable:
+
+        R1  grammar parses instead of round-tripping    11 red   blind reds   CLOSED (round 2)
+        R2  releaseHandle drops status='active'          1 red   colocated    open
+        R3  NamingError always passes the options bag   19 red   blind reds   CLOSED THIS ROUND
+        R4  checkHandle answers available for illegal   12 red   blind reds   CLOSED (round 2)
+        R5  releaseHandle drops its accountId condition  4 red   blind reds   CLOSED (round 2)
+        R6  release never stamps released_at             4 red   blind reds   CLOSED THIS ROUND
+
+    **R3 went from 1 red to 19** — the descriptor assertion landed, and it is the one that
+    separates *a cause was never passed* from *a cause was dropped*, which every rendering-based
+    clause reports identically as nothing. **R6 went from 1 to 4**, and the test that closed it is
+    `D-70-06 > answers `taken` for a reclaimed handle, not `reserved` — the proxy trap`: a
+    behaviour ruled for a different reason turned out to make an unruled column observable,
+    because a reclaim is the only state in which `released_at` has to survive.
+
+    **R2 is left open and it is not a coverage gap.** Dropping `status='active'` has exactly one
+    externally visible consequence — a second release walking `released_at` forward — and
+    `released_at` is on **no published surface**: `Availability` carries `available`, `reason` and
+    `suggestion`, and no exported function returns the column. A blind suite writing against the
+    published interface therefore *cannot* observe it, and only a colocated test reading the table
+    can. That is a property of the contract's surface rather than a hole in anyone's suite, and
+    the honest close is to say so rather than to ask for a test that would have to reach past the
+    barrel to exist.
+
+    **Ten further mutations re-run for regression** (the runner matches name prefixes, so `R1`
+    also selected `R10`–`R16`): R10 16 red, R11 10, R12 2, R13 3, R15 6, R16 2. **Zero GAPs, zero
+    SILENT GREENs.** Four MISSes, all of them my predictions rather than the suites' coverage —
+    R2's "idempotent" cannot red because releasing twice is not an error either way; R6's
+    "released_at" matches no test name; R13's "free at the moment" names the AC6 test that
+    structurally cannot catch a generator which never checks freedom; R16's "account" was a word
+    from the mechanism. A red count alone would have reported all four as caught.
+
+    **What would falsify this PASS.** (1) The sweep is scoped to `tests/server/t070`,
+    `lib/server/naming` and `app/api/names`, justified by measurement — nothing else imports the
+    barrel — so if a later task consumes it, every attribution here is about a smaller domain than
+    the claim. (2) AC5 is fired at N=16 on a host with **0** foreign `vitest`; a genuinely
+    contended host is a different measurement, and the axis that survives it is ownership of the
+    surviving row rather than the count. (3) The route checks drive the exported handlers with a
+    scratch client swapped into `Symbol.for("darkprint.db.sharedClient")` — that is the handler,
+    not Next's routing, so nothing here says the paths resolve. (4) The W0 confirmation depends on
+    `accountId` being unguarded; a runtime guard would make the two predicates behaviourally
+    identical and this evidence would become a source read. (5) The shared runner's `failing_set`
+    discards file-level `FAIL` lines, so a mutation whose only effect is a collection abort
+    reports as a GAP — none of mine did, but that is a property of my sixteen and not of the
+    instrument. (6) `released_at`'s meaning is now ruled but its *movement* is asserted nowhere
+    reachable from the barrel, so R2-class defects would ship silently.
+
+    **Even attention.** Nine of sixteen mutations touch `handles.ts`, which is where AC4, AC5,
+    AC7 and the reclaim all live, so the pull was there again. The deliberate second pass went to
+    the places round 2 had already found clean — `errors.ts` (R3, and the descriptor question that
+    closed it), `suggest.ts` (R12, R13, the at-bound suggestion), the route layer (R16 and seven
+    driven cases), `grammar.ts` (R1, R15). **The finding of this round is not in the module at all
+    — it is in my own contention detector**, which came out of doubting a number that looked fine,
+    in the one place I had no prior reason to look.
+
+    **Residue.** Working tree clean including untracked files at `26eef93`, before and after both
+    triples; probe suites archived outside the repository and the directory removed **before** the
+    first triple, so nothing under `tests/` is mine. `darkprint%` databases: 1 during every run and
+    1 after, which is the development database itself — no scratch database of mine survives, and
+    the two scratch databases my out-of-tree experiments created were dropped with
+    `remaining: 0` verified at the time. `git worktree list` unchanged at 17.
+
+    **Verdict: PASS.** All seven criteria hold, each driven from a command; the two axes AC5 now
+    names are verified independently of the blind suite and agree with it; the predicate is
+    confirmed by behaviour; D-70-22's three states answer correctly including the one nothing had
+    tested; and the only failing test in the tree belongs to T090 and is base's declared
+    dependency on T100. I found no defect in the implementation this round, and the one instrument
+    error I did find was mine.
 
 ### T240, Observability and audit log
 
