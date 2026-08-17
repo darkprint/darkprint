@@ -355,6 +355,51 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## When two independent readers reach the same false premise, it is the premise
+
+I justified AC5's third property by writing that a vacuous `WHERE` — `excluded.account_id =
+excluded.account_id` — *"passes every count test: one winner, fifteen losers, one row. It fails only
+against ownership of the surviving row."* T070's adversary pre-registered five predictions and its
+P2 said the same thing. Then it ran six candidate predicates against a synthetic reference and
+measured **sixteen winners**: a vacuous `WHERE` means every concurrent `DO UPDATE` matches, so every
+caller is told it succeeded. **(a)'s count half alone trips it.**
+
+Two people reading one sentence reached one false conclusion independently. That is not two mistakes
+— it is evidence about **the sentence**: `ON CONFLICT DO UPDATE … WHERE <tautology>` reads as
+"updates the row it was going to update anyway", and the actual semantics are "matches for every
+caller, so nobody is refused". Agreement between independent readers is usually corroboration; when
+both are wrong the agreement is the signal that the source is the problem.
+
+Its scoring is the part to copy: **four of five predictions right, and the one it got wrong is the
+one that mattered.** A prediction sweep whose value came entirely from its single miss.
+
+## A property that catches the same set as another is not a second axis
+
+(c) caught the identical set as (b) on all six predicates. So it is not a third discriminating
+property — it is a **sequential, race-free form of (b)**, which is worth keeping precisely because it
+needs no contention to run, and worth **not** counting as coverage, because two names for one axis
+report as two.
+
+That is the reachability rule again from the other end. There it was asserting a cell that cannot
+happen; here it is asserting an axis that is not distinct. Both inflate a coverage count with
+something that cannot fail independently, and both look like thoroughness.
+
+**The predicate (a) actually misses is `status = 'released'`** — one winner, who owns the row, (a)
+clean. It is the *plausible* wrong answer, because it reads as half of what the ruling says. A test
+justified by the vacuous predicate would have been aimed at a defect (a) already catches, while the
+one that gets past (a) went unnamed. **Name the defect a test catches by measuring which predicates
+survive it, not by picking the wrongest-looking one.**
+
+## The permissive half of a two-half ruling discriminates nothing
+
+The adversary's sweep also shows the original holder reclaiming successfully under **all six**
+predicates, the three broken ones included. So T070's three currently-red D-70-06 tests going green
+is **necessary and proves only the permissive half** — the refusing half is carried entirely by (b).
+
+Worth stating before anyone reads three greens as the ruling being implemented. A ruling shaped
+"X may, Y may not" has one half that almost any implementation satisfies and one that discriminates;
+they are not equally informative and a suite that holds both should not report them as one result.
+
 ## An assertion outlives the implementation shape it was written against
 
 The mirror of *a tolerance outlives the ambiguity it was written for*, and it has the same tell: **it
@@ -4145,7 +4190,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 - **Goal:** allocate and check every user-chosen identifier — handles, bundle slugs, card ids, term namespaces — and keep reservations permanent.
 - **Contract:** a handle is chosen at sign-up, independent of the GitHub login (B-05); it is unique across the registry, permanently reserved once used, and a rename keeps the old one reserved because every published card carries the handle inside its own bytes (`app/settings/page.tsx:258-265`). A slug is unique **per owner** (B-09). Four slugs stay permanently reserved as bundle names because the profile tabs occupy them: `blueprints`, `cards`, `saved`, `terms` (`components/profile/tabs.ts`). Ids must satisfy the engine's grammars (`CARD_ID`, `REF_VERSION`, `lib/core/card/schema.ts:167,174`) so a stored id is one a DOT node can pin. Availability answers `{ available, reason?, suggestion? }` — the `reason` added by D-70-01 when the two error classes were struck, since a caller that can no longer catch a class needs the discriminator in the value.
-- **Acceptance criteria:** (1) each reserved slug is refused as a bundle name; (2) two owners may both hold `frontline-triage`; (3) one owner may not hold it twice; (4) **D-70-06, owner-confirmed 2026-08-17, one criterion in two halves:** a released handle cannot be claimed by a second account, ever, **and can be reclaimed by its original holder**. Both halves or neither — an implementation satisfying only the first refuses a rename its own author wants to undo, and one satisfying only the second is the impersonation B-05 exists to prevent. The statement is `ON CONFLICT (handle) DO UPDATE … WHERE handle_reservation.account_id = excluded.account_id`, which is equally atomic and so preserves AC5; (5) **restated for D-70-06's statement shape, measured not assumed:** `ON CONFLICT DO UPDATE … WHERE` **never raises** — a refused claim is `rowCount = 0` and a *successful* statement — so `allocateHandle` must read `rowCount` and raise `HandleTakenError` itself, and the three discriminating properties are: (a) exactly one caller sees `rowCount = 1` **and the surviving row belongs to that caller**, which kills a `DO UPDATE` with no `WHERE` (it refuses nobody and hands the name to whoever commits last); (b) a **different** account racing a *released* handle never wins it, which is what the `WHERE` exists for; (c) **a released handle's row keeps its original `account_id` after a losing claim**, which kills a subtly wrong `WHERE` such as `excluded.account_id = excluded.account_id` that passes every count test. The old cause-presence assertion is **withdrawn** for this criterion — see below; (6) **D-70-18/20/21, replacing the conditional this criterion used to be**, which a never-suggesting module satisfied completely: a refusal of a **well-formed** name — `reason` `taken` or `reserved` — carries a suggestion, and that suggestion is itself free at the moment it is returned; a refusal of an **ill-formed** name — `illegal` — carries none; an **available** answer carries none. Total on both axes, and the generator must **shorten** rather than only append, since at `MAX_NAME_LENGTH` no suffix fits. (7) **D-70-19:** a **released** handle answers `reason: "reserved"` and an **active** one answers `"taken"`, so both values are reachable for handles; erasing the split in either direction — never `reserved`, or `reserved` everywhere — is a defect.
+- **Acceptance criteria:** (1) each reserved slug is refused as a bundle name; (2) two owners may both hold `frontline-triage`; (3) one owner may not hold it twice; (4) **D-70-06, owner-confirmed 2026-08-17, one criterion in two halves:** a released handle cannot be claimed by a second account, ever, **and can be reclaimed by its original holder**. Both halves or neither — an implementation satisfying only the first refuses a rename its own author wants to undo, and one satisfying only the second is the impersonation B-05 exists to prevent. The statement is `ON CONFLICT (handle) DO UPDATE … WHERE handle_reservation.account_id = excluded.account_id`, which is equally atomic and so preserves AC5; (5) **restated for D-70-06's statement shape, measured not assumed:** `ON CONFLICT DO UPDATE … WHERE` **never raises** — a refused claim is `rowCount = 0` and a *successful* statement — so `allocateHandle` must read `rowCount` and raise `HandleTakenError` itself, and there are **two** discriminating axes, not three, established by running six candidate predicates rather than by reasoning about them: (a) exactly one caller sees `rowCount = 1` **and the surviving row belongs to that caller** — this trips an absent `WHERE`, a **vacuous** one (`excluded.account_id = excluded.account_id`, which yields **sixteen** winners because every concurrent `DO UPDATE` matches) and a self-comparison; (b) a **different** account racing a *released* handle never wins it — this is the only axis that catches a `WHERE` keyed on `status = 'released'` rather than on ownership, which gives exactly one winner who **does** own the row and so passes (a) cleanly, and which is the plausible wrong predicate because it reads as half of what the ruling says. A third check — *a released handle's row keeps its original `account_id` after a losing claim* — caught the identical set as (b) on every predicate tested, so it is a **sequential, race-free form of (b)** worth having for being cheap and deterministic and **not** countable as independent coverage. The predicate is `handle_reservation.account_id = excluded.account_id`, **not** the null-safe `IS NOT DISTINCT FROM` form: both pass all the properties, but under the former a row with a NULL `account_id` is permanently unclaimable (`NULL = NULL` is `NULL`), which is coherent, while under the latter a second null-owner caller could take it. The old cause-presence assertion is **withdrawn** for this criterion — see below; (6) **D-70-18/20/21, replacing the conditional this criterion used to be**, which a never-suggesting module satisfied completely: a refusal of a **well-formed** name — `reason` `taken` or `reserved` — carries a suggestion, and that suggestion is itself free at the moment it is returned; a refusal of an **ill-formed** name — `illegal` — carries none; an **available** answer carries none. Total on both axes, and the generator must **shorten** rather than only append, since at `MAX_NAME_LENGTH` no suffix fits. (7) **D-70-19:** a **released** handle answers `reason: "reserved"` and an **active** one answers `"taken"`, so both values are reachable for handles; erasing the split in either direction — never `reserved`, or `reserved` everywhere — is a defect.
 - **Out of scope:** creating the account (T050) or the bundle (T100) the name is for.
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-05, B-09.
