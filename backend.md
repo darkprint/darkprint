@@ -4719,6 +4719,294 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     only reaches the product test. Both directions are now observed, which is what a criterion
     written as a split rather than as a value requires.
 
+  - 2026-08-15 blind test author, **round 2, D-70-12. The suite is 203 tests over 9 files,
+    from 119 over 6.** Still blind: `feat/t070-naming` was not read, merged or logged, and
+    nothing under `lib/server/naming/**` or `app/api/names/**` was opened. Written against the
+    contract at `be5297f`, reached by **merge** (`7f85fb8`); the two conflicts in this file were
+    both contract text rather than Log entries and both resolved to `backend`, per the rule.
+
+        contract.ts        + the reason union, `unavailable`/`availableNow`, the fault form,
+                             route discovery and dispatch, `Scratch`
+        fixtures.ts        + `seatHandle` (both tables), `MAX_NAME_LENGTH`, `deadDb`
+        surface.test.ts    11  unchanged
+        grammar.test.ts    78  + D-70-04's round-trip cases on both pure grammars
+        slugs.test.ts      23  AC1/AC2/AC3 with the reason, + the illegal block
+        handles.test.ts    32  AC4, + D-70-06, D-70-02 and the write side of the grammar
+        concurrency.test.ts 5  AC5
+        suggestion.test.ts  5  AC6
+        length.test.ts      9  D-70-15
+        faults.test.ts     10  D-70-05
+        routes.test.ts     30  D-70-03 and D-70-14b
+
+    **The 27 are covered.** `reason` at both refusal sites and in all three of its values,
+    including the two cases where a wrong reason is the only observable difference: an illegal
+    slug whose *trimmed* form the owner really does hold — which a module with no round-trip
+    answers `taken` about, correctly, for a name nobody typed — and a reserved slug an owner
+    already has a bundle at. The length bound at 255, 256 and 100 000. Four fault doors. Both
+    routes. The sentinel.
+
+    **A round-1 assertion of mine is now WRONG and I deleted it.** Round 1 asserted that every
+    loser in an AC5 race carries a driver `cause`, reasoning that a causeless refusal under a
+    race is the read-then-write shape. **D-70-06 invalidates that**: the ruled mechanism is
+    `ON CONFLICT DO UPDATE ... WHERE account_id = excluded.account_id`, and a conflicting row
+    that fails the `WHERE` is not updated and raises nothing — so a correct implementation's
+    losers carry no cause at all and the assertion would have reddened the contract's own
+    design. Found by building the reference to the mechanism the **ruling** names rather than
+    to the one round 1 had in mind. Replaced with a better one: a released handle raced by
+    eight accounts, one of them the previous holder, who must win **every time** rather than by
+    timing — which a plain insert, a `DO UPDATE` with no `WHERE`, and a read-then-write each
+    fail differently. A finding is a measurement and it goes stale like the thing it measured.
+
+    **Round 1's first gap is closed and the second is not.** D-70-02 rules that release "updates
+    nothing because the UPDATE is scoped by `account_id`", so a stranger's release is now
+    asserted against the row's `status`, and the mutation that reddened nothing in round 1
+    reddens 2. `released_at` is still unruled and still unasserted, labelled in the test that
+    cannot see it.
+
+    **Tolerances removed rather than left standing.** D-70-01 settled `checkSlug` (a query,
+    returns; both error classes struck), so round 1's either-shape helper is gone and a throw
+    there now reds; the two struck message literals are deleted from `contract.ts` rather than
+    left beside the ruling that removed them. D-70-06 settled the reclaim, so round 1's
+    "either outcome" is now an assertion. D-70-04 settled the trimming question round 1
+    explicitly declined to assert, so surrounding whitespace is now refused on both grammars
+    **and** the substitution is checked directly: after asking for a leading-space name, the
+    trimmed key must not exist.
+
+    **Reference first, 203/203 — and then the reference was made to go red.** A green against a
+    reference is evidence only if the reference could have gone red, so all 30 mutations name
+    the test they are predicted to red and a mutation that reds something else is reported as a
+    MISS. **30 of 30 caught.** The fault doors are opened by real driver faults at a caller's
+    call site, never by a stub: 22P02 through `checkSlug` and `releaseHandle`, 23503 through
+    `allocateHandle`, and a refused connection through all four — the last being the shape a
+    SQLSTATE-keyed catch cannot classify, which the sweep confirms (keying on a SQLSTATE
+    *shape* reds 5).
+
+    **Four of the thirty were defective on their first run, and none was a suite result.** They
+    are three of this file's three causes of a zero, in one sweep, and the harness named each
+    rather than my re-reading it. Two replaced `await guard(op, () => db...)` with
+    `await (async () => db...)`, which yields a *function* and breaks the module: 199 of 203
+    red, flagged as breakage rather than counted. One keyed the fault classifier on "has a
+    `code` at all" — but Node's ECONNREFUSED error carries `code: "ECONNREFUSED"`, so the
+    mutation changed nothing and reported a gap; keyed on a five-character SQLSTATE shape it
+    reds 5. One made the unknown-owner response differ by `suggestion: undefined`, which
+    `JSON.stringify` drops, so the bodies stayed byte-identical: a no-op **at the wire**,
+    reported as a gap. And one was a defect in the *prediction* rather than the mutation — the
+    predicted word appears in the error message and in no test name, so a correct 10-red result
+    was reported as a MISS.
+
+    **Three readings taken rather than reported, each flagged as a reading.** (a) A slug
+    containing `/` is refused. D-70-04 says all three names use `CARD_ID`, and `CARD_ID` admits
+    one separator — but a slug with one cannot be expressed by `/blueprints/{owner}/{slug}` at
+    all, so `checkSlug` would be answering about a name no URL can carry. If the implementation
+    reads D-70-04 literally, this reds and the contract should say which. (b) `MAX_NAME_LENGTH`
+    is 255, read from D-70-15's prose because the constant is not in the Published signatures
+    block — deliberately not imported, since a boundary test that imports the constant it
+    bounds moves with it. (c) `checkHandle` must return a `suggestion` for a taken handle,
+    carried forward from round 1 for the same reason.
+
+    **Still open, unchanged from round 1:** `<kind>` in `InvalidNameError` is unenumerated, so
+    that one path keeps a prefix-and-shape pin rather than an equality one.
+
+    **Base agrees.** `npm test` at `7f85fb8` before any of this round's tests existed:
+    **5010 total, 119 failed** — this suite's 118 plus exactly one other, `tests/server/t090/serve.test.ts`
+    "returns the same bytes for one digest after a B-08 RE-SCORE", which reconciles to the
+    4891/4890 the hand-off states. No other failing file.
+
+    **State of this worktree.** `npx vitest run tests/server/t070`: exit 1, **9 failed files**,
+    201 failed and 2 passed of 203. Every red traces to one of two causes and nothing else —
+    9 blocks of `@/lib/server/naming does not load` and 17 of
+    `No route file exists under app/api/names/`, both of which are the correct blind state.
+    Zero syntax errors, zero transform failures, zero bad paths, zero hook timeouts. The two
+    passing tests need neither module nor route: the check that `components/profile/tabs.ts`
+    still carries exactly the four segments this section names, and the control asserting that
+    the indistinguishability pair really is a pair — one handle seated in `account`, the other
+    absent from both tables — which is the assertion that stops that property from being true
+    and untested. `npx eslint tests/server/t070` clean; `npm run typecheck` reports the one
+    expected `TS2307` on the absent barrel.
+
+    **The gate triple, taken in the serialised slot and released after.** Whole-tree stamps
+    taken **before and after**, `git status --porcelain` empty at both ends, on the **committed**
+    tree — the sha is reported to the orchestrator alongside this entry rather than written into
+    it, because a sha written into the entry is invalidated by the commit that carries the entry.
+    That is not pedantry: the first triple this round ran at `5afd32f` and an amend to this very
+    paragraph moved HEAD to a different sha, so the recorded stamp named a tree the gates had not
+    measured. Re-run on the final tree rather than explained away. Three consecutive
+    `npm test` runs, read as the count rather than the exit code: **5094 tests, 202 failed,
+    4892 passed** on each, and the failing **sets are identical across all three** once sorted
+    and stripped of ANSI and durations. Ten failing files: this suite's nine, plus
+    `tests/server/t090/serve.test.ts` with the one named failure and no other. Zero hook
+    timeouts on all three.
+
+    The arithmetic reconciles to the hand-off in both directions: base was 4891 with 4890
+    passing, this suite adds 203, and 4891 + 203 = 5094; 202 failed is this suite's 201 plus
+    T090's 1; 4892 passed is base's 4890 plus this suite's 2.
+
+    **Residue: none, and measured rather than glanced at.** `pg_database` was empty of
+    `darkprint_test_%` before the triple and sampled three times over 24 seconds after it — 0
+    each time, with `pg_stat_activity` showing no live connections into any. The sampling is the
+    method rather than the count: a single check taken as the runner exits catches teardown in
+    flight, and on this shared server a non-zero count is not evidence of your own residue.
+    Scratch worktree removed, `git worktree list` back to 17.
+
+    This row's `State` and `Evidence` are left to the orchestrator: the implementation exists
+    and `impl-done` is not mine to move.
+
+  - 2026-08-15 blind test author, **merged `d76111f` and answered its value-versus-presence
+    finding by measurement.** Merge clean, no conflicts. Base records: "`reason` dropped
+    entirely (N12) reds 4. `reason` returned as `"taken"` for an illegal name — wrong but
+    present (N13) — reds 2. A test asserting only that `reason` is defined passes N13." So the
+    question for this suite is whether it pins the VALUE, and the answer is a number rather than
+    a claim. Run against the reference:
+
+        N12   reason dropped entirely            11 red
+        N13   illegal reported as "taken"         6 red     <- the discriminator
+        N13b  illegal reported as "reserved"     12 red
+        N14   a reason on an AVAILABLE answer     5 red
+        N14b  the same on the slug side           8 red
+
+    Audited before measuring, and the audit agrees: **no assertion in this suite is of the form
+    "the answer has a reason"** — every one of the 30 `unavailable()` call sites passes the
+    expected value, so N13 was always going to red. Substitution, not removal, is what was run
+    to find that out.
+
+    **The property is now quantified rather than written per case**, which is base's second
+    move and the one worth copying: `unavailable()` requires a reason on *every* refusal and
+    `availableNow()` requires none on *every* available answer, so a fourth refusal path added
+    later reds instead of answering `undefined` to a caller branching on it. Honest about what
+    that bought: on the refusal side, nothing today — every call site already pinned a value, so
+    the quantifier guards future paths only. On the available side it bought coverage that did
+    not exist: the same mutation reddened **2** before the change and **13** after (5 + 8), and
+    the slug half had no case at all. Measured, not reasoned — which is base's own third point,
+    that running the suite is what settles an additive change and not the argument that it is
+    additive.
+
+  - 2026-08-15 blind test author, **on D-70-12's closing condition, stated as what I can and
+    cannot measure.** The item asks that the 27 be held by this suite rather than by colocated
+    tests alone, and names the settling measurement: mutate each and check the newly-red lines
+    now include `tests/server/t070/**`.
+
+    **I do not have that measurement and I cannot run it without ceasing to be blind.** It
+    mutates `lib/server/naming/**` and `app/api/names/**`, which requires finding the code,
+    which requires reading it — the same division this file already records for the
+    guard-observability experiment: the implementer runs it on its own tree, the adversary
+    reproduces it independently, and the blind author produces the analogue against its own
+    reference, which is precisely why it can.
+
+    **What I do have is that analogue, and it is real evidence with a named limit.** Thirty-five
+    mutations across a reference built to the rulings — module and both routes — each naming the
+    test it must red: 30 of 30 in the main sweep, 5 of 5 in the value-versus-presence pass, and
+    every newly-red line under `tests/server/t070/**`. That establishes this suite observes those
+    behaviours in **an** implementation of the rulings. It does not establish that it observes
+    them in **the** implementation, and the gap is not rhetorical: my reference is my own reading
+    of the same sentences, so a behaviour the implementation reaches by a different structure may
+    be reachable by a mutation I could not have written. A test can pass for the wrong reason
+    where a deletion diff cannot.
+
+    So: the item is **not** closed by this round on my evidence alone, and it should not be read
+    as closed. Whoever holds the implementation tree runs the twelve original mutations again and
+    reports whether the newly-red sets now reach `tests/server/t070/**`. That is a different
+    instrument from mine by design, and two instruments disagreeing is how a gap surfaces where
+    one confident number hides it.
+
+  - 2026-08-15 blind test author, **D-70-16/17/18's cells. 215 tests over 9 files, from 203.**
+    Merged `5a8e084`. Scope was the cells the amendment adds and nothing else.
+
+    **Three of the four uncontested cells are now held**, and the property is quantified in
+    `unavailable()` rather than written per case, so it binds every refusal in the suite at
+    once: `reserved` carries a suggestion, `illegal` carries none. D-70-16's separator rule is
+    asserted for handles as well as slugs. D-70-17's `MAX_NAME_LENGTH` is bound and pinned to a
+    literal **255 written in the test** — read to CHECK it, never to use it, since the block
+    itself says a test that imports the constant it bounds moves with it; `length.test.ts` keeps
+    its own copy and `surface.test.ts` is what stops the two drifting apart.
+
+    **Falsified by SUBSTITUTION as well as removal, because that is the half the ruling adds.**
+    A suggestion *present* on an `illegal` refusal is exactly the case a "suggestion is
+    required" assertion passes. Seven mutations, 7 caught: no suggestion on `reserved` 9 red, on
+    a taken slug 3; a suggestion offered on an illegal slug 12 and on an illegal handle 5; a
+    reserved suggestion that is itself a tab 5; D-70-16 reverted 6; `MAX_NAME_LENGTH` moved 5.
+
+    **A red against a correct reference, which is a defect in the test by the standing rule —
+    and it turned out to be a contract gap.** D-70-18 and D-70-15 **interact and nothing rules
+    the interaction**. A handle of exactly `MAX_NAME_LENGTH` is well-formed, and D-70-15's own
+    criterion allocates one; D-70-18 then requires a suggestion for its refusal. **No suffix
+    fits** — every `<name>-2` is `MAX_NAME_LENGTH + 2` and therefore illegal — so a generator
+    that appends cannot satisfy D-70-18 at the bound, and one that satisfies it must SHORTEN the
+    name it was given. Unruled either way: (a) shortening is required and an appending generator
+    is a defect, or (b) D-70-18 owes a carve-out where no legal alternative exists. Reported.
+    One call site uses `unavailableAtLengthBound`, which drops the suggestion requirement and
+    nothing else, and says why — the single labelled weak spot in the suite.
+
+    **The sixth cell is NOT a missing cell and I have not implemented it. It contradicts an
+    assertion this suite already carries and which two rounds accepted.** `reserved x handle`
+    rests on "a released handle is permanently reserved, so `checkHandle` on one must answer
+    `reserved`". This suite asserts that a released handle answers **`taken`**, and has since
+    round 2. Both cannot be right. D-70-18 as ruled (§"the three readings, ruled") governs only
+    which reasons carry a suggestion and says nothing about which reason a released handle gets;
+    the only definition of `reserved` anywhere in this contract is "reserved by the profile
+    tabs", which is a slug concept. So this is an amendment to an existing ruling rather than a
+    cell of a new one, and by the two-holders rule written in the same commit it needs both
+    holders told — flipping it here alone is the "round of false failures" half.
+
+    **And the enumeration-by-product argument cuts both ways.** A cross product is a domain by
+    construction only if every cell is REACHABLE. If a released handle is `taken`, then
+    `reserved x handle` is unreachable and the product has five live cells rather than six —
+    asserting the sixth would manufacture coverage of behaviour that does not exist, which is
+    the same error as omitting a live one, in the other direction. Which it is depends on a
+    ruling nobody has made. Held at `taken` pending it, stated rather than hedged.
+
+    **Still open, unchanged:** `<kind>` in `InvalidNameError` is unenumerated; `released_at` is
+    unruled and unasserted; and whether an `available` answer may carry a `suggestion` — D-70-18
+    quantifies over refusals and says nothing about the other side, so nothing asserts it.
+
+  - 2026-08-15 blind test author, **D-70-19/20/21. 216 tests over 9 files, from 215.** Merged
+    `35d5f06`. Scope was the three cells these rulings add.
+
+    **D-70-19, and my premise was wrong in a way worth recording.** I refused the sixth cell on
+    two grounds: that it contradicted an assertion three rounds had accepted, and that the only
+    definition of `reserved` in the contract was the profile tabs. **The first ground was right
+    and the second was false** — the Contract line says a handle is "permanently reserved once
+    used" and that a rename "keeps the old one reserved", and it predates the tab-slug sentence.
+    I searched the record for a *definition* of `reserved`, so a *use* of it was outside what
+    the search could return: the instrument answered the question I asked it, and my claim was
+    wider than the question. That is this run's own through-line arriving inside the check I
+    ran to avoid taking a peer's word. Checking the record rather than the message was still the
+    right move; asking it a narrower question than my claim was not.
+
+    Now asserted: a released handle answers `reserved`, an active one `taken`, and the **rename
+    test pins both at once** — the old handle `reserved`, the new one `taken` — which is the
+    only place both are reachable in one call sequence and the only shape that catches a module
+    answering one reason for everything.
+
+    **D-70-20 closed the interaction I reported and the labelled weak spot went away rather than
+    becoming a documented exception.** `unavailableAtLengthBound` is deleted; the bound test
+    uses the ordinary helper and the suggestion is required there like everywhere else. The
+    ruling's reasoning is the part to keep: "no suffix fits" was a property of one **generation
+    strategy**, not of the problem — truncate to `MAX_NAME_LENGTH - 2` and append and a legal
+    candidate always exists. A suite that had accepted my carve-out would have made D-70-18
+    unsatisfiable at exactly the boundary D-70-15 exists to defend.
+
+    **D-70-21 closes the last open question round 2 reported.** The property is now total on
+    both axes and enforced in the two helpers rather than per case: every refusal of a
+    well-formed name carries a suggestion, every refusal of an ill-formed one carries none, and
+    every available answer carries none.
+
+    **Six mutations, 6 caught, and D-70-19 falsified in BOTH directions** because that is what
+    the domain rule now requires. A released handle collapsed back to `taken` reds 4; an
+    **active** handle answering `reserved` reds 9 — the dead-cell direction, where the value is
+    present and well-formed and the distinction is gone just as completely. Appending-only
+    generator reds 1 at the bound; a suggestion beside an available name reds 12 on the slug
+    side and 5 on the handle side; the sixth cell removed reds 4.
+
+    **A constructed domain owes two demonstrations and this round ran both**: nothing live
+    missing (T6, the sixth cell) and nothing listed dead (T2, `reserved` where it does not
+    belong). Under the pre-D-70-19 reading the sixth cell was unreachable and asserting it would
+    have manufactured coverage of behaviour that does not exist — which is why holding at five
+    was right *then* and is wrong *now*, and the difference is a ruling rather than a
+    preference.
+
+    **Still open and still labelled, neither mine to close:** `<kind>` in `InvalidNameError`
+    needs the implementer's enumeration; `released_at` is a T100 question.
+
 ### T240, Observability and audit log
 
 - **State:** todo

@@ -47,17 +47,19 @@ import {
   expectSealedError,
   handleTakenMessage,
   settled,
+  unavailable,
 } from "./contract";
 import {
-  type TestDb,
+  type Scratch,
   clean,
+  closeDatabase,
   createAccount,
   db,
   freeHandle,
   openDatabase,
 } from "./fixtures";
 
-let t: TestDb;
+let t: Scratch;
 
 beforeAll(async () => {
   t = await openDatabase();
@@ -72,18 +74,24 @@ beforeAll(async () => {
    scratch database, so the harness itself becomes the residue. `testTimeout` is already 20s
    for the same reason one level up. */
 afterAll(async () => {
-  await t?.drop();
+  await closeDatabase();
 }, 60_000);
 beforeEach(async () => {
   await clean(t);
 }, 60_000);
 
-/** Allocate `handle` to a fresh account and hand back the answer `checkHandle` then gives. */
+/**
+ * Allocate `handle` to a fresh account and hand back the answer `checkHandle` then gives.
+ *
+ * `unavailable(..., "taken")` rather than a bare shape check: D-70-14a gave `Availability` its
+ * `reason`, and a suggestion offered beside a refusal that cannot say why it refused is half an
+ * answer. Asserting it here means every AC6 test below rests on a refusal of the right kind.
+ */
 async function takenThenChecked(handle: string) {
   const allocate = await bind("allocateHandle");
   const check = await bind("checkHandle");
   await allocate(db(t), await createAccount(t), handle);
-  return asAvailability(await check(db(t), handle), "checkHandle(taken)");
+  return unavailable(() => check(db(t), handle), "checkHandle(taken)", "taken");
 }
 
 describe("AC6: the suggestion for a taken handle", () => {
@@ -195,8 +203,7 @@ describe("AC6 against released reservations, which is where a suggestion goes st
       await release(db(t), account, name);
     }
 
-    const answer = asAvailability(await check(db(t), handle), "checkHandle(taken)");
-    expect(answer.available).toBe(false);
+    const answer = await unavailable(() => check(db(t), handle), "checkHandle(taken)", "taken");
     const suggestion = answer.suggestion as string;
     expect(
       burnt,

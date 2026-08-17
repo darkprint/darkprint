@@ -20,6 +20,7 @@ import {
   type PublishedName,
   asDiagnostics,
   bind,
+  bindMaxNameLength,
   loadNaming,
 } from "./contract";
 
@@ -38,6 +39,20 @@ describe("the barrel publishes what the contract says it publishes", () => {
 
   /* `Availability` is an interface and erases at compile time, so there is nothing to bind. It
      is checked structurally at every call site instead, by `asAvailability`. */
+
+  it("exports `MAX_NAME_LENGTH`, which D-70-17 moved into the published block", async () => {
+    await expect(bindMaxNameLength()).resolves.toBeTypeOf("number");
+  });
+
+  it("publishes it as 255, compared against a literal written here", async () => {
+    /* The one place this suite reads the module's constant, and it reads it to CHECK it rather
+       than to use it. The block is explicit: "Do NOT import it into a boundary test: a test
+       that imports the constant it bounds moves with it." So `length.test.ts` keeps its own
+       255 from `fixtures.ts` and this test is what stops the two from drifting apart silently
+       — a raised constant reds here, which is the whole point D-70-15 made about the number
+       being safe because a test holds it rather than because it is small. */
+    expect(await bindMaxNameLength()).toBe(255);
+  });
 });
 
 describe("the three pure functions are pure", () => {

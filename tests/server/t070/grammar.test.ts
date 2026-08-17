@@ -29,11 +29,16 @@
      than a stated one. What is pinned is severity: an id the grammar
      rejects produces at least one `error`, and one it accepts
      produces none.
-   * No surrounding-whitespace case. `parseCardRef` trims its input
-     "because refs arrive from hand-written DOT attributes", so an
-     implementation that trims before matching is defensible and a
-     test forbidding it would be asserting a preference. Interior
-     whitespace is here instead: no reading of `CARD_ID` admits it.
+   * Surrounding whitespace IS here now, and round 1's reason for
+     leaving it out is what D-70-04 overturned. Round 1 argued that
+     `parseCardRef` trims "because refs arrive from hand-written DOT
+     attributes", so trimming before matching was defensible. The
+     ruling says the opposite and gives the mechanism: the check
+     **round-trips** rather than parses, because "a bare
+     `!== undefined` accepts `\" mara-veil\"` and reserves
+     `mara-veil`, a different primary key from the one asked for,
+     substituted with nothing reporting it". A name is legal only if
+     `cardRef(parseCardRef(x))` is `x` again.
    * `REF_VERSION` is cited by the contract and reached by no
      published function — nothing in the signature block takes a
      version. Reported to the orchestrator, not tested around.
@@ -135,6 +140,9 @@ const INVALID_IDS: ReadonlyArray<readonly [string, string]> = [
   ["/solver", "an empty namespace segment"],
   ["solver/", "an empty local segment"],
   ["solver a", "interior whitespace"],
+  [" solver-a", "a leading space: `parseCardRef` TRIMS, so this does not round-trip (D-70-04)"],
+  ["solver-a ", "a trailing space, the same way"],
+  ["\tsolver-a", "a leading tab, which `String.prototype.trim` also removes"],
   ["solver.a", "a dot"],
   ["sólver", "a character outside `[a-z0-9-]`"],
   ["solver\u0000a", "a NUL, written as an escape rather than a literal byte (T-01)"],
@@ -180,6 +188,8 @@ const INVALID_NAMESPACES: ReadonlyArray<readonly [string, string]> = [
   ["mara--veil", "a doubled hyphen"],
   ["mara/veil", "a separator: a namespace is one segment, and `splitTermId` reads the first `/`"],
   ["mara veil", "interior whitespace"],
+  [" mara-veil", "a leading space, which does not round-trip (D-70-04)"],
+  ["mara-veil ", "a trailing space, the same way"],
   ["mara.veil", "a dot"],
   ["márá", "a character outside `[a-z0-9-]`"],
   ["ma\u0000ra", "a NUL, written as an escape rather than a literal byte (T-01)"],

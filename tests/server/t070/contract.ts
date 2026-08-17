@@ -2,46 +2,48 @@
    T070 — the blind contract surface
 
    Not a test file. `vitest.config.ts` collects `tests/**\/*.test.ts`
-   and nothing else, so this module is imported by the suites beside
-   it and is never collected as one itself.
+   and this module is imported by the suites beside it.
 
-   ── why every load is a dynamic import ──
-   These tests were written in a worktree branched before
-   `lib/server/naming/**` existed. A static top-level import of a
-   module that is not on disk fails the whole *file* at collection,
-   which reports one red where the protocol asks for one per
-   acceptance criterion and hides five criteria behind the first
-   missing module. Loading inside the test that needs it turns "the
-   module is not there yet" into exactly the per-criterion red the
-   hand-off is supposed to produce. The specifier stays a literal so
-   the `@` alias resolves.
+   ── round 2, and why this file changed shape ──
+   D-70-12 re-opened this suite. The measurement behind it: across
+   twelve mutations against the whole tree, every newly-red line was
+   under `lib/server/naming/**` or `app/api/names/**` and not one was
+   under `tests/server/t070/**`. Twenty-seven behaviours were held by
+   the implementer's colocated tests alone — `reason` at both refusal
+   sites, the length bound, the fault doors, both routes, and the
+   unknown-owner sentinel. All of them arrived as contract AFTER this
+   suite was written, which is the mechanism recorded at "an
+   amendment writes signatures against a tree that already exists".
 
-   ── one barrel ──
-   `@/lib/server/naming` is the only module under test. T070's
-   contract says it "consumes nothing else" — no second barrel, so
-   unlike T030 there is no red here that means "a dependency has not
-   merged". Every red is T070 absent or T070 wrong.
+   ── what the rulings removed from this file ──
+   D-70-01 settled the question round 1 reported rather than resolved:
+   **`checkSlug` is a query and returns; `SlugTakenError` and
+   `ReservedSlugError` are struck.** So the dual-reading tolerance
+   `refusalOf` carried is now an OVER-tolerance — a `checkSlug` that
+   throws must red — and the two message literals are gone rather
+   than left standing beside the ruling that removed them. `Availability`
+   gained `reason` so a caller that can no longer catch a class has
+   the discriminator in the value, and D-70-14a gave it its third
+   member, `"illegal"`.
 
-   ── no candidate lists ──
-   Every name is bound exactly and its absence quotes the clause that
-   publishes it. T000 paid two rounds for the alternative: one list
-   resolved `encodeSession` instead of the cookie writer, another
-   resolved the one migration function with no database parameter.
-
-   ── the message pins are LITERALS, and that is deliberate ──
-   T070 is the first task in this run to publish an admissible
-   message form per rejection path *before* the implementation
-   exists, so the strongest pin in the error-hygiene rule is
-   available here: `message` equals the constructed form, with the
-   expected string written out in this file rather than imported from
-   the module under test. A later change that derives one of these
-   from `@/lib/server/naming` — reusing a template, a format helper
-   or an exported constant — is a REMOVED ASSERTION, not a removal of
-   duplication, and is to be treated as one. See backend.md,
-   "the expected message must be a LITERAL in the test".
+   ── the message pins are still LITERALS ──
+   Every expected string below is written out here and never imported
+   from `@/lib/server/naming`. An expectation built from the module
+   under test asserts "does the module agree with itself" and passes
+   unchanged if the template starts interpolating a driver value. A
+   later change that derives one of these from the module is a
+   REMOVED ASSERTION and is to be treated as one.
    ============================================================ */
 
+import { readdirSync, type Dirent } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+import { getRouteMatcher } from "next/dist/shared/lib/router/utils/route-matcher.js";
+import { getRouteRegex } from "next/dist/shared/lib/router/utils/route-regex.js";
+
 import type { Diagnostic, Severity } from "@/lib/core";
+import { createTestDb, type TestDb } from "@/tests/support";
 
 export type Namespace = Record<string, unknown>;
 export type UnknownFn = (...args: unknown[]) => unknown;
@@ -103,11 +105,8 @@ function requireFrom(mod: Namespace, name: string, clause: string): unknown {
     `${NAMING} exports no \`${name}\`.\n` +
       `  the contract publishes: ${clause}\n` +
       `  found: ${exported}\n` +
-      `  This is a failed acceptance criterion, not a naming difference. The Published ` +
-      `signatures block names this export exactly, and the rule above it ("the contract must ` +
-      `name the interface, not only the behaviour") exists because two rounds of candidate ` +
-      `lists in T000 each resolved to the wrong thing. Do not add a synonym here; publish the ` +
-      `name the contract states.`,
+      `  This is a failed acceptance criterion, not a naming difference. Do not add a synonym ` +
+      `here; publish the name the contract states.`,
   );
 }
 
@@ -121,39 +120,69 @@ function asFn(value: unknown, name: string, clause: string): UnknownFn {
   return value as UnknownFn;
 }
 
-/** The seven bindings T070 publishes. `Availability` is a type and has no runtime binding. */
+/** The seven function bindings. `Availability` is a type and has no runtime binding. */
 export async function bind(name: PublishedName): Promise<UnknownFn> {
   const mod = await loadNaming();
   return asFn(requireFrom(mod, name, PUBLISHED[name]), name, PUBLISHED[name]);
 }
 
+/**
+ * D-70-17 published `MAX_NAME_LENGTH` into the signature block, so it is a name this suite
+ * must bind — but deliberately NOT one it may use as a bound. The block says so itself: "Do
+ * NOT import it into a boundary test: a test that imports the constant it bounds moves with
+ * it." So this reads the value to compare it against a literal, and `fixtures.ts` keeps its
+ * own 255 for every assertion about what is storable.
+ */
+export const PUBLISHED_MAX_NAME_LENGTH =
+  "const MAX_NAME_LENGTH = 255   // D-70-15/D-70-16. A STORAGE bound, not a product one.";
+
+export async function bindMaxNameLength(): Promise<unknown> {
+  const mod = await loadNaming();
+  return requireFrom(mod, "MAX_NAME_LENGTH", PUBLISHED_MAX_NAME_LENGTH);
+}
+
 /* --------------------- the shape the contract publishes back --------------------- */
+
+/** D-70-14a gave the union its third member. `"illegal"` is a name the grammar refuses. */
+export const REASONS = ["taken", "reserved", "illegal"] as const;
+export type Reason = (typeof REASONS)[number];
 
 export interface Availability {
   available: boolean;
+  reason?: Reason;
   suggestion?: string;
 }
 
 /**
- * `interface Availability { available: boolean; suggestion?: string }`.
+ * `interface Availability { available: boolean; reason?: "taken" | "reserved" | "illegal"; suggestion?: string }`
  *
  * The return type is part of the published signature, so a wrong shape is a red rather than a
- * broken test. `available` is a boolean and not a truthy value: a store answering `undefined`
- * for "I found no row" has published a different type from the one it declared, and every
- * caller written against `if (!a.available)` would then treat a free name as taken.
+ * broken test. Three things are checked and each is a way the type has already been got wrong
+ * somewhere in this run: `available` is a **boolean** and not a truthy value, since a store
+ * answering `undefined` for "I found no row" makes every `if (!a.available)` treat a free name
+ * as taken; `reason` is a member of the published union and not free prose, since a caller
+ * switches on it; and no member outside the three exists, because the published shape is the
+ * whole shape and an extra field is a second declaration by another route.
  */
 export function asAvailability(value: unknown, where: string): Availability {
   if (value === null || typeof value !== "object") {
     throw new Error(
-      `${where} returned ${describe_(value)}; the contract publishes ` +
-        `Promise<Availability>, i.e. { available: boolean; suggestion?: string }.`,
+      `${where} returned ${describe_(value)}; the contract publishes Promise<Availability>, ` +
+        `i.e. { available: boolean; reason?: "taken" | "reserved" | "illegal"; suggestion?: string }.`,
     );
   }
   const a = value as Partial<Availability>;
   if (typeof a.available !== "boolean") {
     throw new Error(
-      `${where} returned \`available\` = ${JSON.stringify(a.available)} (${describe_(a.available)}); ` +
-        `Availability.available is declared \`boolean\`.`,
+      `${where} returned \`available\` = ${JSON.stringify(a.available)} ` +
+        `(${describe_(a.available)}); Availability.available is declared \`boolean\`.`,
+    );
+  }
+  if (a.reason !== undefined && !REASONS.includes(a.reason)) {
+    throw new Error(
+      `${where} returned \`reason\` = ${JSON.stringify(a.reason)}; D-70-14a publishes the union ` +
+        `as exactly ${REASONS.map((r) => JSON.stringify(r)).join(" | ")}. A caller switches on ` +
+        `this value, so a fourth member is a value nobody handles.`,
     );
   }
   if (a.suggestion !== undefined && (typeof a.suggestion !== "string" || a.suggestion === "")) {
@@ -162,35 +191,171 @@ export function asAvailability(value: unknown, where: string): Availability {
         `is \`string | undefined\`, and an empty string is not a name anybody can claim.`,
     );
   }
+  const extra = Object.keys(a).filter((k) => !["available", "reason", "suggestion"].includes(k));
+  if (extra.length > 0) {
+    throw new Error(
+      `${where} returned an Availability carrying ${extra.map((k) => `\`${k}\``).join(", ")}. ` +
+        `The published interface has three members and a fourth is a second declaration of one ` +
+        `shape — which is what D-70-10 was charged for.`,
+    );
+  }
   return a as Availability;
 }
 
-/* --------------------- the four admissible message forms --------------------- */
+/**
+ * A name the module says is not available, in the one shape D-70-01 leaves for saying so.
+ *
+ * Round 1 tolerated either a returned `{ available: false }` or a throw, because the contract
+ * published both and settled neither. **D-70-01 settled it**: "`checkSlug` is a query and
+ * returns; both error classes are struck. A query asked 'is this available' answers, and one
+ * that throws to say 'no' makes its own return type meaningless." So the tolerance is gone and a
+ * throw here is a red — keeping it would be a suite carrying a withdrawn clause, which is the
+ * exact failure recorded at "Resolving `backend.md`".
+ */
+export async function unavailable(
+  call: () => unknown,
+  where: string,
+  expected?: Reason,
+): Promise<Availability> {
+  let result: unknown;
+  try {
+    result = await call();
+  } catch (err) {
+    throw new Error(
+      `${where} THREW where the contract requires it to answer.\n` +
+        `  ${err instanceof Error ? err.message : describe_(err)}\n` +
+        `  D-70-01: "\`checkSlug\` is a query and returns; both error classes are struck." ` +
+        `\`SlugTakenError\` and \`ReservedSlugError\` no longer exist, and a refusal is ` +
+        `\`{ available: false, reason }\`.`,
+      { cause: err },
+    );
+  }
+  const availability = asAvailability(result, where);
+  if (availability.available) {
+    throw new Error(
+      `${where} answered \`{ available: true }\` where the name is not available.`,
+    );
+  }
+  /* **Quantified over the refusals, not written per case.** Every call that reaches here is a
+     refusal, so this one line says "every refusal carries a reason" — and a fourth refusal path
+     added later with no reason reds instead of answering `undefined` to a caller branching on
+     it. The output-property rule applied to a field; recorded on `backend` after round 2, from
+     T070's implementer. The per-case `expected` below is the identity half. */
+  if (availability.reason === undefined) {
+    throw new Error(
+      `${where} answered \`{ available: false }\` with no \`reason\`.\n` +
+        `  D-70-14a exists because "a caller could not tell 'not legal' from 'I did not say'". ` +
+        `Every refusal carries one of ${REASONS.map((r) => JSON.stringify(r)).join(" | ")}.`,
+    );
+  }
+  /* **D-70-18, quantified over the refusals.** "A suggestion accompanies exactly those
+     refusals where the name asked for is well-formed. Required when `reason` is `"taken"` or
+     `"reserved"`; **forbidden** when `"illegal"` — you can only offer an alternative to a name
+     that is itself legal."
+
+     Written here rather than per case because that is what makes it bind. AC6 was a
+     conditional — *a suggestion returned for a taken name is itself free* — which a module
+     that never returns one satisfies completely while observing nothing; the guard-that-cannot-
+     fail shape, sitting inside an acceptance criterion since the contract was written. Round 2
+     required a suggestion for `taken` and got that right for the wrong reason: the argument
+     offered was that AC6 needed something to observe, which is an argument about testability.
+     The orchestrator's is stronger and is the one recorded — a criterion satisfiable by never
+     doing the thing it constrains is not a criterion.
+
+     Note which half is the new one. "Required for taken" was already held; **"forbidden for
+     illegal" was held by nothing**, and it is the half a "suggestion is required" assertion
+     passes rather than catches. */
+  const suggestion = availability.suggestion;
+  if (availability.reason === "illegal" && suggestion !== undefined) {
+    throw new Error(
+      `${where} answered \`{ available: false, reason: "illegal", suggestion: ` +
+        `${JSON.stringify(suggestion)} }\`.\n` +
+        `  D-70-18 forbids a suggestion on an illegal name: an alternative can only be offered ` +
+        `to a name that is itself legal. Offering one here answers a question the caller did ` +
+        `not ask and hands it a name in place of the refusal it needed to see.`,
+    );
+  }
+  if (availability.reason !== "illegal" && suggestion === undefined) {
+    throw new Error(
+      `${where} answered \`{ available: false, reason: ${JSON.stringify(availability.reason)} }\` ` +
+        `with no \`suggestion\`.\n` +
+        `  D-70-18 requires one whenever the name asked for is well-formed — \`taken\` and ` +
+        `\`reserved\` both. AC6 as originally written was a conditional a never-suggesting ` +
+        `module satisfied completely, which is why the requirement is stated over the set ` +
+        `rather than left to the one case somebody remembered to test.`,
+    );
+  }
+
+  if (expected !== undefined && availability.reason !== expected) {
+    throw new Error(
+      `${where} answered \`{ available: false, reason: ${JSON.stringify(availability.reason)} }\` ` +
+        `where the contract requires \`${expected}\`.\n` +
+        `  D-70-14a: the reason exists so "a caller could tell 'not legal' from 'I did not say'". ` +
+        `An absent reason on a refusal is the defect that ruling was written for; a wrong one is ` +
+        `the same defect with a value in it.`,
+    );
+  }
+  return availability;
+}
+
+/** A name the module says is free. Asserted with the same shape checks, in the other direction. */
+export async function availableNow(call: () => unknown, where: string): Promise<Availability> {
+  const availability = asAvailability(await call(), where);
+  if (!availability.available) {
+    throw new Error(
+      `${where} answered \`{ available: false, reason: ${JSON.stringify(availability.reason)} }\` ` +
+        `where the name is free.`,
+    );
+  }
+  /* The other half of the same property: every available answer carries NO reason. A module
+     that computes the reason before deciding the answer hands a caller a value it has no branch
+     for, and a per-case check would only catch it wherever somebody remembered to look. */
+  if (availability.reason !== undefined) {
+    throw new Error(
+      `${where} answered \`{ available: true, reason: ${JSON.stringify(availability.reason)} }\`. ` +
+        `A name that was not refused has nothing to explain, and \`reason\` is what a caller ` +
+        `switches on.`,
+    );
+  }
+  /* **D-70-21.** The property is now total on both axes: every refusal of a well-formed name
+     carries a suggestion, every refusal of an ill-formed one carries none, and every available
+     answer carries none. This was the open question round 2 reported — D-70-18 quantified over
+     the refusals and was silent here — so it is an assertion rather than a reading now. An
+     alternative offered beside a name the caller can simply have is noise at best, and at worst
+     a sign-up form that shows a suggestion next to a green tick. */
+  if (availability.suggestion !== undefined) {
+    throw new Error(
+      `${where} answered \`{ available: true, suggestion: ` +
+        `${JSON.stringify(availability.suggestion)} }\`. D-70-21 forbids a suggestion beside an ` +
+        `available name: there is nothing to suggest an alternative to.`,
+    );
+  }
+  return availability;
+}
+
+/* --------------------- the admissible message forms --------------------- */
 
 /*
- * backend.md §T070, "Admissible message forms, published before the implementation exists":
+ * backend.md §T070, after D-70-01 struck two of the five and D-70-05 added one:
  *
  *     HandleTakenError      "allocateHandle: the handle `<handle>` is not available."
- *     SlugTakenError        "checkSlug: `<owner>` already has a bundle at `<slug>`."
- *     ReservedSlugError     "checkSlug: `<slug>` is reserved by the profile tabs."
+ *     NamingStoreError      "<operation>: the database call failed."
  *     InvalidNameError      "<operation>: `<value>` is not a valid <kind>."
  *
- * Written out here as literals. Do not replace any of these with an import from
- * `@/lib/server/naming`: an expectation built from the module under test asserts "does the
- * module agree with itself", and passes unchanged if the template starts interpolating a
- * driver value.
+ * Literals. Never imported from the module.
  */
 
 export function handleTakenMessage(handle: string): string {
   return `allocateHandle: the handle \`${handle}\` is not available.`;
 }
 
-export function slugTakenMessage(owner: string, slug: string): string {
-  return `checkSlug: \`${owner}\` already has a bundle at \`${slug}\`.`;
-}
-
-export function reservedSlugMessage(slug: string): string {
-  return `checkSlug: \`${slug}\` is reserved by the profile tabs.`;
+/**
+ * D-70-05's fifth form. Every slot is filled by the contract — the operation is the published
+ * function name — so this is an EQUALITY pin, which is the strongest available and the one the
+ * clause exists to enable: "a fault has to leave and must not carry `DrizzleQueryError.message`".
+ */
+export function storeFailureMessage(operation: string): string {
+  return `${operation}: the database call failed.`;
 }
 
 /**
@@ -199,7 +364,7 @@ export function reservedSlugMessage(slug: string): string {
  * `<kind>` is unenumerated — the contract never says whether an invalid handle is "a valid
  * handle", "a valid name" or "a valid identifier" — so this path gets a prefix-and-shape pin
  * rather than an equality one, and says so. Pinning an invented `<kind>` would be a candidate
- * list wearing an exact-match's clothes.
+ * list wearing an exact-match's clothes. Still open; reported again this round.
  */
 export function invalidNamePrefix(operation: string, value: string): string {
   return `${operation}: \`${value}\` is not a valid `;
@@ -207,18 +372,6 @@ export function invalidNamePrefix(operation: string, value: string): string {
 
 /* --------------------- the rejection contract --------------------- */
 
-/**
- * "Nothing else may appear in any rendering: the operation, the caller's own value, and the four
- * fixed forms above. `cause` carries the driver error and is non-enumerable; `stack` is retained."
- *
- * Checked over every rendering a log line or an error reporter would actually reach for, because
- * a `message` that is clean while `JSON.stringify(err)` carries the whole INSERT has leaked.
- *
- * `expectedMessage` is an exact pin where the contract fills every slot. Where it does not,
- * `expectedPrefix` pins what is published and `driverValues` covers the rest — see
- * `assertNoDriverLeak` below, which derives the deny set from the actual driver error rather
- * than from a list somebody wrote down.
- */
 export interface SealedExpectation {
   /** The full published form, every slot filled. Exact equality. */
   expectedMessage?: string;
@@ -226,6 +379,19 @@ export interface SealedExpectation {
   expectedPrefix?: string;
 }
 
+/**
+ * D-13's four parts, in the order `tests/error-hygiene.test.ts` enumerates them.
+ *
+ * That guard quantifies the same clause over every error class exported from any `lib/server/*`
+ * barrel, by construction — so it covers T070's classes the day they exist, and this function
+ * covers something it structurally cannot: the clause **as observed on an error a caller
+ * actually received**, from the path production takes. A class that satisfies the clause when
+ * constructed directly and violates it when raised through `allocateHandle` passes there and
+ * reds here. The two are not redundant; they measure the same property at two distances.
+ *
+ * The fourth part — `stack` retained — is invisible to any enumerable-surface walk, which is
+ * how it was missed before that guard existed.
+ */
 export function expectSealedError(
   err: unknown,
   where: string,
@@ -238,13 +404,13 @@ export function expectSealedError(
     );
   }
 
-  // (1) and (2). `Object.keys` is the enumerable own set, which is what every serialiser walks.
   const keys = Object.keys(err);
   if (keys.length !== 0) {
     throw new Error(
-      `${where} rejected with an Error whose \`Object.keys\` is [${keys.join(", ")}]; the ` +
-        `error-hygiene clause requires it empty. A \`code\`, a \`detail\`, a \`query\` or a ` +
-        `\`params\` here is the driver's error escaping under a new name.`,
+      `${where} rejected with an Error whose \`Object.keys\` is [${keys.join(", ")}]; D-13 ` +
+        `requires it empty. A \`code\`, a \`detail\`, a \`query\`, a \`params\` — or a \`name\` ` +
+        `and a \`kind\` assigned in the constructor, which is how \`ArchiveConflictError\` broke ` +
+        `this clause in a task that had already merged — all show up here.`,
     );
   }
   const serialised = JSON.stringify(err);
@@ -253,18 +419,12 @@ export function expectSealedError(
       `${where} rejected with an Error serialising to ${serialised}; the clause requires exactly "{}".`,
     );
   }
-
-  // (3). `propertyIsEnumerable`, never by inference — the clause says so in as many words.
   if (Object.prototype.propertyIsEnumerable.call(err, "cause")) {
     throw new Error(
       `${where} rejected with an Error whose \`cause\` is enumerable; the clause requires it ` +
         `non-enumerable, which is what keeps \`JSON.stringify\` from reaching the driver's error.`,
     );
   }
-
-  // (4). `stack` is RETAINED. "own properties exactly [message, cause]" was unsatisfiable —
-  // `stack` is an own property of every `new Error()` in V8 — so the clause was amended to say
-  // what it was always reaching for: nothing leaks, and the trace survives.
   if (
     !Object.prototype.hasOwnProperty.call(err, "stack") ||
     typeof err.stack !== "string" ||
@@ -276,10 +436,6 @@ export function expectSealedError(
     );
   }
 
-  // (5). The whitelist, asserted by EXACT MATCH against the admissible form rather than by
-  // scanning for forbidden substrings. T070 publishes all four forms, so there is nothing to
-  // derive and nothing to curate: the enumerable surface of a sealed error is `{}` and the
-  // message is the one string the contract names for this path.
   if (expectation.expectedMessage !== undefined && err.message !== expectation.expectedMessage) {
     throw new Error(
       `${where} rejected with\n` +
@@ -296,7 +452,7 @@ export function expectSealedError(
       throw new Error(
         `${where} rejected with\n` +
           `    message  ${JSON.stringify(err.message)}\n` +
-          `  where backend.md §T070 publishes InvalidNameError as ` +
+          `  where §T070 publishes InvalidNameError as ` +
           `"<operation>: \`<value>\` is not a valid <kind>." — so this path is pinned as far as ` +
           `the contract fills it in:\n` +
           `    expected ${JSON.stringify(expectation.expectedPrefix + "<kind>.")}\n` +
@@ -313,21 +469,13 @@ export function expectSealedError(
  * The other half of the whitelist, for the paths whose form carries an unpinned slot.
  *
  * Both halves are derived rather than listed: the deny set is every word the *actual* driver
- * error on `cause` identifies, and the allow set is the caller's own values. So a value nobody
- * enumerated is caught the moment the driver puts it in its own error, and the over-match that
- * cost two earlier suites a round — scanning for a substring of the module's own constraint
- * name — cannot recur, because the comparison is word by word.
- *
- * Unconditional by construction. When the rejection carries no driver error the deny set is
- * empty rather than the check being skipped: a block that runs only when the subject supplies
- * the shape it keys on cannot test the subject that does not.
+ * error on `cause` identifies, and the allow set is the caller's own values. Unconditional by
+ * construction — when the rejection carries no driver error the deny set is empty rather than
+ * the check being skipped.
  */
 export function assertNoDriverLeak(err: Error, supplied: readonly string[], where: string): void {
   const admissible = new Set<string>();
   for (const value of supplied) for (const word of wordsOf(value)) admissible.add(word);
-  // `Error.prototype.name` puts "error" in `String(err)` structurally, and the operation names
-  // in the published forms are the module's own. Subtracted by deriving from a baseline `Error`
-  // rather than by listing them.
   for (const word of wordsOf(String(new Error("")))) admissible.add(word);
 
   const renderings: Record<string, string> = {
@@ -347,7 +495,7 @@ export function assertNoDriverLeak(err: Error, supplied: readonly string[], wher
       throw new Error(
         `${where}: \`${name}\` carries ${JSON.stringify(echoed.join(" "))}, which came from the ` +
           `driver error on \`cause\` and is not a value the caller supplied. §T070 admits only ` +
-          `"the operation, the caller's own value, and the four fixed forms".`,
+          `"the operation, the caller's own value, and the fixed forms above".`,
       );
     }
   }
@@ -358,8 +506,7 @@ export function assertNoDriverLeak(err: Error, supplied: readonly string[], wher
  *
  * The leading class admits a digit on purpose: an identifier-shaped `[a-z_][a-z0-9_]{3,}`
  * produces no token at all from `"23505"`, so a SQLSTATE could never appear on either side of
- * the comparison while the clause names one among the things no rendering may carry. Widening
- * a deny set does nothing if the thing doing the looking cannot represent its members.
+ * the comparison while the clause names one among the things no rendering may carry.
  */
 const WORD = /[a-z0-9_][a-z0-9_]{3,}/g;
 
@@ -367,13 +514,6 @@ function wordsOf(text: string): Set<string> {
   return new Set(text.toLowerCase().match(WORD) ?? []);
 }
 
-/**
- * What the driver error *identifies*, never what it says.
- *
- * Reading the prose would make the module's fixed English depend on PostgreSQL's English, which
- * moves with a server upgrade or an `lc_messages` change. `severity` is deliberately absent —
- * its value is the word "ERROR", which identifies nothing and collides with every `Error`.
- */
 const IDENTIFYING = [
   "code",
   "constraint",
@@ -384,6 +524,8 @@ const IDENTIFYING = [
   "file",
   "query",
   "sql",
+  "detail",
+  "where",
 ] as const;
 
 function driverValues(cause: unknown): Set<string> {
@@ -416,11 +558,6 @@ function driverValues(cause: unknown): Set<string> {
  * `hasOwnProperty` is not enough and this was measured in T030 rather than reasoned: a sealed
  * error defines `cause` as a non-enumerable own property *even when nothing was passed*, so the
  * key exists on every refusal. The VALUE has to be defined.
- *
- * This is what makes AC5 discriminating beyond the count. §T070 requires `allocateHandle` to be
- * "a single insert whose conflict is caught and translated", so under a genuine race every
- * loser's refusal comes back from the index and carries the driver error. A refusal produced by
- * a `SELECT` that ran before the winner committed carries nothing.
  */
 export function expectCausePresent(err: Error, where: string): void {
   const descriptor = Object.getOwnPropertyDescriptor(err, "cause");
@@ -430,52 +567,9 @@ export function expectCausePresent(err: Error, where: string): void {
         `${descriptor === undefined ? "" : " (the property is defined, and it is `undefined`)"}.\n` +
         `  §T070: "\`allocateHandle\` is a **single insert** whose conflict is caught and ` +
         `translated; the primary key is the arbiter." A refusal the index raised carries the ` +
-        `driver error underneath it; one a read-then-write pre-check raised does not. Under a ` +
-        `race every loser got past any pre-check, so a causeless refusal here is the ` +
-        `read-then-write shape the criterion exists to catch.`,
+        `driver error underneath it; one a read-then-write pre-check raised does not.`,
     );
   }
-}
-
-/* --------------------- refusals that may take either shape --------------------- */
-
-/**
- * `checkSlug` is published as `Promise<Availability>` AND as the operation named in two of the
- * four admissible message forms. Both readings are live and the contract does not settle it:
- *
- *   (a) it answers `{ available: false }` and the two `checkSlug:` forms belong to a writer
- *       T070 does not publish;
- *   (b) it throws, in which case its `Availability` return can only ever be `{available: true}`
- *       and the declared shape is dead.
- *
- * Reported to the orchestrator rather than resolved here. What both readings agree on is that
- * the name is REFUSED, so that is asserted unconditionally, and the form is then pinned on
- * whichever shape arrived. Neither branch is a no-op: this is not the conditional-assertion
- * hazard, where a check exists only when the subject supplies a shape and vanishes otherwise.
- */
-export type Refusal =
-  | { kind: "unavailable"; availability: Availability }
-  | { kind: "threw"; error: Error };
-
-export async function refusalOf(call: () => unknown, where: string): Promise<Refusal> {
-  let result: unknown;
-  try {
-    result = await call();
-  } catch (err) {
-    if (!(err instanceof Error)) {
-      throw new Error(`${where} rejected with ${describe_(err)}; a refusal is a typed Error.`);
-    }
-    return { kind: "threw", error: err };
-  }
-  const availability = asAvailability(result, where);
-  if (availability.available) {
-    throw new Error(
-      `${where} answered \`{ available: true }\` where the contract requires the name to be ` +
-        `refused. Neither reading of the contract permits this: a taken or reserved name is ` +
-        `either unavailable or a rejection, never free.`,
-    );
-  }
-  return { kind: "unavailable", availability };
 }
 
 /** Run a call, require it to reject, and hold the rejection to the whole hygiene clause. */
@@ -522,9 +616,6 @@ export function asDiagnostics(value: unknown, where: string): Diagnostic[] {
       severity?: unknown;
       message?: unknown;
     };
-    // The contract publishes no diagnostic CODE for either grammar, so nothing here binds one.
-    // What is checked is that the value is a `DiagnosticCode` in shape — `lib/core`'s union is
-    // `<stage>/<rule>` throughout — rather than a bare English sentence in the code slot.
     if (typeof code !== "string" || !/^[a-z]+\/[a-z-]+$/.test(code)) {
       throw new Error(
         `${where}[${i}] has \`code\` = ${JSON.stringify(code)}; Diagnostic.code is a ` +
@@ -544,4 +635,238 @@ export function asDiagnostics(value: unknown, where: string): Diagnostic[] {
 
 export function errorsOf(ds: readonly Diagnostic[]): Diagnostic[] {
   return ds.filter((d) => d.severity === "error");
+}
+
+/* ============================================================
+   The two routes D-70-03 publishes
+
+       GET /api/names/handles/[handle]       -> { available, reason?, suggestion? }
+       GET /api/names/slugs/[owner]/[slug]   -> { available, reason?, suggestion? }
+
+   "Both 200 with the `Availability` payload; there is no 404,
+   because 'not found' **is** the available answer."
+
+   Discovered by walking the tree rather than by importing a guessed
+   path, and dispatched through Next's own matcher, so a red says
+   "this URL is unserved" rather than "a file is missing from where I
+   looked". The file layout is the implementation's; the URL is the
+   contract's.
+   ============================================================ */
+
+export const ROUTES = {
+  handle: {
+    url: "GET /api/names/handles/[handle]",
+    sample: (handle: string) => `/api/names/handles/${encodeURIComponent(handle)}`,
+  },
+  slug: {
+    url: "GET /api/names/slugs/[owner]/[slug]",
+    sample: (owner: string, slug: string) =>
+      `/api/names/slugs/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}`,
+  },
+} as const;
+
+export type RouteName = keyof typeof ROUTES;
+
+interface DiscoveredRoute {
+  pattern: string;
+  file: string;
+}
+
+const ROUTE_FILE = /^route\.(ts|tsx|js|mjs)$/;
+const NAMES_ROOT = fileURLToPath(new URL("../../../app/api/names/", import.meta.url));
+
+let table: DiscoveredRoute[] | undefined;
+
+function walk(dir: string, segments: string[], out: DiscoveredRoute[]): void {
+  let entries: Dirent[];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return; // a tree the implementation has not created yet
+  }
+  for (const entry of entries) {
+    if (entry.isDirectory()) walk(join(dir, entry.name), [...segments, entry.name], out);
+    else if (ROUTE_FILE.test(entry.name)) {
+      out.push({ pattern: `/api/names/${segments.join("/")}`, file: join(dir, entry.name) });
+    }
+  }
+}
+
+function routeTable(): DiscoveredRoute[] {
+  if (table !== undefined) return table;
+  const found: DiscoveredRoute[] = [];
+  walk(NAMES_ROOT, [], found);
+  if (found.length === 0) {
+    throw new Error(
+      `No route file exists under \`app/api/names/\`.\n` +
+        `  D-70-03 publishes two: \`${ROUTES.handle.url}\` and \`${ROUTES.slug.url}\`, both ` +
+        `200 with the Availability payload.\n` +
+        `  \`app/api/names/**\` is in T070's \`Owns\` set, so this is a failed acceptance ` +
+        `criterion rather than a test looking in the wrong place — the tree is walked, not guessed.`,
+    );
+  }
+  table = found;
+  return table;
+}
+
+function matchRoute(path: string): { route: DiscoveredRoute; params: Record<string, unknown> } {
+  const routes = routeTable();
+  for (const route of routes) {
+    const params = getRouteMatcher(getRouteRegex(route.pattern))(path);
+    if (params !== false) return { route, params };
+  }
+  throw new Error(
+    `No published route matches \`${path}\`.\n` +
+      `  Discovered patterns: ${routes.map((r) => r.pattern).join(", ")}\n` +
+      `  The contract publishes URLs and the file layout is the implementation's, so this says ` +
+      `the URL is unserved rather than that a file is missing from a guessed path.`,
+  );
+}
+
+/** Which published pattern serves a URL, asked without importing a module or opening a database. */
+export function routePatternFor(path: string): string {
+  return matchRoute(path).route.pattern;
+}
+
+/**
+ * Drive a published URL the way a caller does: matched through Next's router, dispatched to
+ * whichever file wins, and invoked with `params` as a promise
+ * (`node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md`:
+ * "**`params`**: a promise that resolves to an object containing the dynamic route parameters").
+ *
+ * `name` names the published route only so a red can quote the contract; it takes no part in
+ * choosing the module, so a route shadowed by a sibling dispatches here exactly as it would in
+ * production.
+ */
+export async function callRoute(name: RouteName, path: string): Promise<Response> {
+  const spec = ROUTES[name];
+  const { route, params } = matchRoute(path);
+  let mod: Namespace;
+  try {
+    mod = (await import(/* @vite-ignore */ pathToFileURL(route.file).href)) as Namespace;
+  } catch (cause) {
+    throw new Error(
+      `\`${route.pattern}\` — the route serving \`${path}\` — does not load.\n` +
+        `  Driving the published URL \`${spec.url}\`.`,
+      { cause },
+    );
+  }
+  const get = mod.GET;
+  if (typeof get !== "function") {
+    throw new Error(
+      `\`${route.pattern}\` exports no \`GET\` (it has: ` +
+        `${Object.keys(mod).sort().join(", ") || "(nothing)"}). D-70-03 publishes the method.`,
+    );
+  }
+  const request = new Request(`https://darkprint.test${path}`);
+  const answered = await (get as UnknownFn)(request, { params: Promise.resolve(params) });
+  if (!(answered instanceof Response)) {
+    throw new Error(
+      `\`${spec.url}\` answered ${describe_(answered)}; a route handler returns a Response.`,
+    );
+  }
+  return answered;
+}
+
+/**
+ * The whole of a route's answer, as a caller sees it, kept together so two answers can be
+ * compared for indistinguishability rather than only for their payload.
+ *
+ * `body` is the raw text and not the parsed object: D-70-14b's fall-out property is that an
+ * unknown owner is not distinguishable from an existing one holding no bundles, and a
+ * difference in key order or in an extension member distinguishes them just as well as a
+ * different value would.
+ */
+export interface RouteAnswer {
+  status: number;
+  contentType: string | null;
+  body: string;
+}
+
+export async function answerOf(name: RouteName, path: string): Promise<RouteAnswer> {
+  const response = await callRoute(name, path);
+  return {
+    status: response.status,
+    contentType: response.headers.get("content-type"),
+    body: await response.text(),
+  };
+}
+
+/** The `Availability` a route answered with, held to the same shape as the module's. */
+export function payloadOf(answer: RouteAnswer, where: string): Availability {
+  if (answer.status !== 200) {
+    throw new Error(
+      `${where} answered ${answer.status}. D-70-03: "Both 200 with the \`Availability\` payload; ` +
+        `there is no 404, because 'not found' **is** the available answer."\n` +
+        `  body: ${answer.body.slice(0, 400)}`,
+    );
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(answer.body);
+  } catch (cause) {
+    throw new Error(`${where} answered a body that is not JSON: ${answer.body.slice(0, 200)}`, {
+      cause,
+    });
+  }
+  return asAvailability(parsed, where);
+}
+
+/* --------------------- the database a route reads --------------------- */
+
+const open: TestDb[] = [];
+
+export interface Scratch {
+  /** The published `Db` — the first parameter of every T070 function that takes one. */
+  db: unknown;
+  /** This scratch database's connection string, for the routes' shared client. */
+  url: string;
+  query: (sql: string, params?: readonly unknown[]) => Promise<Record<string, unknown>[]>;
+}
+
+/**
+ * A scratch database, plus the URL a route handler needs to reach it.
+ *
+ * `createTestDb` does not hand back the URL it built, and the route half of this suite needs
+ * one: `getSharedDbClient()` reads `DATABASE_URL`, so a route can only be pointed at this
+ * database by naming it. Asked of the connection itself rather than rebuilt from a convention.
+ */
+export async function scratchDatabase(): Promise<Scratch> {
+  const test = await createTestDb();
+  open.push(test);
+  const client = test.client as unknown as Namespace;
+  const db = client.db;
+  if (db === null || typeof db !== "object") {
+    throw new Error(`createTestDb's client carries no \`db\`.`);
+  }
+  const [current] = (await test.client.query("select current_database() as name")).rows as {
+    name?: unknown;
+  }[];
+  const database = current?.name;
+  if (typeof database !== "string" || database === "") {
+    throw new Error(
+      `\`select current_database()\` answered ${describe_(database)}, so the route handlers ` +
+        `cannot be pointed at this scratch database.`,
+    );
+  }
+  const base = new URL(process.env.DATABASE_URL ?? "");
+  base.pathname = `/${database}`;
+
+  return {
+    db,
+    url: base.toString(),
+    query: async (sql, params) => {
+      const result = await test.client.query(sql, params as unknown[]);
+      return result.rows as Record<string, unknown>[];
+    },
+  };
+}
+
+export async function dropScratchDatabases(): Promise<number> {
+  let dropped = 0;
+  for (const test of open.splice(0)) {
+    await test.drop();
+    dropped += 1;
+  }
+  return dropped;
 }

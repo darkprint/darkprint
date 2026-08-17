@@ -1,47 +1,46 @@
 /* ============================================================
-   T070 — bundle slugs: AC1, AC2, AC3
+   T070 — bundle slugs: AC1, AC2, AC3, and the `reason`
 
    AC1  each reserved slug is refused as a bundle name
    AC2  two owners may both hold `frontline-triage`
    AC3  one owner may not hold it twice
 
-   ── the one reading this suite could not settle ──
-   `checkSlug` is published as `Promise<Availability>` and is ALSO
-   the operation named in two of the four admissible message forms
-   (`SlugTakenError`, `ReservedSlugError`). Both cannot be the whole
-   story: if it throws on those two paths, `available` can only ever
-   be `true` and the declared return type is dead.
+   ── the reading round 1 reported is now ruled ──
+   **D-70-01: `checkSlug` is a query and returns; `SlugTakenError`
+   and `ReservedSlugError` are struck.** "A query asked 'is this
+   available' answers, and one that throws to say 'no' makes its own
+   return type meaningless."
 
-   Reported to the orchestrator rather than resolved here. What both
-   readings agree on is that the name is REFUSED, so `refusalOf`
-   asserts that unconditionally and then pins the published message
-   on whichever shape arrived. Neither branch is empty — this is not
-   the conditional-assertion hazard, where a check exists only when
-   the subject supplies the shape it keys on and silently vanishes
-   otherwise.
+   So round 1's tolerance — assert the refusal, pin the form on
+   whichever shape arrived — is gone. `unavailable()` requires a
+   returned `{ available: false }` and a throw here is a red. Keeping
+   the tolerance would be a suite carrying a withdrawn clause, which
+   is the failure recorded at "Resolving `backend.md`".
+
+   ── and the `reason` is the point of the ruling ──
+   The two classes were struck *and* `Availability` gained `reason`
+   in the same breath, "since a caller that can no longer catch a
+   class needs the discriminator in the value". A `checkSlug` that
+   answers `{ available: false }` with no reason has implemented half
+   of D-70-01 — the half that removes the caller's information —
+   and every test that only asserts `available === false` passes it.
+   All three members are reachable here and all three are asserted.
 
    ── the bundle rows ──
    Creating a bundle is T100's, and §T070 puts it out of scope
    explicitly, so `fixtures.ts` inserts the `(owner_id, slug)` rows
-   through `lib/db`'s schema directly. `bundle_owner_slug_key` is the
-   unique index the criteria are about, and it is T000's, merged.
+   directly. `bundle_owner_slug_key` is T000's, merged.
    ============================================================ */
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { RESERVED_PROFILE_SEGMENTS } from "@/components/profile/tabs";
 
+import { availableNow, bind, unavailable } from "./contract";
 import {
-  asAvailability,
-  bind,
-  expectSealedError,
-  refusalOf,
-  reservedSlugMessage,
-  slugTakenMessage,
-} from "./contract";
-import {
-  type TestDb,
+  type Scratch,
   clean,
+  closeDatabase,
   createAccount,
   createBundle,
   db,
@@ -49,22 +48,13 @@ import {
   openDatabase,
 } from "./fixtures";
 
-let t: TestDb;
+let t: Scratch;
 
 beforeAll(async () => {
   t = await openDatabase();
 }, 60_000);
-/* The explicit timeouts are not padding. vitest's default `hookTimeout` is 10s, and this
-   repository shares one Postgres on 5432 across every worktree with no owner — under that
-   load a `DROP DATABASE` crossed 10s and all four database files here reported
-   `Hook timed out in 10000ms`. Two consequences, and the second is the one that matters: a
-   failed hook runs no test, so it adds NOTHING to the failed-test column and a handoff
-   reading the total would call a red run green (backend.md, "read the exit code and the
-   failed-file count, never the test total"); and a teardown that times out never drops its
-   scratch database, so the harness itself becomes the residue. `testTimeout` is already 20s
-   for the same reason one level up. */
 afterAll(async () => {
-  await t?.drop();
+  await closeDatabase();
 }, 60_000);
 beforeEach(async () => {
   await clean(t);
@@ -79,19 +69,14 @@ describe("AC1: each reserved slug is refused as a bundle name", () => {
      "read them from that module rather than restating the list, so the profile tabs and this
      guard cannot drift" — so a fifth tab is covered by this loop the day it is added. */
   for (const segment of RESERVED_PROFILE_SEGMENTS) {
-    it(`refuses \`${segment}\` to an owner with no bundles at all`, async () => {
+    it(`refuses \`${segment}\` with reason "reserved", to an owner with no bundles at all`, async () => {
       const check = await bind("checkSlug");
       const owner = await createAccount(t);
-
-      const refusal = await refusalOf(
+      await unavailable(
         () => check(db(t), owner, segment),
         `checkSlug(db, owner, "${segment}")`,
+        "reserved",
       );
-      if (refusal.kind === "threw") {
-        expectSealedError(refusal.error, `checkSlug(db, owner, "${segment}")`, {
-          expectedMessage: reservedSlugMessage(segment),
-        });
-      }
     });
   }
 
@@ -99,34 +84,35 @@ describe("AC1: each reserved slug is refused as a bundle name", () => {
     /* The reservation is a route collision, not a uniqueness one: `/u/<handle>/saved` resolves
        to the tab for *every* handle. A guard that only fires when the name is otherwise free,
        or that reads the reserved list after the per-owner query rather than before it, gets
-       this wrong and no criterion phrased as "each reserved slug is refused" would notice. */
+       this wrong — and the reason is what shows it, since a module answering `"taken"` here has
+       refused for the wrong cause and would answer `available` for the owner who has no bundle. */
     const check = await bind("checkSlug");
     const [first, second] = [await createAccount(t), await createAccount(t)];
     const reserved = RESERVED_PROFILE_SEGMENTS[0];
     await createBundle(t, first, reserved);
 
-    await refusalOf(() => check(db(t), second, reserved), "checkSlug(db, second, reserved)");
+    await unavailable(
+      () => check(db(t), second, reserved),
+      "checkSlug(db, second, reserved)",
+      "reserved",
+    );
   });
 
   it("does not refuse `overview`, whose tab has no segment of its own", async () => {
-    /* The half of AC1 the criterion does not state, and the one that has teeth against an
+    /* The half of AC1 the criterion does not state, and the one with teeth against an
        over-broad guard: the overview tab is the profile index, so nothing occupies
        `/u/<handle>/overview` and a bundle may be called that. An implementation reserving the
        tab *ids* rather than their *segments* takes a name the product never claimed. */
     const check = await bind("checkSlug");
     const owner = await createAccount(t);
-    const answer = asAvailability(
-      await check(db(t), owner, "overview"),
-      'checkSlug(db, owner, "overview")',
-    );
-    expect(answer.available).toBe(true);
+    await availableNow(() => check(db(t), owner, "overview"), 'checkSlug(db, owner, "overview")');
   });
 
-  it("does not refuse an ordinary slug", async () => {
+  it("does not refuse an ordinary slug, and gives it no reason", async () => {
     const check = await bind("checkSlug");
     const owner = await createAccount(t);
-    const answer = asAvailability(await check(db(t), owner, freeSlug()), "checkSlug");
-    expect(answer.available).toBe(true);
+    const answer = await availableNow(() => check(db(t), owner, freeSlug()), "checkSlug");
+    expect(answer.reason, "a name that was not refused has nothing to explain").toBeUndefined();
   });
 });
 
@@ -138,17 +124,16 @@ describe("AC2: two owners may both hold `frontline-triage`", () => {
   it("answers `available` to a second owner for a slug the first already has", async () => {
     /* B-09: slugs are unique **per owner**, and the public route carries the owner —
        `/blueprints/{owner}/{slug}`. The index is `bundle_owner_slug_key` on `(owner_id, slug)`,
-       so the database permits this; what this test discriminates is a module that queries on
-       `slug` alone and refuses a name it had no business refusing. */
+       so the database permits this; what this discriminates is a module that queries on `slug`
+       alone and refuses a name it had no business refusing. */
     const check = await bind("checkSlug");
     const [first, second] = [await createAccount(t), await createAccount(t)];
     await createBundle(t, first, "frontline-triage");
 
-    const answer = asAvailability(
-      await check(db(t), second, "frontline-triage"),
+    await availableNow(
+      () => check(db(t), second, "frontline-triage"),
       "checkSlug(db, second, slug)",
     );
-    expect(answer.available).toBe(true);
   });
 
   it("answers `available` to a second owner even when the first holds several", async () => {
@@ -157,8 +142,7 @@ describe("AC2: two owners may both hold `frontline-triage`", () => {
     const shared = freeSlug();
     for (const slug of [freeSlug(), shared, freeSlug()]) await createBundle(t, first, slug);
 
-    const answer = asAvailability(await check(db(t), second, shared), "checkSlug(db, second, slug)");
-    expect(answer.available).toBe(true);
+    await availableNow(() => check(db(t), second, shared), "checkSlug(db, second, slug)");
   });
 });
 
@@ -167,38 +151,45 @@ describe("AC2: two owners may both hold `frontline-triage`", () => {
    ============================================================ */
 
 describe("AC3: one owner may not hold `frontline-triage` twice", () => {
-  it("refuses the owner who already has a bundle at that slug", async () => {
+  it('refuses the owner who already has a bundle at that slug, with reason "taken"', async () => {
     const check = await bind("checkSlug");
     const owner = await createAccount(t);
     await createBundle(t, owner, "frontline-triage");
 
-    const where = "checkSlug(db, owner, slug)";
-    const refusal = await refusalOf(() => check(db(t), owner, "frontline-triage"), where);
-    if (refusal.kind === "threw") {
-      /* `<owner>` in the published form is read as the value the caller supplied, which is the
-         `ownerId` argument — `checkSlug` has no handle without a join it was not given. The
-         ambiguity is reported to the orchestrator; it is pinned here rather than left loose,
-         because a form published before the implementation exists is the only kind of pin that
-         is not tautological. */
-      expectSealedError(refusal.error, where, {
-        expectedMessage: slugTakenMessage(owner, "frontline-triage"),
-      });
-    } else if (refusal.availability.suggestion !== undefined) {
-      /* Only reachable under the `Availability` reading. AC6's promise is over "a taken name",
-         not over handles alone, so a suggestion offered here is held to the same standard: free
-         at the moment it is returned, and never one of the four the profile tabs occupy. */
-      const suggestion = refusal.availability.suggestion;
-      expect(suggestion, "a suggestion equal to the taken name suggests nothing").not.toBe(
-        "frontline-triage",
-      );
-      const isReserved = await bind("isReservedSlug");
-      expect(isReserved(suggestion), `suggested the reserved slug \`${suggestion}\``).toBe(false);
-      const second = asAvailability(
-        await check(db(t), owner, suggestion),
-        "checkSlug(db, owner, suggestion)",
-      );
-      expect(second.available, "a suggestion is free at the moment it is returned").toBe(true);
-    }
+    await unavailable(
+      () => check(db(t), owner, "frontline-triage"),
+      "checkSlug(db, owner, slug)",
+      "taken",
+    );
+  });
+
+  it("offers a suggestion that is free, and never one of the four the tabs occupy", async () => {
+    /* AC6's promise is over "a taken name", not over handles alone. A slug suggestion is held
+       to the same standard, plus one this module can get wrong in a way the handle side cannot:
+       suggesting a name `checkSlug` itself reserves. */
+    const check = await bind("checkSlug");
+    const isReserved = await bind("isReservedSlug");
+    const owner = await createAccount(t);
+    await createBundle(t, owner, "frontline-triage");
+
+    const answer = await unavailable(
+      () => check(db(t), owner, "frontline-triage"),
+      "checkSlug(taken)",
+      "taken",
+    );
+    const suggestion = answer.suggestion;
+    expect(
+      suggestion,
+      "AC6 is a criterion, and a module that never suggests leaves it nothing to observe",
+    ).toBeTypeOf("string");
+    expect(suggestion, "a suggestion equal to the taken name suggests nothing").not.toBe(
+      "frontline-triage",
+    );
+    expect(isReserved(suggestion), `suggested the reserved slug \`${suggestion}\``).toBe(false);
+    await availableNow(
+      () => check(db(t), owner, suggestion as string),
+      "checkSlug(db, owner, suggestion)",
+    );
   });
 
   it("refuses only the exact slug, not one that merely starts with it", async () => {
@@ -210,12 +201,9 @@ describe("AC3: one owner may not hold `frontline-triage` twice", () => {
     await createBundle(t, owner, "frontline-triage");
 
     for (const slug of ["frontline-triage-2", "frontline", "frontline-triages", "rontline-triage"]) {
-      const answer = asAvailability(
-        await check(db(t), owner, slug),
-        `checkSlug(db, owner, "${slug}")`,
-      );
-      expect(answer.available, `\`${slug}\` is a different slug from \`frontline-triage\``).toBe(
-        true,
+      await availableNow(
+        () => check(db(t), owner, slug),
+        `checkSlug(db, owner, "${slug}") — a different slug from \`frontline-triage\``,
       );
     }
   });
@@ -229,9 +217,134 @@ describe("AC3: one owner may not hold `frontline-triage` twice", () => {
     const slug = freeSlug();
     await createBundle(t, first, slug);
 
-    await refusalOf(() => check(db(t), first, slug), "checkSlug(db, first, slug)");
-    expect(
-      asAvailability(await check(db(t), second, slug), "checkSlug(db, second, slug)").available,
-    ).toBe(true);
+    await unavailable(() => check(db(t), first, slug), "checkSlug(db, first, slug)", "taken");
+    await availableNow(() => check(db(t), second, slug), "checkSlug(db, second, slug)");
+  });
+});
+
+/* ============================================================
+   D-70-04's grammar, reached through the slug side
+   ============================================================ */
+
+describe('checkSlug answers reason "illegal" for a name the grammar refuses', () => {
+  /* D-70-04: one grammar for handles, slugs and namespaces. The reason a slug needs one at all
+     is stated there and is not tidiness: "a slug with no grammar lets an unpaired surrogate
+     reach a `SELECT` as U+FFFD, so `checkSlug` would answer about a name nobody typed."
+
+     That is the discriminating case in this block and it is why the surrogate is here rather
+     than only in the pure-function file: `pg` sends `text` as UTF-8, an unpaired surrogate has
+     no UTF-8 encoding, and the driver replaces it with U+FFFD. The query then asks about a
+     DIFFERENT name and answers truthfully about it. A module with no slug grammar returns
+     `{ available: true }` and the caller has been told about a name it did not name. */
+
+  const ILLEGAL: ReadonlyArray<readonly [string, string]> = [
+    ["", "empty"],
+    ["Frontline-Triage", "uppercase"],
+    ["frontline_triage", "an underscore"],
+    ["-frontline", "a leading hyphen"],
+    ["frontline-", "a trailing hyphen"],
+    ["frontline triage", "interior whitespace"],
+    [" frontline-triage", "a leading space, which `parseCardRef` would trim away"],
+    ["frontline/triage", "a separator: a slug is one segment"],
+    ["front\uD800line", "an unpaired surrogate, which `pg` would send as U+FFFD"],
+  ];
+
+  for (const [slug, why] of ILLEGAL) {
+    it(`refuses ${JSON.stringify(slug)} — ${why}`, async () => {
+      const check = await bind("checkSlug");
+      const owner = await createAccount(t);
+      await unavailable(
+        () => check(db(t), owner, slug),
+        `checkSlug(db, owner, ${JSON.stringify(slug)})`,
+        "illegal",
+      );
+    });
+  }
+
+  it("answers `illegal` rather than `taken` when the trimmed form IS taken", async () => {
+    /* The sharpest case the trimming defect produces, and neither half alone finds it. With no
+       grammar and a trimming round-trip, `" frontline-triage"` becomes `frontline-triage`,
+       which this owner does hold — so the module answers `{ available: false, reason: "taken" }`
+       and looks entirely correct. The name it answered about is not the name it was asked
+       about, and only the reason distinguishes the two. */
+    const check = await bind("checkSlug");
+    const owner = await createAccount(t);
+    await createBundle(t, owner, "frontline-triage");
+
+    await unavailable(
+      () => check(db(t), owner, " frontline-triage"),
+      'checkSlug(db, owner, " frontline-triage")',
+      "illegal",
+    );
+  });
+});
+
+/* ============================================================
+   D-70-18: which refusals carry a suggestion
+   ============================================================ */
+
+describe("D-70-18: a suggestion accompanies exactly the well-formed refusals", () => {
+  /* `unavailable()` enforces this over every refusal in the suite, which is what makes it bind
+     rather than depend on somebody remembering. These are the named cases, because a criterion
+     nobody can point at in a test list is a criterion nobody reviews.
+
+     The ruling's own reasoning is the part worth keeping: AC6 said *a suggestion returned for a
+     taken name is itself free*, a conditional that a module returning no suggestion satisfies
+     completely while observing nothing. A guard that cannot fail, inside an acceptance
+     criterion, since the contract was written. */
+
+  for (const segment of RESERVED_PROFILE_SEGMENTS) {
+    it(`offers an alternative to the reserved \`${segment}\`, which is free and not itself reserved`, async () => {
+      /* The half that was held by nothing before D-70-18. `reserved` is a refusal of a
+         perfectly legal name — the tab occupies it, the grammar does not object — so an
+         alternative can be offered, and AC6's freeness clause binds it once it is. */
+      const check = await bind("checkSlug");
+      const isReserved = await bind("isReservedSlug");
+      const owner = await createAccount(t);
+
+      const answer = await unavailable(
+        () => check(db(t), owner, segment),
+        `checkSlug(db, owner, "${segment}")`,
+        "reserved",
+      );
+      const suggestion = answer.suggestion as string;
+      expect(suggestion).not.toBe(segment);
+      expect(isReserved(suggestion), `suggested \`${suggestion}\`, which is itself a tab`).toBe(
+        false,
+      );
+      await availableNow(
+        () => check(db(t), owner, suggestion),
+        `checkSlug(db, owner, "${suggestion}")`,
+      );
+    });
+  }
+
+  it("offers nothing for an illegal slug", async () => {
+    /* The direction a "suggestion is required" assertion PASSES rather than catches, which is
+       why it is written out separately: substitution, not removal. You can only offer an
+       alternative to a name that is itself legal, so a module that suggests here has answered a
+       question the caller did not ask and put a name where the refusal needed to be. */
+    const check = await bind("checkSlug");
+    const owner = await createAccount(t);
+    for (const slug of ["Not A Slug", "frontline/triage", " frontline-triage", ""]) {
+      const answer = await unavailable(
+        () => check(db(t), owner, slug),
+        `checkSlug(db, owner, ${JSON.stringify(slug)})`,
+        "illegal",
+      );
+      expect(answer.suggestion, `for ${JSON.stringify(slug)}`).toBeUndefined();
+    }
+  });
+
+  it("offers nothing for an illegal handle either", async () => {
+    const check = await bind("checkHandle");
+    for (const handle of ["Not A Handle", "mara/veil", "-mara", ""]) {
+      const answer = await unavailable(
+        () => check(db(t), handle),
+        `checkHandle(db, ${JSON.stringify(handle)})`,
+        "illegal",
+      );
+      expect(answer.suggestion, `for ${JSON.stringify(handle)}`).toBeUndefined();
+    }
   });
 });
