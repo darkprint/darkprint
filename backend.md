@@ -355,6 +355,48 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## D-70-22: `released_at` is a history field, not a status proxy
+
+T070's implementer raised it as the last unstated thing in its module: the ruled `SET` names
+`account_id` and `status` only, so a **reclaimed** row keeps its old `released_at`. Coherent, and
+nothing said so.
+
+**Ruled: keep it, and it means "when this handle was last released, if ever".** The `SET` stays as
+ruled — no change to the shipped statement.
+
+Two reasons rather than one. It is **information that is otherwise lost**: `status = 'active'` with a
+non-null `released_at` is exactly "reclaimed after a release", which nothing else records, and
+clearing it would delete the only trace that D-70-06's path was taken. And the alternative invariant
+— `status = 'active'` implies `released_at IS NULL` — buys a checkable rule at the cost of the fact
+it is checking.
+
+**The trap it creates is named here because it is the reason this needed a ruling at all:**
+`released_at IS NOT NULL` is **not** a test for "released" and never was. After a reclaim it is true
+of an active row. **`status` is the only authority on current state**, and any future reader — T050's
+rename flow first — that reaches for `released_at` as a shortcut is wrong in exactly the case
+D-70-06 was written to allow.
+
+That is the same species as `propertyIsEnumerable` failing to separate absent from non-enumerable:
+a field that answers a *nearby* question, read as if it answered the one being asked.
+
+**D-70-15 stays the owner's** — the product length bound against the 255 storage bound, with the
+longest handle in the archive at 11 characters. Nothing blocks on it.
+
+## A stamp whose purpose is to say where the tree is must be read, not recalled
+
+T070's implementer told me it was claiming the slot at `f0f5cad`. **That object does not exist.** The
+tree was at `476c0da`. It caught this itself, recorded it against itself in the Log rather than
+letting it pass as a typo, and named the rule it broke: *paste the output, do not narrate the case.*
+
+Nothing rested on it, which is the only reason it is cheap. But a handover sha is the one value in a
+handback with **no** redundancy — every other number in that message can be checked against a rerun,
+and the sha is what a reader would use to do the checking. **It is the field least able to survive
+being recalled and the one most often typed from memory**, because by the time you write the message
+you have seen it several times.
+
+The fix is mechanical and belongs in every handback: the sha comes from `git rev-parse HEAD` in the
+same command that reads porcelain, pasted, not retyped.
+
 ## When a check contradicts a premise you were handed, re-examine the premise
 
 T070's blind author's rule, from its second instance of the same shape in one day, and it is the
