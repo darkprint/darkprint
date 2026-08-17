@@ -2294,7 +2294,7 @@ it does not decide differently inside a worktree.
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
-| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | reverted | adversary round 2 **FAIL** at `2ee17d6`, on one item that is not the implementer's: **three blind tests red on D-70-06**, whose paragraph rules and defers in one block — the blind author bound the ruling, the implementer bound the deferral, both correctly. Round 1's six charges all closed and re-checked from commands. typecheck/lint/build 0; three consecutive full-suite runs, identical sorted failing file and test sets, **0 skipped**, 185 files, 5139 tests, 4 failed — the three above plus base's expected t090 red; contention 1 db/1 conn either side. All six criteria plus AC7 driven; all eight reason cells; a 255-char handle with a fitting 255-char suggestion. **D-70-12 closes 3 of 6**; of the rest, two are unobservable while `released_at` is unruled and one is a structural blind-suite gap in the sealed-error check. 16 mutations, 0 GAPs, 0 SILENT GREENs. The shared runner's `DID NOT LOAD` guard cannot fire here and its own `--self-test` reports it |
+| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | impl-done | **round 3 at `3c97c4b`: D-70-06 implemented**, `ON CONFLICT (handle) DO UPDATE … setWhere` with the empty `returning` as the refusal; generated SQL read rather than assumed, `setWhere` not the deprecated `where`. Two removals it forced: the unreachable constraint-name branch and the two pg-error helpers it orphaned. 4 predicate mutations, all observed — **F3 `status = 'released'` reds 4, every one an ownership case and no count test among them**. typecheck/lint/build 0; three consecutive runs in the **held** gate slot, identical sorted failing sets, **1 failed file — t090's `serve.test.ts`, T100's dependency** — 185 files, 5140 tests, porcelain empty both ends |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
@@ -4111,7 +4111,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T070, Namespace: handles, slugs, reservation
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t070-naming` on `feat/t070-naming`
 - **Test worktree:** `../darkprint-wt-t070-naming-tests` on `test/t070-naming`
 - **Depends on:** T000 (contract: schema)
@@ -5466,6 +5466,72 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     charges and I found no new defect in it. One paragraph needs a decision, and until it has one
     the blind suite and the module cannot both be right. If D-70-06 is withdrawn the tree is green
     on the next run; if it is implemented, AC5 needs re-firing against the new statement shape.
+
+  - 2026-08-15 implementer, **round 3: D-70-06 implemented, AC4's second half**. Code at `3c97c4b`.
+    Onto base by merge throughout — `3236b63`, `138a682`, `07bda1a`.
+
+    **The statement, and the one thing I checked rather than trusted.** `allocateHandle` is now
+    `ON CONFLICT (handle) DO UPDATE … setWhere`, with an **empty `returning` as the refusal**: the
+    statement never raises, so the module reads the result and raises `HandleTakenError` itself.
+    Two details decide it and neither is visible in the TypeScript:
+
+    - **`setWhere`, not the deprecated `where`.** Drizzle's `where` is ambiguous between the index
+      predicate and the `DO UPDATE`'s own condition. Picking the wrong one moves the guard from
+      "may this account reclaim" to "which rows does the conflict target cover" **and leaves every
+      test green**, because both spellings compile and both produce a working statement.
+    - **The generated SQL was read, not assumed.** `toSQL()` gives
+      `… do update set "account_id" = $4, "status" = $5 where "handle_reservation"."account_id" = $6`
+      with `$6` the inserted account id — the existing row's column against `excluded`, which is the
+      ruled predicate and not the tautological form. Which side of that comparison drizzle qualifies
+      is exactly what reading the SQL settles and reading the TypeScript cannot.
+
+    **Two REMOVALS the ruling forced, which are the harder half.** With the conflict handled inside
+    the statement, no 23505 on the key can reach the catch — so the constraint-name match became a
+    branch nothing can take, and it is deleted rather than kept for symmetry. `constraint.ts` keeps
+    only the assumption the statement actually rests on, that `handle` carries a unique constraint,
+    so a moved key fails **loudly at import** instead of arriving as 42P10 in front of a caller.
+    `pgErrorConstraint` and `isUniqueViolationOn` lost their only caller with it and went too.
+
+    **`HandleTakenError` no longer carries a cause, because none exists**, and my own round-1 case
+    asserted that it did. Inverted rather than deleted, and not fabricated: the claim worth keeping
+    is that the own property is **absent**, not present holding `undefined`. The line it replaced —
+    `propertyIsEnumerable("cause")` — cannot tell those apart, so it had quietly stopped
+    discriminating: a check that still ran, still passed, and no longer meant what its name said.
+    Its control is the reclaim case, where an error that *does* have a cause must show a descriptor;
+    without that control, `toBeUndefined()` would pass against a module that had stopped attaching
+    causes anywhere, which is the state it exists to detect.
+
+    **Falsification: four mutations of the predicate, whole-suite, every one observed.**
+
+        F1  no `setWhere` at all                        11 red, incl. the ACTIVE-handle case
+        F2  `excluded.account_id = excluded.account_id` 15 red
+        F3  `WHERE status = 'released'`                  4 red  <- the plausible wrong answer
+        F4  the empty `returning` is not read           14 red
+
+    **F3 is the one worth keeping.** It reds **four**, and every one is an ownership case — AC4's
+    different-account-after-release, the rename case, and the reclaim race. **No count test catches
+    it**, because it yields exactly one winner who does own the surviving row. The adversary
+    measured the same thing independently from the other side, and two mutation sets agreeing makes
+    it a property of the criterion rather than of either suite. Three greens on the D-70-06 blind
+    tests prove only the **permissive** half — every one of the broken predicates passes them — so
+    the refusing half is carried entirely by the different-account cases.
+
+    **Contention, read rather than counted.** `lib/db/migrate.test.ts` failed three runs running,
+    which is not the flake shape. Its error was **`Test timed out in 20000ms`**, not an assertion,
+    on a test that creates its own scratch database, at load 105 with 11 other `vitest` processes —
+    the orchestrator identified the other party as the blind author's triple started against mine.
+    It is **absent from the quiet triple**, which is what settles it.
+
+    **A sha I narrated instead of reading.** My message taking the gate slot quoted the tree as
+    `f0f5cad`. **That object does not exist**; the tree was at `476c0da`. Nothing rested on it and
+    the gate stamps below are read values, but it is the "paste the output, do not narrate the case"
+    rule and I broke it in the message whose whole purpose is to state where the tree is.
+
+    **Gates**, gate slot **held**, machine quiet at load 34 with 1 other `vitest` process. Whole-tree
+    stamp, porcelain empty before and after. typecheck 0, lint 0, build 0 with porcelain still empty.
+    `npm test` three consecutive times: **1 failed file, 1 failed test, 185 files, 5140 tests** each
+    time, identical by sorted failing file and test sets. The one failure is
+    `tests/server/t090/serve.test.ts`, T100's named dependency. Counted, not read off the exit code.
 
 ### T240, Observability and audit log
 
