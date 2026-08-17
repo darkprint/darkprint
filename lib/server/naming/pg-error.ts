@@ -14,11 +14,20 @@
    path — `lib/db/index.ts`'s rule is that deep paths are internal
    and may be rearranged, and a cross-task deep import would also
    make this module's gate depend on a task that has not merged.
+
+   **Narrowed to `code` by D-70-06.** The constraint-name reader and
+   the unique-violation predicate were both here to translate a
+   23505 on the handle key into `HandleTakenError`. Under
+   `ON CONFLICT (handle) DO UPDATE … WHERE` no such error is raised,
+   so both lost their only caller and are deleted rather than left
+   as a surface nothing exercises. What remains has callers: the
+   SQLSTATE reader is how the fault-door cases prove a real 22P02 or
+   23503 reached them.
    ============================================================ */
 
 const MAX_CAUSE_DEPTH = 5;
 
-function pgErrorField(err: unknown, field: "code" | "constraint"): string | undefined {
+function pgErrorField(err: unknown, field: "code"): string | undefined {
   let current: unknown = err;
   for (let depth = 0; depth < MAX_CAUSE_DEPTH; depth++) {
     if (typeof current !== "object" || current === null) return undefined;
@@ -35,12 +44,3 @@ export function pgErrorCode(err: unknown): string | undefined {
   return pgErrorField(err, "code");
 }
 
-/** The violated constraint's name, if `err` names one. */
-export function pgErrorConstraint(err: unknown): string | undefined {
-  return pgErrorField(err, "constraint");
-}
-
-/** True only for a unique violation naming exactly `constraint`. */
-export function isUniqueViolationOn(err: unknown, constraint: string): boolean {
-  return pgErrorCode(err) === "23505" && pgErrorConstraint(err) === constraint;
-}

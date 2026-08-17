@@ -12,7 +12,7 @@ import { createDbClient, schema, type DbClient } from "@/lib/db";
 import { createTestDb, resetTestDb, type TestDb } from "../../../tests/support/db";
 import type { Availability } from "./index";
 
-import { pgErrorCode, pgErrorConstraint } from "./pg-error";
+import { pgErrorCode } from "./pg-error";
 import {
   allocateHandle,
   checkHandle,
