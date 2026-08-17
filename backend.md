@@ -355,6 +355,179 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## D-70-22: `released_at` is a history field, not a status proxy
+
+T070's implementer raised it as the last unstated thing in its module: the ruled `SET` names
+`account_id` and `status` only, so a **reclaimed** row keeps its old `released_at`. Coherent, and
+nothing said so.
+
+**Ruled: keep it, and it means "when this handle was last released, if ever".** The `SET` stays as
+ruled — no change to the shipped statement.
+
+Two reasons rather than one. It is **information that is otherwise lost**: `status = 'active'` with a
+non-null `released_at` is exactly "reclaimed after a release", which nothing else records, and
+clearing it would delete the only trace that D-70-06's path was taken. And the alternative invariant
+— `status = 'active'` implies `released_at IS NULL` — buys a checkable rule at the cost of the fact
+it is checking.
+
+**The trap it creates is named here because it is the reason this needed a ruling at all:**
+`released_at IS NOT NULL` is **not** a test for "released" and never was. After a reclaim it is true
+of an active row. **`status` is the only authority on current state**, and any future reader — T050's
+rename flow first — that reaches for `released_at` as a shortcut is wrong in exactly the case
+D-70-06 was written to allow.
+
+That is the same species as `propertyIsEnumerable` failing to separate absent from non-enumerable:
+a field that answers a *nearby* question, read as if it answered the one being asked.
+
+**D-70-15 stays the owner's** — the product length bound against the 255 storage bound, with the
+longest handle in the archive at 11 characters. Nothing blocks on it.
+
+## A stamp whose purpose is to say where the tree is must be read, not recalled
+
+T070's implementer told me it was claiming the slot at `f0f5cad`. **That object does not exist.** The
+tree was at `476c0da`. It caught this itself, recorded it against itself in the Log rather than
+letting it pass as a typo, and named the rule it broke: *paste the output, do not narrate the case.*
+
+Nothing rested on it, which is the only reason it is cheap. But a handover sha is the one value in a
+handback with **no** redundancy — every other number in that message can be checked against a rerun,
+and the sha is what a reader would use to do the checking. **It is the field least able to survive
+being recalled and the one most often typed from memory**, because by the time you write the message
+you have seen it several times.
+
+The fix is mechanical and belongs in every handback: the sha comes from `git rev-parse HEAD` in the
+same command that reads porcelain, pasted, not retyped.
+
+## When a check contradicts a premise you were handed, re-examine the premise
+
+T070's blind author's rule, from its second instance of the same shape in one day, and it is the
+sharpest thing to come out of the slot collision.
+
+It sampled the stack **before** starting its triple, watched scratch databases climb 0 → 1 → 6, and
+concluded *"another session is working, so I will separate my numbers from the contention."* The
+correct conclusion from that exact signal was *"another session is running a **suite** — ask who
+holds the slot before starting mine."* It had the disconfirming evidence in hand and **used it to
+adjust its method instead of to doubt the premise I had handed it.**
+
+Its earlier instance was the delivery failure: it had the evidence that its handbacks had not
+arrived, because I asked twice, and read it as me being early rather than as its channel being
+wrong.
+
+**Sampling was the right instrument; "so I will account for it" was the wrong question to ask it.**
+A measurement that conflicts with something you were told is evidence about the telling, and the
+cheapest response — calibrate around it — is the one that preserves the false premise intact.
+
+This is the orchestrator-facing half too. Both instances trace to something I said: *the slot is
+free*, and *dispatched, therefore in flight*. **An agent that calibrates around a bad premise leaves
+no trace**, which is why this is worth a rule rather than an apology: the failure produces adjusted
+numbers rather than an error.
+
+## A gate chained on exit code cannot gate a tree with an expected red
+
+Immediately after writing *a gate and a commit must be one chain*, I chained them — and the commit
+could never run, because base carries one **expected** failure and `npm test` therefore always exits
+1. The correct chain does not test the exit code at all; it tests the **count**, which is the rule
+this file already states for every session's handback: *report the count, not the exit code.*
+
+    npm test 2>&1 | grep -E "^ +Tests +" | tail -1 | tee /dev/stderr | grep -q "1 failed | 4890 passed (4891)" && git commit …
+
+A tree with a known red needs an **expected-result** gate, not a pass/fail one. Anything else forces
+whoever is committing to bypass the chain by hand, which is how the bypass became habitual in the
+first place.
+
+## One slot announced to two parties is not a slot
+
+Both T070 sessions ran gate triples at the same time — load 105, eleven `vitest` processes, scratch
+databases climbing 0 → 1 → 6 while one of them sampled. Neither breached anything: **I told each of
+them, in separate messages, that the slot was free.** "Free" is a fact about the past tense by the
+time a second reader acts on it.
+
+The blind author caught it from its own instrument before I did: its triple was **not identical**, it
+refused to report it as a result, and it named the disjunction correctly — *a non-identical triple
+cannot distinguish a nondeterministic suite from a contended host*. It was the second, and the
+climbing scratch-database count was the other session's signature.
+
+**The rule: the slot is granted to a named session, never announced as available.** A grant says who
+holds it; an announcement says only that nobody held it at the moment of writing, and two
+announcements are two grants. When one session releases, the next is told **by name** that it now
+holds it.
+
+The cost was not just wasted runs. It corrupted three parties' numbers at once — including mine, two
+commits earlier — and every one of us initially read our own contention as a possible defect.
+
+## I committed over a red and wrote a gate line that was false
+
+`eada7b0` carries the line *"full suite 4890 passed / 1 failed"*. **The run printed 2 failed.** The
+second was `lib/core/dot/graph.test.ts > answers a small lookup in time independent of how large the
+graph is`, at 22503ms.
+
+Two errors, and the second is worse.
+
+**The mechanical one:** I chained `npm test | grep …` and then `git add -A && git commit` on a
+**separate line**. `set -o pipefail` makes the pipeline exit 1, and a `&&` chain does not span lines,
+so the commit ran anyway. This is the third instance of the same class in this run — twice before
+with `grep -E "Tests "` matching whether the run passed or failed. **A gate and a commit must be one
+chain, or the gate is decoration.**
+
+**The one that matters:** the commit message asserted a number I had not read. Nothing in this run is
+worth less than a gate line that reports a different result from the run it names, because every
+later reader takes it as evidence and no later run can contradict a claim about a tree that has
+moved on.
+
+**The failure itself was contention, verified after the fact rather than assumed:** load average
+**65**, the implementer running its own suites in parallel, and the test passes twice in isolation at
+the same load. So it is a parallel-worker contention artifact inside a full-suite run, not a
+regression and not host load alone — the distinction matters because only the first is invisible to
+a single re-run of the whole suite.
+
+Which is the argument for the instrument this run already requires: **three consecutive runs compared
+by identical sorted failing sets.** One run cannot tell a contention artifact from a defect; three
+can, because the artifact moves and the defect does not. I ran one, and I ran it while another
+session was running its own.
+
+`eada7b0`'s content is correct and stands. Its gate line is retracted here rather than by amending
+the commit, because base commits are cited by name in this run and rewriting one to fix my own
+reporting is the wrong trade.
+
+## Reasoning printed beside output reads as output
+
+T070's adversary retracted its own claim before anyone acted further on it. I chose the predicate
+`account_id = excluded.account_id` over the null-safe form on its sentence *"under W5 it would
+instead be claimable by a second null-owner caller"* — and its sweep had only ever claimed with a
+**non-null** account, so it could not have measured that cell either way. Its words: **reasoning
+presented next to output**.
+
+That is the most easily missed shape in this whole file, because nothing about it looks wrong. A
+message that carries a table of measured results and a sentence of inference reads uniformly as
+measurement; the reader has no marker to tell which line was run. The tell is not in the writing, it
+is in the **coverage**: the sweep's inputs did not include the case the sentence was about.
+
+Re-measured, the claim holds and the ruling now rests on it. **But the fix is not "be careful" — it
+is that a claim about a cell no run covered must be labelled as inference in the same breath**, the
+way this run already labels `read, not measured`.
+
+## A discriminator can be designed out of reach, and saying so in advance is the whole of it
+
+The re-measurement showed W0 and W5 differ in **exactly one** of four cells: stored NULL, claim NULL.
+That converts my round-3 item *"confirm the shipped predicate"* from a **code read** into a
+**behavioural** check — reserve with an undefined `accountId`, release, reserve again: W0 refuses,
+W5 claims. Worth having, because every other criterion in T070 is checked from a command and this
+would have been the only clause whose evidence is a source line.
+
+The caveat is the valuable half, and it flagged it **before** the round rather than discovering it
+mid-round: that path reaches the store only because nothing rejects an `accountId` the signature
+types as `string`. **If the implementer adds a runtime guard — which is the right thing to do — the
+discriminating cell becomes unreachable and the two predicates are behaviourally identical through
+the published surface.** At that point a source read is the only way to tell them apart.
+
+Ruled: **add the guard, and report the predicate check as `read, not measured` when it applies.** Its
+pre-commitment to saying which is exactly right, and is the opposite of quietly falling back to a
+grep while still calling it a measurement.
+
+And the durable answer belongs to neither: **T005 gains `handle_reservation.account_id NOT NULL`**
+(AC7a). A guard in `allocateHandle` closes T070's path and leaves T050's open; a `NOT NULL` makes the
+NULL-owner row unstorable, which makes the W0/W5 difference **provably unreachable** rather than
+merely unreached — and then the predicate choice stops needing evidence at all.
+
 ## When two independent readers reach the same false premise, it is the premise
 
 I justified AC5's third property by writing that a vacuous `WHERE` — `excluded.account_id =
@@ -1336,7 +1509,7 @@ refuse that input". A guard can be correct, unit-tested, and load-bearing nowher
 cheap and total — delete the guard, run the whole suite, diff the sorted failing sets; if they are
 identical the guard is unobserved.
 
-**But a zero has FOUR causes and the count cannot separate them.** T030's blind author hit all
+**But a zero has FIVE causes and the count cannot separate them.** T030's blind author hit all
 three in one round: **a guard that cannot fail** (`expectCausePresent` tested
 `hasOwnProperty("cause")`, true on *every* sealed error because the constructor defines the property
 whether or not anything was passed — the trap built into the check written to catch it); **a probe
@@ -1360,6 +1533,15 @@ was failing now passes because the mutation removed what it was failing on".
 It would not have found this by re-reading the runner. It found it by running the runner against a
 synthetic subject built to exhibit each outcome — the instrument falsified on demand rather than
 inspected.
+
+**The fifth is an EQUIVALENT MUTANT, and no instrument can name it.** T070's blind author mutated the
+ruled predicate to its null-safe form, `IS NOT DISTINCT FROM`, and the suite reddened nothing — the
+runner reported `GAP: nothing observes this`, which is **false**. For non-null values the two
+predicates *are the same predicate*, so there was nothing to observe. An equivalent mutant and an
+unobserved behaviour produce **identical failing sets**, and no guard inside a tool can separate
+them: the separating question is not about the run at all but about the patch — **did this change
+what the code does, or only how it reads?** It goes in the runner's docstring rather than its logic,
+because it is the one question the runner cannot ask itself.
 
 So: **a zero is not a result until you have read what the mutation actually did to the module.**
 Confirm the mutated code still loads, still reaches the path under test, and changed the behaviour
@@ -2890,7 +3072,8 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   (4) **T180 AC1 — "a report against an unknown digest is refused"** is a foreign key to the release, not a lookup the module performs first. A `run_report` row naming a digest no release holds must fail at the driver.
   (5) **T160 AC1 — "a ballot cannot write `autonomy` or `security`"** is expressible in the schema and must be: the writable metric set is constrained by the column shape or a check constraint, so the refusal does not depend on every future caller remembering it.
   (6) Every migration is **paired up/down and reversible against a scratch database**: apply, roll back, apply again, and the schema is identical at both applications — compared structurally, not by the migration file.
-  (7) **No existing table is altered, renamed or dropped**, and the ten tables T000 shipped are byte-identical in the schema after this task. Eight tasks have merged against them.
+  (7) **No existing table is altered, renamed or dropped — with exactly one named exception**, and the ten tables T000 shipped are otherwise byte-identical in the schema after this task. Eight tasks have merged against them.
+  (7a) **The exception: `handle_reservation.account_id` becomes `NOT NULL`.** It is currently `uuid("account_id").references(...)` with no `.notNull()`, and `0001_init.up.sql` agrees, so a reservation row with a NULL owner is storable. Such a row is garbage that can never be claimed or released: under T070's ruled predicate `handle_reservation.account_id = excluded.account_id`, `NULL = NULL` is `NULL`, so it refuses **everyone forever**. T070 cannot fix it — `lib/db/schema.ts` is Forbidden there — and a runtime guard in `allocateHandle` closes only T070's own path while T050 and any later writer keep theirs open. The criterion: after this task, a direct `INSERT` of a NULL-owner reservation **fails at the driver**, not at a caller. Measured by raw SQL, as with every other constraint here.
   (8) Every unique constraint above is **named**, and the name is derived from the schema at runtime wherever a module will match on it — T010's D-14 established that a bare `23505` says *a* unique constraint was violated and not which, and `lib/server/archive/constraints.ts` already derives its names rather than restating them. A consumer that has to hardcode a constraint name is a defect in this task.
 
 - **Out of scope:** any read or write path over these tables; that is each consuming task's. Seed data. `T150`'s counters, which the wave-4 audit did not find missing a table and which are not invented here.
@@ -5532,6 +5715,117 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     `npm test` three consecutive times: **1 failed file, 1 failed test, 185 files, 5140 tests** each
     time, identical by sorted failing file and test sets. The one failure is
     `tests/server/t090/serve.test.ts`, T100's named dependency. Counted, not read off the exit code.
+
+  - 2026-08-17 blind test author, **the adversary's R3 and AC5(c). 217 tests over 9 files.**
+    Merged `138a682`. Scope was those two assertions.
+
+    **R3 held.** `expectNoCausePassed` asserts the DESCRIPTOR, not a rendering, at the three
+    `InvalidNameError` sites: `Object.getOwnPropertyDescriptor(err, "cause")` must be absent
+    where the module raises for itself. The four hygiene clauses cannot see this — a dropped
+    driver error and one never passed render identically, as nothing — so a constructor calling
+    `super(message, { cause })` unconditionally satisfies all four while carrying nothing.
+    Falsified: that constructor reds **16**, and the count is exactly the number of tests that
+    call the new assertion (14 grammar cases + the sealed test + the over-bound refusal), so
+    every red is the assertion firing and none is collateral. **The control is the part that
+    matters**: under the same mutation the four fault-path tests stay GREEN, so this is not
+    "no error may carry a cause" — it is scoped to the paths where there is nothing to carry,
+    and `expectCausePresent` still holds the other direction (dropping the driver error on the
+    fault paths reds 8).
+
+    **The obsolete AC5 assertion was already gone, and two agents reached that by different
+    routes.** The hand-off asked me to swap `expectCausePresent` out of
+    `concurrency.test.ts`; round 2 had already deleted it, for the same reason, on the same
+    ruling. I found it by building the reference to the mechanism D-70-06 names; the adversary
+    found it by measuring `ON CONFLICT DO UPDATE … WHERE` against a real database. Convergence
+    from two instruments, which is worth more than either finding alone.
+
+    **AC5(a)'s ownership half was already held** — the race asserts the surviving row belongs
+    to the caller that won, not merely that one caller won. (b) is the released-handle race
+    added in round 2. **(c) is new and it is genuinely new.**
+
+    **(c) falsified three ways, and the predicted discriminator does not discriminate.**
+
+        V1  the WHERE present and TAUTOLOGICAL          12 red
+        V3  the WHERE REMOVED entirely (the control)    12 red
+        V2  refusal right, row wrong                     5 red
+
+    **V1 and V3 red identically**, and the reason is arithmetic rather than measurement luck:
+    `excluded.account_id = excluded.account_id` is always true, so a tautological `WHERE` *is*
+    an absent `WHERE`. The stranger wins in both, and the refusal assertions catch both. So the
+    hand-off's claim — that only (c) sees the tautological case — does not hold; that case was
+    already covered several times over, and (c) is not what covers it.
+
+    **What (c) actually catches is V2: a refusal that is correct while the row underneath it is
+    not.** And the gap it closes is narrower than "nobody had it": the ACTIVE-handle
+    counterpart has been in this suite since round 1 ("leaves the first account's reservation
+    intact after refusing the second"), and V2 reds it too.
+
+    **Then the six predicates were run against THIS suite, and (c) is smaller still.** The
+    hand-off's table was measured against the adversary's own reference, which answers "what
+    does each predicate do"; re-running it here answers the different question "which of MY
+    tests trips on each", and that is the only one that decides whether (c) is coverage.
+
+        W1 absent            12 red    W1 = W2 = W3, identical sets
+        W2 vacuous           12 red    a vacuous WHERE IS an absent WHERE; every caller matches
+        W3 self              12 red
+        W4 status=released    4 red    the one that gets past (a) — 1 winner, right ownership
+        W5 IS NOT DISTINCT    0 red    equivalent to W0 for non-null ids
+
+    **Every predicate that trips (c) already tripped a test written before it.** W4's four are
+    (b), (c), and the two AC4 refusal tests that have been here since round 1. So (c) adds
+    **no new predicate coverage**, and on V2 it co-tripped with four others. The hand-off is
+    right that (b) and (c) are one axis and not two, and the honest version is stronger than
+    that: (c)'s value is that it is **deterministic and race-free** where (b) needs eight
+    concurrent callers on a contended host, and that it names the invariant in one place. That
+    is worth keeping and it is not coverage. Recorded at its measured size rather than the size
+    it was requested at.
+
+    **And W5 is a fourth cause of a zero that this suite's own instrument cannot name.** It
+    reds nothing and it should — `a = b` and `a IS NOT DISTINCT FROM b` are the same predicate
+    for non-null values — but the runner reports "GAP: nothing observes this", which is false:
+    there was nothing to observe. An **equivalent mutant** and an unobserved behaviour produce
+    identical failing sets, and no guard inside the tool can separate them; it takes the human
+    question *did this patch change what the code does, or only how it reads*. Added to the
+    runner handed to the adversary, since it now carries a fourth question rather than three.
+
+    **The three D-70-06 tests are untouched**, as instructed; the owner's ruling matches the
+    reading they were written against.
+
+  - 2026-08-18 blind test author, **D-70-22. 219 tests over 9 files.** Merged `a1153e9`.
+
+    **The gap this suite carried for three rounds is closed, and by a ruling rather than by me
+    deciding it.** Since round 1 the AC4 row test said `released_at` was unruled and unasserted
+    and that asserting it would be inventing a requirement. D-70-22 rules it, so the label is
+    deleted and the column's three states are pinned: **null** before any release, **set** by a
+    release, **retained** through a reclaim. Each is mutated and each reds only its own test.
+
+    **The reclaimed row is the whole ruling in one assertion**: `status = 'active'` with a
+    non-null `released_at`, simultaneously — legal, expected, and the only trace the reclaim
+    path ran at all.
+
+    **The trap is the behavioural half, and this suite could not see it. Found by measuring
+    rather than by reading the ruling.** A module deciding the reason from
+    `released_at IS NOT NULL` answers `reserved` for a handle its owner actively holds. Mutated
+    in, it reddened **one** test — and the wrong one: `routes.test.ts`'s released-handle case,
+    which caught it **by accident**. The route fixture marked a row `status = 'released'`
+    without setting `released_at`, a state D-70-22 says cannot occur, and the mutation was
+    caught only because that impossible row made the proxy read the other way. Every honest
+    path was blind to it: **no test in this suite called `checkHandle` on a reclaimed handle.**
+
+    Both halves fixed. The fixture now sets `released_at` with the status, so it stops
+    manufacturing a row production never supplies; and the assertion that was missing is
+    written — after a reclaim, `checkHandle` answers `taken`. Re-measured: the mutation now
+    reds exactly that one test and no longer touches the route. **A test that passes for the
+    wrong reason and a test that passes are the same colour**, and the only thing that
+    separated them here was mutating the module and reading *which* test objected.
+
+    **A self-error worth recording because it is the third instance.** Three of the four
+    mutations reported MISS on a correct result, because I again named a predicted string that
+    appears in the error message and in no test name. My own `mutations.example.py` — written
+    for the adversary — warns about exactly this. Writing the warning did not stop me making
+    the mistake, which is its own small finding about where warnings help and where they do
+    not: the instrument caught it every time, and the instrument is why the results are still
+    trustworthy.
 
 ### T240, Observability and audit log
 

@@ -111,9 +111,15 @@ beforeAll(async () => {
 
   const released = await createAccount(t);
   await seatHandle(t, released, RELEASED_HANDLE);
-  await t.query("update handle_reservation set status = 'released' where handle = $1", [
-    RELEASED_HANDLE,
-  ]);
+  /* `released_at` is set with the status, because D-70-22 makes a released row with a null
+     `released_at` a state that cannot occur — a release records when it happened. A fixture
+     that manufactures an impossible row makes its test pass for a reason production never
+     supplies, and this one did: it was the only thing catching a module that read
+     `released_at IS NOT NULL` as "released", and it caught it by accident. */
+  await t.query(
+    "update handle_reservation set status = 'released', released_at = now() where handle = $1",
+    [RELEASED_HANDLE],
+  );
   await t.query("update account set handle = null where id = $1", [released]);
 
   originalDatabaseUrl = process.env.DATABASE_URL;

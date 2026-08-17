@@ -40,6 +40,7 @@ import {
   assertNoDriverLeak,
   availableNow,
   bind,
+  expectNoCausePassed,
   expectSealedError,
   handleTakenMessage,
   invalidNamePrefix,
@@ -96,6 +97,24 @@ describe("checkHandle and allocateHandle, before anything is released", () => {
     /* A store that answers with the row it wrote has published a different signature from the
        one the contract states, and T050 — which calls this in four places — binds to `void`. */
     await expect(allocate(db(t), account, freeHandle())).resolves.toBeUndefined();
+  });
+
+  it("leaves `released_at` null on a handle that was never released", async () => {
+    /* D-70-22's "if ever". The three states of this column are the ruling: null before any
+       release, set by a release, and RETAINED through a reclaim. This is the first; the AC4
+       block holds the other two. Without this one, an implementation that stamped
+       `released_at` at allocation would satisfy both of those and still be wrong about what
+       the column means. */
+    const allocate = await bind("allocateHandle");
+    const account = await createAccount(t);
+    const handle = freeHandle();
+
+    await allocate(db(t), account, handle);
+    const rows = await reservationsFor(t, handle);
+    expect(rows.map((r) => r.status)).toEqual(["active"]);
+    expect(rows[0].releasedAt, "nothing has been released, so there is no release to record").toBe(
+      null,
+    );
   });
 
   it("answers `{ available: false, reason: \"taken\" }` once the handle is allocated", async () => {
@@ -164,6 +183,44 @@ describe("AC4: a released handle cannot be claimed by a second account, ever", (
     });
   });
 
+  it("keeps the released row's original account_id after a losing claim", async () => {
+    /* AC5(c), and the only assertion here that catches a `WHERE` which is **present and
+       wrong**. Every other test in this block reads the REFUSAL — did the stranger get an
+       error — and a refusal can be correct while the row underneath it is not. An
+       implementation that refuses the stranger and then touches the row on the way out (a
+       "mark the attempt" write, a cleanup, a `set` applied before the filter) passes every
+       count and every message pin in this suite and quietly reassigns a handle AC4 says is
+       reserved forever.
+
+       Falsified by SUBSTITUTION rather than removal, per the rule this suite has now hit
+       twice: REMOVING the `WHERE` makes the stranger WIN, which the refusal assertion above
+       already catches. It is the wrong-but-present case that needs its own eyes. */
+    const allocate = await bind("allocateHandle");
+    const release = await bind("releaseHandle");
+    const [holder, stranger] = [await createAccount(t), await createAccount(t)];
+    const handle = freeHandle();
+
+    await allocate(db(t), holder, handle);
+    await release(db(t), holder, handle);
+
+    const before = await reservationsFor(t, handle);
+    expect(before.map((r) => r.accountId), "premise: the row is the holder's").toEqual([holder]);
+
+    await rejects(() => allocate(db(t), stranger, handle), "allocateHandle(stranger, released)", {
+      expectedMessage: handleTakenMessage(handle),
+    });
+
+    const after = await reservationsFor(t, handle);
+    expect(after.length, "and no second row was written for the loser").toBe(1);
+    expect(
+      after[0].accountId,
+      `a losing claim on a released handle moved the row from the original holder to the ` +
+        `account that was just refused. The refusal was right and the row is wrong, which is ` +
+        `the one combination no count and no message assertion can see.`,
+    ).toBe(holder);
+    expect(after[0].status, "and it is still released, not quietly reactivated").toBe("released");
+  });
+
   it('still answers `{ available: false, reason: "reserved" }` after the release', async () => {
     const allocate = await bind("allocateHandle");
     const release = await bind("releaseHandle");
@@ -225,10 +282,14 @@ describe("AC4: a released handle cannot be claimed by a second account, ever", (
     ).toBe(1);
     expect(after[0].status).toBe("released");
 
-    /* WHAT THIS TEST STILL DOES NOT CHECK: `released_at`. The column exists and is nullable,
-       and §T070's ruling names `status` only. A release that leaves it null was mutated in and
-       reds nothing here — the gap is the contract's, and asserting it would be inventing a
-       requirement. Carried forward from round 1 unchanged, because the ruling did not move. */
+    /* **The gap this test carried since round 1 is now closed, and by a ruling rather than by
+       me deciding.** For three rounds this said `released_at` was unruled and unasserted, and
+       that asserting it would be inventing a requirement. D-70-22 rules it: `released_at` is a
+       HISTORY field — "when this handle was last released, if ever" — so a release sets it. */
+    expect(
+      after[0].releasedAt,
+      "D-70-22: a release records when it happened",
+    ).toBeInstanceOf(Date);
   });
 
   it("offers an alternative to a released handle, which is free — the sixth D-70-18 cell", async () => {
@@ -314,6 +375,56 @@ describe("D-70-06: the original holder reclaims; a different account never does"
     expect(rows.length, "reclaiming is an update of the one row, not a second row").toBe(1);
     expect(rows[0].status, "and the handle is active again").toBe("active");
     expect(rows[0].accountId).toBe(account);
+
+    /* **D-70-22, and this single row is the whole ruling.** The reclaimed row is
+       `status = 'active'` with a NON-NULL `released_at`, simultaneously — a legal, expected
+       state, and the only trace that D-70-06's reclaim path was taken at all.
+
+       It is also the assertion that breaks any implementation reading `released_at IS NOT
+       NULL` as "this handle is released". That predicate answers a NEARBY question and is
+       true of this active row; `status` is the sole authority on current state. Same species
+       as `hasOwnProperty` failing to separate absent from non-enumerable — a field that
+       almost answers the question, read as if it did.
+
+       And it reds if a future `SET` starts clearing the column, which nothing else here
+       would notice: every other assertion in this file is about `status` and `account_id`. */
+    expect(
+      rows[0].releasedAt,
+      "D-70-22: the ruled SET does not clear `released_at` on a reclaim — it is history, and " +
+        "clearing it erases the only evidence the reclaim path ran",
+    ).toBeInstanceOf(Date);
+  });
+
+  it("answers `taken` for a reclaimed handle, not `reserved` — the proxy trap", async () => {
+    /* **The behavioural half of D-70-22, and the half nothing in this suite reached.** After a
+       reclaim the row is `status = 'active'` with a non-null `released_at`. A module that
+       decides the reason from `released_at IS NOT NULL` answers `reserved` here — for a handle
+       its owner is actively holding — and every other test in this suite passes, because no
+       other test calls `checkHandle` on a reclaimed handle.
+
+       Measured, not assumed: with the reason computed from `released_at`, this is the only
+       assertion that reds for the right reason. Before it existed the mutation was caught by
+       a ROUTE fixture that marked a row released without setting `released_at` — an impossible
+       state under D-70-22, catching the defect by accident. That fixture is fixed; this is the
+       replacement, and it fails through the published surface on the path production takes. */
+    const allocate = await bind("allocateHandle");
+    const release = await bind("releaseHandle");
+    const check = await bind("checkHandle");
+    const account = await createAccount(t);
+    const handle = freeHandle();
+
+    await allocate(db(t), account, handle);
+    await release(db(t), account, handle);
+    await allocate(db(t), account, handle);
+
+    const rows = await reservationsFor(t, handle);
+    expect(rows[0].status, "premise: the row is active again").toBe("active");
+    expect(rows[0].releasedAt, "premise: and it still carries its release history").toBeInstanceOf(
+      Date,
+    );
+
+    /* `status` is the sole authority on current state. */
+    await unavailable(() => check(db(t), handle), "checkHandle(reclaimed)", "taken");
   });
 
   it("still refuses a different account after the holder has reclaimed it", async () => {
@@ -446,6 +557,10 @@ describe("allocateHandle refuses a name the grammar refuses", () => {
         expectedPrefix: invalidNamePrefix("allocateHandle", handle),
       });
       assertNoDriverLeak(err, [account, handle], where);
+      /* The adversary's R3: the four rendering checks cannot tell a dropped driver error from
+         one that was never passed, so the descriptor is asserted here where there is nothing
+         to carry. */
+      expectNoCausePassed(err, where);
       expect(
         await reservationsFor(t, handle),
         "and nothing was written for a name that is not a name",
@@ -509,5 +624,6 @@ describe("allocateHandle refuses a name the grammar refuses", () => {
     expectSealedError(err, "allocateHandle(illegal)", {
       expectedPrefix: invalidNamePrefix("allocateHandle", "Not A Handle"),
     });
+    expectNoCausePassed(err as Error, "allocateHandle(illegal)");
   });
 });

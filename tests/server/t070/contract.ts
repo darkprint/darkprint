@@ -572,6 +572,47 @@ export function expectCausePresent(err: Error, where: string): void {
   }
 }
 
+/**
+ * The other half of `expectCausePresent`, and the half neither of us could see from the clause.
+ *
+ * The four hygiene checks are all about RENDERINGS, and a rendering cannot answer this: a
+ * driver error that was dropped and one that was never passed **render identically — as
+ * nothing**. `Object.keys` is empty either way, `JSON.stringify` is `"{}"` either way, `cause`
+ * is non-enumerable either way, `stack` is retained either way. So a module that reinstated
+ * T030's trap — `super(message, { cause })` **unconditionally**, giving every error an own
+ * non-enumerable `cause` whose value is `undefined` — satisfies all four while carrying nothing.
+ * The check proves nothing leaks OUT; it cannot prove anything arrived IN, and this suite was
+ * reading it as both.
+ *
+ * The distinguishing observation is not about the rendering at all. It is the DESCRIPTOR:
+ *
+ *     Object.getOwnPropertyDescriptor(err, "cause") === undefined        no cause was passed
+ *     Object.getOwnPropertyDescriptor(err, "cause") === { value: undefined, ... }
+ *                                                                        one was, as undefined
+ *
+ * So this is asserted where the module raises for ITSELF — `InvalidNameError`, refused before
+ * any statement is sent — and it is what keeps `expectCausePresent` meaningful on the fault
+ * paths. If every error carries the property, "does this refusal come from the database" stops
+ * being answerable, and the two paths this suite distinguishes collapse into one.
+ *
+ * The value-versus-presence rule again, on a property with no rendering to be present *in*.
+ */
+export function expectNoCausePassed(err: Error, where: string): void {
+  const descriptor = Object.getOwnPropertyDescriptor(err, "cause");
+  if (descriptor !== undefined) {
+    throw new Error(
+      `${where} rejected with an Error that defines a \`cause\` property ` +
+        `(value: ${describe_(descriptor.value)}). This refusal is raised before any statement ` +
+        `is sent, so there is no driver error to carry and the property should not exist.\n` +
+        `  A constructor calling \`super(message, { cause })\` unconditionally defines it on ` +
+        `every error with the value \`undefined\` — which passes all four rendering checks, ` +
+        `because a dropped cause and a cause that was never passed render identically. The ` +
+        `descriptor is the only thing that tells them apart, and once every error has one, ` +
+        `"did this refusal come from the database" is no longer a question this suite can ask.`,
+    );
+  }
+}
+
 /** Run a call, require it to reject, and hold the rejection to the whole hygiene clause. */
 export async function rejects(
   call: () => unknown,
