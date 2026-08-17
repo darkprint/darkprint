@@ -118,7 +118,6 @@ function branchState(task: string): string | undefined {
  * Leaving T080 here after its merge reddened this guard against a correct file.
  */
 const TASK_BRANCH: Readonly<Record<string, string>> = {
-  T070: "feat/t070-naming",
 };
 
 describe("backend.md records each task's State once, in effect", () => {

@@ -355,6 +355,40 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A contention figure inherits the standard of the claim it supports
+
+T070's adversary adopted the implementer's in-run sampling and got it wrong, then found it itself.
+
+Its detector counted `vitest` processes whose command line did **not** name the worktree — and its
+own launcher, `node /opt/homebrew/bin/npx vitest run …`, names nothing identifying. So every run
+reported a peak of **1**: **small, stable, plausible, and manufacturing contention rather than
+missing it.** A detector that over-reports is the harder failure, because the number looks like
+careful measurement and a zero looks like a claim nobody checked.
+
+It found it by running a targeted suite and **reading the line the detector had flagged** rather than
+trusting the count — the same instrument this run keeps arriving at. Counting by process group gives
+0. It kept both triples in the Log and reported the first for its failing sets only.
+
+**The general form, in its words: a contention figure is part of a determinism claim, so it inherits
+the determinism claim's standard of evidence.** It had been treating it as context. Everything
+attached to a result is part of the result; a stamp offered as reassurance is an assertion, and an
+unfalsified assertion beside three falsified ones is where the next defect lives.
+
+## R2 is not a coverage gap: `released_at` is on no published return
+
+The last of D-70-12's six, and the adversary refused to call it a gap.
+
+Dropping `status = 'active'` from the reclaim has exactly one visible consequence — `released_at`
+moving — and **`released_at` is on no published return.** `Availability` carries three members and no
+exported function yields the column. So a blind suite writing against the published interface
+**cannot** observe it, and asking for a test that reaches past the barrel would be asking a blind
+author to stop being blind.
+
+That is a fact about the **contract's surface**, not about anyone's suite, and saying so is worth more
+than a test that would have to violate the partition to exist. Five of six closed; this one is
+recorded as unobservable-by-construction with the reason, which is the third of the five causes of a
+zero, correctly identified rather than assumed.
+
 ## Two kinds of mechanisation: preventing the mistake, and refusing to let it pass as a result
 
 T070's blind author's distinction, offered about its own third repetition of a mistake it had
@@ -2648,7 +2682,7 @@ it does not decide differently inside a worktree.
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
-| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | adversarial-pass | adversary round 3 **PASS** at `26eef93`: all seven criteria driven from commands; **AC5 re-fired at N=16 x3 against the new `ON CONFLICT DO UPDATE` shape** — one winner, the row is the winner's, **0 of 45 losers carry a driver cause**; axis (b) verified independently of the blind suite; **the shipped predicate confirmed as W0 by behaviour, not by reading**; D-70-22's three states including the reclaimed one nothing had tested. typecheck/lint/build 0; two triples, six runs, identical sorted failing sets, 0 skipped, 186 files, 5144 tests, the only red T090's own; **peak foreign vitest 0 after I found and fixed my own detector counting its launcher**. **D-70-12 closes 5 of 6** — R3 and R6 closed this round; R2 is unobservable through the published surface because `released_at` is on no published return |
+| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | **merged** | adversary round 3 **PASS** at `26eef93`: all seven criteria driven from commands; **AC5 re-fired at N=16 x3 against the new `ON CONFLICT DO UPDATE` shape** — one winner, the row is the winner's, **0 of 45 losers carry a driver cause**; axis (b) verified independently of the blind suite; **the shipped predicate confirmed as W0 by behaviour, not by reading**; D-70-22's three states including the reclaimed one nothing had tested. typecheck/lint/build 0; two triples, six runs, identical sorted failing sets, 0 skipped, 186 files, 5144 tests, the only red T090's own; **peak foreign vitest 0 after I found and fixed my own detector counting its launcher**. **D-70-12 closes 5 of 6** — R3 and R6 closed this round; R2 is unobservable through the published surface because `released_at` is on no published return |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
@@ -4466,7 +4500,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T070, Namespace: handles, slugs, reservation
 
-- **State:** adversarial-pass
+- **State:** merged
 - **Worktree:** `../darkprint-wt-t070-naming` on `feat/t070-naming`
 - **Test worktree:** `../darkprint-wt-t070-naming-tests` on `test/t070-naming`
 - **Depends on:** T000 (contract: schema)
