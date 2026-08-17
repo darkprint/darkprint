@@ -2103,7 +2103,7 @@ it does not decide differently inside a worktree.
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
-| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | impl-done | round 2 at `1f7cbc8`, onto base by **merge** (`e65db9e`, then `0f6d46e`). D-70-08, 09, 11 and 13 closed; D-70-12 answered with a measurement rather than a fix, since a blind test cannot be written from here. typecheck/lint/build 0; three consecutive full-suite runs in the gate slot, identical sorted failing sets, **1 failed file — t090's `serve.test.ts`, the expected red on base** — 182 files, 5037 tests, whole-tree stamp clean both ends; 12 mutations, every one observed, none greening anything; **0 scratch databases and 0 live connections** after the triple, having found and closed a leak of my own. D-70-14a implemented at `87c2880`; **D-70-16 through D-70-21 answered at `91cb435`, all six measured** — 16 and 21 already held, 17, 18, 19 and 20 needed code. 9 further mutations, every one observed, **two of them reddening BLIND tests** for the first time. Reported: D-70-06 is unimplemented contract and D-70-19's reasoning assumes it is not; D-70-18…21 live only in the preamble while AC6 still reads as the conditional they overturned |
+| T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | reverted | adversary round 2 **FAIL** at `2ee17d6`, on one item that is not the implementer's: **three blind tests red on D-70-06**, whose paragraph rules and defers in one block — the blind author bound the ruling, the implementer bound the deferral, both correctly. Round 1's six charges all closed and re-checked from commands. typecheck/lint/build 0; three consecutive full-suite runs, identical sorted failing file and test sets, **0 skipped**, 185 files, 5139 tests, 4 failed — the three above plus base's expected t090 red; contention 1 db/1 conn either side. All six criteria plus AC7 driven; all eight reason cells; a 255-char handle with a fitting 255-char suggestion. **D-70-12 closes 3 of 6**; of the rest, two are unobservable while `released_at` is unruled and one is a structural blind-suite gap in the sealed-error check. 16 mutations, 0 GAPs, 0 SILENT GREENs. The shared runner's `DID NOT LOAD` guard cannot fire here and its own `--self-test` reports it |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
@@ -3920,7 +3920,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T070, Namespace: handles, slugs, reservation
 
-- **State:** impl-done
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t070-naming` on `feat/t070-naming`
 - **Test worktree:** `../darkprint-wt-t070-naming-tests` on `test/t070-naming`
 - **Depends on:** T000 (contract: schema)
@@ -5058,6 +5058,221 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
     **Still open and still labelled, neither mine to close:** `<kind>` in `InvalidNameError`
     needs the implementer's enumeration; `released_at` is a T100 question.
+
+  - 2026-08-17 adversary: `impl-done` → `reverted`. **Round 2, FAIL, on one item that is not the
+    implementer's.** Measured at `2ee17d6` = `71de52a` merged with `test/t070-naming` (`9c9c6ac`)
+    and then with `backend` (`d15d957`), **merged and never rebased**, as instructed. Both merges
+    conflicted on `backend.md` **and nothing else**, so the test branch touched no implementation
+    path and there is no partition error. Resolved by the rule: both sides' Log entries kept in
+    order, base's text for everything else, row and section set together.
+
+    **Round 1's six charges are closed, and I checked each from a command rather than from the
+    diff.** D-70-08: all five published `reason` cells answer, `illegal` included. D-70-09: both
+    routes are in the build's own route manifest and both answer 200. D-70-10: the Admissible
+    message forms block now lists three forms, the two struck classes are gone from it, and the
+    `Contract` line carries `reason` — the three contradictions are all gone. D-70-11: every
+    `NamingStoreError` door is now driven by the blind suite's `faults.test.ts`. D-70-13: the
+    length bound exists, and 256 characters answers `illegal` rather than raising 54000.
+    D-70-12 is the settling measurement below.
+
+    **What blocks the verdict is three red tests, and the defect is a paragraph rather than
+    code.**
+
+        FAIL tests/server/t070/concurrency.test.ts > AC5 > gives a released handle back to its
+             previous holder, whoever else is racing
+        FAIL tests/server/t070/handles.test.ts > D-70-06 > lets the original holder take its own
+             released handle back
+        FAIL tests/server/t070/handles.test.ts > D-70-06 > still refuses a different account
+             after the holder has reclaimed it
+          AssertionError: promise rejected "HandleTakenError: allocateHandle: the han…"
+          instead of resolving
+
+    D-70-06 opens **"needed a product ruling and now has one: the original holder may reclaim its
+    own released handle"** and closes **"Flagged for owner review, since it is a product decision
+    rather than a technical one."** A ruling and a not-yet-ruling in one block. The blind author
+    bound the first half — its own header says *"It is now ruled, so the tolerance is gone.
+    Keeping it would be a suite carrying a withdrawn clause"* — and dropped round 1's tolerance
+    for three hard assertions. The implementer bound the second half and left `allocateHandle` a
+    plain insert, which refuses everyone including the previous holder. **Both read correctly;
+    neither is at fault.** This is D-01 and D-08's shape — two agents who cannot see each other
+    converging on nothing, because what they were given had two answers in it — and it is the
+    reason "do not charge its absence" cannot make the suite green: the absence is not what is
+    red, the disagreement is.
+
+    Settling it is one line either way, and it is the owner's rather than mine. **Withdraw** the
+    ruling and edit the clause in the same commit, and the blind author rewrites three tests and
+    the tree goes green with no code change — I can say that because these three are the only
+    failures beyond base's own. **Implement** it, and `allocateHandle` stops being a bare insert
+    and becomes `ON CONFLICT DO UPDATE … WHERE account_id = excluded.account_id`; that is
+    equally atomic, but it changes the shape of the statement AC5's arbiter rests on, and AC5 is
+    a criterion I passed **in the present form**, so it would need re-firing rather than
+    inheriting this round's result.
+
+    **The gates**, whole-tree stamp `2ee17d6` with `git status --porcelain` **empty before and
+    after**, `set -a; . ./.env.example; set +a` throughout. `npm run typecheck` 0, `npm run lint`
+    0, `npm run build` 0 with porcelain still empty, and the manifest now carrying
+    `ƒ /api/names/handles/[handle]` and `ƒ /api/names/slugs/[owner]/[slug]`. `npm test` three
+    consecutive times inside the gate slot:
+
+        run 1  exit 1   185 files   3 failed files   5139 tests   4 failed   0 skipped   43.5s   load 28.0
+        run 2  exit 1   185 files   3 failed files   5139 tests   4 failed   0 skipped   30.6s   load 32.4
+        run 3  exit 1   185 files   3 failed files   5139 tests   4 failed   0 skipped   24.5s   load 32.2
+
+    Sorted failing **file** and **test** sets identical across all three, ANSI and durations
+    stripped — `237ms`, `1523ms` *and* `2.09s`. Read off the exit code, the failed-**file** count
+    and the **skipped** count; the totals are reported and are not the criterion. Contention
+    stamped either side: 1 `darkprint%` database and 1 connection before, 1 after, so the
+    determinism is a property of the tree rather than of a quiet host. The fourth failure is
+    `tests/server/t090/serve.test.ts > … after a B-08 RE-SCORE`, base's own expected red awaiting
+    T100. **No other failing test appeared**, which is the criterion this round was given.
+
+    **The six acceptance criteria, each from a command through the barrel**, plus AC7:
+
+        AC1  every reserved slug -> {available:false, reason:"reserved", suggestion:"<slug>-2"},
+             and no suggestion is itself reserved
+        AC2  owner B -> {"available":true} for a slug A holds
+        AC3  owner A -> {available:false, reason:"taken", suggestion:"frontline-triage-2"}
+        AC4  release keeps the row, status "released", released_at stamped; a second account gets
+             HandleTakenError in the published form; the row stays the first account's
+        AC5  16 concurrent callers, one handle: fulfilled 1, rejected 15, **causeless refusals 0**,
+             one row, and it belongs to the winner
+        AC6  total on both axes, all eight cells driven: a suggestion accompanies exactly `taken`
+             and `reserved`; `illegal` carries none; an available answer carries neither reason
+             nor suggestion; and no answer carries a member outside the published three
+        AC7  handle `active` -> "taken", handle `released` -> "reserved" — both reachable, and
+             both erasures observed (R7/R8 below)
+
+    **D-70-20 at the boundary, which is where the rewritten AC6 is otherwise unsatisfiable.** A
+    255-character handle allocates; `checkHandle` on it answers `taken` with a suggestion of
+    **exactly 255 characters**, and that suggestion is itself allocatable — so the shortening is
+    real and not merely present. 256 characters answers `illegal` from `checkHandle` and
+    `InvalidNameError` from `allocateHandle`, with **no** SQLSTATE, so the bound is the module's
+    rather than the btree's.
+
+    **Every `NamingStoreError` door, driven and sealed** — `checkSlug` 22P02, `allocateHandle`
+    23503, `allocateHandle` 22P02, `releaseHandle` 22P02. Each: `Object.keys` `[]`,
+    `JSON.stringify` `"{}"`, `cause` non-enumerable, `stack` retained, message exactly
+    `"<operation>: the database call failed."`. Both routes answer 200 with no member outside
+    `available`/`reason`/`suggestion`, and never 404. `checkHandle` and `checkSlug` cost
+    **one statement each** in the common case, measured by wrapping the pool.
+
+    ---
+
+    **D-70-12's settling measurement. It closes three of six, and the three that remain each have
+    a nameable reason.** Round 1 found six behaviours observed by the implementer's own colocated
+    tests alone. Sixteen mutations, my own anchors, run through the shared runner:
+
+        R1  grammar parses instead of round-tripping     11 red   BLIND REDS   -> CLOSED
+        R2  releaseHandle drops status='active'           1 red   colocated    -> open
+        R3  NamingError always passes the options bag     1 red   colocated    -> open
+        R4  checkHandle answers available for an illegal 12 red   BLIND REDS   -> CLOSED
+        R5  releaseHandle drops its accountId condition   4 red   BLIND REDS   -> CLOSED
+        R6  release never stamps released_at              1 red   colocated    -> open
+
+    **R5 was closed harder than the first measurement showed, and I checked because the first
+    result looked lucky.** The blind test it reddened is `faults.test.ts > releaseHandle: a
+    malformed accountId raises 22P02 from the UPDATE` — which reds because dropping the condition
+    removes the uuid cast, not because anything asserted scoping. That would leave the blind suite
+    observing the *comparison's existence* rather than the *scoping*. So R5b kept the comparison
+    and removed only the scoping, with an `or` that is always true: it reds
+    `handles.test.ts > D-70-02 > does nothing when the account does not hold the handle`. The
+    blind suite observes the semantics. My suspicion was wrong and the closure is real.
+
+    **The three still open, and only one of them is a gap anybody can close.** R6 is
+    `released_at`, which no ruling names and which the blind suite labels in place as unchecked —
+    asserting it would be inventing a requirement. R2 is R6 wearing a different hat: dropping
+    `status='active'` has exactly one externally visible consequence, a second release walking
+    `released_at` forward, so it is unobservable for the same reason and not separately closable.
+    **R3 is the real one.** Reinstating T030's trap — `super(message, { cause })` unconditionally,
+    so every error carries an own `cause` of `undefined` — reds one colocated test and **nothing
+    blind**, and the reason is structural rather than an oversight: the blind hygiene assertion
+    checks `Object.keys` empty, `JSON.stringify` exactly `"{}"`, `cause` non-enumerable and
+    `stack` retained, and an own non-enumerable `cause` whose value is `undefined` satisfies all
+    four. The property that separates them is *whether the descriptor's value is defined*, which
+    the blind suite checks only where it expects a driver error (`expectCausePresent` on AC5's
+    losers) and never on an error raised before the database is touched. **A whitelist over
+    renderings cannot see a property that renders as nothing.** Closing it is one assertion on
+    `InvalidNameError`: `Object.getOwnPropertyDescriptor(err, "cause")` is `undefined`, not
+    present-and-undefined.
+
+    **Ten further mutations against what round 2 added, none of them on anyone's list.** R7 AC7
+    saturated to `taken` — 5 red including two blind. R8 saturated to `reserved` — 14 red. The
+    asymmetry the implementer measured reproduces at a different scale on my mutations and in the
+    same direction, which is what makes it a property of the criterion rather than of either
+    instrument. R9 the `illegal` refusal loses its reason — 13 red. R10 a suggestion offered for
+    an illegal name — 16 red. R11 a suggestion offered on an *available* answer — 10 red. R12 the
+    generator appends without shortening — 2 red, one of them blind at the bound. R13 the
+    suggestion offered without checking it is free — 3 red. R15 `MAX_NAME_LENGTH` raised to 4000 —
+    6 red, and it reds because the blind suite carries `255` as a **literal in its fixtures**
+    rather than importing the constant it bounds, which is the trap the Published signatures block
+    warns about and the one place this round could have gone tautological. R16 the slug route
+    stops resolving `[owner]` as a handle — 2 red.
+
+    **Zero GAPs and zero SILENT GREENs across all sixteen.** Every mutation reddened something,
+    and the diff ran both directions.
+
+    **Five MISSes, and four of them were my predictions rather than the suite's coverage.** R2's
+    predicted "idempotent" cannot red because releasing twice is not an error either way; R6's
+    "released_at" matches no test name at all; R13's "free at the moment" names the AC6 test that
+    structurally *cannot* catch a generator which never checks freedom — in that scenario the
+    first candidate happens to be free, and the test that discriminates is the released-reservation
+    one; R16's "account" was a word from the mechanism rather than from a name. The fifth, R3, is
+    the one where the MISS was the finding: I predicted the blind hygiene test and it cannot red,
+    for the reason above. **A red count alone reports all five as caught**, which is the argument
+    for the feature.
+
+    **The shared runner has a guard that cannot fire, and its own `--self-test` says so.**
+
+        DID NOT LOAD — replacing a file with garbage and running the suite
+          [FAIL] mutated tree does not report a summary: got True, want False
+        SELF-TEST FAILED
+
+    Confirmed by hand rather than inferred. With `grammar.ts` replaced by garbage this tree prints
+    `Tests 212 failed | 4 passed (216)` — a summary — so the guard's condition is never met. The
+    cause is not faulty logic: T070's blind suite **loads lazily inside each test**, deliberately,
+    so a module that will not import yields 212 real per-test failures rather than a collection
+    abort, and the guard was written for a suite that imports at the top. BREAKAGE catches this
+    case, so nothing here was misread. The sharper edge is underneath it: `failing_set` keeps only
+    `FAIL` lines containing `" > "`, and the same run emits **three file-level `FAIL` lines with
+    no test path**, which are structurally invisible. A mutation whose only effect is a collection
+    abort or a failed hook in a statically-importing file would red the suite, exit 1, and
+    contribute **zero** to the diff — reported as `GAP: nothing observes this`. That is the
+    `Tests 3954 passed (3954)` shape with a new door, arriving inside the instrument built to
+    separate the three causes of a zero. It did not bite this round — all sixteen mutations
+    reddened something — and I ran the normalisation unmodified so these numbers stay comparable
+    to the blind author's.
+
+    **What would falsify this verdict.** (1) The mutation sweep is scoped to
+    `tests/server/t070`, `lib/server/naming` and `app/api/names`, and that scope is measured
+    rather than assumed — nothing else in the tree imports the barrel, `tests/wave-dependencies`
+    naming the path as a string and not an import — but if anything later consumes it, every
+    attribution above is about a smaller domain than the claim. (2) AC5 is fired at N=16 on a host
+    at load 28-32; the discriminator that survives a serialised pool is the causeless-refusal
+    count of 0. (3) The route tests, mine included, drive the exported handlers directly with a
+    scratch client swapped into `Symbol.for("darkprint.db.sharedClient")` — that is the handler's
+    behaviour, not Next's routing, so nothing here says the paths resolve. (4) Both route suites
+    are `describe.skipIf(!hasDb)`, so on a machine with no `DATABASE_URL` they vanish silently;
+    the skipped count was **0** in all three runs, which is the only reason that is not a hole in
+    this report. (5) The three D-70-06 reds are the blind author's reading of a paragraph, and if
+    the owner rules the other way they become three tests to delete rather than three defects.
+
+    **Even attention.** The pull this round was toward `handles.ts` again — AC4, AC5, AC7 and the
+    reclaim conflict all live there. Counted: 9 of 16 mutations touch it. So `suggest.ts` got its
+    own pass (R12, R13, and the at-bound suggestion driven end to end), the route layer got R16
+    plus seven driven cases, `errors.ts` got R3 and four doors, and `grammar.ts` got R1 and R15.
+    **The one finding that closes nothing else — R3's structural blind spot — came out of
+    `errors.ts`**, which is the file I had least reason to revisit, since round 1 had already found
+    it clean.
+
+    **Residue.** Working tree clean including untracked files at `2ee17d6`, before and after every
+    run; probe suites archived outside the repository and the directory removed **before** the
+    triple, so nothing under `tests/` is mine. `darkprint%` databases: 1 before, 1 after, with 1
+    connection — no scratch database of mine survives. `git worktree list` unchanged.
+
+    **Back to the owner, not to the implementer.** The implementation closed all six of round 1's
+    charges and I found no new defect in it. One paragraph needs a decision, and until it has one
+    the blind suite and the module cannot both be right. If D-70-06 is withdrawn the tree is green
+    on the next run; if it is implemented, AC5 needs re-firing against the new statement shape.
 
 ### T240, Observability and audit log
 
