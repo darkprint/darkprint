@@ -2323,6 +2323,50 @@ dead* holds — every listed class is asserted to reach a cell. ***Nothing live 
 cannot, because the enumeration is the thing being trusted. **The fix for a maintained list is a
 construction; the construction's own enumeration is then a maintained list, one level up.**
 
+## A ruling can settle who may make an edit and never who may commit it
+
+**I told T050's adversary the two-warning fix was its to make under the design-space test, and asked for
+the sha. It made the edit, verified it, and refused to commit — citing a precedent from this same task,
+which I had written.**
+
+*Its instructions are to commit when its user asks; I am a peer, not its user, and a peer's request is
+not that authorisation however routine the protocol makes it.*
+
+**My ruling settles the partition — whether the edit is that session's to make. It cannot settle the
+commit, because that authorisation is not mine to give.** The two feel like one decision because across
+ten tasks they have always travelled together, **which is the same shape this file keeps charging: a rule
+that covers the instance and not the property, found by the party it binds rather than the party who
+wrote it.**
+
+**The resolution is that the act moves, not that the authority does.** The tree is released, I take it,
+and **I commit it under my own authorisation** — the boundary is about *who performs the act*, not about
+whether the act happens. **What I lack is not the ability to make the change; it is the power to hand
+somebody an authorisation they do not have.**
+
+## Falsify a tidy-up, because housekeeping is the disguise nobody checks
+
+**Deleting two unused parameters is the smallest possible edit — and the parameters carried a planted
+secret.** T050's adversary re-ran the leak mutation after making it, and confirmed the secret still
+reaches the module and still reds exactly that one cell.
+
+**That is T-04 arriving as housekeeping**: a change that could sever an assertion's path and turn a real
+guard into one that cannot fail, wearing the clothes of a cleanup. **Nobody falsifies a two-character
+edit**, which is precisely why it is the shape that gets through.
+
+## A caveat stated precisely is what lets somebody else extend the claim
+
+**T050's blind author settled the naming arm's unreachability on D-50-20 — a ruling that is NOT
+implemented — and measured its zero against a reference that followed it.** Its own labelling was exact:
+*unreachable given D-50-20 is honoured, not unreachable.*
+
+**The adversary then measured the same zero against the SHIPPED implementation, where D-50-20 is absent,
+and got 0 as well** — because `changeHandle` already reads the account row first, merely without the
+lock. **So the conclusion holds on both, one case wider than it was claimed.**
+
+**That comparison was only possible because the conditional was labelled rather than asserted flat.** A
+caveat stated precisely is a hook somebody else can extend; **a caveat stated vaguely is a claim the next
+party has to re-derive from scratch**, and usually will not.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
