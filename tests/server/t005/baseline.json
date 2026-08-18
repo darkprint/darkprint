@@ -1,0 +1,1216 @@
+{
+  "capturedFrom": "3bfc6bca12cc97969335326f5f48ca500250575f",
+  "migration": "0001_init.up.sql",
+  "tables": [
+    "account",
+    "handle_reservation",
+    "bundle",
+    "release",
+    "card_version",
+    "ontology_version",
+    "ontology_term",
+    "target",
+    "target_actor",
+    "audit"
+  ],
+  "shape": {
+    "columns": [
+      {
+        "table_name": "account",
+        "column_name": "avatar_hue",
+        "data_type": "smallint",
+        "udt_name": "int2",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": 16,
+        "numeric_scale": 0
+      },
+      {
+        "table_name": "account",
+        "column_name": "bio",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "account",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "account",
+        "column_name": "default_visibility",
+        "data_type": "USER-DEFINED",
+        "udt_name": "visibility",
+        "is_nullable": "NO",
+        "column_default": "'public'::visibility",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "account",
+        "column_name": "display_name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "account",
+        "column_name": "email",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "account",
+        "column_name": "github_id",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "account",
+        "column_name": "github_login",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "account",
+        "column_name": "handle",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "account",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "account",
+        "column_name": "notification_preferences",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'{}'::jsonb",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "account",
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "account",
+        "column_name": "validator",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "NO",
+        "column_default": "false",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "account",
+        "column_name": "validator_since",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "account",
+        "column_name": "validator_weight",
+        "data_type": "numeric",
+        "udt_name": "numeric",
+        "is_nullable": "NO",
+        "column_default": "'1'::numeric",
+        "character_maximum_length": null,
+        "numeric_precision": 6,
+        "numeric_scale": 3
+      },
+      {
+        "table_name": "audit",
+        "column_name": "action",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "audit",
+        "column_name": "actor_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "audit",
+        "column_name": "actor_kind",
+        "data_type": "USER-DEFINED",
+        "udt_name": "actor_kind",
+        "is_nullable": "NO",
+        "column_default": "'owner'::actor_kind",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "audit",
+        "column_name": "decision",
+        "data_type": "USER-DEFINED",
+        "udt_name": "audit_decision",
+        "is_nullable": "NO",
+        "column_default": "'allowed'::audit_decision",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "audit",
+        "column_name": "detail",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'{}'::jsonb",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "audit",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "audit",
+        "column_name": "occurred_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "audit",
+        "column_name": "target_id",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "audit",
+        "column_name": "target_kind",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "bundle",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "bundle",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "bundle",
+        "column_name": "lineage_owner_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "bundle",
+        "column_name": "lineage_slug",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "bundle",
+        "column_name": "lineage_version",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "bundle",
+        "column_name": "owner_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "bundle",
+        "column_name": "slug",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "bundle",
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "bundle",
+        "column_name": "visibility",
+        "data_type": "USER-DEFINED",
+        "udt_name": "visibility",
+        "is_nullable": "NO",
+        "column_default": "'public'::visibility",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "card_version",
+        "column_name": "body",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "card_version",
+        "column_name": "card_id",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "card_version",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "card_version",
+        "column_name": "digest",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "card_version",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "card_version",
+        "column_name": "owner_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "card_version",
+        "column_name": "source",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "card_version",
+        "column_name": "version",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "card_version",
+        "column_name": "visibility",
+        "data_type": "USER-DEFINED",
+        "udt_name": "visibility",
+        "is_nullable": "NO",
+        "column_default": "'public'::visibility",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "handle_reservation",
+        "column_name": "account_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "handle_reservation",
+        "column_name": "handle",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "handle_reservation",
+        "column_name": "released_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "handle_reservation",
+        "column_name": "reserved_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "handle_reservation",
+        "column_name": "status",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": "'active'::text",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "ontology_term",
+        "column_name": "body",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "ontology_term",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "ontology_term",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "ontology_term",
+        "column_name": "kind",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "ontology_term",
+        "column_name": "ontology_version_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "ontology_term",
+        "column_name": "term_id",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "ontology_version",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "ontology_version",
+        "column_name": "digest",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "ontology_version",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "ontology_version",
+        "column_name": "version",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "release",
+        "column_name": "autonomy",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "release",
+        "column_name": "bundle_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "release",
+        "column_name": "card_digests",
+        "data_type": "ARRAY",
+        "udt_name": "_text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "release",
+        "column_name": "card_refs",
+        "data_type": "ARRAY",
+        "udt_name": "_text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "release",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "release",
+        "column_name": "digest",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "release",
+        "column_name": "dot",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "release",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "release",
+        "column_name": "local_vocabulary",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "release",
+        "column_name": "manifest",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "release",
+        "column_name": "phase_coverage",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "release",
+        "column_name": "scored_ontology_version_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "release",
+        "column_name": "security",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "YES",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "release",
+        "column_name": "version",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "target",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "target",
+        "column_name": "download_count",
+        "data_type": "numeric",
+        "udt_name": "numeric",
+        "is_nullable": "NO",
+        "column_default": "'0'::numeric",
+        "character_maximum_length": null,
+        "numeric_precision": 12,
+        "numeric_scale": 0
+      },
+      {
+        "table_name": "target",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "target",
+        "column_name": "kind",
+        "data_type": "USER-DEFINED",
+        "udt_name": "target_kind",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "target",
+        "column_name": "note_count",
+        "data_type": "numeric",
+        "udt_name": "numeric",
+        "is_nullable": "NO",
+        "column_default": "'0'::numeric",
+        "character_maximum_length": null,
+        "numeric_precision": 12,
+        "numeric_scale": 0
+      },
+      {
+        "table_name": "target",
+        "column_name": "ref_id",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "target",
+        "column_name": "star_count",
+        "data_type": "numeric",
+        "udt_name": "numeric",
+        "is_nullable": "NO",
+        "column_default": "'0'::numeric",
+        "character_maximum_length": null,
+        "numeric_precision": 12,
+        "numeric_scale": 0
+      },
+      {
+        "table_name": "target_actor",
+        "column_name": "account_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "target_actor",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "target_actor",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()",
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "target_actor",
+        "column_name": "kind",
+        "data_type": "USER-DEFINED",
+        "udt_name": "target_actor_kind",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      },
+      {
+        "table_name": "target_actor",
+        "column_name": "target_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null,
+        "character_maximum_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null
+      }
+    ],
+    "indexes": [
+      {
+        "tablename": "account",
+        "indexname": "account_github_id_key",
+        "indexdef": "CREATE UNIQUE INDEX account_github_id_key ON public.account USING btree (github_id)"
+      },
+      {
+        "tablename": "account",
+        "indexname": "account_handle_key",
+        "indexdef": "CREATE UNIQUE INDEX account_handle_key ON public.account USING btree (handle)"
+      },
+      {
+        "tablename": "account",
+        "indexname": "account_pkey",
+        "indexdef": "CREATE UNIQUE INDEX account_pkey ON public.account USING btree (id)"
+      },
+      {
+        "tablename": "audit",
+        "indexname": "audit_actor_id_idx",
+        "indexdef": "CREATE INDEX audit_actor_id_idx ON public.audit USING btree (actor_id)"
+      },
+      {
+        "tablename": "audit",
+        "indexname": "audit_occurred_at_idx",
+        "indexdef": "CREATE INDEX audit_occurred_at_idx ON public.audit USING btree (occurred_at)"
+      },
+      {
+        "tablename": "audit",
+        "indexname": "audit_pkey",
+        "indexdef": "CREATE UNIQUE INDEX audit_pkey ON public.audit USING btree (id)"
+      },
+      {
+        "tablename": "audit",
+        "indexname": "audit_target_idx",
+        "indexdef": "CREATE INDEX audit_target_idx ON public.audit USING btree (target_kind, target_id)"
+      },
+      {
+        "tablename": "bundle",
+        "indexname": "bundle_owner_slug_key",
+        "indexdef": "CREATE UNIQUE INDEX bundle_owner_slug_key ON public.bundle USING btree (owner_id, slug)"
+      },
+      {
+        "tablename": "bundle",
+        "indexname": "bundle_pkey",
+        "indexdef": "CREATE UNIQUE INDEX bundle_pkey ON public.bundle USING btree (id)"
+      },
+      {
+        "tablename": "card_version",
+        "indexname": "card_version_digest_idx",
+        "indexdef": "CREATE INDEX card_version_digest_idx ON public.card_version USING btree (digest)"
+      },
+      {
+        "tablename": "card_version",
+        "indexname": "card_version_id_version_key",
+        "indexdef": "CREATE UNIQUE INDEX card_version_id_version_key ON public.card_version USING btree (card_id, version)"
+      },
+      {
+        "tablename": "card_version",
+        "indexname": "card_version_pkey",
+        "indexdef": "CREATE UNIQUE INDEX card_version_pkey ON public.card_version USING btree (id)"
+      },
+      {
+        "tablename": "handle_reservation",
+        "indexname": "handle_reservation_account_id_idx",
+        "indexdef": "CREATE INDEX handle_reservation_account_id_idx ON public.handle_reservation USING btree (account_id)"
+      },
+      {
+        "tablename": "handle_reservation",
+        "indexname": "handle_reservation_pkey",
+        "indexdef": "CREATE UNIQUE INDEX handle_reservation_pkey ON public.handle_reservation USING btree (handle)"
+      },
+      {
+        "tablename": "ontology_term",
+        "indexname": "ontology_term_pkey",
+        "indexdef": "CREATE UNIQUE INDEX ontology_term_pkey ON public.ontology_term USING btree (id)"
+      },
+      {
+        "tablename": "ontology_term",
+        "indexname": "ontology_term_version_term_key",
+        "indexdef": "CREATE UNIQUE INDEX ontology_term_version_term_key ON public.ontology_term USING btree (ontology_version_id, term_id)"
+      },
+      {
+        "tablename": "ontology_version",
+        "indexname": "ontology_version_pkey",
+        "indexdef": "CREATE UNIQUE INDEX ontology_version_pkey ON public.ontology_version USING btree (id)"
+      },
+      {
+        "tablename": "ontology_version",
+        "indexname": "ontology_version_version_key",
+        "indexdef": "CREATE UNIQUE INDEX ontology_version_version_key ON public.ontology_version USING btree (version)"
+      },
+      {
+        "tablename": "release",
+        "indexname": "release_bundle_version_key",
+        "indexdef": "CREATE UNIQUE INDEX release_bundle_version_key ON public.release USING btree (bundle_id, version)"
+      },
+      {
+        "tablename": "release",
+        "indexname": "release_digest_idx",
+        "indexdef": "CREATE INDEX release_digest_idx ON public.release USING btree (digest)"
+      },
+      {
+        "tablename": "release",
+        "indexname": "release_pkey",
+        "indexdef": "CREATE UNIQUE INDEX release_pkey ON public.release USING btree (id)"
+      },
+      {
+        "tablename": "target",
+        "indexname": "target_kind_ref_id_key",
+        "indexdef": "CREATE UNIQUE INDEX target_kind_ref_id_key ON public.target USING btree (kind, ref_id)"
+      },
+      {
+        "tablename": "target",
+        "indexname": "target_pkey",
+        "indexdef": "CREATE UNIQUE INDEX target_pkey ON public.target USING btree (id)"
+      },
+      {
+        "tablename": "target_actor",
+        "indexname": "target_actor_pkey",
+        "indexdef": "CREATE UNIQUE INDEX target_actor_pkey ON public.target_actor USING btree (id)"
+      },
+      {
+        "tablename": "target_actor",
+        "indexname": "target_actor_target_account_kind_key",
+        "indexdef": "CREATE UNIQUE INDEX target_actor_target_account_kind_key ON public.target_actor USING btree (target_id, account_id, kind)"
+      }
+    ],
+    "constraints": [
+      {
+        "table_name": "account",
+        "conname": "account_pkey",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "audit",
+        "conname": "audit_actor_id_account_id_fk",
+        "definition": "FOREIGN KEY (actor_id) REFERENCES account(id)"
+      },
+      {
+        "table_name": "audit",
+        "conname": "audit_pkey",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "bundle",
+        "conname": "bundle_lineage_owner_id_account_id_fk",
+        "definition": "FOREIGN KEY (lineage_owner_id) REFERENCES account(id)"
+      },
+      {
+        "table_name": "bundle",
+        "conname": "bundle_owner_id_account_id_fk",
+        "definition": "FOREIGN KEY (owner_id) REFERENCES account(id)"
+      },
+      {
+        "table_name": "bundle",
+        "conname": "bundle_pkey",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "card_version",
+        "conname": "card_version_owner_id_account_id_fk",
+        "definition": "FOREIGN KEY (owner_id) REFERENCES account(id)"
+      },
+      {
+        "table_name": "card_version",
+        "conname": "card_version_pkey",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "handle_reservation",
+        "conname": "handle_reservation_account_id_account_id_fk",
+        "definition": "FOREIGN KEY (account_id) REFERENCES account(id)"
+      },
+      {
+        "table_name": "handle_reservation",
+        "conname": "handle_reservation_pkey",
+        "definition": "PRIMARY KEY (handle)"
+      },
+      {
+        "table_name": "ontology_term",
+        "conname": "ontology_term_ontology_version_id_ontology_version_id_fk",
+        "definition": "FOREIGN KEY (ontology_version_id) REFERENCES ontology_version(id)"
+      },
+      {
+        "table_name": "ontology_term",
+        "conname": "ontology_term_pkey",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "ontology_version",
+        "conname": "ontology_version_pkey",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "release",
+        "conname": "release_bundle_id_bundle_id_fk",
+        "definition": "FOREIGN KEY (bundle_id) REFERENCES bundle(id)"
+      },
+      {
+        "table_name": "release",
+        "conname": "release_pkey",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "release",
+        "conname": "release_scored_ontology_version_id_ontology_version_id_fk",
+        "definition": "FOREIGN KEY (scored_ontology_version_id) REFERENCES ontology_version(id)"
+      },
+      {
+        "table_name": "target",
+        "conname": "target_pkey",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "target_actor",
+        "conname": "target_actor_account_id_account_id_fk",
+        "definition": "FOREIGN KEY (account_id) REFERENCES account(id)"
+      },
+      {
+        "table_name": "target_actor",
+        "conname": "target_actor_pkey",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "target_actor",
+        "conname": "target_actor_target_id_target_id_fk",
+        "definition": "FOREIGN KEY (target_id) REFERENCES target(id)"
+      }
+    ]
+  },
+  "enums": [
+    {
+      "name": "actor_kind",
+      "label": "owner"
+    },
+    {
+      "name": "actor_kind",
+      "label": "operator"
+    },
+    {
+      "name": "actor_kind",
+      "label": "system"
+    },
+    {
+      "name": "audit_decision",
+      "label": "allowed"
+    },
+    {
+      "name": "audit_decision",
+      "label": "denied"
+    },
+    {
+      "name": "audit_decision",
+      "label": "error"
+    },
+    {
+      "name": "target_actor_kind",
+      "label": "star"
+    },
+    {
+      "name": "target_actor_kind",
+      "label": "note_vote"
+    },
+    {
+      "name": "target_kind",
+      "label": "blueprint"
+    },
+    {
+      "name": "target_kind",
+      "label": "card"
+    },
+    {
+      "name": "target_kind",
+      "label": "term"
+    },
+    {
+      "name": "visibility",
+      "label": "public"
+    },
+    {
+      "name": "visibility",
+      "label": "private"
+    }
+  ]
+}
