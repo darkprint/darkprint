@@ -355,6 +355,38 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## Every gate line in this run assumes an environment nobody wrote down
+
+T050's implementer asked whether base's line is reproducible without `DATABASE_URL` exported, rather
+than assuming. It is not, and the difference is the whole suite:
+
+```
+without the env    Tests  178 failed | 4245 passed | 721 skipped (5144)
+with the env       Tests    1 failed | 5143 passed |   0 skipped (5144)
+```
+
+**Base's line — `1 failed | 5143 passed (5144)` — is only produced with `.env.example`'s variables
+exported.** Every gate number quoted in this file, in every handback, assumes it. It was never stated
+because it was never wrong for anyone, which is precisely the condition under which a premise stops
+being examined.
+
+**The hazard is the skipped count, and it is the reason this needed asking.** A partial export leaves
+suites `skipIf`-ing rather than failing, so a run can carry hundreds of silent skips and **agree with
+base on the failure set** while measuring a fraction of the tree. Anyone comparing *failures* rather
+than *totals* reads it as clean. That is the `describe.skipIf` trap this file already records, at the
+scale of the whole suite rather than one file.
+
+**So a gate result carries three numbers, not two: failed, passed and SKIPPED** — and the skipped
+count is not decoration, it is the one that says whether the other two describe the tree. Several
+sessions had already arrived at reporting it; it is a rule now, and the environment it depends on is
+stated rather than assumed.
+
+**And the standard `skipIf` shape is what makes this invisible rather than loud.** A missing
+`DATABASE_URL` ought to be the loudest possible failure — it means the run measured nothing about the
+database — and instead it is the quietest, because skipping is how the suite is designed to behave
+when a developer has no stack up. The design is right for a developer and wrong for a gate, and
+nothing distinguishes the two contexts.
+
 ## An amendment can owe nothing, and checking beats adding a ceremonial test
 
 D-50-06 published `PublicAuthor.handle` as `string | null`. By the two-holders rule that reaches the
@@ -6944,7 +6976,8 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Published signatures** (checked against `backend` at `9411199`, against `lib/db/schema.ts`'s `account` — `github_id` and `handle` each carry a unique index, `handle` is **nullable**, `notification_preferences` is `jsonb NOT NULL DEFAULT {}` and belongs to T190 — and against T000's `SessionPayload`, which is `{ accountId, handle: string | null }`. Barrel: `@/lib/server/accounts`.)
 
         interface PublicAuthor {
-          handle: string | null;   // D-50-06: AC1 rules a handle-less account legal, so getAccount
+          handle: string | null;   // L-06 (D-50-06 is the session re-mint): AC1 rules a handle-less
+                                   // account legal, so getAccount
                                    // must be able to describe one. getPublicAuthor(db, handle) is
                                    // KEYED by handle and can never return a null one; the
                                    // nullability is reachable only through getAccount().author.
