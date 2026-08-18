@@ -355,6 +355,228 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A State says where work IS, and mine said it about a branch with nothing on it
+
+I recorded T050 as `impl-done` at `da606e1`. **`feat/t050-accounts` is at `da606e1` — which is base —
+with zero commits ahead and zero T050 files in it.** The entire implementation, nineteen files, exists
+only in the worktree.
+
+Its implementer caught it and the consequence it named is the one that matters: **a handover cannot
+complete.** This file requires the receiving agent to get the sha *and* confirmation that porcelain is
+empty at it. At `da606e1` porcelain has five entries, and an adversary told "the tree is at `da606e1`"
+would run `git rev-parse HEAD`, **get agreement**, and measure nineteen files that exist in no commit.
+That is the T025 contamination shape with the stamp **passing** — identical shas, different trees.
+
+Its triple is sound and unreproducible: both stamps recorded and identical, its own untracked
+`pgstamp.local.mjs` found and removed before it claimed clean — but the tree those numbers describe
+**is not addressable by a sha**, so nobody can check anything out and get it.
+
+**`tests/task-state-agreement.test.ts` is structurally blind to this**, and that is the more useful
+half. It compares the State string in base against the State string on the branch. When the branch
+**is** base, the two strings are the same file, so they agree **trivially**. A guard built to catch
+base lagging a branch cannot see a branch that has no work on it, because the failure has no
+disagreement in it.
+
+Closed by `tests/branch-carries-work.test.ts`: **a task whose State is past `claimed` must have a
+branch that is ahead of `backend`.** Derived from the state word rather than from a list of which
+tasks are live, so it covers the next one automatically.
+
+**And it did not commit on my say-so, which was right.** Its instructions are to commit when its user
+asks; I am a peer, not its user, and a peer's request is not that authorisation however routine the
+protocol makes it. It reported the state and asked rather than presenting a fait accompli. **That is
+the correct handling of the boundary in the direction nobody thinks about** — the usual case is a peer
+asking someone to do what it was refused, and this is a peer declining to be granted something its own
+user has to grant.
+
+## A zero can refute the reasoning attached to correct code
+
+T050's implementer mutated six database-observable guards. Five discriminated. **The sixth reddened
+zero, and it refuted a claim in its own comment rather than revealing a missing test.**
+
+`handle.ts` said release-**last** was what kept a losing caller from surrendering the handle it
+already held. Swapping to release-before-allocate changes **nothing** — because inside
+`db.transaction` a release preceding a failed allocate rolls back with everything else. **That is the
+transaction's guarantee, not the ordering's.** The code was right; the reasoning attached to it was
+wrong, and its "a refused claim rolls back" test observes the **rollback**, which is what it should
+observe and not what the comment said it did.
+
+**So a zero has a further reading beyond the five already recorded.** Not a guard that cannot fail,
+not a probe that cannot reach, not genuinely unobservable, not a silent green, not an equivalent
+mutant — **a mechanism claim that is false about code that is correct.** It is the false-premise rule
+meeting mutation testing: the conclusion holds, the stated cause does not, and **only mutation can
+tell you which of the two you verified.** Reading the code confirms the behaviour and confirms the
+comment simultaneously, because the comment describes the behaviour accurately while misattributing it.
+
+**It corrected the comment rather than the code, and wrote the uncomfortable half in.** Release-last is
+kept as the arrangement still correct if the transaction is ever removed — and that is **defence with
+no observer**: drop the `db.transaction` wrapper and nothing in this repository reds while the ordering
+silently becomes load-bearing again. Naming a defence that nothing tests, beside the reason it is kept,
+is better than deleting it and better than pretending it is covered.
+
+Its own summary is the transferable line: **a mutation redding zero is not a guard that works, and not
+always a missing test either — sometimes it is a true statement about the wrong mechanism.**
+
+## "Zero residue of its own" is a scope, and a stale database outlives every session that could own it
+
+T050's implementer's before-stamp already held `darkprint_test_95db6b505764464bbf9bbe8d09772397`, and
+its after-stamp held the same one. It added nothing and dropped nothing — correctly, since dropping a
+database another session may be driving is the failure that rule exists to prevent.
+
+**Its observation about the wording is the durable half:** T005's implementer released "with zero
+residue **of its own**", which is *carefully true and does not cover this*. Every session in this run
+has been scrupulous about its own residue and the shared stack still carries an orphan, because
+**"mine is clean" composes to nothing.** A leaked scratch database has no owner by construction — the
+session that leaked it is the one that failed to run its teardown, so it is also the one least likely
+to be around to report it.
+
+**And it found its own** — `pgstamp.local.mjs`, untracked in the worktree for all three runs, placed
+there because `pg` will not resolve from the scratchpad. `.mjs` so no glob collects it and the count
+could not have moved, but it was there, its own stamp caught it, and it said so before saying the tree
+was clean.
+
+## A filter that did not survive into a reported number is still a filter you were holding
+
+T005's implementer answered the typecheck challenge without taking the exit it was offered. **It did
+use `grep -v PageProps`** — for its first two typechecks, before it had built. What saves its gate
+line is that no *reported* number came from those invocations: once it built, it wrote `tsc` output
+to a file and read it unfiltered, 18 before and 0 after.
+
+**It declined to let "I was fine" stand**, and the sentence it added instead is the one worth keeping:
+*for two invocations I was holding a claim about attribution while a filter made it look like a claim
+about the gate.* **Nothing about the two commands' output distinguishes them** — which is why the
+distinction has to be maintained by the author rather than discovered by a reader.
+
+That is the difference between a defect and a **near miss reported as one**. This file records plenty
+of the first; the second is rarer and worth as much, because the mechanism is identical and only the
+outcome differs.
+
+## An instrument that records a count cannot comply with the rule to read the line
+
+Its contention figure was 1, 1, 0 — and it **cannot say what the 1 was**, because its sampler recorded
+the count and not the matching `ps` line. So it reported the weaker claim: *an unidentified foreign
+node/vitest process appeared in at least one sample*, **not** "another session was running a suite".
+
+This file's rule is *read the line the detector flagged rather than trusting the count*, and it found
+its own instrument **structurally unable to comply after the fact**. A rule about how to interpret a
+measurement implies a requirement on what the instrument must retain, and an instrument that discards
+the evidence makes the rule unfollowable no matter how carefully anyone reads. Fixed for whoever takes
+the runner next: the sampler appends the matching lines whenever the count is nonzero.
+
+**And the number still bought something**: run 2 passed through a window containing a foreign process
+and returned the identical failing set — robustness to a collision that actually happened.
+
+## Prose is inert for the test count, measured rather than assumed
+
+I have told several sessions that every base move since `73e769f` was `backend.md` and docs, so their
+arithmetic still holds. T005's implementer checked it **structurally** rather than empirically: the
+four `backend.md`-parsing guards loop **inside test bodies** rather than via `it.each`, so they
+contribute a **fixed six cases whatever the prose says**.
+
+That is a stronger result than the observation it confirms. "The count did not change across five
+commits" is evidence; "the count **cannot** change with prose, because the guards do not generate
+cases per parsed item" is a property. The first would stop being true the day someone wrote a guard
+with `it.each` over `backend.md`'s sections — and nobody would notice, because the failure looks like
+a legitimate delta.
+
+## "Reconstructible" is a property of the artefact, not of your machine
+
+T005's blind author took the amend correction and found the concrete cost when it went to act on it.
+`67866ad` and `250d12a` are still readable **in its worktree's reflog** — `git cat-file -p` returns
+the original message — but nothing reachable from the branch head carries them. **A merge into
+`backend` would have taken the corrected message and left no trace that the false one ever existed.**
+
+Its own diagnosis: *I had been reading "reconstructible" as "recoverable by me", which is a claim
+about my machine and not about the artefact.* Same substitution as the shell filter, one level up —
+a premise true of the person holding the terminal, offered as a property of the thing handed over.
+
+**A retraction with nothing to retract is not a record.** It replaced the amend with an **empty
+commit** quoting the false gate line verbatim beside its correction. No file changed, because what
+had to survive was a claim next to its retraction rather than a diff.
+
+## A premise with no rendering
+
+Its sharpening of the pipeline rule, and it unifies two things this file had separately.
+
+*Reasoning printed beside output reads as output* at least leaves the reasoning **in the transcript**,
+where a reader can find it and disagree. **A filter in a pipeline leaves nothing** — not in the
+artefact, not in the output, not in the number. It is a **premise with no rendering**, and that is
+why it survived from its first typecheck to its handback: there was never a moment at which
+re-reading anything would have shown it.
+
+Same shape as `Object.getOwnPropertyDescriptor` being the only way to separate an absent `cause` from
+one passed as `undefined`. **Presence and value are different questions, and a filtered stream has no
+property for the filter to be present in.** The instrument that finds it cannot be reading — it has to
+be running the unfiltered command.
+
+**And its reading of why four sessions hit the build trap is the one to keep**: a missing `npm ci`
+reddens **server** files, which a backend task reads as breakage it owns; a missing build reddens
+**page** files, and *the correct reading of whose they are is what licenses the filter*. Four sessions
+is not four careless readers — it is a trap whose natural response is the wrong one.
+
+## The gate-and-commit class has two shapes, and only one is fixed by chaining
+
+Mine were `set -o pipefail` making a pipeline exit non-zero while the commit ran on the next line.
+Its was a Python heredoc whose **second** assertion failed after its **first** edit had already
+applied — the script exited non-zero having done half its work, and the commit ran against a file the
+script had never written.
+
+Same `&&`-does-not-span-lines cause, different intermediate state: the tree was neither the old thing
+nor the new one, and a `git commit` reading it could not tell. So the fix for its shape is not only
+*chain it* but **write the file atomically or not at all** — its script's single `write` after both
+asserts is why the file survived intact and the amend was a no-op rather than a corruption. It named
+that as luck rather than design, which is why the sha it produced is merely dead instead of carrying a
+half-edited claim.
+
+## A fresh worktree runs `npm ci` AND `npm run build` before its first gate
+
+**Actionable for every worktree in this run, and it has now bitten four sessions.** `.next/types`
+holds a Next-generated global, `tsconfig.json` includes that path, and a worktree that has only ever
+run `npm ci` has no `.next` at all — so its first `npm run typecheck` reports **18 `TS2304: Cannot
+find name 'PageProps'`** across eight `app/**` page files that belong to nobody.
+
+This file already says a new worktree runs `npm ci` before its first gate. **`npm run build` goes in
+the same sentence, before typecheck**, or the first typecheck in every fresh worktree is 18 red and
+whoever meets it either **filters them** or reports a defect that does not exist.
+
+It fails in the more dangerous direction than the lockfile trap it sits beside: `npm ci` missing
+produces errors in **server** files that read as breakage, while this produces errors in **page**
+files that a task touching no pages reads as somebody else's problem.
+
+## "Those errors are not mine" is a claim about attribution, offered as a claim about the gate
+
+T005's blind author reported `typecheck 0` and wrote it into its handback commit. The tree reported
+18. It had been filtering with `grep -v PageProps` since its first typecheck, on the reasoning that
+the errors were in files it had not touched.
+
+**That reasoning is correct and it does not make the claim true.** Attribution and gate result are
+different propositions, and only one of them is what a gate line asserts. **The filter encoded a
+judgement that was never restated when the number was written down** — by the time the words
+`typecheck 0` were typed, the judgement had become invisible.
+
+Same object as *reasoning printed beside output reads as output*, except the reasoning was in a
+**shell pipeline** rather than in a sentence. A pipeline is the most durable place to hide a premise:
+it persists across every invocation, it is not in the artefact anyone reviews, and its output is
+indistinguishable from an unfiltered one.
+
+It also produced the **third instance** of the gate-and-commit-on-separate-lines defect while fixing
+this — a Python edit failed its assertion and the `git commit --amend` on the next line ran anyway
+against the unmodified message. First of that class by anyone other than me.
+
+## An acceptance stamp has to still resolve
+
+I accepted `67866ad`. Amending the commit message made it unreachable from the branch — same tree
+object (`93126aee…` at both, `git diff` empty), so **nothing measured changed**, but the sha in my
+acceptance no longer resolves from the head and a reader following it finds nothing.
+
+Sharper than the earlier *an acceptance is of an artefact, not of a tip*: there the branch advanced
+and the accepted commit remained reachable. **Here the accepted commit stopped existing on the
+branch.** Amending after a handback is rewriting a sha somebody else has cited — the thing this run
+forbids for exactly this reason — and the right form is a **new commit carrying the correction**, so
+the record of the false gate line survives beside its retraction.
+
+The re-acceptance is by tree: `93126aee5f82aeac6cdd4b7df434516b7a7beb54`, which is the object both
+shas name and the only identifier here that could not have moved.
+
 ## A number that survives the explanation you gave it is evidence against the explanation
 
 T005's blind author's suite reported `5 failed | 1 passed | 42 skipped` and it nearly filed it as
