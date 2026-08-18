@@ -109,13 +109,26 @@ describe("AC5 — identical bytes, identical output", () => {
    * producing six diagnostics. So it is an *equivalent* mutant rather than an unobserved
    * behaviour, and those two produce the same zero.
    *
-   * The blind author reached the same classification independently, and its reason is better
-   * than this measurement because it says *why* rather than *that*: `loadBundle` returns
-   * every array through `sortDiagnostics`, and no two card diagnostics can tie, because
-   * `location.file` is the card's own key and is part of the sort key. So the order is
-   * pinned by the file names themselves, whatever order they arrived in. Two parties, two
-   * instruments, one conclusion — which is what makes it a fact about the contract's surface
-   * rather than a hole in either suite.
+   * **The mechanism is one source line, and it makes the equivalence provable rather than
+   * sampled.** `cardFiles` is read in exactly one place in the whole of `lib/core` —
+   * `bundle/resolve.ts:191` — and that place is
+   * `for (const file of Object.keys(bundle.cardFiles).sort(cmpString))`. `cmpString` is
+   * `a < b ? -1 : a > b ? 1 : 0`, which is what `Array.prototype.sort()` does to strings by
+   * default. So `sortedByKey` applies the same sort, with the same comparator, to the same
+   * keys, immediately before `lib/core` applies it again. **The record's insertion order
+   * cannot reach anything**, and no argument about diagnostics is needed to say so.
+   *
+   * Three parties reached the equivalence by three routes — this suite by mutation, the
+   * blind author by reasoning that no two card diagnostics can tie on `location.file`, and
+   * the adversary by narrowing that to "only while every card diagnostic carries a
+   * location, so sampled, not proved". All three are right and all three are downstream of
+   * a sort that already happened. Recorded because the caveat is what sent me to read the
+   * call site, and the call site settles it.
+   *
+   * What that leaves the clause: AC5's "`cardFiles` is rebuilt in sorted key order before
+   * `loadBundle` sees it" is **defence-in-depth against a future change in `lib/core`**,
+   * not against anything reachable today, and `lib/core` is Forbidden here so this module
+   * cannot be the one to notice if that line moves.
    *
    * The sort stays: the contract mandates it, and it is what keeps AC5 true of this module
    * rather than true of `lib/core`'s current internals. What it must not do is be reported

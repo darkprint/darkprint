@@ -7912,6 +7912,30 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     level up. And `ebe0544`'s task-index row replaced the blind author's evidence string — *98 blind
     tests, 96 red on the absent module, 33 mutations 32/0/1* — with `—`; it survives only on this
     branch, because the test branch was merged here and never into base.
+  - 2026-08-18 implementer, **the equivalent mutant is PROVABLE, and the adversary's caveat is what
+    sent me to prove it.** Three parties had reached the same classification by three routes — this
+    suite by mutating the sort away twice for 0 red, the blind author by arguing no two card
+    diagnostics can tie on `location.file`, the adversary by narrowing that to *only while every card
+    diagnostic carries a location, so sampled, not proved*. All three are downstream of a sort that has
+    already happened. **`cardFiles` is read in exactly one place in the whole of `lib/core`** —
+    `bundle/resolve.ts:191`, `for (const file of Object.keys(bundle.cardFiles).sort(cmpString))` — and
+    `cmpString` is `a < b ? -1 : a > b ? 1 : 0`, which is what `Array.prototype.sort()` does to strings
+    by default. So `sortedByKey` applies the same sort with the same comparator to the same keys
+    immediately before `lib/core` applies it again: **the record's insertion order cannot reach
+    anything**, and no argument about diagnostic ties is needed to say so. Sampled becomes proved, from
+    one line, and the caveat is what made me go and read it rather than bank three agreeing opinions.
+  - 2026-08-18 implementer, **so AC5's `cardFiles` clause is defence-in-depth, and it should say so.**
+    "`cardFiles` is rebuilt in sorted key order before `loadBundle` sees it" guards against a future
+    change to `resolve.ts:191`, not against anything reachable today. `lib/core/**` is Forbidden here,
+    so this module cannot be the thing that notices if that line moves — which is worth a contract line
+    rather than a comment, since the clause currently reads as though it were load-bearing now.
+  - 2026-08-18 implementer, **a slot discipline slip of my own, reported rather than left to be
+    noticed.** Checking the merge resolution I ran `npx vitest run tests/` — meaning the eight root
+    guards — and that glob also collects `tests/server/**`, which is DB-touching, while T050's blind
+    author holds the slot. `DATABASE_URL` was unset and `psql` is not on this PATH, so 596 tests
+    skipped and the rest failed on a missing connection string: no connection was opened and no scratch
+    database can exist. No contention was possible either, at 10 s of import-time failures. Recorded
+    because the rule is about what I ran, not about what it happened to cost.
 
 ### T080, Registry read model and read API
 
