@@ -2290,6 +2290,39 @@ delivering after that.** The join has a date and nothing marks it.
 suite cannot see it, or **the suite that can see it was not in the tree.** Those are the same number.
 **Re-join before measuring the blind axis, and report the blind branch's tip sha next to it.**
 
+## `npm run lint | tail -1` prints a blank line, and I have called that a gate all night
+
+**T050's adversary found `npm run lint` at exit 0 with two warnings, and noted that every `lint 0` in
+this run has meant clean output while from that commit it means an exit code.** That is correct and it
+is worse for me than for the tree.
+
+**My own gate line has been `npm run lint 2>&1 | tail -1` in every commit tonight. Measured just now on
+a clean base: it prints a BLANK LINE.** Not the banner, not a summary — nothing. **So my lint gate has
+been reporting an empty string and I have been reading it as a pass**, and it would have reported the
+same empty string with two warnings, or twenty, above it.
+
+**A gate whose reading is a blank line is not a gate**, and this one has been in the gate stanza of
+roughly twenty commits. **The reading has to be the output**, not a tail of it: `npm run lint 2>&1` in
+full, and the absence of `warning` and `problems` asserted rather than assumed.
+
+**Same defect as the six others tonight, in the instrument I use most.** `tail -1` was chosen because it
+is short, and short is exactly why it escaped being checked.
+
+## A construction over an author's transcription of a spec is a list one level up
+
+**T040's adversary, on the fix for D-40-E.** `SerializeJSONProperty` steps 4-6 name **four** internal
+slots — `[[StringData]]`, `[[NumberData]]`, `[[BooleanData]]`, `[[BigIntData]]`. **`unbox` implements
+three, and `VALUE_CLASSES` has no bigint entry either.**
+
+**So the domain is a construction over the serialiser's own branches, as ruled — except it is a
+construction over the AUTHOR'S TRANSCRIPTION of those branches**, and the transcription dropped the same
+branch in the code and in the domain **simultaneously**, which is why nothing could see it.
+
+**And it names precisely which half of the two-demonstration rule was discharged:** *nothing listed is
+dead* holds — every listed class is asserted to reach a cell. ***Nothing live is missing* does not**, and
+cannot, because the enumeration is the thing being trusted. **The fix for a maintained list is a
+construction; the construction's own enumeration is then a maintained list, one level up.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -9635,8 +9668,14 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **Admissible message forms.** This module returns diagnostics rather than throwing, so the whitelist applies to the one place it does throw:
 
         LimitExceededError  "<operation>: <what> exceeds the limit of <n> <units>."
+        LimitExceededError  "validateBundle: the nesting depth exceeds the limit of 10000 levels."
+        CircularReferenceError  (D-40-22, exported from `@/lib/server/engine`)
 
   The operation, the measured quantity, and the limit. Never the input, never a fragment of it — an oversized submission's own bytes are the last thing a refusal about size should carry.
+
+  **D-40-D's depth ceiling is published HERE and in the block below, and its absence from both was my defect rather than the implementer's.** I ruled it, it was built, it went into the barrel and into a Log entry, and **it reached neither binding surface** — the same failure this file records as its worst instance and wrote a guard for. Charged by T040's adversary.
+
+  **`MAX_NESTING_DEPTH = 10 000` is exported from `@/lib/server/engine`, and the ceiling is a NEW REFUSAL CRITERION rather than an implementation detail.** D-40-17 is explicitly normative about *which submissions are refused*, and a submission the ruled formula **accepts** is now **refused** if it nests past 10 000. That is a change to the contract, not to the walk. It is admissible because the recursive alternative did not refuse it either — it threw a bare `RangeError` at a host-dependent depth between 3 000 and 7 000 — so **every input that previously produced a number still produces one**, and the inputs that previously produced nothing now produce a typed refusal. **The blind suite could hold neither clause while both were unpublished.**
 
   **Inherited hazards.** T-02 (**D-40-09: reported as unreachable through this task's published surface — no in-process object graph reaches a walk here, and `canonicalJson` is reachable only through cards parsed from `cardFiles`, which is the closed parsed front door. MEASURE it before writing any guard; a guard nothing reaches is what this file charges most often.**) T-02 is **reported unreachable through this task's published surface** (D-40-09) and **must be measured before any guard is written**. T-01 applies. T-03 and T-04 do not — no database, no driver error.
 
