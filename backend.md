@@ -355,6 +355,41 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A ruling granted in a REPLY is a ruling published nowhere
+
+The displacement fix landed and **four rulings from the same round never left my reply**. T050's
+implementer reported F-03 and F-04, I granted all four in a message — `AccountStoreError`, the
+free-text door, code-point lengths, the empty-`githubId` close — and published none of them. Grepping
+the whole of `backend.md` returned **zero** occurrences of `AccountStoreError`, zero of "code point".
+
+Its diagnosis is the one to keep: **the rulings that were *stated* got fixed and the rulings that were
+*granted in reply to a report* never left the reply.** Those are two different acts and only the first
+has a habit attached to it. A ruling made while answering somebody is a ruling made in the least
+durable medium available, and it feels finished because the person who needed it has it.
+
+**And the exposure is asymmetric in a way that hides it.** The implementer was already correct — it
+had built all four before I ruled and I ruled its way — so nothing it does reveals the gap. The whole
+cost lands on the **blind author**, which binds the published block and cannot see the reply: four reds
+against code that matches every ruling, in a task gating fifteen others.
+
+## The worked example survived the fix that was written about it
+
+`PublicAuthor.handle: string` is the field the displacement rule uses as its own worked example. The
+commit that wrote that rule **did not change the declaration**, and three sessions reported it still
+`string` afterwards.
+
+T050's blind author's reading is exact and it is the reason this is recorded rather than just fixed:
+*that is not an argument against the rule; it is the strongest possible evidence for it, and it says
+the failure is not attention but **method**.* Adding a ruling and editing a declaration are different
+operations, and only the second displaces. I had done the first while writing about the need for the
+second.
+
+**A related cost of doing it by substitution.** The `.dev` → `.io` fix was a global replace, so it also
+displaced the one occurrence that had to survive — the **quotation of the error** — leaving the ruling
+arguing with itself: *"the contract said `darkprint.io`; it occurs once in the whole repository"*. **A
+substitution displaces every occurrence, including the ones that are evidence rather than
+instruction**, and the record of what was wrong is what makes a ruling reconstructible.
+
 ## A ruling that arrives without displacing anything is a contradiction I authored
 
 The worst instance in this run, and it is mine. I ruled ~50 contract defects across T005, T040 and
@@ -6862,7 +6897,11 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Published signatures** (checked against `backend` at `9411199`, against `lib/db/schema.ts`'s `account` — `github_id` and `handle` each carry a unique index, `handle` is **nullable**, `notification_preferences` is `jsonb NOT NULL DEFAULT {}` and belongs to T190 — and against T000's `SessionPayload`, which is `{ accountId, handle: string | null }`. Barrel: `@/lib/server/accounts`.)
 
         interface PublicAuthor {
-          handle: string; displayName: string | null; avatarHue: number | null;
+          handle: string | null;   // D-50-06: AC1 rules a handle-less account legal, so getAccount
+                                   // must be able to describe one. getPublicAuthor(db, handle) is
+                                   // KEYED by handle and can never return a null one; the
+                                   // nullability is reachable only through getAccount().author.
+          displayName: string | null; avatarHue: number | null;
           validator: boolean; bio?: string;
         }
         interface AccountRecord {
@@ -6918,7 +6957,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **`DELETE /api/account` is NOT T050's** (seams.md SEAM-50 is wrong): deletion is `app/api/account/delete/**`, T120's. §8 is corrected with the rest.
 
-  **The problem type base is `https://darkprint.io/problems`** (D-50-03). The contract said `darkprint.io`; it occurs **once in the whole repository**, in that line, while six live responses carry `.io` and `lib/server/http/problem.ts:8` defines it. **The code wins and the divergence is reported** — CLAUDE.md's own rule. `handle-required` is `https://darkprint.io/problems/handle-required`, 403.
+  **The problem type base is `https://darkprint.io/problems`** (D-50-03). The contract originally published the type under a **`.dev`** host — which occurred **once in the whole repository**, in that one line — while six live responses carry `.io` and `lib/server/http/problem.ts:8` defines it. **The code wins and the divergence is reported** — CLAUDE.md's own rule. `handle-required` is `https://darkprint.io/problems/handle-required`, 403.
 
   **T070's errors cross the barrel and T050 maps them** (D-50-08): `HandleTakenError` → **409** via `conflict()`, `InvalidNameError` → **400** via `badRequest()`. Neither is re-rendered into a T050 form — the whitelist admits T070's two forms **passing through unaltered**, which keeps one author for each message.
 
@@ -6926,13 +6965,23 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **Types, measured against the columns** (D-50-09/D-50-10/D-50-11): `PublicAuthor.handle` is `string | null`, matching `SessionPayload.handle` and the column, because AC1 rules a handle-less account legal and `getAccount` must be able to describe one. `validatorWeight` is published `number` over a `numeric(6,3)` column that drizzle types **`string`** and `pg` returns as `"1.000"` — the module converts, and `1.005` is representable so an integer reading is wrong. `avatarHue` is bounded **0–360** and refused outside it with `InvalidProfileError`: the column is `smallint`, so `40000` reaches the driver as SQLSTATE 22003 inside a `DrizzleQueryError` **whose message carries the statement and every bound parameter** (D-13). `displayName` ≤ 80 and `bio` ≤ 400 characters.
 
+  **D-50-15, the free-text door — the first `text` columns any task in this run writes.** T070 never faced this: its grammar admits `[a-z0-9-]` only, so character count and byte count were one number and nothing could arrive malformed. `displayName`, `bio` and `email` are free text and **a NUL or an unpaired surrogate is REFUSED at the door, never repaired**, with `isWellFormed` — the language's own answer, so no second definition can drift from it. A lone surrogate has no UTF-8 encoding and `pg` silently rewrites it to U+FFFD (D-12), so the row would hold a different string from the one typed; a NUL raises 22021 as a `DrizzleQueryError` carrying the statement and every bound parameter.
+
+  **D-50-16, length is counted in CODE POINTS — `[...value].length`, not `value.length`.** `displayName` ≤ 80 and `bio` ≤ 400 **code points**. Neither column has a storage bound to trade against, and a UTF-16 bound of 80 refuses a 41-character name made of emoji. This is the one bound where the two readings are equally defensible and **disagree on exactly one class of input**, so it is published rather than left to a reader.
+
+  **D-50-17, `AccountStoreError` is published from the barrel**, with the fourth admissible form:
+
+        AccountStoreError  "<operation>: the account store failed."
+
+  It carries the operation alone — no statement, no bound parameter, no SQLSTATE. **AC2 is the argument, not hygiene:** on `setEmail` the bound parameter **is** the email, so *"no `email` value appears in any rejection, including one about the email"* is false the moment a driver fault leaves unwrapped. It also closes `upsertFromGitHub`, which had no door: an **empty-string `githubId` is storable today** (`NOT NULL` is satisfied by `""`) and two would collide on `account_github_id_key` as one identity, which is AC6 read backwards — unreachable through the OAuth callback, reachable through the barrel by any later caller.
+
   **Email has no predicate beyond non-empty** (D-50-12) and is **unverified** — nothing sends a verification, so no validity claim is made or tested.
 
   **D-50-09, ruled:** an **optional** field means the key is **omitted**, and the wire and the object agree. `Response.json` drops a key whose value is `undefined`, so a record built as `{ …, bio: undefined }` has the key in the object a unit test inspects and **not** on the wire — build it absent, so an object-level and a wire-level key-set assertion cannot disagree.
 
   **D-50-13, ruled:** AC2's "non-owner" means **NOT AUTHORIZED**, not "not the owner" — `can` runs `isOperatorGrant(actor, action) || canOnAccount(...)`, so an operator **is** granted `read` and receives `email`, and that is correct. The contradiction is also **unreachable through the published surface today**: `SessionPayload` is `{ accountId, handle }` with no `kind`, so every route-built `Actor` is `kind: "account"` and no route can mint an operator.
 
-- **Acceptance criteria:** (1) a first sign-in with no handle cannot complete until one is chosen and allocated; (2) `email` is absent from every response a non-owner can obtain; (3) a GitHub rename leaves the handle and the handle and the `account` row untouched; (4) **D-50-04, in D-70-06's own words:** a handle change leaves the old handle claimable by **no other account, ever**, and **reclaimable by its original holder**. Both halves or neither — an implementation satisfying only the first refuses a rename its own author wants to undo; (5) reading the account without a session returns `problem+json` 401, never a fixture; (6) two GitHub identities cannot map to one account.
+- **Acceptance criteria:** (1) a first sign-in with no handle cannot complete until one is chosen and allocated; (2) `email` is absent from every response a non-owner can obtain; (3) a GitHub rename leaves the handle and the `account` row untouched; (4) **D-50-04, in D-70-06's own words:** a handle change leaves the old handle claimable by **no other account, ever**, and **reclaimable by its original holder**. Both halves or neither — an implementation satisfying only the first refuses a rename its own author wants to undo; (5) reading the account without a session returns `problem+json` 401, never a fixture; (6) two GitHub identities cannot map to one account.
 - **Out of scope:** notification preferences (T190), saves (T140), deletion (T120), API keys (T230), the validator grant workflow.
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-02, B-05.
@@ -6949,7 +6998,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Published signatures** (checked against `backend` at `9411199` and against `lib/core/index.ts`, which exports `loadBundle` and the `LoadBundleResult` type — both are **consumed, never reimplemented**, and `lib/core/**` is Forbidden here. Barrel: `@/lib/server/engine`. This task touches no database and takes no `Db`.)
 
         // D-40-07: every field optional; DEFAULT_ENGINE_LIMITS is exported and passes all nine archive bundles.
-        interface EngineLimits { maxBytes: number; maxCards: number; maxNodes: number }
+        interface EngineLimits { maxBytes?: number; maxCards?: number; maxNodes?: number }
 
         validateBundle(input: {
           manifest: BundleManifest; dot: string;
