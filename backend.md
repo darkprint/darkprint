@@ -355,6 +355,51 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A claim of unobservability is itself a measurement, and it is the easiest one to fake
+
+T005's blind author labelled the migration-only mirror **unobservable** — *no published accessor gives
+a column's precision from the drizzle side without opening the Forbidden file.* I declined to rule from
+that and asked it to measure. **It is observable.** `getTableConfig(...).columns[i].getSQLType()`
+renders `numeric(6, 3)` or omits the qualifier, and `precision`/`scale` are own properties on
+`PgNumeric` — measured against **base's** numeric columns rather than T005's, since the question was
+about drizzle rather than about the task.
+
+**Its own account is the rule, and it is sharper than the other two it has caught today.** A filter in a
+pipeline and *reconstructible* meaning *recoverable by me* were premises it **never restated**. This one
+it **did** state — in a handback, in a sentence whose whole job was to mark a boundary — **and stating
+it is exactly what made it look checked.**
+
+**`Unobservable-by-construction` is a strong claim: it says no instrument exists, and the only thing
+that establishes it is having gone to look.** It had quoted the precedent that licensed the look two
+messages earlier and still did not take it.
+
+**So the corollary to the falsifier rule: a claim of silence is itself a measurement, and the cheapest
+way to get one wrong is to write it down confidently in a document whose other sentences were
+measured.** Every `unobservable`, `unreachable` and `by construction` in this file is a claim of that
+shape — and the one thing they all share is that **nothing reds when they are wrong.**
+
+**And note where it landed:** the falsifier T005's adversary named as *the migration-versus-catalogue
+comparison nobody takes* was untaken **because this session had told me it could not be taken.** A
+false claim of unobservability does not merely miss a check — it **retires** it, and it retires it in
+the record where the next reader finds the reason and stops.
+
+## Compare each side against the contract, not against each other
+
+The one design choice in the fix, and it is the better one. A direct schema-versus-catalogue diff says
+only **that** they disagree. Comparing **each side against the block** says **which of the two has
+drifted from the contract** — so a fix applied to one side reds exactly one of the two tests, and the
+message names which.
+
+**That is the sentence whoever fixes it needs**, and a symmetric diff cannot produce it: it reports a
+disagreement between two artefacts, either of which might be the correct one.
+
+**And it reported the cost rather than banking the closure.** Reference-mode's expected reds go from 2
+to 3, because the reference is a migration directory and supplies no `schema.ts` — so the new test is a
+third `GAP: green not demonstrated`. Its words: *I would rather say that number went up than let a
+third unobserved green sit inside a "46 passed".* The drizzle side is falsified **by the real
+implementation or not at all**, and what it can show today is that it reds on disagreement, **not that
+it greens on agreement.**
+
 ## Does the wider assertion read the contract, or fill its silence?
 
 T005's blind author took the **instance** and the **class** at D-05-09 — pinning `cost_units` and then
