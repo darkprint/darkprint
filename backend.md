@@ -1108,6 +1108,18 @@ Why the magnitude is not load-bearing anyway: the guard is **exact equality betw
 any non-zero divergence reds. The size only decides whether anyone would be tempted to write a
 tolerance, and 8 359 against a 2 MiB default is not a rounding difference that invites one.
 
+**And that sentence describes a guard that cannot fail in its obvious form.** T040's adversary built
+it as `measureSubmission(input) === literal` and **a route made to pass an `ontology` left it green** —
+because the exclusion happens **inside `validateBundle`**, so the comparison is the input against
+itself. **Two integers that are the same measurement are equal for a reason that has nothing to do
+with the property.** It drives the bound instead: **refused at `literal - 1`, accepted at `literal`.**
+Same equality, cannot go vacuous. I wrote the original claim on the strength of two sessions' agreeing
+reasoning and my own, and **none of the three noticed the operands could be one measurement.**
+
+**Confirmed independently and the word *floor* is right empirically, not only conceptually**: 8 372 as
+a view's data property, measured before reading this entry — and **8 605 with the archive's own
+extensions layered in.** The number moves with the overlay.
+
 The structural check covers the **fifth route**. **Neither covers the cost**, and that gap is one gap
 rather than two: it lands with whoever writes the first route that builds a view from caller bytes,
 in the same place T-02's note already puts a materialised-size cap.
@@ -1143,10 +1155,75 @@ saying so.
 as one decision.** Passing a fault through unwrapped and answering it outside `problem+json` are
 separable, and separating them is the fix.
 
-**The guard is constructed from the code's own declaration, so no list is maintained: every class named
-in `isDecision` must have an arm in `withAccountErrors`.** `isDecision` *is* the module's statement of
-what it recognises; the wrapper's fallback is for what it does not. **A class on one list and absent
-from the other is the contradiction, spelled out in two files that never have to agree by hand.**
+**The guard, corrected before it was written.** My first construction — *every class `isDecision`
+names owes an arm* — is **wrong**, and T050's adversary measured both set differences to show it
+rather than arguing. It reds on `AccountError`, which must **not** be mapped: it is the base of all
+four of T050's own classes, so an arm for it swallows `HandleRequiredError`, `InvalidProfileError` and
+`AccountStoreError` into one status and destroys the four distinct mappings the ruling exists to
+protect. The subtype-aware repair is no better — it reds on `NotAccountOwnerError`, deliberately
+unmapped because no route can produce one and giving it a status publishes a code the contract does
+not list for a case that cannot arise.
+
+**So both obvious constructions demand an arm for a class that must stay unmapped, and the natural
+repair is a hand-written exemption — the maintained list the guard existed to replace.**
+
+**The predicate that works derives the exclusion from where a class comes from**, and `AccountError`
+is excluded **structurally** rather than by an exemption anybody maintains. `NotAccountOwnerError`
+never enters the domain, because `isDecision` does not name it.
+
+**Construct it BEHAVIOURALLY, not lexically — T050's implementer, correcting my own wording.** I wrote
+*imported from another module's barrel*, which invites parsing `store.ts`'s import lines against
+`http.ts`'s `instanceof` identifiers and comparing sets. **That is a guard over the SPELLING of a
+relation, and it goes green on a wrapper whose arm is present and wrong.** Today's lesson, committed
+in the sentence that ruled the fix for it.
+
+The construction that tests the relation instead:
+
+* **Domain**, by the walk `tests/error-hygiene.test.ts` already does — every error class exported from
+  every `lib/server/<module>/index.ts`, **minus accounts' own**. That is the provenance partition read
+  off **the module the class lives in**, not off an import line.
+* **Relation, driven**: for each such class, if `withStore` passes an instance through **unwrapped** —
+  which *is* `isDecision` saying yes, **observed rather than read** — then `withAccountErrors` must
+  answer **the `store-failed` `problem+json` 500**, not merely *a* `Response`. Red if it throws, and red
+  if it answers something else.
+
+  **The identity clause is T050's adversary's, and my wording lacked it.** *Answers a `Response`* is
+  satisfied by **any** `Response` — an arm returning `badRequest` for a store fault passes a guard that
+  only checks presence. **That is value-versus-presence at a fourth altitude**: a field, a partition,
+  the scope of a sentence, and now **the object a guard accepts as its answer.** A guard built on the
+  weaker clause holds that an arm *exists* and nothing about what it *does*.
+
+So a `lib/server/policy` fault class enters the domain **from the barrel walk**, the day it exists,
+with nobody touching the guard.
+
+**And it says the right thing rather than a nearby thing**, which is why it generalises: the wrapper's
+job is the envelope for faults **this module did not author**. A foreign sealed fault has an author
+for its message and needs a status from whoever serves it. That is precisely what D-50-21 is about, so
+a fault class from a third module's barrel is covered the day the import lands.
+
+**The guard must not also carry the re-wrap question.** *Mapped* and *not re-wrapped* are the two
+decisions this ruling separates, and a guard that checks the first must not be read as checking the
+second. `isDecision` holds the second and already does it correctly.
+
+**And the withdrawn construction was not merely wrong, it was self-contradicting with the other ruling
+in the same commit.** T050's implementer, independently and without having seen the adversary's
+message: a **base-class arm** makes the five classes **no longer disjoint siblings** —
+`AccountStoreError` and the rest become subtypes of something the wrapper also matches — so **arm
+order becomes load-bearing at the exact moment the second ruling amends the comment to state that
+nothing depends on it.** The adversary's `0 red, 0 green` on reordering is a fact about *today's*
+disjointness. The naive reading would falsify that premise while the sentence recording it was being
+written.
+
+That is *a ruling can promote an unobserved property into a load-bearing one*, at its sharpest: doing
+it to a property being documented as inert **in the same change**. Both objections — the base class
+and the deliberately-unmapped leaf — are answered by provenance, which demands no base-class arm and
+never admits `NotAccountOwnerError` to the domain at all.
+
+**One gap the provenance predicate does not close, named by the implementer against its own proposal
+rather than left for an adversary: a class published from either barrel that `isDecision` does not
+recognise is outside both designs' domains and reads as intentional.** Recorded as a follow-up, not
+this round — closing it needs a declaration surface, and inventing one inside a fix round is the scope
+creep this ruling was careful to avoid.
 
 **Reachability, labelled the way the adversary labelled it.** `namingStoreError` is raised at three
 sites, two inside `changeHandle`'s transaction. Round 1 measured concurrent same-account renames
@@ -1154,6 +1231,436 @@ deadlocking (40P01) on that exact transaction with `update "account"` as the vic
 so an `AccountStoreError`. **Had Postgres picked the upsert one statement earlier, the same request in
 the same outage would have answered with a different envelope.** The mechanism is measured; that
 particular victim was not driven, and it said so rather than rounding it up.
+
+## A domain constructed to avoid an exemption list owes both set differences
+
+I ruled D-50-21's guard as *every class `isDecision` names owes an arm in `withAccountErrors`*, and
+wrote that **nothing is maintained by hand**. That sentence was a claim about the guard, it was
+false, and **nothing would have redded when it was wrong** — the guard did not exist yet, so the
+claim was safe in exactly the way this file keeps charging.
+
+T050's adversary measured both set differences instead of reading the construction. **Both obvious
+constructions demand an arm for a class that must stay unmapped**: `AccountError` under the naive
+one, `NotAccountOwnerError` under the subtype-aware one. The repair each invites is a hand-written
+exemption — **the maintained list the construction existed to eliminate**, living in the test file,
+away from the thing it exempts, maintained by whoever next hits the red.
+
+**The rule: constructing a domain from the code does not by itself remove the list. It removes the
+list only if the exclusions fall out of a property the code already carries.** Here that property is
+**provenance** — which barrel a class is imported from — and it was already in the source, in the
+import lines, rather than in anybody's head.
+
+**So a constructed domain owes both directions before it is written, not after it reds**: what it
+demands that should not be demanded, and what it omits that should be included. I checked neither. I
+checked that the construction *described* the thing I wanted and stopped, which is the same move as
+auditing the region you are already looking at.
+
+**And the discriminators belong on the table before the guard exists.** It registered two: adding a
+fifth foreign class to `isDecision` and not to the wrapper **must red** — otherwise the guard
+enforces today's four rather than the relation, which is §6.2's *satisfiable by the record of a change
+rather than by the change* — and removing `AccountError` from `isDecision` **must stay green**, or the
+predicate has quietly become "these four names". **A discriminator designed out of reach is cheap to
+state in advance and expensive to find mid-round.**
+
+## A pre-registered prediction that does not name its scope is two predictions
+
+**T050's adversary registered a discriminator before the guard existed, which is the right move and
+the one this file asks for. T050's implementer then found it ambiguous in a way that would make a
+CORRECT implementation report a failure.**
+
+*"Removing `AccountError` from `isDecision` must stay green."* Scoped to **the guard**, it stays
+green, and that is the point — accounts' own classes are outside the domain, so the guard cannot
+notice. Scoped to **the module or the file**, it **reds**, correctly: the existing *passes this
+module's own rejections through* assertion is exactly the observer for that mutation and should fire.
+
+**The honest expected result is `guard green, module red`.** Measured file-wide against a prediction
+that says only *green*, a correct implementation looks broken — **and the disagreement is about scope
+rather than behaviour, which a count cannot distinguish.**
+
+**The rule: a pre-registration is only falsifiable if it names what is being observed.** Its entire
+value is that it cannot be rescued after the fact; an ambiguous one **can be rescued in either
+direction**, which destroys precisely the property it exists for. A prediction of *N red* owes the
+scope N is counted over — this file, this module, this suite — in the same sentence.
+
+**Same defect family as the day's others, at the level of the instrument rather than the claim**:
+*unreachable through any writer* versus *unreachable through an INSERT*, and *the only read* versus
+*the only spelling I searched for*. Here it is *green* versus *green where I am looking*.
+
+## Ask of every finding what else changes if it is acted on
+
+**T050's adversary put two items in one message and did not notice the second falsifies the first's
+premise.** P7 classified arm order as an equivalent mutant *because the classes are disjoint
+siblings*; the guard objection said the naive construction demands an arm on `AccountError`. **An arm
+on a base class is exactly what stops them being disjoint** — so the construction it was arguing
+against would have made its own classification wrong, silently, since nothing reds when a premise
+stops holding.
+
+Its own diagnosis, which is the rule: **I found the base-class problem by looking at what the guard
+would DEMAND, and stopped there.** The remaining move was *what does an arm on a base class do to
+everything else in that function*. **A finding is a proposed change, and a proposed change has
+consequences past the thing it fixes — but it arrives feeling like an observation, so nobody checks
+them.**
+
+It is calling this a method problem rather than three lapses, on the strength of three instances in
+one round from itself alone, and it is right to. **Of every finding: what else in this file changes if
+it is acted on?**
+
+**And it then measured the premise it had read.** Pairwise `instanceof` across both barrels, every
+ordered pair of seven classes: **0 overlapping pairs**. Plus a structural asymmetry nobody had noted —
+`NamingError` is declared with **no `export`**, so it is not on the barrel and a base-class arm over
+T070's three is unreachable from `withAccountErrors` even by mistake. **The hazard is specific to
+`AccountError`, which is local and importable**, which is the same asymmetry provenance uses. So the
+amended comment can say the classes are pairwise disjoint **and that this is checked**, rather than
+only that it is true — a four-line pairwise check beside the wrapper, which reds the day arm order
+silently starts mattering.
+
+## The gate slot holder owns the host's CPU, and my sampler cannot see me
+
+**I have told three sessions this round: *I am off the host while you hold it — my commits gate on
+typecheck, lint and the file-parsing guards only.* Measured, that sentence is false in the way that
+matters.**
+
+`npm run lint` on a **markdown-only** change timed out at five minutes tonight. Not a failure: **load
+average 72**, because the slot holder was running its triple. So my "gates only" costs minutes of CPU
+taken directly from the measurement the slot exists to protect.
+
+**And the instrument cannot catch me.** Every session samples foreign runs **by process group looking
+for `vitest`**. `tsc` and `eslint` are neither. **I have been invisible in precisely the instrument
+designed to detect contention** — my own rule about a guard whose probe cannot reach, aimed at myself,
+found only because a timeout made me look at the load.
+
+**So: while a slot is held, a markdown-only commit runs the file guards and nothing else**, and the
+commit says which gates were skipped and why. Running `tsc` on a document that no TypeScript file
+imports is ritual, and here the ritual is paid for by somebody else's numbers.
+
+## A grant to one party and silence toward the rest is one slot announced to two
+
+**I granted the gate slot to T005's implementer by name, told three other sessions separately that I
+was off the host, and never told any of them that somebody else was ON it.** Three worktrees ran
+`vitest` inside its slot. A released slot does not propagate, and neither does a held one.
+
+**But T050's implementer refused the generous attribution and it was right to, because the two
+readings point at different fixes.** The rule as dispatched was *the three consecutive full-suite runs,
+**and every DB-touching targeted run** — in-process probes and reading stay free*. Its scoped runs were
+**DB-free by construction**, so they were **inside the rule as written**, and it would make them again
+on that wording.
+
+**The rule's domain and every detector's domain have never matched.** The rule governs *DB-touching*
+runs; the samplers count ***`vitest`* process groups**. So **a session obeying the rule perfectly still
+appears in every sample**, and the gap is exactly the set of DB-free scoped runs the rule explicitly
+permitted. **That is why this happened while three careful sessions were each being careful.** The fix
+is to the rule's **scope** — *any `vitest` invocation is slot-gated* — which finally makes the rule and
+the instrument describe the same set. The announcement fix is real and **separate**.
+
+**It cost a real measurement.** The triple came back non-identical — `1 failed`, then `3 failed`
+twice — with both extras being **20-second timeouts in tests that run at 1 263 ms and 1 694 ms in
+isolation**, a 12–16x margin, at host load 122. Not assertion failures.
+
+**The rule this file already had was *one slot announced to two parties*. This is its other form: one
+announced to one, and withheld from everyone else.** A grant is a statement about the host, not about
+the grantee, so it is owed to every session that can touch the host.
+
+**Two things about the detector, both from the session it happened to.**
+
+**Keeping the sampler's LINES rather than its count is what turned this from a number into a finding.**
+Last round the same session reported *an unidentified foreign process appeared in at least one sample*
+and could say nothing more. This round the same instrument named the worktree, the config path and the
+role for all three. **The rule was written one round earlier and paid immediately.**
+
+**And it stated the part that does not fit rather than smoothing it: run 3 had peak foreign 1 and
+still carried both extras.** So three concurrent suites explains run 2 and not run 3. **A `vitest`
+process count is not a load measurement** — the detector counts suites, not the work they cause, and a
+suite that has exited leaves a host that has not caught up. The honest statement is *timeouts on a
+host whose load I can attribute for one run and only partly for another*, which is what it wrote.
+
+## Two guards each blind to the other's premise fail together
+
+**T050's blind author could not write the `NamingStoreError` cell, and settled it from the contract
+rather than the implementation.** D-50-20 locks the account row first, so with every store call
+failing the first call attempted is the account read: a closed port yields `AccountStoreError` at
+`PATCH /api/account/handle`, never `NamingStoreError`. Driven, not asserted — S2 deletes the naming
+arm from a reference and reds **0**, predicted zero, confirmed zero.
+
+**Then it grepped its own file for `unreachable`, because that is now standing instruction, and the
+check changed what the file says.** The zero means **unreachable *given D-50-20 is honoured***, not
+*unreachable*. And **nothing in that suite observes D-50-20's ordering.**
+
+**So an implementation that reached naming before locking the account row would violate D-50-20 AND
+make the arm reachable — and the two would go uncaught together.** That is the new shape: not a gap in
+one guard, but **a pair of guards each resting on the other's subject, with no observer over the
+composition.** Each is individually honest. The conjunction is what nothing measures.
+
+## A permission's scope is a claim about a deliverable, not about a session
+
+**T050's blind author, unprompted, from its own artefacts.** My brief said its cells *need no database
+— only a closed port — so this is off-slot work you can do now*. **That was true of the cells and it
+stayed true: the committed file touches no database.** What needed one was the **verification method
+it added on top** — the whole suite against a reference tree, then seven mutations. **Nine DB-touching
+invocations in an eight-minute window, roughly 63 scratch create/drop cycles against the shared
+Postgres, concurrent with T005's triple.**
+
+**The scope of a permission goes stale exactly like the scope of a check.** I scoped it to a property
+of the **deliverable**; it extended the work and carried the permission across unexamined.
+
+**And the disconfirming evidence was in its own prose.** Its file header reads *"no database is used
+anywhere in this file … so it runs off-slot while another session holds the gate."* It had written
+down that the off-slot property belonged to **that file** — and then ran nine suites that did not have
+it. **A distinction stated in your own words is not a distinction you are applying.**
+
+**The check is one question and it is cheap: does THIS COMMAND have the property the permission was
+granted for — not does the round.**
+
+## A path-matching detector cannot see a throwaway tree, and this run builds throwaway trees
+
+**The attribution was inverted and the direction matters.** T005's sampler named
+`darkprint-wt-t050-accounts-tests`. **The runs in that directory were the two that touch no database at
+all.** The nine heavy ones ran from a scratchpad reference tree, on a command line carrying nothing
+identifying. **The instrument named the harmless pair and could not see the costly nine.**
+
+**So the load T005 measured is under-attributed, not over** — and under-attribution reads as *absence*,
+which is the direction that makes a contended host look like a defect in the code.
+
+**The instrument and the practice were introduced separately and do not compose.** This run now asks
+blind authors to build **throwaway sighted reference trees** — that is how a blind suite gets measured
+against a correct module — and every contention detector identifies foreign work **by worktree path**.
+Counting `node`-with-`vitest` by process tree has the same hole for a different reason: **it identifies
+your own runs correctly and everyone else's only as a count.**
+
+**A detector that matches on a path or a command substring sees only the processes that happen to
+carry the string.** Same defect as `23505` in a different costume and as the `cardFiles` grep, at the
+level of a **process** rather than a token or a read.
+
+## A contention detector must filter on activity, never on a name
+
+**T050's adversary, on its own instrument, twice in one evening.**
+
+**v1 under-reported** — it counted foreign `vitest` by process group, so my `tsc` and `eslint` were
+invisible while I ran them against three sessions' measurements all evening.
+
+**v2 over-reported, and that failure was committed inside the fix for the first.** It widened the
+process list; **in the same file it wrote *"the fix is not only a longer list"*, and then shipped a
+longer list.** First real use: **41 foreign processes.** Read rather than counted — 10 were T005's real
+`vitest` group, 1 was ChatGPT.app matching on `--experimental`, and **30 were idle MCP servers
+belonging to other projects: 8 days of uptime, under 2 seconds of CPU each, 0.0%.** **Thirty processes
+that have used two seconds of CPU in a week, reported as contention.** That is T070's adversary's
+manufactured-contention detector, rebuilt by the session charging list-based predicates in the same
+breath.
+
+**The rule: the predicate was never supposed to be a name.** The question is not *is this named like a
+build tool* but **is this taking CPU from my run.** v3 filters on **activity** — `%CPU` over a floor,
+across every process on the host — and the name is only a **label**. An idle MCP server is invisible
+**because it is idle**, not because nobody listed it. Ownership by pgid unchanged and still measured.
+
+## The slot serialises peers; the host is not peers
+
+**v4 splits the count, and the split changes how every triple in this run should be read.**
+
+```
+peers=0  host=23  load=141.47
+  159.9%  com.apple.Virtualization.VirtualMachine.xpc
+   35.9%  claude --session-id …          <- the orchestrator
+   33.9%  WindowServer
+   18.2%  cmux
+```
+
+**A Virtualization VM at 159.9% is the dominant load source on this host and no gate slot can
+serialise it.** Docker, WindowServer, Spotlight and XprotectService share that channel. So the
+adversary's round-1 line — *foreign vitest 0, load 56 to 110* — was **true and far narrower than it
+sounded**: it had no idea what the load was, and now the load has a name and the name is not an agent.
+
+**Three identical runs at load 141 are a stronger determinism claim than three at load 20**, and three
+non-identical ones become **diagnosable** rather than ambiguous, because the channel that moved can be
+named.
+
+**And the split has a stated limitation that lands on me: the orchestrator's own CPU classifies as
+`host`**, because the split asks whether a process names a darkprint path and `claude`'s args do not.
+**So `peers=0` means *no peer build or test*, not *no peer working*.** Reported to me rather than left
+for me to discover, which is the standard.
+
+## D-40-D: a justification quantified over the outcomes you enumerated is silent about the one you introduced
+
+**T040 round 2 is a FAIL, and the sharpest charge is against a ruling of mine rather than against the
+implementer.**
+
+**D-40-20 replaced `Buffer.byteLength(JSON.stringify(input))` with a bounded short-circuiting walk, and
+the clause that paid for the substitution was: *the number is preserved exactly for every submission
+that is accepted*.** The walk is **recursive**. `POST /api/validate/bundle` with a **6 134-byte** body
+— **0.3% of the 2 MiB default** — whose `manifest` holds a nested array throws a **bare `RangeError`
+out of the handler**. The ruled formula measures that same input at 6 134 and keeps answering to depth
+**1 000 000**: V8's serialiser is not recursion-limited and the replacement is.
+
+**So the fix is a regression against the code it replaced, on a shape that code handled** — and the
+clause is not merely violated, it is **silent**: the input is neither accepted nor refused. **No number
+is produced at all.**
+
+**The rule: a justification quantified over the outcomes you enumerated says nothing about the outcome
+you introduced.** *Accepted* and *refused* were the two cases; the substitution added a third — **no
+answer** — and the clause could not see it because the clause's own domain predates it. **A replacement
+argued as equivalent-where-it-matters owes a measurement on the inputs the ORIGINAL handled, not only
+on the inputs the new one targets.**
+
+**Ruled: the bounded walk must be iterative.** An explicit stack keeps D-40-B's O(`maxBytes`) bound and
+D-40-20's number, and removes the stack dependency entirely. **The boundary today is
+host-dependent, not input-dependent** — depth 7 000 direct, 3 000 under the route — which is the
+property that makes it untestable as a threshold and unacceptable as a behaviour.
+
+**Stated limits, the adversary's own:** it rests on one host's stack size (a bigger stack moves where
+it fires, not whether), and whether Next converts the `RangeError` into a 500 or an unhandled
+rejection is **read, not measured**, so the status a caller sees is not established.
+
+**D-40-E, charged against the warrant rather than the wire.** The 22-shape corpus **is a list**, and
+nine divergences were measured in three classes it does not reach: `toJSON` returning a droppable,
+`toJSON` reading its key argument, and boxed primitives. The array case **under-counts ~5x**, which is
+a `maxBytes` bypass through the barrel. All barrel-only. **What is owed is a construction over the
+serialiser's equivalence classes, not three more rows** — the corpus's defect is that it is a corpus.
+
+## A scratch worktree is invisible in BOTH directions
+
+Confirmed from the other side by T040's adversary, whose C1 sweep was **44 full runs of 13 files** from
+`…/scratchpad/c1-worktree`. **It does not name its own worktree, so its own filter drops it; it does
+not name anyone else's, so theirs do too.** Nobody's instrument saw the heaviest sweep of the evening,
+including the instrument belonging to the session running it.
+
+**And a retraction that does not displace survives in shipped code, not only in a document.**
+`limits.ts:40` still states the archive maxima as **17 963** *"measured through this module's own entry
+point"*, and `validate.ts:283` repeats it. Measured through that entry point: **17 947** and **18 195**,
+which is what `measure.test.ts` itself computes. **The retracted figure carries a provenance claim in
+two comments**, which is the form that makes a wrong number look checked.
+
+## A written countermeasure only fires if it is re-read at the moment it applies
+
+**T040's implementer, on the `RangeError` that is its own:** the iterative-walk pattern **was already
+in this preamble**, written about this exact hazard — T010 and T020's `isWellFormedDeep`, made
+*iterative, as the contract demanded*, with one mutable `open` set and an explicit leave-marker frame,
+O(1) per visit. **It wrote a recursive walk anyway**, in the same commit where it converted the cycle
+case from a bare `TypeError` to a typed refusal.
+
+Its own note, and it is the durable part: **reaching for recursion is the default, and a countermeasure
+in a document only works if someone re-reads it at the moment they write a walk — which is not a moment
+anything marks.** A rule catches the person who goes looking. The defect belongs to the person who did
+not know to look, and there is no reliable signal that tells them to.
+
+**Which is the argument for the guard over the rule, again**, and this file has now paid for it four
+times today. The fix is an explicit stack **plus a bound**: an iterative walk over a 100 MB deeply
+nested body still runs, so a frame ceiling has to **refuse as a typed error** rather than by exhausting
+something.
+
+## A retracted mechanism must be struck where it reads as settled, not only where it is wrong
+
+**The false `resolve.ts:191` mechanism survives in two live artefacts on T040's branch**, and its
+author flagged both before anyone asked: the AC5 comment in `lib/server/engine/engine.test.ts`, and its
+own `backend.md` Log entry at `406eba1` together with that commit's message. **Neither is on base**,
+so both belong to whoever holds the tree.
+
+**Its reason for calling them urgent is the point: they are worse than a wrong number because they read
+as the settled end of a three-party question.** *"Sampled becomes proved, from one line"* does
+rhetorical work that a wrong figure does not — **it tells the next reader to stop asking.** A retraction
+that leaves that sentence standing has retracted the claim and left the instruction.
+
+**And it labelled its successor hypothesis instead of promoting it.** Having just lost one mechanism,
+it has another — `sortDiagnostics` normalises diagnostic order, and nothing observably reads
+`blueprint.cards`'s insertion order — and it wrote: *unverified, the same kind of object as the one
+that just failed, and it must not enter a comment or the contract until someone runs it.* **That is the
+correct handling of the thing that got it here**, and it named what would test it rather than leaving
+the next reader to re-derive the question.
+
+## Retract where the claim is read from, and keep the claim next to its retraction
+
+**T040's adversary struck the false `resolve.ts:191` mechanism from three artefacts and the method is
+worth copying in each case.**
+
+**The `backend.md` Log entry it marked WITHDRAWN rather than deleted**, quoting the struck sentences
+inside the withdrawal with the measurement beside them — *so the retraction has something to retract*.
+A deleted claim leaves a reader who half-remembers it with nothing to check against.
+
+**The commit message it could not amend without rewriting a sha this run cites, so it retracted it in
+an EMPTY commit** quoting the three false passages verbatim beside the correction. **Empty by design:
+what had to survive is a claim next to its retraction, not a diff.**
+
+**And then it found the one I had missed, in the surface that matters most.** T040's published block on
+`backend` still carried the retracted **17 963**, in a sentence beginning *"Measured by T040's blind
+author"*. **The correction to 17 947 existed only on the test branch** and had been showing up as the
+single line "missing from base" in every merge check all evening — visible, unread, for a day.
+
+**A figure retracted in prose while standing in a declaration reads as checked**, and the declaration
+is what an implementer types from. **Same class as the two module comments it charged, one level up,
+and in the more authoritative surface.** Fixed here: `17 947` own-extensions, `18 195` shared
+vocabulary.
+
+**Narrowing over withdrawal, ruled correct.** It asked whether the neighbouring entry — *AC5's clause
+is defence-in-depth against a future change to `resolve.ts:191`* — should be withdrawn outright or
+narrowed. **Narrowed is right, and the test is whether the retained conclusion has a warrant
+independent of the struck mechanism.** Here it does: the clause stays because **AC5 mandates it**, which
+is the contract and not the mechanism. What it deleted is the false part; what it wrote in its place —
+*`sortedByKey` is unobservable through the published surface and what it defends against is unnamed* —
+is **release-last's shape named honestly rather than dressed up as a reason.**
+
+## An adversary may propagate a settled measurement; it may not pre-empt a decision
+
+**T040's adversary asked whether to strike `17 963` from `limits.ts:40` and `validate.ts:283` while it
+holds the tree, or leave them to the implementer's round.** It argued **against itself** — *expanding an
+adversary's strike list into the fix round is how a fix ends up shaped to the party that charged it* —
+which is a real rule in this run and the reason the question was worth asking.
+
+**Ruled: strike them now, and the test that licenses it is whether the edit has a design space.**
+
+A charge is a claim that something is wrong, and answering it is a **decision** — there is more than
+one defensible answer, so it belongs to the implementer or the round would be shaped by the charger.
+**Propagating a number that has already been measured and ruled is not a decision.** `17 947` and
+`18 195` are what `measure.test.ts` computes; nobody could reasonably write anything else. **Where
+there is no choice there is no shaping hazard**, and the rule that protects the fix round is not
+serving anything.
+
+**The other half of the ruling is the boundary**: the number only, worded as base words it, nothing
+else in those comments touched. And **`limits.ts:40` is the docstring on the exported constant** — the
+module's own declaration surface, the same shape as the block I fixed on base, one level down. **If the
+D-40-D fix rewrites those files the implementer owns the conflict**, which is the normal order.
+
+## After fixing a claim in one surface, classify the remaining occurrences by surface, not by count
+
+**Eight `17 963` remain in `backend.md` and the adversary checked where each one sits**: six in Log or
+preamble entries that **are** the record, two inside withdrawal sentences, **none in a declaration**.
+
+**A count of eight reads as alarming and is the wrong instrument.** The defect was never the figure's
+presence — it was its presence **in a surface a reader types from**. A grep answers *how many*; the
+question is *which kind of sentence*, and only the second one distinguishes a live claim from a
+retracted one being quoted.
+
+**And it re-ran the check that had been failing all evening.** `base lines missing from merged: 0`, for
+the first time tonight, where every prior merge returned exactly one and it was always that line.
+**The signal that announced the defect is the instrument that confirms the fix landed** — a fix
+declared without re-running it is a claim about a tree nobody looked at.
+
+**One distinction it named against itself, worth keeping**: it narrowed rather than withdrew *because
+the conclusion looked separately true*, which would have got the call wrong the first time a retained
+conclusion had no independent support. **A ruled requirement and a stated reason are different objects**,
+and the test is which one the conclusion rests on — not whether it still looks right.
+
+## A neighbouring claim that depends on a corrected value is found by reading
+
+**T040's adversary handed this back rather than accepting the credit for it, and the handing back is
+the finding.**
+
+I told it that *an edit's blast radius is the sentences that depend on the value, not the lines that
+contain it*, because it had checked the sentence after `limits.ts:40` — *"clears its maximum by at
+least fifty times"*, still true at the corrected figures, 115x and 55x. **Its correction: it did not
+check that as a rule. It checked it because the sentence happened to be in its eye line.**
+
+**So the blast radius was covered by luck, and the luck is the finding.** A dependent claim two
+paragraphs away, or in another file, is found by **reading** — and reading is the instrument this file
+trusts least, for reasons every entry above this one demonstrates.
+
+**The mechanisable shape it offered, recorded rather than ordered:** `DEFAULT_ENGINE_LIMITS` divided by
+the measured archive maxima is **computable**, so *every default clears the archive maximum by at least
+fifty times* could be an **assertion instead of a sentence** — and a correction that broke it would red
+rather than needing to be noticed. **A ratio stated in prose is a claim that goes stale silently when
+either operand moves.** Not this round's work.
+
+**And the general form, which is where the run keeps landing: the fix was to say the thing out loud, not
+to build something.** Twice tonight — announcing that I held the slot rather than leaving it to be
+inferred, and the outgoing holder stating it had stopped writing rather than letting an appointment
+message stand as a claim about a future state. **An appointment is a claim about the future until the
+leaver confirms.**
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
@@ -4303,7 +4810,7 @@ it does not decide differently inside a worktree.
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
-| T005 | Schema extension: the community and account tables | T000 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**` | `../darkprint-wt-t005-schema` | `feat/t005-schema` | adversarial-pass | — |
+| T005 | Schema extension: the community and account tables | T000 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**`, `lib/db/migrate.test.ts`, `tests/support/db.ts` | `../darkprint-wt-t005-schema` | `feat/t005-schema` | merged | merged at `011a851` as the tenth task. Triple identical at `f282f93`, `1 failed, 5208 passed, 0 skipped`, count pre-registered at 5209 and hit exactly; gates 0 unfiltered. D-05-09's witness discriminates all four fix states and names which half is wrong |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
@@ -4313,7 +4820,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | round 2 fix at `712a6b1`, 12 ahead: D-50-18 at three sites with a per-site witness. Triple identical, `1 failed, 5361 passed, 0 skipped`, base's own t090 red, foreign vitest peak 0, residue zero added. D-50-20 (`FOR UPDATE`) deliberately absent and named as absent |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | blind suite 98 tests, 96 red on the absent module, 33 mutations 32 caught / 0 MISS / 1 equivalent; adversary round 1 FAIL at `cf1f7a1` on D-40-A/B/C plus nine GAPs; round 2 `impl-done` at `e1ca2e4` |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | reverted | adversary round 2 **FAIL** at `a7f0a88`: **D-40-D** wire-reachable — the recursive bounded walk throws a bare `RangeError` on a 6 134-byte body, 0.3% of the limit, where the ruled formula answers to depth 1 000 000; **D-40-E** the 22-shape corpus misses nine divergences in three classes, array case under-counts ~5x, barrel-only. 42 mutations two passes: 31 CAUGHT / 6 MISS / 11 GAP / 0 SILENT GREEN / 0 equivalent. All four claimed equivalents have discriminators. C1's pre-registered green branch hit: `resolve.ts:191` is NOT the mechanism, warrant reverts to sampled. D-40-21's two guards in and falsified. No full suite, owed at a slot |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | todo | — |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -4880,7 +5387,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T005, Schema extension: the community and account tables
 
-- **State:** adversarial-pass
+- **State:** merged
 - **Worktree:** `../darkprint-wt-t005-schema` (impl), `../darkprint-wt-t005-schema-tests` (blind)
 - **Branch:** `feat/t005-schema` (impl), `test/t005-schema` (blind)
 - **Depends on:** T000 (merged)
@@ -4985,6 +5492,26 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 - **Out of scope:** any read or write path over these tables; that is each consuming task's. Seed data. `T150`'s counters, which the wave-4 audit did not find missing a table and which are not invented here.
 - **Note on sequencing:** all five consumers sit behind T050, which sits behind T070, so this is needed roughly two waves out rather than immediately. It is written now because the need is known now, and because a task that exists can be dispatched the moment a slot opens.
 - **Log:**
+  - 2026-08-18 implementer: **D-05-09 shipped, in BOTH places, and each half falsified where that half lands.** `cost_units` was `numeric(18, 6)`, which truncates silently — `0.0000001` stores as `0.000000` — one line below the docblock rejecting `double precision` for exactly that. Measured per half, because nothing in the suite compared the two artefacts on column types: `getSQLType()` reads `numeric(18, 6)` reverted and `numeric` fixed, from the schema side with no database; the catalogue reads precision 18 scale 6 reverted and null/null fixed, and loses the cost. A `schema.ts`-only fix leaves the database still truncating.
+  - 2026-08-18 implementer: **the reverse mutation is measured and it is not zero.** My branch carried the blind suite from the adversary round but **not round 4**, which holds `fef17c6` — D-05-09's witness, written before the fix so the reverse mutation could red. Caught by checking `test/t005-schema`'s tip against my own tree while verifying an unrelated premise. Merged, and it discriminates all four states rather than the one it was asked for: both fixed 10/10 green; both reverted reds the catalogue assertion; migration-only revert reds the catalogue assertion; **`schema.ts`-only revert reds the MIRROR assertion, exactly 1**. A half-fix is caught in either direction and the message names which half.
+  - 2026-08-18 implementer: `migrate.test.ts`'s two negatives after a one-step rollback are replaced by a round trip. They encoded an unstated assumption — that the last migration changes the table set — true of every migration on disk and false of the first column-only one anyone writes. AC2's real property is down one, up one, schema structurally identical. **My first snapshot was over-specified and reddened a correct probe migration**: read rather than assumed, the only differing field was `ordinal_position`, 7 then 8, because Postgres keeps a dropped column's slot. Ordered by it now, not asserted on it. Falsified four ways.
+  - 2026-08-18 implementer: **triple at `f282f93`, three consecutive runs, `1 failed / 5208 passed (5209)`, 0 skipped, identical sorted failing sets**, the only red T090's known one; whole-tree stamp clean both ends; peak foreign vitest 1/0/1, and the 1 is the orchestrator's own two-file guard run in the base repo, named rather than counted; zero database residue of mine. **Count pre-registered as 5209 before the run** — the prior clean triple read 5205, round 4 adds exactly four `it` declarations, and I add none.
+  - 2026-08-18 implementer: **an earlier triple was NOT a result and is kept rather than buried.** Runs 2 and 3 carried two extra failures, both 20-second timeouts. Checked my own change first because `migrate.test.ts` was the file I had just touched: it runs at 1 263 ms against a 20 000 ms budget, a 16x margin, so the change did not put it near the edge. The sampler kept the flagged lines rather than only the count and named three foreign worktrees. The decisive evidence was a timestamp correlation independent of the sampler: run 1 finished at 20:52:02 and was clean, run 2 at 20:55:27 and run 3 at 21:00:26 both fell inside the 20:52:25-20:59:58 window in which another session ran nine DB-touching invocations and roughly 63 scratch create/drop cycles. **Three limits on that instrument are now known**: a process count is not a load measurement, a path-matching detector cannot see a throwaway tree, and `tsc`/`eslint` are invisible to it entirely.
+  - 2026-08-18 implementer: **a `git merge` reported success and silently reverted seventeen lines of base's contract text**, keeping this worktree's stale paragraph over base's newer one. No conflict was raised; the markers sat three thousand lines away on a hunk that conflicted with nothing, and a hand-resolve would have missed it identically. Caught only by *every line present in base must survive*. Rebuilt from `git show backend:backend.md` and re-applied only this task's row and Log. Also mine, and worse: I committed over a red because the guard run and the `git commit` were separate statements in one block rather than one chain.
+  - 2026-08-18 implementer: **five contract defects reported before writing code**, all ruled. D-05-01 (AC4's foreign key is impossible — `release.digest` carries a non-unique index; a unique one is forbidden by AC7 *and* would make an unchanged T110 fork unpublishable, measured through `bundleDigest` at `sha256:0400893b` for both sides) reversed the standing ruling and landed as a trigger raising 23503. D-05-02 (`target_actor` cannot key a per-note vote: `target.kind` has no `note` member, so it constrains one vote per account per *blueprint*), D-05-03 and D-05-04 (`lib/db/migrate.test.ts` and `tests/support/db.ts` break on a second migration and are in no live task's Owns — granted), D-05-05 (`save.target_id` reads as an FK to `target.id` and must not be one — implemented as the criterion names it, hazard recorded).
+  - 2026-08-18 implementer: shipped at `1ef5c37`. Every criterion is a constraint and every constraint was **falsified two-factor** — dropped, and the forbidden write re-run — because a constraint that refuses proves nothing on its own (T-03). All seven flip. AC5b is the shape rather than a constraint, so its falsification runs the other way: **add** the `autonomy` column and the write lands, which is what D-05-02's ruling bought. AC3's discriminating case — a second note on the *same* blueprint, same voter — is included, so the `target_actor` grain claim is behavioural rather than read.
+  - 2026-08-18 implementer: **AC7a lands, and T070's W0 evidence is `read, not measured` from here.** No committed test seeds a NULL-owner reservation — every insert site checked — so nothing in tree breaks. A falsifying condition stated on a passed verdict fired three days later from a task its author never saw.
+  - 2026-08-18 implementer: **retraction — D-05-04's mechanism was wrong and the grant rested on it.** I reported silent contamination; the real prior implementation *throws*, `Failed query: delete from "account"`, because all six new tables carry a foreign key to `account`. The conclusion stands and the premise does not, which is the shape that reads as confirmed. What survives: the throw is in a **hook**, so it reports as a failed file with nothing added to the failed test count; and the silent reading does hold for any future table with no FK path into the set. Found by falsifying my own probe — its first version passed under *both* factors, because `TRUNCATE … CASCADE` reaches the six through `account` whichever list names them. A guard that cannot fail, inside the check written to prove the fix load-bearing.
+  - 2026-08-18 implementer: **two contract defects still open, neither blocking.** D-05-06 — the Published signatures block still carries the pre-reversal `run_report` line (`release_id, digest`) while AC4 three paragraphs below rules `release_digest`; both in one section, contradicting. Built to AC4. D-05-07 — the block gives `run_report` no submitter, and T180's AC5 (*a report on one's own blueprint does not increment `validated`*) cannot be built without one; carried `account_id NOT NULL` and said so in the file rather than adding it silently.
+  - 2026-08-18 implementer: `docs/ARCHITECTURE.md` **not** edited and recorded as owed to the orchestrator at merge — six tables are a domain-concept change under CLAUDE.md, and the document is in no task's Owns, with `tests/architecture-current.test.ts` deriving its domain from `git ls-tree backend` so an unmerged table owes no row yet.
+  - 2026-08-18 adversary: **PASS at `cbfe933`.** Merged `backend` (`49eb151`) and `test/t005-schema` (`609ce8d`), merge never rebase; every line of base's `backend.md` accounted for, one deliberate exception (T005's own stale index row). All eight criteria measured from raw SQL and **falsified two-factor on my tree rather than inherited**: the seven constraints dropped and the forbidden write re-run, all seven flip. 13 mutations, **zero MISSes** — each named the test it must red before it ran. Three that reddened more than predicted are explicable and were read rather than counted: dropping any of the three uniques also reds two `ac8-names` tests, because `schema.ts` still declares an index Postgres no longer reports, which is the agreement check doing its job.
+  - 2026-08-18 adversary: **AC5 is held at both ends, measured.** Collapse (drop `ballot_metric_range`) reds *"-1 and 101 are refused"* and leaves *"0 and 100 are accepted"* green; saturation (narrow the range to 1..99) reds acceptance and leaves refusal green. Two tests, two directions, each red under exactly its own — *a range check that refuses everything* has both halves and neither is carried by the other.
+  - 2026-08-18 adversary: **AC6's stepwise half is unobserved at EVERY N, not only collapsed at N=1.** The blind author flagged the collapse; the mechanism is worse. `reversibility.test.ts` pushes `levels[1..n]` and then compares **only `levels[0]`** against the final restore, so the intermediate snapshots are captured and never read — its own comment says "compared level by level" and the code does not. It is therefore strictly dominated by the aggregate test at every N, and additionally lacks the aggregate's "the rollback changed something" guard. **Measured, not argued:** a second migration `0003_probe` whose `up` adds a column and whose `down` is a deliberate no-op — the exact defect the test's comment says it exists to catch — reds **nothing**, 0 of 57. The zero was classified by probing what the mutation did: `migrateUp` applied `['0001_init','0002_community','0003_probe']`, `migrateDown(1)` reported `['0003_probe']`, and `probe_col` **survived the rollback the runner said it performed**. Not a defect in T005, which ships one migration whose down is correct and is caught by AC6's fourth test against the frozen baseline; the criterion's second half simply has no witness, so a later owner of `lib/db/migrations/**` shipping a broken `down` lands unobserved by construction.
+  - 2026-08-18 adversary: **both `api_key` gaps closed, and the closure is verified rather than accepted.** I found them by aiming at the one table with **no acceptance criterion of its own** — the untested-region rule used as a search strategy rather than quoted afterwards. GAP 1 was D-14 exactly: renaming the unique in `schema.ts` alone reddened 0, while the identical edit on `save` reddened the agreement test, and the zero was classified by measuring the mutation's effect (`getTableConfig` reporting `api_key_token_hash_key_v2` while Postgres still said `api_key_token_hash_key`, so a consumer deriving the name gets a string the driver will never say). GAP 2: `api_key` never reached `falsifyUnique`'s `predicate` assertion, so a partial unique was unobservable there while caught on all three tables a criterion names. The blind author took both **from the clause rather than from my probes** at `609ce8d`. Re-measured after the fix: the schema-only rename now reds `ac8-names` (1), and a `WHERE "revoked_at" IS NULL` partial unique now reds the `api_key` uniqueness test (1). **0 -> 1 on both axes** — the reverse mutation is the acceptance number, and a 0 there would have meant the fix was unobservable however green the suite looked.
+  - 2026-08-18 adversary: **D-05-09, raised for ruling, and it is the module's own argument turned against its column.** `run_report.cost_units` ships as `numeric(18, 6)` where the published block says `cost_units numeric`, unqualified. The docblock beside it argues *"`numeric` rather than a float because ... B-16's promise is that the registry stores what it was given; `double precision` cannot round-trip every decimal the CLI can send"* — and `numeric(18,6)` reintroduces exactly the failure that argument rejects, **silently**. Measured against the shipped type: `0.0000001` stores as `0.000000`, `0.1234567` as `0.123457`, `123.4567895` as `123.456790`; `1234567890123.5` is refused with 22003. So a submitted cost can become **no cost at all** with no error, and it then feeds T180's median and p10/p90. Nothing observes it — no test asserts the column's precision or scale. Not charged as an implementation defect: bounding a caller-supplied numeric is a defensible engineering choice and unqualified `numeric` is unbounded. What needs a ruling is that the bound is **unstated and fails silently**, which reaches T180 and T270's CLI: if 6 decimal places is right, it belongs in the block the way `MAX_NAME_LENGTH` was published, so a caller knows what it may send.
+  - 2026-08-18 adversary: **latent, in a file T005 gained by grant.** `lib/db/migrate.test.ts`'s rewrite correctly derives migration ids and table names instead of listing them, and then adds `expect(await publicTableNames(pool)).not.toEqual(declaredTableNames())` after a one-step rollback. That encodes the assumption the derivation removed everywhere else — that the **last** migration changes the **table set**. Measured with a correct column-only `0003_probe` (correct `up`, correct `down`): `AssertionError: expected [ Array(16) ] to not deeply equal [ Array(16) ]` at line 97. So a future column-only, index-only or constraint-only migration reds this file against a correct implementation. Same class as the ten-name list it replaced — a claim about a moment, moved one level down and harder to see because everything around it is derived.
+  - 2026-08-18 adversary: **the count format and the table delimiter are the same character.** Pasting vitest's own summary line — `1 failed | 5203 passed (5204)` — into the pipe-delimited index row gave that row **eleven** fields where every other has ten, so `tests/task-state-agreement.test.ts` read the Evidence cell as the State cell and reported a **State disagreement** between row and section. Both were correct; the delimiter was not. The red named the wrong thing, and the wrong thing it named is plausible — I had just edited both places, which is exactly when a disagreement is believable. Caught only because the rule to re-gate after a `backend.md` commit was followed rather than the triple carried over it. Counts go in that column as `1 failed / 5203 passed`; the pipe is the table's.
+  - 2026-08-18 adversary: **what would falsify this PASS.** (1) My 13 mutations are all on constraints, the trigger, and index names — I mutated **no column type** except by reading, so a type-level defect other than D-05-09 would be invisible to my sweep. (2) The set-difference is empty against a suite that moved **after** I first measured it; I re-ran rather than carrying the earlier red forward, but a suite and an implementation that now agree can still share a misreading of any block sentence nobody probed, and D-05-08 is evidence that such sentences existed. (3) AC7's "byte-identical" is held by the blind suite's frozen baseline plus my independent static read of the `schema.ts` diff; neither reaches a base table altered by the **migration** in a way `schema.ts` does not record, which only a migration-versus-catalogue comparison covers. (4) The triple ran at load 46 with 0 foreign vitest groups, so it shows determinism on a **quiet** host and cannot show robustness to a collision that did not happen. (5) One `darkprint_test_95db6b50…` scratch database, 0 connections, was present before my first run and is not mine — I left it, so my residue claim is "none of mine" rather than "clean".
 
 ### T071, Handle length: the product bound
 
@@ -8371,15 +8898,24 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Contract:** GitHub OAuth establishes credentials; the handle is chosen at sign-up and stored independently (B-02, B-05), so the OAuth subject and the handle are separate columns and a GitHub rename moves neither. The record is `Account { author: Author, email, joinedAt, validatorSince?, validatorWeight, defaultVisibility, notifications[] }` (`lib/data/account.ts:51-73`) with `Author { username, displayName, avatarHue, validator, bio? }`. `email` never appears on a public surface. The three profile fields the settings form edits live are `displayName`, `bio`, `avatarHue`. A handle change reserves the old one through `T070`.
 - **Published routes** (D-50-01/D-50-02 — fourth instance of an owned route tree with nothing published; and `docs/architecture/seams.md` published a *contradicting* second reading, which is worse than silence because a blind author can bind to it. **The contract wins; §8 is being rewritten to match, by me, in the same commit as this line.**)
 
-        GET   /api/account                     -> 200 AccountRecord            | 401
+        GET   /api/account                     -> 200 AccountRecord            | 401 500
         PATCH /api/account/profile             { displayName?, bio?, avatarHue? }
-                                               -> 200 AccountRecord            | 400 401 403
+                                               -> 200 AccountRecord            | 400 401 403 500
         PATCH /api/account/handle              { handle }
-                                               -> 200 AccountRecord            | 400 401 409
+                                               -> 200 AccountRecord            | 400 401 409 500
         PATCH /api/account/email               { email }
-                                               -> 200 AccountRecord            | 400 401 403
+                                               -> 200 AccountRecord            | 400 401 403 500
         PATCH /api/account/default-visibility  { visibility }
-                                               -> 200 AccountRecord            | 400 401 403
+                                               -> 200 AccountRecord            | 400 401 403 500
+
+  **The `500` on every row is D-50-18 and it is a contract status, not an accident.** A sanitized store
+  fault answers `application/problem+json` with `type` `https://darkprint.io/problems/store-failed` and
+  all five RFC 9457 members, `instance` the route's own path, and **no statement, bound parameter,
+  SQLSTATE or connection string in the body**. Every published function in this half takes `db: Db`, so
+  the fault is reachable from **every** route here — which is why it is on every row rather than on the
+  three sites a fix happened to touch. Added late: **D-50-18 ruled this in prose and did not displace
+  the declaration**, so all five rows read `400 401 403` / `400 401 409` for a day while the ruling said
+  otherwise. Found by T050's blind author, which asserted 500 anyway because the ruling is the decision.
 
   Every route answers `AccountRecord`, not seams.md's `{ ok, … }` shapes: the module already returns it, and a second mapping is a second thing to drift. Specifically **dropped**: `reservedOldHandle` (derivable — it is the previous `author.handle`) and `verificationSent` (**nobody sends**, so the field would be a lie D-50-12 makes permanent).
 
@@ -8423,7 +8959,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **D-50-20, ruled: `changeHandle` takes `SELECT … FOR UPDATE` on the account row, and does NOT retry.** Its implementer's proposal, taken with its reasoning. The measured `40P01` is contention on **one row** — the control is decisive, eight *different* accounts renaming concurrently give 8 fulfilled and 0 rejected — and the cause is a lock-order inversion: a plain `SELECT`, then the reservation insert, then the account update. **Locking the account row first removes the inversion rather than recovering from it**, and every rename of that account then queues on one lock in a consistent order. **Prevention over retry**: a retry loop needs a bound, a backoff and a claim that the whole transaction is safe to replay — three things to get wrong where one line removes the condition.
 
-  **D-50-21, ruled and owed in round 2's fix rather than deferred: `withAccountErrors` answers every class `isDecision` recognises.** `NamingStoreError` is on that list and has no arm, so it leaves through the fallback reserved for what the wrapper does **not** recognise — outside `problem+json`, which is the exact divergence D-50-18 was ruled on. Same `store-failed` 500 as `AccountStoreError`, and **not re-wrapped**: the original travels on `cause` so the operation named in a rendering stays the one that failed. Separating the envelope decision from the wrapping decision is the fix; they were taken as one. **Guard constructed from `isDecision`'s own members** — every class it names owes an arm — so nothing is maintained by hand. Unlike D-50-20 this is the same failure mode and the same remedy one class name apart, so it is not scope creep: a fix that closes a defect for one class has closed an instance.
+  **D-50-21, ruled and owed in round 2's fix rather than deferred: `withAccountErrors` answers every class `isDecision` recognises.** `NamingStoreError` is on that list and has no arm, so it leaves through the fallback reserved for what the wrapper does **not** recognise — outside `problem+json`, which is the exact divergence D-50-18 was ruled on. Same `store-failed` 500 as `AccountStoreError`, and **not re-wrapped**: the original travels on `cause` so the operation named in a rendering stays the one that failed. Separating the envelope decision from the wrapping decision is the fix; they were taken as one. **Guard, behavioural and constructed: the domain is every error class exported from every `lib/server/<module>/index.ts` MINUS accounts' own — provenance read off the module a class lives in — and the relation is driven: if `withStore` passes an instance through unwrapped (which is `isDecision` saying yes, observed rather than read), `withAccountErrors` must answer the `store-failed` `problem+json` 500 — not merely *a* `Response`, which any arm satisfies including one returning `badRequest`.** Not a comparison of import lines against `instanceof` identifiers: that guards the **spelling** of the relation and goes green on an arm that is present and wrong. Not *every member owes an arm* — that construction is withdrawn: it reds on `AccountError`, whose arm would swallow the four distinct mappings this ruling protects, and the subtype-aware variant reds on `NotAccountOwnerError`, deliberately unmapped. Provenance excludes `AccountError` **structurally, by the import it arrives on**, with no exemption for anyone to maintain, and states the actual property: the wrapper owes an envelope for faults **this module did not author**. Unlike D-50-20 this is the same failure mode and the same remedy one class name apart, so it is not scope creep: a fix that closes a defect for one class has closed an instance.
 
   **Its own two caveats are kept rather than smoothed.** It orders same-account renames only; cross-account inversion was not measured and is not thought reachable, since each transaction touches its own account row plus its own target and old reservation rows. **And the witness is a disappearance, not an assertion** — inducing `40P01` deterministically is its own problem, so the strongest available evidence is the adversary's sixteen-way repro returning **0 rejected** after the change. That is weaker than a test and it is what is available; **it is recorded as such rather than dressed up.** Owed in its own round, after the D-50-18 fix lands, with that repro as its measurement.
 
@@ -8440,7 +8976,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** impl-done
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
@@ -8537,11 +9073,15 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **D-40-17 is normative as a NUMBER, not as a PROCEDURE (D-40-20, ruled on T040's adversary's question).** The criterion says which submissions are refused; it does not say how the size is computed. **So a bounded walk that accumulates and short-circuits the moment the running total exceeds `maxBytes` is CONFORMING**, and it is required — see D-40-B. Cost becomes O(`maxBytes`), bounded by the limit rather than by the input graph, and the number is preserved exactly for every submission that is **accepted**, because past the bound only the comparison is ever needed. A `seen` set must **not** be used for the size — it would change the number for shared substructure — and is the right instrument for the **cycle**, which becomes a typed refusal instead of a `TypeError`.
 
+  **D-40-D, ruled (adversary round 2, charged and accepted): the bounded walk must be ITERATIVE, with an explicit stack and a frame ceiling that refuses as a typed error.** The recursive walk throws a bare `RangeError` on a **6 134-byte** body whose `manifest` nests — **0.3% of the 2 MiB default** — where D-40-17's literal answers that same input at 6 134 and keeps answering to depth 1 000 000. **D-40-20's substitution was paid for by *the number is preserved exactly for every submission that is accepted*, and here that clause is SILENT rather than violated**: the input is neither accepted nor refused and no number is produced. The boundary is host-dependent, not input-dependent — depth 7 000 direct, 3 000 under the route — which makes it untestable as a threshold and unacceptable as a behaviour. Precedent is T010/T020's `isWellFormedDeep`: one mutable `open` set, explicit enter/leave frames, O(1) per visit. **A ceiling is required as well as a shape**, because an iterative walk over a 100 MB nested body still runs.
+
+  **D-40-E, ruled (same round): the 22-shape corpus backing the walk's equivalence with D-40-17 is a LIST, and what is owed is a construction over the serialiser's equivalence classes.** Nine divergences measured in three classes it does not reach — `toJSON` returning a droppable, `toJSON` reading its key argument, and boxed primitives — with the array case **under-counting ~5x**, a `maxBytes` bypass through the barrel. All barrel-only, so the charge is against the warrant rather than a live wire defect. **Three more rows reproduces the defect one size larger.**
+
   **D-40-21: `submissionOf` excludes `input.ontology`, and that is now published rather than a deviation.** An `OntologyView` carries the whole of `CORE_ONTOLOGY`, so measuring it would charge a caller the entire curated vocabulary against its own upload's budget — refusing a small bundle for the size of something it did not send and cannot make smaller. **`ontology` is not caller-supplied, and that is a premise rather than a remark** — an exclusion from a measured set is a bypass of the bound the moment the excluded field becomes caller-reachable, so a route that ever accepted a caller's `ontology` would turn this ruling into an unbounded hole in `maxBytes` with nothing redding in between. The earlier wording here (*every wire call gives the same number under either reading*) framed it as a convenience and is withdrawn. **Guard owed, adversary's round**, two instruments: the wire number must equal the literal `Buffer.byteLength(JSON.stringify(input))` for a payload through a route, and no route file may pass `ontology` into the engine. Reported by the implementer rather than taken quietly, confirmed by the adversary, and the premise charged by the implementer against itself a round later.
 
   **D-40-17, `input` byte length is `Buffer.byteLength(JSON.stringify(input), "utf8")`.** Three readings differed by hundreds of bytes on a real bundle. `lib/server/**` is not isomorphic, so `Buffer` is available here; `lib/core` remains the place that may not use it.
 
-  **`DEFAULT_ENGINE_LIMITS` is asserted as a PROPERTY, not as three numbers** — every archive bundle passes with `limits` omitted, and each default exceeds the archive's maximum. Measured by T040's blind author: largest submission **17 963 bytes**, most cards **9**, most nodes **9**. A test pinning the constant moves with the constant and stops being a bound, which is D-70-17's note about `MAX_NAME_LENGTH` applied here.
+  **`DEFAULT_ENGINE_LIMITS` is asserted as a PROPERTY, not as three numbers** — every archive bundle passes with `limits` omitted, and each default exceeds the archive's maximum. Measured through this module's own entry point, which is what `measure.test.ts` computes: largest submission **17 947 bytes** with each bundle's own extensions, **18 195** with the shared vocabulary applied to all nine; most cards **9**, most nodes **9**. **The blind author's original `17 963` reproduces under no reading and is WITHDRAWN** — it stood here for a day after being retracted in a Log entry, which is the wrong direction: this block is the surface a reader types from, and a figure retracted in prose while standing in a declaration is a figure that reads as checked. Charged by T040's adversary against base, one level up from the two module comments it charged in the tree. A test pinning the constant moves with the constant and stops being a bound, which is D-70-17's note about `MAX_NAME_LENGTH` applied here.
 
 - **Acceptance criteria:** (1) the nine archive bundles return the diagnostics, autonomy class and security level the build computes today; (2) **D-40-01, ruled (a): the verdict stays the caller's.** `bundleProgress` lives in `components/upload/progress.ts (**D-40-01(a): Forbidden to T040; the verdict stays the caller's and no T040 return type carries one**)`, which is Forbidden to T040 and re-exported from nowhere, and `LoadBundleResult` has no field that can carry a verdict. Reimplementing it would be the second opinion `progress.ts`'s own header exists to prevent. So the criterion is a property of what **is** returned: a bundle with three of eight nodes carded returns an **analysis over the three** — `blueprint.nodes.length === 3`, `blueprint.graph.ids.length === 8`, every error in `AWAITING_CARD` or a shadow of it, and an autonomy class that differs from the whole bundle's, not an error; (3) a DOT that fails to parse returns a diagnostic carrying line and column; (4) an oversized submission is refused before parsing, with the limit named; (5) identical bytes return identical output including diagnostic order; (6) a card naming a term the supplied vocabulary lacks returns `card/unknown-term`, never silence.
 - **Out of scope:** persistence, publishing, the archive's own re-validation sweep.
