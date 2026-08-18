@@ -355,6 +355,43 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A sanitizer applied twice does not sanitize twice — it relabels
+
+T050's implementer took the previous rule as a **sweep** rather than a fix and classified every
+`throw` in its module by whether its failure is observable without Postgres. One more guard had no
+observer, and it was the load-bearing one: the class-preserving step that lets T070's rejections
+reach a route with their class intact. Break it and D-50-08's 409 and 400 both become 500s **while
+the module still looks correct**, because the sanitized rendering it produces is a *legitimate*
+rendering.
+
+**The finding is in its third falsification axis, and it is one I would not have thought to ask for.**
+Re-wrapping a `NamingStoreError` looks harmless — it **is** a fault, and sanitizing a fault is what
+the sanitizer is for. But its message already names `allocateHandle`, and re-wrapping replaces it
+with one naming `changeHandle`. **The rendering then names an operation that did not fail**, which is
+the exact opposite of what the whitelist exists for.
+
+So a sanitizer is not idempotent in the way its shape suggests. Applying it to something already
+sanitized does not make it safer; it **overwrites the one piece of true information the first
+application preserved**. Any wrapper that rewrites an operation name has to ask whether the thing it
+is wrapping already carries one.
+
+**And the fourth axis is the one that proves the whitelist is doing its job rather than merely
+existing**: a driver error whose message contains the bound email comes out as
+`setEmail: the account store failed.`, asserted **not to contain the address**, with the original kept
+only as `cause`. That is AC2 carried through the *fault* path, which is where D-13 actually bites.
+
+**The sweep discipline is the transferable part.** A rule that arrives as "this guard had no observer"
+is a fix; the same rule applied as "classify every `throw` by whether its failure is observable
+without the resource" is a **survey**, and it found the one that mattered rather than the one that
+prompted it. Knowing when to stop is part of it — it stopped at the genuinely store-shaped throws
+rather than inventing pure observers that would fake the thing under test.
+
+**And it falsified `tests/no-raw-control-bytes.test.ts` against its own untracked files** rather than
+believing this file's claim that `--others --exclude-standard` reaches them. Planted a NUL, got the
+offset and the path, removed it. Given T-01 fired twice on this task, *"the guard covers untracked
+files"* was a premise to check rather than to inherit — which is this file's own rule about premises
+handed to you, applied to the file itself.
+
 ## A module that sanitizes its rejections cannot use its own error surface as an oracle
 
 T050's implementer's finding, and it is the sharpest consequence of a ruling this run made
