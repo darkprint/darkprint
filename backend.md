@@ -1920,6 +1920,49 @@ the finding**, and the reading it picked was the one that meant it had nothing t
 **It cost exactly what the measurement was for**: had it flagged the line, I would have found my own
 suite a round earlier. **The detector worked and printed the evidence. The reading did not.**
 
+## A dispatch that contradicts a rule revokes the rule in the only place the recipient reads
+
+**Second contradiction of mine found within the hour, and this one was not in this file at all.**
+
+I wrote *any `vitest` invocation is slot-gated* into the preamble, and then wrote *you do not need one
+for most of this* into T050's implementer's dispatch. **It refused to infer from the older sentence and
+asked by name**, on the ground that the newer rule exists **because** the older shape cost a real
+measurement tonight — three worktrees running in good faith inside somebody's slot.
+
+**The asymmetry is what makes this worse than the last one.** A rule lives in `backend.md`, which a
+session reads once at dispatch and then works from memory. **A dispatch is what the recipient acts on.**
+So a permissive sentence in a brief does not merely sit beside the rule — **it revokes it for that
+recipient**, in the only surface they are reading, and neither party has any instrument that would
+notice.
+
+**Ruled: it waits.** T040's implementer holds the slot and is sampling; **a DB-free run is still a
+`vitest` process group in its samples**, which is precisely the gap between rule-scope and
+detector-scope this run closed today. *You do not need one for most of this* is **withdrawn**.
+
+**And the standing correction: a brief may narrow what a rule permits and may never widen it.** If a
+dispatch needs to grant latitude, the latitude is a change to the rule and belongs in the file first.
+
+## A discriminator carried between contexts keeps its wording and loses its warrant
+
+**T050's implementer, against a prediction I forwarded to it as a requirement.**
+
+F4 was registered as *removing the `NamingStoreError` arm must red a non-empty set **disjoint** from the
+other three*. **It cannot be, by design rather than by construction.** F1 (a fifth foreign class with no
+arm) and F4 both red the **provenance guard**, necessarily — the guard exists to catch *a class
+`isDecision` recognises with no arm*, and F4 introduces exactly that. **A guard that stayed green on F4
+would be a guard that misses the defect it was built for**, so disjointness is not merely unachievable
+here, it would be a **worse** outcome if achieved.
+
+**Where the test came from is the finding.** Disjointness was the right property for the per-**site**
+pairing, where three sites should have three independent observers and a shared mechanism wearing three
+names is the failure. **Transplanted to a mutation against a shared relation it keeps its wording and
+loses its warrant.**
+
+**The right property for the new context:** F4's red set must be a **strict superset** of F1's,
+containing **at least one test no other mutation reds** — the per-class arm test and the transport
+witness, which are naming-specific. **Same discipline, different relation, and the wording had to
+change for the discipline to survive.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
