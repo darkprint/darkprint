@@ -2409,6 +2409,49 @@ a guard nothing reaches.**
 you named. **Same family as *the identity of the reds separates a mutation that mutated from one that did
 not*, one level in: there, which TEST reddened; here, which ASSERTION inside it.**
 
+## A floor absorbs additions silently and then stops detecting removals
+
+**`error-hygiene`'s domain floor was `>= 8`, with its own comment saying *if one was added, raise it* —
+and nothing reds when the raise is skipped. Measured at `d7ee3ca`: the walk discovers 17.**
+
+**So the floor sat at 8 across T070's three naming classes, T030's six ontology classes and T050's four
+accounts classes.** It detected none of them. **And it would no longer have detected any of those nine
+going missing either** — a guard written to catch *one* class the walk stops reaching could, after three
+merges, only have caught **nine disappearing at once.**
+
+**The number was mine to maintain at every one of those merges and I maintained it at none.** The
+comment predicted exactly this and predicting it changed nothing, which is the argument for the
+instrument over the note, again.
+
+**Now an equality.** It reds in **both** directions, so a merge that adds a class cannot land without
+somebody looking at the line, and a class that quietly stops being exported reds immediately instead of
+being absorbed. **The maintenance cost is identical — one number — and the difference is that skipping
+it is impossible rather than invisible.** Falsified: `18` reds with the right message, `17` passes.
+
+**The general form, and this file has now paid for it twice tonight in two directions:** a **floor**
+absorbs growth and loses sensitivity as the domain grows; a **list** stops covering what nobody
+remembered. **Both fail by staying green, and both were introduced as the careful option.**
+
+## Declining a partition exception is worth more than the two edits it would have saved
+
+**T081's implementer declined to make two `tests/**` edits I offered it**, on the ground that it had
+already declined `docs/ARCHITECTURE.md` on the same rule, and **taking these while declining that one
+would be it choosing which partition rule applies.**
+
+**That is the correct reading and it is stricter than mine.** I had ruled the design-space test — an edit
+with no design space may be propagated by whoever holds the tree — and it is right that the test governs
+**who may make an edit inside their own partition**, not whether a partition boundary can be crossed
+because the crossing is small. **A rule about the size of an edit cannot license an edit in someone
+else's directory**, and I had been about to let it.
+
+It gave both edits verbatim so they can be applied without re-derivation, and **measured rather than
+reasoned** that the walk prints `registry/RegistryStoreError` at both arities.
+
+**And it took `PROBLEM_TYPE_BASE` from `@/lib/server/http` the moment T050's merge made it importable**,
+replacing a literal it had written before the constant existed — **D-50-03's own argument, that a second
+copy of a constant is what produced `darkprint.dev`.** With the suite still writing the whole URL as a
+literal, deliberately: **an expectation built from the subject asserts the subject agrees with itself.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it

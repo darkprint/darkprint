@@ -100,13 +100,30 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
 
     /* A zero here has three causes and only one of them is good news. This rules out the two bad
        ones: if the walk found nothing, the assertions below would all pass over an empty set. */
+    /*
+     * EXACT, not a floor, and the change is the point.
+     *
+     * This was `toBeGreaterThanOrEqual(8)` with a comment saying "if one was added, raise it" —
+     * and nothing reds when the raise is skipped, which is the whole defect of a hand-maintained
+     * number. Measured at `d7ee3ca`: the walk discovers **17**. So the floor sat at 8 across
+     * T070's three naming classes, T030's six ontology classes and T050's four accounts classes,
+     * detecting none of them, and it would no longer have detected any of those nine going
+     * missing either. It was written to catch a class the walk stops reaching; after three merges
+     * it could only have caught nine disappearing at once.
+     *
+     * An equality reds in BOTH directions, so a merge that adds a class cannot land without
+     * somebody looking at this line, and a class that quietly stops being exported reds
+     * immediately rather than being absorbed. The maintenance cost is identical — one number —
+     * and the difference is that skipping it is now impossible instead of invisible.
+     */
     expect(
       classes.length,
-      "Fewer published error classes were discovered than exist. Either a barrel stopped " +
-        "exporting its rejections or this walk no longer reaches them, and every class it stops " +
-        "reaching is one the assertion below passes over in silence. If a class was deliberately " +
-        "removed, lower this floor in the same commit; if one was added, raise it.",
-    ).toBeGreaterThanOrEqual(8);
+      "The number of published error classes changed. This is an EQUALITY rather than a floor, " +
+        "deliberately: a floor absorbs additions silently and then stops detecting removals, " +
+        "which is what happened here across three merges. If a class was added, raise this number " +
+        "in the same commit and say which. If one was removed, lower it and say why — a class " +
+        "that stopped being exported is exactly what this walk exists to notice.",
+    ).toBe(17);
 
     const rendered: string[] = [];
     const traceless: string[] = [];
