@@ -998,9 +998,61 @@ is ever needed, which is why this costs the ruling nothing. A `seen` set must no
 
 **D-40-21, ruled: `submissionOf` excluding `input.ontology` is correct and is now published.** An
 `OntologyView` carries the whole of `CORE_ONTOLOGY`, so measuring it charges a caller the curated
-vocabulary against its own upload's budget. No route can set `ontology`, so every wire call gives the
-same number either way — and the implementer reported the deviation rather than taking it quietly,
-which is the only reason it was available to rule.
+vocabulary against its own upload's budget.
+
+**`ontology` is not caller-supplied — and that is a PREMISE of this ruling, not a remark about its
+impact.** The first wording of this paragraph said *no route can set `ontology`, so every wire call
+gives the same number either way*, which reads as a convenience and is why nobody asked what stood
+behind it. It is not a convenience. **An exclusion from a measured set is a bypass of the bound the
+moment the excluded field becomes caller-reachable.** A route that let a caller supply an `ontology`
+would let it put unbounded bytes in the one place `maxBytes` does not look — so the exclusion that is
+correct today is the hole tomorrow, and **nothing reds in between**, because the excluded field is by
+construction the field no size assertion measures.
+
+Charged by T040's implementer against its own sentence, one round after handing the tree back, with
+the instrument named: *I read my own four route files. That is it.* Quantified over every route,
+present and future; established by inspecting four files at one commit. Guard owed in T040's
+adversary's round. The implementer reported the original deviation rather than taking it quietly,
+which is the only reason any of this was available to rule.
+
+## A claim quantified over a set is a constructed domain written in prose
+
+This file has had the constructed-domain rule since T090: **a domain built by listing is a domain
+somebody maintains, and it stops covering the thing nobody remembered.** Build it by construction,
+then demonstrate it twice — that it finds the defect, and that it would still find one added
+tomorrow.
+
+It was written about **test domains** and it was never once applied to **sentences**. T040's
+implementer applied it, unprompted, to four unobservability claims it had written into shipped
+comments and into handbacks I had already published. **Two are that exact shape, and one of them is
+in my contract.**
+
+**"The record's insertion order cannot reach anything."** Quantified over every read of `cardFiles`
+in `lib/core`. Evidence: `grep -rn "cardFiles" lib/core/` returns three lines. **A name grep finds
+the reads that SPELL the name** — destructuring spells it, `bundle[key]` with a computed key does
+not, a `{...bundle}` handed onward does not. That is `23505` in a different costume with the aim
+changed: the tokenizer defect this file already charged against a *matcher*, committed against a
+*claim*.
+
+**"No route can set `ontology`."** Quantified over every route, present and future. Evidence: four
+files read at one commit. See D-40-21 — that one is not a comment, it is load-bearing for a published
+ruling, and its failure mode is a hole in a limit rather than a wrong sentence.
+
+**The general form:** the claim is about a set, the evidence is about the members you went and looked
+at, and **stating it is what makes it look checked**. A constructed domain owes two demonstrations;
+prose owes the same two and is never asked for either, because prose has no runner.
+
+**And the half worth copying: it pre-registered both readings before anyone ran the experiment.**
+Delete `.sort(cmpString)` from `resolve.ts:191` and re-run the permutation test — *it reds* proves
+the mechanism, *it stays green* means something else normalises the order and the conclusion is
+standing on a premise the author invented. It named the **green** branch as the worse news and the
+one worth finding. Do that in advance, every time: **the green reading is the one you will otherwise
+rescue**, and after the fact you can no longer tell a prediction from a repair.
+
+**This travelled.** The rule that produced the audit was paid for by T005's blind author six hours
+earlier, in a different worktree, on a different task, about a different kind of claim. That is the
+run's machinery working as designed, and it is the argument for publishing a rule in the file rather
+than answering the session that found it.
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
@@ -8382,7 +8434,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **D-40-17 is normative as a NUMBER, not as a PROCEDURE (D-40-20, ruled on T040's adversary's question).** The criterion says which submissions are refused; it does not say how the size is computed. **So a bounded walk that accumulates and short-circuits the moment the running total exceeds `maxBytes` is CONFORMING**, and it is required — see D-40-B. Cost becomes O(`maxBytes`), bounded by the limit rather than by the input graph, and the number is preserved exactly for every submission that is **accepted**, because past the bound only the comparison is ever needed. A `seen` set must **not** be used for the size — it would change the number for shared substructure — and is the right instrument for the **cycle**, which becomes a typed refusal instead of a `TypeError`.
 
-  **D-40-21: `submissionOf` excludes `input.ontology`, and that is now published rather than a deviation.** An `OntologyView` carries the whole of `CORE_ONTOLOGY`, so measuring it would charge a caller the entire curated vocabulary against its own upload's budget — refusing a small bundle for the size of something it did not send and cannot make smaller. No route can set `ontology`, so **every wire call gives the same number under either reading**. Reported by the implementer rather than taken quietly, and confirmed by the adversary.
+  **D-40-21: `submissionOf` excludes `input.ontology`, and that is now published rather than a deviation.** An `OntologyView` carries the whole of `CORE_ONTOLOGY`, so measuring it would charge a caller the entire curated vocabulary against its own upload's budget — refusing a small bundle for the size of something it did not send and cannot make smaller. **`ontology` is not caller-supplied, and that is a premise rather than a remark** — an exclusion from a measured set is a bypass of the bound the moment the excluded field becomes caller-reachable, so a route that ever accepted a caller's `ontology` would turn this ruling into an unbounded hole in `maxBytes` with nothing redding in between. The earlier wording here (*every wire call gives the same number under either reading*) framed it as a convenience and is withdrawn. **Guard owed, adversary's round**, two instruments: the wire number must equal the literal `Buffer.byteLength(JSON.stringify(input))` for a payload through a route, and no route file may pass `ontology` into the engine. Reported by the implementer rather than taken quietly, confirmed by the adversary, and the premise charged by the implementer against itself a round later.
 
   **D-40-17, `input` byte length is `Buffer.byteLength(JSON.stringify(input), "utf8")`.** Three readings differed by hundreds of bytes on a real bundle. `lib/server/**` is not isomorphic, so `Buffer` is available here; `lib/core` remains the place that may not use it.
 
