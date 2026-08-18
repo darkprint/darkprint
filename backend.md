@@ -1108,6 +1108,18 @@ Why the magnitude is not load-bearing anyway: the guard is **exact equality betw
 any non-zero divergence reds. The size only decides whether anyone would be tempted to write a
 tolerance, and 8 359 against a 2 MiB default is not a rounding difference that invites one.
 
+**And that sentence describes a guard that cannot fail in its obvious form.** T040's adversary built
+it as `measureSubmission(input) === literal` and **a route made to pass an `ontology` left it green** —
+because the exclusion happens **inside `validateBundle`**, so the comparison is the input against
+itself. **Two integers that are the same measurement are equal for a reason that has nothing to do
+with the property.** It drives the bound instead: **refused at `literal - 1`, accepted at `literal`.**
+Same equality, cannot go vacuous. I wrote the original claim on the strength of two sessions' agreeing
+reasoning and my own, and **none of the three noticed the operands could be one measurement.**
+
+**Confirmed independently and the word *floor* is right empirically, not only conceptually**: 8 372 as
+a view's data property, measured before reading this entry — and **8 605 with the archive's own
+extensions layered in.** The number moves with the overlay.
+
 The structural check covers the **fifth route**. **Neither covers the cost**, and that gap is one gap
 rather than two: it lands with whoever writes the first route that builds a view from caller bytes,
 in the same place T-02's note already puts a materialised-size cap.
@@ -1464,6 +1476,93 @@ named.
 `host`**, because the split asks whether a process names a darkprint path and `claude`'s args do not.
 **So `peers=0` means *no peer build or test*, not *no peer working*.** Reported to me rather than left
 for me to discover, which is the standard.
+
+## D-40-D: a justification quantified over the outcomes you enumerated is silent about the one you introduced
+
+**T040 round 2 is a FAIL, and the sharpest charge is against a ruling of mine rather than against the
+implementer.**
+
+**D-40-20 replaced `Buffer.byteLength(JSON.stringify(input))` with a bounded short-circuiting walk, and
+the clause that paid for the substitution was: *the number is preserved exactly for every submission
+that is accepted*.** The walk is **recursive**. `POST /api/validate/bundle` with a **6 134-byte** body
+— **0.3% of the 2 MiB default** — whose `manifest` holds a nested array throws a **bare `RangeError`
+out of the handler**. The ruled formula measures that same input at 6 134 and keeps answering to depth
+**1 000 000**: V8's serialiser is not recursion-limited and the replacement is.
+
+**So the fix is a regression against the code it replaced, on a shape that code handled** — and the
+clause is not merely violated, it is **silent**: the input is neither accepted nor refused. **No number
+is produced at all.**
+
+**The rule: a justification quantified over the outcomes you enumerated says nothing about the outcome
+you introduced.** *Accepted* and *refused* were the two cases; the substitution added a third — **no
+answer** — and the clause could not see it because the clause's own domain predates it. **A replacement
+argued as equivalent-where-it-matters owes a measurement on the inputs the ORIGINAL handled, not only
+on the inputs the new one targets.**
+
+**Ruled: the bounded walk must be iterative.** An explicit stack keeps D-40-B's O(`maxBytes`) bound and
+D-40-20's number, and removes the stack dependency entirely. **The boundary today is
+host-dependent, not input-dependent** — depth 7 000 direct, 3 000 under the route — which is the
+property that makes it untestable as a threshold and unacceptable as a behaviour.
+
+**Stated limits, the adversary's own:** it rests on one host's stack size (a bigger stack moves where
+it fires, not whether), and whether Next converts the `RangeError` into a 500 or an unhandled
+rejection is **read, not measured**, so the status a caller sees is not established.
+
+**D-40-E, charged against the warrant rather than the wire.** The 22-shape corpus **is a list**, and
+nine divergences were measured in three classes it does not reach: `toJSON` returning a droppable,
+`toJSON` reading its key argument, and boxed primitives. The array case **under-counts ~5x**, which is
+a `maxBytes` bypass through the barrel. All barrel-only. **What is owed is a construction over the
+serialiser's equivalence classes, not three more rows** — the corpus's defect is that it is a corpus.
+
+## A scratch worktree is invisible in BOTH directions
+
+Confirmed from the other side by T040's adversary, whose C1 sweep was **44 full runs of 13 files** from
+`…/scratchpad/c1-worktree`. **It does not name its own worktree, so its own filter drops it; it does
+not name anyone else's, so theirs do too.** Nobody's instrument saw the heaviest sweep of the evening,
+including the instrument belonging to the session running it.
+
+**And a retraction that does not displace survives in shipped code, not only in a document.**
+`limits.ts:40` still states the archive maxima as **17 963** *"measured through this module's own entry
+point"*, and `validate.ts:283` repeats it. Measured through that entry point: **17 947** and **18 195**,
+which is what `measure.test.ts` itself computes. **The retracted figure carries a provenance claim in
+two comments**, which is the form that makes a wrong number look checked.
+
+## A written countermeasure only fires if it is re-read at the moment it applies
+
+**T040's implementer, on the `RangeError` that is its own:** the iterative-walk pattern **was already
+in this preamble**, written about this exact hazard — T010 and T020's `isWellFormedDeep`, made
+*iterative, as the contract demanded*, with one mutable `open` set and an explicit leave-marker frame,
+O(1) per visit. **It wrote a recursive walk anyway**, in the same commit where it converted the cycle
+case from a bare `TypeError` to a typed refusal.
+
+Its own note, and it is the durable part: **reaching for recursion is the default, and a countermeasure
+in a document only works if someone re-reads it at the moment they write a walk — which is not a moment
+anything marks.** A rule catches the person who goes looking. The defect belongs to the person who did
+not know to look, and there is no reliable signal that tells them to.
+
+**Which is the argument for the guard over the rule, again**, and this file has now paid for it four
+times today. The fix is an explicit stack **plus a bound**: an iterative walk over a 100 MB deeply
+nested body still runs, so a frame ceiling has to **refuse as a typed error** rather than by exhausting
+something.
+
+## A retracted mechanism must be struck where it reads as settled, not only where it is wrong
+
+**The false `resolve.ts:191` mechanism survives in two live artefacts on T040's branch**, and its
+author flagged both before anyone asked: the AC5 comment in `lib/server/engine/engine.test.ts`, and its
+own `backend.md` Log entry at `406eba1` together with that commit's message. **Neither is on base**,
+so both belong to whoever holds the tree.
+
+**Its reason for calling them urgent is the point: they are worse than a wrong number because they read
+as the settled end of a three-party question.** *"Sampled becomes proved, from one line"* does
+rhetorical work that a wrong figure does not — **it tells the next reader to stop asking.** A retraction
+that leaves that sentence standing has retracted the claim and left the instruction.
+
+**And it labelled its successor hypothesis instead of promoting it.** Having just lost one mechanism,
+it has another — `sortDiagnostics` normalises diagnostic order, and nothing observably reads
+`blueprint.cards`'s insertion order — and it wrote: *unverified, the same kind of object as the one
+that just failed, and it must not enter a comment or the contract until someone runs it.* **That is the
+correct handling of the thing that got it here**, and it named what would test it rather than leaving
+the next reader to re-derive the question.
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
@@ -4623,7 +4722,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | round 2 fix at `712a6b1`, 12 ahead: D-50-18 at three sites with a per-site witness. Triple identical, `1 failed, 5361 passed, 0 skipped`, base's own t090 red, foreign vitest peak 0, residue zero added. D-50-20 (`FOR UPDATE`) deliberately absent and named as absent |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | blind suite 98 tests, 96 red on the absent module, 33 mutations 32 caught / 0 MISS / 1 equivalent; adversary round 1 FAIL at `cf1f7a1` on D-40-A/B/C plus nine GAPs; round 2 `impl-done` at `e1ca2e4` |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | reverted | adversary round 2 **FAIL** at `a7f0a88`: **D-40-D** wire-reachable — the recursive bounded walk throws a bare `RangeError` on a 6 134-byte body, 0.3% of the limit, where the ruled formula answers to depth 1 000 000; **D-40-E** the 22-shape corpus misses nine divergences in three classes, array case under-counts ~5x, barrel-only. 42 mutations two passes: 31 CAUGHT / 6 MISS / 11 GAP / 0 SILENT GREEN / 0 equivalent. All four claimed equivalents have discriminators. C1's pre-registered green branch hit: `resolve.ts:191` is NOT the mechanism, warrant reverts to sampled. D-40-21's two guards in and falsified. No full suite, owed at a slot |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | todo | — |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -8759,7 +8858,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** impl-done
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
