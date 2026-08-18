@@ -355,6 +355,40 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A derived fill answers "what must I supply?" and never "is that what was published?"
+
+T005's blind author declined to patch the one cell and gave the accounting: **nine columns diverged
+and one reddened, so the other eight agreed by luck.** Fixing `label` restores the luck; it does not
+remove the dependence on it. So its suite now asserts the block's notation at **every published column
+of every table, in both directions** — a column whose nullability disagrees with the block, **and a
+`NOT NULL` column with no default that the block never published at all.**
+
+**The second direction is the one a suite checking its own list cannot see, and it fails worse**: an
+unpublished required column surfaces at write time **inside the consuming task**, where the contract
+can no longer be amended, rather than here.
+
+**And the finding underneath is a cost of deriving that this file had only counted the credit side
+of.** `rows.ts` reading required columns from the catalogue is exactly what absorbed the `account_id`
+amendment without a false red — reported twice as a strength, and it is one. **It is also precisely
+why the suite could not see that the block and the schema disagreed: it only ever read one of them.**
+
+**A derived fill answers *what must I supply?* and never *is that what was published?*** Those are
+different questions, and one instrument was answering the first while being described as answering
+both. Its own comparison is right: **same family as the shell filter — a judgement that stops being
+visible once its output looks like every other output.**
+
+The general form, which reaches every derived domain in this run: **deriving from one artefact makes a
+suite robust to that artefact changing and blind to it disagreeing with a second.** Robustness and
+agreement are opposite properties of the same choice, and the guards here have been claiming the first
+while being read as also providing the second.
+
+**A reclassification comes with it.** M1/M2/M16 each reddened a second `ac8-names` test, which it had
+reported as *its prediction being incomplete*. It was not — `schema.ts` still declares an index
+Postgres no longer reports, so the **agreement** check fires on a *drop* as well as a rename. It built
+that instrument for D-14's rename case and it caught a drop on a path nobody designed it for. **The
+instrument working, not noise**, and worth correcting because a MISS filed against a suite that was
+right teaches the wrong lesson twice.
+
 ## A ruling about a notation belongs in the notation's legend
 
 D-05-08 ruled that an unmarked column in T005's published block is `NOT NULL`. It landed **in prose,
