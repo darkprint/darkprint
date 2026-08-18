@@ -355,6 +355,36 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A count built by describing the groups is a count nobody took
+
+T050's implementer told me **nineteen files**, twice, and I repeated it back. The commit is **22** —
+it had built the number by describing the groups (three modified, five routes, "twelve modules")
+rather than by counting the list it had **already printed**, which holds fourteen under
+`lib/server/accounts/`.
+
+**It was caught by staging by path**: it diffed `--cached --name-only` and counted the output instead
+of trusting the sentence.
+
+*A count is part of a result and it is the part a name cannot fake* — and this one **had a name
+attached and was still wrong**, because the name was a description of a structure rather than a
+reading of a set. The two look identical in a message. And it was wrong in the direction that
+**under-reports what a reviewer has to read**, which is the direction nobody double-checks.
+
+## The delta is measured, the total is arithmetic, and it will not report the second as the first
+
+Its triple was measured at `b06d3e5`; base is now `03956d2`. It could have written `5145 + 65 = 5210`
+and nobody would have queried it. **It refused**, on the grounds that a derivation is not a
+measurement — *which is the whole reason base's line needed an independent confirmation in the first
+place*.
+
+So its statement is: **the `+65` delta is measured, the absolute total against the new base is
+arithmetic.** It also declined to re-take the slot to produce a number nobody had asked for.
+
+That is the reconciliation rule with its provenance attached. This file already requires a handback to
+name the base line it computed against; this adds the sharper half — **say which of your numbers you
+watched and which you calculated**, because both arrive in the same table and only one of them can be
+wrong in a way a rerun would catch.
+
 ## A State says where work IS, and mine said it about a branch with nothing on it
 
 I recorded T050 as `impl-done` at `da606e1`. **`feat/t050-accounts` is at `da606e1` — which is base —
@@ -3405,7 +3435,7 @@ it does not decide differently inside a worktree.
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
-| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | claimed | — |
+| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | — |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | claimed | — |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -7376,7 +7406,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T050, Accounts and sessions
 
-- **State:** claimed
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t050-accounts` (impl), `../darkprint-wt-t050-accounts-tests` (blind)
 - **Branch:** `feat/t050-accounts` (impl), `test/t050-accounts` (blind)
 - **Depends on:** T000 (contract: session), T070 (contract: handle allocation)
