@@ -1143,10 +1143,53 @@ saying so.
 as one decision.** Passing a fault through unwrapped and answering it outside `problem+json` are
 separable, and separating them is the fix.
 
-**The guard is constructed from the code's own declaration, so no list is maintained: every class named
-in `isDecision` must have an arm in `withAccountErrors`.** `isDecision` *is* the module's statement of
-what it recognises; the wrapper's fallback is for what it does not. **A class on one list and absent
-from the other is the contradiction, spelled out in two files that never have to agree by hand.**
+**The guard, corrected before it was written.** My first construction — *every class `isDecision`
+names owes an arm* — is **wrong**, and T050's adversary measured both set differences to show it
+rather than arguing. It reds on `AccountError`, which must **not** be mapped: it is the base of all
+four of T050's own classes, so an arm for it swallows `HandleRequiredError`, `InvalidProfileError` and
+`AccountStoreError` into one status and destroys the four distinct mappings the ruling exists to
+protect. The subtype-aware repair is no better — it reds on `NotAccountOwnerError`, deliberately
+unmapped because no route can produce one and giving it a status publishes a code the contract does
+not list for a case that cannot arise.
+
+**So both obvious constructions demand an arm for a class that must stay unmapped, and the natural
+repair is a hand-written exemption — the maintained list the guard existed to replace.**
+
+**The predicate that works derives the exclusion from where a class comes from, and the split is
+already in the source: every class `isDecision` names that is imported from ANOTHER module's barrel
+must be mapped by name in `withAccountErrors`.** `AccountError` arrives on `from "./errors"` and is
+excluded **structurally, by its import**, not by an exemption anybody maintains; the three from
+`@/lib/server/naming` are the domain. `NotAccountOwnerError` never enters it, because it is not on
+`isDecision`'s list at all.
+
+**And it says the right thing rather than a nearby thing**, which is why it generalises: the wrapper's
+job is the envelope for faults **this module did not author**. A foreign sealed fault has an author
+for its message and needs a status from whoever serves it. That is precisely what D-50-21 is about, so
+a fault class from a third module's barrel is covered the day the import lands.
+
+**The guard must not also carry the re-wrap question.** *Mapped* and *not re-wrapped* are the two
+decisions this ruling separates, and a guard that checks the first must not be read as checking the
+second. `isDecision` holds the second and already does it correctly.
+
+**And the withdrawn construction was not merely wrong, it was self-contradicting with the other ruling
+in the same commit.** T050's implementer, independently and without having seen the adversary's
+message: a **base-class arm** makes the five classes **no longer disjoint siblings** —
+`AccountStoreError` and the rest become subtypes of something the wrapper also matches — so **arm
+order becomes load-bearing at the exact moment the second ruling amends the comment to state that
+nothing depends on it.** The adversary's `0 red, 0 green` on reordering is a fact about *today's*
+disjointness. The naive reading would falsify that premise while the sentence recording it was being
+written.
+
+That is *a ruling can promote an unobserved property into a load-bearing one*, at its sharpest: doing
+it to a property being documented as inert **in the same change**. Both objections — the base class
+and the deliberately-unmapped leaf — are answered by provenance, which demands no base-class arm and
+never admits `NotAccountOwnerError` to the domain at all.
+
+**One gap the provenance predicate does not close, named by the implementer against its own proposal
+rather than left for an adversary: a class published from either barrel that `isDecision` does not
+recognise is outside both designs' domains and reads as intentional.** Recorded as a follow-up, not
+this round — closing it needs a declaration surface, and inventing one inside a fix round is the scope
+creep this ruling was careful to avoid.
 
 **Reachability, labelled the way the adversary labelled it.** `namingStoreError` is raised at three
 sites, two inside `changeHandle`'s transaction. Round 1 measured concurrent same-account renames
@@ -1154,6 +1197,36 @@ deadlocking (40P01) on that exact transaction with `update "account"` as the vic
 so an `AccountStoreError`. **Had Postgres picked the upsert one statement earlier, the same request in
 the same outage would have answered with a different envelope.** The mechanism is measured; that
 particular victim was not driven, and it said so rather than rounding it up.
+
+## A domain constructed to avoid an exemption list owes both set differences
+
+I ruled D-50-21's guard as *every class `isDecision` names owes an arm in `withAccountErrors`*, and
+wrote that **nothing is maintained by hand**. That sentence was a claim about the guard, it was
+false, and **nothing would have redded when it was wrong** — the guard did not exist yet, so the
+claim was safe in exactly the way this file keeps charging.
+
+T050's adversary measured both set differences instead of reading the construction. **Both obvious
+constructions demand an arm for a class that must stay unmapped**: `AccountError` under the naive
+one, `NotAccountOwnerError` under the subtype-aware one. The repair each invites is a hand-written
+exemption — **the maintained list the construction existed to eliminate**, living in the test file,
+away from the thing it exempts, maintained by whoever next hits the red.
+
+**The rule: constructing a domain from the code does not by itself remove the list. It removes the
+list only if the exclusions fall out of a property the code already carries.** Here that property is
+**provenance** — which barrel a class is imported from — and it was already in the source, in the
+import lines, rather than in anybody's head.
+
+**So a constructed domain owes both directions before it is written, not after it reds**: what it
+demands that should not be demanded, and what it omits that should be included. I checked neither. I
+checked that the construction *described* the thing I wanted and stopped, which is the same move as
+auditing the region you are already looking at.
+
+**And the discriminators belong on the table before the guard exists.** It registered two: adding a
+fifth foreign class to `isDecision` and not to the wrapper **must red** — otherwise the guard
+enforces today's four rather than the relation, which is §6.2's *satisfiable by the record of a change
+rather than by the change* — and removing `AccountError` from `isDecision` **must stay green**, or the
+predicate has quietly become "these four names". **A discriminator designed out of reach is cheap to
+state in advance and expensive to find mid-round.**
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
@@ -8423,7 +8496,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **D-50-20, ruled: `changeHandle` takes `SELECT … FOR UPDATE` on the account row, and does NOT retry.** Its implementer's proposal, taken with its reasoning. The measured `40P01` is contention on **one row** — the control is decisive, eight *different* accounts renaming concurrently give 8 fulfilled and 0 rejected — and the cause is a lock-order inversion: a plain `SELECT`, then the reservation insert, then the account update. **Locking the account row first removes the inversion rather than recovering from it**, and every rename of that account then queues on one lock in a consistent order. **Prevention over retry**: a retry loop needs a bound, a backoff and a claim that the whole transaction is safe to replay — three things to get wrong where one line removes the condition.
 
-  **D-50-21, ruled and owed in round 2's fix rather than deferred: `withAccountErrors` answers every class `isDecision` recognises.** `NamingStoreError` is on that list and has no arm, so it leaves through the fallback reserved for what the wrapper does **not** recognise — outside `problem+json`, which is the exact divergence D-50-18 was ruled on. Same `store-failed` 500 as `AccountStoreError`, and **not re-wrapped**: the original travels on `cause` so the operation named in a rendering stays the one that failed. Separating the envelope decision from the wrapping decision is the fix; they were taken as one. **Guard constructed from `isDecision`'s own members** — every class it names owes an arm — so nothing is maintained by hand. Unlike D-50-20 this is the same failure mode and the same remedy one class name apart, so it is not scope creep: a fix that closes a defect for one class has closed an instance.
+  **D-50-21, ruled and owed in round 2's fix rather than deferred: `withAccountErrors` answers every class `isDecision` recognises.** `NamingStoreError` is on that list and has no arm, so it leaves through the fallback reserved for what the wrapper does **not** recognise — outside `problem+json`, which is the exact divergence D-50-18 was ruled on. Same `store-failed` 500 as `AccountStoreError`, and **not re-wrapped**: the original travels on `cause` so the operation named in a rendering stays the one that failed. Separating the envelope decision from the wrapping decision is the fix; they were taken as one. **Guard: every class `isDecision` names that is imported from ANOTHER module's barrel must be mapped by name in `withAccountErrors`.** Not *every member owes an arm* — that construction is withdrawn: it reds on `AccountError`, whose arm would swallow the four distinct mappings this ruling protects, and the subtype-aware variant reds on `NotAccountOwnerError`, deliberately unmapped. Provenance excludes `AccountError` **structurally, by the import it arrives on**, with no exemption for anyone to maintain, and states the actual property: the wrapper owes an envelope for faults **this module did not author**. Unlike D-50-20 this is the same failure mode and the same remedy one class name apart, so it is not scope creep: a fix that closes a defect for one class has closed an instance.
 
   **Its own two caveats are kept rather than smoothed.** It orders same-account renames only; cross-account inversion was not measured and is not thought reachable, since each transaction touches its own account row plus its own target and old reservation rows. **And the witness is a disappearance, not an assertion** — inducing `40P01` deterministically is its own problem, so the strongest available evidence is the adversary's sixteen-way repro returning **0 rejected** after the change. That is weaker than a test and it is what is available; **it is recorded as such rather than dressed up.** Owed in its own round, after the D-50-18 fix lands, with that repro as its measurement.
 
