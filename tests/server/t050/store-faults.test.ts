@@ -309,7 +309,19 @@ function githubStub(githubId: string, login: string): typeof globalThis.fetch {
   }) as unknown as typeof globalThis.fetch;
 }
 
-async function callCallback(githubId: string, login: string): Promise<Response> {
+/**
+ * Drives the shipped callback handler. Takes no identity: the GitHub subject is supplied
+ * by `githubStub`, installed on `globalThis.fetch` by the caller.
+ *
+ * It used to take `githubId` and `login` and use neither, which `eslint` reported as two
+ * unused parameters. They are DELETED rather than `_`-prefixed, and the difference
+ * matters here: underscoring says "intentionally unused" and preserves the appearance
+ * that a caller sets the identity through this function, when the value that reaches the
+ * module comes from the stub on the line above. Both call sites passed the planted secret
+ * twice, once effectively and once inertly, and a later reader varying the arguments to
+ * change the subject would have changed nothing.
+ */
+async function callCallback(): Promise<Response> {
   const state = createOAuthState();
   const mod = (await import("@/app/api/auth/github/callback/route")) as {
     GET?: (request: Request, ctx: { params: Promise<Record<string, string>> }) => Promise<Response>;
@@ -343,7 +355,7 @@ describe("the OAuth callback answers problem+json 500 when the store cannot answ
     const secret = plantedSecret();
     globalThis.fetch = githubStub(`gh-${secret}`, `login-${secret}`);
 
-    const response = await callCallback(`gh-${secret}`, `login-${secret}`);
+    const response = await callCallback();
 
     expect(response).toBeInstanceOf(Response);
     expect(
@@ -380,7 +392,7 @@ describe("the OAuth callback answers problem+json 500 when the store cannot answ
     const secret = plantedSecret();
     globalThis.fetch = githubStub(`gh-${secret}`, `login-${secret}`);
 
-    const response = await callCallback(`gh-${secret}`, `login-${secret}`);
+    const response = await callCallback();
     const setCookie = response.headers.get("set-cookie") ?? "";
 
     expect(
