@@ -355,6 +355,127 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## The blind suite reaches no route, and the routes were published a round ago
+
+T040's adversary charged this as second only to its red, and it is right. **All 81 of T040's blind
+tests bind the module.** `tests/server/t040/**` contains no `Response`, no `POST`, no status code —
+one incidental occurrence across ten files, verified here. Six route mutations reddened **zero** blind
+tests; four were caught by the implementer's own colocated file and **two by nothing at all**.
+
+**D-40-01 and D-40-02 published four paths, four request shapes and three status codes**, and every one
+of them is held by the implementer's own ten tests. That is D-70-12's shape exactly, in a task where
+the surface was published **during** the round rather than before it.
+
+**And the blind author said so at handback**: *"No route tests… I would rather hand back a suite whose
+every number I have measured than one with a file I have not. Say the word and I will add them in a
+second round; the route half is currently held by nothing, which is D-70-12's shape and yours to
+weigh."* **I did not weigh it.** It named the gap, offered the round, and I acknowledged the message
+without answering the question in it.
+
+So the rule this run keeps arriving at has a new instance and a new location: **an offer to close a gap
+is a question, and acknowledging the message it arrived in is not an answer.** The gap was reported by
+the party who could not close it alone, in the words that named its own shape, and it survived to be
+found by an adversary a round later.
+
+## Two rulings on T040's byte guard, and the fix costs the contract nothing
+
+**D-40-B is a real defect and it is the sharp end of D-40-18.** `byteLengthOf` materialises the
+caller's input to measure it. Measured through the published surface: a depth-25 diamond — **26
+objects** — makes the guard throw a bare `RangeError` where a `LimitExceededError` is contractually
+owed, and below that it allocates up to **386 MB of transient heap to decide that a submission exceeds
+2 MB.** The limit performs the resource exhaustion the limit exists to prevent.
+
+**D-40-20, ruled: `Buffer.byteLength(JSON.stringify(input), "utf8")` is normative as a NUMBER, not as
+a PROCEDURE.** The criterion says which submissions are refused, not how the size is computed. A
+bounded walk that short-circuits past `maxBytes` is conforming — and required. **The number is
+preserved exactly for every submission that is accepted**, because past the bound only the comparison
+is ever needed, which is why this costs the ruling nothing. A `seen` set must not be used for the
+**size**, since it would change the number for shared substructure; it is the right instrument for the
+**cycle**.
+
+**D-40-21, ruled: `submissionOf` excluding `input.ontology` is correct and is now published.** An
+`OntologyView` carries the whole of `CORE_ONTOLOGY`, so measuring it charges a caller the curated
+vocabulary against its own upload's budget. No route can set `ontology`, so every wire call gives the
+same number either way — and the implementer reported the deviation rather than taking it quietly,
+which is the only reason it was available to rule.
+
+## Every sha in a report is a measurement, including the ones that are only context
+
+T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
+itself within the hour.
+
+**It is worse than the instance already recorded against T070's implementer, and the difference is the
+finding.** That one was a sha that had been read at some point and then retyped from memory. This one
+was **never read at all**: it ran `git merge backend`, took the **diffstat** off the screen — "backend.md
+only, 64 insertions", accurate — and then **manufactured a plausible hex string to sit beside it,
+because the sentence had a slot for one.**
+
+**The true detail next to it is what made it pass its own reading.** A fabricated value inside an
+otherwise measured block **inherits the block's credibility** — this file's *a false claim supporting a
+true finding is the hardest kind to catch*, with the true claims doing the laundering.
+
+**And the mechanism is not the obvious one, which matters because a rule with the wrong mechanism
+propagates the wrong fix.** It did not forget to run `rev-parse`. **It never captured the merge's
+output as a value at all** — `git merge` prints a diffstat and no sha, so there was nothing to paste,
+and the gap got filled rather than left open or gone back for.
+
+The existing rule — *the sha comes from `git rev-parse HEAD` in the same command that reads porcelain,
+pasted, not retyped* — is written for the **end of a pass**. It does not cover an **intermediate**
+step, which is exactly where this failed: it stamped before and after and invented the middle, because
+the middle was **narration rather than a result**.
+
+**The sharper form, offered against itself: every sha that appears in a report is a measurement,
+including the ones that are only there for context. An intermediate commit nobody will check out still
+gets read, or it gets omitted — and omitting it is strictly better, because an absent sha asks a
+question and a wrong one answers it.**
+
+Worth noting where it happened: from the adversary whose entire job this round is to check other
+people's claims, in the message reporting that it had reproduced a premise of mine rather than trusting
+it. Neither of those made it immune, and it did not offer either as mitigation.
+
+## A handover is confirmed by the side losing the tree, not only announced to it
+
+T050's implementer stood down explicitly rather than merely being told, and gave the reason:
+**a one-writer rule only holds if the outgoing side confirms.** An appointment message is a claim
+about a future state — the incoming session takes the tree *when it acts* — and until the outgoing
+side says it has stopped, both parties believe they know the holder and only one of them has checked.
+
+This file already required a handover to name **the commit and the holder, in both directions**. That
+was written after I appointed one session while telling another its tree was safe. **It was still only
+half the loop**: naming both directions is the sender's job, and confirming is the receiver's *and*
+the leaver's.
+
+## A built `.next` is tree state that porcelain cannot see, and it changes what typecheck reports
+
+The same message, and it is the F-02 trap seen from the far side. The T050 worktree carries a built
+`.next` from its gate runs. It is gitignored, so **`git status` says nothing about it** — and it
+decides the answer to a command anyone would call a gate.
+
+**`npm run typecheck` comes back clean there. It would not have on arrival.** So a session inheriting
+that tree cannot reproduce F-02 without `rm -rf .next` first — and having done so, **must rebuild
+before quoting a typecheck**, or it quotes 18 phantom `TS2304` errors as a finding against the tree
+it inherited.
+
+**Silent in the dangerous direction both ways**: an unbuilt tree manufactures 18 errors in files no
+backend task touches, and a built tree hides the fact that it would have. Nothing in either command's
+output distinguishes them.
+
+**T050's adversary reproduced it rather than taking it from the record, and corrected the wording.**
+*"A built `.next` hides that it would have"* is true of the **worktree** and not of the **artefact**:
+it had already run `npm ci`, and `npm ci` does not touch `.next`. What makes the state invisible is
+that `.next` is **gitignored**, not that anything rebuilt it.
+
+So **the fix is a reading, not a build.** *"Rebuild before quoting"* implies the remedy is to run
+something; the 18 are a function of **one directory's existence**, and `ls .next/types` tells a
+session which side of it it is on before it runs anything at all. The cheapest detector for a hidden
+premise is usually a **look**, and prescribing an action instead hides that the premise was
+checkable.
+
+Which makes it the third member of a set this wave has assembled: a **filter in a pipeline**, an
+**environment variable**, and now a **generated directory** — three premises that change a gate's
+answer, that no artefact records, and that a reader has no way to detect from the output. **A handover
+stamp names the commit and the porcelain, and neither of those sees any of the three.**
+
 ## A count built by describing the groups is a count nobody took
 
 T050's implementer told me **nineteen files**, twice, and I repeated it back. The commit is **22** —
@@ -562,7 +683,7 @@ half-edited claim.
 **Actionable for every worktree in this run, and it has now bitten four sessions.** `.next/types`
 holds a Next-generated global, `tsconfig.json` includes that path, and a worktree that has only ever
 run `npm ci` has no `.next` at all — so its first `npm run typecheck` reports **18 `TS2304: Cannot
-find name 'PageProps'`** across eight `app/**` page files that belong to nobody.
+find name 'PageProps'`** across **nine** `app/**` page files that belong to nobody.
 
 This file already says a new worktree runs `npm ci` before its first gate. **`npm run build` goes in
 the same sentence, before typecheck**, or the first typecheck in every fresh worktree is 18 red and
@@ -3436,7 +3557,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | — |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | tests-written | 98 blind tests on `test/t040-engine`, 96 red on the absent module and 2 module-independent; 98/98 against a throwaway correct reference on three identical runs; 33 mutations, 32 CAUGHT / 0 MISS / 1 equivalent-through-the-sort |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | reverted | — |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
@@ -7509,7 +7630,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** tests-written
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
@@ -7597,6 +7718,10 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         "validateBundle: the node count exceeds the limit of <n> nodes."
 
   `<operation>` is the function's own name. **`maxCards` and `maxNodes` are `validateBundle`'s alone** — a sibling takes one document, so a card count is meaningless and `validateDot` does not enforce `maxNodes` even though it parses a graph, because a limit enforced in two places is two limits.
+
+  **D-40-17 is normative as a NUMBER, not as a PROCEDURE (D-40-20, ruled on T040's adversary's question).** The criterion says which submissions are refused; it does not say how the size is computed. **So a bounded walk that accumulates and short-circuits the moment the running total exceeds `maxBytes` is CONFORMING**, and it is required — see D-40-B. Cost becomes O(`maxBytes`), bounded by the limit rather than by the input graph, and the number is preserved exactly for every submission that is **accepted**, because past the bound only the comparison is ever needed. A `seen` set must **not** be used for the size — it would change the number for shared substructure — and is the right instrument for the **cycle**, which becomes a typed refusal instead of a `TypeError`.
+
+  **D-40-21: `submissionOf` excludes `input.ontology`, and that is now published rather than a deviation.** An `OntologyView` carries the whole of `CORE_ONTOLOGY`, so measuring it would charge a caller the entire curated vocabulary against its own upload's budget — refusing a small bundle for the size of something it did not send and cannot make smaller. No route can set `ontology`, so **every wire call gives the same number under either reading**. Reported by the implementer rather than taken quietly, and confirmed by the adversary.
 
   **D-40-17, `input` byte length is `Buffer.byteLength(JSON.stringify(input), "utf8")`.** Three readings differed by hundreds of bytes on a real bundle. `lib/server/**` is not isomorphic, so `Buffer` is available here; `lib/core` remains the place that may not use it.
 
