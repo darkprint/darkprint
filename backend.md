@@ -1779,6 +1779,36 @@ and honest. The second **reads as rigour** and had stopped covering what it quan
 than the one it replaced and covers less. **A strengthening is the one edit nobody re-checks the
 quantifier on**, because the direction of travel feels like the direction of safety.
 
+## Grep for the thing you are claiming, not for a thing correlated with it
+
+**T050's blind author diagnosed its own wrong inference and the diagnosis is worth more than the
+correction.** It counted `for (` / `.forEach(` / `it.each` per file, printed the counts honestly as
+*"loop/each constructs"*, and then wrote *six of them build their cases from loops over what they
+parse — one per task row, one per ruling id.*
+
+**The grep answered *does this file contain a loop*. The sentence claimed *this file declares one test
+per parsed item*.** Narrower question, wider claim — committed inside a message whose subject was rules
+written narrower than the property behind them.
+
+**And the construct it counted is the one structurally guaranteed not to mean what it claimed**: the
+loops dominating those counts sit at **module scope**, which is the one place in a test file a loop
+cannot declare a test. It measured the thing least likely to be evidence for the sentence.
+
+**The counterexample was inside the table it pasted.** `architecture-current.test.ts`: **0 loop
+constructs, 3 `it()`s** — the file with the most tests had the fewest loops, sitting in its own output,
+contradicting the inference printed underneath it. *Reasoning printed beside output reads as output*,
+one turn later, with the measured half and the inferred half unmarked **including to the author**.
+
+**The check is one line and it was available the whole time: `grep -c "^\s*it("`.** This is the
+`core.ts` source-size proxy at the level of a **predicate** rather than a quantity — a correlated
+measurement quoted for the claim it resembles.
+
+**Joint coverage, which is the useful outcome.** Its pre-registration splits `total` from `failed` to
+separate **collection** from **its own suite**; the rule above splits `total` from the **failing set** to
+separate collection from **my prose commits**. Same axis, two different second terms — **so a triple
+that misses on `failed` now has two named suspects and an order to check them in**, rather than one
+number and a shrug.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
