@@ -2222,6 +2222,29 @@ four sessions have been reporting *zero residue added* against an instrument tha
 two — **the pattern names a claim about where things live**, in the residue check, exactly as it did in
 the contention sampler and in the `17 963` audit. **Residue stamps count `darkprint%` from now on.**
 
+## A session can vanish, and nothing in this run's state tracks sessions
+
+**T040's implementer is gone from the session list.** Its work is committed and its tree is clean at
+`dafe787`, so nothing was lost — **but the context is gone, and with it the triple it owed.**
+
+**The task index records `impl-done` for T040 and is not wrong.** `branch-carries-work` checks that a
+state past `claimed` names a branch ahead of `backend`, and it passes. `task-state-agreement` checks
+two surfaces of the same fact, and it passes. **Every guard I have built measures the TASK. None of
+them measures whether anyone is still working on it.**
+
+**So the failure mode is: a task in a live state, a clean tree, a branch that has moved recently, and
+nobody home.** All four observable signals read as healthy.
+
+**And the owner found it, not me.** *"t050 and t040 do not seem to me they are running"* — from watching,
+against a run whose whole apparatus is instruments. **The guards cover what they were built to cover,
+which is the sentence this file has written six different ways today**, and this is the instance where
+the uncovered region was the existence of the workers.
+
+**The cheap check, which is a reading rather than a guard: a task in an active state owes a live session,
+and the session list is the only place that fact exists.** Reconcile the two before reporting a task as
+in flight. **A dispatch is evidence that I sent a message, not that work is happening** — already in this
+file — and now: **a live task state is evidence about a branch, not about a session.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
