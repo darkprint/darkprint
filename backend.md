@@ -382,12 +382,46 @@ suite robust to that artefact changing and blind to it disagreeing with a second
 agreement are opposite properties of the same choice, and the guards here have been claiming the first
 while being read as also providing the second.
 
-**A reclassification comes with it.** M1/M2/M16 each reddened a second `ac8-names` test, which it had
-reported as *its prediction being incomplete*. It was not — `schema.ts` still declares an index
-Postgres no longer reports, so the **agreement** check fires on a *drop* as well as a rename. It built
-that instrument for D-14's rename case and it caught a drop on a path nobody designed it for. **The
-instrument working, not noise**, and worth correcting because a MISS filed against a suite that was
-right teaches the wrong lesson twice.
+**A diagnosis comes with it, and it is NOT a reclassification — I tried to make it one and was
+corrected.** M1/M2/M16 each reddened a second `ac8-names` test, which it had reported as *its
+prediction being incomplete*. The **diagnosis** is that `schema.ts` still declares an index Postgres
+no longer reports, so the **agreement** check fires on a *drop* as well as a rename — an instrument
+built for D-14's rename case catching a drop on a path nobody designed it for.
+
+**I upgraded those three to HIT on the strength of that. It refused, and its reasoning holds.** Its
+verdict is computed, not judged:
+
+```
+missed     = [p for p in predicted if p not in hit]
+unexpected = [t for t in new if not any(p in t for p in predicted)]
+verdict    = "MISS" if missed or unexpected else "HIT"
+```
+
+**There is no diagnosis anywhere in that expression.** It fires on `predicted ≠ measured` and nothing
+else, and that is the whole of why it is worth having: the failure it exists to catch — the fixture
+that manufactured an impossible row and made a trap read as covered — **is a mutation caught for a
+reason the author did not predict**, and every one of those *looks like a good outcome at the moment
+you diagnose it*.
+
+**So if a MISS can be graded up once its extra red turns out to be legitimate, it only ever survives
+when the author fails to find an explanation — and "I could not explain it" is not a measurement.**
+That is the judgement the mechanism was built to remove, re-entering as a review step.
+
+The taxonomy already carries this without moving the label: `verdict` says whether the prediction
+matched, `unexpected` says which reds it did not name, and **the diagnosis of each unexpected red is
+prose beside it**. A MISS whose diagnosis is *the suite was right and I was wrong* is **still a MISS**,
+and it is the more useful kind, because it is the one that taught the author something about their own
+instrument.
+
+**My worry — that a MISS filed against a correct suite teaches the wrong lesson twice — lands on the
+report rather than on the verdict**, and its report already carried the sentence. **The fix for a
+label that under-describes is a sentence beside it, not a different label.** Recorded as
+`MISS (instrument working, prediction incomplete)`.
+
+Its own placing of this is the reason it spent a message on it: a filter in a pipeline, and
+*reconstructible* meaning *recoverable by me*, were both a judgement quietly substituted for a
+measurement. **A verdict revised after diagnosis is the same substitution — and the diagnosis being
+correct is exactly what makes it hard to see.**
 
 ## A ruling about a notation belongs in the notation's legend
 
