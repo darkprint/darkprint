@@ -1564,6 +1564,37 @@ that just failed, and it must not enter a comment or the contract until someone 
 correct handling of the thing that got it here**, and it named what would test it rather than leaving
 the next reader to re-derive the question.
 
+## Retract where the claim is read from, and keep the claim next to its retraction
+
+**T040's adversary struck the false `resolve.ts:191` mechanism from three artefacts and the method is
+worth copying in each case.**
+
+**The `backend.md` Log entry it marked WITHDRAWN rather than deleted**, quoting the struck sentences
+inside the withdrawal with the measurement beside them — *so the retraction has something to retract*.
+A deleted claim leaves a reader who half-remembers it with nothing to check against.
+
+**The commit message it could not amend without rewriting a sha this run cites, so it retracted it in
+an EMPTY commit** quoting the three false passages verbatim beside the correction. **Empty by design:
+what had to survive is a claim next to its retraction, not a diff.**
+
+**And then it found the one I had missed, in the surface that matters most.** T040's published block on
+`backend` still carried the retracted **17 963**, in a sentence beginning *"Measured by T040's blind
+author"*. **The correction to 17 947 existed only on the test branch** and had been showing up as the
+single line "missing from base" in every merge check all evening — visible, unread, for a day.
+
+**A figure retracted in prose while standing in a declaration reads as checked**, and the declaration
+is what an implementer types from. **Same class as the two module comments it charged, one level up,
+and in the more authoritative surface.** Fixed here: `17 947` own-extensions, `18 195` shared
+vocabulary.
+
+**Narrowing over withdrawal, ruled correct.** It asked whether the neighbouring entry — *AC5's clause
+is defence-in-depth against a future change to `resolve.ts:191`* — should be withdrawn outright or
+narrowed. **Narrowed is right, and the test is whether the retained conclusion has a warrant
+independent of the struck mechanism.** Here it does: the clause stays because **AC5 mandates it**, which
+is the contract and not the mechanism. What it deleted is the false part; what it wrote in its place —
+*`sortedByKey` is unobservable through the published surface and what it defends against is unnamed* —
+is **release-last's shape named honestly rather than dressed up as a reason.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -8959,7 +8990,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **D-40-17, `input` byte length is `Buffer.byteLength(JSON.stringify(input), "utf8")`.** Three readings differed by hundreds of bytes on a real bundle. `lib/server/**` is not isomorphic, so `Buffer` is available here; `lib/core` remains the place that may not use it.
 
-  **`DEFAULT_ENGINE_LIMITS` is asserted as a PROPERTY, not as three numbers** — every archive bundle passes with `limits` omitted, and each default exceeds the archive's maximum. Measured by T040's blind author: largest submission **17 947 bytes** (`grounded-research-desk`), most cards **9**, most nodes **9** (both `checkpoint-resume-runner`). **The 17 963 first published here was wrong by 16 bytes and the cause is reproducible** — see the Log entry of 2026-08-18 correcting it. A test pinning the constant moves with the constant and stops being a bound, which is D-70-17's note about `MAX_NAME_LENGTH` applied here.
+  **`DEFAULT_ENGINE_LIMITS` is asserted as a PROPERTY, not as three numbers** — every archive bundle passes with `limits` omitted, and each default exceeds the archive's maximum. Measured through this module's own entry point, which is what `measure.test.ts` computes: largest submission **17 947 bytes** with each bundle's own extensions, **18 195** with the shared vocabulary applied to all nine; most cards **9**, most nodes **9**. **The blind author's original `17 963` reproduces under no reading and is WITHDRAWN** — it stood here for a day after being retracted in a Log entry, which is the wrong direction: this block is the surface a reader types from, and a figure retracted in prose while standing in a declaration is a figure that reads as checked. Charged by T040's adversary against base, one level up from the two module comments it charged in the tree. A test pinning the constant moves with the constant and stops being a bound, which is D-70-17's note about `MAX_NAME_LENGTH` applied here.
 
 - **Acceptance criteria:** (1) the nine archive bundles return the diagnostics, autonomy class and security level the build computes today; (2) **D-40-01, ruled (a): the verdict stays the caller's.** `bundleProgress` lives in `components/upload/progress.ts (**D-40-01(a): Forbidden to T040; the verdict stays the caller's and no T040 return type carries one**)`, which is Forbidden to T040 and re-exported from nowhere, and `LoadBundleResult` has no field that can carry a verdict. Reimplementing it would be the second opinion `progress.ts`'s own header exists to prevent. So the criterion is a property of what **is** returned: a bundle with three of eight nodes carded returns an **analysis over the three** — `blueprint.nodes.length === 3`, `blueprint.graph.ids.length === 8`, every error in `AWAITING_CARD` or a shadow of it, and an autonomy class that differs from the whole bundle's, not an error; (3) a DOT that fails to parse returns a diagnostic carrying line and column; (4) an oversized submission is refused before parsing, with the limit named; (5) identical bytes return identical output including diagnostic order; (6) a card naming a term the supplied vocabulary lacks returns `card/unknown-term`, never silence.
 - **Out of scope:** persistence, publishing, the archive's own re-validation sweep.
