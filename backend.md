@@ -1734,6 +1734,51 @@ from the outside, and it rewrote the note rather than appending to it. **Same le
 retracted figure from the surface it is read from, applied by its author to their own file without
 being asked.**
 
+## A prose commit moves the FAILING SET, not the total — and I had already measured it
+
+**T050's blind author reasoned that four commits of pure `backend.md` and `docs/ARCHITECTURE.md` could
+move the suite total, because *six of the eight file-parsing guards build their cases from loops over
+what they parse* — one per task row, one per ruling id.**
+
+**Checked by reading the eight files rather than by running anything, since the slot is held.** All
+eight declare their tests **statically**: 1, 1, 2, 1, 2, 1, 3, 1 — **twelve `it` declarations, no
+`it.each`, no `describe.each`, no `it()` inside a loop.** The loops build the **offender list** inside a
+single assertion, not the test cases. **So a prose commit cannot move the total through these guards.**
+
+**But the instinct was right and the corrected form is sharper: what a prose commit moves is the
+FAILING SET.** A guard whose domain is derived from `backend.md` cannot multiply, and it can absolutely
+**flip**.
+
+**And I measured exactly that tonight without noticing what it demonstrated.** At T005's merge:
+
+```
+first run    3 failed | 5206 passed   (5209)
+after fixing the two guard reds
+             1 failed | 5208 passed   (5209)
+```
+
+**Same total, different failing set, and the only thing that changed between them was `backend.md`.**
+Two of my own guards were red — `branch-carries-work` because T005's State had not been set, and
+`rulings-bind` because D-40-D was argued in the preamble and absent from T040's section.
+
+**So the rule that already existed — *two guards parse that file, so prose in `backend.md` is not inert;
+re-gate rather than carrying a triple over it* — is right for a reason its wording does not give.**
+Carrying a total across a prose commit is safe. **Carrying a `failed` count across one is not**, and
+`failed` is the number a triple is actually about.
+
+## Tightening is the move that disguises the narrowing
+
+**T050's blind author, on which of my three narrower-than-the-property instances is worth keeping.**
+
+Two of them wrote a rule against the instance in front of me. **D-50-21's predicate wrote a rule
+against the instance and made it MORE SPECIFIC** — *answers a `Response`* is true of every class
+`isDecision` names; *answers the `store-failed` 500* is **false for two of three.** The first is weak
+and honest. The second **reads as rigour** and had stopped covering what it quantified over.
+
+**Same shape as a tolerance kept after its ambiguity is decided**: an assertion that looks stronger
+than the one it replaced and covers less. **A strengthening is the one edit nobody re-checks the
+quantifier on**, because the direction of travel feels like the direction of safety.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
