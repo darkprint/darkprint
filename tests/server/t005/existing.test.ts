@@ -209,6 +209,42 @@ suite("T005 AC7a — a NULL-owner reservation is unstorable", () => {
     ).toBeNull();
   }, 120_000);
 
+  it("AC7a: an existing reservation cannot be UPDATED to a NULL owner either", async () => {
+    requireT005Shipped(scratch);
+
+    /* Found by auditing this suite's own claims of unobservability rather than by a
+       mutation. The test below asserts the cell is unreachable through ANY writer, and
+       everything backing that claim was an INSERT — which is precisely the gap AC4's own
+       criterion names one file over: a row checked only at birth is mutable to anything
+       afterwards. I wrote that sentence about somebody else's trigger and did not apply it
+       to my own claim.
+
+       NOT NULL happens to hold on UPDATE as well, so this is expected to pass on a correct
+       schema and is not a second way for it to fail. That is the point: the claim was
+       "unreachable through any writer" and the evidence covered one verb, so the assertion
+       was narrower than the sentence it supported. A claim of silence is a measurement, and
+       this is the measurement it was missing. */
+    const account = await existing(f, "account");
+    const handle = marker("owned-then-orphaned");
+    await insertLiteral(scratch.query, "handle_reservation", {
+      handle,
+      account_id: account.id,
+    });
+
+    const attempt = await attemptToDriverError(() =>
+      scratch.query(`update "handle_reservation" set "account_id" = null where "handle" = $1`, [
+        handle,
+      ]),
+    );
+
+    expect(
+      attempt.raised ? (attempt.driver?.code ?? "(no sqlstate)") : "(accepted)",
+      `${CONTRACT.ac7a}\n  A reservation orphaned by an UPDATE is the same garbage row as one ` +
+        `inserted that way: under T070's ruled predicate it refuses everyone forever. T050 ` +
+        `renames handles and is the writer most likely to reach this verb.`,
+    ).toBe(SQLSTATE.not_null_violation);
+  }, 120_000);
+
   it("AC7a: after this, T070's W0/W5 discriminating cell is unreachable through any writer", async () => {
     requireT005Shipped(scratch);
     /* Recorded as an assertion rather than as prose because `backend.md` says it will need

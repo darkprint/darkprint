@@ -475,6 +475,13 @@ export const PUBLISHED = {
     "AC4, ruled: run_report.release_digest text NOT NULL, existence enforced by a trigger " +
     "raising SQLSTATE 23503 — the same code a foreign key raises, so a consumer branching on " +
     "it cannot tell the difference",
+  d0509:
+    "D-05-09, ruled: `run_report.cost_units` is UNQUALIFIED `numeric`, as the block writes it. " +
+    "The shipped numeric(18,6) silently truncates — 0.0000001 stores as 0.000000, so a " +
+    "submitted cost becomes no cost at all with no error, and it feeds T180's median and " +
+    "p10/p90. A bound that TRUNCATES rather than REFUSES is worse than no bound, because it " +
+    "converts a rejectable input into a wrong number. If T180 or T230 wants a bound later it " +
+    "is published in the block AND refuses explicitly",
   d0508:
     "D-05-08, ruled: a column in the published block is `NOT NULL` unless written `NULL`. " +
     "Only NULL is ever written explicitly — deleted_at NULL, revoked_at NULL, edited_at NULL " +
@@ -574,6 +581,51 @@ export const PUBLISHED_COLUMNS: Readonly<Record<string, readonly [string, boolea
     ["revoked_at", true],
   ],
 };
+
+/**
+ * The column types the published block writes out, as `information_schema` reports them.
+ *
+ * Deliberately only the columns the block **names a type for**. Asserting a type for every
+ * column would be inventing a contract: the block gives `target_id text`, `input_size int`
+ * and `cost_units numeric` and is silent elsewhere, and a blind suite that pinned the rest
+ * would red on choices nobody published. Where the legend does state a convention —
+ * timestamps are `timestamptz`, foreign keys are `uuid` — that is already asserted beside
+ * the columns it governs.
+ *
+ * `precision` and `scale` are `null` where the block writes the type unqualified, and that
+ * is the whole of D-05-09: `numeric` and `numeric(18,6)` are the same `data_type` and differ
+ * only in two columns of the catalogue that nothing here read.
+ *
+ * `sqlType` is the same fact on the OTHER side. The type lives in `lib/db/schema.ts` as well
+ * as in the migration, and until now nothing compared them on anything but index names — so
+ * a `schema.ts`-only fix left the database truncating and a migration-only fix left drizzle's
+ * column wrong for whatever generates the next migration, and **both passed the whole suite**.
+ * I reported the drizzle half as unobservable-by-construction; that was a guess offered as a
+ * fact, and measuring it showed `getTableConfig(...).columns[i].getSQLType()` answers
+ * `numeric(6, 3)` for base's `account.validator_weight` and `numeric` for an unqualified one.
+ * Reading `schema` through the published `@/lib/db` barrel is the T010 precedent, ruled
+ * acceptable under D-05-05.
+ */
+export const PUBLISHED_TYPES: readonly {
+  table: string;
+  column: string;
+  /** `information_schema.columns.data_type`. */
+  dataType: string;
+  precision: number | null;
+  scale: number | null;
+  /** What `getSQLType()` must answer on the drizzle side — the other place the type lives. */
+  sqlType: string;
+  clause: string;
+}[] = [
+  { table: "save", column: "target_id", dataType: "text", precision: null, scale: null, sqlType: "text", clause: "save  … target_id text" },
+  { table: "note", column: "target_id", dataType: "text", precision: null, scale: null, sqlType: "text", clause: "note  … target_id text" },
+  { table: "note", column: "body", dataType: "text", precision: null, scale: null, sqlType: "text", clause: "note  … body text NOT NULL" },
+  { table: "run_report", column: "release_digest", dataType: "text", precision: null, scale: null, sqlType: "text", clause: "run_report  release_digest text NOT NULL" },
+  { table: "run_report", column: "input_size", dataType: "integer", precision: 32, scale: 0, sqlType: "integer", clause: "run_report  … input_size int" },
+  { table: "run_report", column: "duration_ms", dataType: "integer", precision: 32, scale: 0, sqlType: "integer", clause: "run_report  … duration_ms int" },
+  { table: "run_report", column: "cost_units", dataType: "numeric", precision: null, scale: null, sqlType: "numeric", clause: "run_report  … cost_units numeric (D-05-09: UNQUALIFIED)" },
+  { table: "api_key", column: "token_hash", dataType: "text", precision: null, scale: null, sqlType: "text", clause: "api_key  … token_hash text NOT NULL unique" },
+];
 
 /** The three writable metrics, and the two a ballot may never carry. */
 export const WRITABLE_METRICS = ["efficacy", "reliability", "transparency"] as const;

@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe as suite, expect, it } from "vitest";
 import {
   PUBLISHED,
   PUBLISHED_COLUMNS,
+  PUBLISHED_TYPES,
   dropScratchDatabases,
   requireT005Shipped,
   scratchDatabase,
@@ -89,6 +90,120 @@ suite("T005 D-05-08 — every published column has the nullability the block giv
     });
   }
 
+  it("D-05-09: `run_report.cost_units` is UNQUALIFIED numeric, so a submitted cost cannot be silently truncated", () => {
+    requireT005Shipped(scratch);
+
+    const column = columnsOf(cat, "run_report").find((c) => c.name === "cost_units");
+    expect(column === undefined ? "(absent)" : null, PUBLISHED.runReport).toBeNull();
+    if (column === undefined) return;
+
+    /* Read from the CATALOGUE, which is the half that decides it. The type lives in two
+       places — `lib/db/schema.ts` and the migration — and `ac8-names` compares those two on
+       unique index names only. A schema.ts-only fix leaves the database still truncating and
+       reds here, because `information_schema` is built from what the migration actually
+       applied. A migration-only fix greens here and leaves drizzle's idea of the column
+       wrong for whatever generates the next migration; that half is not observable through
+       any surface this suite may read, and is reported rather than claimed. */
+    expect(
+      { precision: column.numericPrecision, scale: column.numericScale },
+      `${PUBLISHED.d0509}\n  \`numeric\` and \`numeric(18,6)\` are the same \`data_type\` and ` +
+        `differ only here, which is why nothing in this suite could see it before. A qualified ` +
+        `numeric does not refuse an over-precise cost — it ROUNDS one, and the rounded value ` +
+        `goes into T180's median and p10/p90 as though it had been submitted.`,
+    ).toEqual({ precision: null, scale: null });
+  });
+
+  it("every column whose type the block writes out has that type in the catalogue", () => {
+    requireT005Shipped(scratch);
+
+    /* The general form of D-05-09, scoped honestly. Only columns the block names a type for
+       are here: pinning the rest would be inventing a contract, since the block is silent on
+       most types and a blind suite that filled the silence would red on choices nobody
+       published. What this does buy is that the next qualifier added to any published type —
+       a `varchar(n)` on `token_hash`, a `numeric(p,s)` anywhere — is a red rather than a
+       silent narrowing, which is the class D-05-09 belongs to rather than the instance. */
+    const wrong: string[] = [];
+    for (const t of PUBLISHED_TYPES) {
+      const column = columnsOf(cat, t.table).find((c) => c.name === t.column);
+      if (column === undefined) {
+        wrong.push(`${t.table}.${t.column}: absent`);
+        continue;
+      }
+      const actual = {
+        dataType: column.dataType,
+        precision: column.numericPrecision,
+        scale: column.numericScale,
+      };
+      const expected = { dataType: t.dataType, precision: t.precision, scale: t.scale };
+      if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+        wrong.push(`${t.table}.${t.column}: block says ${render(expected)}, schema says ${render(actual)}   [${t.clause}]`);
+      }
+    }
+
+    expect(
+      wrong,
+      `${PUBLISHED.d0509}\n  A qualifier the block does not write is a bound nobody published, ` +
+        `and a bound that TRUNCATES rather than REFUSES converts a rejectable input into a ` +
+        `wrong number.`,
+    ).toEqual([]);
+  });
+
+  it("`schema.ts` declares the same type the catalogue reports, for every column the block writes out", async () => {
+    requireT005Shipped(scratch);
+
+    /* The mirror of the assertion above, and the falsifier T005's adversary named as the one
+       nobody takes: the type lives in `lib/db/schema.ts` AND in the migration, and until this
+       existed the two were compared on unique index NAMES only. A schema.ts-only fix leaves
+       the database truncating; a migration-only fix leaves drizzle's column wrong for whatever
+       generates the next migration. Both used to pass the whole suite.
+
+       Each side is compared against the BLOCK rather than against the other, on purpose: a
+       direct diff says only that they disagree, while this says which of the two has drifted
+       from the contract — and that is the sentence whoever fixes it needs.
+
+       I had reported this half as unobservable-by-construction. That was a guess presented as
+       a fact; measured, `getTableConfig(...).columns[i].getSQLType()` answers `numeric(6, 3)`
+       for base's `account.validator_weight`, so the drizzle side publishes exactly what is
+       needed. Reaching `schema` through the `@/lib/db` barrel is the T010 precedent, ruled
+       acceptable under D-05-05. */
+    const { schema } = (await import("@/lib/db")) as { schema: Record<string, unknown> };
+    const { getTableConfig } = await import("drizzle-orm/pg-core");
+
+    const byTable = new Map<string, Map<string, string>>();
+    for (const value of Object.values(schema)) {
+      let config: ReturnType<typeof getTableConfig>;
+      try {
+        config = getTableConfig(value as Parameters<typeof getTableConfig>[0]);
+      } catch {
+        /* Not a pgTable — the schema module also exports enums and types. */
+        continue;
+      }
+      byTable.set(config.name, new Map(config.columns.map((c) => [c.name, c.getSQLType()])));
+    }
+
+    const wrong: string[] = [];
+    for (const t of PUBLISHED_TYPES) {
+      const declared = byTable.get(t.table)?.get(t.column);
+      if (declared === undefined) {
+        wrong.push(
+          `${t.table}.${t.column}: no such column on any pgTable in the published schema` +
+            (byTable.has(t.table) ? "" : ` (no pgTable carries the SQL name \`${t.table}\`)`),
+        );
+        continue;
+      }
+      if (declared !== t.sqlType) {
+        wrong.push(`${t.table}.${t.column}: block says \`${t.sqlType}\`, schema.ts declares \`${declared}\`   [${t.clause}]`);
+      }
+    }
+
+    expect(
+      wrong,
+      `${PUBLISHED.d0509}\n  This is the schema.ts side. The assertion above it reads the same ` +
+        `columns from the catalogue, which is built from the migration — so a fix applied to ` +
+        `only one of the two reds exactly one of the two tests, and the message names which.`,
+    ).toEqual([]);
+  }, 120_000);
+
   it("no published table carries a NOT NULL column the block does not name and cannot default", () => {
     requireT005Shipped(scratch);
 
@@ -121,4 +236,10 @@ function publishedFor(table: string): string {
   const key = table.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
   const clause = (PUBLISHED as Record<string, string>)[key];
   return clause ?? PUBLISHED.preamble;
+}
+
+function render(t: { dataType: string; precision: number | null; scale: number | null }): string {
+  return t.precision === null && t.scale === null
+    ? t.dataType
+    : `${t.dataType}(${t.precision ?? "?"},${t.scale ?? "?"})`;
 }
