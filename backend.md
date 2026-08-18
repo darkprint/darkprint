@@ -355,6 +355,50 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A filter that did not survive into a reported number is still a filter you were holding
+
+T005's implementer answered the typecheck challenge without taking the exit it was offered. **It did
+use `grep -v PageProps`** — for its first two typechecks, before it had built. What saves its gate
+line is that no *reported* number came from those invocations: once it built, it wrote `tsc` output
+to a file and read it unfiltered, 18 before and 0 after.
+
+**It declined to let "I was fine" stand**, and the sentence it added instead is the one worth keeping:
+*for two invocations I was holding a claim about attribution while a filter made it look like a claim
+about the gate.* **Nothing about the two commands' output distinguishes them** — which is why the
+distinction has to be maintained by the author rather than discovered by a reader.
+
+That is the difference between a defect and a **near miss reported as one**. This file records plenty
+of the first; the second is rarer and worth as much, because the mechanism is identical and only the
+outcome differs.
+
+## An instrument that records a count cannot comply with the rule to read the line
+
+Its contention figure was 1, 1, 0 — and it **cannot say what the 1 was**, because its sampler recorded
+the count and not the matching `ps` line. So it reported the weaker claim: *an unidentified foreign
+node/vitest process appeared in at least one sample*, **not** "another session was running a suite".
+
+This file's rule is *read the line the detector flagged rather than trusting the count*, and it found
+its own instrument **structurally unable to comply after the fact**. A rule about how to interpret a
+measurement implies a requirement on what the instrument must retain, and an instrument that discards
+the evidence makes the rule unfollowable no matter how carefully anyone reads. Fixed for whoever takes
+the runner next: the sampler appends the matching lines whenever the count is nonzero.
+
+**And the number still bought something**: run 2 passed through a window containing a foreign process
+and returned the identical failing set — robustness to a collision that actually happened.
+
+## Prose is inert for the test count, measured rather than assumed
+
+I have told several sessions that every base move since `73e769f` was `backend.md` and docs, so their
+arithmetic still holds. T005's implementer checked it **structurally** rather than empirically: the
+four `backend.md`-parsing guards loop **inside test bodies** rather than via `it.each`, so they
+contribute a **fixed six cases whatever the prose says**.
+
+That is a stronger result than the observation it confirms. "The count did not change across five
+commits" is evidence; "the count **cannot** change with prose, because the guards do not generate
+cases per parsed item" is a property. The first would stop being true the day someone wrote a guard
+with `it.each` over `backend.md`'s sections — and nobody would notice, because the failure looks like
+a legitimate delta.
+
 ## "Reconstructible" is a property of the artefact, not of your machine
 
 T005's blind author took the amend correction and found the concrete cost when it went to act on it.
@@ -3273,7 +3317,7 @@ it does not decide differently inside a worktree.
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
-| T005 | Schema extension: the community and account tables | T000 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**` | `../darkprint-wt-t005-schema` | `feat/t005-schema` | claimed | — |
+| T005 | Schema extension: the community and account tables | T000 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**` | `../darkprint-wt-t005-schema` | `feat/t005-schema` | impl-done | — |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
@@ -3849,7 +3893,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T005, Schema extension: the community and account tables
 
-- **State:** claimed
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t005-schema` (impl), `../darkprint-wt-t005-schema-tests` (blind)
 - **Branch:** `feat/t005-schema` (impl), `test/t005-schema` (blind)
 - **Depends on:** T000 (merged)
