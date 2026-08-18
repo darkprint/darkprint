@@ -16,6 +16,8 @@
    ============================================================ */
 
 import { randomUUID } from "node:crypto";
+import { is, sql } from "drizzle-orm";
+import { getTableConfig, PgTable } from "drizzle-orm/pg-core";
 import { Pool } from "pg";
 import { createDbClient, migrateUp, schema, type DbClient } from "@/lib/db";
 import { testEnv } from "./env";
@@ -62,23 +64,48 @@ export async function createTestDb(): Promise<TestDb> {
   };
 }
 
-/** Children before the parents they reference — mirrors `migrations/0001_init.down.sql`. */
-const TABLES_CHILDREN_FIRST = [
-  schema.targetActor,
-  schema.target,
-  schema.release,
-  schema.ontologyTerm,
-  schema.ontologyVersion,
-  schema.handleReservation,
-  schema.cardVersion,
-  schema.bundle,
-  schema.audit,
-  schema.account,
-] as const;
-
-/** Empties every table between tests without dropping or re-migrating the schema. */
-export async function resetTestDb(client: DbClient): Promise<void> {
-  for (const table of TABLES_CHILDREN_FIRST) {
-    await client.db.delete(table);
+/**
+ * Every table `lib/db/schema.ts` declares, derived rather than listed.
+ *
+ * It was a hand-written list in child-before-parent order, and T005 is the reason it
+ * is not any more: six tables arrived and the list would have gone on truncating ten
+ * of them. Nothing reds at that — the six are simply never emptied — so the failure
+ * would have surfaced as rows surviving a `beforeEach` in T140, T160, T170, T180 and
+ * T230, five suites that each believe this function cleared them. A list that has to
+ * be edited per table is a list that stops being edited.
+ *
+ * Deriving it also removes the ordering, which was the other thing that could be
+ * wrong: a single `TRUNCATE` over the whole set is order-independent, where N deletes
+ * are only correct if the order is.
+ */
+function allTables(): PgTable[] {
+  /* `unknown[]` first: the namespace holds enums as well as tables, and their union
+     is narrower than `PgTable`, so a predicate against it cannot typecheck. */
+  const exported: unknown[] = Object.values(schema);
+  const tables = exported.filter((value): value is PgTable => is(value, PgTable));
+  /* A derivation that finds nothing would make this function a silent no-op, which is
+     strictly worse than the hand list it replaces: every suite would run against the
+     previous test's rows while its `beforeEach` reported success. Fail closed. */
+  if (tables.length === 0) {
+    throw new Error(
+      "resetTestDb: no tables found in the `@/lib/db` schema export — the derivation is broken, " +
+        "and an empty truncation set would silently leave every suite dirty.",
+    );
   }
+  return tables;
+}
+
+/**
+ * Empties every table between tests without dropping or re-migrating the schema.
+ *
+ * One `TRUNCATE` over all of them rather than a delete per table in dependency order:
+ * a single statement sees the whole set at once, so no foreign key is ever momentarily
+ * violated and there is no order for a new table to be inserted into wrongly. `CASCADE`
+ * reaches only tables referencing the set, and the set is every table there is.
+ */
+export async function resetTestDb(client: DbClient): Promise<void> {
+  const names = allTables()
+    .map((table) => `"${getTableConfig(table).name}"`)
+    .join(", ");
+  await client.db.execute(sql.raw(`truncate table ${names} restart identity cascade`));
 }

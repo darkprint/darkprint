@@ -1,12 +1,19 @@
 /* ============================================================
    DarkPrint backend — Postgres schema
    The index half of B-01 (bytes live in S3, keyed by digest; the
-   index lives here). Covers the nine tables named in T000's
+   index lives here). Covers the ten tables named in T000's
    contract in `backend.md`: account, handle_reservation, bundle,
    release, card_version, ontology_version, ontology_term, target,
-   audit. Every later task's `Owns` list excludes this file, so
-   what is not here has to be added by amending T000's contract,
-   not by editing this file from another worktree.
+   target_actor, audit. Every later task's `Owns` list excludes this
+   file, so what is not here has to be added by amending T000's
+   contract, not by editing this file from another worktree.
+
+   T005 appends six more at the bottom — save, ballot, note,
+   note_vote, run_report, api_key — for five tasks that each have
+   this file Forbidden and so could not add their own. That is the
+   whole of T005's licence: append, plus one named alteration
+   (`handle_reservation.account_id` gains NOT NULL, AC7a). The ten
+   above are otherwise untouched.
 
    Domain shapes (NodeCard, BundleManifest, OntologyTerm, ...) are
    never restated as SQL columns beyond what needs to be queried or
@@ -15,9 +22,12 @@
    which is the one place allowed to know what those shapes mean.
    ============================================================ */
 
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
+  integer,
   jsonb,
   numeric,
   pgEnum,
@@ -88,7 +98,7 @@ export const account = pgTable("account", {
  */
 export const handleReservation = pgTable("handle_reservation", {
   handle: text("handle").primaryKey(),
-  accountId: uuid("account_id").references(() => account.id),
+  accountId: uuid("account_id").notNull().references(() => account.id),
   status: text("status", { enum: ["active", "released"] }).notNull().default("active"),
   reservedAt: timestamp("reserved_at", { withTimezone: true }).notNull().defaultNow(),
   releasedAt: timestamp("released_at", { withTimezone: true }),
@@ -232,10 +242,18 @@ export const target = pgTable("target", {
 
 /**
  * `target` carries aggregate counters only — nothing records *who* acted, so T150's
- * "starring twice yields 1" and T170's "a vote from one account counts once" have no
- * idempotency-key storage to reach for, and every downstream task's `Owns` excludes
- * this file. One row per `(target, account, kind)`; the unique index below is the
- * idempotency guarantee itself, not just an index on top of one.
+ * "starring twice yields 1" had no idempotency-key storage to reach for, and every
+ * downstream task's `Owns` excludes this file. One row per `(target, account, kind)`;
+ * the unique index below is the idempotency guarantee itself, not just an index on
+ * top of one.
+ *
+ * **`kind = "note_vote"` cannot serve T170 and the original wording of this comment
+ * claimed it could.** `target_id` references `target`, whose kind is
+ * `blueprint | card | term` — there is no `note` — so a note vote recorded here is
+ * keyed per *blueprint*, which refuses an account's vote on a second note under the
+ * same blueprint and never notices two votes on one note. T170's "a vote from one
+ * account counts once" is `note_vote` (T005), below. The enum member is left in place
+ * rather than removed: `target_actor_kind` is an existing type and T005 alters none.
  */
 export const targetActor = pgTable("target_actor", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -271,4 +289,247 @@ export const audit = pgTable("audit", {
   index("audit_actor_id_idx").on(t.actorId),
   index("audit_target_idx").on(t.targetKind, t.targetId),
   index("audit_occurred_at_idx").on(t.occurredAt),
+]);
+
+/* ============================================================
+   T005 — the community and account tables
+
+   Six tables for five tasks (T140, T160, T170, T180, T230) that
+   each have this file Forbidden and so could not add their own.
+   Column names and shapes are T005's Published signatures block in
+   `backend.md`, which is this task's whole acceptance surface: it
+   ships no exported function, so the identifiers a raw-SQL test has
+   to type ARE the interface.
+
+   The criteria these satisfy are about what the DATABASE enforces,
+   not about which columns exist. Four of the five consumers have an
+   acceptance criterion only a constraint can deliver — an idempotent
+   save, a ballot that replaces rather than accumulates, one vote per
+   account per note, a report refused against an unknown digest — and
+   a column list held up by caller convention would let all four pass
+   their own tests against a store permitting exactly what they
+   forbid. Each is measured by dropping it: every one flips from
+   refused to accepted, so none is the database refusing for a reason
+   of its own (T-03).
+   ============================================================ */
+
+/* --------------------- save (T140, B-10) --------------------- */
+
+/**
+ * Private bookmarks. `target_kind`/`target_id` carry the target inline rather than
+ * referencing `target.id`, and that is the difference between a save and a star: a
+ * `target` row is the public counters row, so creating one for a save would put a
+ * private bookmark's existence into the table T150 reads aggregates out of. T140's
+ * AC1 makes a save invisible to everyone but its owner "including its count", so
+ * there must be nothing in a shared row to count.
+ *
+ * `target_id` therefore holds `target.ref_id`'s grain — a bundle id, a bare card id
+ * (never `id@version`, per B-10), or an ontology term id — and is **never** a foreign
+ * key to `target.id`, which the name invites and D-05-05 records as the hazard. The
+ * name is the one T005's AC1 writes, kept as written so a suite driving the criterion
+ * by raw SQL finds the column it names.
+ *
+ * The unique index IS T140's AC2 ("saving one target twice is idempotent"). A
+ * `SELECT`-then-`INSERT` passes every sequential test and loses under two callers.
+ */
+export const save = pgTable("save", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  accountId: uuid("account_id").notNull().references(() => account.id),
+  targetKind: targetKind("target_kind").notNull(),
+  targetId: text("target_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("save_account_target_key").on(t.accountId, t.targetKind, t.targetId),
+]);
+
+/* --------------------- ballot (T160, B-11) --------------------- */
+
+/**
+ * One row per `(account, bundle)` with a column per writable metric — D-05-02's
+ * ruling, and the reason is T160's AC1 rather than tidiness: "a ballot cannot write
+ * `autonomy` or `security`" is satisfied **by construction**, because those columns
+ * do not exist. A `metric` column would need an enum or a check to say the same
+ * thing, and a constraint is something that can be dropped.
+ *
+ * Keyed on the **bundle**, never the release: B-11 carries one ballot across
+ * releases, so keying on a release would silently reset a blueprint's standing every
+ * time its author published. The unique index is T160's AC2 — one account voting
+ * twice replaces rather than accumulates, because there is only ever one row to
+ * update.
+ *
+ * The three are **nullable**, so a caller may vote on one metric and not the others
+ * (`castBallot` takes a `Partial<Ballot>`). The consequence reaches T160 rather than
+ * staying here: a sample size is therefore per *metric*, not per ballot, so AC3's
+ * "every aggregate carries its sample size" and AC4's five-vote threshold both count
+ * per metric.
+ *
+ * No aggregate is stored. T160's AC5 — "granting a validator badge changes an
+ * existing aggregate without any vote being recast" — means the aggregate is computed
+ * from these rows against *current* weights at read time; a materialised column
+ * passes every other criterion and fails that one.
+ */
+export const ballot = pgTable("ballot", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  accountId: uuid("account_id").notNull().references(() => account.id),
+  bundleId: uuid("bundle_id").notNull().references(() => bundle.id),
+  efficacy: smallint("efficacy"),
+  reliability: smallint("reliability"),
+  transparency: smallint("transparency"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("ballot_account_bundle_key").on(t.accountId, t.bundleId),
+  /* B-11's 0-100, bounded here rather than trusted. `smallint` alone admits 101 and
+     -1, which is why this is the constraint AC5 asks to be measured at both ends.
+     NULL passes: an unwritten metric is not an out-of-range one. */
+  check(
+    "ballot_metric_range",
+    sql`${t.efficacy} between 0 and 100 and ${t.reliability} between 0 and 100 and ${t.transparency} between 0 and 100`,
+  ),
+]);
+
+/* --------------------- note / note_vote (T170, B-10, B-18) --------------------- */
+
+/**
+ * `{ id, author, body, createdAt }` keyed by the B-10 target (`lib/types.ts:182`),
+ * carried inline for the same reason `save` carries it: a note attaches to a
+ * blueprint or a card, and the identity grain is `target.ref_id`'s.
+ *
+ * **`votes` is not a column.** `lib/types.ts:182` publishes it and it is a derived
+ * count over `note_vote`, so storing it would be a second place holding one fact —
+ * and the one that goes stale silently, since nothing reconciles a counter against
+ * the rows it counts.
+ *
+ * `deleted_at` is B-18's tombstone. The row survives a delete so counts and cursors
+ * stay honest, and T170's AC6 empties `body` at delete rather than filtering at read,
+ * so "its body is unreadable" is true of the storage rather than of the current
+ * reader.
+ *
+ * One timestamp, not a `deleted` flag beside it, and this needs saying because
+ * D-70-22 rules the opposite for `handle_reservation.released_at`: there a released
+ * handle can be reclaimed, so the timestamp is a history fact and `status` is the
+ * only authority on current state. Here B-18 offers no undelete — no appeals, no
+ * report queue — so deletion is terminal and the timestamp is both the history and
+ * the status. `NoteRecord.deleted` is `deleted_at IS NOT NULL`. If an undelete is
+ * ever added, that stops being true and the two facts split again.
+ */
+export const note = pgTable("note", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  accountId: uuid("account_id").notNull().references(() => account.id),
+  targetKind: targetKind("target_kind").notNull(),
+  targetId: text("target_id").notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  editedAt: timestamp("edited_at", { withTimezone: true }),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+}, (t) => [
+  /* T170's AC2 cursor is keyset on `(createdAt, id)` — `createdAt` alone collides
+     under concurrent inserts, which T010 measured at 32 inserts to 12 distinct
+     timestamps. Indexed in the order the page query reads them, so the cursor is a
+     range scan rather than a sort. Not a constraint: nothing in T005's criteria rests
+     on it, and it is here because the criterion it serves is unaffordable without it. */
+  index("note_target_created_idx").on(t.targetKind, t.targetId, t.createdAt, t.id),
+]);
+
+/**
+ * T170's AC4, "a vote from one account counts once", as a unique constraint.
+ *
+ * This table exists because `target_actor` cannot express it. That table keys
+ * `(target_id, account_id, kind)` where `target_id` references `target`, whose kind
+ * is `blueprint | card | term` — there is no `note` member, so `target_actor` with
+ * `kind = "note_vote"` constrains one vote per account per *blueprint*: it refuses an
+ * account's vote on a second note under the same blueprint, and never notices two
+ * votes on one note. The grain is wrong in both directions (D-05-02, ruled).
+ */
+export const noteVote = pgTable("note_vote", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  noteId: uuid("note_id").notNull().references(() => note.id),
+  accountId: uuid("account_id").notNull().references(() => account.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("note_vote_note_account_key").on(t.noteId, t.accountId),
+]);
+
+/* --------------------- run_report (T180, B-16) --------------------- */
+
+/**
+ * A run that happened on somebody else's machine, keyed by the release digest the
+ * CLI submitted (B-16).
+ *
+ * `reported_at` is the caller's timestamp, from the report; `created_at` is when the
+ * registry accepted it. Both, because B-16 says the report carries a time and the
+ * platform never claims to have observed the run — collapsing them would make an
+ * accepted-at read as an observed-at, which is the one thing this table must not
+ * imply. No column is named as a measurement (T180 AC6): the word is `reported`, and
+ * `cost_units` is what a caller submitted rather than anything read off a meter.
+ *
+ * `cost_units` is `numeric` rather than a float because it is a decimal quantity
+ * supplied by a caller and B-16's promise is that the registry stores what it was
+ * given; `double precision` cannot round-trip every decimal the CLI can send.
+ *
+ * `account_id` is the submitting account, for T180's AC5 — a report on one's own
+ * blueprint is accepted and aggregated but must not count toward T130's `validated`,
+ * which needs an account to filter on. It is **not** in T005's Published signatures
+ * block, which lists no submitter; carried here because AC5 is unimplementable
+ * without it, and reported as D-05-07 rather than added silently.
+ *
+ * **`release_digest` is not a foreign key** (D-05-01, ruled). AC4 asked for one and
+ * Postgres refuses it: `release.digest` carries a non-unique index, and the unique
+ * constraint that would let it be referenced is closed twice over — AC7 forbids
+ * altering `release`, and `bundleDigest({ dot, cardDigests })` reads neither owner nor
+ * slug nor version, so an unchanged T110 fork yields a second release at the same
+ * digest and uniqueness would make that fork unpublishable. `run_report_release_exists`
+ * (migration 0002) raises `foreign_key_violation` — SQLSTATE 23503, the code a real
+ * foreign key raises — so a consumer branching on the code cannot tell them apart, and
+ * the criterion's own standard is met exactly: it fails at the driver.
+ *
+ * The trigger fires on insert and update only, so deleting the last release at a
+ * digest orphans its reports where a foreign key would refuse. Guarding that needs a
+ * trigger on `release`, which AC7 forbids; it is recorded against T120, the task that
+ * first deletes a release.
+ */
+export const runReport = pgTable("run_report", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  releaseDigest: text("release_digest").notNull(),
+  accountId: uuid("account_id").notNull().references(() => account.id),
+  model: text("model").notNull(),
+  provider: text("provider").notNull(),
+  hardware: text("hardware").notNull(),
+  inputSize: integer("input_size").notNull(),
+  harnessVersion: text("harness_version").notNull(),
+  costUnits: numeric("cost_units", { precision: 18, scale: 6 }).notNull(),
+  durationMs: integer("duration_ms").notNull(),
+  reportedAt: timestamp("reported_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  /* `reportedCost` aggregates every report at one digest, which is this index. */
+  index("run_report_release_digest_idx").on(t.releaseDigest),
+  index("run_report_account_id_idx").on(t.accountId),
+]);
+
+/* --------------------- api_key (T230, B-17) --------------------- */
+
+/**
+ * `token_hash` is the only trace of the secret, which `issueKey` returns exactly once
+ * and `ApiKeyRecord` deliberately has no field for. Storing a hash rather than the
+ * secret is what makes that structural instead of a rule somebody remembers, and it
+ * is unique because `resolveKey(db, secret)` looks a presented key up by hashing it.
+ *
+ * `ApiKeyRecord.keyId` is this row's `id`: the block publishes no separate public
+ * identifier, and `revokeKey(db, actor, keyId)` addresses the row.
+ *
+ * `revoked_at` is the revocation state, nullable rather than a `revoked` boolean
+ * because "when" is worth keeping and "whether" is derivable from it. Nothing here
+ * can deliver T230's AC4 — "a revoked key is refused immediately" is a prohibition on
+ * caching `resolveKey`, a property of that module and not of this table.
+ */
+export const apiKey = pgTable("api_key", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  accountId: uuid("account_id").notNull().references(() => account.id),
+  tokenHash: text("token_hash").notNull(),
+  label: text("label").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("api_key_token_hash_key").on(t.tokenHash),
+  index("api_key_account_id_idx").on(t.accountId),
 ]);
