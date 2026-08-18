@@ -1343,9 +1343,16 @@ for `vitest`**. `tsc` and `eslint` are neither. **I have been invisible in preci
 designed to detect contention** — my own rule about a guard whose probe cannot reach, aimed at myself,
 found only because a timeout made me look at the load.
 
-**So: while a slot is held, a markdown-only commit runs the file guards and nothing else**, and the
-commit says which gates were skipped and why. Running `tsc` on a document that no TypeScript file
+**So: while a slot is held, a markdown-only commit runs the file guards and nothing else, and the
+commit says which gates were skipped and why** — Running `tsc` on a document that no TypeScript file
 imports is ritual, and here the ritual is paid for by somebody else's numbers.
+
+**AMENDED, and the amendment is here rather than only downstream because leaving it downstream is how
+this sentence did its damage.** *The file guards* are a **`vitest` invocation** — five files, ~2s,
+spiking to ~40% CPU — so this paragraph and the later *any command taking meaningful host CPU is
+slot-gated* **contradicted each other for hours.** The binding form: **the guards may run during a slot,
+AND the grant must declare them.** Not "nothing else", which reads as a licence; not "never", which
+delays rulings behind a triple.
 
 ## A grant to one party and silence toward the rest is one slot announced to two
 
@@ -1885,6 +1892,122 @@ claimed a clean host and been wrong.
 **Its own retraction, kept because the shape is exact:** it wrote falsification 3 to catch a presence
 check and gave it a value — the `store-failed` 500 — that is **wrong for two thirds of its domain.**
 *The same value-versus-presence error, in the sentence fixing it.*
+
+## A label from the party under measurement is data, not a classification
+
+**T050's adversary saw my five-file `vitest` in its own samples, attributed it correctly, and then
+wrote: *the file-parsing guards, the thing you said you would still do, so consistent rather than a
+breach.*** The rule in force was *any `vitest` invocation is slot-gated*. **What it was looking at was
+a `vitest` invocation.** It had the observation and it had the rule, and it resolved them with **my
+name for the activity** rather than against the rule.
+
+**Its diagnosis, which is the entry: a line you keep and then explain away is a line you did not
+read.** That is *reasoning printed beside output reads as output*, one step further along — **where the
+reasoning is a label supplied by the party being measured.** *"The file-parsing guards"* is a statement
+of intent. `vitest run tests/rulings-bind.test.ts …` is the observation. **It let the first stand in for
+the second in the one report whose entire value is that it does not do that.**
+
+**And the tension was mine to have avoided.** I had written *while a slot is held, a markdown-only
+commit runs the file guards and nothing else*, and later *any `vitest` invocation is slot-gated*.
+**Those disagree** — a block that rules and defers produces two correct readings and **the reader binds
+to whichever it reaches first.** It reached the permissive one, **and reached it because it arrived with
+a reassuring label attached.** Displaced above; there is now one reading.
+
+**The adversary's job on that line was to notice the two statements were in tension and REPORT it, not
+to pick.** Picking is what an implementer does. **An adversary that resolves an ambiguity has removed
+the finding**, and the reading it picked was the one that meant it had nothing to say.
+
+**It cost exactly what the measurement was for**: had it flagged the line, I would have found my own
+suite a round earlier. **The detector worked and printed the evidence. The reading did not.**
+
+## A dispatch that contradicts a rule revokes the rule in the only place the recipient reads
+
+**Second contradiction of mine found within the hour, and this one was not in this file at all.**
+
+I wrote *any `vitest` invocation is slot-gated* into the preamble, and then wrote *you do not need one
+for most of this* into T050's implementer's dispatch. **It refused to infer from the older sentence and
+asked by name**, on the ground that the newer rule exists **because** the older shape cost a real
+measurement tonight — three worktrees running in good faith inside somebody's slot.
+
+**The asymmetry is what makes this worse than the last one.** A rule lives in `backend.md`, which a
+session reads once at dispatch and then works from memory. **A dispatch is what the recipient acts on.**
+So a permissive sentence in a brief does not merely sit beside the rule — **it revokes it for that
+recipient**, in the only surface they are reading, and neither party has any instrument that would
+notice.
+
+**Ruled: it waits.** T040's implementer holds the slot and is sampling; **a DB-free run is still a
+`vitest` process group in its samples**, which is precisely the gap between rule-scope and
+detector-scope this run closed today. *You do not need one for most of this* is **withdrawn**.
+
+**And the standing correction: a brief may narrow what a rule permits and may never widen it.** If a
+dispatch needs to grant latitude, the latitude is a change to the rule and belongs in the file first.
+
+## A discriminator carried between contexts keeps its wording and loses its warrant
+
+**T050's implementer, against a prediction I forwarded to it as a requirement.**
+
+F4 was registered as *removing the `NamingStoreError` arm must red a non-empty set **disjoint** from the
+other three*. **It cannot be, by design rather than by construction.** F1 (a fifth foreign class with no
+arm) and F4 both red the **provenance guard**, necessarily — the guard exists to catch *a class
+`isDecision` recognises with no arm*, and F4 introduces exactly that. **A guard that stayed green on F4
+would be a guard that misses the defect it was built for**, so disjointness is not merely unachievable
+here, it would be a **worse** outcome if achieved.
+
+**Where the test came from is the finding.** Disjointness was the right property for the per-**site**
+pairing, where three sites should have three independent observers and a shared mechanism wearing three
+names is the failure. **Transplanted to a mutation against a shared relation it keeps its wording and
+loses its warrant.**
+
+**The right property for the new context:** F4's red set must be a **strict superset** of F1's,
+containing **at least one test no other mutation reds** — the per-class arm test and the transport
+witness, which are naming-specific. **Same discipline, different relation, and the wording had to
+change for the discipline to survive.**
+
+## A snapshot-restore harness must refuse a dirty tree, because the one-writer rule is only a protocol
+
+**T050's adversary found that its own mutation harness would have silently destroyed T050's
+implementer's uncommitted work, and it found it by nearly running it.**
+
+`applyPatch` snapshots a file, mutates it, and `restore` writes the snapshot back. **Any edit another
+writer makes between patch and restore is silently reverted.** With four dirty paths under
+`lib/server/accounts/` and F1–F4 patching `store.ts` and `http.ts` twice each, the harness would have
+snapshotted work-in-progress, mutated over it, and written the snapshot back on top of whatever had
+been typed meanwhile — **with porcelain looking plausible afterwards.**
+
+**Not a contaminated measurement. Somebody's lost work.** Every previous instance of the one-writer
+failure in this run has cost a **measurement**; this one would have cost an implementer its **edits**,
+which is why it is worth a guard in the tool rather than a line in a brief. **A protocol is a reminder,
+and a reminder only reaches the party who remembers to be reminded.**
+
+Mechanised and falsified against the live tree: `applyPatch` reads `git status --porcelain`, refuses
+when dirty, prints the offending paths and the reason, with `SWEEP_ALLOW_DIRTY=1` for when the work is
+its own. **It protects the next holder of any shared worktree, not only its author.**
+
+**And the protocol gap it exposes is real: handover names a commit, but the risk window is between *I am
+done* and *I have committed*.** An implementer with uncommitted work in a worktree another session may
+be told to take is exposed for exactly that interval, and nothing in this run's handover discipline
+covers it. **A tree is handed over at a sha; until there is a sha there is nothing to hand.**
+
+## A readiness claim is a statement about a tree and gets a sha like any other
+
+**The same session dry-checked its F1–F4 patterns and got `ALL PATTERNS PRESENT`. F4's pattern is the
+`NamingStoreError` arm, and it matched — because it read the arm in its UNCOMMITTED, in-flight state.**
+
+It chased the match instead of banking the green, because it had measured **zero** occurrences in that
+file an hour earlier and the change was the tell.
+
+**That result is not wrong. It is unaddressable** — it describes a tree nobody can check out. Same shape
+as *nineteen files that exist in no commit*, arriving as a **preparation** result rather than a gate
+result, **and a green about an uncommitted tree reads exactly like a green about a sha.**
+
+**The rule the existing one did not cover: the stamp discipline was written for measurements, and dry
+runs, pattern checks and readiness claims are measurements too.** Anything asserted about the tree gets
+a sha, **including the things whose whole purpose is to be cheap** — cheapness is why they escape the
+discipline, not a reason they should.
+
+**And its restraint on the arm is the matching half**: it read `storeFailed(request, err.message)` at
+`http.ts:141` in passing, said it looks like the ruled shape, and stopped. **A finding against a line
+that may not survive the next save is a finding about nothing.**
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
