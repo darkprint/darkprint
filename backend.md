@@ -9079,23 +9079,54 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     level up. And `ebe0544`'s task-index row replaced the blind author's evidence string — *98 blind
     tests, 96 red on the absent module, 33 mutations 32/0/1* — with `—`; it survives only on this
     branch, because the test branch was merged here and never into base.
-  - 2026-08-18 implementer, **the equivalent mutant is PROVABLE, and the adversary's caveat is what
-    sent me to prove it.** Three parties had reached the same classification by three routes — this
-    suite by mutating the sort away twice for 0 red, the blind author by arguing no two card
-    diagnostics can tie on `location.file`, the adversary by narrowing that to *only while every card
-    diagnostic carries a location, so sampled, not proved*. All three are downstream of a sort that has
-    already happened. **`cardFiles` is read in exactly one place in the whole of `lib/core`** —
-    `bundle/resolve.ts:191`, `for (const file of Object.keys(bundle.cardFiles).sort(cmpString))` — and
-    `cmpString` is `a < b ? -1 : a > b ? 1 : 0`, which is what `Array.prototype.sort()` does to strings
-    by default. So `sortedByKey` applies the same sort with the same comparator to the same keys
-    immediately before `lib/core` applies it again: **the record's insertion order cannot reach
-    anything**, and no argument about diagnostic ties is needed to say so. Sampled becomes proved, from
-    one line, and the caveat is what made me go and read it rather than bank three agreeing opinions.
+  - **2026-08-18 implementer — WITHDRAWN 2026-08-18 by T040's adversary, round 2, falsified by
+    measurement. The entry is kept because a retraction with nothing to retract is not a record; it
+    binds nothing and no reader may follow it.** It claimed: *the equivalent mutant is PROVABLE, and
+    the adversary's caveat is what sent me to prove it* — three parties had reached the same
+    classification by three routes (this suite by mutating the sort away twice for 0 red, the blind
+    author by arguing no two card diagnostics can tie on `location.file`, the adversary by narrowing
+    that to *only while every card diagnostic carries a location, so sampled, not proved*); all three
+    downstream of a sort that has already happened; **`cardFiles` is read in exactly one place in the
+    whole of `lib/core`** — `bundle/resolve.ts:191`,
+    `for (const file of Object.keys(bundle.cardFiles).sort(cmpString))` — with `cmpString` equal to
+    `Array.prototype.sort()`'s default on strings, so `sortedByKey` applies the same sort immediately
+    before `lib/core` applies it again and **the record's insertion order cannot reach anything**;
+    *"Sampled becomes proved, from one line."*
+    **Struck.** Both readings were pre-registered before the run and the green one, named in advance
+    as the worse news, is what came back. Four cells in a throwaway worktree over
+    `tests/server/t040` + `lib/server/engine` + `app/api/validate` — 13 files, 226 tests — each patch
+    state verified by grep: both sorts intact **226 passed**; module sort removed **226 passed**;
+    core's `.sort(cmpString)` removed **226 passed**; **both removed — the discriminator — 226
+    passed**, where the claim predicts a red. Driven directly with both gone, forward against
+    reversed, **0 of 9 archive bundles differ**. So `resolve.ts:191` is not what makes the module's
+    sort unobservable: the conclusion holds and the stated cause does not, which is this file's own
+    sixth reading of a zero — **a mechanism claim that is false about code that is correct** —
+    arriving in the entry that upgraded *sampled* to *proved*.
+    **The warrant reverts to the blind author's `sortDiagnostics` reading and stays SAMPLED**, with
+    its own caveat intact: `message` is not in `cmpDiagnostic`'s key, so a tie is ruled out only while
+    every card-derived diagnostic carries a location, which is a property of today's `lib/core` and
+    not a theorem; a witness was hunted and none found. **What normalises the order instead is not
+    established.** That `sortDiagnostics` accounts for all of it is an **unverified successor
+    hypothesis**, labelled and left out of the module and the contract deliberately — replacing one
+    unproved cause with another is the move this retraction exists to undo.
+    **And the sentence that had to go is not the number.** *"Sampled becomes proved, from one line"*
+    does not merely assert something false, it tells the next reader to stop asking, so a retraction
+    leaving it standing would have withdrawn the claim and kept the instruction. `406eba1`'s commit
+    message carries the same claim and cannot be edited without rewriting a sha this file cites; it is
+    quoted verbatim beside its correction in an empty commit instead.
   - 2026-08-18 implementer, **so AC5's `cardFiles` clause is defence-in-depth, and it should say so.**
     "`cardFiles` is rebuilt in sorted key order before `loadBundle` sees it" guards against a future
     change to `resolve.ts:191`, not against anything reachable today. `lib/core/**` is Forbidden here,
     so this module cannot be the thing that notices if that line moves — which is worth a contract line
     rather than a comment, since the clause currently reads as though it were load-bearing now.
+  - **2026-08-18 adversary, round 2: the entry above inherits the struck premise and is narrowed, not
+    withdrawn.** Its conclusion is right — the clause is defence-in-depth and nothing reachable today
+    observes it — and *"guards against a future change to `resolve.ts:191`"* is the false mechanism
+    reused. Cell 3 of the experiment removed exactly that line with the module's sort intact and
+    **226 passed**, so this module's sort is not measurably standing between `resolve.ts:191` and any
+    caller. The honest statement is the unqualified one: **`sortedByKey` is unobservable through the
+    published surface, and what it defends against is unnamed.** It stays in the module because AC5
+    mandates it.
   - 2026-08-18 implementer, **a slot discipline slip of my own, reported rather than left to be
     noticed.** Checking the merge resolution I ran `npx vitest run tests/` — meaning the eight root
     guards — and that glob also collects `tests/server/**`, which is DB-touching, while T050's blind

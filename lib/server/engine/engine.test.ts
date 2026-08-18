@@ -109,21 +109,41 @@ describe("AC5 — identical bytes, identical output", () => {
    * producing six diagnostics. So it is an *equivalent* mutant rather than an unobserved
    * behaviour, and those two produce the same zero.
    *
-   * **The mechanism is one source line, and it makes the equivalence provable rather than
-   * sampled.** `cardFiles` is read in exactly one place in the whole of `lib/core` —
-   * `bundle/resolve.ts:191` — and that place is
-   * `for (const file of Object.keys(bundle.cardFiles).sort(cmpString))`. `cmpString` is
-   * `a < b ? -1 : a > b ? 1 : 0`, which is what `Array.prototype.sort()` does to strings by
-   * default. So `sortedByKey` applies the same sort, with the same comparator, to the same
-   * keys, immediately before `lib/core` applies it again. **The record's insertion order
-   * cannot reach anything**, and no argument about diagnostics is needed to say so.
+   * **The mechanism claimed here was wrong, and the correction is a measurement.** This
+   * comment used to argue that `cardFiles` is read in exactly one place in `lib/core` —
+   * `bundle/resolve.ts:191`, `for (const file of Object.keys(bundle.cardFiles).sort(cmpString))`
+   * — and that `sortedByKey` therefore applies the same sort immediately before `lib/core`
+   * applies it again, so *the record's insertion order cannot reach anything* and no argument
+   * about diagnostics was needed. **That upgraded the claim from sampled to proved, and T040's
+   * adversary falsified it in round 2 with the reading pre-registered in both directions
+   * before the run.**
    *
-   * Three parties reached the equivalence by three routes — this suite by mutation, the
-   * blind author by reasoning that no two card diagnostics can tie on `location.file`, and
-   * the adversary by narrowing that to "only while every card diagnostic carries a
-   * location, so sampled, not proved". All three are right and all three are downstream of
-   * a sort that already happened. Recorded because the caveat is what sent me to read the
-   * call site, and the call site settles it.
+   * Four cells, in a throwaway worktree, over `tests/server/t040` + `lib/server/engine` +
+   * `app/api/validate` — 13 files, 226 tests — with each patch state verified by grep:
+   *
+   *     module sortedByKey   core .sort(cmpString)   result
+   *     INTACT               INTACT                  226 passed  (baseline)
+   *     REMOVED              INTACT                  226 passed
+   *     INTACT               REMOVED                 226 passed
+   *     REMOVED              REMOVED                 226 passed  <- predicted to RED
+   *
+   * With **both** sorts gone, permuting the record still changes nothing: driven directly,
+   * forward against reversed, **0 of 9 archive bundles differ**. So `resolve.ts:191` is not
+   * what makes the module's sort unobservable, and a true conclusion was resting on a false
+   * cause — the reading this repository's own notes call *a mechanism claim that is false
+   * about code that is correct*.
+   *
+   * **So the warrant reverts to the blind author's, and it stays SAMPLED.** `sortDiagnostics`
+   * orders every array `loadBundle` returns, and a tie needs two diagnostics from one card
+   * agreeing on severity, file, line, column and code and differing only in `message` —
+   * possible in principle, ruled out only while every card-derived diagnostic carries a
+   * location, which is a property of today's `lib/core` and not a theorem. A witness was
+   * hunted across the nine bundles, an under-carded bundle, unparseable files, duplicate ids,
+   * empty documents and unknown terms, and none was found. **Equivalent through the published
+   * surface, sampled.** What normalises it instead is not established: that `sortDiagnostics`
+   * is the whole of it is an unverified successor hypothesis, and it is left labelled that way
+   * rather than written in as the new mechanism, because replacing one unproved cause with
+   * another is what this correction exists to undo.
    *
    * What that leaves the clause: AC5's "`cardFiles` is rebuilt in sorted key order before
    * `loadBundle` sees it" is **defence-in-depth against a future change in `lib/core`**,
