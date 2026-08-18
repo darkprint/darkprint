@@ -2009,6 +2009,37 @@ discipline, not a reason they should.
 `http.ts:141` in passing, said it looks like the ruled shape, and stopped. **A finding against a line
 that may not survive the next save is a finding about nothing.**
 
+## A commit's claims and its evidence must have the same scope
+
+**T050's implementer reversed the discipline it used one round earlier and stated the reversal instead
+of performing it quietly, which is what makes it a rule rather than an inconsistency.**
+
+Last round it **held the commit** until the triple was measured, *so the sha names the tree the numbers
+describe*, and that was right. This round it **committed immediately**, labelled `UNVERIFIED` in the
+first line, naming what ran — `typecheck 0`, `lint 0`, unfiltered — and what did not: `npm test`, any
+scoped run, the four falsifications, the transport witness.
+
+**The rule that survives both: the commit's claims and the commit's evidence must have the same
+scope.** Last round the only risk was a **wrong number**, so waiting was how the two matched. This round
+the risk was **the working state itself** — another session's harness was one command from reverting it
+— and a commit that claims nothing costs nothing to make early. **"Commit late" was never the rule; it
+was one solution to the rule, in the case that happened first.**
+
+**And it applied the unaddressable-green finding to itself before anyone did it for them.** Its previous
+message reported *typecheck 0 and lint 0, four files under change* — **a tree with no sha, which nobody
+could check out and which no longer exists.** Two of its three claims that evening described an
+unaddressable tree, and the adversary's F4 pattern matching its uncommitted arm is **the same defect with
+a second party downstream of it.**
+
+**Its corollary to the handover gap, from the side that caused it: an implementer's "done" is not a
+handover and should not read as one.** It wrote *built, not run*, and that was taken — reasonably — as a
+tree safe to inspect. **The window between *I am done* and *I have committed* has no sha in it by
+definition, so every discipline in this run, all of which anchor to a sha, is blind to the one interval
+where the tree is most fragile.**
+
+**And the reason the near-miss report is usable at all**: the adversary wrote **nothing** in the
+worktree while investigating. *Had it written anything, I could not now tell its edits from my losses.*
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -5166,7 +5197,7 @@ it does not decide differently inside a worktree.
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
-| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | D-50-18 fix at `712a6b1`. Adversary round 3 at `1192181`: **blind axis 0 red on all six, pre-registered**, 0 SILENT GREEN — the blind suite has no assertion at any of the three sites. Triple identical, `1 failed, 5423 passed, 0 skipped` of 5424; gates 0 unfiltered; reconciliation `5424 - 215 = 5209`, exact against base's merge-verification line. **D-50-21 not yet landed** — verdict waits on the fix |
+| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | D-50-21 built at `ac6064d`, 20 ahead, **labelled UNVERIFIED in the commit**: `typecheck 0`, `lint 0` unfiltered, **no `vitest` of any kind** — slot held elsewhere. The `NamingStoreError` arm not re-wrapped, the disjointness clause plus `armsNotDisjoint()`, the behavioural provenance guard failing closed twice, and an `ALTER TABLE … RENAME` transport witness. Adversary round 3 at `1192181` measured the D-50-18 tree: blind axis **0 red on all six, pre-registered**, triple identical `1 failed, 5423 passed, 0 skipped` of 5424, reconciliation exact. Verdict waits on F1/F2/F3'/F4 against `ac6064d` |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | reverted | adversary round 2 **FAIL** at `a7f0a88`: **D-40-D** wire-reachable — the recursive bounded walk throws a bare `RangeError` on a 6 134-byte body, 0.3% of the limit, where the ruled formula answers to depth 1 000 000; **D-40-E** the 22-shape corpus misses nine divergences in three classes, array case under-counts ~5x, barrel-only. 42 mutations two passes: 31 CAUGHT / 6 MISS / 11 GAP / 0 SILENT GREEN / 0 equivalent. All four claimed equivalents have discriminators. C1's pre-registered green branch hit: `resolve.ts:191` is NOT the mechanism, warrant reverts to sampled. D-40-21's two guards in and falsified. No full suite, owed at a slot |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | todo | — |
