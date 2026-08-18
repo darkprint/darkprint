@@ -355,6 +355,63 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## An absent class leaks by not existing, and a constructed domain is only as complete as what it constructs over
+
+T050's adversary drove a closed-port probe at **T080's** routes, because *a claim about a precedent is
+a claim about more than one tree*. Result: `GET /api/cards` and `GET /api/blueprints` throw a raw
+`DrizzleQueryError` **whose message opens with the full `select … from "bundle"`** — out of a merged,
+tagged route.
+
+**Verified here, and worse than reported.** Five of six server modules ship an `errors.ts`.
+`lib/server/registry/` ships **none**, its only `catch` is `snapshot.ts`'s `canonicalJson` fallback,
+and its eleven routes carry no boundary. `params:` is empty only because that query is unparameterised;
+a parameterised one carries the bound values, which is **D-13's clause verbatim**.
+
+**And `tests/error-hygiene.test.ts` is structurally blind to it.** That guard builds its domain by
+construction — every export whose `prototype instanceof Error` — and **T080's barrel exports no error
+class**, so the domain is empty and the guard is green over the module with the leak. **An absent class
+leaks by not existing.**
+
+This is the strongest counter-example this run has to its own favourite move. A domain built by
+construction is only as complete as **the thing it constructs over**, and constructing over *exported
+error classes* silently exempts any module that has none — which is exactly the module most likely to
+be leaking. The guard's floor (`>= 8`) does not help: it counts across all modules, so one module
+contributing zero is invisible inside a total that other modules satisfy.
+
+Closed by `tests/store-modules-seal-their-faults.test.ts`: **a `lib/server/*` module that imports
+`@/lib/db` must export at least one error class.** Derived from what a module *reaches* rather than
+from a list, so the next database-touching module is covered on the day it lands.
+
+**T081 carries the fix**, and the adversary's distinction is the reason it is a separate task rather
+than a note on D-50-18: **T050's is an envelope defect** — the class is recognised, sanitized and
+published, and only the wrapper is missing. **T080's is a leak** — there is nothing to wrap. The store
+wrapper comes first and the envelope second.
+
+**Its disposal was right in both directions**: it reported rather than charged, since T080 is merged
+and not its task, and it separated the two defects rather than filing them together because they share
+a symptom.
+
+## D-50-18 was implemented as narrowly as its worked example
+
+The same message, on the ruling I had just made. Four routes wrap with `withAccountErrors`;
+**`GET /api/account` does not wrap at all** — it is `withSession(request, …)` with no error boundary —
+so adding the `AccountStoreError → 500` arm fixes four routes and leaves the read route throwing.
+
+**A ruling implemented as narrowly as its worked example** is this file's own recurring shape, and the
+worked example here was `withAccountErrors` because that is the file the divergence was found in. The
+ruling's scope is *a store fault answers `problem+json`*, and the surface is **every route that can
+have one**.
+
+A third site is labelled `read, not measured`: the OAuth callback calls `upsertFromGitHub` with a
+`problem(… 502 …)` for a GitHub-side failure and nothing for a store-side one. It judged the signed
+state cookie not worth the round and said so rather than driving it.
+
+**And the ruling made an unobservable region observable, which nobody predicted.** Its own §3 had
+established that a correct **door** ruling put the sanitizer's whole fault path out of the blind suite's
+reach. D-50-18 puts it back **at the transport** — point `DATABASE_URL` at a closed port, drive the
+route, assert `problem+json` 500 — which needs **no database and no gate slot**, making it one of the
+cheapest assertions in the task rather than one of the most expensive.
+
 ## Publishing a ruling that was granted in a reply owes the recipient its new number
 
 T050's adversary found that **twelve `D-50-xx` ids cited in the blind suite do not resolve to what they
@@ -3606,6 +3663,7 @@ it does not decide differently inside a worktree.
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | — |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | blind suite 98 tests, 96 red on the absent module, 33 mutations 32 caught / 0 MISS / 1 equivalent; adversary round 1 FAIL at `cf1f7a1` on D-40-A/B/C plus nine GAPs; round 2 `impl-done` at `e1ca2e4` |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
+| T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | todo | — |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | — | — | todo | — |
@@ -8092,6 +8150,19 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   - 2026-08-15 blind test author: **route binding was a defect in this suite and it was mine.** It read the published URL templates as App Router folder syntax and imported eleven route modules literally, which fails `tsc --noEmit` and `npm run build` — a dynamic `import()` specifier resolves at **compile time**, so it was a blocked gate rather than six red tests. Two things were wrong beyond the breakage, and the first is why the implementation could not fix it: **the published paths are URLs and `CARD_ID` admits an `owner/name` namespace**, so no literal `[id]` folder can express every valid id and serving both sub-resources from the catch-all is correct; and **a module-path binding is unsatisfiable by any correct implementation whose layout differs from the prose I read it out of**. The third was quieter — the precedence test it carried, "`/api/cards/duplicates` is not shadowed by `[...ref]`", imported the duplicates module *directly*, so no shadowing was reachable by it in either direction. A guard that could not fail, inside the binding that broke the build.
   - 2026-08-15 blind test author: **both gaps closed and falsified. 259 tests over 9 files** — surface 28, records 35, users-of 10, phase-buckets 12, unknown-key 9, privacy 120, scores 8, routes 29, build-parity 8. **Gap 1, the join, is the one that mattered and the diagnosis was exact:** the privacy sweep hands an `Actor` straight to the readers and `routes.test.ts` drove routes anonymously, so each half was covered and the step connecting them was not. A session is now minted through T000's own published surface — `encodeSession` and `SESSION_COOKIE_NAME` from `@/lib/server/auth`, a new dependency for this suite and a merged one — and `callRoute` takes headers. The assertion is an **equality against the reader's own answer for that actor**, `route(signed in as A) === reader(account A)`, with both required to differ from `route(anonymous)`; a hand-written expectation would have been a third opinion rather than a check on the join. **A second owner was necessary**: with one, "the session became an account actor" and "the session became an operator" produce the same body and only half the join is observed. Falsified both ways — `actorFrom` returning ANONYMOUS unconditionally reds **4**, widening every session to an operator reds **3**. Gap 2, `card()`'s ref canonicalisation, reds **1** on a padded ref, which is the only input separating the two implementations. Reference **259/259** green, measured on **both** route layouts again: eleven files with `[id]` and `[...ref]` siblings, and nine with the catch-all serving both sub-resources.
   - 2026-08-15 implementer, round 2: **three defects addressed, two falsified, and the gate block cleared by implementation rather than by a suite rewrite.** Took the adversary's tree at `a2cac88` rather than re-merging, then merged `backend` at `110dd6b`.
+### T081, Registry store wrapper: D-13 for the read model
+
+- **State:** todo
+- **Depends on:** T080 (merged)
+- **Owns:** `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**`
+- **Contract:** D-13 says no rejection may carry the failed statement or its bound parameters. **T080 ships no error class and no store wrapper**, so a driver failure escapes a merged, tagged route as a raw `DrizzleQueryError` **whose message opens with the full query**. Measured by T050's adversary against a closed port: `GET /api/cards` and `GET /api/blueprints` both threw `Failed query: select "id", "owner_id", "slug", … from "bundle"`. `params:` was empty only because that query is unparameterised — a parameterised one carries the bound values, which is D-13's clause verbatim.
+
+  Five of six server modules ship an `errors.ts`; `lib/server/registry/` has one `catch`, in `snapshot.ts`, for `canonicalJson`. **This is not an envelope defect like T050's D-50-18** — there the class is recognised, sanitized and published and only the wrapper is missing. **Here there is nothing to wrap.** The store wrapper comes first and the envelope second.
+
+- **Acceptance criteria:** (1) `RegistryStoreError` is exported from `@/lib/server/registry`, sealed to D-13's four-part clause, carrying **the operation alone** — no statement, no bound parameter, no SQLSTATE — with the driver error on `cause`; (2) every published read wraps, measured by pointing `DATABASE_URL` at a **closed port** and driving each one, so the check needs no live database and no gate slot; (3) **no rejection from any published function contains a substring of the SQL it ran**, quantified over the whole surface with a floor so an empty case list reds; (4) **D-50-18 applies here**: a store fault answers `problem+json` **500** with `type` `https://darkprint.io/problems/store-failed`, not Next's generic 500, on all eleven routes; (5) `tests/error-hygiene.test.ts` measures the new class at both arities — it could measure nothing before, because the barrel exported no error class at all.
+- **Out of scope:** any change to what the reads return. This is the fault path only.
+- **Log:**
+
 ### T090, Distribution and export artefacts
 
 - **State:** merged
