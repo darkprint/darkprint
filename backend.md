@@ -2128,6 +2128,50 @@ S1's first pattern outright when the pattern did not match.
 defect**, and only reading the patched file separates them. **That is a seventh reading of a zero and it
 is the only one the harness cannot classify.**
 
+## Do the work that can fail cheaply before you hold the expensive resource
+
+**T040's implementer merged base while the slot belonged to someone else, deliberately, and it
+conflicted** — one hunk, the task-index rows for T050 and T040. **Discovering that while holding a
+scarce slot would have spent the slot on a merge.** Discovering it off-slot cost nothing but `git`.
+
+**The rule generalises past merges: anything that can fail, and whose failure costs time rather than
+measurement, belongs BEFORE the scarce resource is held.** A slot is for the things that genuinely
+require it. Every minute of a held slot spent on something that could have been done idle is a minute
+taken from every session in the queue — and the failure that eats it is by definition the one nobody
+predicted, which is why it cannot be scheduled around and must be moved out of the window entirely.
+
+**Its resolution is the other half.** A task-index row is **a unique record keyed by task id**, so it is
+not the append-only case and there is no *keep both*. Base's rows won on both — newer for T050, and
+**better for T040 than its own**, because base carried round 3 while its copy still carried round 2.
+
+## A merge check must run in both directions
+
+**The standing check is *every line present in base must survive*, and it has paid twice in this run.
+T040's implementer also ran it the other way: had recording round 3 on base DUPLICATED its Log entry?**
+
+It had not, and the way it settled the ambiguity is the method: `"10 mutations, 9 CAUGHT, 1 equivalent"`
+appears twice in its copy and once in base, and **the second occurrence is base's task-index row, not a
+repeated entry.** A count of two would have read as duplication; **reading where each one sits is what
+distinguished a summary from a copy** — the same instrument that classified the eight remaining
+`17 963` by surface rather than counting them.
+
+**One-directional merge checks catch deletion and are blind to duplication**, and duplication in a Log
+is the failure that makes a record look corroborated by itself.
+
+## A sweep's caught count is not evidence about its zero
+
+**T040's implementer, on the seventh reading of a zero, applied to its own result and against its own
+interest:**
+
+**"Nine caught says nine edits expressed their names. It does not say the tenth's zero means what I
+called it."**
+
+Its sweep was 9 CAUGHT / 1 equivalent, and it had **already been wrong once in that task about a
+mutation doing what its name said**. So the nine are evidence that nine patches were well-formed and
+observable — **and carry no information at all about whether the tenth patch expressed the defect it is
+named for.** The strong result and the weak one are independent, and the strong one is what makes the
+weak one feel supported.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
