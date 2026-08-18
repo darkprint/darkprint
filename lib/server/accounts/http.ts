@@ -18,16 +18,29 @@
    from 401 (no session at all) and from 404 (a resource you may
    not see). `InvalidProfileError` becomes 400.
 
-   **Everything else is RE-THROWN, deliberately.**
-   `NotAccountOwnerError` is unmapped because no route can produce
-   one: every route passes `session.accountId` as the account it is
-   acting on, so `can(actor, "write", { kind: "account", accountId })`
-   compares an id against itself. Giving it a status would publish a
-   code the contract does not list, for a case that cannot arise —
-   and if it ever arises it is the session and the row disagreeing,
-   which is a server fault and not something to tell a client.
-   `AccountStoreError` is unmapped for the plain reason: the
-   registry being unable to answer is a 500, not an answer.
+   **`AccountStoreError` becomes a 500 `problem+json` (D-50-18),
+   and the reasoning it replaces was mine and was wrong.** This
+   wrapper used to re-throw it, on the argument that *the store
+   being unable to answer is a 500, not an answer*. Throwing does
+   produce a 500 — **Next's own generic one, outside the envelope
+   every other failure on the route uses**, and unobservable to
+   anything driving the handler directly. B-03 makes a transport
+   failure `problem+json`, and T090's merged `serve.ts` argues
+   exactly this and answers a `Response`. The deciding detail is
+   what a re-throw arm is *for*: what the wrapper does **not**
+   recognise — a bug — and `AccountStoreError` is published,
+   recognised and sanitized, so putting it there dressed a known
+   condition up as an unknown one.
+
+   **Everything else is still RE-THROWN, and that arm now means
+   only what it should.** `NotAccountOwnerError` is unmapped
+   because no route can produce one: every route passes
+   `session.accountId` as the account it is acting on, so
+   `can(actor, "write", { kind: "account", accountId })` compares an
+   id against itself. Giving it a status would publish a code the
+   contract does not list, for a case that cannot arise — and if it
+   ever arises it is the session and the row disagreeing, which is a
+   server fault and not something to tell a client.
    ============================================================ */
 
 import type { SessionPayload } from "@/lib/server/auth";
@@ -39,7 +52,7 @@ import {
 } from "@/lib/server/http";
 import { HandleTakenError, InvalidNameError } from "@/lib/server/naming";
 import type { Actor } from "@/lib/server/policy";
-import { HandleRequiredError, InvalidProfileError } from "./errors";
+import { AccountStoreError, HandleRequiredError, InvalidProfileError } from "./errors";
 
 /**
  * The session, as T060 wants it.
@@ -67,7 +80,22 @@ function handleRequired(request: Request, detail: string): Response {
 }
 
 /**
- * Runs a route body and maps this task's four client-visible rejections.
+ * The `problem+json` 500 D-50-18 requires. Built from T000's exported base for the same
+ * reason the 403 is, and carrying the rejection's own message, which is the published
+ * form and therefore the operation and nothing else — no statement, no bound parameter,
+ * no SQLSTATE.
+ */
+function storeFailed(request: Request, detail: string): Response {
+  return problem(request, {
+    type: `${PROBLEM_TYPE_BASE}/store-failed`,
+    title: "Store failed",
+    status: 500,
+    detail,
+  });
+}
+
+/**
+ * Runs a route body and maps this task's five client-visible rejections.
  *
  * A wrapper rather than a `catch` in each route, for `withSession`'s reason one layer
  * down: a mapping applied at five call sites is a mapping with a call site that
@@ -90,6 +118,9 @@ export async function withAccountErrors(
     if (err instanceof InvalidProfileError) return badRequest(request, err.message);
     if (err instanceof HandleTakenError) return conflict(request, err.message);
     if (err instanceof InvalidNameError) return badRequest(request, err.message);
+    /* Last, and deliberately after the four decisions: a store fault is the fallback
+       among things this wrapper recognises, never the first thing it tries. */
+    if (err instanceof AccountStoreError) return storeFailed(request, err.message);
     throw err;
   }
 }

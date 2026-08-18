@@ -17,11 +17,15 @@
    which need the gate slot, which T050's blind author holds.
    ============================================================ */
 
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { LONE_HIGH_SURROGATE, NUL, nulInside, surrogateInside } from "@/tests/support/control-bytes";
 import type { schema } from "@/lib/db";
 import { HandleTakenError, InvalidNameError, NamingStoreError } from "@/lib/server/naming";
-import type { Db } from "@/lib/db";
+import type { Db, DbClient } from "@/lib/db";
+import { createDbClient } from "@/lib/db";
+import { encodeSession, SESSION_COOKIE_NAME } from "@/lib/server/auth";
+import { GET as getAccountRoute } from "@/app/api/account/route";
+import { AccountStoreError } from "./errors";
 import { HandleRequiredError, InvalidProfileError, NotAccountOwnerError } from "./errors";
 import { changeHandle } from "./handle";
 import { upsertFromGitHub } from "./github";
@@ -292,6 +296,111 @@ describe("withStore: a decision is never sanitized into a fault", () => {
 
   it("returns the value untouched when nothing throws", async () => {
     expect(await withStore("getAccount", async () => "ok")).toBe("ok");
+  });
+});
+
+
+describe("D-50-18: a recognised, sanitized fault answers problem+json 500", () => {
+  const request = new Request("https://darkprint.io/api/account");
+  const raise = (err: unknown) => async (): Promise<never> => {
+    throw err;
+  };
+
+  it("maps AccountStoreError to 500 with the published type and its own message", async () => {
+    const response = await withAccountErrors(
+      request,
+      raise(new AccountStoreError("getAccount: the account store failed.")),
+    );
+    expect(response.status).toBe(500);
+    expect(response.headers.get("content-type")).toBe("application/problem+json");
+    const body = (await response.json()) as { type: string; detail: string };
+    expect(body.type).toBe("https://darkprint.io/problems/store-failed");
+    expect(body.detail).toBe("getAccount: the account store failed.");
+  });
+
+  it("WITNESSES THE CLASS, not only the status: an identical message on a bare Error re-throws", async () => {
+    /* The whole reason this test exists. `AccountStoreError`'s class identity is
+       observed by nothing else in the tree — no assertion could tell it from a bare
+       `Error` carrying the same string — and D-50-18 makes a route BRANCH on that
+       class, which promotes an unobserved property into a load-bearing one without
+       making it observable. Until this, *"the route answers 500"* and *"the route
+       answers 500 FOR THIS CLASS"* were the same green.
+
+       Held apart here by outcome rather than by inspection: same message, one is a
+       500 and the other leaves. Reversing the two arms reds this and nothing else. */
+    const message = "getAccount: the account store failed.";
+    expect((await withAccountErrors(request, raise(new AccountStoreError(message)))).status).toBe(500);
+    await expect(withAccountErrors(request, raise(new Error(message)))).rejects.toThrow(message);
+  });
+
+  it("still re-throws what it does not recognise, which is what that arm is FOR", async () => {
+    await expect(withAccountErrors(request, raise(new TypeError("a bug")))).rejects.toThrow(TypeError);
+  });
+});
+
+describe("D-50-18 at the transport, against a database that cannot answer", () => {
+  /* The cheapest assertion in this task and it needs neither a live database nor the
+     gate slot: point the shared client at a CLOSED PORT and drive the route. A correct
+     door ruling had put the sanitizer's whole fault path out of reach of anything short
+     of a real outage; this puts it back, at the transport, for the cost of a refused
+     TCP connection. */
+  const SECRET = "t050-transport-secret";
+  const SHARED_CLIENT_KEY = Symbol.for("darkprint.db.sharedClient");
+  type GlobalWithSharedClient = typeof globalThis & { [SHARED_CLIENT_KEY]?: DbClient };
+
+  let dead: DbClient;
+  let previous: DbClient | undefined;
+  let previousSecret: string | undefined;
+
+  beforeAll(() => {
+    previousSecret = process.env.SESSION_SECRET;
+    process.env.SESSION_SECRET = SECRET;
+    /* Port 1 has nothing listening, so every query fails at connect with ECONNREFUSED —
+       a genuine driver failure rather than a thrown stub. */
+    dead = createDbClient("postgres://nobody:nobody@127.0.0.1:1/nothing");
+    const withShared = globalThis as GlobalWithSharedClient;
+    previous = withShared[SHARED_CLIENT_KEY];
+    withShared[SHARED_CLIENT_KEY] = dead;
+  });
+
+  afterAll(async () => {
+    const withShared = globalThis as GlobalWithSharedClient;
+    if (previous === undefined) delete withShared[SHARED_CLIENT_KEY];
+    else withShared[SHARED_CLIENT_KEY] = previous;
+    if (previousSecret === undefined) delete process.env.SESSION_SECRET;
+    else process.env.SESSION_SECRET = previousSecret;
+    await dead.close();
+  });
+
+  it("GET /api/account answers problem+json 500, not Next's generic one", async () => {
+    /* The route the ruling was implemented too narrowly to reach the first time: it had
+       no error boundary at all, so fixing only the wrapper left this one throwing. */
+    const signed = new Request("https://darkprint.io/api/account", {
+      headers: {
+        cookie: `${SESSION_COOKIE_NAME}=${encodeSession({ accountId: "11111111-1111-4111-8111-111111111111", handle: "mara-veil" }, SECRET)}`,
+      },
+    });
+    const response = await getAccountRoute(signed);
+    expect(response.status).toBe(500);
+    expect(response.headers.get("content-type")).toBe("application/problem+json");
+    const body = (await response.json()) as { type: string; detail: string };
+    expect(body.type).toBe("https://darkprint.io/problems/store-failed");
+    expect(body.detail).toBe("getAccount: the account store failed.");
+  });
+
+  it("and the body carries no connection string, host, port or SQLSTATE", async () => {
+    /* AC2's fault path through a REAL driver error rather than a synthetic one: the
+       `cause` here is whatever `pg` raises for a refused connection, and none of it
+       may reach the rendering. */
+    const signed = new Request("https://darkprint.io/api/account", {
+      headers: {
+        cookie: `${SESSION_COOKIE_NAME}=${encodeSession({ accountId: "11111111-1111-4111-8111-111111111111", handle: "mara-veil" }, SECRET)}`,
+      },
+    });
+    const raw = await (await getAccountRoute(signed)).text();
+    for (const tell of ["nobody", "127.0.0.1", "nothing", "ECONNREFUSED", "connect", "postgres://"]) {
+      expect(raw).not.toContain(tell);
+    }
   });
 });
 

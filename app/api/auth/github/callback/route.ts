@@ -25,10 +25,20 @@
    and no such page exists — `app/**` pages are T262's cutover,
    not this task's, so inventing one here would be worse than
    naming the gap.
+
+   **`withAccountErrors` wraps the handler (D-50-18), and this was
+   the ruling's third site.** The route already answers
+   `problem+json` 502 when GitHub fails and had **nothing** for the
+   store failing underneath `upsertFromGitHub` — so one of the two
+   ways this route can fail wore the envelope and the other wore
+   Next's generic 500. Closing it here rather than leaving it as
+   the adversary's `read, not driven` note, because the ruling is
+   the same one and stopping at the two sites that were driven is
+   the shape this round was charged for.
    ============================================================ */
 
 import { getSharedDbClient } from "@/lib/db";
-import { upsertFromGitHub } from "@/lib/server/accounts";
+import { upsertFromGitHub, withAccountErrors } from "@/lib/server/accounts";
 import {
   clearOAuthStateCookieHeader,
   readOAuthStateCookie,
@@ -39,6 +49,10 @@ import {
 import { PROBLEM_TYPE_BASE, badRequest, problem } from "@/lib/server/http";
 
 export async function GET(request: Request): Promise<Response> {
+  return withAccountErrors(request, () => callback(request));
+}
+
+async function callback(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
