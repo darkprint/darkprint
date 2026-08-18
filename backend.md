@@ -1963,6 +1963,52 @@ containing **at least one test no other mutation reds** — the per-class arm te
 witness, which are naming-specific. **Same discipline, different relation, and the wording had to
 change for the discipline to survive.**
 
+## A snapshot-restore harness must refuse a dirty tree, because the one-writer rule is only a protocol
+
+**T050's adversary found that its own mutation harness would have silently destroyed T050's
+implementer's uncommitted work, and it found it by nearly running it.**
+
+`applyPatch` snapshots a file, mutates it, and `restore` writes the snapshot back. **Any edit another
+writer makes between patch and restore is silently reverted.** With four dirty paths under
+`lib/server/accounts/` and F1–F4 patching `store.ts` and `http.ts` twice each, the harness would have
+snapshotted work-in-progress, mutated over it, and written the snapshot back on top of whatever had
+been typed meanwhile — **with porcelain looking plausible afterwards.**
+
+**Not a contaminated measurement. Somebody's lost work.** Every previous instance of the one-writer
+failure in this run has cost a **measurement**; this one would have cost an implementer its **edits**,
+which is why it is worth a guard in the tool rather than a line in a brief. **A protocol is a reminder,
+and a reminder only reaches the party who remembers to be reminded.**
+
+Mechanised and falsified against the live tree: `applyPatch` reads `git status --porcelain`, refuses
+when dirty, prints the offending paths and the reason, with `SWEEP_ALLOW_DIRTY=1` for when the work is
+its own. **It protects the next holder of any shared worktree, not only its author.**
+
+**And the protocol gap it exposes is real: handover names a commit, but the risk window is between *I am
+done* and *I have committed*.** An implementer with uncommitted work in a worktree another session may
+be told to take is exposed for exactly that interval, and nothing in this run's handover discipline
+covers it. **A tree is handed over at a sha; until there is a sha there is nothing to hand.**
+
+## A readiness claim is a statement about a tree and gets a sha like any other
+
+**The same session dry-checked its F1–F4 patterns and got `ALL PATTERNS PRESENT`. F4's pattern is the
+`NamingStoreError` arm, and it matched — because it read the arm in its UNCOMMITTED, in-flight state.**
+
+It chased the match instead of banking the green, because it had measured **zero** occurrences in that
+file an hour earlier and the change was the tell.
+
+**That result is not wrong. It is unaddressable** — it describes a tree nobody can check out. Same shape
+as *nineteen files that exist in no commit*, arriving as a **preparation** result rather than a gate
+result, **and a green about an uncommitted tree reads exactly like a green about a sha.**
+
+**The rule the existing one did not cover: the stamp discipline was written for measurements, and dry
+runs, pattern checks and readiness claims are measurements too.** Anything asserted about the tree gets
+a sha, **including the things whose whole purpose is to be cheap** — cheapness is why they escape the
+discipline, not a reason they should.
+
+**And its restraint on the arm is the matching half**: it read `storeFailed(request, err.message)` at
+`http.ts:141` in passing, said it looks like the ruled shape, and stopped. **A finding against a line
+that may not survive the next save is a finding about nothing.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
