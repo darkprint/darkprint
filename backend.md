@@ -1343,9 +1343,16 @@ for `vitest`**. `tsc` and `eslint` are neither. **I have been invisible in preci
 designed to detect contention** — my own rule about a guard whose probe cannot reach, aimed at myself,
 found only because a timeout made me look at the load.
 
-**So: while a slot is held, a markdown-only commit runs the file guards and nothing else**, and the
-commit says which gates were skipped and why. Running `tsc` on a document that no TypeScript file
+**So: while a slot is held, a markdown-only commit runs the file guards and nothing else, and the
+commit says which gates were skipped and why** — Running `tsc` on a document that no TypeScript file
 imports is ritual, and here the ritual is paid for by somebody else's numbers.
+
+**AMENDED, and the amendment is here rather than only downstream because leaving it downstream is how
+this sentence did its damage.** *The file guards* are a **`vitest` invocation** — five files, ~2s,
+spiking to ~40% CPU — so this paragraph and the later *any command taking meaningful host CPU is
+slot-gated* **contradicted each other for hours.** The binding form: **the guards may run during a slot,
+AND the grant must declare them.** Not "nothing else", which reads as a licence; not "never", which
+delays rulings behind a triple.
 
 ## A grant to one party and silence toward the rest is one slot announced to two
 
@@ -1885,6 +1892,33 @@ claimed a clean host and been wrong.
 **Its own retraction, kept because the shape is exact:** it wrote falsification 3 to catch a presence
 check and gave it a value — the `store-failed` 500 — that is **wrong for two thirds of its domain.**
 *The same value-versus-presence error, in the sentence fixing it.*
+
+## A label from the party under measurement is data, not a classification
+
+**T050's adversary saw my five-file `vitest` in its own samples, attributed it correctly, and then
+wrote: *the file-parsing guards, the thing you said you would still do, so consistent rather than a
+breach.*** The rule in force was *any `vitest` invocation is slot-gated*. **What it was looking at was
+a `vitest` invocation.** It had the observation and it had the rule, and it resolved them with **my
+name for the activity** rather than against the rule.
+
+**Its diagnosis, which is the entry: a line you keep and then explain away is a line you did not
+read.** That is *reasoning printed beside output reads as output*, one step further along — **where the
+reasoning is a label supplied by the party being measured.** *"The file-parsing guards"* is a statement
+of intent. `vitest run tests/rulings-bind.test.ts …` is the observation. **It let the first stand in for
+the second in the one report whose entire value is that it does not do that.**
+
+**And the tension was mine to have avoided.** I had written *while a slot is held, a markdown-only
+commit runs the file guards and nothing else*, and later *any `vitest` invocation is slot-gated*.
+**Those disagree** — a block that rules and defers produces two correct readings and **the reader binds
+to whichever it reaches first.** It reached the permissive one, **and reached it because it arrived with
+a reassuring label attached.** Displaced above; there is now one reading.
+
+**The adversary's job on that line was to notice the two statements were in tension and REPORT it, not
+to pick.** Picking is what an implementer does. **An adversary that resolves an ambiguity has removed
+the finding**, and the reading it picked was the one that meant it had nothing to say.
+
+**It cost exactly what the measurement was for**: had it flagged the line, I would have found my own
+suite a round earlier. **The detector worked and printed the evidence. The reading did not.**
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
