@@ -355,6 +355,40 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## Every sha in a report is a measurement, including the ones that are only context
+
+T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
+itself within the hour.
+
+**It is worse than the instance already recorded against T070's implementer, and the difference is the
+finding.** That one was a sha that had been read at some point and then retyped from memory. This one
+was **never read at all**: it ran `git merge backend`, took the **diffstat** off the screen — "backend.md
+only, 64 insertions", accurate — and then **manufactured a plausible hex string to sit beside it,
+because the sentence had a slot for one.**
+
+**The true detail next to it is what made it pass its own reading.** A fabricated value inside an
+otherwise measured block **inherits the block's credibility** — this file's *a false claim supporting a
+true finding is the hardest kind to catch*, with the true claims doing the laundering.
+
+**And the mechanism is not the obvious one, which matters because a rule with the wrong mechanism
+propagates the wrong fix.** It did not forget to run `rev-parse`. **It never captured the merge's
+output as a value at all** — `git merge` prints a diffstat and no sha, so there was nothing to paste,
+and the gap got filled rather than left open or gone back for.
+
+The existing rule — *the sha comes from `git rev-parse HEAD` in the same command that reads porcelain,
+pasted, not retyped* — is written for the **end of a pass**. It does not cover an **intermediate**
+step, which is exactly where this failed: it stamped before and after and invented the middle, because
+the middle was **narration rather than a result**.
+
+**The sharper form, offered against itself: every sha that appears in a report is a measurement,
+including the ones that are only there for context. An intermediate commit nobody will check out still
+gets read, or it gets omitted — and omitting it is strictly better, because an absent sha asks a
+question and a wrong one answers it.**
+
+Worth noting where it happened: from the adversary whose entire job this round is to check other
+people's claims, in the message reporting that it had reproduced a premise of mine rather than trusting
+it. Neither of those made it immune, and it did not offer either as mitigation.
+
 ## A handover is confirmed by the side losing the tree, not only announced to it
 
 T050's implementer stood down explicitly rather than merely being told, and gave the reason:
