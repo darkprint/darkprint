@@ -355,6 +355,48 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## Does the wider assertion read the contract, or fill its silence?
+
+T005's blind author took the **instance** and the **class** at D-05-09 — pinning `cost_units` and then
+every column whose type the block writes out — and **declined** the same widening it had *insisted on*
+an hour earlier at D-05-08. It flagged the difference itself rather than letting it look like
+inconsistency, and named the distinguishing question:
+
+**does the wider assertion read the contract, or fill its silence?**
+
+At D-05-08 the block ruled a **convention** — *unmarked means `NOT NULL`* — so asserting it at every
+column was **reading one document consistently**, and the eight columns that agreed by luck were
+agreeing with something the contract said. At D-05-09 the block names a type for **eight** columns and
+is **silent on the rest**, so pinning those would be **inventing a contract** and would red on choices
+nobody published.
+
+That is the sharpest available test for how far to generalise an assertion, and it is not "how much
+coverage do I get". **A suite that fills a contract's silence becomes a second contract**, and the next
+implementer meets two.
+
+## One mutation redding two tests shows both fire, not that they are two instruments
+
+Its own correction to its earlier M4 reasoning, and it is the missing axis. It added **M31** —
+qualifying a *different* column — specifically so the class-level test is falsified **independently**
+rather than by the same edit that falsifies the instance-level one.
+
+**Two assertions that only ever red together are one assertion with two names**, and a single mutation
+cannot tell those apart: it reds both either way. Separating them needs a mutation that reaches **one**
+of them.
+
+## A falsifier that fires on the absence of an instrument is doing the harder job
+
+Its reading of what happened, and it is better than mine. Falsifier 3 fired within the hour — but note
+the **direction**: it did not catch a wrong fix. **It caught that nobody could have told a right fix
+from a wrong one, before either existed.**
+
+**A falsifier that fires on the absence of an instrument rather than on a defect has nothing red to
+draw attention to it** — the suite is green, the fix is green, and reverting the fix is green. The only
+thing that surfaces it is somebody stating in advance what their evidence *could not* have shown.
+
+Which is the argument for the practice rather than for any one falsifier: the ones that pay are not the
+ones predicting where a defect will be, but the ones naming where a **measurement** would be silent.
+
 ## A ruling can create a fix that lands unobserved, and the adversary said so before it was made
 
 T005's adversary pre-registered this **before** the implementer made the change I had just ruled:
