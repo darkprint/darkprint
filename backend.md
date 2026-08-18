@@ -1184,14 +1184,28 @@ The construction that tests the relation instead:
   off **the module the class lives in**, not off an import line.
 * **Relation, driven**: for each such class, if `withStore` passes an instance through **unwrapped** —
   which *is* `isDecision` saying yes, **observed rather than read** — then `withAccountErrors` must
-  answer **the `store-failed` `problem+json` 500**, not merely *a* `Response`. Red if it throws, and red
-  if it answers something else.
+  answer a response that is **`application/problem+json`** and whose **`detail` is the instance's own
+  `message`, byte for byte.** Red if it throws, red if the media type is anything else, red if the
+  detail is re-rendered.
 
-  **The identity clause is T050's adversary's, and my wording lacked it.** *Answers a `Response`* is
-  satisfied by **any** `Response` — an arm returning `badRequest` for a store fault passes a guard that
-  only checks presence. **That is value-versus-presence at a fourth altitude**: a field, a partition,
-  the scope of a sentence, and now **the object a guard accepts as its answer.** A guard built on the
-  weaker clause holds that an arm *exists* and nothing about what it *does*.
+  **NOT *answers a `Response`*, and NOT *answers the `store-failed` 500*. Both were wrong and the
+  second was worse.** *Answers a `Response`* is presence — an arm returning `badRequest` for a store
+  fault satisfies it. **But asserting the 500 universally reds on two arms that are CORRECT**: measured
+  at `http.ts:117-123`, the three foreign classes map to **three different statuses** — `HandleTakenError`
+  409, `InvalidNameError` 400, `NamingStoreError` 500. **A ruling implemented as narrowly as its worked
+  example**, where the worked example was `NamingStoreError` because that is where the defect was.
+
+  **`detail === err.message` is the predicate that is both universal and a value check.** It is D-50-08's
+  *passes through unaltered, so each message keeps one author*, and it is **the not-re-wrapped clause
+  generalised from one class to all three** — it fails an arm that re-renders, one that substitutes a
+  generic string, and one that wraps a foreign fault into a local class, which is exactly the failure
+  `NamingStoreError` would have if someone "fixed" it by re-wrapping. **Status stays per-class and is
+  asserted per-class**, in the three arm tests that already exist.
+
+  **Stated caveat, its own:** `detail === err.message` is checkable only because every published form is
+  safe by construction. **It is not a hygiene assertion and does not replace one** — a class whose own
+  message leaked a bound parameter would satisfy it perfectly. `tests/error-hygiene.test.ts` and the
+  closed-port body assertions cover that, separately.
 
 So a `lib/server/policy` fault class enters the domain **from the barrel walk**, the day it exists,
 with nobody touching the guard.
@@ -1661,6 +1675,27 @@ to build something.** Twice tonight — announcing that I held the slot rather t
 inferred, and the outgoing holder stating it had stopped writing rather than letting an appointment
 message stand as a claim about a future state. **An appointment is a claim about the future until the
 leaver confirms.**
+
+## The reviewer who publishes a proposal unchanged has reviewed nothing
+
+**T050's implementer wrote the weak predicate — *`withAccountErrors` must answer a `Response`* — and
+asked that it sit against its name rather than mine, because it wrote a presence check for a value
+property in the same message where it rejected lexical guards for going green on *a wrapper whose arm
+is present and wrong*.** The adversary caught it one clause later.
+
+**The correction is honest and it is half of the split.** It authored a **proposal**, and a proposal is
+allowed to be wrong — that is what proposals are for. **I published it into a ruling without checking
+it, and publication is what makes a sentence binding.** This file has spent the day insisting that a
+ruling granted in a reply is published nowhere and that the ruling text is what binds. **If the ruling
+text is what binds, a defect in the ruling text belongs to whoever ruled it.**
+
+**And the strengthening I wrote on my own was worse than the weakness I inherited.** *It must answer the
+`store-failed` `problem+json` 500* is **false for two of the three foreign classes** — `HandleTakenError`
+409 and `InvalidNameError` 400, measured at `http.ts:117-123` — so a guard quantified over foreign
+classes asserting 500 **reds on two arms that are correct.** **A ruling implemented as narrowly as its
+worked example**, and the worked example was `NamingStoreError` because that is the class the defect was
+in. **The fix for a presence check is not "assert the specific value I was looking at"; it is find the
+value property that is actually universal.**
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
@@ -8959,7 +8994,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **D-50-20, ruled: `changeHandle` takes `SELECT … FOR UPDATE` on the account row, and does NOT retry.** Its implementer's proposal, taken with its reasoning. The measured `40P01` is contention on **one row** — the control is decisive, eight *different* accounts renaming concurrently give 8 fulfilled and 0 rejected — and the cause is a lock-order inversion: a plain `SELECT`, then the reservation insert, then the account update. **Locking the account row first removes the inversion rather than recovering from it**, and every rename of that account then queues on one lock in a consistent order. **Prevention over retry**: a retry loop needs a bound, a backoff and a claim that the whole transaction is safe to replay — three things to get wrong where one line removes the condition.
 
-  **D-50-21, ruled and owed in round 2's fix rather than deferred: `withAccountErrors` answers every class `isDecision` recognises.** `NamingStoreError` is on that list and has no arm, so it leaves through the fallback reserved for what the wrapper does **not** recognise — outside `problem+json`, which is the exact divergence D-50-18 was ruled on. Same `store-failed` 500 as `AccountStoreError`, and **not re-wrapped**: the original travels on `cause` so the operation named in a rendering stays the one that failed. Separating the envelope decision from the wrapping decision is the fix; they were taken as one. **Guard, behavioural and constructed: the domain is every error class exported from every `lib/server/<module>/index.ts` MINUS accounts' own — provenance read off the module a class lives in — and the relation is driven: if `withStore` passes an instance through unwrapped (which is `isDecision` saying yes, observed rather than read), `withAccountErrors` must answer the `store-failed` `problem+json` 500 — not merely *a* `Response`, which any arm satisfies including one returning `badRequest`.** Not a comparison of import lines against `instanceof` identifiers: that guards the **spelling** of the relation and goes green on an arm that is present and wrong. Not *every member owes an arm* — that construction is withdrawn: it reds on `AccountError`, whose arm would swallow the four distinct mappings this ruling protects, and the subtype-aware variant reds on `NotAccountOwnerError`, deliberately unmapped. Provenance excludes `AccountError` **structurally, by the import it arrives on**, with no exemption for anyone to maintain, and states the actual property: the wrapper owes an envelope for faults **this module did not author**. Unlike D-50-20 this is the same failure mode and the same remedy one class name apart, so it is not scope creep: a fix that closes a defect for one class has closed an instance.
+  **D-50-21, ruled and owed in round 2's fix rather than deferred: `withAccountErrors` answers every class `isDecision` recognises.** `NamingStoreError` is on that list and has no arm, so it leaves through the fallback reserved for what the wrapper does **not** recognise — outside `problem+json`, which is the exact divergence D-50-18 was ruled on. Same `store-failed` 500 as `AccountStoreError`, and **not re-wrapped**: the original travels on `cause` so the operation named in a rendering stays the one that failed. Separating the envelope decision from the wrapping decision is the fix; they were taken as one. **Guard, behavioural and constructed: the domain is every error class exported from every `lib/server/<module>/index.ts` MINUS accounts' own — provenance read off the module a class lives in — and the relation is driven: if `withStore` passes an instance through unwrapped (which is `isDecision` saying yes, observed rather than read), `withAccountErrors` must answer a response that is `application/problem+json` with `detail` equal to the instance's own `message`, byte for byte.** Not *a `Response`* (presence, satisfied by any arm) and **not the `store-failed` 500** — the three foreign classes map to three statuses (`http.ts:117-123`: 409, 400, 500), so a universal 500 reds on two correct arms. `detail === err.message` is D-50-08's pass-through and the **not-re-wrapped clause generalised to all three**; status stays per-class in the three arm tests. Not a comparison of import lines against `instanceof` identifiers: that guards the **spelling** of the relation and goes green on an arm that is present and wrong. Not *every member owes an arm* — that construction is withdrawn: it reds on `AccountError`, whose arm would swallow the four distinct mappings this ruling protects, and the subtype-aware variant reds on `NotAccountOwnerError`, deliberately unmapped. Provenance excludes `AccountError` **structurally, by the import it arrives on**, with no exemption for anyone to maintain, and states the actual property: the wrapper owes an envelope for faults **this module did not author**. Unlike D-50-20 this is the same failure mode and the same remedy one class name apart, so it is not scope creep: a fix that closes a defect for one class has closed an instance.
 
   **Its own two caveats are kept rather than smoothed.** It orders same-account renames only; cross-account inversion was not measured and is not thought reachable, since each transaction touches its own account row plus its own target and old reservation rows. **And the witness is a disappearance, not an assertion** — inducing `40P01` deterministically is its own problem, so the strongest available evidence is the adversary's sixteen-way repro returning **0 rejected** after the change. That is weaker than a test and it is what is available; **it is recorded as such rather than dressed up.** Owed in its own round, after the D-50-18 fix lands, with that repro as its measurement.
 
