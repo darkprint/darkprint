@@ -595,23 +595,36 @@ export const PUBLISHED_COLUMNS: Readonly<Record<string, readonly [string, boolea
  * `precision` and `scale` are `null` where the block writes the type unqualified, and that
  * is the whole of D-05-09: `numeric` and `numeric(18,6)` are the same `data_type` and differ
  * only in two columns of the catalogue that nothing here read.
+ *
+ * `sqlType` is the same fact on the OTHER side. The type lives in `lib/db/schema.ts` as well
+ * as in the migration, and until now nothing compared them on anything but index names — so
+ * a `schema.ts`-only fix left the database truncating and a migration-only fix left drizzle's
+ * column wrong for whatever generates the next migration, and **both passed the whole suite**.
+ * I reported the drizzle half as unobservable-by-construction; that was a guess offered as a
+ * fact, and measuring it showed `getTableConfig(...).columns[i].getSQLType()` answers
+ * `numeric(6, 3)` for base's `account.validator_weight` and `numeric` for an unqualified one.
+ * Reading `schema` through the published `@/lib/db` barrel is the T010 precedent, ruled
+ * acceptable under D-05-05.
  */
 export const PUBLISHED_TYPES: readonly {
   table: string;
   column: string;
+  /** `information_schema.columns.data_type`. */
   dataType: string;
   precision: number | null;
   scale: number | null;
+  /** What `getSQLType()` must answer on the drizzle side — the other place the type lives. */
+  sqlType: string;
   clause: string;
 }[] = [
-  { table: "save", column: "target_id", dataType: "text", precision: null, scale: null, clause: "save  … target_id text" },
-  { table: "note", column: "target_id", dataType: "text", precision: null, scale: null, clause: "note  … target_id text" },
-  { table: "note", column: "body", dataType: "text", precision: null, scale: null, clause: "note  … body text NOT NULL" },
-  { table: "run_report", column: "release_digest", dataType: "text", precision: null, scale: null, clause: "run_report  release_digest text NOT NULL" },
-  { table: "run_report", column: "input_size", dataType: "integer", precision: 32, scale: 0, clause: "run_report  … input_size int" },
-  { table: "run_report", column: "duration_ms", dataType: "integer", precision: 32, scale: 0, clause: "run_report  … duration_ms int" },
-  { table: "run_report", column: "cost_units", dataType: "numeric", precision: null, scale: null, clause: "run_report  … cost_units numeric (D-05-09: UNQUALIFIED)" },
-  { table: "api_key", column: "token_hash", dataType: "text", precision: null, scale: null, clause: "api_key  … token_hash text NOT NULL unique" },
+  { table: "save", column: "target_id", dataType: "text", precision: null, scale: null, sqlType: "text", clause: "save  … target_id text" },
+  { table: "note", column: "target_id", dataType: "text", precision: null, scale: null, sqlType: "text", clause: "note  … target_id text" },
+  { table: "note", column: "body", dataType: "text", precision: null, scale: null, sqlType: "text", clause: "note  … body text NOT NULL" },
+  { table: "run_report", column: "release_digest", dataType: "text", precision: null, scale: null, sqlType: "text", clause: "run_report  release_digest text NOT NULL" },
+  { table: "run_report", column: "input_size", dataType: "integer", precision: 32, scale: 0, sqlType: "integer", clause: "run_report  … input_size int" },
+  { table: "run_report", column: "duration_ms", dataType: "integer", precision: 32, scale: 0, sqlType: "integer", clause: "run_report  … duration_ms int" },
+  { table: "run_report", column: "cost_units", dataType: "numeric", precision: null, scale: null, sqlType: "numeric", clause: "run_report  … cost_units numeric (D-05-09: UNQUALIFIED)" },
+  { table: "api_key", column: "token_hash", dataType: "text", precision: null, scale: null, sqlType: "text", clause: "api_key  … token_hash text NOT NULL unique" },
 ];
 
 /** The three writable metrics, and the two a ballot may never carry. */

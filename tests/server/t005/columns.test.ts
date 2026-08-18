@@ -148,6 +148,62 @@ suite("T005 D-05-08 — every published column has the nullability the block giv
     ).toEqual([]);
   });
 
+  it("`schema.ts` declares the same type the catalogue reports, for every column the block writes out", async () => {
+    requireT005Shipped(scratch);
+
+    /* The mirror of the assertion above, and the falsifier T005's adversary named as the one
+       nobody takes: the type lives in `lib/db/schema.ts` AND in the migration, and until this
+       existed the two were compared on unique index NAMES only. A schema.ts-only fix leaves
+       the database truncating; a migration-only fix leaves drizzle's column wrong for whatever
+       generates the next migration. Both used to pass the whole suite.
+
+       Each side is compared against the BLOCK rather than against the other, on purpose: a
+       direct diff says only that they disagree, while this says which of the two has drifted
+       from the contract — and that is the sentence whoever fixes it needs.
+
+       I had reported this half as unobservable-by-construction. That was a guess presented as
+       a fact; measured, `getTableConfig(...).columns[i].getSQLType()` answers `numeric(6, 3)`
+       for base's `account.validator_weight`, so the drizzle side publishes exactly what is
+       needed. Reaching `schema` through the `@/lib/db` barrel is the T010 precedent, ruled
+       acceptable under D-05-05. */
+    const { schema } = (await import("@/lib/db")) as { schema: Record<string, unknown> };
+    const { getTableConfig } = await import("drizzle-orm/pg-core");
+
+    const byTable = new Map<string, Map<string, string>>();
+    for (const value of Object.values(schema)) {
+      let config: ReturnType<typeof getTableConfig>;
+      try {
+        config = getTableConfig(value as Parameters<typeof getTableConfig>[0]);
+      } catch {
+        /* Not a pgTable — the schema module also exports enums and types. */
+        continue;
+      }
+      byTable.set(config.name, new Map(config.columns.map((c) => [c.name, c.getSQLType()])));
+    }
+
+    const wrong: string[] = [];
+    for (const t of PUBLISHED_TYPES) {
+      const declared = byTable.get(t.table)?.get(t.column);
+      if (declared === undefined) {
+        wrong.push(
+          `${t.table}.${t.column}: no such column on any pgTable in the published schema` +
+            (byTable.has(t.table) ? "" : ` (no pgTable carries the SQL name \`${t.table}\`)`),
+        );
+        continue;
+      }
+      if (declared !== t.sqlType) {
+        wrong.push(`${t.table}.${t.column}: block says \`${t.sqlType}\`, schema.ts declares \`${declared}\`   [${t.clause}]`);
+      }
+    }
+
+    expect(
+      wrong,
+      `${PUBLISHED.d0509}\n  This is the schema.ts side. The assertion above it reads the same ` +
+        `columns from the catalogue, which is built from the migration — so a fix applied to ` +
+        `only one of the two reds exactly one of the two tests, and the message names which.`,
+    ).toEqual([]);
+  }, 120_000);
+
   it("no published table carries a NOT NULL column the block does not name and cannot default", () => {
     requireT005Shipped(scratch);
 
