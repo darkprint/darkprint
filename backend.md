@@ -355,6 +355,93 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## The count format and the table delimiter are the same character
+
+T005's adversary pasted vitest's own summary — `1 failed | 5203 passed` — into `backend.md`'s
+**pipe-delimited** index row, giving that row **eleven fields where every other has ten**.
+`tests/task-state-agreement.test.ts` then read the Evidence cell as the State cell and reported a
+**state disagreement between row and section.** Both were correct. The delimiter was not.
+
+**The red named the wrong thing, and the wrong thing was plausible** — because it had just edited both
+places, which is exactly when a state disagreement is believable. A guard that misidentifies its own
+failure is worse than one that stays silent, because the plausible wrong diagnosis is the one that
+gets acted on.
+
+It was caught only because it followed the rule to **re-gate after a `backend.md` commit** rather than
+carrying the triple over it. A commit that touches only prose still moves what the prose-parsing guards
+read.
+
+## The reverse mutation is the acceptance number for a gap closure
+
+Closing a gap and re-running the suite green proves nothing: **the suite was green before.** T005's
+adversary took the **reverse** mutation as the acceptance number for both `api_key` gaps — schema-only
+rename now reds `ac8-names`, a partial unique now reds the uniqueness test, **0 → 1 on both**.
+
+Its sentence: **a 0 there would mean the fix was unobservable however green the suite looked.** A gap
+is a claim that a mutation reds nothing; its closure is the claim that the same mutation now reds
+something, and only re-running *that mutation* measures it.
+
+And it noted the direction: **the blind author took both gaps from the clause rather than from the
+adversary's probes**, which keeps the suite derived from the contract rather than from someone else's
+findings.
+
+## D-05-09: a bound that truncates rather than refuses is worse than no bound
+
+`run_report.cost_units` ships as `numeric(18,6)` where the block says `cost_units numeric`, unqualified.
+Measured against the shipped type: `0.0000001` stores as `0.000000`, `0.1234567` as `0.123457`,
+`123.4567895` as `123.456790`, and `1234567890123.5` is refused with 22003.
+
+**A submitted cost can become no cost at all, with no error, and it then feeds T180's median and
+p10/p90.** Nothing observes it — no test asserts precision or scale.
+
+**Ruled: unqualified `numeric`, as published.** The module's own docblock argues numeric over float
+*precisely because* "double precision cannot round-trip every decimal the CLI can send" and "the
+registry stores what it was given" — and `(18,6)` **reintroduces that failure silently**, which is the
+module's own argument turned against its column.
+
+The general form is what makes this worth a ruling rather than an edit: **a bound that truncates rather
+than refuses converts a rejectable input into a wrong number.** Refusal is loud and recoverable;
+truncation is silent and lands in an aggregate. If T180 or T230 wants a bound later, it is published in
+the block **and it refuses explicitly**.
+
+## Proving a narrow fix wide needs narrow mutations, one per site
+
+I ruled D-50-18 from the file the divergence was found in, and the adversary charged that fixing only
+that file leaves `GET /api/account` throwing. Its implementer fixed **three** sites — and then proved
+the *narrowness* was gone rather than asserting it:
+
+```
+D-50-18 arm removed entirely     -> 7 red
+GET /api/account unwrapped again -> 2 red   <- only its own
+callback unwrapped again         -> 3 red   <- only its own
+```
+
+**Unwrapping the read route reds 2 and leaves the callback's 3 green; unwrapping the callback does the
+reverse.** That is **three independently observed sites**, not one wrapper shared by three names — and
+nothing but a per-site mutation can tell those apart, because a shared wrapper with one witness reds
+identically to three witnesses when the *arm* is removed.
+
+The general form: **a fix applied at N sites is only proven at N sites by N mutations.** The
+all-sites-at-once mutation measures the mechanism; the per-site ones measure the coverage, and the
+narrow-worked-example failure lives entirely in the second.
+
+**It also closed the site I had labelled `read, not driven`** rather than leaving it, *because stopping
+at the two sites that happened to be driven is the shape this round charged.*
+
+## A mock whose blast radius is one file, and the reason it was necessary
+
+Closing the callback needed one mock: `resolveGithubIdentity` performs a live GitHub token exchange,
+and with credentials unset the route **502s before reaching the store path at all** — so that path is
+unreachable by any input, which is why T000 records this route as not exercisable end to end.
+
+**Without the mock the callback fix would have been a change with no observer** — this round's own
+charge, repeated inside the fix for it.
+
+Its containment is the part to copy: the mock lives in **its own file**, so `vi.mock`'s file-scoped
+hoisting has **zero blast radius**, and everything else is real — the state cookie is minted and
+verified by the shipped code, the wrapper is the shipped one, the socket is genuinely dead. **One
+substitution, named, in a file that contains nothing else.**
+
 ## Classify a zero from the space the guard covers, not from the inputs one suite happens to send
 
 T050's adversary re-ran all ten of its zero-red mutations against the **implementer's colocated
@@ -4533,7 +4620,16 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
                                                      -- than optional.
                       model, provider, hardware text,
                       input_size int, harness_version text, cost_units numeric,
-                      duration_ms int, reported_at, created_at                  -- AC4, D-05-01
+                      duration_ms int, reported_at, created_at
+                      -- D-05-09: cost_units is UNQUALIFIED `numeric`, as this block says.
+                      -- The shipped (18,6) silently truncates — 0.0000001 stores as
+                      -- 0.000000, i.e. a submitted cost becomes NO COST, with no error,
+                      -- feeding T180's median and p10/p90. That is the exact failure the
+                      -- module's own docblock argues numeric-over-float to avoid: "the
+                      -- registry stores what it was given". A bound that TRUNCATES rather
+                      -- than REFUSES is worse than no bound, because it converts a
+                      -- rejectable input into a wrong number. If T180 or T230 wants a
+                      -- bound later it is published here AND refuses explicitly.                  -- AC4, D-05-01
         api_key       account_id, token_hash text NOT NULL unique, label text,
                       created_at, revoked_at NULL
 
@@ -8013,6 +8109,10 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         suite D-50-07 -> published D-50-13   ("non-owner" means NOT AUTHORIZED)
         suite D-50-09 -> published D-50-10   (validatorWeight is a number)
         suite D-50-14 -> published D-50-14   (AC3 scoped; the id exists as of this line)
+
+  **D-50-20, ruled: `changeHandle` takes `SELECT … FOR UPDATE` on the account row, and does NOT retry.** Its implementer's proposal, taken with its reasoning. The measured `40P01` is contention on **one row** — the control is decisive, eight *different* accounts renaming concurrently give 8 fulfilled and 0 rejected — and the cause is a lock-order inversion: a plain `SELECT`, then the reservation insert, then the account update. **Locking the account row first removes the inversion rather than recovering from it**, and every rename of that account then queues on one lock in a consistent order. **Prevention over retry**: a retry loop needs a bound, a backoff and a claim that the whole transaction is safe to replay — three things to get wrong where one line removes the condition.
+
+  **Its own two caveats are kept rather than smoothed.** It orders same-account renames only; cross-account inversion was not measured and is not thought reachable, since each transaction touches its own account row plus its own target and old reservation rows. **And the witness is a disappearance, not an assertion** — inducing `40P01` deterministically is its own problem, so the strongest available evidence is the adversary's sixteen-way repro returning **0 rejected** after the change. That is weaker than a test and it is what is available; **it is recorded as such rather than dressed up.** Owed in its own round, after the D-50-18 fix lands, with that repro as its measurement.
 
   **Email has no predicate beyond non-empty** (D-50-12) and is **unverified** — nothing sends a verification, so no validity claim is made or tested.
 
