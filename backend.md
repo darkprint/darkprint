@@ -8928,6 +8928,169 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     tree** rather than the six results being carried over from the previous one. The reference is now
     archived beside the harness so it cannot be lost a second time.
 
+  - **2026-08-18 adversary round 2, FAIL.** Two charges, both about the D-40-B replacement, and the
+    first is reachable through the wire where D-40-B and D-40-C were not. Measured on
+    `feat/t040-engine` after merging `test/t040-engine` at `a3b90de` and `backend` three times as it
+    moved — `248da0f` → `a4bc5b2` → `8e9430e` → `59973d2` — reaching `743b05e`, `a87abb3`, `b49d6e3`
+    and `e0b43fb`; every one read from `git rev-parse HEAD`, and the intermediate resolutions each
+    diffed against `backend:backend.md` with **zero base lines missing** but for the blind author's
+    own `17 947` correction, which base does not carry. `ls .next/types` before quoting a typecheck:
+    present, so the 18 phantom `PageProps` errors are not in play and the reading is a reading.
+  - **D-40-D (defect, charged): the bounded walk is RECURSIVE, so D-40-B is fixed in breadth and open
+    in depth — and depth is wire-reachable.** `POST /api/validate/bundle` with a **6 134-byte** body
+    whose `manifest` carries a nested array throws a bare `RangeError: Maximum call stack size
+    exceeded` out of the handler. No 200, no 413, no `problem+json`. That is 0.3% of the 2 MiB
+    default. **The submission is conforming under the ruled number**: `Buffer.byteLength(JSON
+    .stringify(input),"utf8")` measures the same input at 6 134 and, measured in the same process,
+    keeps answering up to nesting depth **1 000 000** (2 000 000 bytes) without throwing — V8's
+    serialiser is not recursion-limited and the replacement is. **So the fix for D-40-B is a
+    regression against the formula it replaced**, on a shape the formula handles, and it falsifies
+    the clause that pays for the substitution: *the number is preserved exactly for every submission
+    that is accepted.* Here no number is produced at all. `withLimits` catches only
+    `LimitExceededError`, so the throw leaves the envelope every other failure on that route uses.
+    **And the boundary is a property of the stack rather than of the input**: the same walk survives
+    depth 7 000 called directly and dies at 3 000 under the route handler, so no fixture pins it.
+    `manifest` is the door — `readManifest` checks only that it is an object, deliberately and
+    correctly, and `dot`/`cardFiles` are strings.
+  - **D-40-E (defect, charged): the 22-shape corpus is the whole warrant for the procedure
+    substitution, and it is a list.** D-40-20 makes a different procedure legal *only if the two
+    agree*. Nine measured divergences, in three classes the corpus does not reach, each run against
+    `Buffer.byteLength(JSON.stringify(v),"utf8")` in the same process: **`toJSON` returning a
+    droppable** — the walk tests the raw value for droppable-ness and unwraps afterwards, where the
+    serialiser unwraps first, so a key whose `toJSON` gives `undefined` is charged when it should be
+    dropped (18 vs 13) and an array element that should serialise as `null` is charged nothing (12
+    vs 16); **`toJSON` reading its key argument**, which `unwrap` never passes (21 vs 13); and
+    **boxed primitives**, which the serialiser has an explicit step for — `new String("xy")` is 23
+    vs 10, `new Number(5)` 8 vs 7, `new Boolean(true)` 8 vs 10, and a boxed string at the top is 17
+    vs 4. Both directions occur, and both matter: over-counting refuses a submission the ruled
+    number accepts, under-counting admits one it refuses. The array/`toJSON` shape under-counts by a
+    factor of ~5 and is therefore a **bypass of `maxBytes`**, barrel-only. **A 22-case list chosen
+    for "what the serialiser treats specially" is a maintained domain**, and the same file rules that
+    a domain built by listing stops covering what nobody remembered. What is owed is a construction —
+    generated values over the serialiser's own equivalence classes — not three more rows.
+  - **The corpus's boolean case cannot fail, and my own prediction is what found it.** I predicted
+    CAUGHT for swapping the boolean costs (`true`→5, `false`→4) and measured **0 red**: the corpus's
+    single boolean case is `{ t: true, f: false }`, exactly one of each, so the swap **cancels** —
+    20 = 20. Split, it discriminates at once: `{t:true}` reads 11 against 10, `{f:false}` 10 against
+    11. A fixture-manufactured equivalence, in the one file whose job is to be the warrant.
+  - **C1, the pre-registered `resolve.ts:191` experiment: the GREEN branch, which was named in
+    advance as the worse news. The stated mechanism is WRONG.** Scope, because a pre-registration
+    owes it: `tests/server/t040` + `lib/server/engine` + `app/api/validate`, 13 files, **226 tests**,
+    in a throwaway `git worktree` outside every live tree. Four cells, each with the patch state
+    verified by grep before the run:
+
+        module sortedByKey   core .sort(cmpString)   result
+        INTACT               INTACT                  226 passed   (baseline)
+        REMOVED              INTACT                  226 passed   (the equivalence claim)
+        INTACT               REMOVED                 226 passed
+        REMOVED              REMOVED                 226 passed   <- DISCRIMINATOR, predicted to RED
+
+    With **both** sorts gone, permuting `cardFiles` still changes nothing: driven directly over all
+    nine archive bundles, forward against reversed, **0 of 9 differ**. So `resolve.ts:191` is not
+    what makes the module's sort unobservable, and *"the record's insertion order cannot reach
+    anything"* is a true conclusion resting on a false cause — the sixth reading of a zero, **a
+    mechanism claim that is false about code that is correct**, arriving in the entry that upgraded
+    *sampled* to *proved*. The equivalence itself survives; its warrant reverts to the blind author's
+    weaker argument about `sortDiagnostics`, which the round-1 adversary had already narrowed to
+    *sampled*. Owed: the retraction in the Log entry, in `engine.test.ts`'s comment and in AC5's
+    defence-in-depth line, which all now carry the proof.
+  - **42 mutations, two passes, every prediction stated before the run: 31 CAUGHT, 6 MISS, 11 GAP, 0
+    SILENT GREEN, 0 equivalent mutants.** Baseline and post-sweep restore both `226 passed (226)`
+    with identical failing sets, and every patch verified applied — no PATCH-MISS was carried. **The
+    second pass was aimed at the files the first left at zero**, and six of the eleven GAPs came out
+    of it, which is the third instance of that rule paying in this run.
+  - **All four GAPs the blind author labelled "equivalents ... classified rather than counted" have
+    measured discriminators. None of them is an equivalent mutant.** This is the re-run I was asked
+    for before the word travelled further. `withLimits` widened to a catch-all: intact the depth
+    payload **throws**, mutated it answers **413 with `detail: "Maximum call stack size exceeded"`** —
+    two different behaviours through the published wire surface, and a V8 internal in a response
+    body. Its stated premise — *nothing but a limit ever reaches the catch, because shape checks
+    refuse by return and `loadBundle` never throws* — omits `lib/server/engine`'s **own** throw,
+    which is D-40-D. The body-level array guard and the unparseable-body guard are equivalent **on
+    status** and not on the response: the `detail` moves from *"The request body must be a JSON
+    object."* / *"...is not valid JSON."* to *"`dot` must be a string."*. `submissionOf` including
+    `ontology` moves the measured number from **64 to 8 448** on a route-shaped input — a 132x
+    divergence, unobserved because nothing passes an `ontology` and then looks at the size.
+  - **Six MISSes, and each is a coverage hole rather than a wrong suite.** Predicted CAUGHT, measured
+    0: the boolean swap above; **the three sibling routes each losing their `withLimits` 413
+    mapping** — intact `/card`, `/dot` and `/ontology` all answer **413** to an oversized document,
+    mutated all three **throw** — so of D-40-02's four published 413s exactly one, the bundle
+    route's, is held by anything; **`LimitExceededError.prototype.name` deleted**, which takes
+    `err.name` from `"LimitExceededError"` to `"Error"` and `String(err)`/`stack` with it, pinned
+    nowhere (`error-hygiene`'s four clauses are about renderings and enumerability, not the class
+    name); and **`messageOf` replaced by a fixed string** on `validateVocabularySource`'s shape
+    stage, which collapses four distinct `parseOntologyTerms` messages into one and reds nothing —
+    the module's only path where a foreign module's exception text becomes a diagnostic.
+  - **Two more GAPs, both found by hunting the discriminating input rather than by accepting a
+    sample.** Dropping `sortDiagnostics` on `validateDot`'s unparseable-DOT path reds nothing, and my
+    first five malformed inputs all returned exactly one diagnostic — which would have made it look
+    equivalent. It is not: `parseDot` returns `[...lexed.diagnostics, ...parser.diagnostics]`, two
+    position-ordered lists concatenated, so `digraph g { a -> } @ # $` arrives `@1:20, @1:18` and
+    sorts to `@1:18, @1:20`. **Four of seven hunted inputs reorder**, and AC5 names diagnostic order.
+    Same shape for `validateVocabularySource` dropping `parsed.diagnostics` when the shape stage
+    throws: six inputs said equivalent, and `"%YAML 1.3\n---\nterms: 3\n"` returns **two**
+    diagnostics — the shape error and *"Unsupported YAML version 1.3."* — of which the mutation loses
+    the second.
+  - **D-40-21's two guards are written and both are falsified**, at
+    `app/api/validate/ontology-not-caller-supplied.test.ts`, 4 tests. **Behavioural**: the input the
+    bundle route actually builds — captured by wrapping the barrel, not hand-assembled — is refused
+    at `maxBytes = literal - 1` and accepted at `maxBytes = literal`, where `literal` is
+    `Buffer.byteLength(JSON.stringify(input),"utf8")`. **My first version was a guard that could not
+    fail and falsification is what caught it**: asserting `measureSubmission(input) === literal`
+    compares the whole input against itself, because `submissionOf`'s exclusion happens *inside*
+    `validateBundle` — a route made to pass an `ontology` left it green. Driving the bound states the
+    same integer equality and cannot go vacuous. **Structural**: no file under `app/api/**` may call
+    `ontologyView` with a second argument, over a domain walked from the filesystem, comments
+    stripped, arguments split at paren depth zero, with a floor assertion and a planted-call
+    self-test so a walk that finds nothing reds. Falsified both ways: a route passing a caller-built
+    view reds the behavioural half, and a helper file under `app/api/` reds both — a helper outside
+    `app/api/` would red only the behavioural one, which is the asymmetry the pair exists for.
+    **The structural half's proper home is a repo-wide guard on base**, since one living in T040's
+    `Owns` is deleted with T040's tree.
+  - **The 8 359-byte floor, reached independently.** I measured `ontologyView(CORE_ONTOLOGY)` at
+    **8 372** bytes as a view's data property before reading base's entry, which is the same figure
+    by a different route; and I add the third point that makes *floor* the right word empirically
+    rather than by argument — with the archive's own shipped extensions layered in the same view
+    serialises to **8 605**. The number moves with the overlay, and a caller's overlay is unbounded.
+  - **C3, measured rather than asserted.** `JSON.parse('{"a":{"x":1},"b":{"x":1}}')` yields `a !== b`,
+    and a JSON text has no syntax that denotes a back-edge — a `$ref` parses as an inert string. So
+    the route/barrel split under D-40-18 and D-40-C rests on a measurement now.
+  - **A retracted number survives in two shipped comments, with a false provenance attached.**
+    `limits.ts:40` says the archive maxima *"measured through this module's own entry point"* are
+    **17 963** bytes, and `validate.ts:283` repeats *"the archive's 17 963 reproduces either way."*
+    The blind author retracted 17 963 and corrected this file; the module was never corrected.
+    Measured through this module's own entry point just now: **17 947** with each bundle's own
+    extensions (`grounded-research-desk`) and **18 195** with the shared vocabulary applied to all
+    nine, which is what `measure.test.ts` itself does. The comment is wrong under both readings, and
+    it is the sentence that claims to have been measured here.
+  - **Contention I caused, disclosed rather than left to be attributed.** My `--config
+    .t040-adversary/vitest.p…` was named in T005's implementer's samples. The larger share is not
+    that: the 42-mutation sweep is **44 full runs of 13 test files** and it ran from a scratch
+    `git worktree` at `…/scratchpad/c1-worktree`, plus one `npm run build` and two `npm run lint`.
+    **A detector that excludes runs naming its own worktree and looks for the other sessions' names
+    cannot see a run from a fourth path that is neither** — the scratch worktree is invisible to the
+    instrument in both directions. The worktree is removed and every probe file deleted; porcelain
+    carries only the guard above. No database was reached at any point — `DATABASE_URL` was never
+    exported in this shell and the T040 surface takes no `Db` — so the cost was CPU, not the
+    resource the slot names.
+  - **Gates, and when each was taken.** `ls .next/types` present; `npx tsc --noEmit` written to a
+    file and read **unfiltered, 0 lines, exit 0**; `npm run lint` **0 errors 0 warnings**;
+    `npm run build` exit 0, `Compiled successfully`, and porcelain clean afterwards — no
+    `public/bundles` diff. Targeted, before the stop order: the nine repo-wide root guards plus the
+    whole T040 surface, **23 files, 244 passed | 0 failed | 0 skipped**, which is the 226 above plus
+    this round's 4 plus 14 root-guard tests. **No full-suite run and no base reconciliation**: those
+    need the slot, the slot is T005's implementer's, and a number taken now would be a number taken
+    off somebody else's triple. Owed at a slot, by name.
+  - **What would overturn this verdict.** D-40-D rests on one host's stack size — a build with a
+    larger stack moves the depth at which it fires but not that it fires, and I did not test whether
+    Next's runtime catches the `RangeError` into a 500 rather than an unhandled rejection, so the
+    *status* a caller sees is read, not measured. D-40-E's nine divergences are all barrel-only:
+    `JSON.parse` produces none of those shapes, so no route reaches them today and the charge is
+    about the warrant for the substitution rather than about a live wire defect. My 42 mutations are
+    still a set I chose; the second pass narrowed the untouched region but `lib/core` and
+    `lib/server/http` were never mutated at all. And the 11 GAPs are gaps in the suites **I ran** —
+    226 tests over three globs — which is not the whole tree.
+
 ### T080, Registry read model and read API
 
 - **State:** merged
