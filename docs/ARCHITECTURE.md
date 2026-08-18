@@ -15,7 +15,7 @@ contract seams](architecture/seams.md), the matching `TODO(SEAM-xx)` comment in 
 the same change. This document does not get updated speculatively or on a schedule — see
 [12 · Maintenance protocol](#12-maintenance-protocol-and-revision-log).
 
-**Last verified against commit `3c485f8` on 2026-08-18.**
+**Last verified against commit `a4bc5b2` on 2026-08-18.**
 
 **Stack summary.** Next.js 16.2.11 (App Router, Turbopack, no Pages Router code), React
 19.2.4, TypeScript 5 (`tsc --noEmit` as the type gate), Tailwind CSS v4 (CSS-first
@@ -560,6 +560,21 @@ Recorded in the code as intentional, not accidental:
   means the read plane — 22 of 113 seams — could be built first, behind the same URLs the
   pages already consume, without moving a single page component's data shape.**
 
+- **No size bound exists on a caller-supplied vocabulary, and none can be added inside
+  `lib/server/engine`.** The engine's byte limit (`maxBytes`) excludes `input.ontology`
+  from the measured set, because an `OntologyView` carries the whole of `CORE_ONTOLOGY`
+  and charging a caller for the curated vocabulary would refuse a small upload for the
+  size of something it did not send. That exclusion is correct **only while `ontology`
+  is not caller-reachable**, which is true today: no route sets it. It is a premise, not
+  a convenience — an exclusion from a measured set becomes a bypass of the bound the
+  moment the excluded field becomes caller-reachable, and nothing fails in between.
+  Worse for placement: `ontology` arrives as a *prebuilt* `OntologyView`, so
+  `ontologyView()`'s O(terms) merge (`lib/core/ontology/resolve.ts:128`) has already run
+  by the time the engine is entered. **A limit bounds only the work that happens after it
+  runs**, so the cap has to sit at the route, on the bytes the view is built from, before
+  `ontologyView` is called. Binding on whoever writes the first route that accepts a
+  caller's vocabulary.
+
 ### 11.2 · Open `TBD:` questions
 
 Per this document's grounding rule, a `PENDING-OWNER-REVIEW` row in `docs/DECISIONS.md`
@@ -634,6 +649,7 @@ next revision records the divergence; nobody edits the code to match a stale doc
 | 2026-08-12 | `f32267c` | Initial publication — all sections (0-12), assembled from Phase 2A's `ROUTES.md`, `ENTITIES.md`, `SEAMS.md` (carried over unchanged into §2-4, §8) and a fresh code-derived pass for §1, §5-7, §9-11 |
 | 2026-08-18 | `3c485f8` | §8 seams — SEAM-42..48 and SEAM-50 marked **superseded for T050's account routes**. Seven rows contradicted T050's published route block, and `CLAUDE.md` makes this document binding, so T050's blind author bound to the wrong published surface in good faith. Marked rather than edited away: the rows are the record of what the frontend expected, and the correction is placed **above** them so the next reader hits it first. No route or module changed |
 | 2026-08-18 | `fef79f2` | §6.2 — `lib/server/naming/` added, and §4 the two `/api/names/**` routes, as T070 merged (`38eb820`, tagged `t070-verified`). Caught by `tests/architecture-current.test.ts` on the merge itself. §8 seams **unchanged**: no seam covers identifier availability, because no page asks for it today — the handle field on `/settings` is `readOnly`. Recorded rather than invented: this is the second task whose routes have no seam id, and the open `TBD:` in §4 about whether §8 gains entries for routes no page consumes now covers thirteen of seventeen |
+| 2026-08-18 | `a4bc5b2` | §11.1 — new shortcut recorded: **no size bound exists on a caller-supplied vocabulary, and none can be added inside `lib/server/engine`**. Found by T040's implementer auditing its own unobservability claims after handing the tree back. `maxBytes` excludes `input.ontology`; that exclusion is a **premise** (`ontology` is not caller-reachable) rather than a convenience, and the field arrives as a prebuilt `OntologyView`, so `ontologyView()`'s O(terms) merge is already spent before the engine is entered. A limit bounds only the work that happens after it runs, so the cap belongs at the route on the bytes, not in the module on the type. No route or module changed |
 | 2026-08-15 | `6d746ff` | §6.2 — `lib/server/export/` added, and §4 the three `/api/files/**` routes, as T090 merged (`6d746ff`, tagged `t090-verified`). Caught by `tests/architecture-current.test.ts` on the merge itself rather than noticed later, which is what it was added for one commit earlier. §8 — SEAM-19 marked half-crossed: the per-file download links have a served endpoint now, while `DownloadPanel` still points at the static `public/bundles/` mirror |
 | 2026-08-15 | `68b6f19` | §6.2 directory tree — `lib/server/{ontology,registry}/` added; both were merged and tagged (`t030-verified`, `t080-verified`) while the tree recorded neither, and the `tests/` row was still naming four task suites out of six. §4 sitemap — a new **API routes** table: fifteen `route.ts` handlers existed and the sitemap recorded zero, because it listed only `page.tsx`. §8 seams — SEAM-01, 07, 09 and 13 marked **half-crossed**: T080 is the first task whose routes call a backend module, which is the exact condition the 2026-08-14 rows named for re-reading them, but the server end is open and no page consumes it, so none becomes `LIVE` end to end. Carries one `TBD:` — eleven of the fifteen routes have no seam id and it is not decidable without ruling on what a seam is for. Found by T080's session on its way out of a task this file is not part of; mechanised as `tests/architecture-current.test.ts`, which reds when a `lib/server` module or an `/api` route exists and is recorded nowhere |
 | 2026-08-14 | `49b8d2f` | §6.2 directory tree — `lib/server/{archive,cards,versioning}/` added as T010, T020 and T025 merged (`3fd050f`, `aee6e07`, `87dffd8`); `tests/` gains the two repo-level guards. §8 seams still **unchanged**: five backend modules now exist and no route calls any of them, so every seam stays `PLANNED` until one does |
