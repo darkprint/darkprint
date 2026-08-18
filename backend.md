@@ -1042,7 +1042,9 @@ ruling, and its failure mode is a hole in a limit rather than a wrong sentence.
 at, and **stating it is what makes it look checked**. A constructed domain owes two demonstrations;
 prose owes the same two and is never asked for either, because prose has no runner.
 
-**And the half worth copying: it pre-registered both readings before anyone ran the experiment.**
+**And the half worth copying, which it declined credit for and was right to:** it pre-registered
+both readings before anyone ran the experiment. The pre-registration discipline was already this
+file's; what is new is **aiming it at the branch that flatters the author.**
 Delete `.sort(cmpString)` from `resolve.ts:191` and re-run the permutation test — *it reds* proves
 the mechanism, *it stays green* means something else normalises the order and the conclusion is
 standing on a premise the author invented. It named the **green** branch as the worse news and the
@@ -1053,6 +1055,50 @@ rescue**, and after the fact you can no longer tell a prediction from a repair.
 earlier, in a different worktree, on a different task, about a different kind of claim. That is the
 run's machinery working as designed, and it is the argument for publishing a rule in the file rather
 than answering the session that found it.
+
+## A limit can only bound work that happens after it runs
+
+**Third altitude of a shape this task has now hit three times, and the first one no guard can close.**
+
+Round 1's T-02: `validateBundle`'s card-count refusal read every card value before refusing — *a
+submission refused after the work has been done still refuses, and has already done the work the
+limit exists to prevent.* D-40-B: the byte guard **materialised the input to measure it**, 386 MB of
+transient heap to decide a submission exceeds 2 MB. Both are the cost sitting *inside* the guard, and
+both were fixable where they were found.
+
+**The third is outside the module by construction.** T040's implementer, checking my own C2
+sharpening rather than accepting it: an exclusion is only a bypass if the excluded field reaches work
+proportional to its size — and it does. `ontologyView` (`lib/core/ontology/resolve.ts:128`) walks
+`base.terms` and then `extensions`, one `Map` slot per term. **O(terms), unmeasured.** Verified here
+against the file.
+
+But `ontology` is not bytes. It is a **prebuilt `OntologyView`** — `readonly ontology: Ontology` plus
+eight methods. For a caller's vocabulary to arrive in that shape somebody must already have called
+`ontologyView(...)` on it, and on a route that call happens **in the route, before the module is
+entered.** So no guard placed anywhere in `lib/server/engine` can cover the cost, **however it is
+written**, including the two I had just paired. By the time the module holds a typed object the work
+of building it is spent.
+
+**The rule: a limit bounds only the work that happens after it runs, and work done to construct its
+own input is unbounded by construction.** The corollary is about placement and it generalises past
+this task to every parse-then-validate boundary in the system: **the bound belongs where the bytes
+are, not where the type is.** A route holds bytes; a module holds structure; the conversion between
+them is the cost nobody is measuring, and it is upstream of every assertion the module can make about
+itself.
+
+**What this does to the two guards owed at D-40-21, which is still good news.** The behavioural
+equality covers the **number** — `JSON.stringify` drops a view's methods and keeps its `ontology`
+property, so the literal includes the whole curated vocabulary that `submissionOf` excludes, and the
+two diverge by kilobytes rather than by an amount a tolerance could hide (`core.ts` is 15 802 bytes
+of source for 49 terms; the serialised property is that order, which is what the claim needs). The
+structural check covers the **fifth route**. **Neither covers the cost**, and that gap is one gap
+rather than two: it lands with whoever writes the first route that builds a view from caller bytes,
+in the same place T-02's note already puts a materialised-size cap.
+
+**The structural check is therefore sharpened before it is written.** Not *no route may pass
+`ontology`* but **no route may call `ontologyView` with a second argument** — `ontologyView(CORE_ONTOLOGY)`
+costs O(49) once and is harmless, and the hazard is exactly the caller-supplied overlay. Strictly
+stronger, and it names the boundary instead of a symptom of crossing it.
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
