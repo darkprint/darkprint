@@ -355,6 +355,205 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## Audit a claim-shape LEXICALLY, because a grep does not know where you have been looking
+
+T005's blind author took the line *every `unobservable`, `unreachable` and `by construction` shares the
+property that nothing reds when they are wrong*, applied it to its **own** files, and found one of eight
+false.
+
+**The method is the finding.** It searched for the **words**, not for places it thought a claim might be
+weak. Its own note: had it asked *where are my unobservability claims shaky*, it would have reviewed the
+one I had just corrected and stopped — **because that is where its attention was.**
+
+That is *the region with no prior defects is the region still holding them* with an instrument attached.
+A semantic audit inherits the auditor's model of where the risk is, which is the same model that
+produced the claims. **A lexical sweep over a claim-shape does not know where anyone has been looking**,
+and that is the whole of why it reaches the seven nobody was worried about.
+
+## A quantifier defect is supported by the same green as the claim it over-states
+
+The one that failed: *"the discriminating cell is unreachable through **any writer**"*, backed entirely
+by an `INSERT`.
+
+**That is the gap AC4's own criterion names one file over** — *a trigger on INSERT alone checks a row
+once and lets it be moved anywhere afterwards* — and it had written that sentence **about the
+implementer's trigger** and not applied it to its own claim. The quantifier said *any writer*; the
+evidence covered **one verb**.
+
+**`unreachable through any writer` and `unreachable through an INSERT` are different claims that the
+same green supports, and nothing distinguishes them from inside a passing run.** That is the
+value-versus-presence rule applied to **the scope of a sentence** — the third altitude this run has
+found it at, after a **field** and a **partition**.
+
+And the added `UPDATE` assertion is expected to **pass** on a correct schema, which is exactly why it is
+worth having: it is not a second way for the criterion to fail, it is the measurement the claim was
+missing. **T050 renames handles and is the writer most likely to reach the verb nobody tested.**
+
+## A claim of unobservability is itself a measurement, and it is the easiest one to fake
+
+T005's blind author labelled the migration-only mirror **unobservable** — *no published accessor gives
+a column's precision from the drizzle side without opening the Forbidden file.* I declined to rule from
+that and asked it to measure. **It is observable.** `getTableConfig(...).columns[i].getSQLType()`
+renders `numeric(6, 3)` or omits the qualifier, and `precision`/`scale` are own properties on
+`PgNumeric` — measured against **base's** numeric columns rather than T005's, since the question was
+about drizzle rather than about the task.
+
+**Its own account is the rule, and it is sharper than the other two it has caught today.** A filter in a
+pipeline and *reconstructible* meaning *recoverable by me* were premises it **never restated**. This one
+it **did** state — in a handback, in a sentence whose whole job was to mark a boundary — **and stating
+it is exactly what made it look checked.**
+
+**`Unobservable-by-construction` is a strong claim: it says no instrument exists, and the only thing
+that establishes it is having gone to look.** It had quoted the precedent that licensed the look two
+messages earlier and still did not take it.
+
+**So the corollary to the falsifier rule: a claim of silence is itself a measurement, and the cheapest
+way to get one wrong is to write it down confidently in a document whose other sentences were
+measured.** Every `unobservable`, `unreachable` and `by construction` in this file is a claim of that
+shape — and the one thing they all share is that **nothing reds when they are wrong.**
+
+**And note where it landed:** the falsifier T005's adversary named as *the migration-versus-catalogue
+comparison nobody takes* was untaken **because this session had told me it could not be taken.** A
+false claim of unobservability does not merely miss a check — it **retires** it, and it retires it in
+the record where the next reader finds the reason and stops.
+
+## Compare each side against the contract, not against each other
+
+The one design choice in the fix, and it is the better one. A direct schema-versus-catalogue diff says
+only **that** they disagree. Comparing **each side against the block** says **which of the two has
+drifted from the contract** — so a fix applied to one side reds exactly one of the two tests, and the
+message names which.
+
+**That is the sentence whoever fixes it needs**, and a symmetric diff cannot produce it: it reports a
+disagreement between two artefacts, either of which might be the correct one.
+
+**And it reported the cost rather than banking the closure.** Reference-mode's expected reds go from 2
+to 3, because the reference is a migration directory and supplies no `schema.ts` — so the new test is a
+third `GAP: green not demonstrated`. Its words: *I would rather say that number went up than let a
+third unobserved green sit inside a "46 passed".* The drizzle side is falsified **by the real
+implementation or not at all**, and what it can show today is that it reds on disagreement, **not that
+it greens on agreement.**
+
+## Does the wider assertion read the contract, or fill its silence?
+
+T005's blind author took the **instance** and the **class** at D-05-09 — pinning `cost_units` and then
+every column whose type the block writes out — and **declined** the same widening it had *insisted on*
+an hour earlier at D-05-08. It flagged the difference itself rather than letting it look like
+inconsistency, and named the distinguishing question:
+
+**does the wider assertion read the contract, or fill its silence?**
+
+At D-05-08 the block ruled a **convention** — *unmarked means `NOT NULL`* — so asserting it at every
+column was **reading one document consistently**, and the eight columns that agreed by luck were
+agreeing with something the contract said. At D-05-09 the block names a type for **eight** columns and
+is **silent on the rest**, so pinning those would be **inventing a contract** and would red on choices
+nobody published.
+
+That is the sharpest available test for how far to generalise an assertion, and it is not "how much
+coverage do I get". **A suite that fills a contract's silence becomes a second contract**, and the next
+implementer meets two.
+
+## One mutation redding two tests shows both fire, not that they are two instruments
+
+Its own correction to its earlier M4 reasoning, and it is the missing axis. It added **M31** —
+qualifying a *different* column — specifically so the class-level test is falsified **independently**
+rather than by the same edit that falsifies the instance-level one.
+
+**Two assertions that only ever red together are one assertion with two names**, and a single mutation
+cannot tell those apart: it reds both either way. Separating them needs a mutation that reaches **one**
+of them.
+
+## A falsifier that fires on the absence of an instrument is doing the harder job
+
+Its reading of what happened, and it is better than mine. Falsifier 3 fired within the hour — but note
+the **direction**: it did not catch a wrong fix. **It caught that nobody could have told a right fix
+from a wrong one, before either existed.**
+
+**A falsifier that fires on the absence of an instrument rather than on a defect has nothing red to
+draw attention to it** — the suite is green, the fix is green, and reverting the fix is green. The only
+thing that surfaces it is somebody stating in advance what their evidence *could not* have shown.
+
+Which is the argument for the practice rather than for any one falsifier: the ones that pay are not the
+ones predicting where a defect will be, but the ones naming where a **measurement** would be silent.
+
+## A ruling can create a fix that lands unobserved, and the adversary said so before it was made
+
+T005's adversary pre-registered this **before** the implementer made the change I had just ruled:
+**nothing in the blind suite asserts a column's type, precision or scale for any of T005's six tables.**
+`columns.test.ts` checks names and nullability; `baseline.json`'s 166 precision/scale entries are AC7's
+frozen baseline over the **ten base** tables and reach none of the new ones.
+
+**So changing `numeric(18,6)` to `numeric` goes 57/57, and so does reverting it.** *A suite that could
+not see a defect cannot see its fix* — this file's own rule, arriving on a ruling I had made an hour
+earlier. **The acceptance number is the reverse mutation, and a zero there is the expected result
+unless the witness is written first.**
+
+**And the fix has two places with nothing comparing them.** The type lives in `lib/db/schema.ts` **and**
+in `0002_community.up.sql`, and `ac8-names` compares those two on **unique index names only**. A
+`schema.ts`-only fix leaves the database still truncating; a migration-only fix leaves drizzle's idea of
+the column wrong for whatever generates the next migration. **Both states pass the whole suite today.**
+
+That is falsifier 3 of its own verdict — *the migration-versus-catalogue comparison nobody takes* —
+**becoming live on the first change made after it was written down.** A stated falsifier that fires
+within the hour is the strongest argument this run has for stating them at all.
+
+**The general form: a ruling that fixes an unobserved defect owes a witness before the fix, not after.**
+Ruling first and fixing second produces a green that means nothing and a reverse mutation that cannot
+distinguish a correct fix from no fix — and by then the round is over and the green is in the record.
+
+Its own closing note is the one to keep about itself: **a finding is a measurement too and goes stale
+the same way** — it offered to re-merge, re-stamp and re-measure rather than have its verdict's reasoning
+carried forward from a message.
+
+## The count format and the table delimiter are the same character
+
+T005's adversary pasted vitest's own summary — `1 failed | 5203 passed` — into `backend.md`'s
+**pipe-delimited** index row, giving that row **eleven fields where every other has ten**.
+`tests/task-state-agreement.test.ts` then read the Evidence cell as the State cell and reported a
+**state disagreement between row and section.** Both were correct. The delimiter was not.
+
+**The red named the wrong thing, and the wrong thing was plausible** — because it had just edited both
+places, which is exactly when a state disagreement is believable. A guard that misidentifies its own
+failure is worse than one that stays silent, because the plausible wrong diagnosis is the one that
+gets acted on.
+
+It was caught only because it followed the rule to **re-gate after a `backend.md` commit** rather than
+carrying the triple over it. A commit that touches only prose still moves what the prose-parsing guards
+read.
+
+## The reverse mutation is the acceptance number for a gap closure
+
+Closing a gap and re-running the suite green proves nothing: **the suite was green before.** T005's
+adversary took the **reverse** mutation as the acceptance number for both `api_key` gaps — schema-only
+rename now reds `ac8-names`, a partial unique now reds the uniqueness test, **0 → 1 on both**.
+
+Its sentence: **a 0 there would mean the fix was unobservable however green the suite looked.** A gap
+is a claim that a mutation reds nothing; its closure is the claim that the same mutation now reds
+something, and only re-running *that mutation* measures it.
+
+And it noted the direction: **the blind author took both gaps from the clause rather than from the
+adversary's probes**, which keeps the suite derived from the contract rather than from someone else's
+findings.
+
+## D-05-09: a bound that truncates rather than refuses is worse than no bound
+
+`run_report.cost_units` ships as `numeric(18,6)` where the block says `cost_units numeric`, unqualified.
+Measured against the shipped type: `0.0000001` stores as `0.000000`, `0.1234567` as `0.123457`,
+`123.4567895` as `123.456790`, and `1234567890123.5` is refused with 22003.
+
+**A submitted cost can become no cost at all, with no error, and it then feeds T180's median and
+p10/p90.** Nothing observes it — no test asserts precision or scale.
+
+**Ruled: unqualified `numeric`, as published.** The module's own docblock argues numeric over float
+*precisely because* "double precision cannot round-trip every decimal the CLI can send" and "the
+registry stores what it was given" — and `(18,6)` **reintroduces that failure silently**, which is the
+module's own argument turned against its column.
+
+The general form is what makes this worth a ruling rather than an edit: **a bound that truncates rather
+than refuses converts a rejectable input into a wrong number.** Refusal is loud and recoverable;
+truncation is silent and lands in an aggregate. If T180 or T230 wants a bound later, it is published in
+the block **and it refuses explicitly**.
+
 ## Proving a narrow fix wide needs narrow mutations, one per site
 
 I ruled D-50-18 from the file the divergence was found in, and the adversary charged that fixing only
@@ -3951,7 +4150,7 @@ it does not decide differently inside a worktree.
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
-| T005 | Schema extension: the community and account tables | T000 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**` | `../darkprint-wt-t005-schema` | `feat/t005-schema` | impl-done | — |
+| T005 | Schema extension: the community and account tables | T000 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**` | `../darkprint-wt-t005-schema` | `feat/t005-schema` | adversarial-pass | — |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
@@ -4528,7 +4727,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T005, Schema extension: the community and account tables
 
-- **State:** impl-done
+- **State:** adversarial-pass
 - **Worktree:** `../darkprint-wt-t005-schema` (impl), `../darkprint-wt-t005-schema-tests` (blind)
 - **Branch:** `feat/t005-schema` (impl), `test/t005-schema` (blind)
 - **Depends on:** T000 (merged)
@@ -4571,7 +4770,38 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
                                                      -- than optional.
                       model, provider, hardware text,
                       input_size int, harness_version text, cost_units numeric,
-                      duration_ms int, reported_at, created_at                  -- AC4, D-05-01
+                      duration_ms int, reported_at, created_at
+                      -- D-05-09: cost_units is UNQUALIFIED `numeric`, as this block says.
+                      -- The shipped (18,6) silently truncates — 0.0000001 stores as
+                      -- 0.000000, i.e. a submitted cost becomes NO COST, with no error,
+                      -- feeding T180's median and p10/p90. That is the exact failure the
+                      -- module's own docblock argues numeric-over-float to avoid: "the
+                      -- registry stores what it was given". A bound that TRUNCATES rather
+                      -- than REFUSES is worse than no bound, because it converts a
+                      -- rejectable input into a wrong number. If T180 or T230 wants a
+                      -- bound later it is published here AND refuses explicitly.
+                      --
+                      -- D-05-09's WITNESS is owed BEFORE the fix. Nothing in the blind
+                      -- suite asserts a column's type, precision or scale for any of the
+                      -- six new tables — `columns.test.ts` checks names and nullability,
+                      -- and baseline.json's 166 precision/scale entries are AC7's frozen
+                      -- baseline over the TEN BASE tables and reach none of these. So the
+                      -- fix goes 57/57 and so does reverting it. The acceptance number is
+                      -- the REVERSE mutation: deleting the fix must red at least one blind
+                      -- test.
+                      --
+                      -- And the fix has TWO places with nothing comparing them: the type
+                      -- lives in `lib/db/schema.ts` AND in `0002_community.up.sql`, and
+                      -- `ac8-names` compares those two on UNIQUE INDEX NAMES only. A
+                      -- schema.ts-only fix leaves the database truncating; a migration-only
+                      -- fix leaves drizzle's idea of the column wrong for whatever generates
+                      -- the next migration. Both states pass the whole suite today.
+                      --
+                      -- Cheapest witness covering both: assert `numeric_precision IS NULL
+                      -- AND numeric_scale IS NULL` for run_report.cost_units FROM THE
+                      -- CATALOGUE — it reds on the current column, greens on the fix, and
+                      -- reds again on a schema.ts-only fix, because the catalogue is built
+                      -- from the migration.                  -- AC4, D-05-01
         api_key       account_id, token_hash text NOT NULL unique, label text,
                       created_at, revoked_at NULL
 
