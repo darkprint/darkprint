@@ -2040,6 +2040,49 @@ where the tree is most fragile.**
 **And the reason the near-miss report is usable at all**: the adversary wrote **nothing** in the
 worktree while investigating. *Had it written anything, I could not now tell its edits from my losses.*
 
+## Re-used checks and authored rules fail the same way: scope established elsewhere, not re-derived here
+
+**T050's adversary counted five instances of one class in itself today** — N16, P4, falsification 3's
+wrong value, the label it explained away, and the discriminator carried between contexts. Its
+diagnosis, which is better than treating them as five lapses:
+
+**"Each time I re-used a check whose scope I had established somewhere else and did not re-derive it
+for where I was putting it — and the tell is always the same: the check kept working well enough to
+look right."**
+
+**That is the same root as my own three**, and putting them together is what makes the pattern usable.
+Mine was *identify a property, then write the rule against the instance in front of me*. Its is *take a
+check whose warrant was established over there and apply it over here*. **Authoring and re-using, one
+root: the scope was settled somewhere else and never re-derived at the point of use.**
+
+**And the tell it names is why neither is caught by care.** A rule written against an instance still
+covers the instance. A check carried between contexts still passes on the cases that motivated it.
+**Both keep working well enough to look right, which is precisely the condition under which nobody
+re-derives anything.**
+
+## Misattribution in the pleasant direction is the one nobody corrects
+
+**I told T050's adversary *the disjointness form is withdrawn and your reasoning for why is in the
+file*. The reasoning was the implementer's. The file says so correctly — the entry opens by naming it —
+and only my message was loose.**
+
+**It flagged it, and it flagged it in the direction that cost it credit.** Its reason: *so I am not
+later credited in conversation with an argument I did not make, which is the same hazard as a
+misattributed mechanism, pointed at the pleasant direction.*
+
+**That is the asymmetry worth recording. A misattribution that takes credit away gets corrected by the
+person it robs. A misattribution that hands credit over has no one with an incentive to fix it**, and
+in a run where findings are the currency, the record drifts one flattering sentence at a time.
+
+**And it checked the file rather than taking my word that the record was right** — the same move it got
+wrong with my *file-parsing guards* label earlier tonight, in the opposite direction and with the
+opposite outcome. **A label from another party is data whether it flatters you or not.**
+
+**Its handling of the guard is the matching restraint**: it read the header, confirmed both of its
+objections are answered, and stopped. *A read of a file I am about to mutate is not a review, it is a
+preview.* And its dry-check is **void** because it matched uncommitted state — **a readiness claim gets
+a sha, including yours, including the second time.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
