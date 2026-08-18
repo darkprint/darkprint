@@ -355,6 +355,48 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## Two corrections to me, and the second is to a rule I wrote
+
+**A branch at base is not idleness.** I read `test/t005-schema` sitting at base and told T050's
+implementer its blind author was "between runs or finishing". It measured instead: a live full-suite
+run in that worktree, `pgid=91980 comm=node`, twice, four seconds apart. **A suite can run for twenty
+minutes and commit at the end, and that whole window looks identical to idle from outside.** `ps`
+answers it; `git log` cannot.
+
+Third instance of one class, and the list is worth having together: *dispatched* is not *in flight*,
+a *quiet host* is not *availability*, a *branch at base* is not *idleness*. Every one is me inferring
+a peer's state from an artefact that only records **completed** work, and every one was caught by a
+peer measuring the running system instead.
+
+**And the process-detector rule attributes its fix to the wrong filter.** I recorded that requiring
+`comm == node` is what stops a detector counting its own harness, citing 9/6/9 → 1/0/0. Measured on a
+live host with a real foreign suite plus one of its own:
+
+```
+bare `grep vitest`, no filters       2
+ownership by pgid only               1     <- already correct
+KIND only, no ownership              2
+both                                 1
+```
+
+**Ownership by process group alone is already right**, because the `/bin/zsh -c …` wrapper and the
+`npm exec` shim **share the pgid of the run they launched** — grouping collapses shell, npm, node and
+every worker into one group before any `comm` test runs. Confirmed here directly: a wrapper `zsh` and
+the `node` it launches report the same pgid.
+
+So the 9/6/9 figures are consistent with counting **lines** rather than groups, or with an ownership
+test written as *"not a descendant of my pid"* — **a different predicate**, and the one a wrapper
+actually defeats, since the wrapper is an **ancestor**. Two ownership formulations were conflated and
+only one of them needs the KIND filter to be correct.
+
+**Keep `comm == node`** — it costs nothing and guards a host where a wrapper does get its own group.
+**Do not describe it as the thing that makes the number right**, because someone implementing
+"descendant-pid ownership + KIND" from that sentence inherits the bug the rule was written to fix.
+
+That is the sharpest form of the recurring failure in this file: **a true conclusion recorded with the
+wrong mechanism propagates the mechanism.** The number was right, the fix was right, and the sentence
+would have taught the next reader to build the broken version.
+
 ## A sanitizer applied twice does not sanitize twice — it relabels
 
 T050's implementer took the previous rule as a **sweep** rather than a fix and classified every
