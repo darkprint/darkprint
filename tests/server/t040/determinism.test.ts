@@ -149,12 +149,26 @@ describe("AC5 breakable 2: cardFiles is not iterated in insertion order", () => 
      differ ONLY in the order their keys were inserted — same keys, same values, same DOT — so
      any difference in the answer is the iteration order reaching the output.
 
-     **What it cannot distinguish, stated rather than left for someone to discover.** If the
+     **What it cannot distinguish, and the argument is SAMPLED rather than proved.** If the
      implementation defers its final ordering to `sortDiagnostics`, an unsorted merge is erased
      before it reaches the caller and this test goes green over a module that iterates in
-     insertion order throughout. That is a real blind spot and the reason the assertion below
-     is a pair: the answers must match, AND the returned order must be the sorted one. The
-     second is what catches a module that does its own merge and skips the sort. */
+     insertion order throughout. Mutating the reference to iterate in insertion order reds
+     nothing, measured.
+
+     My first account of why said no two card diagnostics *can* tie, because `location.file` is
+     the card's own key and is part of the sort. **That is too strong, and T040's adversary
+     corrected it.** `cmpDiagnostic` sorts on severity, file, line, column and code — `message`
+     is **not** in the key — and `sortDiagnostics` falls back to input order on a full tie. So a
+     tie needs two diagnostics from one card agreeing on all five and differing only in their
+     message, which is possible in principle; it is ruled out here only while every card-derived
+     diagnostic carries a location. A witness was hunted through the published surface across the
+     nine bundles, an under-carded bundle, unparseable files, duplicate ids, empty documents and
+     unknown terms, and none was found.
+
+     **Equivalent through the published surface, sampled.** Calling it a theorem is what would
+     retire the next sweep. The assertion below is a pair for the same reason: the answers must
+     match, AND the returned order must be the sorted one — the second is what catches a module
+     that does its own merge and skips the sort, and it does not depend on the argument above. */
   it("gives the identical answer whichever order the caller built the record in", async () => {
     const validateBundle = await bind("validateBundle");
     const input = keepCards(caseFor(EIGHT_NODE_BUNDLE).input, 3);

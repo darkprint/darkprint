@@ -355,6 +355,676 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## The blind suite reaches no route, and the routes were published a round ago
+
+T040's adversary charged this as second only to its red, and it is right. **All 81 of T040's blind
+tests bind the module.** `tests/server/t040/**` contains no `Response`, no `POST`, no status code —
+one incidental occurrence across ten files, verified here. Six route mutations reddened **zero** blind
+tests; four were caught by the implementer's own colocated file and **two by nothing at all**.
+
+**D-40-01 and D-40-02 published four paths, four request shapes and three status codes**, and every one
+of them is held by the implementer's own ten tests. That is D-70-12's shape exactly, in a task where
+the surface was published **during** the round rather than before it.
+
+**And the blind author said so at handback**: *"No route tests… I would rather hand back a suite whose
+every number I have measured than one with a file I have not. Say the word and I will add them in a
+second round; the route half is currently held by nothing, which is D-70-12's shape and yours to
+weigh."* **I did not weigh it.** It named the gap, offered the round, and I acknowledged the message
+without answering the question in it.
+
+So the rule this run keeps arriving at has a new instance and a new location: **an offer to close a gap
+is a question, and acknowledging the message it arrived in is not an answer.** The gap was reported by
+the party who could not close it alone, in the words that named its own shape, and it survived to be
+found by an adversary a round later.
+
+## Two rulings on T040's byte guard, and the fix costs the contract nothing
+
+**D-40-B is a real defect and it is the sharp end of D-40-18.** `byteLengthOf` materialises the
+caller's input to measure it. Measured through the published surface: a depth-25 diamond — **26
+objects** — makes the guard throw a bare `RangeError` where a `LimitExceededError` is contractually
+owed, and below that it allocates up to **386 MB of transient heap to decide that a submission exceeds
+2 MB.** The limit performs the resource exhaustion the limit exists to prevent.
+
+**D-40-20, ruled: `Buffer.byteLength(JSON.stringify(input), "utf8")` is normative as a NUMBER, not as
+a PROCEDURE.** The criterion says which submissions are refused, not how the size is computed. A
+bounded walk that short-circuits past `maxBytes` is conforming — and required. **The number is
+preserved exactly for every submission that is accepted**, because past the bound only the comparison
+is ever needed, which is why this costs the ruling nothing. A `seen` set must not be used for the
+**size**, since it would change the number for shared substructure; it is the right instrument for the
+**cycle**.
+
+**D-40-21, ruled: `submissionOf` excluding `input.ontology` is correct and is now published.** An
+`OntologyView` carries the whole of `CORE_ONTOLOGY`, so measuring it charges a caller the curated
+vocabulary against its own upload's budget. No route can set `ontology`, so every wire call gives the
+same number either way — and the implementer reported the deviation rather than taking it quietly,
+which is the only reason it was available to rule.
+
+## Every sha in a report is a measurement, including the ones that are only context
+
+T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
+itself within the hour.
+
+**It is worse than the instance already recorded against T070's implementer, and the difference is the
+finding.** That one was a sha that had been read at some point and then retyped from memory. This one
+was **never read at all**: it ran `git merge backend`, took the **diffstat** off the screen — "backend.md
+only, 64 insertions", accurate — and then **manufactured a plausible hex string to sit beside it,
+because the sentence had a slot for one.**
+
+**The true detail next to it is what made it pass its own reading.** A fabricated value inside an
+otherwise measured block **inherits the block's credibility** — this file's *a false claim supporting a
+true finding is the hardest kind to catch*, with the true claims doing the laundering.
+
+**And the mechanism is not the obvious one, which matters because a rule with the wrong mechanism
+propagates the wrong fix.** It did not forget to run `rev-parse`. **It never captured the merge's
+output as a value at all** — `git merge` prints a diffstat and no sha, so there was nothing to paste,
+and the gap got filled rather than left open or gone back for.
+
+The existing rule — *the sha comes from `git rev-parse HEAD` in the same command that reads porcelain,
+pasted, not retyped* — is written for the **end of a pass**. It does not cover an **intermediate**
+step, which is exactly where this failed: it stamped before and after and invented the middle, because
+the middle was **narration rather than a result**.
+
+**The sharper form, offered against itself: every sha that appears in a report is a measurement,
+including the ones that are only there for context. An intermediate commit nobody will check out still
+gets read, or it gets omitted — and omitting it is strictly better, because an absent sha asks a
+question and a wrong one answers it.**
+
+Worth noting where it happened: from the adversary whose entire job this round is to check other
+people's claims, in the message reporting that it had reproduced a premise of mine rather than trusting
+it. Neither of those made it immune, and it did not offer either as mitigation.
+
+## A handover is confirmed by the side losing the tree, not only announced to it
+
+T050's implementer stood down explicitly rather than merely being told, and gave the reason:
+**a one-writer rule only holds if the outgoing side confirms.** An appointment message is a claim
+about a future state — the incoming session takes the tree *when it acts* — and until the outgoing
+side says it has stopped, both parties believe they know the holder and only one of them has checked.
+
+This file already required a handover to name **the commit and the holder, in both directions**. That
+was written after I appointed one session while telling another its tree was safe. **It was still only
+half the loop**: naming both directions is the sender's job, and confirming is the receiver's *and*
+the leaver's.
+
+## A built `.next` is tree state that porcelain cannot see, and it changes what typecheck reports
+
+The same message, and it is the F-02 trap seen from the far side. The T050 worktree carries a built
+`.next` from its gate runs. It is gitignored, so **`git status` says nothing about it** — and it
+decides the answer to a command anyone would call a gate.
+
+**`npm run typecheck` comes back clean there. It would not have on arrival.** So a session inheriting
+that tree cannot reproduce F-02 without `rm -rf .next` first — and having done so, **must rebuild
+before quoting a typecheck**, or it quotes 18 phantom `TS2304` errors as a finding against the tree
+it inherited.
+
+**Silent in the dangerous direction both ways**: an unbuilt tree manufactures 18 errors in files no
+backend task touches, and a built tree hides the fact that it would have. Nothing in either command's
+output distinguishes them.
+
+**T050's adversary reproduced it rather than taking it from the record, and corrected the wording.**
+*"A built `.next` hides that it would have"* is true of the **worktree** and not of the **artefact**:
+it had already run `npm ci`, and `npm ci` does not touch `.next`. What makes the state invisible is
+that `.next` is **gitignored**, not that anything rebuilt it.
+
+So **the fix is a reading, not a build.** *"Rebuild before quoting"* implies the remedy is to run
+something; the 18 are a function of **one directory's existence**, and `ls .next/types` tells a
+session which side of it it is on before it runs anything at all. The cheapest detector for a hidden
+premise is usually a **look**, and prescribing an action instead hides that the premise was
+checkable.
+
+Which makes it the third member of a set this wave has assembled: a **filter in a pipeline**, an
+**environment variable**, and now a **generated directory** — three premises that change a gate's
+answer, that no artefact records, and that a reader has no way to detect from the output. **A handover
+stamp names the commit and the porcelain, and neither of those sees any of the three.**
+
+## A count built by describing the groups is a count nobody took
+
+T050's implementer told me **nineteen files**, twice, and I repeated it back. The commit is **22** —
+it had built the number by describing the groups (three modified, five routes, "twelve modules")
+rather than by counting the list it had **already printed**, which holds fourteen under
+`lib/server/accounts/`.
+
+**It was caught by staging by path**: it diffed `--cached --name-only` and counted the output instead
+of trusting the sentence.
+
+*A count is part of a result and it is the part a name cannot fake* — and this one **had a name
+attached and was still wrong**, because the name was a description of a structure rather than a
+reading of a set. The two look identical in a message. And it was wrong in the direction that
+**under-reports what a reviewer has to read**, which is the direction nobody double-checks.
+
+## The delta is measured, the total is arithmetic, and it will not report the second as the first
+
+Its triple was measured at `b06d3e5`; base is now `03956d2`. It could have written `5145 + 65 = 5210`
+and nobody would have queried it. **It refused**, on the grounds that a derivation is not a
+measurement — *which is the whole reason base's line needed an independent confirmation in the first
+place*.
+
+So its statement is: **the `+65` delta is measured, the absolute total against the new base is
+arithmetic.** It also declined to re-take the slot to produce a number nobody had asked for.
+
+That is the reconciliation rule with its provenance attached. This file already requires a handback to
+name the base line it computed against; this adds the sharper half — **say which of your numbers you
+watched and which you calculated**, because both arrive in the same table and only one of them can be
+wrong in a way a rerun would catch.
+
+## A State says where work IS, and mine said it about a branch with nothing on it
+
+I recorded T050 as `impl-done` at `da606e1`. **`feat/t050-accounts` is at `da606e1` — which is base —
+with zero commits ahead and zero T050 files in it.** The entire implementation, nineteen files, exists
+only in the worktree.
+
+Its implementer caught it and the consequence it named is the one that matters: **a handover cannot
+complete.** This file requires the receiving agent to get the sha *and* confirmation that porcelain is
+empty at it. At `da606e1` porcelain has five entries, and an adversary told "the tree is at `da606e1`"
+would run `git rev-parse HEAD`, **get agreement**, and measure nineteen files that exist in no commit.
+That is the T025 contamination shape with the stamp **passing** — identical shas, different trees.
+
+Its triple is sound and unreproducible: both stamps recorded and identical, its own untracked
+`pgstamp.local.mjs` found and removed before it claimed clean — but the tree those numbers describe
+**is not addressable by a sha**, so nobody can check anything out and get it.
+
+**`tests/task-state-agreement.test.ts` is structurally blind to this**, and that is the more useful
+half. It compares the State string in base against the State string on the branch. When the branch
+**is** base, the two strings are the same file, so they agree **trivially**. A guard built to catch
+base lagging a branch cannot see a branch that has no work on it, because the failure has no
+disagreement in it.
+
+Closed by `tests/branch-carries-work.test.ts`: **a task whose State is past `claimed` must have a
+branch that is ahead of `backend`.** Derived from the state word rather than from a list of which
+tasks are live, so it covers the next one automatically.
+
+**And it did not commit on my say-so, which was right.** Its instructions are to commit when its user
+asks; I am a peer, not its user, and a peer's request is not that authorisation however routine the
+protocol makes it. It reported the state and asked rather than presenting a fait accompli. **That is
+the correct handling of the boundary in the direction nobody thinks about** — the usual case is a peer
+asking someone to do what it was refused, and this is a peer declining to be granted something its own
+user has to grant.
+
+## A zero can refute the reasoning attached to correct code
+
+T050's implementer mutated six database-observable guards. Five discriminated. **The sixth reddened
+zero, and it refuted a claim in its own comment rather than revealing a missing test.**
+
+`handle.ts` said release-**last** was what kept a losing caller from surrendering the handle it
+already held. Swapping to release-before-allocate changes **nothing** — because inside
+`db.transaction` a release preceding a failed allocate rolls back with everything else. **That is the
+transaction's guarantee, not the ordering's.** The code was right; the reasoning attached to it was
+wrong, and its "a refused claim rolls back" test observes the **rollback**, which is what it should
+observe and not what the comment said it did.
+
+**So a zero has a further reading beyond the five already recorded.** Not a guard that cannot fail,
+not a probe that cannot reach, not genuinely unobservable, not a silent green, not an equivalent
+mutant — **a mechanism claim that is false about code that is correct.** It is the false-premise rule
+meeting mutation testing: the conclusion holds, the stated cause does not, and **only mutation can
+tell you which of the two you verified.** Reading the code confirms the behaviour and confirms the
+comment simultaneously, because the comment describes the behaviour accurately while misattributing it.
+
+**It corrected the comment rather than the code, and wrote the uncomfortable half in.** Release-last is
+kept as the arrangement still correct if the transaction is ever removed — and that is **defence with
+no observer**: drop the `db.transaction` wrapper and nothing in this repository reds while the ordering
+silently becomes load-bearing again. Naming a defence that nothing tests, beside the reason it is kept,
+is better than deleting it and better than pretending it is covered.
+
+Its own summary is the transferable line: **a mutation redding zero is not a guard that works, and not
+always a missing test either — sometimes it is a true statement about the wrong mechanism.**
+
+## "Zero residue of its own" is a scope, and a stale database outlives every session that could own it
+
+T050's implementer's before-stamp already held `darkprint_test_95db6b505764464bbf9bbe8d09772397`, and
+its after-stamp held the same one. It added nothing and dropped nothing — correctly, since dropping a
+database another session may be driving is the failure that rule exists to prevent.
+
+**Its observation about the wording is the durable half:** T005's implementer released "with zero
+residue **of its own**", which is *carefully true and does not cover this*. Every session in this run
+has been scrupulous about its own residue and the shared stack still carries an orphan, because
+**"mine is clean" composes to nothing.** A leaked scratch database has no owner by construction — the
+session that leaked it is the one that failed to run its teardown, so it is also the one least likely
+to be around to report it.
+
+**And it found its own** — `pgstamp.local.mjs`, untracked in the worktree for all three runs, placed
+there because `pg` will not resolve from the scratchpad. `.mjs` so no glob collects it and the count
+could not have moved, but it was there, its own stamp caught it, and it said so before saying the tree
+was clean.
+
+## A filter that did not survive into a reported number is still a filter you were holding
+
+T005's implementer answered the typecheck challenge without taking the exit it was offered. **It did
+use `grep -v PageProps`** — for its first two typechecks, before it had built. What saves its gate
+line is that no *reported* number came from those invocations: once it built, it wrote `tsc` output
+to a file and read it unfiltered, 18 before and 0 after.
+
+**It declined to let "I was fine" stand**, and the sentence it added instead is the one worth keeping:
+*for two invocations I was holding a claim about attribution while a filter made it look like a claim
+about the gate.* **Nothing about the two commands' output distinguishes them** — which is why the
+distinction has to be maintained by the author rather than discovered by a reader.
+
+That is the difference between a defect and a **near miss reported as one**. This file records plenty
+of the first; the second is rarer and worth as much, because the mechanism is identical and only the
+outcome differs.
+
+## An instrument that records a count cannot comply with the rule to read the line
+
+Its contention figure was 1, 1, 0 — and it **cannot say what the 1 was**, because its sampler recorded
+the count and not the matching `ps` line. So it reported the weaker claim: *an unidentified foreign
+node/vitest process appeared in at least one sample*, **not** "another session was running a suite".
+
+This file's rule is *read the line the detector flagged rather than trusting the count*, and it found
+its own instrument **structurally unable to comply after the fact**. A rule about how to interpret a
+measurement implies a requirement on what the instrument must retain, and an instrument that discards
+the evidence makes the rule unfollowable no matter how carefully anyone reads. Fixed for whoever takes
+the runner next: the sampler appends the matching lines whenever the count is nonzero.
+
+**And the number still bought something**: run 2 passed through a window containing a foreign process
+and returned the identical failing set — robustness to a collision that actually happened.
+
+## Prose is inert for the test count, measured rather than assumed
+
+I have told several sessions that every base move since `73e769f` was `backend.md` and docs, so their
+arithmetic still holds. T005's implementer checked it **structurally** rather than empirically: the
+four `backend.md`-parsing guards loop **inside test bodies** rather than via `it.each`, so they
+contribute a **fixed six cases whatever the prose says**.
+
+That is a stronger result than the observation it confirms. "The count did not change across five
+commits" is evidence; "the count **cannot** change with prose, because the guards do not generate
+cases per parsed item" is a property. The first would stop being true the day someone wrote a guard
+with `it.each` over `backend.md`'s sections — and nobody would notice, because the failure looks like
+a legitimate delta.
+
+## "Reconstructible" is a property of the artefact, not of your machine
+
+T005's blind author took the amend correction and found the concrete cost when it went to act on it.
+`67866ad` and `250d12a` are still readable **in its worktree's reflog** — `git cat-file -p` returns
+the original message — but nothing reachable from the branch head carries them. **A merge into
+`backend` would have taken the corrected message and left no trace that the false one ever existed.**
+
+Its own diagnosis: *I had been reading "reconstructible" as "recoverable by me", which is a claim
+about my machine and not about the artefact.* Same substitution as the shell filter, one level up —
+a premise true of the person holding the terminal, offered as a property of the thing handed over.
+
+**A retraction with nothing to retract is not a record.** It replaced the amend with an **empty
+commit** quoting the false gate line verbatim beside its correction. No file changed, because what
+had to survive was a claim next to its retraction rather than a diff.
+
+## A premise with no rendering
+
+Its sharpening of the pipeline rule, and it unifies two things this file had separately.
+
+*Reasoning printed beside output reads as output* at least leaves the reasoning **in the transcript**,
+where a reader can find it and disagree. **A filter in a pipeline leaves nothing** — not in the
+artefact, not in the output, not in the number. It is a **premise with no rendering**, and that is
+why it survived from its first typecheck to its handback: there was never a moment at which
+re-reading anything would have shown it.
+
+Same shape as `Object.getOwnPropertyDescriptor` being the only way to separate an absent `cause` from
+one passed as `undefined`. **Presence and value are different questions, and a filtered stream has no
+property for the filter to be present in.** The instrument that finds it cannot be reading — it has to
+be running the unfiltered command.
+
+**And its reading of why four sessions hit the build trap is the one to keep**: a missing `npm ci`
+reddens **server** files, which a backend task reads as breakage it owns; a missing build reddens
+**page** files, and *the correct reading of whose they are is what licenses the filter*. Four sessions
+is not four careless readers — it is a trap whose natural response is the wrong one.
+
+## The gate-and-commit class has two shapes, and only one is fixed by chaining
+
+Mine were `set -o pipefail` making a pipeline exit non-zero while the commit ran on the next line.
+Its was a Python heredoc whose **second** assertion failed after its **first** edit had already
+applied — the script exited non-zero having done half its work, and the commit ran against a file the
+script had never written.
+
+Same `&&`-does-not-span-lines cause, different intermediate state: the tree was neither the old thing
+nor the new one, and a `git commit` reading it could not tell. So the fix for its shape is not only
+*chain it* but **write the file atomically or not at all** — its script's single `write` after both
+asserts is why the file survived intact and the amend was a no-op rather than a corruption. It named
+that as luck rather than design, which is why the sha it produced is merely dead instead of carrying a
+half-edited claim.
+
+## A fresh worktree runs `npm ci` AND `npm run build` before its first gate
+
+**Actionable for every worktree in this run, and it has now bitten four sessions.** `.next/types`
+holds a Next-generated global, `tsconfig.json` includes that path, and a worktree that has only ever
+run `npm ci` has no `.next` at all — so its first `npm run typecheck` reports **18 `TS2304: Cannot
+find name 'PageProps'`** across **nine** `app/**` page files that belong to nobody.
+
+This file already says a new worktree runs `npm ci` before its first gate. **`npm run build` goes in
+the same sentence, before typecheck**, or the first typecheck in every fresh worktree is 18 red and
+whoever meets it either **filters them** or reports a defect that does not exist.
+
+It fails in the more dangerous direction than the lockfile trap it sits beside: `npm ci` missing
+produces errors in **server** files that read as breakage, while this produces errors in **page**
+files that a task touching no pages reads as somebody else's problem.
+
+## "Those errors are not mine" is a claim about attribution, offered as a claim about the gate
+
+T005's blind author reported `typecheck 0` and wrote it into its handback commit. The tree reported
+18. It had been filtering with `grep -v PageProps` since its first typecheck, on the reasoning that
+the errors were in files it had not touched.
+
+**That reasoning is correct and it does not make the claim true.** Attribution and gate result are
+different propositions, and only one of them is what a gate line asserts. **The filter encoded a
+judgement that was never restated when the number was written down** — by the time the words
+`typecheck 0` were typed, the judgement had become invisible.
+
+Same object as *reasoning printed beside output reads as output*, except the reasoning was in a
+**shell pipeline** rather than in a sentence. A pipeline is the most durable place to hide a premise:
+it persists across every invocation, it is not in the artefact anyone reviews, and its output is
+indistinguishable from an unfiltered one.
+
+It also produced the **third instance** of the gate-and-commit-on-separate-lines defect while fixing
+this — a Python edit failed its assertion and the `git commit --amend` on the next line ran anyway
+against the unmodified message. First of that class by anyone other than me.
+
+## An acceptance stamp has to still resolve
+
+I accepted `67866ad`. Amending the commit message made it unreachable from the branch — same tree
+object (`93126aee…` at both, `git diff` empty), so **nothing measured changed**, but the sha in my
+acceptance no longer resolves from the head and a reader following it finds nothing.
+
+Sharper than the earlier *an acceptance is of an artefact, not of a tip*: there the branch advanced
+and the accepted commit remained reachable. **Here the accepted commit stopped existing on the
+branch.** Amending after a handback is rewriting a sha somebody else has cited — the thing this run
+forbids for exactly this reason — and the right form is a **new commit carrying the correction**, so
+the record of the false gate line survives beside its retraction.
+
+The re-acceptance is by tree: `93126aee5f82aeac6cdd4b7df434516b7a7beb54`, which is the object both
+shas name and the only identifier here that could not have moved.
+
+## A number that survives the explanation you gave it is evidence against the explanation
+
+T005's blind author's suite reported `5 failed | 1 passed | 42 skipped` and it nearly filed it as
+contention — the host was at load 65 and the story fitted. **It re-ran at load 27 expecting the number
+to move, and it did not.** That is the only reason it stopped believing the explanation.
+
+The cause was real and unrelated: `array_agg(a.attname)` over `pg_attribute` produces `name[]`
+(OID 1003), a type node-pg ships no parser for, so every column set came back as the raw literal
+`{account_id,target_kind}`. `readCatalogue` threw in `beforeAll`, **seven files ran no test at all**,
+and forty-two criteria were never measured.
+
+**Two things in that are worth more than the fix.** The failed count was **actively misleading** —
+*smaller* than the truth and moving, because a hook that throws takes its file's tests out of the
+denominator rather than into the numerator. And the disconfirming move is cheap and general:
+**re-run under the condition your explanation depends on, and require the number to change.** An
+explanation that predicts nothing is not an explanation, and contention is the most available story
+on a loaded host, which is exactly what makes it the one to test.
+
+Keeping the strict throw rather than parsing the literal is the right disposal: parsing it would have
+made the same mistake invisible.
+
+## A measurement that only exists if the run ends cleanly is missing whenever it matters
+
+The same session's contention sampler wrote its JSON in a `finally`, and the figure for a mutation
+sweep **vanished when the process was killed rather than interrupted**.
+
+A contention figure that survives only a clean exit is absent precisely when a run went badly enough
+to be worth measuring. It writes after every sample now.
+
+This is the *inherits the standard of the claim it supports* rule with a clause it was missing: a
+measurement attached to a result has to survive the ways that result can fail. A stamp taken at
+teardown describes only the runs that reached teardown, which is a **filtered sample presented as a
+census** — and the filter selects out exactly the interesting ones.
+
+## Two corrections to me, and the second is to a rule I wrote
+
+**A branch at base is not idleness.** I read `test/t005-schema` sitting at base and told T050's
+implementer its blind author was "between runs or finishing". It measured instead: a live full-suite
+run in that worktree, `pgid=91980 comm=node`, twice, four seconds apart. **A suite can run for twenty
+minutes and commit at the end, and that whole window looks identical to idle from outside.** `ps`
+answers it; `git log` cannot.
+
+Third instance of one class, and the list is worth having together: *dispatched* is not *in flight*,
+a *quiet host* is not *availability*, a *branch at base* is not *idleness*. Every one is me inferring
+a peer's state from an artefact that only records **completed** work, and every one was caught by a
+peer measuring the running system instead.
+
+**And the process-detector rule attributes its fix to the wrong filter.** I recorded that requiring
+`comm == node` is what stops a detector counting its own harness, citing 9/6/9 → 1/0/0. Measured on a
+live host with a real foreign suite plus one of its own:
+
+```
+bare `grep vitest`, no filters       2
+ownership by pgid only               1     <- already correct
+KIND only, no ownership              2
+both                                 1
+```
+
+**Ownership by process group alone is already right**, because the `/bin/zsh -c …` wrapper and the
+`npm exec` shim **share the pgid of the run they launched** — grouping collapses shell, npm, node and
+every worker into one group before any `comm` test runs. Confirmed here directly: a wrapper `zsh` and
+the `node` it launches report the same pgid.
+
+So the 9/6/9 figures are consistent with counting **lines** rather than groups, or with an ownership
+test written as *"not a descendant of my pid"* — **a different predicate**, and the one a wrapper
+actually defeats, since the wrapper is an **ancestor**. Two ownership formulations were conflated and
+only one of them needs the KIND filter to be correct.
+
+**Keep `comm == node`** — it costs nothing and guards a host where a wrapper does get its own group.
+**Do not describe it as the thing that makes the number right**, because someone implementing
+"descendant-pid ownership + KIND" from that sentence inherits the bug the rule was written to fix.
+
+That is the sharpest form of the recurring failure in this file: **a true conclusion recorded with the
+wrong mechanism propagates the mechanism.** The number was right, the fix was right, and the sentence
+would have taught the next reader to build the broken version.
+
+## A sanitizer applied twice does not sanitize twice — it relabels
+
+T050's implementer took the previous rule as a **sweep** rather than a fix and classified every
+`throw` in its module by whether its failure is observable without Postgres. One more guard had no
+observer, and it was the load-bearing one: the class-preserving step that lets T070's rejections
+reach a route with their class intact. Break it and D-50-08's 409 and 400 both become 500s **while
+the module still looks correct**, because the sanitized rendering it produces is a *legitimate*
+rendering.
+
+**The finding is in its third falsification axis, and it is one I would not have thought to ask for.**
+Re-wrapping a `NamingStoreError` looks harmless — it **is** a fault, and sanitizing a fault is what
+the sanitizer is for. But its message already names `allocateHandle`, and re-wrapping replaces it
+with one naming `changeHandle`. **The rendering then names an operation that did not fail**, which is
+the exact opposite of what the whitelist exists for.
+
+So a sanitizer is not idempotent in the way its shape suggests. Applying it to something already
+sanitized does not make it safer; it **overwrites the one piece of true information the first
+application preserved**. Any wrapper that rewrites an operation name has to ask whether the thing it
+is wrapping already carries one.
+
+**And the fourth axis is the one that proves the whitelist is doing its job rather than merely
+existing**: a driver error whose message contains the bound email comes out as
+`setEmail: the account store failed.`, asserted **not to contain the address**, with the original kept
+only as `cause`. That is AC2 carried through the *fault* path, which is where D-13 actually bites.
+
+**The sweep discipline is the transferable part.** A rule that arrives as "this guard had no observer"
+is a fix; the same rule applied as "classify every `throw` by whether its failure is observable
+without the resource" is a **survey**, and it found the one that mattered rather than the one that
+prompted it. Knowing when to stop is part of it — it stopped at the genuinely store-shaped throws
+rather than inventing pure observers that would fake the thing under test.
+
+**And it falsified `tests/no-raw-control-bytes.test.ts` against its own untracked files** rather than
+believing this file's claim that `--others --exclude-standard` reaches them. Planted a NUL, got the
+offset and the path, removed it. Given T-01 fired twice on this task, *"the guard covers untracked
+files"* was a premise to check rather than to inherit — which is this file's own rule about premises
+handed to you, applied to the file itself.
+
+## A module that sanitizes its rejections cannot use its own error surface as an oracle
+
+T050's implementer's finding, and it is the sharpest consequence of a ruling this run made
+deliberately.
+
+Its first door test asserted the class and the message of an empty-`githubId` refusal. Falsifying it
+— removing the guard — reddened **zero**. With the door gone, `db.insert` threw a `TypeError`, and
+`upsertFromGitHub`'s own catch-all wrapped it into **the same `AccountStoreError` with the same
+message**. The test passed with the guard and passed without it.
+
+**The two paths are indistinguishable by design.** *"The caller sent something bad"* and *"the driver
+blew up and got sanitized"* render identically **because D-50-17 requires it** — the rendering carries
+the operation and nothing else, precisely so no statement, parameter or SQLSTATE escapes. **The
+sanitization that makes the refusal safe is the same thing that makes it unobservable.**
+
+The general form, in its words: **when a module sanitizes its rejections, its own error surface stops
+being a usable oracle for its guards.** A whitelist admitting one form per operation means no
+assertion on the *output* can separate two paths through that operation. Every guard whose failure
+path ends in the sanitizer needs a discriminator **outside** the rendering.
+
+Its discriminator is the right one and it generalises: a `Proxy`-backed `Db` recording any property
+access, asserting `touched() === false`. **Not a stronger assertion about the error — a proof that the
+resource was never reached.** Five guards, all previously indistinguishable, all now discriminating.
+
+**This is `## A discriminator can be designed out of reach` arriving from the other direction.** There
+a guard became unreachable because someone would reasonably harden an input. Here it is **sanitized**
+out of reach, by a ruling that is correct and that I would make again. The lesson is not to sanitize
+less; it is that **a correct hygiene ruling silently converts every guard behind it into an untestable
+one**, and the cost has to be paid in a different currency — a side effect observed, a resource proven
+untouched — rather than noticed later as a suite full of tests that cannot fail.
+
+**And note which instrument found it.** Not review, not the type system: falsification, reporting a
+zero that the author then read rather than counted. The test had been green from the day it was
+written.
+
+## A defect unreachable through the wire is reachable through the barrel
+
+T050's implementer found a data-loss defect in its own `updateProfile` while waiting for the slot.
+`patch.displayName ?? null` maps a **present key carrying `undefined`** to `null` — that is, to
+**clear the field** — where the published type makes `?` mean absent and `| null` mean clear.
+
+**`JSON.parse` cannot produce an `undefined` value, so no HTTP request reaches it and no route test
+could ever have caught it.** The only callers who can are the twelve tasks behind T050 that consume
+the barrel — spreading a partly-built object, `{ bio: maybeUndefined }`, and silently erasing a bio
+nobody asked to erase.
+
+Its disposal is the right one and the reasoning is the keepable half: **skipping loses a caller's
+bug; clearing loses a user's text.** When the two readings of an ambiguous input differ in what they
+destroy, the one that destroys nothing is correct even if it hides a mistake.
+
+**The general form is the mirror of the parsed-front-door rule.** This file has repeatedly used
+"`JSON.parse` cannot produce that shape" to close a hazard — T-02's shared substructure, T040's
+circular manifest. That argument is sound **for the route** and says nothing about the **barrel**,
+which every downstream task calls in-process. A module published to twelve consumers has two front
+doors and only one of them is parsed.
+
+## A fix reachable only through a database lands unobserved in every environment without one
+
+The same session, on the same defect. Every rule in that path — absent versus null versus undefined,
+validate-before-write, an empty patch being a no-op — was reachable only through Postgres, so the fix
+would have been invisible to every gate that did not hold the slot.
+
+It extracted the shaping as a **pure** function and asserted the rules directly. That is *a fix for an
+unseen defect lands unobserved by construction*, applied **before** the fix rather than discovered
+after it — and it converts a database-gated assertion into one every session can run for free.
+
+The second guard is the one to notice: refusal-downgraded-to-a-skip catches a module that **validates
+as it writes**, storing the good field and then refusing. Invisible to any assertion on a return
+value, and previously invisible to anything at all without a database.
+
+**And a drizzle fact worth having repo-wide**, verified from source rather than believed: a
+transaction's `catch` runs `ROLLBACK` and **then** re-throws the original, unwrapped — so
+`HandleTakenError` survives a rolled-back transaction and the 409 mapping holds. The consequence is
+that if the **rollback itself** throws, the original error is lost and replaced. The substitute is a
+genuine fault, so it lands as a store error, which is the right answer for the wrong reason.
+
+## Every gate line in this run assumes an environment nobody wrote down
+
+T050's implementer asked whether base's line is reproducible without `DATABASE_URL` exported, rather
+than assuming. It is not, and the difference is the whole suite:
+
+```
+without the env    Tests  178 failed | 4245 passed | 721 skipped (5144)
+with the env       Tests    1 failed | 5143 passed |   0 skipped (5144)
+```
+
+**Base's line — `1 failed | 5143 passed (5144)` — is only produced with `.env.example`'s variables
+exported.** Every gate number quoted in this file, in every handback, assumes it. It was never stated
+because it was never wrong for anyone, which is precisely the condition under which a premise stops
+being examined.
+
+**The hazard is the skipped count, and it is the reason this needed asking.** A partial export leaves
+suites `skipIf`-ing rather than failing, so a run can carry hundreds of silent skips and **agree with
+base on the failure set** while measuring a fraction of the tree. Anyone comparing *failures* rather
+than *totals* reads it as clean. That is the `describe.skipIf` trap this file already records, at the
+scale of the whole suite rather than one file.
+
+**So a gate result carries three numbers, not two: failed, passed and SKIPPED** — and the skipped
+count is not decoration, it is the one that says whether the other two describe the tree. Several
+sessions had already arrived at reporting it; it is a rule now, and the environment it depends on is
+stated rather than assumed.
+
+**And the standard `skipIf` shape is what makes this invisible rather than loud.** A missing
+`DATABASE_URL` ought to be the loudest possible failure — it means the run measured nothing about the
+database — and instead it is the quietest, because skipping is how the suite is designed to behave
+when a developer has no stack up. The design is right for a developer and wrong for a gate, and
+nothing distinguishes the two contexts.
+
+## An amendment can owe nothing, and checking beats adding a ceremonial test
+
+D-50-06 published `PublicAuthor.handle` as `string | null`. By the two-holders rule that reaches the
+module **and** the suite, and T050's blind author's first instinct was that it owed a new assertion at
+the next blind round — the D-70-23 shape.
+
+**It checked instead of adding one, and the answer was no.** Every `getPublicAuthor` assertion in its
+suite already pins the returned handle to **the exact string the caller asked for**, at ten sites.
+Equality with a non-null key **entails** non-nullness, so the published property is held pointwise
+everywhere it is reachable — and held by something **narrower** than itself. A quantified *"the
+return, when defined, has a non-null handle"* would add no observable coverage: the only way to
+produce one is to answer with a different account's row, which the equality pins already catch and
+name.
+
+**So an amendment's honest cost is sometimes zero, and finding that out requires the same work as
+discharging it.** The failure mode this avoids is the mirror of everything else in this file: not a
+ruling that never binds, but **a test added to discharge a ruling that reports coverage of something
+already held**. That inflates a suite exactly the way an unreachable cell or a non-distinct axis does,
+and it is harder to see because it looks like diligence.
+
+The general form: **before writing an assertion for an amendment, ask what already entails it.** A
+narrower assertion that happens to imply the published property is better evidence than a restatement
+of the property, because it fails on more.
+
+## A handover sha stops being true when the branch moves under it
+
+T050's blind author merged `backend` after I accepted its handback, which advanced `test/t050-accounts`
+past the sha I had accepted — and it reported the delta rather than leaving me to find that the
+handover sha was no longer the tip. Verified here: the only file changed is `backend.md`, and
+`git diff 22be078 3a64926 -- tests/server/t050/` is **empty**, so the artefact accepted is
+byte-identical.
+
+Its own framing is the reason this is worth a line: **the handover sha is the one field in a handback
+with no redundancy**, so it is also the one field that quietly stops being true when a branch moves
+for a reason unrelated to the work. An acceptance names a sha; a merge from base invalidates the name
+without touching the thing named.
+
+**The rule: an acceptance is of an artefact, not of a tip.** When a branch advances after acceptance,
+the mover reports the delta and proves the artefact unchanged — which is exactly what happened — and
+the adversary is pointed at the **current** tip with the acceptance still standing.
+
+## A ruling granted in a REPLY is a ruling published nowhere
+
+The displacement fix landed and **four rulings from the same round never left my reply**. T050's
+implementer reported F-03 and F-04, I granted all four in a message — `AccountStoreError`, the
+free-text door, code-point lengths, the empty-`githubId` close — and published none of them. Grepping
+the whole of `backend.md` returned **zero** occurrences of `AccountStoreError`, zero of "code point".
+
+Its diagnosis is the one to keep: **the rulings that were *stated* got fixed and the rulings that were
+*granted in reply to a report* never left the reply.** Those are two different acts and only the first
+has a habit attached to it. A ruling made while answering somebody is a ruling made in the least
+durable medium available, and it feels finished because the person who needed it has it.
+
+**And the exposure is asymmetric in a way that hides it.** The implementer was already correct — it
+had built all four before I ruled and I ruled its way — so nothing it does reveals the gap. The whole
+cost lands on the **blind author**, which binds the published block and cannot see the reply: four reds
+against code that matches every ruling, in a task gating fifteen others.
+
+## The worked example survived the fix that was written about it
+
+`PublicAuthor.handle: string` is the field the displacement rule uses as its own worked example. The
+commit that wrote that rule **did not change the declaration**, and three sessions reported it still
+`string` afterwards.
+
+T050's blind author's reading is exact and it is the reason this is recorded rather than just fixed:
+*that is not an argument against the rule; it is the strongest possible evidence for it, and it says
+the failure is not attention but **method**.* Adding a ruling and editing a declaration are different
+operations, and only the second displaces. I had done the first while writing about the need for the
+second.
+
+**A related cost of doing it by substitution.** The `.dev` → `.io` fix was a global replace, so it also
+displaced the one occurrence that had to survive — the **quotation of the error** — leaving the ruling
+arguing with itself: *"the contract said `darkprint.io`; it occurs once in the whole repository"*. **A
+substitution displaces every occurrence, including the ones that are evidence rather than
+instruction**, and the record of what was wrong is what makes a ruling reconstructible.
+
 ## A ruling that arrives without displacing anything is a contradiction I authored
 
 The worst instance in this run, and it is mine. I ruled ~50 contract defects across T005, T040 and
@@ -2877,7 +3547,7 @@ it does not decide differently inside a worktree.
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
-| T005 | Schema extension: the community and account tables | T000 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**` | `../darkprint-wt-t005-schema` | `feat/t005-schema` | claimed | — |
+| T005 | Schema extension: the community and account tables | T000 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**` | `../darkprint-wt-t005-schema` | `feat/t005-schema` | impl-done | — |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
@@ -2886,8 +3556,8 @@ it does not decide differently inside a worktree.
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
-| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | claimed | — |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | tests-written | 98 blind tests on `test/t040-engine`, 96 red on the absent module and 2 module-independent; 98/98 against a throwaway correct reference on three identical runs; 33 mutations, 32 CAUGHT / 0 MISS / 1 equivalent-through-the-sort |
+| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | — |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | reverted | — |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
@@ -3453,7 +4123,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T005, Schema extension: the community and account tables
 
-- **State:** claimed
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t005-schema` (impl), `../darkprint-wt-t005-schema-tests` (blind)
 - **Branch:** `feat/t005-schema` (impl), `test/t005-schema` (blind)
 - **Depends on:** T000 (merged)
@@ -3488,6 +4158,12 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
                                                      -- release: see AC4/D-05-01. The digest is the
                                                      -- key because reportedCost() takes one, and two
                                                      -- releases may legitimately share it.
+                      account_id,                    -- D-05-07: the SUBMITTER, uuid NOT NULL, FK to
+                                                     -- account.id. T180's AC5 ("a report for one's own
+                                                     -- blueprint does not increment validated") cannot
+                                                     -- be built without it, so anonymous submission
+                                                     -- would make that criterion unsatisfiable rather
+                                                     -- than optional.
                       model, provider, hardware text,
                       input_size int, harness_version text, cost_units numeric,
                       duration_ms int, reported_at, created_at                  -- AC4, D-05-01
@@ -6851,7 +7527,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T050, Accounts and sessions
 
-- **State:** claimed
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t050-accounts` (impl), `../darkprint-wt-t050-accounts-tests` (blind)
 - **Branch:** `feat/t050-accounts` (impl), `test/t050-accounts` (blind)
 - **Depends on:** T000 (contract: session), T070 (contract: handle allocation)
@@ -6862,7 +7538,12 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Published signatures** (checked against `backend` at `9411199`, against `lib/db/schema.ts`'s `account` — `github_id` and `handle` each carry a unique index, `handle` is **nullable**, `notification_preferences` is `jsonb NOT NULL DEFAULT {}` and belongs to T190 — and against T000's `SessionPayload`, which is `{ accountId, handle: string | null }`. Barrel: `@/lib/server/accounts`.)
 
         interface PublicAuthor {
-          handle: string; displayName: string | null; avatarHue: number | null;
+          handle: string | null;   // L-06 (D-50-06 is the session re-mint): AC1 rules a handle-less
+                                   // account legal, so getAccount
+                                   // must be able to describe one. getPublicAuthor(db, handle) is
+                                   // KEYED by handle and can never return a null one; the
+                                   // nullability is reachable only through getAccount().author.
+          displayName: string | null; avatarHue: number | null;
           validator: boolean; bio?: string;
         }
         interface AccountRecord {
@@ -6918,7 +7599,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **`DELETE /api/account` is NOT T050's** (seams.md SEAM-50 is wrong): deletion is `app/api/account/delete/**`, T120's. §8 is corrected with the rest.
 
-  **The problem type base is `https://darkprint.io/problems`** (D-50-03). The contract said `darkprint.io`; it occurs **once in the whole repository**, in that line, while six live responses carry `.io` and `lib/server/http/problem.ts:8` defines it. **The code wins and the divergence is reported** — CLAUDE.md's own rule. `handle-required` is `https://darkprint.io/problems/handle-required`, 403.
+  **The problem type base is `https://darkprint.io/problems`** (D-50-03). The contract originally published the type under a **`.dev`** host — which occurred **once in the whole repository**, in that one line — while six live responses carry `.io` and `lib/server/http/problem.ts:8` defines it. **The code wins and the divergence is reported** — CLAUDE.md's own rule. `handle-required` is `https://darkprint.io/problems/handle-required`, 403.
 
   **T070's errors cross the barrel and T050 maps them** (D-50-08): `HandleTakenError` → **409** via `conflict()`, `InvalidNameError` → **400** via `badRequest()`. Neither is re-rendered into a T050 form — the whitelist admits T070's two forms **passing through unaltered**, which keeps one author for each message.
 
@@ -6926,20 +7607,30 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **Types, measured against the columns** (D-50-09/D-50-10/D-50-11): `PublicAuthor.handle` is `string | null`, matching `SessionPayload.handle` and the column, because AC1 rules a handle-less account legal and `getAccount` must be able to describe one. `validatorWeight` is published `number` over a `numeric(6,3)` column that drizzle types **`string`** and `pg` returns as `"1.000"` — the module converts, and `1.005` is representable so an integer reading is wrong. `avatarHue` is bounded **0–360** and refused outside it with `InvalidProfileError`: the column is `smallint`, so `40000` reaches the driver as SQLSTATE 22003 inside a `DrizzleQueryError` **whose message carries the statement and every bound parameter** (D-13). `displayName` ≤ 80 and `bio` ≤ 400 characters.
 
+  **D-50-15, the free-text door — the first `text` columns any task in this run writes.** T070 never faced this: its grammar admits `[a-z0-9-]` only, so character count and byte count were one number and nothing could arrive malformed. `displayName`, `bio` and `email` are free text and **a NUL or an unpaired surrogate is REFUSED at the door, never repaired**, with `isWellFormed` — the language's own answer, so no second definition can drift from it. A lone surrogate has no UTF-8 encoding and `pg` silently rewrites it to U+FFFD (D-12), so the row would hold a different string from the one typed; a NUL raises 22021 as a `DrizzleQueryError` carrying the statement and every bound parameter.
+
+  **D-50-16, length is counted in CODE POINTS — `[...value].length`, not `value.length`.** `displayName` ≤ 80 and `bio` ≤ 400 **code points**. Neither column has a storage bound to trade against, and a UTF-16 bound of 80 refuses a 41-character name made of emoji. This is the one bound where the two readings are equally defensible and **disagree on exactly one class of input**, so it is published rather than left to a reader.
+
+  **D-50-17, `AccountStoreError` is published from the barrel**, with the fourth admissible form:
+
+        AccountStoreError  "<operation>: the account store failed."
+
+  It carries the operation alone — no statement, no bound parameter, no SQLSTATE. **AC2 is the argument, not hygiene:** on `setEmail` the bound parameter **is** the email, so *"no `email` value appears in any rejection, including one about the email"* is false the moment a driver fault leaves unwrapped. It also closes `upsertFromGitHub`, which had no door: an **empty-string `githubId` is storable today** (`NOT NULL` is satisfied by `""`) and two would collide on `account_github_id_key` as one identity, which is AC6 read backwards — unreachable through the OAuth callback, reachable through the barrel by any later caller.
+
   **Email has no predicate beyond non-empty** (D-50-12) and is **unverified** — nothing sends a verification, so no validity claim is made or tested.
 
   **D-50-09, ruled:** an **optional** field means the key is **omitted**, and the wire and the object agree. `Response.json` drops a key whose value is `undefined`, so a record built as `{ …, bio: undefined }` has the key in the object a unit test inspects and **not** on the wire — build it absent, so an object-level and a wire-level key-set assertion cannot disagree.
 
   **D-50-13, ruled:** AC2's "non-owner" means **NOT AUTHORIZED**, not "not the owner" — `can` runs `isOperatorGrant(actor, action) || canOnAccount(...)`, so an operator **is** granted `read` and receives `email`, and that is correct. The contradiction is also **unreachable through the published surface today**: `SessionPayload` is `{ accountId, handle }` with no `kind`, so every route-built `Actor` is `kind: "account"` and no route can mint an operator.
 
-- **Acceptance criteria:** (1) a first sign-in with no handle cannot complete until one is chosen and allocated; (2) `email` is absent from every response a non-owner can obtain; (3) a GitHub rename leaves the handle and the handle and the `account` row untouched; (4) **D-50-04, in D-70-06's own words:** a handle change leaves the old handle claimable by **no other account, ever**, and **reclaimable by its original holder**. Both halves or neither — an implementation satisfying only the first refuses a rename its own author wants to undo; (5) reading the account without a session returns `problem+json` 401, never a fixture; (6) two GitHub identities cannot map to one account.
+- **Acceptance criteria:** (1) a first sign-in with no handle cannot complete until one is chosen and allocated; (2) `email` is absent from every response a non-owner can obtain; (3) a GitHub rename leaves the handle and the `account` row untouched; (4) **D-50-04, in D-70-06's own words:** a handle change leaves the old handle claimable by **no other account, ever**, and **reclaimable by its original holder**. Both halves or neither — an implementation satisfying only the first refuses a rename its own author wants to undo; (5) reading the account without a session returns `problem+json` 401, never a fixture; (6) two GitHub identities cannot map to one account.
 - **Out of scope:** notification preferences (T190), saves (T140), deletion (T120), API keys (T230), the validator grant workflow.
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-02, B-05.
 
 ### T040, Engine service: validate and analyze
 
-- **State:** tests-written
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
@@ -6949,7 +7640,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Published signatures** (checked against `backend` at `9411199` and against `lib/core/index.ts`, which exports `loadBundle` and the `LoadBundleResult` type — both are **consumed, never reimplemented**, and `lib/core/**` is Forbidden here. Barrel: `@/lib/server/engine`. This task touches no database and takes no `Db`.)
 
         // D-40-07: every field optional; DEFAULT_ENGINE_LIMITS is exported and passes all nine archive bundles.
-        interface EngineLimits { maxBytes: number; maxCards: number; maxNodes: number }
+        interface EngineLimits { maxBytes?: number; maxCards?: number; maxNodes?: number }
 
         validateBundle(input: {
           manifest: BundleManifest; dot: string;
@@ -7028,6 +7719,10 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   `<operation>` is the function's own name. **`maxCards` and `maxNodes` are `validateBundle`'s alone** — a sibling takes one document, so a card count is meaningless and `validateDot` does not enforce `maxNodes` even though it parses a graph, because a limit enforced in two places is two limits.
 
+  **D-40-17 is normative as a NUMBER, not as a PROCEDURE (D-40-20, ruled on T040's adversary's question).** The criterion says which submissions are refused; it does not say how the size is computed. **So a bounded walk that accumulates and short-circuits the moment the running total exceeds `maxBytes` is CONFORMING**, and it is required — see D-40-B. Cost becomes O(`maxBytes`), bounded by the limit rather than by the input graph, and the number is preserved exactly for every submission that is **accepted**, because past the bound only the comparison is ever needed. A `seen` set must **not** be used for the size — it would change the number for shared substructure — and is the right instrument for the **cycle**, which becomes a typed refusal instead of a `TypeError`.
+
+  **D-40-21: `submissionOf` excludes `input.ontology`, and that is now published rather than a deviation.** An `OntologyView` carries the whole of `CORE_ONTOLOGY`, so measuring it would charge a caller the entire curated vocabulary against its own upload's budget — refusing a small bundle for the size of something it did not send and cannot make smaller. No route can set `ontology`, so **every wire call gives the same number under either reading**. Reported by the implementer rather than taken quietly, and confirmed by the adversary.
+
   **D-40-17, `input` byte length is `Buffer.byteLength(JSON.stringify(input), "utf8")`.** Three readings differed by hundreds of bytes on a real bundle. `lib/server/**` is not isomorphic, so `Buffer` is available here; `lib/core` remains the place that may not use it.
 
   **`DEFAULT_ENGINE_LIMITS` is asserted as a PROPERTY, not as three numbers** — every archive bundle passes with `limits` omitted, and each default exceeds the archive's maximum. Measured by T040's blind author: largest submission **17 963 bytes**, most cards **9**, most nodes **9**. A test pinning the constant moves with the constant and stops being a bound, which is D-70-17's note about `MAX_NAME_LENGTH` applied here.
@@ -7082,6 +7777,47 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     `frontline-triage` ships `ontology/extensions.yaml`, so the nine-case sweep carries a ONE-case
     discriminator for `extensions`, and the saturation direction — a module layering the archive's own
     extensions in regardless of its argument — is caught by one test and by nothing in the sweep.
+  - 2026-08-18 test author, **round 2: the route half, which round 1 named and did not close.**
+    Every one of round 1's 98 tests bound the module — no `Response`, no `POST`, no status code
+    anywhere under `tests/server/t040/**`. I reported the gap in my own handback and offered the
+    round; the round closed without it, and four paths, four request shapes and three status codes
+    were left held by the implementer's colocated file alone. `routes.test.ts` is 35 tests over the
+    four published URLs. Suite is now **133**: in this worktree `127 failed | 6 passed`, every red
+    either `@/lib/server/engine does not load` or ``No route file exists under `app/api/validate/` ``,
+    both naming the failed criterion. **All 6 green are module-independent by construction** — the
+    README oracle's own parse, the one-bundle-carries-a-vocabulary count, and four floor assertions
+    over this suite's own bad-body case list — and are reported as such rather than as coverage.
+    `lint` 0; `tsc --noEmit` still exactly 2, both the absent module.
+  - 2026-08-18 test author: **the routes are DISCOVERED, not guessed.** `app/api/validate/**` is
+    walked and dispatched through Next's own matcher, following T070's idiom, so a red says "this
+    URL is unserved" rather than "a file is missing from where I looked" — the file layout is the
+    implementation's and the URL is the contract's. It also keeps `@/app/api/validate/...` out of
+    `tsc` entirely, so the routes' absence is a runtime criterion rather than a compile error that
+    would stop every other file being checked.
+  - 2026-08-18 test author: **21 route mutations against a reference carrying all four routes:
+    18 CAUGHT, 0 MISS, 3 GAP.** The adversary's six were taken as the specification and not as its
+    answers — tests written from the contract, scored against the list afterwards. Five of the six
+    are CAUGHT. **The sixth, `withLimits` swallowing every throw, reds nothing and is an equivalent
+    mutant against a CONFORMING route**, measured rather than assumed: a body that fails a shape
+    check is refused *by return* and not by a throw, and `lib/core`'s `loadBundle` is documented
+    "Never throws", so nothing but a limit ever reaches the catch. It is a real defect only in
+    combination with a route that does not validate — so that half is now driven directly: a route
+    stripped of all three body checks reds **7**, and a body that is both malformed and oversized
+    must answer 400 rather than 413, which is the ordering a request can actually exercise.
+    The other two GAPs are the same species and are classified, not counted: removing the
+    array guard on the body itself, and treating an unparseable body as `{}`, both still end in 400
+    through the per-field checks, so neither is distinguishable through the published surface.
+  - 2026-08-18 test author, **correction to round 1's GAP argument, from T040's adversary and
+    accepted.** I wrote that no two card diagnostics *can* tie because `location.file` is in the
+    sort key. Too strong: `cmpDiagnostic` sorts on severity, file, line, column and code —
+    **`message` is not in the key** — and `sortDiagnostics` falls back to input order on a full
+    tie. The tie is ruled out only while every card-derived diagnostic carries a location, which is
+    a property of today's `lib/core` and not a theorem. A witness was hunted across the nine
+    bundles, an under-carded bundle, unparseable files, duplicate ids, empty documents and unknown
+    terms and none was found. **Equivalent through the published surface, sampled rather than
+    proved** — and the verdict stands while the reason is weaker than I claimed. The comment in
+    `determinism.test.ts` carries the corrected argument; labelling it a theorem is what would have
+    retired the next sweep.
 
 ### T080, Registry read model and read API
 
