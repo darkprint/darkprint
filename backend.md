@@ -355,6 +355,55 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## "Reconstructible" is a property of the artefact, not of your machine
+
+T005's blind author took the amend correction and found the concrete cost when it went to act on it.
+`67866ad` and `250d12a` are still readable **in its worktree's reflog** — `git cat-file -p` returns
+the original message — but nothing reachable from the branch head carries them. **A merge into
+`backend` would have taken the corrected message and left no trace that the false one ever existed.**
+
+Its own diagnosis: *I had been reading "reconstructible" as "recoverable by me", which is a claim
+about my machine and not about the artefact.* Same substitution as the shell filter, one level up —
+a premise true of the person holding the terminal, offered as a property of the thing handed over.
+
+**A retraction with nothing to retract is not a record.** It replaced the amend with an **empty
+commit** quoting the false gate line verbatim beside its correction. No file changed, because what
+had to survive was a claim next to its retraction rather than a diff.
+
+## A premise with no rendering
+
+Its sharpening of the pipeline rule, and it unifies two things this file had separately.
+
+*Reasoning printed beside output reads as output* at least leaves the reasoning **in the transcript**,
+where a reader can find it and disagree. **A filter in a pipeline leaves nothing** — not in the
+artefact, not in the output, not in the number. It is a **premise with no rendering**, and that is
+why it survived from its first typecheck to its handback: there was never a moment at which
+re-reading anything would have shown it.
+
+Same shape as `Object.getOwnPropertyDescriptor` being the only way to separate an absent `cause` from
+one passed as `undefined`. **Presence and value are different questions, and a filtered stream has no
+property for the filter to be present in.** The instrument that finds it cannot be reading — it has to
+be running the unfiltered command.
+
+**And its reading of why four sessions hit the build trap is the one to keep**: a missing `npm ci`
+reddens **server** files, which a backend task reads as breakage it owns; a missing build reddens
+**page** files, and *the correct reading of whose they are is what licenses the filter*. Four sessions
+is not four careless readers — it is a trap whose natural response is the wrong one.
+
+## The gate-and-commit class has two shapes, and only one is fixed by chaining
+
+Mine were `set -o pipefail` making a pipeline exit non-zero while the commit ran on the next line.
+Its was a Python heredoc whose **second** assertion failed after its **first** edit had already
+applied — the script exited non-zero having done half its work, and the commit ran against a file the
+script had never written.
+
+Same `&&`-does-not-span-lines cause, different intermediate state: the tree was neither the old thing
+nor the new one, and a `git commit` reading it could not tell. So the fix for its shape is not only
+*chain it* but **write the file atomically or not at all** — its script's single `write` after both
+asserts is why the file survived intact and the amend was a no-op rather than a corruption. It named
+that as luck rather than design, which is why the sha it produced is merely dead instead of carrying a
+half-edited claim.
+
 ## A fresh worktree runs `npm ci` AND `npm run build` before its first gate
 
 **Actionable for every worktree in this run, and it has now bitten four sessions.** `.next/types`
