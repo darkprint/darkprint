@@ -355,6 +355,227 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A number that survives the explanation you gave it is evidence against the explanation
+
+T005's blind author's suite reported `5 failed | 1 passed | 42 skipped` and it nearly filed it as
+contention — the host was at load 65 and the story fitted. **It re-ran at load 27 expecting the number
+to move, and it did not.** That is the only reason it stopped believing the explanation.
+
+The cause was real and unrelated: `array_agg(a.attname)` over `pg_attribute` produces `name[]`
+(OID 1003), a type node-pg ships no parser for, so every column set came back as the raw literal
+`{account_id,target_kind}`. `readCatalogue` threw in `beforeAll`, **seven files ran no test at all**,
+and forty-two criteria were never measured.
+
+**Two things in that are worth more than the fix.** The failed count was **actively misleading** —
+*smaller* than the truth and moving, because a hook that throws takes its file's tests out of the
+denominator rather than into the numerator. And the disconfirming move is cheap and general:
+**re-run under the condition your explanation depends on, and require the number to change.** An
+explanation that predicts nothing is not an explanation, and contention is the most available story
+on a loaded host, which is exactly what makes it the one to test.
+
+Keeping the strict throw rather than parsing the literal is the right disposal: parsing it would have
+made the same mistake invisible.
+
+## A measurement that only exists if the run ends cleanly is missing whenever it matters
+
+The same session's contention sampler wrote its JSON in a `finally`, and the figure for a mutation
+sweep **vanished when the process was killed rather than interrupted**.
+
+A contention figure that survives only a clean exit is absent precisely when a run went badly enough
+to be worth measuring. It writes after every sample now.
+
+This is the *inherits the standard of the claim it supports* rule with a clause it was missing: a
+measurement attached to a result has to survive the ways that result can fail. A stamp taken at
+teardown describes only the runs that reached teardown, which is a **filtered sample presented as a
+census** — and the filter selects out exactly the interesting ones.
+
+## Two corrections to me, and the second is to a rule I wrote
+
+**A branch at base is not idleness.** I read `test/t005-schema` sitting at base and told T050's
+implementer its blind author was "between runs or finishing". It measured instead: a live full-suite
+run in that worktree, `pgid=91980 comm=node`, twice, four seconds apart. **A suite can run for twenty
+minutes and commit at the end, and that whole window looks identical to idle from outside.** `ps`
+answers it; `git log` cannot.
+
+Third instance of one class, and the list is worth having together: *dispatched* is not *in flight*,
+a *quiet host* is not *availability*, a *branch at base* is not *idleness*. Every one is me inferring
+a peer's state from an artefact that only records **completed** work, and every one was caught by a
+peer measuring the running system instead.
+
+**And the process-detector rule attributes its fix to the wrong filter.** I recorded that requiring
+`comm == node` is what stops a detector counting its own harness, citing 9/6/9 → 1/0/0. Measured on a
+live host with a real foreign suite plus one of its own:
+
+```
+bare `grep vitest`, no filters       2
+ownership by pgid only               1     <- already correct
+KIND only, no ownership              2
+both                                 1
+```
+
+**Ownership by process group alone is already right**, because the `/bin/zsh -c …` wrapper and the
+`npm exec` shim **share the pgid of the run they launched** — grouping collapses shell, npm, node and
+every worker into one group before any `comm` test runs. Confirmed here directly: a wrapper `zsh` and
+the `node` it launches report the same pgid.
+
+So the 9/6/9 figures are consistent with counting **lines** rather than groups, or with an ownership
+test written as *"not a descendant of my pid"* — **a different predicate**, and the one a wrapper
+actually defeats, since the wrapper is an **ancestor**. Two ownership formulations were conflated and
+only one of them needs the KIND filter to be correct.
+
+**Keep `comm == node`** — it costs nothing and guards a host where a wrapper does get its own group.
+**Do not describe it as the thing that makes the number right**, because someone implementing
+"descendant-pid ownership + KIND" from that sentence inherits the bug the rule was written to fix.
+
+That is the sharpest form of the recurring failure in this file: **a true conclusion recorded with the
+wrong mechanism propagates the mechanism.** The number was right, the fix was right, and the sentence
+would have taught the next reader to build the broken version.
+
+## A sanitizer applied twice does not sanitize twice — it relabels
+
+T050's implementer took the previous rule as a **sweep** rather than a fix and classified every
+`throw` in its module by whether its failure is observable without Postgres. One more guard had no
+observer, and it was the load-bearing one: the class-preserving step that lets T070's rejections
+reach a route with their class intact. Break it and D-50-08's 409 and 400 both become 500s **while
+the module still looks correct**, because the sanitized rendering it produces is a *legitimate*
+rendering.
+
+**The finding is in its third falsification axis, and it is one I would not have thought to ask for.**
+Re-wrapping a `NamingStoreError` looks harmless — it **is** a fault, and sanitizing a fault is what
+the sanitizer is for. But its message already names `allocateHandle`, and re-wrapping replaces it
+with one naming `changeHandle`. **The rendering then names an operation that did not fail**, which is
+the exact opposite of what the whitelist exists for.
+
+So a sanitizer is not idempotent in the way its shape suggests. Applying it to something already
+sanitized does not make it safer; it **overwrites the one piece of true information the first
+application preserved**. Any wrapper that rewrites an operation name has to ask whether the thing it
+is wrapping already carries one.
+
+**And the fourth axis is the one that proves the whitelist is doing its job rather than merely
+existing**: a driver error whose message contains the bound email comes out as
+`setEmail: the account store failed.`, asserted **not to contain the address**, with the original kept
+only as `cause`. That is AC2 carried through the *fault* path, which is where D-13 actually bites.
+
+**The sweep discipline is the transferable part.** A rule that arrives as "this guard had no observer"
+is a fix; the same rule applied as "classify every `throw` by whether its failure is observable
+without the resource" is a **survey**, and it found the one that mattered rather than the one that
+prompted it. Knowing when to stop is part of it — it stopped at the genuinely store-shaped throws
+rather than inventing pure observers that would fake the thing under test.
+
+**And it falsified `tests/no-raw-control-bytes.test.ts` against its own untracked files** rather than
+believing this file's claim that `--others --exclude-standard` reaches them. Planted a NUL, got the
+offset and the path, removed it. Given T-01 fired twice on this task, *"the guard covers untracked
+files"* was a premise to check rather than to inherit — which is this file's own rule about premises
+handed to you, applied to the file itself.
+
+## A module that sanitizes its rejections cannot use its own error surface as an oracle
+
+T050's implementer's finding, and it is the sharpest consequence of a ruling this run made
+deliberately.
+
+Its first door test asserted the class and the message of an empty-`githubId` refusal. Falsifying it
+— removing the guard — reddened **zero**. With the door gone, `db.insert` threw a `TypeError`, and
+`upsertFromGitHub`'s own catch-all wrapped it into **the same `AccountStoreError` with the same
+message**. The test passed with the guard and passed without it.
+
+**The two paths are indistinguishable by design.** *"The caller sent something bad"* and *"the driver
+blew up and got sanitized"* render identically **because D-50-17 requires it** — the rendering carries
+the operation and nothing else, precisely so no statement, parameter or SQLSTATE escapes. **The
+sanitization that makes the refusal safe is the same thing that makes it unobservable.**
+
+The general form, in its words: **when a module sanitizes its rejections, its own error surface stops
+being a usable oracle for its guards.** A whitelist admitting one form per operation means no
+assertion on the *output* can separate two paths through that operation. Every guard whose failure
+path ends in the sanitizer needs a discriminator **outside** the rendering.
+
+Its discriminator is the right one and it generalises: a `Proxy`-backed `Db` recording any property
+access, asserting `touched() === false`. **Not a stronger assertion about the error — a proof that the
+resource was never reached.** Five guards, all previously indistinguishable, all now discriminating.
+
+**This is `## A discriminator can be designed out of reach` arriving from the other direction.** There
+a guard became unreachable because someone would reasonably harden an input. Here it is **sanitized**
+out of reach, by a ruling that is correct and that I would make again. The lesson is not to sanitize
+less; it is that **a correct hygiene ruling silently converts every guard behind it into an untestable
+one**, and the cost has to be paid in a different currency — a side effect observed, a resource proven
+untouched — rather than noticed later as a suite full of tests that cannot fail.
+
+**And note which instrument found it.** Not review, not the type system: falsification, reporting a
+zero that the author then read rather than counted. The test had been green from the day it was
+written.
+
+## A defect unreachable through the wire is reachable through the barrel
+
+T050's implementer found a data-loss defect in its own `updateProfile` while waiting for the slot.
+`patch.displayName ?? null` maps a **present key carrying `undefined`** to `null` — that is, to
+**clear the field** — where the published type makes `?` mean absent and `| null` mean clear.
+
+**`JSON.parse` cannot produce an `undefined` value, so no HTTP request reaches it and no route test
+could ever have caught it.** The only callers who can are the twelve tasks behind T050 that consume
+the barrel — spreading a partly-built object, `{ bio: maybeUndefined }`, and silently erasing a bio
+nobody asked to erase.
+
+Its disposal is the right one and the reasoning is the keepable half: **skipping loses a caller's
+bug; clearing loses a user's text.** When the two readings of an ambiguous input differ in what they
+destroy, the one that destroys nothing is correct even if it hides a mistake.
+
+**The general form is the mirror of the parsed-front-door rule.** This file has repeatedly used
+"`JSON.parse` cannot produce that shape" to close a hazard — T-02's shared substructure, T040's
+circular manifest. That argument is sound **for the route** and says nothing about the **barrel**,
+which every downstream task calls in-process. A module published to twelve consumers has two front
+doors and only one of them is parsed.
+
+## A fix reachable only through a database lands unobserved in every environment without one
+
+The same session, on the same defect. Every rule in that path — absent versus null versus undefined,
+validate-before-write, an empty patch being a no-op — was reachable only through Postgres, so the fix
+would have been invisible to every gate that did not hold the slot.
+
+It extracted the shaping as a **pure** function and asserted the rules directly. That is *a fix for an
+unseen defect lands unobserved by construction*, applied **before** the fix rather than discovered
+after it — and it converts a database-gated assertion into one every session can run for free.
+
+The second guard is the one to notice: refusal-downgraded-to-a-skip catches a module that **validates
+as it writes**, storing the good field and then refusing. Invisible to any assertion on a return
+value, and previously invisible to anything at all without a database.
+
+**And a drizzle fact worth having repo-wide**, verified from source rather than believed: a
+transaction's `catch` runs `ROLLBACK` and **then** re-throws the original, unwrapped — so
+`HandleTakenError` survives a rolled-back transaction and the 409 mapping holds. The consequence is
+that if the **rollback itself** throws, the original error is lost and replaced. The substitute is a
+genuine fault, so it lands as a store error, which is the right answer for the wrong reason.
+
+## Every gate line in this run assumes an environment nobody wrote down
+
+T050's implementer asked whether base's line is reproducible without `DATABASE_URL` exported, rather
+than assuming. It is not, and the difference is the whole suite:
+
+```
+without the env    Tests  178 failed | 4245 passed | 721 skipped (5144)
+with the env       Tests    1 failed | 5143 passed |   0 skipped (5144)
+```
+
+**Base's line — `1 failed | 5143 passed (5144)` — is only produced with `.env.example`'s variables
+exported.** Every gate number quoted in this file, in every handback, assumes it. It was never stated
+because it was never wrong for anyone, which is precisely the condition under which a premise stops
+being examined.
+
+**The hazard is the skipped count, and it is the reason this needed asking.** A partial export leaves
+suites `skipIf`-ing rather than failing, so a run can carry hundreds of silent skips and **agree with
+base on the failure set** while measuring a fraction of the tree. Anyone comparing *failures* rather
+than *totals* reads it as clean. That is the `describe.skipIf` trap this file already records, at the
+scale of the whole suite rather than one file.
+
+**So a gate result carries three numbers, not two: failed, passed and SKIPPED** — and the skipped
+count is not decoration, it is the one that says whether the other two describe the tree. Several
+sessions had already arrived at reporting it; it is a rule now, and the environment it depends on is
+stated rather than assumed.
+
+**And the standard `skipIf` shape is what makes this invisible rather than loud.** A missing
+`DATABASE_URL` ought to be the loudest possible failure — it means the run measured nothing about the
+database — and instead it is the quietest, because skipping is how the suite is designed to behave
+when a developer has no stack up. The design is right for a developer and wrong for a gate, and
+nothing distinguishes the two contexts.
+
 ## An amendment can owe nothing, and checking beats adding a ceremonial test
 
 D-50-06 published `PublicAuthor.handle` as `string | null`. By the two-holders rule that reaches the
@@ -6950,7 +7171,8 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Published signatures** (checked against `backend` at `9411199`, against `lib/db/schema.ts`'s `account` — `github_id` and `handle` each carry a unique index, `handle` is **nullable**, `notification_preferences` is `jsonb NOT NULL DEFAULT {}` and belongs to T190 — and against T000's `SessionPayload`, which is `{ accountId, handle: string | null }`. Barrel: `@/lib/server/accounts`.)
 
         interface PublicAuthor {
-          handle: string | null;   // D-50-06: AC1 rules a handle-less account legal, so getAccount
+          handle: string | null;   // L-06 (D-50-06 is the session re-mint): AC1 rules a handle-less
+                                   // account legal, so getAccount
                                    // must be able to describe one. getPublicAuthor(db, handle) is
                                    // KEYED by handle and can never return a null one; the
                                    // nullability is reachable only through getAccount().author.
