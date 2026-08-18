@@ -3604,7 +3604,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | — |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | reverted | — |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | blind suite 98 tests, 96 red on the absent module, 33 mutations 32 caught / 0 MISS / 1 equivalent; adversary round 1 FAIL at `cf1f7a1` on D-40-A/B/C plus nine GAPs; round 2 `impl-done` at `e1ca2e4` |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
@@ -7691,7 +7691,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
@@ -7780,6 +7780,12 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   `<operation>` is the function's own name. **`maxCards` and `maxNodes` are `validateBundle`'s alone** — a sibling takes one document, so a card count is meaningless and `validateDot` does not enforce `maxNodes` even though it parses a graph, because a limit enforced in two places is two limits.
 
+  **D-40-22, ruling the name D-40-20 left owed: the cycle refusal is `CircularReferenceError`**, exported from `@/lib/server/engine`, sealed like every other published class, with the form:
+
+        "<operation>: the submission contains a circular reference."
+
+  The implementer's proposal, taken verbatim. **D-40-20 ruled the refusal typed and did not say what type** — a published surface with two holders where only one had it, flagged by the implementer in the module, in its Log and in its handback rather than left for the blind author to guess. Both holders are told in the turn carrying this line.
+
   **D-40-17 is normative as a NUMBER, not as a PROCEDURE (D-40-20, ruled on T040's adversary's question).** The criterion says which submissions are refused; it does not say how the size is computed. **So a bounded walk that accumulates and short-circuits the moment the running total exceeds `maxBytes` is CONFORMING**, and it is required — see D-40-B. Cost becomes O(`maxBytes`), bounded by the limit rather than by the input graph, and the number is preserved exactly for every submission that is **accepted**, because past the bound only the comparison is ever needed. A `seen` set must **not** be used for the size — it would change the number for shared substructure — and is the right instrument for the **cycle**, which becomes a typed refusal instead of a `TypeError`.
 
   **D-40-21: `submissionOf` excludes `input.ontology`, and that is now published rather than a deviation.** An `OntologyView` carries the whole of `CORE_ONTOLOGY`, so measuring it would charge a caller the entire curated vocabulary against its own upload's budget — refusing a small bundle for the size of something it did not send and cannot make smaller. No route can set `ontology`, so **every wire call gives the same number under either reading**. Reported by the implementer rather than taken quietly, and confirmed by the adversary.
@@ -7792,6 +7798,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Out of scope:** persistence, publishing, the archive's own re-validation sweep.
 - **Log:**
   - 2026-08-13 orchestrator: created. Contract was already derivable; unchanged by the decisions.
+  - **2026-08-18 adversary round 1, FAIL — recorded here because it reached the implementer only in a message, which is this file's own least durable medium.** Four charges. **D-40-A (defect, charged):** `validateBundle`'s card-count refusal read every card value — `guardBytes` ran before `guardCards` and `byteLengthOf` walks `cardFiles` — while `limits.ts:153` stated the opposite in its own docstring. One red blind test, one-line cause, and nothing in the blind suite pinned the order because every limits case breaches one bound with the others generous. **D-40-B (defect, charged):** the byte guard materialises the input to measure it — a depth-25 diamond (26 objects) threw a bare `RangeError` where a `LimitExceededError` was owed, and below that allocated up to 386 MB of transient heap to decide a submission exceeds 2 MB. **D-40-C (defect, charged):** a circular `manifest` **or `extensions`** gave `TypeError: Converting circular structure to JSON`; hygiene intact, so `error-hygiene` cannot see it. All three closed through the routes and open through the barrel, which T100/T263/T270 consume in-process. **Nine GAPs**, of which the ones that became work: `maxCards`/`maxNodes` pinned at neither end while `maxBytes` was pinned at both; `resolveLimits` `??`→`||` making `maxBytes: 0` silently 2 MiB; `documentBytes` byte-vs-code-unit; `guardNodes` resolved-vs-declared; `validateCardSource`'s `card: undefined` versus an omitted key. **And the second-biggest item: the blind suite reached no route at all** — 81 tests, no `Response`, no `POST`, no status code; six route mutations reddened zero blind tests and two were caught by nothing. Verdict measured at `cf1f7a1`; byte figures reconciled (17 947 archive max, 18 195 = that plus frontline-triage's 248-byte extensions; the blind author's 17 963 reproduces under no reading and is unresolved).
 
 ### T080, Registry read model and read API
 
