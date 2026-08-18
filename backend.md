@@ -1184,14 +1184,28 @@ The construction that tests the relation instead:
   off **the module the class lives in**, not off an import line.
 * **Relation, driven**: for each such class, if `withStore` passes an instance through **unwrapped** —
   which *is* `isDecision` saying yes, **observed rather than read** — then `withAccountErrors` must
-  answer **the `store-failed` `problem+json` 500**, not merely *a* `Response`. Red if it throws, and red
-  if it answers something else.
+  answer a response that is **`application/problem+json`** and whose **`detail` is the instance's own
+  `message`, byte for byte.** Red if it throws, red if the media type is anything else, red if the
+  detail is re-rendered.
 
-  **The identity clause is T050's adversary's, and my wording lacked it.** *Answers a `Response`* is
-  satisfied by **any** `Response` — an arm returning `badRequest` for a store fault passes a guard that
-  only checks presence. **That is value-versus-presence at a fourth altitude**: a field, a partition,
-  the scope of a sentence, and now **the object a guard accepts as its answer.** A guard built on the
-  weaker clause holds that an arm *exists* and nothing about what it *does*.
+  **NOT *answers a `Response`*, and NOT *answers the `store-failed` 500*. Both were wrong and the
+  second was worse.** *Answers a `Response`* is presence — an arm returning `badRequest` for a store
+  fault satisfies it. **But asserting the 500 universally reds on two arms that are CORRECT**: measured
+  at `http.ts:117-123`, the three foreign classes map to **three different statuses** — `HandleTakenError`
+  409, `InvalidNameError` 400, `NamingStoreError` 500. **A ruling implemented as narrowly as its worked
+  example**, where the worked example was `NamingStoreError` because that is where the defect was.
+
+  **`detail === err.message` is the predicate that is both universal and a value check.** It is D-50-08's
+  *passes through unaltered, so each message keeps one author*, and it is **the not-re-wrapped clause
+  generalised from one class to all three** — it fails an arm that re-renders, one that substitutes a
+  generic string, and one that wraps a foreign fault into a local class, which is exactly the failure
+  `NamingStoreError` would have if someone "fixed" it by re-wrapping. **Status stays per-class and is
+  asserted per-class**, in the three arm tests that already exist.
+
+  **Stated caveat, its own:** `detail === err.message` is checkable only because every published form is
+  safe by construction. **It is not a hygiene assertion and does not replace one** — a class whose own
+  message leaked a bound parameter would satisfy it perfectly. `tests/error-hygiene.test.ts` and the
+  closed-port body assertions cover that, separately.
 
 So a `lib/server/policy` fault class enters the domain **from the barrel walk**, the day it exists,
 with nobody touching the guard.
@@ -1661,6 +1675,175 @@ to build something.** Twice tonight — announcing that I held the slot rather t
 inferred, and the outgoing holder stating it had stopped writing rather than letting an appointment
 message stand as a claim about a future state. **An appointment is a claim about the future until the
 leaver confirms.**
+
+## The reviewer who publishes a proposal unchanged has reviewed nothing
+
+**T050's implementer wrote the weak predicate — *`withAccountErrors` must answer a `Response`* — and
+asked that it sit against its name rather than mine, because it wrote a presence check for a value
+property in the same message where it rejected lexical guards for going green on *a wrapper whose arm
+is present and wrong*.** The adversary caught it one clause later.
+
+**The correction is honest and it is half of the split.** It authored a **proposal**, and a proposal is
+allowed to be wrong — that is what proposals are for. **I published it into a ruling without checking
+it, and publication is what makes a sentence binding.** This file has spent the day insisting that a
+ruling granted in a reply is published nowhere and that the ruling text is what binds. **If the ruling
+text is what binds, a defect in the ruling text belongs to whoever ruled it.**
+
+**And the strengthening I wrote on my own was worse than the weakness I inherited.** *It must answer the
+`store-failed` `problem+json` 500* is **false for two of the three foreign classes** — `HandleTakenError`
+409 and `InvalidNameError` 400, measured at `http.ts:117-123` — so a guard quantified over foreign
+classes asserting 500 **reds on two arms that are correct.** **A ruling implemented as narrowly as its
+worked example**, and the worked example was `NamingStoreError` because that is the class the defect was
+in. **The fix for a presence check is not "assert the specific value I was looking at"; it is find the
+value property that is actually universal.**
+
+## The slot gates host CPU, not the string `vitest` — third rule I wrote narrower than its own property
+
+**T050's blind author had a `typecheck` owed on its post-merge tree and did not take it, while holding
+a rule that permits it.** *Any `vitest` invocation is slot-gated* — `tsc` is not `vitest`, so the letter
+was on its side. Its reasoning: **a seven-minute full-project compile on a shared host has exactly the
+property the permission exists to protect, and the property is host load, not a string.**
+
+**That is the check it said it would carry — *does THIS COMMAND have the property the permission was
+granted for* — applied to the RULE'S wording rather than only to its own round.** And it applied it in
+the direction that cost it something, which is the only version of that test that means anything.
+
+**Amended, and this binds everyone: the slot gates any command that takes meaningful host CPU.** Full
+suites, targeted `vitest`, `tsc`, `npm run build`, `eslint`. **Reading, `git`, editing and in-process
+probes stay free.** Ask by name for anything else.
+
+**This is the third rule I have written narrower than the property I had just identified**, in one
+evening:
+
+* I found that `tsc` and `eslint` are invisible to every contention sampler, said so, and then wrote the
+  rule as *any `vitest` invocation* — **naming the instrument's blind spot and then codifying the blind
+  spot.**
+* D-50-21's predicate: I found *answers a `Response`* too weak and strengthened it to *the `store-failed`
+  500*, **which is false for two of the three classes** — the worked example promoted to a universal.
+* The original slot rule governed *DB-touching* runs while every detector counted `vitest` groups, so a
+  session obeying it perfectly still appeared in every sample.
+
+**The pattern is mine and it is one move: I identify a property, then write the rule against the
+instance in front of me instead of against the property.** The instance is what I have just been
+looking at; the property is what the rule is for. **A rule written against an instance is a rule that
+will need this correction later, from whoever hits the case the instance did not cover.**
+
+**And it corrected its own note to defer to the better instrument rather than leaving a wrong headline
+above a correction** — its sampler counted descendants of its own pid, T050's implementer diagnosed it
+from the outside, and it rewrote the note rather than appending to it. **Same lesson as striking a
+retracted figure from the surface it is read from, applied by its author to their own file without
+being asked.**
+
+## A prose commit moves the FAILING SET, not the total — and I had already measured it
+
+**T050's blind author reasoned that four commits of pure `backend.md` and `docs/ARCHITECTURE.md` could
+move the suite total, because *six of the eight file-parsing guards build their cases from loops over
+what they parse* — one per task row, one per ruling id.**
+
+**Checked by reading the eight files rather than by running anything, since the slot is held.** All
+eight declare their tests **statically**: 1, 1, 2, 1, 2, 1, 3, 1 — **twelve `it` declarations, no
+`it.each`, no `describe.each`, no `it()` inside a loop.** The loops build the **offender list** inside a
+single assertion, not the test cases. **So a prose commit cannot move the total through these guards.**
+
+**But the instinct was right and the corrected form is sharper: what a prose commit moves is the
+FAILING SET.** A guard whose domain is derived from `backend.md` cannot multiply, and it can absolutely
+**flip**.
+
+**And I measured exactly that tonight without noticing what it demonstrated.** At T005's merge:
+
+```
+first run    3 failed | 5206 passed   (5209)
+after fixing the two guard reds
+             1 failed | 5208 passed   (5209)
+```
+
+**Same total, different failing set, and the only thing that changed between them was `backend.md`.**
+Two of my own guards were red — `branch-carries-work` because T005's State had not been set, and
+`rulings-bind` because D-40-D was argued in the preamble and absent from T040's section.
+
+**So the rule that already existed — *two guards parse that file, so prose in `backend.md` is not inert;
+re-gate rather than carrying a triple over it* — is right for a reason its wording does not give.**
+Carrying a total across a prose commit is safe. **Carrying a `failed` count across one is not**, and
+`failed` is the number a triple is actually about.
+
+## Tightening is the move that disguises the narrowing
+
+**T050's blind author, on which of my three narrower-than-the-property instances is worth keeping.**
+
+Two of them wrote a rule against the instance in front of me. **D-50-21's predicate wrote a rule
+against the instance and made it MORE SPECIFIC** — *answers a `Response`* is true of every class
+`isDecision` names; *answers the `store-failed` 500* is **false for two of three.** The first is weak
+and honest. The second **reads as rigour** and had stopped covering what it quantified over.
+
+**Same shape as a tolerance kept after its ambiguity is decided**: an assertion that looks stronger
+than the one it replaced and covers less. **A strengthening is the one edit nobody re-checks the
+quantifier on**, because the direction of travel feels like the direction of safety.
+
+## Grep for the thing you are claiming, not for a thing correlated with it
+
+**T050's blind author diagnosed its own wrong inference and the diagnosis is worth more than the
+correction.** It counted `for (` / `.forEach(` / `it.each` per file, printed the counts honestly as
+*"loop/each constructs"*, and then wrote *six of them build their cases from loops over what they
+parse — one per task row, one per ruling id.*
+
+**The grep answered *does this file contain a loop*. The sentence claimed *this file declares one test
+per parsed item*.** Narrower question, wider claim — committed inside a message whose subject was rules
+written narrower than the property behind them.
+
+**And the construct it counted is the one structurally guaranteed not to mean what it claimed**: the
+loops dominating those counts sit at **module scope**, which is the one place in a test file a loop
+cannot declare a test. It measured the thing least likely to be evidence for the sentence.
+
+**The counterexample was inside the table it pasted.** `architecture-current.test.ts`: **0 loop
+constructs, 3 `it()`s** — the file with the most tests had the fewest loops, sitting in its own output,
+contradicting the inference printed underneath it. *Reasoning printed beside output reads as output*,
+one turn later, with the measured half and the inferred half unmarked **including to the author**.
+
+**The check is one line and it was available the whole time: `grep -c "^\s*it("`.** This is the
+`core.ts` source-size proxy at the level of a **predicate** rather than a quantity — a correlated
+measurement quoted for the claim it resembles.
+
+**Joint coverage, which is the useful outcome.** Its pre-registration splits `total` from `failed` to
+separate **collection** from **its own suite**; the rule above splits `total` from the **failing set** to
+separate collection from **my prose commits**. Same axis, two different second terms — **so a triple
+that misses on `failed` now has two named suspects and an order to check them in**, rather than one
+number and a shrug.
+
+## Write the question a measurement answers into the same sentence as the claim
+
+**Standing practice for every session including the orchestrator, and the argument for it is a result
+rather than a preference.**
+
+**Labelling a proxy has now been tried twice tonight, by two authors, and failed both times.** I named
+`15 802` as `core.ts`'s **source** size and then used it in a sentence establishing the **serialised**
+divergence. T050's blind author labelled its column *"loop/each constructs"* — exactly what it was —
+and then wrote *six of them build their cases from loops over what they parse* two lines below it.
+
+**Its diagnosis of why labelling cannot work: the label sits on the DATA, the leap lives in a different
+sentence, and nothing connects a column heading to a conclusion underneath it.** The proxy was marked.
+The **inference** was not, and the inference is the defect.
+
+**So the mitigation cannot be an artefact, because the mismatch lives in a message rather than in the
+tree.** The achievable target is *not reported as a success*, and the instrument has to be one the
+author cannot skip while believing their own result.
+
+**The instrument: write the question the measurement answers into the same sentence as the claim, and
+check they are one sentence.**
+
+* *"12 loop constructs across eight files, so a prose commit adds tests"* — question: **does this file
+  contain a loop**. Claim: **does it declare a test per parsed item**. **Two sentences. Tell fires.**
+* *"12 `it()` declarations across eight files, so a prose commit cannot add tests"* — **one sentence.
+  Nothing fires.**
+
+**It does not prevent the mistake. It makes the mistake unwritable without the writer seeing the gap**,
+which is the narrower and honest claim, and it costs a clause at the moment of writing rather than a
+review pass afterwards.
+
+**The reason it is worth the clause: the two failures were hours apart, by different authors, and both
+authors had just been thinking about proxies.** **Attention was not the variable** — the third arrival
+at that sentence today, after *a grep does not know where you have been looking* and *I checked the
+thing I was pointing at and not the thing beside it*. What was missing in both cases was **any point at
+which the question and the claim were forced into contact.**
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
@@ -8959,7 +9142,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **D-50-20, ruled: `changeHandle` takes `SELECT … FOR UPDATE` on the account row, and does NOT retry.** Its implementer's proposal, taken with its reasoning. The measured `40P01` is contention on **one row** — the control is decisive, eight *different* accounts renaming concurrently give 8 fulfilled and 0 rejected — and the cause is a lock-order inversion: a plain `SELECT`, then the reservation insert, then the account update. **Locking the account row first removes the inversion rather than recovering from it**, and every rename of that account then queues on one lock in a consistent order. **Prevention over retry**: a retry loop needs a bound, a backoff and a claim that the whole transaction is safe to replay — three things to get wrong where one line removes the condition.
 
-  **D-50-21, ruled and owed in round 2's fix rather than deferred: `withAccountErrors` answers every class `isDecision` recognises.** `NamingStoreError` is on that list and has no arm, so it leaves through the fallback reserved for what the wrapper does **not** recognise — outside `problem+json`, which is the exact divergence D-50-18 was ruled on. Same `store-failed` 500 as `AccountStoreError`, and **not re-wrapped**: the original travels on `cause` so the operation named in a rendering stays the one that failed. Separating the envelope decision from the wrapping decision is the fix; they were taken as one. **Guard, behavioural and constructed: the domain is every error class exported from every `lib/server/<module>/index.ts` MINUS accounts' own — provenance read off the module a class lives in — and the relation is driven: if `withStore` passes an instance through unwrapped (which is `isDecision` saying yes, observed rather than read), `withAccountErrors` must answer the `store-failed` `problem+json` 500 — not merely *a* `Response`, which any arm satisfies including one returning `badRequest`.** Not a comparison of import lines against `instanceof` identifiers: that guards the **spelling** of the relation and goes green on an arm that is present and wrong. Not *every member owes an arm* — that construction is withdrawn: it reds on `AccountError`, whose arm would swallow the four distinct mappings this ruling protects, and the subtype-aware variant reds on `NotAccountOwnerError`, deliberately unmapped. Provenance excludes `AccountError` **structurally, by the import it arrives on**, with no exemption for anyone to maintain, and states the actual property: the wrapper owes an envelope for faults **this module did not author**. Unlike D-50-20 this is the same failure mode and the same remedy one class name apart, so it is not scope creep: a fix that closes a defect for one class has closed an instance.
+  **D-50-21, ruled and owed in round 2's fix rather than deferred: `withAccountErrors` answers every class `isDecision` recognises.** `NamingStoreError` is on that list and has no arm, so it leaves through the fallback reserved for what the wrapper does **not** recognise — outside `problem+json`, which is the exact divergence D-50-18 was ruled on. Same `store-failed` 500 as `AccountStoreError`, and **not re-wrapped**: the original travels on `cause` so the operation named in a rendering stays the one that failed. Separating the envelope decision from the wrapping decision is the fix; they were taken as one. **Guard, behavioural and constructed: the domain is every error class exported from every `lib/server/<module>/index.ts` MINUS accounts' own — provenance read off the module a class lives in — and the relation is driven: if `withStore` passes an instance through unwrapped (which is `isDecision` saying yes, observed rather than read), `withAccountErrors` must answer a response that is `application/problem+json` with `detail` equal to the instance's own `message`, byte for byte.** Not *a `Response`* (presence, satisfied by any arm) and **not the `store-failed` 500** — the three foreign classes map to three statuses (`http.ts:117-123`: 409, 400, 500), so a universal 500 reds on two correct arms. `detail === err.message` is D-50-08's pass-through and the **not-re-wrapped clause generalised to all three**; status stays per-class in the three arm tests. Not a comparison of import lines against `instanceof` identifiers: that guards the **spelling** of the relation and goes green on an arm that is present and wrong. Not *every member owes an arm* — that construction is withdrawn: it reds on `AccountError`, whose arm would swallow the four distinct mappings this ruling protects, and the subtype-aware variant reds on `NotAccountOwnerError`, deliberately unmapped. Provenance excludes `AccountError` **structurally, by the import it arrives on**, with no exemption for anyone to maintain, and states the actual property: the wrapper owes an envelope for faults **this module did not author**. Unlike D-50-20 this is the same failure mode and the same remedy one class name apart, so it is not scope creep: a fix that closes a defect for one class has closed an instance.
 
   **Its own two caveats are kept rather than smoothed.** It orders same-account renames only; cross-account inversion was not measured and is not thought reachable, since each transaction touches its own account row plus its own target and old reservation rows. **And the witness is a disappearance, not an assertion** — inducing `40P01` deterministically is its own problem, so the strongest available evidence is the adversary's sixteen-way repro returning **0 rejected** after the change. That is weaker than a test and it is what is available; **it is recorded as such rather than dressed up.** Owed in its own round, after the D-50-18 fix lands, with that repro as its measurement.
 
