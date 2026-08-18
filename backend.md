@@ -355,6 +355,55 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## The count format and the table delimiter are the same character
+
+T005's adversary pasted vitest's own summary — `1 failed | 5203 passed` — into `backend.md`'s
+**pipe-delimited** index row, giving that row **eleven fields where every other has ten**.
+`tests/task-state-agreement.test.ts` then read the Evidence cell as the State cell and reported a
+**state disagreement between row and section.** Both were correct. The delimiter was not.
+
+**The red named the wrong thing, and the wrong thing was plausible** — because it had just edited both
+places, which is exactly when a state disagreement is believable. A guard that misidentifies its own
+failure is worse than one that stays silent, because the plausible wrong diagnosis is the one that
+gets acted on.
+
+It was caught only because it followed the rule to **re-gate after a `backend.md` commit** rather than
+carrying the triple over it. A commit that touches only prose still moves what the prose-parsing guards
+read.
+
+## The reverse mutation is the acceptance number for a gap closure
+
+Closing a gap and re-running the suite green proves nothing: **the suite was green before.** T005's
+adversary took the **reverse** mutation as the acceptance number for both `api_key` gaps — schema-only
+rename now reds `ac8-names`, a partial unique now reds the uniqueness test, **0 → 1 on both**.
+
+Its sentence: **a 0 there would mean the fix was unobservable however green the suite looked.** A gap
+is a claim that a mutation reds nothing; its closure is the claim that the same mutation now reds
+something, and only re-running *that mutation* measures it.
+
+And it noted the direction: **the blind author took both gaps from the clause rather than from the
+adversary's probes**, which keeps the suite derived from the contract rather than from someone else's
+findings.
+
+## D-05-09: a bound that truncates rather than refuses is worse than no bound
+
+`run_report.cost_units` ships as `numeric(18,6)` where the block says `cost_units numeric`, unqualified.
+Measured against the shipped type: `0.0000001` stores as `0.000000`, `0.1234567` as `0.123457`,
+`123.4567895` as `123.456790`, and `1234567890123.5` is refused with 22003.
+
+**A submitted cost can become no cost at all, with no error, and it then feeds T180's median and
+p10/p90.** Nothing observes it — no test asserts precision or scale.
+
+**Ruled: unqualified `numeric`, as published.** The module's own docblock argues numeric over float
+*precisely because* "double precision cannot round-trip every decimal the CLI can send" and "the
+registry stores what it was given" — and `(18,6)` **reintroduces that failure silently**, which is the
+module's own argument turned against its column.
+
+The general form is what makes this worth a ruling rather than an edit: **a bound that truncates rather
+than refuses converts a rejectable input into a wrong number.** Refusal is loud and recoverable;
+truncation is silent and lands in an aggregate. If T180 or T230 wants a bound later, it is published in
+the block **and it refuses explicitly**.
+
 ## Proving a narrow fix wide needs narrow mutations, one per site
 
 I ruled D-50-18 from the file the divergence was found in, and the adversary charged that fixing only
@@ -3951,7 +4000,7 @@ it does not decide differently inside a worktree.
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
-| T005 | Schema extension: the community and account tables | T000 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**` | `../darkprint-wt-t005-schema` | `feat/t005-schema` | impl-done | — |
+| T005 | Schema extension: the community and account tables | T000 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**` | `../darkprint-wt-t005-schema` | `feat/t005-schema` | adversarial-pass | — |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
@@ -4528,7 +4577,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T005, Schema extension: the community and account tables
 
-- **State:** impl-done
+- **State:** adversarial-pass
 - **Worktree:** `../darkprint-wt-t005-schema` (impl), `../darkprint-wt-t005-schema-tests` (blind)
 - **Branch:** `feat/t005-schema` (impl), `test/t005-schema` (blind)
 - **Depends on:** T000 (merged)
@@ -4571,7 +4620,16 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
                                                      -- than optional.
                       model, provider, hardware text,
                       input_size int, harness_version text, cost_units numeric,
-                      duration_ms int, reported_at, created_at                  -- AC4, D-05-01
+                      duration_ms int, reported_at, created_at
+                      -- D-05-09: cost_units is UNQUALIFIED `numeric`, as this block says.
+                      -- The shipped (18,6) silently truncates — 0.0000001 stores as
+                      -- 0.000000, i.e. a submitted cost becomes NO COST, with no error,
+                      -- feeding T180's median and p10/p90. That is the exact failure the
+                      -- module's own docblock argues numeric-over-float to avoid: "the
+                      -- registry stores what it was given". A bound that TRUNCATES rather
+                      -- than REFUSES is worse than no bound, because it converts a
+                      -- rejectable input into a wrong number. If T180 or T230 wants a
+                      -- bound later it is published here AND refuses explicitly.                  -- AC4, D-05-01
         api_key       account_id, token_hash text NOT NULL unique, label text,
                       created_at, revoked_at NULL
 
