@@ -355,6 +355,52 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A zero can refute the reasoning attached to correct code
+
+T050's implementer mutated six database-observable guards. Five discriminated. **The sixth reddened
+zero, and it refuted a claim in its own comment rather than revealing a missing test.**
+
+`handle.ts` said release-**last** was what kept a losing caller from surrendering the handle it
+already held. Swapping to release-before-allocate changes **nothing** — because inside
+`db.transaction` a release preceding a failed allocate rolls back with everything else. **That is the
+transaction's guarantee, not the ordering's.** The code was right; the reasoning attached to it was
+wrong, and its "a refused claim rolls back" test observes the **rollback**, which is what it should
+observe and not what the comment said it did.
+
+**So a zero has a further reading beyond the five already recorded.** Not a guard that cannot fail,
+not a probe that cannot reach, not genuinely unobservable, not a silent green, not an equivalent
+mutant — **a mechanism claim that is false about code that is correct.** It is the false-premise rule
+meeting mutation testing: the conclusion holds, the stated cause does not, and **only mutation can
+tell you which of the two you verified.** Reading the code confirms the behaviour and confirms the
+comment simultaneously, because the comment describes the behaviour accurately while misattributing it.
+
+**It corrected the comment rather than the code, and wrote the uncomfortable half in.** Release-last is
+kept as the arrangement still correct if the transaction is ever removed — and that is **defence with
+no observer**: drop the `db.transaction` wrapper and nothing in this repository reds while the ordering
+silently becomes load-bearing again. Naming a defence that nothing tests, beside the reason it is kept,
+is better than deleting it and better than pretending it is covered.
+
+Its own summary is the transferable line: **a mutation redding zero is not a guard that works, and not
+always a missing test either — sometimes it is a true statement about the wrong mechanism.**
+
+## "Zero residue of its own" is a scope, and a stale database outlives every session that could own it
+
+T050's implementer's before-stamp already held `darkprint_test_95db6b505764464bbf9bbe8d09772397`, and
+its after-stamp held the same one. It added nothing and dropped nothing — correctly, since dropping a
+database another session may be driving is the failure that rule exists to prevent.
+
+**Its observation about the wording is the durable half:** T005's implementer released "with zero
+residue **of its own**", which is *carefully true and does not cover this*. Every session in this run
+has been scrupulous about its own residue and the shared stack still carries an orphan, because
+**"mine is clean" composes to nothing.** A leaked scratch database has no owner by construction — the
+session that leaked it is the one that failed to run its teardown, so it is also the one least likely
+to be around to report it.
+
+**And it found its own** — `pgstamp.local.mjs`, untracked in the worktree for all three runs, placed
+there because `pg` will not resolve from the scratchpad. `.mjs` so no glob collects it and the count
+could not have moved, but it was there, its own stamp caught it, and it said so before saying the tree
+was clean.
+
 ## A filter that did not survive into a reported number is still a filter you were holding
 
 T005's implementer answered the typecheck challenge without taking the exit it was offered. **It did
@@ -3326,7 +3372,7 @@ it does not decide differently inside a worktree.
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
-| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | claimed | — |
+| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | — |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | claimed | — |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -7297,7 +7343,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T050, Accounts and sessions
 
-- **State:** claimed
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t050-accounts` (impl), `../darkprint-wt-t050-accounts-tests` (blind)
 - **Branch:** `feat/t050-accounts` (impl), `test/t050-accounts` (blind)
 - **Depends on:** T000 (contract: session), T070 (contract: handle allocation)
