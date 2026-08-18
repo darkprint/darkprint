@@ -355,6 +355,52 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## T005 will invalidate one of T070's verification conditions, and that was written down in advance
+
+T070's adversary listed six conditions that would falsify its PASS. One: *the W0 confirmation depends
+on `accountId` being unguarded* — it proved the shipped predicate is
+`handle_reservation.account_id = excluded.account_id` rather than the null-safe form by seeding a
+**NULL-owner row**, releasing it, and claiming it with a NULL claimant.
+
+**T005's AC7a makes `handle_reservation.account_id` `NOT NULL`.** The moment it merges, that row is
+unstorable, the discriminating cell is unreachable, and the evidence for T070's predicate degrades
+from *measured* to *read*.
+
+Nothing is wrong and nothing needs undoing: the predicate is still correct, and `NOT NULL` is
+strictly better than the runtime guard it replaces. What is worth recording is that **a falsifying
+condition stated on a passed verdict actually fired**, three days later, from a task the adversary
+never saw — which is the entire argument for stating them. Without it, T005 would silently remove the
+only behavioural evidence distinguishing W0 from W5 and nobody would know the claim had changed
+category.
+
+**T005's brief must carry this**: after `NOT NULL` lands, T070's predicate is source-read only, and
+anyone re-verifying it should say so rather than reproducing a measurement that can no longer be
+taken.
+
+## The graph drifted again, one wave after I built the task that drifted it
+
+Recomputing before wave 6 found five tasks depending on **T005** and declaring nothing. I created
+T005 two waves ago *because* T140, T160, T170, T180 and T230 need tables `lib/db/schema.ts` lacks —
+and then never wrote T005 into a single one of their `Depends on` lines.
+
+So the recorded graph said T005 gates **0** tasks. It gates **5**, and every one of them has
+`lib/db/schema.ts` Forbidden, so none could have added its own table on discovering the gap.
+
+**The same failure as the Phase 0 drift the owner caught, with a new cause.** That one was
+consumption outrunning declaration — tasks importing barrels they never listed. This one is the
+reverse: a **new task** was created and the dependency it discharges was never written back into the
+tasks that need it. A task added mid-run has no author reviewing the graph it changed, because the
+graph is only re-derived at wave boundaries and the task was created between two of them.
+
+**Note what the existing check could not see.** `tests/wave-dependencies.test.ts` reds when a
+**claimed** task consumes an unmerged barrel. All five are `todo`, and a table is not a barrel —
+nothing is imported, so there is nothing for a consumption-based check to find. The dependency is
+real, blocking, and invisible to the instrument built for exactly this class.
+
+Recorded rather than mechanised, honestly: I do not have a derivation for "this contract needs a
+table that task owns" that is not a restatement of the same list. The mitigation is the standing
+instruction the owner gave — recompute before every wave — and this is the second time it has paid.
+
 ## A contention figure inherits the standard of the claim it supports
 
 T070's adversary adopted the implementer's in-run sampling and got it wrong, then found it itself.
@@ -7198,7 +7244,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 ### T140, Saves (private bookmarks)
 
 - **State:** todo
-- **Depends on:** T050, T060
+- **Depends on:** T050, T060, **T005** (the `save` table; `lib/db/schema.ts` is Forbidden here)
 - **Blocks:** T262
 - **Owns:** `lib/server/saves/**`, `app/api/account/saves/**`
 - **Forbidden:** `lib/server/accounts/**`, `components/ui/FavoriteStar.tsx`
@@ -7228,7 +7274,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 ### T230, Rate limiting and API keys
 
 - **State:** todo
-- **Depends on:** T000 (contract: middleware), T050 (data: identity)
+- **Depends on:** T000 (contract: middleware), T050 (data: identity), **T005** (the `api_key` table; `lib/db/schema.ts` is Forbidden here)
 - **Blocks:** —
 - **Owns:** `lib/server/limits/**`, `app/api/account/keys/**`
 - **Forbidden:** every other route file, `lib/server/auth/**`
@@ -7391,7 +7437,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 ### T160, Community ballot and vote weighting
 
 - **State:** todo
-- **Depends on:** T050, T060, T080
+- **Depends on:** T050, T060, T080, **T005** (the `ballot` table; `lib/db/schema.ts` is Forbidden here)
 - **Blocks:** —
 - **Owns:** `lib/server/ballot/**`, `app/api/votes/**`
 - **Forbidden:** `lib/server/counters/**`
@@ -7423,7 +7469,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 ### T170, Notes and note votes
 
 - **State:** todo
-- **Depends on:** T050, T060, T080
+- **Depends on:** T050, T060, T080, **T005** (the `note` and `note_vote` tables; `lib/db/schema.ts` is Forbidden here)
 - **Blocks:** —
 - **Owns:** `lib/server/notes/**`, `app/api/notes/**`
 - **Forbidden:** `lib/server/ballot/**`, `components/blueprint/Comments.tsx`
@@ -7458,7 +7504,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 ### T180, Run-report ingestion and cost aggregation
 
 - **State:** todo
-- **Depends on:** T010, T050, T080
+- **Depends on:** T010, T050, T080, **T005** (the `run_report` table; `lib/db/schema.ts` is Forbidden here)
 - **Blocks:** T270
 - **Owns:** `lib/server/runs/**`, `app/api/runs/**`
 - **Forbidden:** `lib/server/ballot/**`, `lib/server/counters/**`
