@@ -138,11 +138,37 @@ export class CircularReferenceError extends Error {
 CircularReferenceError.prototype.name = "CircularReferenceError";
 
 /**
+ * The deepest nesting this walk will hold frames for, before refusing as a typed error.
+ *
+ * D-40-D requires a ceiling as well as a shape, because an iterative walk over a deeply
+ * nested body still runs — it stops exhausting the call stack and starts consuming heap.
+ *
+ * **10 000 is chosen so that no input which previously produced a number stops producing
+ * one.** The recursive walk it replaces died at a *host-dependent* boundary — 7 000 reached
+ * directly, 3 000 through a route, varying with stack size and frame layout — and that is
+ * the half D-40-D calls untestable as a threshold: the same bytes answered or crashed
+ * depending on where they arrived. This ceiling is above every observed crash point, so the
+ * change is strictly an improvement in both directions. Everything that used to be measured
+ * still is, everything that used to crash now refuses, and the boundary is a property of the
+ * input rather than of the host.
+ *
+ * It is not `EngineLimits`' fourth field. That interface is published with three, T230 owns
+ * the numbers in it, and a depth bound is a property of what this procedure can hold rather
+ * than a product decision about what a submission may contain.
+ *
+ * Note where it does and does not bind: every container costs at least two bytes, so a
+ * submission nested deeper than `maxBytes / 2` is refused on size before depth is ever
+ * reached — at the 2 MiB default that is about a million levels. So this ceiling binds only
+ * between 10 000 and that, and for a caller that raised `maxBytes`.
+ */
+export const MAX_NESTING_DEPTH = 10_000;
+
+/**
  * The measured size of a whole submission, and its refusal, fused into one walk (D-40-20).
  *
  * `Buffer.byteLength(JSON.stringify(input), "utf8")` is normative as a **number** and not as
  * a **procedure**: the criterion says which submissions are refused, not how the size is
- * computed. Running the literal formula was the defect — it materialises the whole
+ * computed. Running the literal formula was the original defect — it materialises the whole
  * submission to decide it is too large, so a depth-25 diamond over 26 objects threw a bare
  * `RangeError`, and below that it allocated up to 386 MB of transient heap to conclude that
  * a submission exceeds 2 MB. The limit performed the exhaustion the limit exists to prevent.
@@ -152,103 +178,210 @@ CircularReferenceError.prototype.name = "CircularReferenceError";
  * steps is bounded by the limit rather than by the shape of the input graph, and the cost
  * becomes O(`maxBytes`) whatever the caller sends.
  *
+ * **It is ITERATIVE, and that is D-40-D rather than a preference.** The first version was
+ * recursive, which closed D-40-B in breadth and left it open in depth: a 6 134-byte body —
+ * 0.3% of the default — whose manifest nested threw a bare `RangeError` through the route,
+ * where the formula it replaced answers the same input and keeps answering to depth 10^6.
+ * D-40-20 bought the substitution with *the number is preserved exactly for every submission
+ * that is accepted*, and a stack overflow produces no number at all: the clause was silent
+ * there rather than violated, which is the harder kind of gap to see. The precedent was in
+ * this repository the whole time — T010 and T020 made `isWellFormedDeep` iterative with one
+ * mutable `open` set and explicit enter/leave frames — and reaching for recursion is the
+ * default that a written-down countermeasure does not interrupt.
+ *
  * **The number is preserved exactly for every submission that is accepted.** Past the bound
  * only the comparison is ever needed, which is why bounding it costs the contract nothing;
- * below the bound this returns the same integer the formula does, and
- * `measure.test.ts` holds that as a differential property rather than as an assurance.
+ * below the bound this returns the same integer the formula does, and `measure.test.ts`
+ * holds that against a corpus **generated over the serialiser's equivalence classes** rather
+ * than listed, which is D-40-E.
  *
  * **No `seen` set for the size**, deliberately: memoising a shared subtree would count it
  * once where `JSON.stringify` counts it per path, and that changes the number for exactly
- * the inputs this was written for. The `open` set below is path-scoped and detects a
- * **cycle**, which is a different question and the one that has no answer at all.
+ * the inputs this was written for. The `open` set is path-scoped and detects a **cycle**,
+ * which is a different question and the one that has no answer at all.
  */
 export function measureSubmission(
   operation: string,
   submission: unknown,
   limits: Required<EngineLimits>,
 ): number {
-  const budget = { total: 0 };
+  let total = 0;
   const spend = (bytes: number): void => {
-    budget.total += bytes;
-    if (budget.total > limits.maxBytes) {
+    total += bytes;
+    if (total > limits.maxBytes) {
       refuse(operation, "the submission", limits.maxBytes, "bytes");
     }
   };
-  measure(submission, spend, new Set<object>(), operation);
-  return budget.total;
+  walk(submission, spend, operation);
+  return total;
 }
 
-/** `JSON.stringify`'s own byte accounting, one value at a time. */
-function measure(
-  value: unknown,
-  spend: (bytes: number) => void,
-  open: Set<object>,
-  operation: string,
-): void {
-  /* `toJSON` first, exactly as `JSON.stringify` does, or a `Date` on a manifest would be
-     measured as an object with no keys where the formula measures a quoted string. */
-  const resolved = unwrap(value);
+/** One open container, with the cursor into it that an explicit stack has to carry itself. */
+type Frame =
+  | { readonly kind: "array"; readonly container: readonly unknown[]; index: number }
+  | {
+      readonly kind: "object";
+      readonly container: Record<string, unknown>;
+      readonly keys: readonly string[];
+      index: number;
+      written: number;
+    };
 
-  if (resolved === null) return spend(4);
-  const kind = typeof resolved;
-  if (kind === "string") return spend(Buffer.byteLength(JSON.stringify(resolved), "utf8"));
-  if (kind === "number") {
-    /* A non-finite number serialises as `null`, not as `NaN`. */
-    return spend(Number.isFinite(resolved) ? String(resolved).length : 4);
-  }
-  if (kind === "boolean") return spend(resolved === true ? 4 : 5);
-  if (kind !== "object") {
-    /* `bigint` throws out of `JSON.stringify` and still does; `undefined`, functions and
-       symbols never reach here, because both containers below handle them in the two
-       different ways the serialiser does. */
-    return spend(Buffer.byteLength(JSON.stringify(resolved) ?? "", "utf8"));
-  }
+/**
+ * `JSON.stringify`'s byte accounting, one value at a time, over an explicit stack.
+ *
+ * The shape follows `SerializeJSONProperty` rather than being invented, because the three
+ * classes D-40-E charged were all **ordering** defects rather than arithmetic ones: the
+ * serialiser resolves `toJSON` and unboxes *before* it decides whether a value is droppable,
+ * and the first version decided droppability on the raw value and unwrapped afterwards. So a
+ * key whose `toJSON` returns `undefined` was charged for its own name when the serialiser
+ * drops it entirely, and an array element that should serialise as `null` was charged
+ * nothing. Doing it in the serialiser's order makes that class unreachable instead of fixed.
+ */
+function walk(root: unknown, spend: (bytes: number) => void, operation: string): void {
+  const open = new Set<object>();
+  const stack: Frame[] = [];
 
-  const container = resolved as object;
-  if (open.has(container)) throw new CircularReferenceError(operation);
-  open.add(container);
-  try {
-    if (Array.isArray(container)) {
-      spend(2);
-      for (let i = 0; i < container.length; i += 1) {
-        if (i > 0) spend(1);
-        const entry = container[i] as unknown;
-        /* In an array these three serialise as `null`; in an object they are dropped. */
-        if (entry === undefined || typeof entry === "function" || typeof entry === "symbol") {
-          spend(4);
-        } else {
-          measure(entry, spend, open, operation);
-        }
-      }
-      return;
+  /** A value that is already normalised and already known not to be droppable. */
+  const enter = (value: unknown): void => {
+    if (value === null) return spend(4);
+    const kind = typeof value;
+    if (kind === "string") return spend(Buffer.byteLength(JSON.stringify(value), "utf8"));
+    /* A non-finite number serialises as `null`, not as `NaN`. Numbers are ASCII, so their
+       code-unit length is their byte length. */
+    if (kind === "number") return spend(Number.isFinite(value) ? String(value).length : 4);
+    if (kind === "boolean") return spend(value === true ? 4 : 5);
+    if (kind !== "object") {
+      /* `bigint` throws out of `JSON.stringify` and still does, which is the serialiser's
+         own behaviour rather than a decision taken here. A droppable never reaches this
+         call: both containers below handle it in the two different ways the serialiser
+         does, and the top-level case is documented at the call site. */
+      return spend(Buffer.byteLength(JSON.stringify(value) ?? "", "utf8"));
     }
 
+    const container = value as object;
+    if (open.has(container)) throw new CircularReferenceError(operation);
+    if (stack.length >= MAX_NESTING_DEPTH) {
+      refuse(operation, "the nesting depth", MAX_NESTING_DEPTH, "levels");
+    }
+    open.add(container);
     spend(2);
-    let written = 0;
-    for (const key of Object.keys(container)) {
-      const entry = (container as Record<string, unknown>)[key];
-      if (entry === undefined || typeof entry === "function" || typeof entry === "symbol") {
+    stack.push(
+      Array.isArray(container)
+        ? { kind: "array", container, index: 0 }
+        : {
+            kind: "object",
+            container: container as Record<string, unknown>,
+            keys: Object.keys(container),
+            index: 0,
+            written: 0,
+          },
+    );
+  };
+
+  enter(normalise(root, ""));
+
+  while (stack.length > 0) {
+    const frame = stack[stack.length - 1];
+
+    if (frame.kind === "array") {
+      if (frame.index >= frame.container.length) {
+        /* Path-scoped: leaving a container makes it legal again on a different path, which
+           is what keeps legitimate shared substructure from reading as a cycle. */
+        open.delete(frame.container);
+        stack.pop();
         continue;
       }
-      if (written > 0) spend(1);
-      written += 1;
-      spend(Buffer.byteLength(JSON.stringify(key), "utf8") + 1);
-      measure(entry, spend, open, operation);
+      const at = frame.index;
+      frame.index += 1;
+      if (at > 0) spend(1);
+      const resolved = normalise(frame.container[at], String(at));
+      /* In an array these three serialise as `null`; in an object they are dropped. That
+         difference is decided on the RESOLVED value, which is the D-40-E fix. */
+      if (isDroppable(resolved)) {
+        spend(4);
+        continue;
+      }
+      enter(resolved);
+      continue;
     }
-  } finally {
-    /* Path-scoped: leaving the container makes it legal again on a different path, which is
-       what keeps legitimate shared substructure from reading as a cycle. */
-    open.delete(container);
+
+    if (frame.index >= frame.keys.length) {
+      open.delete(frame.container);
+      stack.pop();
+      continue;
+    }
+    const key = frame.keys[frame.index];
+    frame.index += 1;
+    const resolved = normalise(frame.container[key], key);
+    /* Dropped before the key costs anything, which is what the serialiser does and what the
+       recursive version got wrong: it spent the key and then measured nothing for a value
+       the serialiser never emits. */
+    if (isDroppable(resolved)) continue;
+    if (frame.written > 0) spend(1);
+    frame.written += 1;
+    spend(Buffer.byteLength(JSON.stringify(key), "utf8") + 1);
+    enter(resolved);
   }
 }
 
-/** `JSON.stringify` calls `toJSON` before looking at anything else. So does this. */
-function unwrap(value: unknown): unknown {
-  if (value === null || value === undefined) return value;
-  const candidate = (value as { toJSON?: unknown }).toJSON;
-  return typeof candidate === "function"
-    ? (candidate as () => unknown).call(value)
-    : value;
+/** `undefined`, a function and a symbol are the three values the serialiser will not emit. */
+function isDroppable(value: unknown): boolean {
+  return value === undefined || typeof value === "function" || typeof value === "symbol";
+}
+
+/**
+ * `SerializeJSONProperty` steps 2 and 4: resolve `toJSON`, then unwrap a boxed primitive.
+ *
+ * **`key` is passed**, because the serialiser passes it and a `toJSON` is entitled to read
+ * it — `Date.prototype.toJSON` ignores it, which is why omitting it looked harmless against
+ * a corpus whose only `toJSON` was a `Date`.
+ */
+function normalise(value: unknown, key: string): unknown {
+  let resolved = value;
+
+  if (resolved !== null && (typeof resolved === "object" || typeof resolved === "bigint")) {
+    const toJSON = (resolved as { toJSON?: unknown }).toJSON;
+    if (typeof toJSON === "function") {
+      resolved = (toJSON as (k: string) => unknown).call(resolved, key);
+    }
+  }
+
+  if (resolved !== null && typeof resolved === "object") {
+    const unboxed = unbox(resolved);
+    if (unboxed !== NOT_BOXED) return unboxed;
+  }
+
+  return resolved;
+}
+
+/** A sentinel, because `undefined` is itself a legal unboxed value to return. */
+const NOT_BOXED = Symbol("not-boxed");
+
+/**
+ * The boxed-primitive step, tested by internal slot rather than by `instanceof`.
+ *
+ * `instanceof` is realm-scoped and `Object.prototype.toString` is forgeable through
+ * `Symbol.toStringTag`; calling the prototype's own `valueOf` throws unless the object
+ * genuinely carries the slot, which is the same question the specification asks.
+ */
+function unbox(value: object): unknown {
+  try {
+    return String.prototype.valueOf.call(value);
+  } catch {
+    /* not a String object */
+  }
+  try {
+    return Number.prototype.valueOf.call(value);
+  } catch {
+    /* not a Number object */
+  }
+  try {
+    return Boolean.prototype.valueOf.call(value);
+  } catch {
+    /* not a Boolean object */
+  }
+  return NOT_BOXED;
 }
 
 /** The measured size of one document, for the three siblings, which are handed bytes. */

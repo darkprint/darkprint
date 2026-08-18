@@ -342,6 +342,15 @@ describe("AC4 — limits", () => {
     expect(DEFAULT_ENGINE_LIMITS.maxBytes).toBeGreaterThan(maxBytes);
     expect(DEFAULT_ENGINE_LIMITS.maxCards).toBeGreaterThan(maxCards);
     expect(DEFAULT_ENGINE_LIMITS.maxNodes).toBeGreaterThan(maxNodes);
+
+    /* `limits.ts` claims each bound "clears its maximum by at least fifty times". That
+       sentence was true and was checked by an adversary who happened to have it in eye line
+       rather than by anything that would check it again — its own words. The ratio is
+       computable, so it is an assertion here instead of a claim there, and the day someone
+       tightens a default without reading the paragraph beside it, this is what objects. */
+    expect(DEFAULT_ENGINE_LIMITS.maxBytes / maxBytes).toBeGreaterThanOrEqual(50);
+    expect(DEFAULT_ENGINE_LIMITS.maxCards / maxCards).toBeGreaterThanOrEqual(50);
+    expect(DEFAULT_ENGINE_LIMITS.maxNodes / maxNodes).toBeGreaterThanOrEqual(50);
   });
 
   it("refuses an oversized submission with the limit named", () => {

@@ -16,7 +16,12 @@
 
 /* --------------------- limits (AC4) --------------------- */
 export type { EngineLimits } from "./limits";
-export { CircularReferenceError, DEFAULT_ENGINE_LIMITS, LimitExceededError } from "./limits";
+export {
+  CircularReferenceError,
+  DEFAULT_ENGINE_LIMITS,
+  LimitExceededError,
+  MAX_NESTING_DEPTH,
+} from "./limits";
 
 /* --------------------- the four entry points --------------------- */
 export type {

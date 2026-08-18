@@ -5003,7 +5003,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | round 2 fix at `712a6b1`, 12 ahead: D-50-18 at three sites with a per-site witness. Triple identical, `1 failed, 5361 passed, 0 skipped`, base's own t090 red, foreign vitest peak 0, residue zero added. D-50-20 (`FOR UPDATE`) deliberately absent and named as absent |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | reverted | adversary round 2 **FAIL** at `a7f0a88`: **D-40-D** wire-reachable — the recursive bounded walk throws a bare `RangeError` on a 6 134-byte body, 0.3% of the limit, where the ruled formula answers to depth 1 000 000; **D-40-E** the 22-shape corpus misses nine divergences in three classes, array case under-counts ~5x, barrel-only. 42 mutations two passes: 31 CAUGHT / 6 MISS / 11 GAP / 0 SILENT GREEN / 0 equivalent. All four claimed equivalents have discriminators. C1's pre-registered green branch hit: `resolve.ts:191` is NOT the mechanism, warrant reverts to sampled. D-40-21's two guards in and falsified. No full suite, owed at a slot |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round-2 charges D-40-D (iterative walk, typed depth ceiling above every observed crash point) and D-40-E (corpus replaced by a construction over `SerializeJSONProperty`'s branches, 50 classes x 9 positions plus 500 composed) fixed; typecheck/lint 0, targeted 69/69, 10 mutations 9 CAUGHT 1 equivalent |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | todo | — |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -9159,7 +9159,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
@@ -9685,6 +9685,71 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     still a set I chose; the second pass narrowed the untouched region but `lib/core` and
     `lib/server/http` were never mutated at all. And the 11 GAPs are gaps in the suites **I ran** —
     226 tests over three globs — which is not the whole tree.
+  - 2026-08-18 implementer, **round 3: D-40-D and D-40-E fixed, on the gate slot granted by name.**
+    Merged `backend` at `c20a162` before stamping. Gates in the ordered sequence, stopping at the first
+    red: `tsc --noEmit` **0**, `eslint` **0**, `npx vitest run lib/server/engine app/api/validate`
+    **69/69 exit 0**, peak foreign `vitest` **0** across 22 in-run samples counted by process group.
+  - 2026-08-18 implementer, **the count moved 79 → 69 and it reconciles exactly.** `measure.test.ts`
+    went 32 → 18 because the old corpus emitted **one `it` per shape** and the construction that
+    replaced it is one assertion over 400+ generated cells — −22 rows, +8 new cases, **−14**. The other
+    +4 is `app/api/validate/ontology-not-caller-supplied.test.ts`, which is **not mine**: T040's
+    adversary built D-40-21's two guards into my `Owns` and they pass. 79 − 14 + 4 = 69, and the
+    per-file split is 33/18/4/10 plus the adversary's 4.
+  - 2026-08-18 implementer, **D-40-D built, and the ceiling is placed so nothing previously measured
+    stops being measured.** Iterative with an explicit frame stack, one mutable `open` set, enter/leave
+    by pop — the `isWellFormedDeep` shape. `MAX_NESTING_DEPTH = 10 000`, refusing as
+    `"validateBundle: the nesting depth exceeds the limit of 10000 levels."`, above **every** observed
+    crash point of the recursive walk (3 000 through a route, 7 000 direct), so depths that used to
+    crash now measure and depths past the ceiling refuse cleanly. **The main assertion is over the
+    outcome KIND across four orders of magnitude** — at depths 1 to 50 000 the answer is a number or a
+    `LimitExceededError` and `RangeError` is legal at no depth — with the threshold cases as witnesses
+    under the property rather than as the property, because a threshold assertion would have been the
+    ceiling validated against the input that motivated it. Not a fourth `EngineLimits` field: T230 owns
+    those three as product decisions about what a submission may contain, and a depth bound is a
+    property of what this procedure can hold.
+  - 2026-08-18 implementer, **D-40-E built as a construction over `SerializeJSONProperty`'s own
+    branches.** 50 value classes × 9 positions, each class commenting the algorithm step it covers,
+    plus **500 composed values** to depth 3 under a seeded LCG — because a flat product tests each
+    class beside a constant while the steps interact, and a `toJSON` returning a boxed primitive inside
+    an array inside an object exercises three branches in one value that no single cell reaches. The
+    generator is asserted **before** its results, so a corpus that silently stopped generating cannot
+    report agreement over nothing. **The ordering fix is structural**: `normalise` resolves `toJSON(key)`
+    then unboxes, and droppability is decided on the **resolved** value, which is the serialiser's
+    order — all three charged classes were one defect wearing three faces, so the order makes them
+    unreachable rather than fixed. Boxing is tested by calling `String.prototype.valueOf` and catching,
+    which asks the internal-slot question where `instanceof` is realm-scoped and
+    `Object.prototype.toString` is forgeable through `Symbol.toStringTag`.
+  - 2026-08-18 implementer, **three defects the run found that no amount of reading had.** This is the
+    argument for having asked for the slot rather than shipping on a read, and each is a different kind.
+    (1) **`1n` is a syntax error at this project's `target: ES2017`** while `lib: esnext` types the
+    global, so `BigInt(1)` — found by `tsc` in one second, invisible to inspection. (2) **The 22-shape
+    corpus's replacement made D-40-E's own mistake, one level up, in the generator written to close
+    it**: each class carried a hand-set `droppable` flag, so the cells excluded from the top were those
+    whose *raw* value is droppable — and `JSON.stringify({ toJSON: () => undefined })` is `undefined`
+    too, so `Buffer.byteLength` threw and the run died **inside the corpus**. Droppability declared
+    instead of derived, which is the charge verbatim. The partition is now computed by asking
+    `JSON.stringify` whether it has a value, which cannot make the same mistake because it *is* the
+    thing being agreed with, and the excluded half is asserted rather than skipped — non-empty, every
+    member genuinely undefined, and two named `toJSON` cells required to be in it. (3) **An absolute
+    `< 2000 ms` assertion failed at 2 187 ms on a quiet host holding the slot**, and it deserved to: a
+    millisecond bound is a **host-dependent threshold**, the same defect D-40-D charged in the
+    `RangeError` boundary. Replaced by the property the ruling actually states — hold `maxBytes` fixed
+    and vary the depth: an exponential walk costs 2^15 times more at depth 40 than at 25, a bounded one
+    costs the same, and **the ratio cancels the host**.
+  - 2026-08-18 implementer, **10 mutations, 9 CAUGHT, 1 equivalent, and my first attempt at the tenth
+    was an equivalent mutant of my own making.** S1 was meant to reproduce D-40-E's array half and
+    reddened **nothing** — because it kept the post-normalise droppable check, so a `toJSON` returning
+    `undefined` still cost 4. That is not the defect; the defect spends **0**. Rewritten to check the
+    raw value only and let the unwrap happen downstream, it reds **3** — the cross product, the named
+    witnesses, and the composed values independently. **Third time in this task a mutation has not done
+    what its name said, and the harness cannot tell me**: it reports a failing set, and whether the
+    patch changed the behaviour it claims is a question about the patch. The remaining zero is S10,
+    `cardFiles` unsorted, measured equivalent for the third round running.
+  - 2026-08-18 implementer, **the ratio the adversary offered is mechanised.** `limits.ts` claims each
+    default "clears its maximum by at least fifty times" — a sentence the adversary verified because it
+    was in its eye line rather than because anything would check it again, its own words. It is now
+    three assertions beside the three maxima. Four lines, and it converts a claim that reads as checked
+    into one that is.
 
 ### T080, Registry read model and read API
 
