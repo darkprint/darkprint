@@ -1636,6 +1636,32 @@ the conclusion looked separately true*, which would have got the call wrong the 
 conclusion had no independent support. **A ruled requirement and a stated reason are different objects**,
 and the test is which one the conclusion rests on — not whether it still looks right.
 
+## A neighbouring claim that depends on a corrected value is found by reading
+
+**T040's adversary handed this back rather than accepting the credit for it, and the handing back is
+the finding.**
+
+I told it that *an edit's blast radius is the sentences that depend on the value, not the lines that
+contain it*, because it had checked the sentence after `limits.ts:40` — *"clears its maximum by at
+least fifty times"*, still true at the corrected figures, 115x and 55x. **Its correction: it did not
+check that as a rule. It checked it because the sentence happened to be in its eye line.**
+
+**So the blast radius was covered by luck, and the luck is the finding.** A dependent claim two
+paragraphs away, or in another file, is found by **reading** — and reading is the instrument this file
+trusts least, for reasons every entry above this one demonstrates.
+
+**The mechanisable shape it offered, recorded rather than ordered:** `DEFAULT_ENGINE_LIMITS` divided by
+the measured archive maxima is **computable**, so *every default clears the archive maximum by at least
+fifty times* could be an **assertion instead of a sentence** — and a correction that broke it would red
+rather than needing to be noticed. **A ratio stated in prose is a claim that goes stale silently when
+either operand moves.** Not this round's work.
+
+**And the general form, which is where the run keeps landing: the fix was to say the thing out loud, not
+to build something.** Twice tonight — announcing that I held the slot rather than leaving it to be
+inferred, and the outgoing holder stating it had stopped writing rather than letting an appointment
+message stand as a claim about a future state. **An appointment is a claim about the future until the
+leaver confirms.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
