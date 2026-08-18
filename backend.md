@@ -1636,6 +1636,32 @@ the conclusion looked separately true*, which would have got the call wrong the 
 conclusion had no independent support. **A ruled requirement and a stated reason are different objects**,
 and the test is which one the conclusion rests on — not whether it still looks right.
 
+## A neighbouring claim that depends on a corrected value is found by reading
+
+**T040's adversary handed this back rather than accepting the credit for it, and the handing back is
+the finding.**
+
+I told it that *an edit's blast radius is the sentences that depend on the value, not the lines that
+contain it*, because it had checked the sentence after `limits.ts:40` — *"clears its maximum by at
+least fifty times"*, still true at the corrected figures, 115x and 55x. **Its correction: it did not
+check that as a rule. It checked it because the sentence happened to be in its eye line.**
+
+**So the blast radius was covered by luck, and the luck is the finding.** A dependent claim two
+paragraphs away, or in another file, is found by **reading** — and reading is the instrument this file
+trusts least, for reasons every entry above this one demonstrates.
+
+**The mechanisable shape it offered, recorded rather than ordered:** `DEFAULT_ENGINE_LIMITS` divided by
+the measured archive maxima is **computable**, so *every default clears the archive maximum by at least
+fifty times* could be an **assertion instead of a sentence** — and a correction that broke it would red
+rather than needing to be noticed. **A ratio stated in prose is a claim that goes stale silently when
+either operand moves.** Not this round's work.
+
+**And the general form, which is where the run keeps landing: the fix was to say the thing out loud, not
+to build something.** Twice tonight — announcing that I held the slot rather than leaving it to be
+inferred, and the outgoing holder stating it had stopped writing rather than letting an appointment
+message stand as a claim about a future state. **An appointment is a claim about the future until the
+leaver confirms.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -4784,7 +4810,7 @@ it does not decide differently inside a worktree.
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
-| T005 | Schema extension: the community and account tables | T000 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**`, `lib/db/migrate.test.ts`, `tests/support/db.ts` | `../darkprint-wt-t005-schema` | `feat/t005-schema` | **adversarial-pass** | adversary **PASS** at `cbfe933`: all eight criteria driven from raw SQL, every one falsified two-factor on my own tree — seven constraints dropped and the forbidden write re-run, all seven flip. AC5 measured at BOTH ends (collapse reds the refusal test and leaves acceptance green; saturation at 1..99 reds acceptance and leaves refusal green). 13 mutations, **zero MISSes**, every prediction named before the run. Set-difference at merge: **57/57, empty** — the one red (`api_key.label`) was D-05-08, ruled, and the suite corrected it at `609ce8d`. Two gaps I found on `api_key` (its name outside `ac8-names`, its unique outside the partial-index assertion) are **closed and the closure verified by reverse mutation, 0 red -> 1 red on both**. typecheck/lint/build 0, read unfiltered on a tree whose unbuilt counterfactual I measured (18 `TS2304` across **nine** files). Triple: **three consecutive runs, `1 failed / 5203 passed (5204)`, 0 skipped, identical sorted failing sets**, the only red T090's known expected one; whole-tree stamp `cbfe933` clean both ends; **peak foreign vitest process groups 0 across 40 samples**, load 46 max; zero database residue of mine. Two items recorded, neither a defect in what T005 ships: AC6's stepwise half is unobserved at every N, and D-05-09 (`cost_units numeric(18,6)` silently rounds) is raised for ruling |
+| T005 | Schema extension: the community and account tables | T000 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**`, `lib/db/migrate.test.ts`, `tests/support/db.ts` | `../darkprint-wt-t005-schema` | `feat/t005-schema` | merged | merged at `011a851` as the tenth task. Triple identical at `f282f93`, `1 failed, 5208 passed, 0 skipped`, count pre-registered at 5209 and hit exactly; gates 0 unfiltered. D-05-09's witness discriminates all four fix states and names which half is wrong |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
@@ -5361,7 +5387,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T005, Schema extension: the community and account tables
 
-- **State:** adversarial-pass
+- **State:** merged
 - **Worktree:** `../darkprint-wt-t005-schema` (impl), `../darkprint-wt-t005-schema-tests` (blind)
 - **Branch:** `feat/t005-schema` (impl), `test/t005-schema` (blind)
 - **Depends on:** T000 (merged)
@@ -9046,6 +9072,10 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   The implementer's proposal, taken verbatim. **D-40-20 ruled the refusal typed and did not say what type** — a published surface with two holders where only one had it, flagged by the implementer in the module, in its Log and in its handback rather than left for the blind author to guess. Both holders are told in the turn carrying this line.
 
   **D-40-17 is normative as a NUMBER, not as a PROCEDURE (D-40-20, ruled on T040's adversary's question).** The criterion says which submissions are refused; it does not say how the size is computed. **So a bounded walk that accumulates and short-circuits the moment the running total exceeds `maxBytes` is CONFORMING**, and it is required — see D-40-B. Cost becomes O(`maxBytes`), bounded by the limit rather than by the input graph, and the number is preserved exactly for every submission that is **accepted**, because past the bound only the comparison is ever needed. A `seen` set must **not** be used for the size — it would change the number for shared substructure — and is the right instrument for the **cycle**, which becomes a typed refusal instead of a `TypeError`.
+
+  **D-40-D, ruled (adversary round 2, charged and accepted): the bounded walk must be ITERATIVE, with an explicit stack and a frame ceiling that refuses as a typed error.** The recursive walk throws a bare `RangeError` on a **6 134-byte** body whose `manifest` nests — **0.3% of the 2 MiB default** — where D-40-17's literal answers that same input at 6 134 and keeps answering to depth 1 000 000. **D-40-20's substitution was paid for by *the number is preserved exactly for every submission that is accepted*, and here that clause is SILENT rather than violated**: the input is neither accepted nor refused and no number is produced. The boundary is host-dependent, not input-dependent — depth 7 000 direct, 3 000 under the route — which makes it untestable as a threshold and unacceptable as a behaviour. Precedent is T010/T020's `isWellFormedDeep`: one mutable `open` set, explicit enter/leave frames, O(1) per visit. **A ceiling is required as well as a shape**, because an iterative walk over a 100 MB nested body still runs.
+
+  **D-40-E, ruled (same round): the 22-shape corpus backing the walk's equivalence with D-40-17 is a LIST, and what is owed is a construction over the serialiser's equivalence classes.** Nine divergences measured in three classes it does not reach — `toJSON` returning a droppable, `toJSON` reading its key argument, and boxed primitives — with the array case **under-counting ~5x**, a `maxBytes` bypass through the barrel. All barrel-only, so the charge is against the warrant rather than a live wire defect. **Three more rows reproduces the defect one size larger.**
 
   **D-40-21: `submissionOf` excludes `input.ontology`, and that is now published rather than a deviation.** An `OntologyView` carries the whole of `CORE_ONTOLOGY`, so measuring it would charge a caller the entire curated vocabulary against its own upload's budget — refusing a small bundle for the size of something it did not send and cannot make smaller. **`ontology` is not caller-supplied, and that is a premise rather than a remark** — an exclusion from a measured set is a bypass of the bound the moment the excluded field becomes caller-reachable, so a route that ever accepted a caller's `ontology` would turn this ruling into an unbounded hole in `maxBytes` with nothing redding in between. The earlier wording here (*every wire call gives the same number under either reading*) framed it as a convenience and is withdrawn. **Guard owed, adversary's round**, two instruments: the wire number must equal the literal `Buffer.byteLength(JSON.stringify(input))` for a payload through a route, and no route file may pass `ontology` into the engine. Reported by the implementer rather than taken quietly, confirmed by the adversary, and the premise charged by the implementer against itself a round later.
 
