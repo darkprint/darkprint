@@ -355,6 +355,145 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## I have been exempting myself from the gate slot without ever saying so
+
+T005's adversary sampled during its batch, kept the line, and reported a foreign process group
+running `vitest` **out of `/Users/alessandro/Github/darkprint` — the base checkout, not a worktree**,
+with scratch databases climbing 1 → 10 across eighteen samples while it held the slot.
+
+**That was me.** I have run `npm test` on base to gate nearly every commit in this wave, including
+commits whose own messages say *"no full suite while a slot is held"*. **I wrote that sentence and
+then ran the suite anyway**, because gating a commit felt like a different activity from taking the
+slot. It is not — it is the same shared Postgres, the same scratch databases, the same contention, and
+every session in this run has been asking permission for exactly it.
+
+Its handling was better than the finding: **it flagged rather than filed**, on the grounds that a red
+is a red under contention so its mutation numbers were unaffected — *but it is exactly the ambiguity
+my triple cannot afford.* Distinguishing the measurement that survives contention from the one that
+cannot is what made the report useful rather than an accusation.
+
+**The rule, and it binds me first:** the orchestrator holds no standing exemption. A full suite on base
+is a slot-taking run. When a slot is held, base commits gate on **typecheck, lint and the file-parsing
+guards** — which is what several of my commits already did, correctly, and what the rest should have.
+
+**And it is why the slot protocol has been costing more than it should.** Six sessions have queued
+politely around a resource one participant was using unannounced, which makes every wait longer than
+it looked and every contention figure harder to attribute — including the ones I asked them to
+explain.
+
+## I committed over a lint failure by reading a gate file the failed chain never wrote
+
+`96ff164` claims *typecheck 0, lint 0, one full suite at 5146 passed*. **Lint was failing** — two
+`no-assign-module-variable` errors in the guard that commit adds — and I found out two commits later.
+
+**The mechanism is new and it is worse than the `&&`-does-not-span-lines instances.** My chain was:
+
+```
+npm run typecheck >/dev/null && npm run lint >/dev/null && npm test > "$OUT" 2>&1; LINE=$(grep … "$OUT")
+```
+
+The `&&` chain **worked**: lint failed, so `npm test` never ran. But `$OUT` is a **fixed path**, so it
+still held the **previous** run's output, and the `grep` read a stale file that matched base's line
+exactly. **The guard chain did its job and the reporting step defeated it**, because the artefact it
+reads outlives the run that writes it.
+
+Two things follow. **A gate output file must be unique per invocation, or it is a cache of the last
+time things worked.** And **a chain that stops early must leave nothing readable behind**, or the
+reading step cannot tell "did not run" from "ran and passed".
+
+Recorded beside the other three because the family now has two distinct shapes: a chain that does not
+guard, and a chain that guards correctly while the **evidence** is stale. The second is harder — every
+command in it behaved exactly as designed.
+
+**And I read `tail`'s exit code again while diagnosing it**, in the same session that recorded T040's
+adversary doing it. `npm run lint 2>&1 | tail -3; echo "lint=$?"` prints `0` whatever lint did.
+
+## A branch that has NOT moved is not a session that has stopped
+
+T005's adversary corrected the mirror of a rule this file already holds. I read
+`feat/t005-schema` as last moving four hours earlier and inferred a session that had finished. It had
+been sitting still because **everything since had been reading, mutating and restoring rather than
+committing** — and it was between runs, not stopped.
+
+So the pair is complete: **a branch that has moved is not a session that has finished, and a branch
+that has not moved is not a session that has stopped. The tree stamp answers neither.** `ps` does, and
+my `ps` reading was in fact correct — what was wrong was the second signal I reached for to corroborate
+it. **Corroborating a good measurement with a bad one does not strengthen it.**
+
+It also corrected the figure: 3h36m, not four hours. I had rounded a number I had not read.
+
+## `error-hygiene` over a task with no module is vacuous, not thin
+
+Its sharpening of my own warning, and it is stronger than what I sent. I told it that a green from
+`error-hygiene` means *the classes T005 publishes are clean, and nothing more*. **T005 publishes no
+module, no barrel and no exported function at all** — every `lib/server` module and every route is
+Forbidden to it. So that guard's domain over T005 is **empty by construction**, and its green is
+vacuous in the precise sense this run charges elsewhere.
+
+**And it turned the observation back on the guard I had just written.**
+`tests/store-modules-seal-their-faults.test.ts` is *also* a domain-by-construction check, deriving from
+modules that **exist and import `@/lib/db`** — so it is blind in the same direction: a task that ought
+to have a store module and does not ship one is invisible to it, exactly as T080's missing error class
+was invisible to `error-hygiene`. **Every guard that constructs its domain owes an answer to "which
+side of *exists* did you derive from, and what lives on the other side."**
+
+## An absent class leaks by not existing, and a constructed domain is only as complete as what it constructs over
+
+T050's adversary drove a closed-port probe at **T080's** routes, because *a claim about a precedent is
+a claim about more than one tree*. Result: `GET /api/cards` and `GET /api/blueprints` throw a raw
+`DrizzleQueryError` **whose message opens with the full `select … from "bundle"`** — out of a merged,
+tagged route.
+
+**Verified here, and worse than reported.** Five of six server modules ship an `errors.ts`.
+`lib/server/registry/` ships **none**, its only `catch` is `snapshot.ts`'s `canonicalJson` fallback,
+and its eleven routes carry no boundary. `params:` is empty only because that query is unparameterised;
+a parameterised one carries the bound values, which is **D-13's clause verbatim**.
+
+**And `tests/error-hygiene.test.ts` is structurally blind to it.** That guard builds its domain by
+construction — every export whose `prototype instanceof Error` — and **T080's barrel exports no error
+class**, so the domain is empty and the guard is green over the module with the leak. **An absent class
+leaks by not existing.**
+
+This is the strongest counter-example this run has to its own favourite move. A domain built by
+construction is only as complete as **the thing it constructs over**, and constructing over *exported
+error classes* silently exempts any module that has none — which is exactly the module most likely to
+be leaking. The guard's floor (`>= 8`) does not help: it counts across all modules, so one module
+contributing zero is invisible inside a total that other modules satisfy.
+
+Closed by `tests/store-modules-seal-their-faults.test.ts`: **a `lib/server/*` module that imports
+`@/lib/db` must export at least one error class.** Derived from what a module *reaches* rather than
+from a list, so the next database-touching module is covered on the day it lands.
+
+**T081 carries the fix**, and the adversary's distinction is the reason it is a separate task rather
+than a note on D-50-18: **T050's is an envelope defect** — the class is recognised, sanitized and
+published, and only the wrapper is missing. **T080's is a leak** — there is nothing to wrap. The store
+wrapper comes first and the envelope second.
+
+**Its disposal was right in both directions**: it reported rather than charged, since T080 is merged
+and not its task, and it separated the two defects rather than filing them together because they share
+a symptom.
+
+## D-50-18 was implemented as narrowly as its worked example
+
+The same message, on the ruling I had just made. Four routes wrap with `withAccountErrors`;
+**`GET /api/account` does not wrap at all** — it is `withSession(request, …)` with no error boundary —
+so adding the `AccountStoreError → 500` arm fixes four routes and leaves the read route throwing.
+
+**A ruling implemented as narrowly as its worked example** is this file's own recurring shape, and the
+worked example here was `withAccountErrors` because that is the file the divergence was found in. The
+ruling's scope is *a store fault answers `problem+json`*, and the surface is **every route that can
+have one**.
+
+A third site is labelled `read, not measured`: the OAuth callback calls `upsertFromGitHub` with a
+`problem(… 502 …)` for a GitHub-side failure and nothing for a store-side one. It judged the signed
+state cookie not worth the round and said so rather than driving it.
+
+**And the ruling made an unobservable region observable, which nobody predicted.** Its own §3 had
+established that a correct **door** ruling put the sanitizer's whole fault path out of the blind suite's
+reach. D-50-18 puts it back **at the transport** — point `DATABASE_URL` at a closed port, drive the
+route, assert `problem+json` 500 — which needs **no database and no gate slot**, making it one of the
+cheapest assertions in the task rather than one of the most expensive.
+
 ## Publishing a ruling that was granted in a reply owes the recipient its new number
 
 T050's adversary found that **twelve `D-50-xx` ids cited in the blind suite do not resolve to what they
@@ -3604,8 +3743,9 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | — |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | reverted | — |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | blind suite 98 tests, 96 red on the absent module, 33 mutations 32 caught / 0 MISS / 1 equivalent; adversary round 1 FAIL at `cf1f7a1` on D-40-A/B/C plus nine GAPs; round 2 `impl-done` at `e1ca2e4` |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
+| T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | todo | — |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | — | — | todo | — |
@@ -4216,6 +4356,8 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
                       duration_ms int, reported_at, created_at                  -- AC4, D-05-01
         api_key       account_id, token_hash text NOT NULL unique, label text,
                       created_at, revoked_at NULL
+
+  **D-05-08, ruled: an unmarked column in this block is `NOT NULL`.** The block writes `token_hash text NOT NULL` and `label text` on one line and never said what the absence of a marker meant — so T005's implementer read unmarked as required and its blind author read it as nullable, and **both readings are defensible against the text I wrote.** Required wins, corroborated by three independent places rather than by preference: T230's `issueKey(…, label: string)`, its `ApiKeyRecord.label: string`, and T180's all-required `RunReport` covering the eight other unmarked columns. **Only `NULL` is written explicitly**, as `deleted_at NULL`, `revoked_at NULL`, `edited_at NULL` and the three `smallint NULL` metrics already are. Nine columns were divergent and exactly one reddened, because the blind suite derives required columns from the catalogue everywhere except its `api_key` test, which hardcodes a two-column insert — so the disagreement was invisible at the other eight by luck rather than by agreement.
 
   `target_kind` reuses the existing `target_kind` enum (`blueprint | card | term`); any narrowing is the consuming task's, not a check constraint here. `note.deleted_at` is B-18's tombstone — a deleted note keeps its row so counts and cursors stay honest, and its `body` becomes unreadable through the module rather than by deletion. `note.votes` in `lib/types.ts:182` is a **derived count** over `note_vote` and is not a column.
 
@@ -7691,7 +7833,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
@@ -7780,6 +7922,12 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   `<operation>` is the function's own name. **`maxCards` and `maxNodes` are `validateBundle`'s alone** — a sibling takes one document, so a card count is meaningless and `validateDot` does not enforce `maxNodes` even though it parses a graph, because a limit enforced in two places is two limits.
 
+  **D-40-22, ruling the name D-40-20 left owed: the cycle refusal is `CircularReferenceError`**, exported from `@/lib/server/engine`, sealed like every other published class, with the form:
+
+        "<operation>: the submission contains a circular reference."
+
+  The implementer's proposal, taken verbatim. **D-40-20 ruled the refusal typed and did not say what type** — a published surface with two holders where only one had it, flagged by the implementer in the module, in its Log and in its handback rather than left for the blind author to guess. Both holders are told in the turn carrying this line.
+
   **D-40-17 is normative as a NUMBER, not as a PROCEDURE (D-40-20, ruled on T040's adversary's question).** The criterion says which submissions are refused; it does not say how the size is computed. **So a bounded walk that accumulates and short-circuits the moment the running total exceeds `maxBytes` is CONFORMING**, and it is required — see D-40-B. Cost becomes O(`maxBytes`), bounded by the limit rather than by the input graph, and the number is preserved exactly for every submission that is **accepted**, because past the bound only the comparison is ever needed. A `seen` set must **not** be used for the size — it would change the number for shared substructure — and is the right instrument for the **cycle**, which becomes a typed refusal instead of a `TypeError`.
 
   **D-40-21: `submissionOf` excludes `input.ontology`, and that is now published rather than a deviation.** An `OntologyView` carries the whole of `CORE_ONTOLOGY`, so measuring it would charge a caller the entire curated vocabulary against its own upload's budget — refusing a small bundle for the size of something it did not send and cannot make smaller. No route can set `ontology`, so **every wire call gives the same number under either reading**. Reported by the implementer rather than taken quietly, and confirmed by the adversary.
@@ -7792,6 +7940,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Out of scope:** persistence, publishing, the archive's own re-validation sweep.
 - **Log:**
   - 2026-08-13 orchestrator: created. Contract was already derivable; unchanged by the decisions.
+  - **2026-08-18 adversary round 1, FAIL — recorded here because it reached the implementer only in a message, which is this file's own least durable medium.** Four charges. **D-40-A (defect, charged):** `validateBundle`'s card-count refusal read every card value — `guardBytes` ran before `guardCards` and `byteLengthOf` walks `cardFiles` — while `limits.ts:153` stated the opposite in its own docstring. One red blind test, one-line cause, and nothing in the blind suite pinned the order because every limits case breaches one bound with the others generous. **D-40-B (defect, charged):** the byte guard materialises the input to measure it — a depth-25 diamond (26 objects) threw a bare `RangeError` where a `LimitExceededError` was owed, and below that allocated up to 386 MB of transient heap to decide a submission exceeds 2 MB. **D-40-C (defect, charged):** a circular `manifest` **or `extensions`** gave `TypeError: Converting circular structure to JSON`; hygiene intact, so `error-hygiene` cannot see it. All three closed through the routes and open through the barrel, which T100/T263/T270 consume in-process. **Nine GAPs**, of which the ones that became work: `maxCards`/`maxNodes` pinned at neither end while `maxBytes` was pinned at both; `resolveLimits` `??`→`||` making `maxBytes: 0` silently 2 MiB; `documentBytes` byte-vs-code-unit; `guardNodes` resolved-vs-declared; `validateCardSource`'s `card: undefined` versus an omitted key. **And the second-biggest item: the blind suite reached no route at all** — 81 tests, no `Response`, no `POST`, no status code; six route mutations reddened zero blind tests and two were caught by nothing. Verdict measured at `cf1f7a1`; byte figures reconciled (17 947 archive max, 18 195 = that plus frontline-triage's 248-byte extensions; the blind author's 17 963 reproduces under no reading and is unresolved).
 
 ### T080, Registry read model and read API
 
@@ -7948,6 +8097,19 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   - 2026-08-15 blind test author: **route binding was a defect in this suite and it was mine.** It read the published URL templates as App Router folder syntax and imported eleven route modules literally, which fails `tsc --noEmit` and `npm run build` — a dynamic `import()` specifier resolves at **compile time**, so it was a blocked gate rather than six red tests. Two things were wrong beyond the breakage, and the first is why the implementation could not fix it: **the published paths are URLs and `CARD_ID` admits an `owner/name` namespace**, so no literal `[id]` folder can express every valid id and serving both sub-resources from the catch-all is correct; and **a module-path binding is unsatisfiable by any correct implementation whose layout differs from the prose I read it out of**. The third was quieter — the precedence test it carried, "`/api/cards/duplicates` is not shadowed by `[...ref]`", imported the duplicates module *directly*, so no shadowing was reachable by it in either direction. A guard that could not fail, inside the binding that broke the build.
   - 2026-08-15 blind test author: **both gaps closed and falsified. 259 tests over 9 files** — surface 28, records 35, users-of 10, phase-buckets 12, unknown-key 9, privacy 120, scores 8, routes 29, build-parity 8. **Gap 1, the join, is the one that mattered and the diagnosis was exact:** the privacy sweep hands an `Actor` straight to the readers and `routes.test.ts` drove routes anonymously, so each half was covered and the step connecting them was not. A session is now minted through T000's own published surface — `encodeSession` and `SESSION_COOKIE_NAME` from `@/lib/server/auth`, a new dependency for this suite and a merged one — and `callRoute` takes headers. The assertion is an **equality against the reader's own answer for that actor**, `route(signed in as A) === reader(account A)`, with both required to differ from `route(anonymous)`; a hand-written expectation would have been a third opinion rather than a check on the join. **A second owner was necessary**: with one, "the session became an account actor" and "the session became an operator" produce the same body and only half the join is observed. Falsified both ways — `actorFrom` returning ANONYMOUS unconditionally reds **4**, widening every session to an operator reds **3**. Gap 2, `card()`'s ref canonicalisation, reds **1** on a padded ref, which is the only input separating the two implementations. Reference **259/259** green, measured on **both** route layouts again: eleven files with `[id]` and `[...ref]` siblings, and nine with the catch-all serving both sub-resources.
   - 2026-08-15 implementer, round 2: **three defects addressed, two falsified, and the gate block cleared by implementation rather than by a suite rewrite.** Took the adversary's tree at `a2cac88` rather than re-merging, then merged `backend` at `110dd6b`.
+### T081, Registry store wrapper: D-13 for the read model
+
+- **State:** todo
+- **Depends on:** T080 (merged)
+- **Owns:** `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**`
+- **Contract:** D-13 says no rejection may carry the failed statement or its bound parameters. **T080 ships no error class and no store wrapper**, so a driver failure escapes a merged, tagged route as a raw `DrizzleQueryError` **whose message opens with the full query**. Measured by T050's adversary against a closed port: `GET /api/cards` and `GET /api/blueprints` both threw `Failed query: select "id", "owner_id", "slug", … from "bundle"`. `params:` was empty only because that query is unparameterised — a parameterised one carries the bound values, which is D-13's clause verbatim.
+
+  Five of six server modules ship an `errors.ts`; `lib/server/registry/` has one `catch`, in `snapshot.ts`, for `canonicalJson`. **This is not an envelope defect like T050's D-50-18** — there the class is recognised, sanitized and published and only the wrapper is missing. **Here there is nothing to wrap.** The store wrapper comes first and the envelope second.
+
+- **Acceptance criteria:** (1) `RegistryStoreError` is exported from `@/lib/server/registry`, sealed to D-13's four-part clause, carrying **the operation alone** — no statement, no bound parameter, no SQLSTATE — with the driver error on `cause`; (2) every published read wraps, measured by pointing `DATABASE_URL` at a **closed port** and driving each one, so the check needs no live database and no gate slot; (3) **no rejection from any published function contains a substring of the SQL it ran**, quantified over the whole surface with a floor so an empty case list reds; (4) **D-50-18 applies here**: a store fault answers `problem+json` **500** with `type` `https://darkprint.io/problems/store-failed`, not Next's generic 500, on all eleven routes; (5) `tests/error-hygiene.test.ts` measures the new class at both arities — it could measure nothing before, because the barrel exported no error class at all.
+- **Out of scope:** any change to what the reads return. This is the fault path only.
+- **Log:**
+
 ### T090, Distribution and export artefacts
 
 - **State:** merged
