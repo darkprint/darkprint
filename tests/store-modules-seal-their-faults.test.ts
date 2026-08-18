@@ -71,13 +71,13 @@ describe("a lib/server module that reaches Postgres seals its faults", () => {
     const reachesDb = new Set<string>();
     const declaresError = new Set<string>();
     for (const file of files) {
-      const module = /^lib\/server\/([^/]+)\//.exec(file)?.[1];
-      if (module === undefined) continue;
+      const name = /^lib\/server\/([^/]+)\//.exec(file)?.[1];
+      if (name === undefined) continue;
       const source = readFileSync(`${REPO_ROOT}${file}`, "utf8");
       /* `@/lib/db` is the only way to a connection; a module that never names it cannot raise a
          driver error and owes no wrapper. */
-      if (/from\s+["']@\/lib\/db/.test(source)) reachesDb.add(module);
-      if (/export\s+class\s+\w*Error\b/.test(source)) declaresError.add(module);
+      if (/from\s+["']@\/lib\/db/.test(source)) reachesDb.add(name);
+      if (/export\s+class\s+\w*Error\b/.test(source)) declaresError.add(name);
     }
 
     const unsealed = [...reachesDb]
@@ -98,11 +98,11 @@ describe("a lib/server module that reaches Postgres seals its faults", () => {
   it("no exemption outlives the defect it names", () => {
     const files = shippedServerFiles();
     const stale: string[] = [];
-    for (const module of KNOWN_UNSEALED) {
+    for (const name of KNOWN_UNSEALED) {
       const sealed = files
-        .filter((f) => f.startsWith(`lib/server/${module}/`))
+        .filter((f) => f.startsWith(`lib/server/${name}/`))
         .some((f) => /export\s+class\s+\w*Error\b/.test(readFileSync(`${REPO_ROOT}${f}`, "utf8")));
-      if (sealed) stale.push(module);
+      if (sealed) stale.push(name);
     }
     expect(
       stale,

@@ -355,6 +355,62 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## I committed over a lint failure by reading a gate file the failed chain never wrote
+
+`96ff164` claims *typecheck 0, lint 0, one full suite at 5146 passed*. **Lint was failing** — two
+`no-assign-module-variable` errors in the guard that commit adds — and I found out two commits later.
+
+**The mechanism is new and it is worse than the `&&`-does-not-span-lines instances.** My chain was:
+
+```
+npm run typecheck >/dev/null && npm run lint >/dev/null && npm test > "$OUT" 2>&1; LINE=$(grep … "$OUT")
+```
+
+The `&&` chain **worked**: lint failed, so `npm test` never ran. But `$OUT` is a **fixed path**, so it
+still held the **previous** run's output, and the `grep` read a stale file that matched base's line
+exactly. **The guard chain did its job and the reporting step defeated it**, because the artefact it
+reads outlives the run that writes it.
+
+Two things follow. **A gate output file must be unique per invocation, or it is a cache of the last
+time things worked.** And **a chain that stops early must leave nothing readable behind**, or the
+reading step cannot tell "did not run" from "ran and passed".
+
+Recorded beside the other three because the family now has two distinct shapes: a chain that does not
+guard, and a chain that guards correctly while the **evidence** is stale. The second is harder — every
+command in it behaved exactly as designed.
+
+**And I read `tail`'s exit code again while diagnosing it**, in the same session that recorded T040's
+adversary doing it. `npm run lint 2>&1 | tail -3; echo "lint=$?"` prints `0` whatever lint did.
+
+## A branch that has NOT moved is not a session that has stopped
+
+T005's adversary corrected the mirror of a rule this file already holds. I read
+`feat/t005-schema` as last moving four hours earlier and inferred a session that had finished. It had
+been sitting still because **everything since had been reading, mutating and restoring rather than
+committing** — and it was between runs, not stopped.
+
+So the pair is complete: **a branch that has moved is not a session that has finished, and a branch
+that has not moved is not a session that has stopped. The tree stamp answers neither.** `ps` does, and
+my `ps` reading was in fact correct — what was wrong was the second signal I reached for to corroborate
+it. **Corroborating a good measurement with a bad one does not strengthen it.**
+
+It also corrected the figure: 3h36m, not four hours. I had rounded a number I had not read.
+
+## `error-hygiene` over a task with no module is vacuous, not thin
+
+Its sharpening of my own warning, and it is stronger than what I sent. I told it that a green from
+`error-hygiene` means *the classes T005 publishes are clean, and nothing more*. **T005 publishes no
+module, no barrel and no exported function at all** — every `lib/server` module and every route is
+Forbidden to it. So that guard's domain over T005 is **empty by construction**, and its green is
+vacuous in the precise sense this run charges elsewhere.
+
+**And it turned the observation back on the guard I had just written.**
+`tests/store-modules-seal-their-faults.test.ts` is *also* a domain-by-construction check, deriving from
+modules that **exist and import `@/lib/db`** — so it is blind in the same direction: a task that ought
+to have a store module and does not ship one is invisible to it, exactly as T080's missing error class
+was invisible to `error-hygiene`. **Every guard that constructs its domain owes an answer to "which
+side of *exists* did you derive from, and what lives on the other side."**
+
 ## An absent class leaks by not existing, and a constructed domain is only as complete as what it constructs over
 
 T050's adversary drove a closed-port probe at **T080's** routes, because *a claim about a precedent is
@@ -4274,6 +4330,8 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
                       duration_ms int, reported_at, created_at                  -- AC4, D-05-01
         api_key       account_id, token_hash text NOT NULL unique, label text,
                       created_at, revoked_at NULL
+
+  **D-05-08, ruled: an unmarked column in this block is `NOT NULL`.** The block writes `token_hash text NOT NULL` and `label text` on one line and never said what the absence of a marker meant — so T005's implementer read unmarked as required and its blind author read it as nullable, and **both readings are defensible against the text I wrote.** Required wins, corroborated by three independent places rather than by preference: T230's `issueKey(…, label: string)`, its `ApiKeyRecord.label: string`, and T180's all-required `RunReport` covering the eight other unmarked columns. **Only `NULL` is written explicitly**, as `deleted_at NULL`, `revoked_at NULL`, `edited_at NULL` and the three `smallint NULL` metrics already are. Nine columns were divergent and exactly one reddened, because the blind suite derives required columns from the catalogue everywhere except its `api_key` test, which hardcodes a two-column insert — so the disagreement was invisible at the other eight by luck rather than by agreement.
 
   `target_kind` reuses the existing `target_kind` enum (`blueprint | card | term`); any narrowing is the consuming task's, not a check constraint here. `note.deleted_at` is B-18's tombstone — a deleted note keeps its row so counts and cursors stay honest, and its `body` becomes unreadable through the module rather than by deletion. `note.votes` in `lib/types.ts:182` is a **derived count** over `note_vote` and is not a column.
 
