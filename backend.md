@@ -1809,6 +1809,42 @@ separate collection from **my prose commits**. Same axis, two different second t
 that misses on `failed` now has two named suspects and an order to check them in**, rather than one
 number and a shrug.
 
+## Write the question a measurement answers into the same sentence as the claim
+
+**Standing practice for every session including the orchestrator, and the argument for it is a result
+rather than a preference.**
+
+**Labelling a proxy has now been tried twice tonight, by two authors, and failed both times.** I named
+`15 802` as `core.ts`'s **source** size and then used it in a sentence establishing the **serialised**
+divergence. T050's blind author labelled its column *"loop/each constructs"* — exactly what it was —
+and then wrote *six of them build their cases from loops over what they parse* two lines below it.
+
+**Its diagnosis of why labelling cannot work: the label sits on the DATA, the leap lives in a different
+sentence, and nothing connects a column heading to a conclusion underneath it.** The proxy was marked.
+The **inference** was not, and the inference is the defect.
+
+**So the mitigation cannot be an artefact, because the mismatch lives in a message rather than in the
+tree.** The achievable target is *not reported as a success*, and the instrument has to be one the
+author cannot skip while believing their own result.
+
+**The instrument: write the question the measurement answers into the same sentence as the claim, and
+check they are one sentence.**
+
+* *"12 loop constructs across eight files, so a prose commit adds tests"* — question: **does this file
+  contain a loop**. Claim: **does it declare a test per parsed item**. **Two sentences. Tell fires.**
+* *"12 `it()` declarations across eight files, so a prose commit cannot add tests"* — **one sentence.
+  Nothing fires.**
+
+**It does not prevent the mistake. It makes the mistake unwritable without the writer seeing the gap**,
+which is the narrower and honest claim, and it costs a clause at the moment of writing rather than a
+review pass afterwards.
+
+**The reason it is worth the clause: the two failures were hours apart, by different authors, and both
+authors had just been thinking about proxies.** **Attention was not the variable** — the third arrival
+at that sentence today, after *a grep does not know where you have been looking* and *I checked the
+thing I was pointing at and not the thing beside it*. What was missing in both cases was **any point at
+which the question and the claim were forced into contact.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
