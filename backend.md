@@ -2729,6 +2729,7 @@ it does not decide differently inside a worktree.
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
 | T070 | Namespace: handles, slugs, reservation | T000 | `lib/server/naming/**`, `app/api/names/**` | `../darkprint-wt-t070-naming` | `feat/t070-naming` | **merged** | adversary round 3 **PASS** at `26eef93`: all seven criteria driven from commands; **AC5 re-fired at N=16 x3 against the new `ON CONFLICT DO UPDATE` shape** — one winner, the row is the winner's, **0 of 45 losers carry a driver cause**; axis (b) verified independently of the blind suite; **the shipped predicate confirmed as W0 by behaviour, not by reading**; D-70-22's three states including the reclaimed one nothing had tested. typecheck/lint/build 0; two triples, six runs, identical sorted failing sets, 0 skipped, 186 files, 5144 tests, the only red T090's own; **peak foreign vitest 0 after I found and fixed my own detector counting its launcher**. **D-70-12 closes 5 of 6** — R3 and R6 closed this round; R2 is unobservable through the published surface because `released_at` is on no published return |
+| T071 | Handle length: the product bound | T070 | `lib/server/naming/grammar.ts`, `app/settings/page.tsx` (handle `maxLength` only) | — | — | todo | — |
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
@@ -3332,6 +3333,20 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 - **Out of scope:** any read or write path over these tables; that is each consuming task's. Seed data. `T150`'s counters, which the wave-4 audit did not find missing a table and which are not invented here.
 - **Note on sequencing:** all five consumers sit behind T050, which sits behind T070, so this is needed roughly two waves out rather than immediately. It is written now because the need is known now, and because a task that exists can be dispatched the moment a slot opens.
+- **Log:**
+
+### T071, Handle length: the product bound
+
+- **State:** todo
+- **Depends on:** T070 (merged)
+- **Owns:** `lib/server/naming/grammar.ts`, `app/settings/page.tsx` (the handle field's `maxLength` only)
+- **Forbidden:** every other `lib/server/naming/**` file, `lib/db/schema.ts`, every other route and page.
+- **Contract:** D-70-15, owner-ruled 2026-08-18. Add `MAX_HANDLE_LENGTH = 32` beside `MAX_NAME_LENGTH`, enforced **at the door**. `MAX_NAME_LENGTH = 255` does not change and neither does anything that rests on it: it is the storage bound, it is what the btree tuple actually holds, and T070's boundary test is what keeps it honest. The two bounds coexist and mean different things — one is what the database can store, the other is what the product will accept.
+
+  A handle longer than 32 is **not well-formed**, so by D-70-18 it answers `{ available: false, reason: "illegal" }` with **no suggestion** — you can only offer an alternative to a name that is itself legal. This is the existing `illegal` path, not a new one.
+
+- **Acceptance criteria:** (1) a 32-character handle is available and allocatable; a 33-character one answers `illegal` from `checkHandle` **and** is refused by `allocateHandle` — both doors, since a check that only guards the query lets the write through; (2) the refusal carries **no** `suggestion`, per D-70-18, and a truncated-to-32 suggestion is specifically **not** offered — that would hand the caller a name it did not ask for; (3) `MAX_NAME_LENGTH` is unchanged at 255 and T070's boundary test still passes, so a **slug** of 200 characters is still legal — the bound is on handles, not on names; (4) `app/settings/page.tsx`'s handle field carries `maxLength={32}`, and the server refuses 33 **regardless** of the client cap, since a client cap is not enforcement; (5) every handle in the archive still validates, measured over `content/` rather than asserted — the longest is 11.
+- **Out of scope:** any bound on slugs, card ids or term namespaces. Migrating an existing over-length handle: none exists, and none can, since nothing has been registered.
 - **Log:**
 
 ### T010, Archive persistence: bundles, releases, bytes
@@ -5215,7 +5230,9 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
       owner nobody is must still be refused the tabs' four, since a profile tab occupies that
       segment for every handle, so an unknown owner is asked with a nil-uuid sentinel rather than
       short-circuited to available. N8 is that behaviour's falsification.
-    - **D-70-15, the product length bound is still owed.** 255 is a correctness bound: it makes
+    - **D-70-15, RULED BY THE OWNER 2026-08-18: the product length bound for a handle is 32.** `MAX_NAME_LENGTH = 255` stays exactly as it is — it is the **storage** bound, the largest value that holds on every page size Postgres supports, and the test that allocates a name of exactly that length through the published surface stays the thing that makes it safe. `MAX_HANDLE_LENGTH = 32` is a **second, narrower** bound enforced at the door: a handle longer than 32 answers `{ available: false, reason: "illegal" }` and `allocateHandle` refuses it.
+  Measured, not assumed: every handle in the archive is **4–11 characters** (`orin`, `hachi`, `k0bra`, `mara-veil`, `sol-antczak`), so 32 is roughly three times the longest real one. `app/settings/page.tsx` carries **no** `maxLength` on the handle field today.
+  **The argument is B-05, not tidiness.** A handle is permanently reserved *as protection against impersonation*, and it is written into the bytes of every card its owner publishes. At 255 a chip or a profile header truncates, so `sol-antczak-aaaaaa…` renders as `sol-antczak…` — **the reservation machinery defends the exact string while the display defends nothing.** 32 is chosen so nothing truncates, which closes the vector rather than mitigating it. **Owed as T071, not to T070**, which is merged and tagged.
       `checkHandle` and `allocateHandle` agree on every page size. It is not a product bound. A
       handle is a URL segment and the author field on every published card, and the longest one the
       archive holds is 11 characters; the longest slug is 26. A 255-character permanent primary key
