@@ -355,6 +355,40 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A number that survives the explanation you gave it is evidence against the explanation
+
+T005's blind author's suite reported `5 failed | 1 passed | 42 skipped` and it nearly filed it as
+contention — the host was at load 65 and the story fitted. **It re-ran at load 27 expecting the number
+to move, and it did not.** That is the only reason it stopped believing the explanation.
+
+The cause was real and unrelated: `array_agg(a.attname)` over `pg_attribute` produces `name[]`
+(OID 1003), a type node-pg ships no parser for, so every column set came back as the raw literal
+`{account_id,target_kind}`. `readCatalogue` threw in `beforeAll`, **seven files ran no test at all**,
+and forty-two criteria were never measured.
+
+**Two things in that are worth more than the fix.** The failed count was **actively misleading** —
+*smaller* than the truth and moving, because a hook that throws takes its file's tests out of the
+denominator rather than into the numerator. And the disconfirming move is cheap and general:
+**re-run under the condition your explanation depends on, and require the number to change.** An
+explanation that predicts nothing is not an explanation, and contention is the most available story
+on a loaded host, which is exactly what makes it the one to test.
+
+Keeping the strict throw rather than parsing the literal is the right disposal: parsing it would have
+made the same mistake invisible.
+
+## A measurement that only exists if the run ends cleanly is missing whenever it matters
+
+The same session's contention sampler wrote its JSON in a `finally`, and the figure for a mutation
+sweep **vanished when the process was killed rather than interrupted**.
+
+A contention figure that survives only a clean exit is absent precisely when a run went badly enough
+to be worth measuring. It writes after every sample now.
+
+This is the *inherits the standard of the claim it supports* rule with a clause it was missing: a
+measurement attached to a result has to survive the ways that result can fail. A stamp taken at
+teardown describes only the runs that reached teardown, which is a **filtered sample presented as a
+census** — and the filter selects out exactly the interesting ones.
+
 ## Two corrections to me, and the second is to a rule I wrote
 
 **A branch at base is not idleness.** I read `test/t005-schema` sitting at base and told T050's
