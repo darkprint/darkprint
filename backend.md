@@ -2172,6 +2172,124 @@ observable — **and carry no information at all about whether the tenth patch e
 named for.** The strong result and the weak one are independent, and the strong one is what makes the
 weak one feel supported.
 
+## What separates a mutation that mutated from one that did not is the IDENTITY of the reds, not the count
+
+**Fourth instance in two tasks, and this one landed on the session that had been warned about it an
+hour earlier.**
+
+T050's implementer replaced `withAccountErrors(request, async () => {` with `(async () => {`, leaving
+the IIFE **uncalled** — so the handler returned a **function** rather than a `Response`. **A broken
+route, not an unwrapped one.** It redded 3, which is a plausible number for that mutation, and **every
+red was for the wrong reason; the two that looked right were right by accident.**
+
+**It caught it by reading which tests failed rather than how many.** One of the three was `serves the
+signed-in account's own record` — **a plain DB read with no business failing** — and that single test
+name was the entire tell. Corrected to `})()`, it reds exactly 2, both its own.
+
+**The harness cannot supply this.** It asserted the fragment was found and it was; it printed a diff and
+the diff looked correct; the count was non-zero and plausible. **A count is consistent with both
+readings. A subject the mutation had no business touching is consistent with only one.**
+
+**So the seventh reading of a zero has a companion for the non-zeros: a plausible count is not evidence
+that the patch expressed its name.** Read the red set as a set of subjects, and ask of each whether this
+mutation should have been able to reach it.
+
+## A guard's domain is a relation when a barrel it never names can enter it
+
+**T050's adversary registered discriminator 1 in the strong form before the guard existed: a fifth
+foreign class from ANY `lib/server` barrel, not only `naming`.** The implementer measured it with
+**`ArchiveConflictError` from `lib/server/archive` — a barrel the provenance guard never mentions** —
+and it entered the domain and redded.
+
+**That is the difference between a guard that enforces today's three and one that enforces the
+relation**, and it is only demonstrable with a class from a module nobody had in mind. **A discriminator
+registered before the artefact exists is the only kind that can require this**, because after the fact
+the natural test uses a class the author was already thinking about.
+
+**And the four-site pairing turns out to have structure rather than a flat property**: sites 2, 3 and 4
+pairwise **disjoint**, while site 1 — the mechanism — is a **superset** of the sites it serves, with two
+remaining reds belonging to it alone. **A mechanism mutation must red everything downstream or it is not
+the mechanism.** Same shape as F4 ⊃ F1, one level up: **disjointness is the right property between
+peers and the wrong one between a mechanism and what it carries.**
+
+## Two orphan databases were invisible to every session's residue check
+
+`pg_database darkprint%` moved from **2** to **4** outside any session's measured window:
+**`darkprint_t090_attractor_33059`** and **`darkprint_t090_attractor_broken_33059`**.
+
+**Neither matches `darkprint_test%`, which is what every session's `scratch dbs` count greps for.** So
+four sessions have been reporting *zero residue added* against an instrument that could not see these
+two — **the pattern names a claim about where things live**, in the residue check, exactly as it did in
+the contention sampler and in the `17 963` audit. **Residue stamps count `darkprint%` from now on.**
+
+## A session can vanish, and nothing in this run's state tracks sessions
+
+**T040's implementer is gone from the session list.** Its work is committed and its tree is clean at
+`dafe787`, so nothing was lost — **but the context is gone, and with it the triple it owed.**
+
+**The task index records `impl-done` for T040 and is not wrong.** `branch-carries-work` checks that a
+state past `claimed` names a branch ahead of `backend`, and it passes. `task-state-agreement` checks
+two surfaces of the same fact, and it passes. **Every guard I have built measures the TASK. None of
+them measures whether anyone is still working on it.**
+
+**So the failure mode is: a task in a live state, a clean tree, a branch that has moved recently, and
+nobody home.** All four observable signals read as healthy.
+
+**And the owner found it, not me.** *"t050 and t040 do not seem to me they are running"* — from watching,
+against a run whose whole apparatus is instruments. **The guards cover what they were built to cover,
+which is the sentence this file has written six different ways today**, and this is the instance where
+the uncovered region was the existence of the workers.
+
+**The cheap check, which is a reading rather than a guard: a task in an active state owes a live session,
+and the session list is the only place that fact exists.** Reconcile the two before reporting a task as
+in flight. **A dispatch is evidence that I sent a message, not that work is happening** — already in this
+file — and now: **a live task state is evidence about a branch, not about a session.**
+
+## A transport acknowledgement is not a receipt
+
+**T050's adversary sent its verdict two hours ago. `SendMessage` returned `{"success": true}` with a
+message id. It did not arrive.**
+
+This file already had *a message I composed is evidence that I composed it, not that anyone received
+it*. **The sharper form, paid for here: an acknowledgement from the transport is not one either.** A
+`success` and an id say the send was accepted, not that it was delivered.
+
+**The only receipt is the recipient quoting it back.** It knew its verdict had not landed because I
+quoted the **implementer's** numbers instead of its own — **the absence of its content in my reply was
+the signal, not any silence.**
+
+**So: if a report matters, the sender should expect it quoted and say so, and the recipient should quote
+enough of it that its absence would be visible.** I had already been reporting peers' numbers back to
+them for other reasons; **that habit is now load-bearing** and it is the only delivery check this run
+has.
+
+**And I diagnosed the stall as three possibilities and named the right one second.** The instrument that
+distinguished them was asking, which is the same answer as *a quiet host is not a released slot*: **for a
+question about another party's interval, the only reliable instrument is the party.**
+
+## A blind suite merged into an adversary's tree is a snapshot, and blind authors keep working
+
+**T050's adversary measured *blind red 0 at all four sites* against a blind suite that does not contain
+the cells written to observe those sites.** Verified here rather than inferred:
+
+```
+aca5b39  "T050: the store-fault door, 16 blind cells"   NOT an ancestor of 1a3631c
+1a3631c  contains 10 t050 test files, no store-faults file
+```
+
+**It flagged this itself as the largest thing behind its PASS** — *both rulings are held by one author
+until your three dispatched cells land* — and it was right, but the cells **already exist**, committed,
+on `test/t050-accounts`, and were never joined.
+
+**Second instance in this run, different task.** T005's implementer nearly shipped without round 4's
+witness for the same reason: *my branch carried the blind suite from the adversary round but not round
+4.* **An adversary joins the blind branch once, at the start of its round, and the blind author keeps
+delivering after that.** The join has a date and nothing marks it.
+
+**So a verdict's blind axis is only as current as the join, and *blind red 0* has two readings** — the
+suite cannot see it, or **the suite that can see it was not in the tree.** Those are the same number.
+**Re-join before measuring the blind axis, and report the blind branch's tip sha next to it.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -5329,10 +5447,10 @@ it does not decide differently inside a worktree.
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
-| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | D-50-21 built at `ac6064d`, 20 ahead, **labelled UNVERIFIED in the commit**: `typecheck 0`, `lint 0` unfiltered, **no `vitest` of any kind** — slot held elsewhere. The `NamingStoreError` arm not re-wrapped, the disjointness clause plus `armsNotDisjoint()`, the behavioural provenance guard failing closed twice, and an `ALTER TABLE … RENAME` transport witness. Adversary round 3 at `1192181` measured the D-50-18 tree: blind axis **0 red on all six, pre-registered**, triple identical `1 failed, 5423 passed, 0 skipped` of 5424, reconciliation exact. Verdict waits on F1/F2/F3'/F4 against `ac6064d` |
+| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | D-50-21 verified at `0325022`, 21 ahead, verification changed no lines. Triple identical `1 failed, 5427 passed, 0 skipped` of 5428; reconciliation `5428 - 219 = 5209`, agreeing with the adversary's `5424 - 215 = 5209` from a different tree. **F1 1 red** (guard alone, via `ArchiveConflictError` from a barrel the guard never names), **F2 1** (module red, guard green, as pre-registered), **F3' 3**, **F4 3 ⊃ F1 with 2 unique**. Four-site pairing: sites pairwise disjoint, mechanism a superset of the sites it serves. Gates 0 unfiltered. Adversary round 4 pending |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 3 at `c3aa441`: **D-40-D** iterative frame stack, `MAX_NESTING_DEPTH = 10 000` refusing as a typed error, asserted over **outcome kind across four orders of magnitude** with thresholds as witnesses under it. **D-40-E** 50 classes x 9 positions over `SerializeJSONProperty`'s own branches plus 500 composed values, generator asserted before its results, `normalise` ordering making the three charged classes unreachable. Gates `tsc` 0, `lint` 0, scoped `vitest` 69/69, peak foreign 0 over 22 samples. Sweep 10 mutations, 9 CAUGHT, 1 equivalent (S10, third round running). Count 79 -> 69 reconciled exactly. **Full suite not claimed** |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
-| T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | todo | — |
+| T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | claimed | — |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | — | — | todo | — |
@@ -9756,12 +9874,32 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   - 2026-08-15 implementer, round 2: **three defects addressed, two falsified, and the gate block cleared by implementation rather than by a suite rewrite.** Took the adversary's tree at `a2cac88` rather than re-merging, then merged `backend` at `110dd6b`.
 ### T081, Registry store wrapper: D-13 for the read model
 
-- **State:** todo
+- **State:** claimed
 - **Depends on:** T080 (merged)
 - **Owns:** `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**`
 - **Contract:** D-13 says no rejection may carry the failed statement or its bound parameters. **T080 ships no error class and no store wrapper**, so a driver failure escapes a merged, tagged route as a raw `DrizzleQueryError` **whose message opens with the full query**. Measured by T050's adversary against a closed port: `GET /api/cards` and `GET /api/blueprints` both threw `Failed query: select "id", "owner_id", "slug", … from "bundle"`. `params:` was empty only because that query is unparameterised — a parameterised one carries the bound values, which is D-13's clause verbatim.
 
   Five of six server modules ship an `errors.ts`; `lib/server/registry/` has one `catch`, in `snapshot.ts`, for `canonicalJson`. **This is not an envelope defect like T050's D-50-18** — there the class is recognised, sanitized and published and only the wrapper is missing. **Here there is nothing to wrap.** The store wrapper comes first and the envelope second.
+
+- **Published signatures** (barrel: `@/lib/server/registry`. Measured against `backend` at `8e97192` before dispatch — see the note below.)
+
+        class RegistryStoreError extends Error {
+          constructor(operation: string, cause: unknown)   // `message` is the OPERATION alone
+        }
+
+        withRegistryStore<T>(operation: string, work: () => Promise<T>): Promise<T>
+        withRegistryErrors(request: Request, work: () => Promise<Response>): Promise<Response>
+
+  **`withRegistryErrors` mirrors T050's `withAccountErrors` deliberately, and `problem()` is consumed from `@/lib/server/http` rather than edited** — that barrel is T000's and T050 is modifying it right now, so touching it is a partition breach. Verified before dispatch: `problem`, `badRequest`, `conflict`, `notFound`, `unauthorized` are all exported from `lib/server/http/index.ts`.
+
+  **OPEN, and to be answered by measurement rather than by analogy:** T050's `withStore` passes **decisions** through unwrapped and sanitizes the rest. **Whether this read model has any decisions at all is not established** — it may be that every fault here is a store fault, in which case `isDecision`'s shape is not owed and inventing one is D-50-21's *ruling implemented as narrowly as its worked example* running the other way. **Measure what the published reads can throw before deciding.** If there are none, say so in the module and say how it was established.
+
+**Measured before dispatch, and it is worse than this section said.** `app/api/blueprints/route.ts` is:
+
+        const { db } = getSharedDbClient();
+        return ok({ blueprints: await blueprints(db, actorFrom(request)) });
+
+  **No `try`, no `catch`, no wrapper — there is no fault path at all**, so this is not "a sanitizer is missing" but "nothing on this route has ever considered failure". `lib/server/registry/` has exactly one `catch` in the whole module, in `snapshot.ts` around `canonicalJson`, and it is not on a query. **Five of six server modules ship an `errors.ts`; this one ships none**, and eleven routes import the barrel.
 
 - **Acceptance criteria:** (1) `RegistryStoreError` is exported from `@/lib/server/registry`, sealed to D-13's four-part clause, carrying **the operation alone** — no statement, no bound parameter, no SQLSTATE — with the driver error on `cause`; (2) every published read wraps, measured by pointing `DATABASE_URL` at a **closed port** and driving each one, so the check needs no live database and no gate slot; (3) **no rejection from any published function contains a substring of the SQL it ran**, quantified over the whole surface with a floor so an empty case list reds; (4) **D-50-18 applies here**: a store fault answers `problem+json` **500** with `type` `https://darkprint.io/problems/store-failed`, not Next's generic 500, on all eleven routes; (5) `tests/error-hygiene.test.ts` measures the new class at both arities — it could measure nothing before, because the barrel exported no error class at all.
 - **Out of scope:** any change to what the reads return. This is the fault path only.
