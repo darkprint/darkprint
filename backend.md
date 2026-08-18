@@ -355,6 +355,44 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## Proving a narrow fix wide needs narrow mutations, one per site
+
+I ruled D-50-18 from the file the divergence was found in, and the adversary charged that fixing only
+that file leaves `GET /api/account` throwing. Its implementer fixed **three** sites — and then proved
+the *narrowness* was gone rather than asserting it:
+
+```
+D-50-18 arm removed entirely     -> 7 red
+GET /api/account unwrapped again -> 2 red   <- only its own
+callback unwrapped again         -> 3 red   <- only its own
+```
+
+**Unwrapping the read route reds 2 and leaves the callback's 3 green; unwrapping the callback does the
+reverse.** That is **three independently observed sites**, not one wrapper shared by three names — and
+nothing but a per-site mutation can tell those apart, because a shared wrapper with one witness reds
+identically to three witnesses when the *arm* is removed.
+
+The general form: **a fix applied at N sites is only proven at N sites by N mutations.** The
+all-sites-at-once mutation measures the mechanism; the per-site ones measure the coverage, and the
+narrow-worked-example failure lives entirely in the second.
+
+**It also closed the site I had labelled `read, not driven`** rather than leaving it, *because stopping
+at the two sites that happened to be driven is the shape this round charged.*
+
+## A mock whose blast radius is one file, and the reason it was necessary
+
+Closing the callback needed one mock: `resolveGithubIdentity` performs a live GitHub token exchange,
+and with credentials unset the route **502s before reaching the store path at all** — so that path is
+unreachable by any input, which is why T000 records this route as not exercisable end to end.
+
+**Without the mock the callback fix would have been a change with no observer** — this round's own
+charge, repeated inside the fix for it.
+
+Its containment is the part to copy: the mock lives in **its own file**, so `vi.mock`'s file-scoped
+hoisting has **zero blast radius**, and everything else is real — the state cookie is minted and
+verified by the shipped code, the wrapper is the shipped one, the socket is genuinely dead. **One
+substitution, named, in a file that contains nothing else.**
+
 ## Classify a zero from the space the guard covers, not from the inputs one suite happens to send
 
 T050's adversary re-ran all ten of its zero-red mutations against the **implementer's colocated
@@ -7999,6 +8037,10 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         suite D-50-07 -> published D-50-13   ("non-owner" means NOT AUTHORIZED)
         suite D-50-09 -> published D-50-10   (validatorWeight is a number)
         suite D-50-14 -> published D-50-14   (AC3 scoped; the id exists as of this line)
+
+  **D-50-20, ruled: `changeHandle` takes `SELECT … FOR UPDATE` on the account row, and does NOT retry.** Its implementer's proposal, taken with its reasoning. The measured `40P01` is contention on **one row** — the control is decisive, eight *different* accounts renaming concurrently give 8 fulfilled and 0 rejected — and the cause is a lock-order inversion: a plain `SELECT`, then the reservation insert, then the account update. **Locking the account row first removes the inversion rather than recovering from it**, and every rename of that account then queues on one lock in a consistent order. **Prevention over retry**: a retry loop needs a bound, a backoff and a claim that the whole transaction is safe to replay — three things to get wrong where one line removes the condition.
+
+  **Its own two caveats are kept rather than smoothed.** It orders same-account renames only; cross-account inversion was not measured and is not thought reachable, since each transaction touches its own account row plus its own target and old reservation rows. **And the witness is a disappearance, not an assertion** — inducing `40P01` deterministically is its own problem, so the strongest available evidence is the adversary's sixteen-way repro returning **0 rejected** after the change. That is weaker than a test and it is what is available; **it is recorded as such rather than dressed up.** Owed in its own round, after the D-50-18 fix lands, with that repro as its measurement.
 
   **Email has no predicate beyond non-empty** (D-50-12) and is **unverified** — nothing sends a verification, so no validity claim is made or tested.
 
