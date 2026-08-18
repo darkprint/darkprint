@@ -1155,12 +1155,27 @@ not list for a case that cannot arise.
 **So both obvious constructions demand an arm for a class that must stay unmapped, and the natural
 repair is a hand-written exemption — the maintained list the guard existed to replace.**
 
-**The predicate that works derives the exclusion from where a class comes from, and the split is
-already in the source: every class `isDecision` names that is imported from ANOTHER module's barrel
-must be mapped by name in `withAccountErrors`.** `AccountError` arrives on `from "./errors"` and is
-excluded **structurally, by its import**, not by an exemption anybody maintains; the three from
-`@/lib/server/naming` are the domain. `NotAccountOwnerError` never enters it, because it is not on
-`isDecision`'s list at all.
+**The predicate that works derives the exclusion from where a class comes from**, and `AccountError`
+is excluded **structurally** rather than by an exemption anybody maintains. `NotAccountOwnerError`
+never enters the domain, because `isDecision` does not name it.
+
+**Construct it BEHAVIOURALLY, not lexically — T050's implementer, correcting my own wording.** I wrote
+*imported from another module's barrel*, which invites parsing `store.ts`'s import lines against
+`http.ts`'s `instanceof` identifiers and comparing sets. **That is a guard over the SPELLING of a
+relation, and it goes green on a wrapper whose arm is present and wrong.** Today's lesson, committed
+in the sentence that ruled the fix for it.
+
+The construction that tests the relation instead:
+
+* **Domain**, by the walk `tests/error-hygiene.test.ts` already does — every error class exported from
+  every `lib/server/<module>/index.ts`, **minus accounts' own**. That is the provenance partition read
+  off **the module the class lives in**, not off an import line.
+* **Relation, driven**: for each such class, if `withStore` passes an instance through **unwrapped** —
+  which *is* `isDecision` saying yes, **observed rather than read** — then `withAccountErrors` must
+  answer a `Response`. Red if it throws.
+
+So a `lib/server/policy` fault class enters the domain **from the barrel walk**, the day it exists,
+with nobody touching the guard.
 
 **And it says the right thing rather than a nearby thing**, which is why it generalises: the wrapper's
 job is the envelope for faults **this module did not author**. A foreign sealed fault has an author
@@ -1227,6 +1242,77 @@ enforces today's four rather than the relation, which is §6.2's *satisfiable by
 rather than by the change* — and removing `AccountError` from `isDecision` **must stay green**, or the
 predicate has quietly become "these four names". **A discriminator designed out of reach is cheap to
 state in advance and expensive to find mid-round.**
+
+## A pre-registered prediction that does not name its scope is two predictions
+
+**T050's adversary registered a discriminator before the guard existed, which is the right move and
+the one this file asks for. T050's implementer then found it ambiguous in a way that would make a
+CORRECT implementation report a failure.**
+
+*"Removing `AccountError` from `isDecision` must stay green."* Scoped to **the guard**, it stays
+green, and that is the point — accounts' own classes are outside the domain, so the guard cannot
+notice. Scoped to **the module or the file**, it **reds**, correctly: the existing *passes this
+module's own rejections through* assertion is exactly the observer for that mutation and should fire.
+
+**The honest expected result is `guard green, module red`.** Measured file-wide against a prediction
+that says only *green*, a correct implementation looks broken — **and the disagreement is about scope
+rather than behaviour, which a count cannot distinguish.**
+
+**The rule: a pre-registration is only falsifiable if it names what is being observed.** Its entire
+value is that it cannot be rescued after the fact; an ambiguous one **can be rescued in either
+direction**, which destroys precisely the property it exists for. A prediction of *N red* owes the
+scope N is counted over — this file, this module, this suite — in the same sentence.
+
+**Same defect family as the day's others, at the level of the instrument rather than the claim**:
+*unreachable through any writer* versus *unreachable through an INSERT*, and *the only read* versus
+*the only spelling I searched for*. Here it is *green* versus *green where I am looking*.
+
+## Ask of every finding what else changes if it is acted on
+
+**T050's adversary put two items in one message and did not notice the second falsifies the first's
+premise.** P7 classified arm order as an equivalent mutant *because the classes are disjoint
+siblings*; the guard objection said the naive construction demands an arm on `AccountError`. **An arm
+on a base class is exactly what stops them being disjoint** — so the construction it was arguing
+against would have made its own classification wrong, silently, since nothing reds when a premise
+stops holding.
+
+Its own diagnosis, which is the rule: **I found the base-class problem by looking at what the guard
+would DEMAND, and stopped there.** The remaining move was *what does an arm on a base class do to
+everything else in that function*. **A finding is a proposed change, and a proposed change has
+consequences past the thing it fixes — but it arrives feeling like an observation, so nobody checks
+them.**
+
+It is calling this a method problem rather than three lapses, on the strength of three instances in
+one round from itself alone, and it is right to. **Of every finding: what else in this file changes if
+it is acted on?**
+
+**And it then measured the premise it had read.** Pairwise `instanceof` across both barrels, every
+ordered pair of seven classes: **0 overlapping pairs**. Plus a structural asymmetry nobody had noted —
+`NamingError` is declared with **no `export`**, so it is not on the barrel and a base-class arm over
+T070's three is unreachable from `withAccountErrors` even by mistake. **The hazard is specific to
+`AccountError`, which is local and importable**, which is the same asymmetry provenance uses. So the
+amended comment can say the classes are pairwise disjoint **and that this is checked**, rather than
+only that it is true — a four-line pairwise check beside the wrapper, which reds the day arm order
+silently starts mattering.
+
+## The gate slot holder owns the host's CPU, and my sampler cannot see me
+
+**I have told three sessions this round: *I am off the host while you hold it — my commits gate on
+typecheck, lint and the file-parsing guards only.* Measured, that sentence is false in the way that
+matters.**
+
+`npm run lint` on a **markdown-only** change timed out at five minutes tonight. Not a failure: **load
+average 72**, because the slot holder was running its triple. So my "gates only" costs minutes of CPU
+taken directly from the measurement the slot exists to protect.
+
+**And the instrument cannot catch me.** Every session samples foreign runs **by process group looking
+for `vitest`**. `tsc` and `eslint` are neither. **I have been invisible in precisely the instrument
+designed to detect contention** — my own rule about a guard whose probe cannot reach, aimed at myself,
+found only because a timeout made me look at the load.
+
+**So: while a slot is held, a markdown-only commit runs the file guards and nothing else**, and the
+commit says which gates were skipped and why. Running `tsc` on a document that no TypeScript file
+imports is ritual, and here the ritual is paid for by somebody else's numbers.
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
@@ -8496,7 +8582,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **D-50-20, ruled: `changeHandle` takes `SELECT … FOR UPDATE` on the account row, and does NOT retry.** Its implementer's proposal, taken with its reasoning. The measured `40P01` is contention on **one row** — the control is decisive, eight *different* accounts renaming concurrently give 8 fulfilled and 0 rejected — and the cause is a lock-order inversion: a plain `SELECT`, then the reservation insert, then the account update. **Locking the account row first removes the inversion rather than recovering from it**, and every rename of that account then queues on one lock in a consistent order. **Prevention over retry**: a retry loop needs a bound, a backoff and a claim that the whole transaction is safe to replay — three things to get wrong where one line removes the condition.
 
-  **D-50-21, ruled and owed in round 2's fix rather than deferred: `withAccountErrors` answers every class `isDecision` recognises.** `NamingStoreError` is on that list and has no arm, so it leaves through the fallback reserved for what the wrapper does **not** recognise — outside `problem+json`, which is the exact divergence D-50-18 was ruled on. Same `store-failed` 500 as `AccountStoreError`, and **not re-wrapped**: the original travels on `cause` so the operation named in a rendering stays the one that failed. Separating the envelope decision from the wrapping decision is the fix; they were taken as one. **Guard: every class `isDecision` names that is imported from ANOTHER module's barrel must be mapped by name in `withAccountErrors`.** Not *every member owes an arm* — that construction is withdrawn: it reds on `AccountError`, whose arm would swallow the four distinct mappings this ruling protects, and the subtype-aware variant reds on `NotAccountOwnerError`, deliberately unmapped. Provenance excludes `AccountError` **structurally, by the import it arrives on**, with no exemption for anyone to maintain, and states the actual property: the wrapper owes an envelope for faults **this module did not author**. Unlike D-50-20 this is the same failure mode and the same remedy one class name apart, so it is not scope creep: a fix that closes a defect for one class has closed an instance.
+  **D-50-21, ruled and owed in round 2's fix rather than deferred: `withAccountErrors` answers every class `isDecision` recognises.** `NamingStoreError` is on that list and has no arm, so it leaves through the fallback reserved for what the wrapper does **not** recognise — outside `problem+json`, which is the exact divergence D-50-18 was ruled on. Same `store-failed` 500 as `AccountStoreError`, and **not re-wrapped**: the original travels on `cause` so the operation named in a rendering stays the one that failed. Separating the envelope decision from the wrapping decision is the fix; they were taken as one. **Guard, behavioural and constructed: the domain is every error class exported from every `lib/server/<module>/index.ts` MINUS accounts' own — provenance read off the module a class lives in — and the relation is driven: if `withStore` passes an instance through unwrapped (which is `isDecision` saying yes, observed rather than read), `withAccountErrors` must answer a `Response`.** Not a comparison of import lines against `instanceof` identifiers: that guards the **spelling** of the relation and goes green on an arm that is present and wrong. Not *every member owes an arm* — that construction is withdrawn: it reds on `AccountError`, whose arm would swallow the four distinct mappings this ruling protects, and the subtype-aware variant reds on `NotAccountOwnerError`, deliberately unmapped. Provenance excludes `AccountError` **structurally, by the import it arrives on**, with no exemption for anyone to maintain, and states the actual property: the wrapper owes an envelope for faults **this module did not author**. Unlike D-50-20 this is the same failure mode and the same remedy one class name apart, so it is not scope creep: a fix that closes a defect for one class has closed an instance.
 
   **Its own two caveats are kept rather than smoothed.** It orders same-account renames only; cross-account inversion was not measured and is not thought reachable, since each transaction touches its own account row plus its own target and old reservation rows. **And the witness is a disappearance, not an assertion** — inducing `40P01` deterministically is its own problem, so the strongest available evidence is the adversary's sixteen-way repro returning **0 rejected** after the change. That is weaker than a test and it is what is available; **it is recorded as such rather than dressed up.** Owed in its own round, after the D-50-18 fix lands, with that repro as its measurement.
 
