@@ -355,6 +355,35 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A ruling can create a fix that lands unobserved, and the adversary said so before it was made
+
+T005's adversary pre-registered this **before** the implementer made the change I had just ruled:
+**nothing in the blind suite asserts a column's type, precision or scale for any of T005's six tables.**
+`columns.test.ts` checks names and nullability; `baseline.json`'s 166 precision/scale entries are AC7's
+frozen baseline over the **ten base** tables and reach none of the new ones.
+
+**So changing `numeric(18,6)` to `numeric` goes 57/57, and so does reverting it.** *A suite that could
+not see a defect cannot see its fix* — this file's own rule, arriving on a ruling I had made an hour
+earlier. **The acceptance number is the reverse mutation, and a zero there is the expected result
+unless the witness is written first.**
+
+**And the fix has two places with nothing comparing them.** The type lives in `lib/db/schema.ts` **and**
+in `0002_community.up.sql`, and `ac8-names` compares those two on **unique index names only**. A
+`schema.ts`-only fix leaves the database still truncating; a migration-only fix leaves drizzle's idea of
+the column wrong for whatever generates the next migration. **Both states pass the whole suite today.**
+
+That is falsifier 3 of its own verdict — *the migration-versus-catalogue comparison nobody takes* —
+**becoming live on the first change made after it was written down.** A stated falsifier that fires
+within the hour is the strongest argument this run has for stating them at all.
+
+**The general form: a ruling that fixes an unobserved defect owes a witness before the fix, not after.**
+Ruling first and fixing second produces a green that means nothing and a reverse mutation that cannot
+distinguish a correct fix from no fix — and by then the round is over and the green is in the record.
+
+Its own closing note is the one to keep about itself: **a finding is a measurement too and goes stale
+the same way** — it offered to re-merge, re-stamp and re-measure rather than have its verdict's reasoning
+carried forward from a message.
+
 ## The count format and the table delimiter are the same character
 
 T005's adversary pasted vitest's own summary — `1 failed | 5203 passed` — into `backend.md`'s
@@ -4629,7 +4658,29 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
                       -- registry stores what it was given". A bound that TRUNCATES rather
                       -- than REFUSES is worse than no bound, because it converts a
                       -- rejectable input into a wrong number. If T180 or T230 wants a
-                      -- bound later it is published here AND refuses explicitly.                  -- AC4, D-05-01
+                      -- bound later it is published here AND refuses explicitly.
+                      --
+                      -- D-05-09's WITNESS is owed BEFORE the fix. Nothing in the blind
+                      -- suite asserts a column's type, precision or scale for any of the
+                      -- six new tables — `columns.test.ts` checks names and nullability,
+                      -- and baseline.json's 166 precision/scale entries are AC7's frozen
+                      -- baseline over the TEN BASE tables and reach none of these. So the
+                      -- fix goes 57/57 and so does reverting it. The acceptance number is
+                      -- the REVERSE mutation: deleting the fix must red at least one blind
+                      -- test.
+                      --
+                      -- And the fix has TWO places with nothing comparing them: the type
+                      -- lives in `lib/db/schema.ts` AND in `0002_community.up.sql`, and
+                      -- `ac8-names` compares those two on UNIQUE INDEX NAMES only. A
+                      -- schema.ts-only fix leaves the database truncating; a migration-only
+                      -- fix leaves drizzle's idea of the column wrong for whatever generates
+                      -- the next migration. Both states pass the whole suite today.
+                      --
+                      -- Cheapest witness covering both: assert `numeric_precision IS NULL
+                      -- AND numeric_scale IS NULL` for run_report.cost_units FROM THE
+                      -- CATALOGUE — it reds on the current column, greens on the fix, and
+                      -- reds again on a schema.ts-only fix, because the catalogue is built
+                      -- from the migration.                  -- AC4, D-05-01
         api_key       account_id, token_hash text NOT NULL unique, label text,
                       created_at, revoked_at NULL
 
