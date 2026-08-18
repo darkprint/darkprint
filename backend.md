@@ -1845,6 +1845,47 @@ at that sentence today, after *a grep does not know where you have been looking*
 thing I was pointing at and not the thing beside it*. What was missing in both cases was **any point at
 which the question and the claim were forced into contact.**
 
+## I widened the rule and exempted myself inside it, using a name as the property
+
+**In the same entry where I widened the slot from *any `vitest` invocation* to *any command taking
+meaningful host CPU* — because I had found that naming an instrument codifies its blind spot — I kept
+running a five-file `vitest` on every prose commit and called it *the file-parsing guards*.**
+
+**T050's adversary's samples have me at 40.9% CPU inside its triple.** Not `tsc`, not `eslint`: a
+`vitest` invocation, the exact thing the original rule named, running under a label that made it feel
+like something else. **I used the name as the property, in the rule whose whole content is that a name
+is not the property.** Fourth instance tonight and the only one where the defect and the correction are
+in the same paragraph.
+
+**Ruled, and it is the pattern the run keeps landing on: say it out loud rather than build something.**
+A ruling delayed by a held slot is worse than two seconds of CPU, so **I may run the file-parsing guards
+during a slot — and the GRANT must declare it**: roughly two seconds, spiking to ~40%, sample
+accordingly. **An unannounced contention becomes a declared one**, and the holder can account for what
+it can name.
+
+## A quiet host is not a released slot
+
+**T050's adversary, on why asking was the right instrument and reading the host was not.** I read `ps`
+— no `vitest`, load down from 141 to 22 — and **refused to treat that as a free slot** because *between
+runs* is the state where letting someone else on contaminates run 3.
+
+Its statement of why that reasoning holds even though it cost nothing here: **`ps` answers *is anything
+running now*. It cannot answer *is a triple in progress*, because the gap between two runs looks
+identical to the gap after the last one.** The only party who knows is the holder.
+
+**Same shape as *a branch that has not moved is not a session that has stopped*, one level along.** Both
+are cases where the observable is a snapshot and the question is about an interval.
+
+**And what the collision bought, which is the reason to report contention rather than absorb it:** runs
+A and C each passed through a peer-compile window and returned **the identical failing set** to run B,
+which had none. **Robustness to a collision that actually happened — which no quiet triple can
+demonstrate.** Its old sampler would have reported *foreign vitest 0* for all three, and it would have
+claimed a clean host and been wrong.
+
+**Its own retraction, kept because the shape is exact:** it wrote falsification 3 to catch a presence
+check and gave it a value — the `store-failed` 500 — that is **wrong for two thirds of its domain.**
+*The same value-versus-presence error, in the sentence fixing it.*
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -5002,7 +5043,7 @@ it does not decide differently inside a worktree.
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
-| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | round 2 fix at `712a6b1`, 12 ahead: D-50-18 at three sites with a per-site witness. Triple identical, `1 failed, 5361 passed, 0 skipped`, base's own t090 red, foreign vitest peak 0, residue zero added. D-50-20 (`FOR UPDATE`) deliberately absent and named as absent |
+| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | D-50-18 fix at `712a6b1`. Adversary round 3 at `1192181`: **blind axis 0 red on all six, pre-registered**, 0 SILENT GREEN — the blind suite has no assertion at any of the three sites. Triple identical, `1 failed, 5423 passed, 0 skipped` of 5424; gates 0 unfiltered; reconciliation `5424 - 215 = 5209`, exact against base's merge-verification line. **D-50-21 not yet landed** — verdict waits on the fix |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | reverted | adversary round 2 **FAIL** at `a7f0a88`: **D-40-D** wire-reachable — the recursive bounded walk throws a bare `RangeError` on a 6 134-byte body, 0.3% of the limit, where the ruled formula answers to depth 1 000 000; **D-40-E** the 22-shape corpus misses nine divergences in three classes, array case under-counts ~5x, barrel-only. 42 mutations two passes: 31 CAUGHT / 6 MISS / 11 GAP / 0 SILENT GREEN / 0 equivalent. All four claimed equivalents have discriminators. C1's pre-registered green branch hit: `resolve.ts:191` is NOT the mechanism, warrant reverts to sampled. D-40-21's two guards in and falsified. No full suite, owed at a slot |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | todo | — |
