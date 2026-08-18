@@ -355,6 +355,47 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A defect unreachable through the wire is reachable through the barrel
+
+T050's implementer found a data-loss defect in its own `updateProfile` while waiting for the slot.
+`patch.displayName ?? null` maps a **present key carrying `undefined`** to `null` — that is, to
+**clear the field** — where the published type makes `?` mean absent and `| null` mean clear.
+
+**`JSON.parse` cannot produce an `undefined` value, so no HTTP request reaches it and no route test
+could ever have caught it.** The only callers who can are the twelve tasks behind T050 that consume
+the barrel — spreading a partly-built object, `{ bio: maybeUndefined }`, and silently erasing a bio
+nobody asked to erase.
+
+Its disposal is the right one and the reasoning is the keepable half: **skipping loses a caller's
+bug; clearing loses a user's text.** When the two readings of an ambiguous input differ in what they
+destroy, the one that destroys nothing is correct even if it hides a mistake.
+
+**The general form is the mirror of the parsed-front-door rule.** This file has repeatedly used
+"`JSON.parse` cannot produce that shape" to close a hazard — T-02's shared substructure, T040's
+circular manifest. That argument is sound **for the route** and says nothing about the **barrel**,
+which every downstream task calls in-process. A module published to twelve consumers has two front
+doors and only one of them is parsed.
+
+## A fix reachable only through a database lands unobserved in every environment without one
+
+The same session, on the same defect. Every rule in that path — absent versus null versus undefined,
+validate-before-write, an empty patch being a no-op — was reachable only through Postgres, so the fix
+would have been invisible to every gate that did not hold the slot.
+
+It extracted the shaping as a **pure** function and asserted the rules directly. That is *a fix for an
+unseen defect lands unobserved by construction*, applied **before** the fix rather than discovered
+after it — and it converts a database-gated assertion into one every session can run for free.
+
+The second guard is the one to notice: refusal-downgraded-to-a-skip catches a module that **validates
+as it writes**, storing the good field and then refusing. Invisible to any assertion on a return
+value, and previously invisible to anything at all without a database.
+
+**And a drizzle fact worth having repo-wide**, verified from source rather than believed: a
+transaction's `catch` runs `ROLLBACK` and **then** re-throws the original, unwrapped — so
+`HandleTakenError` survives a rolled-back transaction and the 409 mapping holds. The consequence is
+that if the **rollback itself** throws, the original error is lost and replaced. The substitute is a
+genuine fault, so it lands as a store error, which is the right answer for the wrong reason.
+
 ## Every gate line in this run assumes an environment nobody wrote down
 
 T050's implementer asked whether base's line is reproducible without `DATABASE_URL` exported, rather
