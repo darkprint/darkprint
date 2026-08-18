@@ -355,6 +355,41 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A module that sanitizes its rejections cannot use its own error surface as an oracle
+
+T050's implementer's finding, and it is the sharpest consequence of a ruling this run made
+deliberately.
+
+Its first door test asserted the class and the message of an empty-`githubId` refusal. Falsifying it
+— removing the guard — reddened **zero**. With the door gone, `db.insert` threw a `TypeError`, and
+`upsertFromGitHub`'s own catch-all wrapped it into **the same `AccountStoreError` with the same
+message**. The test passed with the guard and passed without it.
+
+**The two paths are indistinguishable by design.** *"The caller sent something bad"* and *"the driver
+blew up and got sanitized"* render identically **because D-50-17 requires it** — the rendering carries
+the operation and nothing else, precisely so no statement, parameter or SQLSTATE escapes. **The
+sanitization that makes the refusal safe is the same thing that makes it unobservable.**
+
+The general form, in its words: **when a module sanitizes its rejections, its own error surface stops
+being a usable oracle for its guards.** A whitelist admitting one form per operation means no
+assertion on the *output* can separate two paths through that operation. Every guard whose failure
+path ends in the sanitizer needs a discriminator **outside** the rendering.
+
+Its discriminator is the right one and it generalises: a `Proxy`-backed `Db` recording any property
+access, asserting `touched() === false`. **Not a stronger assertion about the error — a proof that the
+resource was never reached.** Five guards, all previously indistinguishable, all now discriminating.
+
+**This is `## A discriminator can be designed out of reach` arriving from the other direction.** There
+a guard became unreachable because someone would reasonably harden an input. Here it is **sanitized**
+out of reach, by a ruling that is correct and that I would make again. The lesson is not to sanitize
+less; it is that **a correct hygiene ruling silently converts every guard behind it into an untestable
+one**, and the cost has to be paid in a different currency — a side effect observed, a resource proven
+untouched — rather than noticed later as a suite full of tests that cannot fail.
+
+**And note which instrument found it.** Not review, not the type system: falsification, reporting a
+zero that the author then read rather than counted. The test had been green from the day it was
+written.
+
 ## A defect unreachable through the wire is reachable through the barrel
 
 T050's implementer found a data-loss defect in its own `updateProfile` while waiting for the slot.
