@@ -355,6 +355,47 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## An amendment can owe nothing, and checking beats adding a ceremonial test
+
+D-50-06 published `PublicAuthor.handle` as `string | null`. By the two-holders rule that reaches the
+module **and** the suite, and T050's blind author's first instinct was that it owed a new assertion at
+the next blind round — the D-70-23 shape.
+
+**It checked instead of adding one, and the answer was no.** Every `getPublicAuthor` assertion in its
+suite already pins the returned handle to **the exact string the caller asked for**, at ten sites.
+Equality with a non-null key **entails** non-nullness, so the published property is held pointwise
+everywhere it is reachable — and held by something **narrower** than itself. A quantified *"the
+return, when defined, has a non-null handle"* would add no observable coverage: the only way to
+produce one is to answer with a different account's row, which the equality pins already catch and
+name.
+
+**So an amendment's honest cost is sometimes zero, and finding that out requires the same work as
+discharging it.** The failure mode this avoids is the mirror of everything else in this file: not a
+ruling that never binds, but **a test added to discharge a ruling that reports coverage of something
+already held**. That inflates a suite exactly the way an unreachable cell or a non-distinct axis does,
+and it is harder to see because it looks like diligence.
+
+The general form: **before writing an assertion for an amendment, ask what already entails it.** A
+narrower assertion that happens to imply the published property is better evidence than a restatement
+of the property, because it fails on more.
+
+## A handover sha stops being true when the branch moves under it
+
+T050's blind author merged `backend` after I accepted its handback, which advanced `test/t050-accounts`
+past the sha I had accepted — and it reported the delta rather than leaving me to find that the
+handover sha was no longer the tip. Verified here: the only file changed is `backend.md`, and
+`git diff 22be078 3a64926 -- tests/server/t050/` is **empty**, so the artefact accepted is
+byte-identical.
+
+Its own framing is the reason this is worth a line: **the handover sha is the one field in a handback
+with no redundancy**, so it is also the one field that quietly stops being true when a branch moves
+for a reason unrelated to the work. An acceptance names a sha; a merge from base invalidates the name
+without touching the thing named.
+
+**The rule: an acceptance is of an artefact, not of a tip.** When a branch advances after acceptance,
+the mover reports the delta and proves the artefact unchanged — which is exactly what happened — and
+the adversary is pointed at the **current** tip with the acceptance still standing.
+
 ## A ruling granted in a REPLY is a ruling published nowhere
 
 The displacement fix landed and **four rulings from the same round never left my reply**. T050's
@@ -3523,6 +3564,12 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
                                                      -- release: see AC4/D-05-01. The digest is the
                                                      -- key because reportedCost() takes one, and two
                                                      -- releases may legitimately share it.
+                      account_id,                    -- D-05-07: the SUBMITTER, uuid NOT NULL, FK to
+                                                     -- account.id. T180's AC5 ("a report for one's own
+                                                     -- blueprint does not increment validated") cannot
+                                                     -- be built without it, so anonymous submission
+                                                     -- would make that criterion unsatisfiable rather
+                                                     -- than optional.
                       model, provider, hardware text,
                       input_size int, harness_version text, cost_units numeric,
                       duration_ms int, reported_at, created_at                  -- AC4, D-05-01
