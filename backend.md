@@ -355,6 +355,247 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A ruling can create a fix that lands unobserved, and the adversary said so before it was made
+
+T005's adversary pre-registered this **before** the implementer made the change I had just ruled:
+**nothing in the blind suite asserts a column's type, precision or scale for any of T005's six tables.**
+`columns.test.ts` checks names and nullability; `baseline.json`'s 166 precision/scale entries are AC7's
+frozen baseline over the **ten base** tables and reach none of the new ones.
+
+**So changing `numeric(18,6)` to `numeric` goes 57/57, and so does reverting it.** *A suite that could
+not see a defect cannot see its fix* — this file's own rule, arriving on a ruling I had made an hour
+earlier. **The acceptance number is the reverse mutation, and a zero there is the expected result
+unless the witness is written first.**
+
+**And the fix has two places with nothing comparing them.** The type lives in `lib/db/schema.ts` **and**
+in `0002_community.up.sql`, and `ac8-names` compares those two on **unique index names only**. A
+`schema.ts`-only fix leaves the database still truncating; a migration-only fix leaves drizzle's idea of
+the column wrong for whatever generates the next migration. **Both states pass the whole suite today.**
+
+That is falsifier 3 of its own verdict — *the migration-versus-catalogue comparison nobody takes* —
+**becoming live on the first change made after it was written down.** A stated falsifier that fires
+within the hour is the strongest argument this run has for stating them at all.
+
+**The general form: a ruling that fixes an unobserved defect owes a witness before the fix, not after.**
+Ruling first and fixing second produces a green that means nothing and a reverse mutation that cannot
+distinguish a correct fix from no fix — and by then the round is over and the green is in the record.
+
+Its own closing note is the one to keep about itself: **a finding is a measurement too and goes stale
+the same way** — it offered to re-merge, re-stamp and re-measure rather than have its verdict's reasoning
+carried forward from a message.
+
+## The count format and the table delimiter are the same character
+
+T005's adversary pasted vitest's own summary — `1 failed | 5203 passed` — into `backend.md`'s
+**pipe-delimited** index row, giving that row **eleven fields where every other has ten**.
+`tests/task-state-agreement.test.ts` then read the Evidence cell as the State cell and reported a
+**state disagreement between row and section.** Both were correct. The delimiter was not.
+
+**The red named the wrong thing, and the wrong thing was plausible** — because it had just edited both
+places, which is exactly when a state disagreement is believable. A guard that misidentifies its own
+failure is worse than one that stays silent, because the plausible wrong diagnosis is the one that
+gets acted on.
+
+It was caught only because it followed the rule to **re-gate after a `backend.md` commit** rather than
+carrying the triple over it. A commit that touches only prose still moves what the prose-parsing guards
+read.
+
+## The reverse mutation is the acceptance number for a gap closure
+
+Closing a gap and re-running the suite green proves nothing: **the suite was green before.** T005's
+adversary took the **reverse** mutation as the acceptance number for both `api_key` gaps — schema-only
+rename now reds `ac8-names`, a partial unique now reds the uniqueness test, **0 → 1 on both**.
+
+Its sentence: **a 0 there would mean the fix was unobservable however green the suite looked.** A gap
+is a claim that a mutation reds nothing; its closure is the claim that the same mutation now reds
+something, and only re-running *that mutation* measures it.
+
+And it noted the direction: **the blind author took both gaps from the clause rather than from the
+adversary's probes**, which keeps the suite derived from the contract rather than from someone else's
+findings.
+
+## D-05-09: a bound that truncates rather than refuses is worse than no bound
+
+`run_report.cost_units` ships as `numeric(18,6)` where the block says `cost_units numeric`, unqualified.
+Measured against the shipped type: `0.0000001` stores as `0.000000`, `0.1234567` as `0.123457`,
+`123.4567895` as `123.456790`, and `1234567890123.5` is refused with 22003.
+
+**A submitted cost can become no cost at all, with no error, and it then feeds T180's median and
+p10/p90.** Nothing observes it — no test asserts precision or scale.
+
+**Ruled: unqualified `numeric`, as published.** The module's own docblock argues numeric over float
+*precisely because* "double precision cannot round-trip every decimal the CLI can send" and "the
+registry stores what it was given" — and `(18,6)` **reintroduces that failure silently**, which is the
+module's own argument turned against its column.
+
+The general form is what makes this worth a ruling rather than an edit: **a bound that truncates rather
+than refuses converts a rejectable input into a wrong number.** Refusal is loud and recoverable;
+truncation is silent and lands in an aggregate. If T180 or T230 wants a bound later, it is published in
+the block **and it refuses explicitly**.
+
+## Proving a narrow fix wide needs narrow mutations, one per site
+
+I ruled D-50-18 from the file the divergence was found in, and the adversary charged that fixing only
+that file leaves `GET /api/account` throwing. Its implementer fixed **three** sites — and then proved
+the *narrowness* was gone rather than asserting it:
+
+```
+D-50-18 arm removed entirely     -> 7 red
+GET /api/account unwrapped again -> 2 red   <- only its own
+callback unwrapped again         -> 3 red   <- only its own
+```
+
+**Unwrapping the read route reds 2 and leaves the callback's 3 green; unwrapping the callback does the
+reverse.** That is **three independently observed sites**, not one wrapper shared by three names — and
+nothing but a per-site mutation can tell those apart, because a shared wrapper with one witness reds
+identically to three witnesses when the *arm* is removed.
+
+The general form: **a fix applied at N sites is only proven at N sites by N mutations.** The
+all-sites-at-once mutation measures the mechanism; the per-site ones measure the coverage, and the
+narrow-worked-example failure lives entirely in the second.
+
+**It also closed the site I had labelled `read, not driven`** rather than leaving it, *because stopping
+at the two sites that happened to be driven is the shape this round charged.*
+
+## A mock whose blast radius is one file, and the reason it was necessary
+
+Closing the callback needed one mock: `resolveGithubIdentity` performs a live GitHub token exchange,
+and with credentials unset the route **502s before reaching the store path at all** — so that path is
+unreachable by any input, which is why T000 records this route as not exercisable end to end.
+
+**Without the mock the callback fix would have been a change with no observer** — this round's own
+charge, repeated inside the fix for it.
+
+Its containment is the part to copy: the mock lives in **its own file**, so `vi.mock`'s file-scoped
+hoisting has **zero blast radius**, and everything else is real — the state cookie is minted and
+verified by the shipped code, the wrapper is the shipped one, the socket is genuinely dead. **One
+substitution, named, in a file that contains nothing else.**
+
+## Classify a zero from the space the guard covers, not from the inputs one suite happens to send
+
+T050's adversary re-ran all ten of its zero-red mutations against the **implementer's colocated
+suite** — a second axis — and **one of its own classifications was wrong.**
+
+It had called `getPublicAuthor` dropping its grammar check an **equivalent mutant**: an illegal handle
+reaching the query matches no row, so `undefined` either way. **True for every input the blind suite
+sends** — padded, uppercase, two-segment. The colocated suite sends a NUL inside a handle, which
+**reaches the driver, raises 22021, and returns a thrown `AccountStoreError` instead of `undefined`.**
+The guard is load-bearing for exactly one input class.
+
+Its own account is the rule: **it classified from the inputs one suite happens to use rather than from
+the space the guard covers.** *The scope of a check is itself a claim* — arriving inside its own
+classification of somebody else's coverage, which is the hardest place to see it.
+
+**The two-axis method is the transferable part.** A zero has six readings and a count separates none
+of them; running every zero against a *second* suite separates **held-elsewhere** from
+**unobserved-anywhere** without any argument. Eight of its ten were held colocated. Two were zero on
+both axes, and only those two are candidates for the harder readings.
+
+## D-50-18 makes a property nothing observes load-bearing
+
+`AccountStoreError`'s **class identity** is observed by nothing in the tree — no test can tell it from
+a bare `Error` carrying the same message. The blind author reported it unpinnable and was right.
+
+**The ruling changes its standing rather than its observability.** A route must branch on that class to
+produce the 500, so the property nothing witnesses becomes the one the new criterion rests on. Until a
+witness exists, **"the route answers 500" and "the route answers 500 *for this class*" are the same
+green.**
+
+Worth generalising: **a ruling can promote an unobserved property into a load-bearing one without
+making it observable**, and the promotion is invisible at the moment it happens because the ruling is
+about something else. Whoever implements D-50-18 owes a witness for the class, not only for the status.
+
+## A refuted candidate, and the deadlock the instrument found instead
+
+Its candidate finding — concurrent renames by one account leaving an orphaned `active` reservation —
+is **refuted**. Reported as a result rather than dropped: the mechanism was wrong and Postgres does not
+permit the interleaving.
+
+**What the probe found instead is a deadlock**, read from the cause chain because the module's own
+error surface cannot answer it by design: `40P01` on `update "account"`. **Its control is what makes
+it a finding rather than a story** — eight *different* accounts renaming concurrently give 8 fulfilled
+and 0 rejected, so it is contention on **one account row**, not concurrency.
+
+**Data integrity is better than predicted**: the transaction aborts and rolls back cleanly, which is
+exactly why no orphan survives. What a caller gets is a **500 for a transient, retryable condition** —
+and unlike the `?? null` defect this **is reachable through the wire**, by a double-submitted form.
+**Reported, not charged**: no ruling forbids it, and whether `changeHandle` retries on `40P01` is a
+decision rather than a defect.
+
+**And the sanitizer earned its keep on a real driver fault rather than a synthetic one.** Every
+deadlock rejection rendered as exactly `"changeHandle: the account store failed."` with `JSON.stringify`
+`"{}"`, from a genuine `DrizzleQueryError` carrying the full statement. **Stronger evidence for AC2's
+fault path than the closed-port probe, because the error was real** — a probe proves the wrapper
+catches what you hand it; a live fault proves it catches what the driver produces.
+
+## A derived fill answers "what must I supply?" and never "is that what was published?"
+
+T005's blind author declined to patch the one cell and gave the accounting: **nine columns diverged
+and one reddened, so the other eight agreed by luck.** Fixing `label` restores the luck; it does not
+remove the dependence on it. So its suite now asserts the block's notation at **every published column
+of every table, in both directions** — a column whose nullability disagrees with the block, **and a
+`NOT NULL` column with no default that the block never published at all.**
+
+**The second direction is the one a suite checking its own list cannot see, and it fails worse**: an
+unpublished required column surfaces at write time **inside the consuming task**, where the contract
+can no longer be amended, rather than here.
+
+**And the finding underneath is a cost of deriving that this file had only counted the credit side
+of.** `rows.ts` reading required columns from the catalogue is exactly what absorbed the `account_id`
+amendment without a false red — reported twice as a strength, and it is one. **It is also precisely
+why the suite could not see that the block and the schema disagreed: it only ever read one of them.**
+
+**A derived fill answers *what must I supply?* and never *is that what was published?*** Those are
+different questions, and one instrument was answering the first while being described as answering
+both. Its own comparison is right: **same family as the shell filter — a judgement that stops being
+visible once its output looks like every other output.**
+
+The general form, which reaches every derived domain in this run: **deriving from one artefact makes a
+suite robust to that artefact changing and blind to it disagreeing with a second.** Robustness and
+agreement are opposite properties of the same choice, and the guards here have been claiming the first
+while being read as also providing the second.
+
+**A diagnosis comes with it, and it is NOT a reclassification — I tried to make it one and was
+corrected.** M1/M2/M16 each reddened a second `ac8-names` test, which it had reported as *its
+prediction being incomplete*. The **diagnosis** is that `schema.ts` still declares an index Postgres
+no longer reports, so the **agreement** check fires on a *drop* as well as a rename — an instrument
+built for D-14's rename case catching a drop on a path nobody designed it for.
+
+**I upgraded those three to HIT on the strength of that. It refused, and its reasoning holds.** Its
+verdict is computed, not judged:
+
+```
+missed     = [p for p in predicted if p not in hit]
+unexpected = [t for t in new if not any(p in t for p in predicted)]
+verdict    = "MISS" if missed or unexpected else "HIT"
+```
+
+**There is no diagnosis anywhere in that expression.** It fires on `predicted ≠ measured` and nothing
+else, and that is the whole of why it is worth having: the failure it exists to catch — the fixture
+that manufactured an impossible row and made a trap read as covered — **is a mutation caught for a
+reason the author did not predict**, and every one of those *looks like a good outcome at the moment
+you diagnose it*.
+
+**So if a MISS can be graded up once its extra red turns out to be legitimate, it only ever survives
+when the author fails to find an explanation — and "I could not explain it" is not a measurement.**
+That is the judgement the mechanism was built to remove, re-entering as a review step.
+
+The taxonomy already carries this without moving the label: `verdict` says whether the prediction
+matched, `unexpected` says which reds it did not name, and **the diagnosis of each unexpected red is
+prose beside it**. A MISS whose diagnosis is *the suite was right and I was wrong* is **still a MISS**,
+and it is the more useful kind, because it is the one that taught the author something about their own
+instrument.
+
+**My worry — that a MISS filed against a correct suite teaches the wrong lesson twice — lands on the
+report rather than on the verdict**, and its report already carried the sentence. **The fix for a
+label that under-describes is a sentence beside it, not a different label.** Recorded as
+`MISS (instrument working, prediction incomplete)`.
+
+Its own placing of this is the reason it spent a message on it: a filter in a pipeline, and
+*reconstructible* meaning *recoverable by me*, were both a judgement quietly substituted for a
+measurement. **A verdict revised after diagnosis is the same substitution — and the diagnosis being
+correct is exactly what makes it hard to see.**
+
 ## A ruling about a notation belongs in the notation's legend
 
 D-05-08 ruled that an unmarked column in T005's published block is `NOT NULL`. It landed **in prose,
@@ -3788,7 +4029,7 @@ it does not decide differently inside a worktree.
 | ID | Title | Deps | Owns (paths) | Worktree | Branch | State | Evidence |
 |------|-------|------|--------------|----------|--------|-------|----------|
 | T000 | Foundation: schema, client, envelope, GitHub session, harness | — | `lib/db/**`, `lib/server/http/**`, `lib/server/auth/**`, `lib/server/types.ts`, `tests/support/**`, `compose.yaml`, `.env.example`, `package.json`, `package-lock.json` | `../darkprint-wt-t000-foundation` (removed) | `feat/t000-foundation` (deleted) | **merged** | `ec516fa`, tag `t000-verified`; typecheck/lint/build clean; 3762/3762 on eight runs, 0 database residue; all six criteria executed; eleven prior defects re-verified closed; four falsifications confirm the suite discriminates |
-| T005 | Schema extension: the community and account tables | T000 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**` | `../darkprint-wt-t005-schema` | `feat/t005-schema` | impl-done | — |
+| T005 | Schema extension: the community and account tables | T000 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**` | `../darkprint-wt-t005-schema` | `feat/t005-schema` | adversarial-pass | — |
 | T010 | Archive persistence: bundles, releases, bytes | T000 | `lib/server/archive/**` | `../darkprint-wt-t010-archive` | `feat/t010-archive` | **merged** | — |
 | T025 | Versioning service: semver, digest, bump, chains | T000 | `lib/server/versioning/**` | `../darkprint-wt-t025-versioning` | `feat/t025-versioning` | **merged** | typecheck/lint/build 0; **three consecutive full-suite runs all green, exit 0, 133/133 files, 4158/4158**, whole-tree stamp `e5b9c920` clean both ends; 223/223 isolated; all six criteria; independent oracle 0 under / 0 over over 2674 cases; stranded-item table verified on all six rows |
 | T060 | Authorization policy: owner and operator | T000 | `lib/server/policy/**` | `../darkprint-wt-t060-policy` | `feat/t060-policy` | **merged** | round-4 adversary PASS: all five criteria pass, AC3 by invocation for all five actor shapes; 88/88, 7410-combination sweep 0 throws 0 non-booleans; awaiting the human gate, not self-promoted |
@@ -3797,7 +4038,7 @@ it does not decide differently inside a worktree.
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
-| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | — |
+| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | reverted | — |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | blind suite 98 tests, 96 red on the absent module, 33 mutations 32 caught / 0 MISS / 1 equivalent; adversary round 1 FAIL at `cf1f7a1` on D-40-A/B/C plus nine GAPs; round 2 `impl-done` at `e1ca2e4` |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | todo | — |
@@ -4365,7 +4606,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 
 ### T005, Schema extension: the community and account tables
 
-- **State:** impl-done
+- **State:** adversarial-pass
 - **Worktree:** `../darkprint-wt-t005-schema` (impl), `../darkprint-wt-t005-schema-tests` (blind)
 - **Branch:** `feat/t005-schema` (impl), `test/t005-schema` (blind)
 - **Depends on:** T000 (merged)
@@ -4408,7 +4649,38 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
                                                      -- than optional.
                       model, provider, hardware text,
                       input_size int, harness_version text, cost_units numeric,
-                      duration_ms int, reported_at, created_at                  -- AC4, D-05-01
+                      duration_ms int, reported_at, created_at
+                      -- D-05-09: cost_units is UNQUALIFIED `numeric`, as this block says.
+                      -- The shipped (18,6) silently truncates — 0.0000001 stores as
+                      -- 0.000000, i.e. a submitted cost becomes NO COST, with no error,
+                      -- feeding T180's median and p10/p90. That is the exact failure the
+                      -- module's own docblock argues numeric-over-float to avoid: "the
+                      -- registry stores what it was given". A bound that TRUNCATES rather
+                      -- than REFUSES is worse than no bound, because it converts a
+                      -- rejectable input into a wrong number. If T180 or T230 wants a
+                      -- bound later it is published here AND refuses explicitly.
+                      --
+                      -- D-05-09's WITNESS is owed BEFORE the fix. Nothing in the blind
+                      -- suite asserts a column's type, precision or scale for any of the
+                      -- six new tables — `columns.test.ts` checks names and nullability,
+                      -- and baseline.json's 166 precision/scale entries are AC7's frozen
+                      -- baseline over the TEN BASE tables and reach none of these. So the
+                      -- fix goes 57/57 and so does reverting it. The acceptance number is
+                      -- the REVERSE mutation: deleting the fix must red at least one blind
+                      -- test.
+                      --
+                      -- And the fix has TWO places with nothing comparing them: the type
+                      -- lives in `lib/db/schema.ts` AND in `0002_community.up.sql`, and
+                      -- `ac8-names` compares those two on UNIQUE INDEX NAMES only. A
+                      -- schema.ts-only fix leaves the database truncating; a migration-only
+                      -- fix leaves drizzle's idea of the column wrong for whatever generates
+                      -- the next migration. Both states pass the whole suite today.
+                      --
+                      -- Cheapest witness covering both: assert `numeric_precision IS NULL
+                      -- AND numeric_scale IS NULL` for run_report.cost_units FROM THE
+                      -- CATALOGUE — it reds on the current column, greens on the fix, and
+                      -- reds again on a schema.ts-only fix, because the catalogue is built
+                      -- from the migration.                  -- AC4, D-05-01
         api_key       account_id, token_hash text NOT NULL unique, label text,
                       created_at, revoked_at NULL
 
@@ -7771,7 +8043,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T050, Accounts and sessions
 
-- **State:** impl-done
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t050-accounts` (impl), `../darkprint-wt-t050-accounts-tests` (blind)
 - **Branch:** `feat/t050-accounts` (impl), `test/t050-accounts` (blind)
 - **Depends on:** T000 (contract: session), T070 (contract: handle allocation)
@@ -7874,6 +8146,10 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         suite D-50-07 -> published D-50-13   ("non-owner" means NOT AUTHORIZED)
         suite D-50-09 -> published D-50-10   (validatorWeight is a number)
         suite D-50-14 -> published D-50-14   (AC3 scoped; the id exists as of this line)
+
+  **D-50-20, ruled: `changeHandle` takes `SELECT … FOR UPDATE` on the account row, and does NOT retry.** Its implementer's proposal, taken with its reasoning. The measured `40P01` is contention on **one row** — the control is decisive, eight *different* accounts renaming concurrently give 8 fulfilled and 0 rejected — and the cause is a lock-order inversion: a plain `SELECT`, then the reservation insert, then the account update. **Locking the account row first removes the inversion rather than recovering from it**, and every rename of that account then queues on one lock in a consistent order. **Prevention over retry**: a retry loop needs a bound, a backoff and a claim that the whole transaction is safe to replay — three things to get wrong where one line removes the condition.
+
+  **Its own two caveats are kept rather than smoothed.** It orders same-account renames only; cross-account inversion was not measured and is not thought reachable, since each transaction touches its own account row plus its own target and old reservation rows. **And the witness is a disappearance, not an assertion** — inducing `40P01` deterministically is its own problem, so the strongest available evidence is the adversary's sixteen-way repro returning **0 rejected** after the change. That is weaker than a test and it is what is available; **it is recorded as such rather than dressed up.** Owed in its own round, after the D-50-18 fix lands, with that repro as its measurement.
 
   **Email has no predicate beyond non-empty** (D-50-12) and is **unverified** — nothing sends a verification, so no validity claim is made or tested.
 
