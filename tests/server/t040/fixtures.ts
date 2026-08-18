@@ -390,7 +390,7 @@ export const LINTS_STRICT_GRAPH = "strict digraph g {\n  a -> b;\n}\n";
  * unpublished (reported), so this is the largest of the plausible readings and therefore a
  * safe lower bound for any of them.
  *
- *     largest submission   17 963 bytes   grounded-research-desk
+ *     largest submission   17 947 bytes   grounded-research-desk
  *     most cards            9             checkpoint-resume-runner
  *     most nodes            9             checkpoint-resume-runner
  */

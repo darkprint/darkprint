@@ -128,6 +128,24 @@ export const PUBLISHED_LIMIT_ERROR =
   "new LimitExceededError(operation: string, what: string, limit: number, units: string)   " +
   "// fields non-enumerable, every parameter optional at runtime (D-40-15)";
 
+/**
+ * D-40-22, the name D-40-20 left owed.
+ *
+ * `seen` is the right instrument for a cycle and the wrong one for the size, so the bounded walk
+ * that measures a submission meets a cycle and must refuse it as a TYPE rather than let
+ * `JSON.stringify` raise `TypeError: Converting circular structure to JSON`. A `TypeError` reaching
+ * a caller is untyped, unbranchable, and — as the adversary recorded — invisible to
+ * `tests/error-hygiene.test.ts`, whose domain is classes a barrel exports.
+ */
+export const PUBLISHED_CIRCULAR_ERROR =
+  "class CircularReferenceError extends Error   " +
+  '// "<operation>: the submission contains a circular reference."';
+
+/** Written out as a LITERAL, never built from anything the module exports. */
+export function circularMessage(operation: string): string {
+  return `${operation}: the submission contains a circular reference.`;
+}
+
 /** D-40-07: absent `limits` means the DEFAULT applies, not unlimited, and the default is published. */
 export const PUBLISHED_DEFAULT_LIMITS =
   "const DEFAULT_ENGINE_LIMITS: EngineLimits   // chosen so all nine archive bundles pass";
@@ -182,6 +200,25 @@ export async function bindLimitError(): Promise<new (...args: never[]) => Error>
       `${ENGINE}'s \`LimitExceededError.prototype\` is not an Error. The published form is a ` +
         `throw, and a caller that cannot \`instanceof\` it cannot tell this refusal from any ` +
         `other. Removal changes WHETHER the caller gets an error; only identity says WHICH.`,
+    );
+  }
+  return value as new (...args: never[]) => Error;
+}
+
+export async function bindCircularError(): Promise<new (...args: never[]) => Error> {
+  const mod = await loadEngine();
+  const value = requireFrom(mod, "CircularReferenceError", PUBLISHED_CIRCULAR_ERROR);
+  if (typeof value !== "function") {
+    throw new Error(
+      `${ENGINE} exports \`CircularReferenceError\` as ${describe_(value)}; D-40-22 publishes it ` +
+        `as a class: ${PUBLISHED_CIRCULAR_ERROR}`,
+    );
+  }
+  const proto = (value as { prototype?: unknown }).prototype;
+  if (!(proto instanceof Error)) {
+    throw new Error(
+      `${ENGINE}'s \`CircularReferenceError.prototype\` is not an Error. D-40-20 ruled the cycle ` +
+        `refusal TYPED; a caller that cannot \`instanceof\` it cannot tell a cycle from a limit.`,
     );
   }
   return value as new (...args: never[]) => Error;
@@ -308,6 +345,14 @@ export function siblingDiagnostics(
   const r = value as Record<string, unknown>;
   const diagnostics = asDiagnostics(r.diagnostics, `${where}.diagnostics`);
 
+  if (Object.prototype.hasOwnProperty.call(r, valueKey) && r[valueKey] === undefined) {
+    throw new Error(
+      `${where} carries \`${valueKey}\` as an own property whose value is \`undefined\`. The ` +
+        `published shape is \`{ ${valueKey}?, diagnostics }\`, and an absent optional is an ` +
+        `omitted key — the convention \`lib/core/diagnostics.ts\` states for exactly this reason. ` +
+        `\`JSON.stringify\` drops it, so no route test could ever see this one.`,
+    );
+  }
   const extra = Object.keys(r).filter((k) => k !== "diagnostics" && k !== valueKey);
   if (extra.length > 0) {
     throw new Error(
@@ -358,6 +403,23 @@ export function asLoadBundleResult(value: unknown, where: string): LoadBundleRes
   const r = value as Record<string, unknown>;
   asDiagnostics(r.diagnostics, `${where}.diagnostics`);
 
+  /* **An absent optional is an ABSENT KEY, not a key set to `undefined`.**
+     `lib/core/diagnostics.ts` states the convention and the reason in its own words: "Optional
+     keys are omitted rather than set to `undefined` so diagnostics compare and serialize
+     identically whether or not the caller passed `opts`." The two are indistinguishable through
+     `JSON.stringify`, which drops an `undefined` value — so a route payload cannot tell them
+     apart and only an in-process caller can. That is precisely why a blind suite has to: AC5's
+     "identical output" is read off `Object.keys` by anyone comparing two answers, and T100
+     consumes this module in-process. */
+  for (const key of ["blueprint", "analysis"]) {
+    if (Object.prototype.hasOwnProperty.call(r, key) && r[key] === undefined) {
+      throw new Error(
+        `${where} carries \`${key}\` as an own property whose value is \`undefined\`. An absent ` +
+          `optional is an omitted key — \`Object.keys\` and a spread both see the difference, and ` +
+          `\`JSON.stringify\` does not, so nothing at the wire would ever report this.`,
+      );
+    }
+  }
   const hasBlueprint = r.blueprint !== undefined;
   const hasAnalysis = r.analysis !== undefined;
   if (hasBlueprint !== hasAnalysis) {
