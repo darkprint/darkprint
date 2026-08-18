@@ -2245,6 +2245,51 @@ and the session list is the only place that fact exists.** Reconcile the two bef
 in flight. **A dispatch is evidence that I sent a message, not that work is happening** — already in this
 file — and now: **a live task state is evidence about a branch, not about a session.**
 
+## A transport acknowledgement is not a receipt
+
+**T050's adversary sent its verdict two hours ago. `SendMessage` returned `{"success": true}` with a
+message id. It did not arrive.**
+
+This file already had *a message I composed is evidence that I composed it, not that anyone received
+it*. **The sharper form, paid for here: an acknowledgement from the transport is not one either.** A
+`success` and an id say the send was accepted, not that it was delivered.
+
+**The only receipt is the recipient quoting it back.** It knew its verdict had not landed because I
+quoted the **implementer's** numbers instead of its own — **the absence of its content in my reply was
+the signal, not any silence.**
+
+**So: if a report matters, the sender should expect it quoted and say so, and the recipient should quote
+enough of it that its absence would be visible.** I had already been reporting peers' numbers back to
+them for other reasons; **that habit is now load-bearing** and it is the only delivery check this run
+has.
+
+**And I diagnosed the stall as three possibilities and named the right one second.** The instrument that
+distinguished them was asking, which is the same answer as *a quiet host is not a released slot*: **for a
+question about another party's interval, the only reliable instrument is the party.**
+
+## A blind suite merged into an adversary's tree is a snapshot, and blind authors keep working
+
+**T050's adversary measured *blind red 0 at all four sites* against a blind suite that does not contain
+the cells written to observe those sites.** Verified here rather than inferred:
+
+```
+aca5b39  "T050: the store-fault door, 16 blind cells"   NOT an ancestor of 1a3631c
+1a3631c  contains 10 t050 test files, no store-faults file
+```
+
+**It flagged this itself as the largest thing behind its PASS** — *both rulings are held by one author
+until your three dispatched cells land* — and it was right, but the cells **already exist**, committed,
+on `test/t050-accounts`, and were never joined.
+
+**Second instance in this run, different task.** T005's implementer nearly shipped without round 4's
+witness for the same reason: *my branch carried the blind suite from the adversary round but not round
+4.* **An adversary joins the blind branch once, at the start of its round, and the blind author keeps
+delivering after that.** The join has a date and nothing marks it.
+
+**So a verdict's blind axis is only as current as the join, and *blind red 0* has two readings** — the
+suite cannot see it, or **the suite that can see it was not in the tree.** Those are the same number.
+**Re-join before measuring the blind axis, and report the blind branch's tip sha next to it.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
