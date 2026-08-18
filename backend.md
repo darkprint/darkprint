@@ -355,6 +355,56 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A fresh worktree runs `npm ci` AND `npm run build` before its first gate
+
+**Actionable for every worktree in this run, and it has now bitten four sessions.** `.next/types`
+holds a Next-generated global, `tsconfig.json` includes that path, and a worktree that has only ever
+run `npm ci` has no `.next` at all — so its first `npm run typecheck` reports **18 `TS2304: Cannot
+find name 'PageProps'`** across eight `app/**` page files that belong to nobody.
+
+This file already says a new worktree runs `npm ci` before its first gate. **`npm run build` goes in
+the same sentence, before typecheck**, or the first typecheck in every fresh worktree is 18 red and
+whoever meets it either **filters them** or reports a defect that does not exist.
+
+It fails in the more dangerous direction than the lockfile trap it sits beside: `npm ci` missing
+produces errors in **server** files that read as breakage, while this produces errors in **page**
+files that a task touching no pages reads as somebody else's problem.
+
+## "Those errors are not mine" is a claim about attribution, offered as a claim about the gate
+
+T005's blind author reported `typecheck 0` and wrote it into its handback commit. The tree reported
+18. It had been filtering with `grep -v PageProps` since its first typecheck, on the reasoning that
+the errors were in files it had not touched.
+
+**That reasoning is correct and it does not make the claim true.** Attribution and gate result are
+different propositions, and only one of them is what a gate line asserts. **The filter encoded a
+judgement that was never restated when the number was written down** — by the time the words
+`typecheck 0` were typed, the judgement had become invisible.
+
+Same object as *reasoning printed beside output reads as output*, except the reasoning was in a
+**shell pipeline** rather than in a sentence. A pipeline is the most durable place to hide a premise:
+it persists across every invocation, it is not in the artefact anyone reviews, and its output is
+indistinguishable from an unfiltered one.
+
+It also produced the **third instance** of the gate-and-commit-on-separate-lines defect while fixing
+this — a Python edit failed its assertion and the `git commit --amend` on the next line ran anyway
+against the unmodified message. First of that class by anyone other than me.
+
+## An acceptance stamp has to still resolve
+
+I accepted `67866ad`. Amending the commit message made it unreachable from the branch — same tree
+object (`93126aee…` at both, `git diff` empty), so **nothing measured changed**, but the sha in my
+acceptance no longer resolves from the head and a reader following it finds nothing.
+
+Sharper than the earlier *an acceptance is of an artefact, not of a tip*: there the branch advanced
+and the accepted commit remained reachable. **Here the accepted commit stopped existing on the
+branch.** Amending after a handback is rewriting a sha somebody else has cited — the thing this run
+forbids for exactly this reason — and the right form is a **new commit carrying the correction**, so
+the record of the false gate line survives beside its retraction.
+
+The re-acceptance is by tree: `93126aee5f82aeac6cdd4b7df434516b7a7beb54`, which is the object both
+shas name and the only identifier here that could not have moved.
+
 ## A number that survives the explanation you gave it is evidence against the explanation
 
 T005's blind author's suite reported `5 failed | 1 passed | 42 skipped` and it nearly filed it as
