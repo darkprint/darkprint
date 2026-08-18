@@ -1117,6 +1117,44 @@ in the same place T-02's note already puts a materialised-size cap.
 costs O(49) once and is harmless, and the hazard is exactly the caller-supplied overlay. Strictly
 stronger, and it names the boundary instead of a symptom of crossing it.
 
+## D-50-21: a fix that closes a defect for one class has closed an instance
+
+**T050's adversary measured the wrapper against a class nobody had pointed it at.** `withAccountErrors`
+maps `AccountStoreError` to `500 application/problem+json`. Handed `NamingStoreError` — T070's, raised
+inside `changeHandle`'s own transaction — it **throws**, answering outside the envelope through the
+arm the fix's own header reserves for *what the wrapper does not recognise, which is a bug*.
+
+**D-50-21, ruled: `withAccountErrors` answers every class `isDecision` recognises, and
+`NamingStoreError` is one.** Same `store-failed` 500 as `AccountStoreError`. **It is NOT re-wrapped**
+— the original error is what travels on `cause`, so the operation named in a rendering stays the
+operation that actually failed.
+
+**This is in the round, not a follow-up, and the distinction from D-50-20 is the whole reason.**
+D-50-20 is a different failure mode needing a different mechanism, so folding it into a fix round is
+scope creep and I told the implementer so. This is **the same failure mode, the same remedy, one class
+name apart.** A fix that closes a defect for one class and not its sibling has not closed the defect;
+it has closed an **instance**, and the round would end with the divergence half-shut and nothing
+saying so.
+
+**The conflation the adversary named is the part worth keeping.** `NamingStoreError` sits on
+`isDecision` deliberately and for a good reason — re-wrapping it would replace a message naming
+`allocateHandle` with one naming `changeHandle`, moving the named operation away from the failed one.
+**That reasoning is about not re-wrapping. It says nothing about the envelope, and the two were taken
+as one decision.** Passing a fault through unwrapped and answering it outside `problem+json` are
+separable, and separating them is the fix.
+
+**The guard is constructed from the code's own declaration, so no list is maintained: every class named
+in `isDecision` must have an arm in `withAccountErrors`.** `isDecision` *is* the module's statement of
+what it recognises; the wrapper's fallback is for what it does not. **A class on one list and absent
+from the other is the contradiction, spelled out in two files that never have to agree by hand.**
+
+**Reachability, labelled the way the adversary labelled it.** `namingStoreError` is raised at three
+sites, two inside `changeHandle`'s transaction. Round 1 measured concurrent same-account renames
+deadlocking (40P01) on that exact transaction with `update "account"` as the victim — T050's own code,
+so an `AccountStoreError`. **Had Postgres picked the upsert one statement earlier, the same request in
+the same outage would have answered with a different envelope.** The mechanism is measured; that
+particular victim was not driven, and it said so rather than rounding it up.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -8384,6 +8422,8 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         suite D-50-14 -> published D-50-14   (AC3 scoped; the id exists as of this line)
 
   **D-50-20, ruled: `changeHandle` takes `SELECT … FOR UPDATE` on the account row, and does NOT retry.** Its implementer's proposal, taken with its reasoning. The measured `40P01` is contention on **one row** — the control is decisive, eight *different* accounts renaming concurrently give 8 fulfilled and 0 rejected — and the cause is a lock-order inversion: a plain `SELECT`, then the reservation insert, then the account update. **Locking the account row first removes the inversion rather than recovering from it**, and every rename of that account then queues on one lock in a consistent order. **Prevention over retry**: a retry loop needs a bound, a backoff and a claim that the whole transaction is safe to replay — three things to get wrong where one line removes the condition.
+
+  **D-50-21, ruled and owed in round 2's fix rather than deferred: `withAccountErrors` answers every class `isDecision` recognises.** `NamingStoreError` is on that list and has no arm, so it leaves through the fallback reserved for what the wrapper does **not** recognise — outside `problem+json`, which is the exact divergence D-50-18 was ruled on. Same `store-failed` 500 as `AccountStoreError`, and **not re-wrapped**: the original travels on `cause` so the operation named in a rendering stays the one that failed. Separating the envelope decision from the wrapping decision is the fix; they were taken as one. **Guard constructed from `isDecision`'s own members** — every class it names owes an arm — so nothing is maintained by hand. Unlike D-50-20 this is the same failure mode and the same remedy one class name apart, so it is not scope creep: a fix that closes a defect for one class has closed an instance.
 
   **Its own two caveats are kept rather than smoothed.** It orders same-account renames only; cross-account inversion was not measured and is not thought reachable, since each transaction touches its own account row plus its own target and old reservation rows. **And the witness is a disappearance, not an assertion** — inducing `40P01` deterministically is its own problem, so the strongest available evidence is the adversary's sixteen-way repro returning **0 rejected** after the change. That is weaker than a test and it is what is available; **it is recorded as such rather than dressed up.** Owed in its own round, after the D-50-18 fix lands, with that repro as its measurement.
 
