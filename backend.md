@@ -355,6 +355,45 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## D-05-01: a foreign key needs an identity, and a content digest is not one
+
+T005's blind author refused to write AC4's assertion and was right. AC4 asked for a foreign key to
+`release(digest)`. **Postgres requires the referenced columns to carry a unique constraint**, and
+`release_digest_idx` is a plain `index(...)`; the only unique on `release` is
+`release_bundle_version_key` on `(bundle_id, version)`. The DDL fails.
+
+**And the obvious fix encodes a falsehood.** `digest` is `bundleDigest(dot, sortedCardDigests)` —
+content-addressed — so a fork that changes nothing collides with its upstream, and a republish of
+byte-identical content under a new version collides with itself. Making it unique would be a claim
+about the world that T100 and T110 both break.
+
+So the criterion moves rather than weakens, which is now the third time this run has done that:
+`run_report.release_id` is a `NOT NULL` foreign key to `release(id)`, driver-enforced, so no report
+can float free of a release. Resolving digest → release becomes T180's, **and because the digest is
+genuinely not an identity, a submission matching more than one release is refused as ambiguous
+rather than attributed arbitrarily** — a T180 criterion I would not have written without this.
+
+The general form: **an acceptance criterion that names a foreign key is asserting that the referenced
+column is an identity.** Content addresses, natural keys and anything derived from a document's bytes
+are not identities, and the criterion has to say what the driver can actually hold.
+
+## D-05-02: satisfied by construction beats satisfied by constraint
+
+Two `ballot` shapes fitted the contract — a row per metric with a `metric` column, or a row per
+`(account, bundle)` with a column per writable metric. The blind author could not write both and
+would not guess.
+
+Ruled: **a column per metric.** Its own argument decided it: that design satisfies AC5 — *a ballot
+cannot write `autonomy` or `security`* — **by construction**, because the columns do not exist, where
+a `metric` column needs a check constraint or an enum to say the same thing. **A constraint can be
+dropped in a later migration and nothing downstream notices; a missing column cannot be written to at
+all.** That is the same preference the reachability rule expresses, applied to a schema.
+
+It also surfaced the consequence that reaches T160 rather than staying in T005: the three columns are
+**nullable**, so a caller may vote on one metric and not the others, and an aggregate's sample size is
+therefore **per metric**. T160's AC3 and its five-vote threshold both read per metric under this
+design, which nobody had noticed.
+
 ## T005 will invalidate one of T070's verification conditions, and that was written down in advance
 
 T070's adversary listed six conditions that would falsify its PASS. One: *the W0 confirmation depends
@@ -3319,17 +3358,40 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   | `run_report` | T180 | keyed by **release digest**, carrying model, provider, hardware, input size, harness version, cost units, duration, timestamp |
   | `api_key` | T230 | account + a revocation state that is immediate |
 
+- **Published signatures** (D-05-03 — column names, because this task has no exported functions and its acceptance surface *is* the identifiers a raw-SQL test must type). Every table carries `id uuid primary key default gen_random_uuid()` unless stated. `account_id`/`bundle_id`/`release_id`/`note_id` are `uuid NOT NULL` with a foreign key to the named table's `id`. Timestamps are `timestamptz`.
+
+        save          account_id, target_kind, target_id text, created_at
+                      unique (account_id, target_kind, target_id)              -- AC1
+        ballot        account_id, bundle_id,
+                      efficacy, reliability, transparency  smallint NULL 0..100
+                      updated_at
+                      unique (account_id, bundle_id)                            -- AC2, D-05-02
+        note          account_id (the author), target_kind, target_id text,
+                      body text NOT NULL, created_at, edited_at NULL, deleted_at NULL
+        note_vote     note_id, account_id, created_at
+                      unique (note_id, account_id)                              -- AC3
+        run_report    release_id, digest text NOT NULL, model, provider, hardware text,
+                      input_size int, harness_version text, cost_units numeric,
+                      duration_ms int, reported_at, created_at                  -- AC4, D-05-01
+        api_key       account_id, token_hash text NOT NULL unique, label text,
+                      created_at, revoked_at NULL
+
+  `target_kind` reuses the existing `target_kind` enum (`blueprint | card | term`); any narrowing is the consuming task's, not a check constraint here. `note.deleted_at` is B-18's tombstone — a deleted note keeps its row so counts and cursors stay honest, and its `body` becomes unreadable through the module rather than by deletion. `note.votes` in `lib/types.ts:182` is a **derived count** over `note_vote` and is not a column.
+
 - **Acceptance criteria:** the criteria are about **what the database enforces**, not about what columns exist, because four of the five consuming tasks have an acceptance criterion that only a constraint can deliver. A column list satisfied by convention would let every one of those four pass its own tests against a store that permits the thing it forbids.
 
   (1) **T140 AC2 — "saving one target twice is idempotent"** is a unique constraint on `(account, target_kind, target_id)`, enforced by the database: a second insert must fail at the driver, and a test that inserts twice through raw SQL must see it fail.
-  (2) **T160 AC2 — "one account voting twice on one metric replaces rather than accumulates"** is a unique constraint on `(account, bundle, metric)`. Same standard: raw SQL, not the module.
+  (2) **D-05-02, ruled: one row per `(account_id, bundle_id)` with a column per writable metric**, not a row per metric. B-11 says *one ballot per account per blueprint*, singular, and the deciding argument is the blind author's own: this design satisfies AC5 **by construction** — `autonomy` and `security` are unwritable because the columns do not exist — where a `metric` column needs a check constraint or an enum to say the same thing, and a constraint can be dropped. So the unique is `(account_id, bundle_id)`, measured by raw SQL: two inserts for one pair, the second fails at the driver.
+  **Consequence, stated because it reaches T160 rather than staying here:** the three metric columns are **nullable**, so a caller may vote on one metric and not the others, and an aggregate's sample size is therefore **per metric** rather than per ballot. T160's AC3 — *every aggregate response carries the sample size* — and AC4's five-vote threshold both read per metric under this design.
   (3) **T170 AC4 — "a vote from one account counts once"** is a unique constraint on `(account, note)`.
-  (4) **T180 AC1 — "a report against an unknown digest is refused"** is a foreign key to the release, not a lookup the module performs first. A `run_report` row naming a digest no release holds must fail at the driver.
-  (5) **T160 AC1 — "a ballot cannot write `autonomy` or `security`"** is expressible in the schema and must be: the writable metric set is constrained by the column shape or a check constraint, so the refusal does not depend on every future caller remembering it.
+  (4) **D-05-01, restated: T180 AC1 cannot be a foreign key to the digest, and here is what replaces it.** `release.digest` carries **no unique constraint** — `release_digest_idx` is a plain `index(...)`, and the only unique on `release` is `release_bundle_version_key` on `(bundle_id, version)` — so `REFERENCES release(digest)` fails at DDL time. Making it unique would **assert something false**: the digest is `bundleDigest(dot, sortedCardDigests)`, content-addressed, so a fork that changes nothing collides with its upstream and a republish of byte-identical content under a new version collides with itself. T100 and T110 would both hit it.
+  What the driver enforces instead: **`run_report.release_id` is `NOT NULL` with a foreign key to `release(id)`**, so no report can exist without a real release, and that half is measured by inserting a row naming a nonexistent release and requiring it to fail at the driver. The submitted `digest` is stored **as submitted**, denormalised, so the report records what the CLI claimed.
+  What moves to T180 rather than being lost: resolving digest → release, and — because the digest is genuinely not an identity — **a submission whose digest matches more than one release is refused as ambiguous rather than attributed arbitrarily.** That is a T180 criterion and is recorded against it, not here. The pre-check AC4 originally forbade is unavoidable; what it was really protecting against — a report floating free of any release — is still enforced by the database.
+  (5) **T160 AC1 — "a ballot cannot write `autonomy` or `security`"** is satisfied **by the column shape** under D-05-02: those columns do not exist, so there is nothing to constrain and nothing to drop. The 0..100 range on the three that do exist is a check constraint, measured by raw SQL at `-1` and `101`.
   (6) Every migration is **paired up/down and reversible against a scratch database**: apply, roll back, apply again, and the schema is identical at both applications — compared structurally, not by the migration file.
   (7) **No existing table is altered, renamed or dropped — with exactly one named exception**, and the ten tables T000 shipped are otherwise byte-identical in the schema after this task. Eight tasks have merged against them.
   (7a) **The exception: `handle_reservation.account_id` becomes `NOT NULL`.** It is currently `uuid("account_id").references(...)` with no `.notNull()`, and `0001_init.up.sql` agrees, so a reservation row with a NULL owner is storable. Such a row is garbage that can never be claimed or released: under T070's ruled predicate `handle_reservation.account_id = excluded.account_id`, `NULL = NULL` is `NULL`, so it refuses **everyone forever**. T070 cannot fix it — `lib/db/schema.ts` is Forbidden there — and a runtime guard in `allocateHandle` closes only T070's own path while T050 and any later writer keep theirs open. The criterion: after this task, a direct `INSERT` of a NULL-owner reservation **fails at the driver**, not at a caller. Measured by raw SQL, as with every other constraint here.
-  (8) Every unique constraint above is **named**, and the name is derived from the schema at runtime wherever a module will match on it — T010's D-14 established that a bare `23505` says *a* unique constraint was violated and not which, and `lib/server/archive/constraints.ts` already derives its names rather than restating them. A consumer that has to hardcode a constraint name is a defect in this task.
+  (8) **D-05-05, confirmed as the blind author read it.** Since T005 ships no module, what AC8 obliges *here* is: every unique index carries an **explicit name** in `schema.ts` rather than a drizzle default, and is reachable through `getTableConfig(schema.<table>).indexes` so a consumer can derive it the way `lib/server/archive/constraints.ts` already does. Asserting that by importing `schema` from the published `@/lib/db` barrel is **not** reading a Forbidden file — it is the same reach T010's merged `constraints.ts` makes, and was ruled acceptable there. The derivation itself happens in each of the five consumers — T010's D-14 established that a bare `23505` says *a* unique constraint was violated and not which, and `lib/server/archive/constraints.ts` already derives its names rather than restating them. A consumer that has to hardcode a constraint name is a defect in this task.
 
 - **Out of scope:** any read or write path over these tables; that is each consuming task's. Seed data. `T150`'s counters, which the wave-4 audit did not find missing a table and which are not invented here.
 - **Note on sequencing:** all five consumers sit behind T050, which sits behind T070, so this is needed roughly two waves out rather than immediately. It is written now because the need is known now, and because a task that exists can be dispatched the moment a slot opens.
