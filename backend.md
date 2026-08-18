@@ -355,6 +355,114 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A ruling granted in a REPLY is a ruling published nowhere
+
+The displacement fix landed and **four rulings from the same round never left my reply**. T050's
+implementer reported F-03 and F-04, I granted all four in a message — `AccountStoreError`, the
+free-text door, code-point lengths, the empty-`githubId` close — and published none of them. Grepping
+the whole of `backend.md` returned **zero** occurrences of `AccountStoreError`, zero of "code point".
+
+Its diagnosis is the one to keep: **the rulings that were *stated* got fixed and the rulings that were
+*granted in reply to a report* never left the reply.** Those are two different acts and only the first
+has a habit attached to it. A ruling made while answering somebody is a ruling made in the least
+durable medium available, and it feels finished because the person who needed it has it.
+
+**And the exposure is asymmetric in a way that hides it.** The implementer was already correct — it
+had built all four before I ruled and I ruled its way — so nothing it does reveals the gap. The whole
+cost lands on the **blind author**, which binds the published block and cannot see the reply: four reds
+against code that matches every ruling, in a task gating fifteen others.
+
+## The worked example survived the fix that was written about it
+
+`PublicAuthor.handle: string` is the field the displacement rule uses as its own worked example. The
+commit that wrote that rule **did not change the declaration**, and three sessions reported it still
+`string` afterwards.
+
+T050's blind author's reading is exact and it is the reason this is recorded rather than just fixed:
+*that is not an argument against the rule; it is the strongest possible evidence for it, and it says
+the failure is not attention but **method**.* Adding a ruling and editing a declaration are different
+operations, and only the second displaces. I had done the first while writing about the need for the
+second.
+
+**A related cost of doing it by substitution.** The `.dev` → `.io` fix was a global replace, so it also
+displaced the one occurrence that had to survive — the **quotation of the error** — leaving the ruling
+arguing with itself: *"the contract said `darkprint.io`; it occurs once in the whole repository"*. **A
+substitution displaces every occurrence, including the ones that are evidence rather than
+instruction**, and the record of what was wrong is what makes a ruling reconstructible.
+
+## A ruling that arrives without displacing anything is a contradiction I authored
+
+The worst instance in this run, and it is mine. I ruled ~50 contract defects across T005, T040 and
+T050 and **landed the rulings as additions**, leaving the text they overturn standing beside them. Two
+implementers found it within the hour and both named it as the thing I had charged `seams.md` for that
+same morning: *silence makes an author ask; a contradiction lets them proceed.*
+
+T050 held both readings of five questions **in the same section, both in the imperative** —
+`darkprint.dev` thirty-six lines above the `.io` ruling, AC4 still absolute, AC3 still saying "every
+attribution", `PublicAuthor.handle: string` eleven lines above the ruling making it nullable. T040's
+**entire published signatures block was pre-ruling** while every correction sat in prose below it.
+
+**This is a fourth failure mode of `tests/rulings-bind.test.ts`, and the guard is structurally blind
+to it.** The three prior modes were the ruling never arriving. This one is **the ruling arriving and
+not displacing anything** — every `D-50-xx` and `D-40-xx` id *is* present, so the guard is green over
+sections that contradict themselves. Its own docblock states the limit exactly (*it checks that the id
+is present, not that the section says what the preamble ruled*), which is why it must not be read as
+covering this.
+
+**The rule, and it is about editing rather than about writing:** an amendment is not applied until the
+sentence it replaces is **gone**. Adding the correction and leaving the original is worse than doing
+nothing, because the original was at least uncontested — now the section publishes both and a reader
+binds to whichever it reaches first, which is a function of line order rather than of authority.
+
+Both sessions also caught that the **published block is the more authoritative position** and the
+older reading was sitting in it. The criteria say what must be true; the block says what to type; a
+reader types the block. A correction in prose below it loses to it every time.
+
+## D-05-07's sibling: a task section has three surfaces, not one
+
+D-05-07 was the criteria holding a ruling the published block contradicted. T040's was the block
+holding a reading the prose contradicted. T050's was both, plus the criteria. **A task section is a
+published block, a criteria list and prose, and an amendment owes all three or it owes an explicit
+note saying which it does not touch.**
+
+That is now the shape of every amendment I write, and it is the reason this file's own instruction —
+*the preamble is where a ruling is argued; the criteria and the published block are where it binds* —
+was insufficient: it named two places when there are three, and said nothing about **removal**.
+
+## D-05-07: the same ruling landed in the criteria and not in the published block
+
+I reversed D-05-01 from a foreign key to a trigger, wrote the argument into AC4 at length — and left
+the **published signatures fence** still reading `release_id, digest`. Two binding places, one
+decision, opposite answers, in the commit that made the decision.
+
+**This is the ruling-does-not-bind rule arriving from the other side.** Every prior instance had the
+preamble ruling and the criteria missing it; this one has the criteria and the **published block**
+missing it. `tests/rulings-bind.test.ts` cannot see either: it checks a ruling id appears **somewhere**
+in the task's section, and `D-05-01` appears in AC4, so the guard is green over a section that
+contradicts itself.
+
+**A task section is not one surface.** The criteria say what must be true; the published block says
+what to type. A reader writing raw SQL types the block, and T005's blind author caught it because it
+was about to type `release_digest` from AC4 into a suite that would red against a tree built from the
+fence.
+
+Its second move is the one to keep: it will assert `run_report` declares **no foreign key into
+`release`** — because that is AC4's actual argument rather than decoration, and without it a tree could
+carry `release_digest` **and** a redundant `release_id`, satisfy every other criterion, and reintroduce
+the ambiguous join the ruling exists to prevent. **A ruling that removes something needs an assertion
+that it is absent**, or only its positive half is held.
+
+## A range check that refuses everything satisfies a criterion that only tests refusal
+
+T005's blind author, folding in a half I did not write. AC5 says the 0..100 range is measured at `-1`
+and `101`. **A check constraint refusing `-1` by refusing every value passes that**, and makes T160
+unimplementable — no ballot can be cast at all.
+
+So the criterion needs its saturation half: **`0` and `100` must both be accepted.** Same shape as the
+metric-column design we both discarded — a constraint that is trivially satisfiable in the wrong
+direction — and the same shape as *falsify by collapse and by saturation*, arriving at a check
+constraint rather than at a partition. Every bound owes both ends.
+
 ## A brief that names a base is a claim about a tree the reader has to reach
 
 All six wave-6 worktrees were created at `d37fdc9`. I then committed twice — `47b2731` and `73e769f` —
@@ -3411,7 +3519,11 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
                       body text NOT NULL, created_at, edited_at NULL, deleted_at NULL
         note_vote     note_id, account_id, created_at
                       unique (note_id, account_id)                              -- AC3
-        run_report    release_id, digest text NOT NULL, model, provider, hardware text,
+        run_report    release_digest text NOT NULL,   -- D-05-07. NOT release_id, and NO foreign key into
+                                                     -- release: see AC4/D-05-01. The digest is the
+                                                     -- key because reportedCost() takes one, and two
+                                                     -- releases may legitimately share it.
+                      model, provider, hardware text,
                       input_size int, harness_version text, cost_units numeric,
                       duration_ms int, reported_at, created_at                  -- AC4, D-05-01
         api_key       account_id, token_hash text NOT NULL unique, label text,
@@ -6791,7 +6903,11 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Published signatures** (checked against `backend` at `9411199`, against `lib/db/schema.ts`'s `account` — `github_id` and `handle` each carry a unique index, `handle` is **nullable**, `notification_preferences` is `jsonb NOT NULL DEFAULT {}` and belongs to T190 — and against T000's `SessionPayload`, which is `{ accountId, handle: string | null }`. Barrel: `@/lib/server/accounts`.)
 
         interface PublicAuthor {
-          handle: string; displayName: string | null; avatarHue: number | null;
+          handle: string | null;   // D-50-06: AC1 rules a handle-less account legal, so getAccount
+                                   // must be able to describe one. getPublicAuthor(db, handle) is
+                                   // KEYED by handle and can never return a null one; the
+                                   // nullability is reachable only through getAccount().author.
+          displayName: string | null; avatarHue: number | null;
           validator: boolean; bio?: string;
         }
         interface AccountRecord {
@@ -6811,9 +6927,9 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **AC2 is satisfied by the type, not by a filter, and that is the point of publishing two record shapes.** "`email` is absent from every response a non-owner can obtain" is unachievable by remembering to omit it — one forgotten call site and it ships. `PublicAuthor` **has no `email` field at all**, and it is the only shape any non-owner path returns; `AccountRecord` carries `email` and is reachable only through `getAccount`, which takes an `Actor` and returns `undefined` when `can(actor, "read", { kind: "account", accountId })` is false. So the criterion holds structurally, and the test that matters asserts the *key set* of what a visitor receives rather than the value of one field.
 
-  **AC1 needs a ruling and here it is: a session with `handle: null` is signed in and incomplete.** `account.handle` is nullable and T000's `SessionPayload` already publishes `handle: string | null`, so first sign-in mints a real session before a handle exists — that is settled by the schema, not open. What was open is what a handle-requiring route does with it. **It refuses with `problem+json` 403 and `type` `https://darkprint.dev/problems/handle-required`**, which is distinguishable from 401 (no session at all) and from 404 (a resource you may not see). Every route that writes anything owned by an account checks it. Allocation itself is T070's; this task calls it.
+  **AC1 needs a ruling and here it is: a session with `handle: null` is signed in and incomplete.** `account.handle` is nullable and T000's `SessionPayload` already publishes `handle: string | null`, so first sign-in mints a real session before a handle exists — that is settled by the schema, not open. What was open is what a handle-requiring route does with it. **It refuses with `problem+json` 403 and `type` `https://darkprint.io/problems/handle-required`**, which is distinguishable from 401 (no session at all) and from 404 (a resource you may not see). Every route that writes anything owned by an account checks it. Allocation itself is T070's; this task calls it.
 
-  **`upsertFromGitHub` is keyed on `github_id`, never on `github_login`.** AC3 — "**D-50-14, scoped:** a GitHub rename leaves the handle and the `account` row untouched. **Attribution lives in the bytes of published cards** (T020/T100), which T050 neither writes nor reads, so "every attribution" named an assertion belonging to a task that has not run" — is exactly this: the login is a display value that moves, the id does not. And AC6 — "two GitHub identities cannot map to one account" — is `account_github_id_key`, enforced by the index and tested with concurrent callers for the same reason as T070's AC5.
+  **`upsertFromGitHub` is keyed on `github_id`, never on `github_login`.** AC3 — is exactly this: the login is a display value that moves, the id does not. And AC6 — "two GitHub identities cannot map to one account" — is `account_github_id_key`, enforced by the index and tested with concurrent callers for the same reason as T070's AC5.
 
   **Admissible message forms:**
 
@@ -6827,7 +6943,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 - **Goal:** sign in through GitHub, hold one account per handle, and serve and mutate the account's own fields.
 - **Contract:** GitHub OAuth establishes credentials; the handle is chosen at sign-up and stored independently (B-02, B-05), so the OAuth subject and the handle are separate columns and a GitHub rename moves neither. The record is `Account { author: Author, email, joinedAt, validatorSince?, validatorWeight, defaultVisibility, notifications[] }` (`lib/data/account.ts:51-73`) with `Author { username, displayName, avatarHue, validator, bio? }`. `email` never appears on a public surface. The three profile fields the settings form edits live are `displayName`, `bio`, `avatarHue`. A handle change reserves the old one through `T070`.
-- **Published routes** (D-50-03/D-50-02 — fourth instance of an owned route tree with nothing published; and `docs/architecture/seams.md` published a *contradicting* second reading, which is worse than silence because a blind author can bind to it. **The contract wins; §8 is being rewritten to match, by me, in the same commit as this line.**)
+- **Published routes** (D-50-01/D-50-02 — fourth instance of an owned route tree with nothing published; and `docs/architecture/seams.md` published a *contradicting* second reading, which is worse than silence because a blind author can bind to it. **The contract wins; §8 is being rewritten to match, by me, in the same commit as this line.**)
 
         GET   /api/account                     -> 200 AccountRecord            | 401
         PATCH /api/account/profile             { displayName?, bio?, avatarHue? }
@@ -6847,7 +6963,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **`DELETE /api/account` is NOT T050's** (seams.md SEAM-50 is wrong): deletion is `app/api/account/delete/**`, T120's. §8 is corrected with the rest.
 
-  **The problem type base is `https://darkprint.io/problems`** (D-50-01/D-50-03). The contract said `darkprint.dev`; it occurs **once in the whole repository**, in that line, while six live responses carry `.io` and `lib/server/http/problem.ts:8` defines it. **The code wins and the divergence is reported** — CLAUDE.md's own rule. `handle-required` is `https://darkprint.io/problems/handle-required`, 403.
+  **The problem type base is `https://darkprint.io/problems`** (D-50-03). The contract originally published the type under a **`.dev`** host — which occurred **once in the whole repository**, in that one line — while six live responses carry `.io` and `lib/server/http/problem.ts:8` defines it. **The code wins and the divergence is reported** — CLAUDE.md's own rule. `handle-required` is `https://darkprint.io/problems/handle-required`, 403.
 
   **T070's errors cross the barrel and T050 maps them** (D-50-08): `HandleTakenError` → **409** via `conflict()`, `InvalidNameError` → **400** via `badRequest()`. Neither is re-rendered into a T050 form — the whitelist admits T070's two forms **passing through unaltered**, which keeps one author for each message.
 
@@ -6855,9 +6971,23 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **Types, measured against the columns** (D-50-09/D-50-10/D-50-11): `PublicAuthor.handle` is `string | null`, matching `SessionPayload.handle` and the column, because AC1 rules a handle-less account legal and `getAccount` must be able to describe one. `validatorWeight` is published `number` over a `numeric(6,3)` column that drizzle types **`string`** and `pg` returns as `"1.000"` — the module converts, and `1.005` is representable so an integer reading is wrong. `avatarHue` is bounded **0–360** and refused outside it with `InvalidProfileError`: the column is `smallint`, so `40000` reaches the driver as SQLSTATE 22003 inside a `DrizzleQueryError` **whose message carries the statement and every bound parameter** (D-13). `displayName` ≤ 80 and `bio` ≤ 400 characters.
 
+  **D-50-15, the free-text door — the first `text` columns any task in this run writes.** T070 never faced this: its grammar admits `[a-z0-9-]` only, so character count and byte count were one number and nothing could arrive malformed. `displayName`, `bio` and `email` are free text and **a NUL or an unpaired surrogate is REFUSED at the door, never repaired**, with `isWellFormed` — the language's own answer, so no second definition can drift from it. A lone surrogate has no UTF-8 encoding and `pg` silently rewrites it to U+FFFD (D-12), so the row would hold a different string from the one typed; a NUL raises 22021 as a `DrizzleQueryError` carrying the statement and every bound parameter.
+
+  **D-50-16, length is counted in CODE POINTS — `[...value].length`, not `value.length`.** `displayName` ≤ 80 and `bio` ≤ 400 **code points**. Neither column has a storage bound to trade against, and a UTF-16 bound of 80 refuses a 41-character name made of emoji. This is the one bound where the two readings are equally defensible and **disagree on exactly one class of input**, so it is published rather than left to a reader.
+
+  **D-50-17, `AccountStoreError` is published from the barrel**, with the fourth admissible form:
+
+        AccountStoreError  "<operation>: the account store failed."
+
+  It carries the operation alone — no statement, no bound parameter, no SQLSTATE. **AC2 is the argument, not hygiene:** on `setEmail` the bound parameter **is** the email, so *"no `email` value appears in any rejection, including one about the email"* is false the moment a driver fault leaves unwrapped. It also closes `upsertFromGitHub`, which had no door: an **empty-string `githubId` is storable today** (`NOT NULL` is satisfied by `""`) and two would collide on `account_github_id_key` as one identity, which is AC6 read backwards — unreachable through the OAuth callback, reachable through the barrel by any later caller.
+
   **Email has no predicate beyond non-empty** (D-50-12) and is **unverified** — nothing sends a verification, so no validity claim is made or tested.
 
-- **Acceptance criteria:** (1) a first sign-in with no handle cannot complete until one is chosen and allocated; (2) `email` is absent from every response a non-owner can obtain; (3) a GitHub rename leaves the handle and every attribution untouched; (4) a handle change makes the old handle permanently unclaimable; (5) reading the account without a session returns `problem+json` 401, never a fixture; (6) two GitHub identities cannot map to one account.
+  **D-50-09, ruled:** an **optional** field means the key is **omitted**, and the wire and the object agree. `Response.json` drops a key whose value is `undefined`, so a record built as `{ …, bio: undefined }` has the key in the object a unit test inspects and **not** on the wire — build it absent, so an object-level and a wire-level key-set assertion cannot disagree.
+
+  **D-50-13, ruled:** AC2's "non-owner" means **NOT AUTHORIZED**, not "not the owner" — `can` runs `isOperatorGrant(actor, action) || canOnAccount(...)`, so an operator **is** granted `read` and receives `email`, and that is correct. The contradiction is also **unreachable through the published surface today**: `SessionPayload` is `{ accountId, handle }` with no `kind`, so every route-built `Actor` is `kind: "account"` and no route can mint an operator.
+
+- **Acceptance criteria:** (1) a first sign-in with no handle cannot complete until one is chosen and allocated; (2) `email` is absent from every response a non-owner can obtain; (3) a GitHub rename leaves the handle and the `account` row untouched; (4) **D-50-04, in D-70-06's own words:** a handle change leaves the old handle claimable by **no other account, ever**, and **reclaimable by its original holder**. Both halves or neither — an implementation satisfying only the first refuses a rename its own author wants to undo; (5) reading the account without a session returns `problem+json` 401, never a fixture; (6) two GitHub identities cannot map to one account.
 - **Out of scope:** notification preferences (T190), saves (T140), deletion (T120), API keys (T230), the validator grant workflow.
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-02, B-05.
@@ -6873,23 +7003,24 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Forbidden:** `lib/core/**` (consume, never edit), `lib/db/**`, `components/**`
 - **Published signatures** (checked against `backend` at `9411199` and against `lib/core/index.ts`, which exports `loadBundle` and the `LoadBundleResult` type — both are **consumed, never reimplemented**, and `lib/core/**` is Forbidden here. Barrel: `@/lib/server/engine`. This task touches no database and takes no `Db`.)
 
-        interface EngineLimits { maxBytes: number; maxCards: number; maxNodes: number }
+        // D-40-07: every field optional; DEFAULT_ENGINE_LIMITS is exported and passes all nine archive bundles.
+        interface EngineLimits { maxBytes?: number; maxCards?: number; maxNodes?: number }
 
         validateBundle(input: {
           manifest: BundleManifest; dot: string;
-          cardFiles: Record<string, string>; vocabulary?: readonly OntologyTerm[];
+          cardFiles: Record<string, string>; extensions?: readonly OntologyTerm[]; ontology?: OntologyView;
         }, limits?: EngineLimits): LoadBundleResult
-        validateDot(dot: string, limits?: EngineLimits): Diagnostic[]
-        validateCardSource(yaml: string, limits?: EngineLimits): Diagnostic[]
-        validateVocabularySource(yaml: string, limits?: EngineLimits): Diagnostic[]
+        validateDot(dot: string, limits?: EngineLimits): { value?: unknown; diagnostics: Diagnostic[] }  /* see the route block: graph? | card? | terms? */
+        validateCardSource(yaml: string, limits?: EngineLimits): { value?: unknown; diagnostics: Diagnostic[] }  /* see the route block: graph? | card? | terms? */
+        validateVocabularySource(yaml: string, limits?: EngineLimits): { value?: unknown; diagnostics: Diagnostic[] }  /* see the route block: graph? | card? | terms? */
 
   **Every function is synchronous and pure.** No `Db`, no I/O, no clock, no randomness — the same bytes give the same answer in the same process and in the next one. That is what makes AC5 testable at all, and it is structural rather than a promise: this module's only import is `@/lib/core`.
 
-  **AC5 is a determinism criterion and it names diagnostic ORDER, which is the part an implementation will get wrong.** "Identical bytes return identical output including diagnostic order" fails the moment anything iterates a `Record` whose key order depends on insertion, or merges results from `Object.entries(cardFiles)` without sorting. **Diagnostics are ordered by (source, line, column, code), sorted explicitly before return**, and `cardFiles` is iterated in sorted key order. Stated because "identical output" reads as satisfied by any correct implementation and is not.
+  **AC5 is a determinism criterion and it names diagnostic ORDER, which is the part an implementation will get wrong.** "Identical bytes return identical output including diagnostic order" fails the moment anything iterates a `Record` whose key order depends on insertion, or merges results from `Object.entries(cardFiles)` without sorting. **Diagnostics are returned in `sortDiagnostics` order, **unmodified** (D-40-05); `cardFiles` is rebuilt in sorted key order before `loadBundle` sees it. Stated because "identical output" reads as satisfied by any correct implementation and is not.
 
   **AC4's "before parsing" is the criterion, not the refusal.** An oversized submission refused *after* parsing still refuses, still names the limit, and still passes a test that only checks the response — while having done exactly the work the limit exists to prevent. The check is on `input` byte length before `loadBundle` is called, and the test that discriminates measures that **no parse occurred**, not that a refusal came back.
 
-  **Degradation is the contract's hardest clause and its three verdicts must stay distinguishable.** A bundle whose DOT parsed returns an analysis over the nodes that resolved: `resolves`, `unfinished` (n of m nodes carded), `rejected` (`components/upload/progress.ts`). So a partial result is a **200 with diagnostics** (B-03), never an error — and AC2's three-of-eight case must assert the analysis is present *and computed over the three*, not merely that the call did not throw.
+  **Degradation is the contract's hardest clause and its three verdicts must stay distinguishable.** A bundle whose DOT parsed returns an analysis over the nodes that resolved: `resolves`, `unfinished` (n of m nodes carded), `rejected` (`components/upload/progress.ts (**D-40-01(a): Forbidden to T040; the verdict stays the caller's and no T040 return type carries one**)`). So a partial result is a **200 with diagnostics** (B-03), never an error — and AC2's three-of-eight case must assert the analysis is present *and computed over the three*, not merely that the call did not throw.
 
   **Admissible message forms.** This module returns diagnostics rather than throwing, so the whitelist applies to the one place it does throw:
 
@@ -6897,10 +7028,10 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   The operation, the measured quantity, and the limit. Never the input, never a fragment of it — an oversized submission's own bytes are the last thing a refusal about size should carry.
 
-  **Inherited hazards.** T-02 (**D-40-09: reported as unreachable through this task's published surface — no in-process object graph reaches a walk here, and `canonicalJson` is reachable only through cards parsed from `cardFiles`, which is the closed parsed front door. MEASURE it before writing any guard; a guard nothing reaches is what this file charges most often.**) T-02 applies **fully and is not closed by anyone else**: `vocabulary` and `cardFiles` are caller-built objects, this module walks them, and the depth ceiling recorded at `81a4642` sits at the driver for the storage tasks but at `canonicalJson` here. T-01 applies. T-03 and T-04 do not — no database, no driver error.
+  **Inherited hazards.** T-02 (**D-40-09: reported as unreachable through this task's published surface — no in-process object graph reaches a walk here, and `canonicalJson` is reachable only through cards parsed from `cardFiles`, which is the closed parsed front door. MEASURE it before writing any guard; a guard nothing reaches is what this file charges most often.**) T-02 is **reported unreachable through this task's published surface** (D-40-09) and **must be measured before any guard is written**. T-01 applies. T-03 and T-04 do not — no database, no driver error.
 
 - **Goal:** run the engine's parse-resolve-analyze pass authoritatively over submitted bytes, returning the same diagnostics and readings the browser already produces.
-- **Contract:** accepts `{ manifest, dot, cardFiles: Record<string,string>, vocabulary? }`, returns `LoadBundleResult` — `{ blueprint?, analysis?, diagnostics: Diagnostic[] }` — at 200 (B-03), because a bundle that resolves with errors is an answer. Resolution **degrades**: a bundle whose DOT parsed returns an analysis over the nodes that resolved, and the three verdicts stay distinct — `resolves`, `unfinished` (n of m nodes carded), `rejected` (`components/upload/progress.ts`). Vocabulary defects are reported separately from bundle defects. Sibling endpoints validate a lone DOT buffer, a lone card and a lone vocabulary. Nothing is persisted. Limits are enforced here and stated in the refusal (T230 owns the numbers).
+- **Contract:** accepts `{ manifest, dot, cardFiles: Record<string,string>, vocabulary? }`, returns `LoadBundleResult` — `{ blueprint?, analysis?, diagnostics: Diagnostic[] }` — at 200 (B-03), because a bundle that resolves with errors is an answer. Resolution **degrades**: a bundle whose DOT parsed returns an analysis over the nodes that resolved, and the three verdicts stay distinct — `resolves`, `unfinished` (n of m nodes carded), `rejected` (`components/upload/progress.ts (**D-40-01(a): Forbidden to T040; the verdict stays the caller's and no T040 return type carries one**)`). Vocabulary defects are reported separately from bundle defects. Sibling endpoints validate a lone DOT buffer, a lone card and a lone vocabulary. Nothing is persisted. Limits are enforced here and stated in the refusal (T230 owns the numbers).
 - **Published routes** (D-40-01/D-40-02). `seams.md` proposes five paths against these four functions and its request/response shapes cannot be joined to the module's signatures — SEAM-30 sends `vocabulary?: string` where `validateBundle` takes parsed terms, and the three siblings return `Diagnostic[]` where the seams return `{ card?, diagnostics }`. **Ruled: the siblings return a value beside their diagnostics, mirroring `lib/core`'s own `CardValidation`/`LoadBundleResult`, and the routes parse source into the module's arguments.**
 
         POST /api/validate/bundle   { dot, cardFiles, manifest, vocabulary?: string }
@@ -6929,7 +7060,34 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **Vocabulary defects are not folded into `validateBundle`'s diagnostics** (D-40-04/D-40-08) — `loadBundle` deliberately does not, and `validateVocabularySource` is where they surface. **The product consequence is real and is recorded as a known gap**: a bundle submitted with a structurally broken vocabulary is scored against a view nobody checked and the caller is not told, which is the state `lib/content/read.ts` fails the whole build over. A route accepting both halves in one request should call both and return both; that is stated here and owed to whoever builds the upload cutover.
 
-- **Acceptance criteria:** (1) the nine archive bundles return the diagnostics, autonomy class and security level the build computes today; (2) **D-40-01, ruled (a): the verdict stays the caller's.** `bundleProgress` lives in `components/upload/progress.ts`, which is Forbidden to T040 and re-exported from nowhere, and `LoadBundleResult` has no field that can carry a verdict. Reimplementing it would be the second opinion `progress.ts`'s own header exists to prevent. So the criterion is a property of what **is** returned: a bundle with three of eight nodes carded returns an **analysis over the three** — `blueprint.nodes.length === 3`, `blueprint.graph.ids.length === 8`, every error in `AWAITING_CARD` or a shadow of it, and an autonomy class that differs from the whole bundle's, not an error; (3) a DOT that fails to parse returns a diagnostic carrying line and column; (4) an oversized submission is refused before parsing, with the limit named; (5) identical bytes return identical output including diagnostic order; (6) a card naming a term the supplied vocabulary lacks returns `card/unknown-term`, never silence.
+  **D-40-14, the fork ruled (A): the MODULE functions change, not only the route payloads.**
+
+        validateDot(dot, limits?)              -> { graph?: DotGraph;  diagnostics: Diagnostic[] }
+        validateCardSource(yaml, limits?)      -> { card?: NodeCard;   diagnostics: Diagnostic[] }
+        validateVocabularySource(yaml, limits?)-> { terms?: readonly OntologyTerm[]; diagnostics }
+
+  Under (B) the route would call `parseDot`/`loadCard`/`parseOntologyTerms` itself to produce the value half — **a second parse of the same bytes by a second reader**, two readings of one document in one request, which is what `ontology-file.ts`'s own header exists to prevent and the same argument that refused (c) for `bundleProgress`. It is also the only reading under which `validateDot` being parse **+ lint** has anywhere to put the graph.
+
+  **D-40-15, `LimitExceededError`'s constructor is published, and its fields are NON-ENUMERABLE.**
+
+        new LimitExceededError(operation: string, what: string, limit: number, units: string)
+        // fields installed with Object.defineProperty(..., { enumerable: false })
+
+  B-21 verbatim: `tests/error-hygiene.test.ts` builds its domain by construction over **every** directory under `lib/server`, so `lib/server/engine` is in it the day it merges with no list to add to. A plain `this.limit =` renders as `{"limit":…,"units":…}` against a clause requiring `{}`. Non-enumerable keeps them readable, keeps `instanceof`, and changes only their appearance in a rendering. **That guard also constructs every class itself with one and two arguments and treats an unconstructible class as a hard error** — so the four parameters above must all be optional-at-runtime or the guard fails with *hygiene is unmeasured*. Give them defaults.
+
+  **D-40-16, message forms for all four entry points**, not just `validateBundle` — the three siblings take `limits` too, so an exact pin existed for one of four:
+
+        "<operation>: the submission exceeds the limit of <n> bytes."
+        "validateBundle: the card count exceeds the limit of <n> cards."
+        "validateBundle: the node count exceeds the limit of <n> nodes."
+
+  `<operation>` is the function's own name. **`maxCards` and `maxNodes` are `validateBundle`'s alone** — a sibling takes one document, so a card count is meaningless and `validateDot` does not enforce `maxNodes` even though it parses a graph, because a limit enforced in two places is two limits.
+
+  **D-40-17, `input` byte length is `Buffer.byteLength(JSON.stringify(input), "utf8")`.** Three readings differed by hundreds of bytes on a real bundle. `lib/server/**` is not isomorphic, so `Buffer` is available here; `lib/core` remains the place that may not use it.
+
+  **`DEFAULT_ENGINE_LIMITS` is asserted as a PROPERTY, not as three numbers** — every archive bundle passes with `limits` omitted, and each default exceeds the archive's maximum. Measured by T040's blind author: largest submission **17 963 bytes**, most cards **9**, most nodes **9**. A test pinning the constant moves with the constant and stops being a bound, which is D-70-17's note about `MAX_NAME_LENGTH` applied here.
+
+- **Acceptance criteria:** (1) the nine archive bundles return the diagnostics, autonomy class and security level the build computes today; (2) **D-40-01, ruled (a): the verdict stays the caller's.** `bundleProgress` lives in `components/upload/progress.ts (**D-40-01(a): Forbidden to T040; the verdict stays the caller's and no T040 return type carries one**)`, which is Forbidden to T040 and re-exported from nowhere, and `LoadBundleResult` has no field that can carry a verdict. Reimplementing it would be the second opinion `progress.ts`'s own header exists to prevent. So the criterion is a property of what **is** returned: a bundle with three of eight nodes carded returns an **analysis over the three** — `blueprint.nodes.length === 3`, `blueprint.graph.ids.length === 8`, every error in `AWAITING_CARD` or a shadow of it, and an autonomy class that differs from the whole bundle's, not an error; (3) a DOT that fails to parse returns a diagnostic carrying line and column; (4) an oversized submission is refused before parsing, with the limit named; (5) identical bytes return identical output including diagnostic order; (6) a card naming a term the supplied vocabulary lacks returns `card/unknown-term`, never silence.
 - **Out of scope:** persistence, publishing, the archive's own re-validation sweep.
 - **Log:**
   - 2026-08-13 orchestrator: created. Contract was already derivable; unchanged by the decisions.
