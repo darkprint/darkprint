@@ -278,10 +278,24 @@ function sortedByKey(cardFiles: Record<string, string>): Record<string, string> 
  * *resolved against*, held by the caller, and it carries the whole of `CORE_ONTOLOGY` on
  * its `ontology` property. Serialising it would charge a caller the entire curated
  * vocabulary against its own upload's budget, so a small bundle could be refused for the
- * size of something it did not send and cannot make smaller. No route can reach that case
- * — `/api/validate/bundle` only ever sets `extensions` — so for every wire call the two
- * readings are the same number, which is also why the archive's 17 963 reproduces either
- * way.
+ * size of something it did not send and cannot make smaller.
+ *
+ * **The justification that stood here is WITHDRAWN** — *no route can reach that case, so for
+ * every wire call the two readings are the same number, which is also why the archive's
+ * 17 963 reproduces either way.* Three things were wrong with it. The figure reproduces under
+ * no reading: measured through this module's own entry point the archive maximum is 17 947
+ * with each bundle's own extensions and 18 195 with the shared vocabulary applied to all
+ * nine. *No route can reach that case* was quantified over every route, present and future,
+ * and established by reading the four that existed. And the framing was the defect rather
+ * than the evidence — see **D-40-21** as published, which rules that this is a **premise** of
+ * the exclusion and not a remark about its impact, on the ground that an exclusion from a
+ * measured set is a bypass of the bound the moment the excluded field becomes caller-reachable.
+ * Cited rather than restated: the replacement premise is the contract's, not this comment's.
+ *
+ * Two guards hold it now, and they are incomplete in different directions on purpose:
+ * `app/api/validate/ontology-not-caller-supplied.test.ts` drives the bound against the input a
+ * route actually builds, and walks `app/api/**` for a call to `ontologyView` with a second
+ * argument.
  *
  * Everything the caller actually submitted is in, `extensions` included: it arrives on the
  * wire as the `vocabulary` string and is the author's own content.
