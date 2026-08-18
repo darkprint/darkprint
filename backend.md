@@ -1314,6 +1314,51 @@ found only because a timeout made me look at the load.
 commit says which gates were skipped and why. Running `tsc` on a document that no TypeScript file
 imports is ritual, and here the ritual is paid for by somebody else's numbers.
 
+## A grant to one party and silence toward the rest is one slot announced to two
+
+**I granted the gate slot to T005's implementer by name, told three other sessions separately that I
+was off the host, and never told any of them that somebody else was ON it.** Three worktrees ran
+`vitest` inside its slot: T040's adversary, T050's implementer, T050's blind author. **None of them
+did anything wrong.** A released slot does not propagate, and neither does a held one.
+
+**It cost a real measurement.** The triple came back non-identical — `1 failed`, then `3 failed`
+twice — with both extras being **20-second timeouts in tests that run at 1 263 ms and 1 694 ms in
+isolation**, a 12–16x margin, at host load 122. Not assertion failures.
+
+**The rule this file already had was *one slot announced to two parties*. This is its other form: one
+announced to one, and withheld from everyone else.** A grant is a statement about the host, not about
+the grantee, so it is owed to every session that can touch the host.
+
+**Two things about the detector, both from the session it happened to.**
+
+**Keeping the sampler's LINES rather than its count is what turned this from a number into a finding.**
+Last round the same session reported *an unidentified foreign process appeared in at least one sample*
+and could say nothing more. This round the same instrument named the worktree, the config path and the
+role for all three. **The rule was written one round earlier and paid immediately.**
+
+**And it stated the part that does not fit rather than smoothing it: run 3 had peak foreign 1 and
+still carried both extras.** So three concurrent suites explains run 2 and not run 3. **A `vitest`
+process count is not a load measurement** — the detector counts suites, not the work they cause, and a
+suite that has exited leaves a host that has not caught up. The honest statement is *timeouts on a
+host whose load I can attribute for one run and only partly for another*, which is what it wrote.
+
+## Two guards each blind to the other's premise fail together
+
+**T050's blind author could not write the `NamingStoreError` cell, and settled it from the contract
+rather than the implementation.** D-50-20 locks the account row first, so with every store call
+failing the first call attempted is the account read: a closed port yields `AccountStoreError` at
+`PATCH /api/account/handle`, never `NamingStoreError`. Driven, not asserted — S2 deletes the naming
+arm from a reference and reds **0**, predicted zero, confirmed zero.
+
+**Then it grepped its own file for `unreachable`, because that is now standing instruction, and the
+check changed what the file says.** The zero means **unreachable *given D-50-20 is honoured***, not
+*unreachable*. And **nothing in that suite observes D-50-20's ordering.**
+
+**So an implementation that reached naming before locking the account row would violate D-50-20 AND
+make the arm reachable — and the two would go uncaught together.** That is the new shape: not a gap in
+one guard, but **a pair of guards each resting on the other's subject, with no observer over the
+composition.** Each is individually honest. The conjunction is what nothing measures.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -8530,15 +8575,24 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Contract:** GitHub OAuth establishes credentials; the handle is chosen at sign-up and stored independently (B-02, B-05), so the OAuth subject and the handle are separate columns and a GitHub rename moves neither. The record is `Account { author: Author, email, joinedAt, validatorSince?, validatorWeight, defaultVisibility, notifications[] }` (`lib/data/account.ts:51-73`) with `Author { username, displayName, avatarHue, validator, bio? }`. `email` never appears on a public surface. The three profile fields the settings form edits live are `displayName`, `bio`, `avatarHue`. A handle change reserves the old one through `T070`.
 - **Published routes** (D-50-01/D-50-02 — fourth instance of an owned route tree with nothing published; and `docs/architecture/seams.md` published a *contradicting* second reading, which is worse than silence because a blind author can bind to it. **The contract wins; §8 is being rewritten to match, by me, in the same commit as this line.**)
 
-        GET   /api/account                     -> 200 AccountRecord            | 401
+        GET   /api/account                     -> 200 AccountRecord            | 401 500
         PATCH /api/account/profile             { displayName?, bio?, avatarHue? }
-                                               -> 200 AccountRecord            | 400 401 403
+                                               -> 200 AccountRecord            | 400 401 403 500
         PATCH /api/account/handle              { handle }
-                                               -> 200 AccountRecord            | 400 401 409
+                                               -> 200 AccountRecord            | 400 401 409 500
         PATCH /api/account/email               { email }
-                                               -> 200 AccountRecord            | 400 401 403
+                                               -> 200 AccountRecord            | 400 401 403 500
         PATCH /api/account/default-visibility  { visibility }
-                                               -> 200 AccountRecord            | 400 401 403
+                                               -> 200 AccountRecord            | 400 401 403 500
+
+  **The `500` on every row is D-50-18 and it is a contract status, not an accident.** A sanitized store
+  fault answers `application/problem+json` with `type` `https://darkprint.io/problems/store-failed` and
+  all five RFC 9457 members, `instance` the route's own path, and **no statement, bound parameter,
+  SQLSTATE or connection string in the body**. Every published function in this half takes `db: Db`, so
+  the fault is reachable from **every** route here — which is why it is on every row rather than on the
+  three sites a fix happened to touch. Added late: **D-50-18 ruled this in prose and did not displace
+  the declaration**, so all five rows read `400 401 403` / `400 401 409` for a day while the ruling said
+  otherwise. Found by T050's blind author, which asserted 500 anyway because the ruling is the decision.
 
   Every route answers `AccountRecord`, not seams.md's `{ ok, … }` shapes: the module already returns it, and a second mapping is a second thing to drift. Specifically **dropped**: `reservedOldHandle` (derivable — it is the previous `author.handle`) and `verificationSent` (**nobody sends**, so the field would be a lie D-50-12 makes permanent).
 
