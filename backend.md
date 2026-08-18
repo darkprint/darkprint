@@ -355,6 +355,38 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A handover is confirmed by the side losing the tree, not only announced to it
+
+T050's implementer stood down explicitly rather than merely being told, and gave the reason:
+**a one-writer rule only holds if the outgoing side confirms.** An appointment message is a claim
+about a future state — the incoming session takes the tree *when it acts* — and until the outgoing
+side says it has stopped, both parties believe they know the holder and only one of them has checked.
+
+This file already required a handover to name **the commit and the holder, in both directions**. That
+was written after I appointed one session while telling another its tree was safe. **It was still only
+half the loop**: naming both directions is the sender's job, and confirming is the receiver's *and*
+the leaver's.
+
+## A built `.next` is tree state that porcelain cannot see, and it changes what typecheck reports
+
+The same message, and it is the F-02 trap seen from the far side. The T050 worktree carries a built
+`.next` from its gate runs. It is gitignored, so **`git status` says nothing about it** — and it
+decides the answer to a command anyone would call a gate.
+
+**`npm run typecheck` comes back clean there. It would not have on arrival.** So a session inheriting
+that tree cannot reproduce F-02 without `rm -rf .next` first — and having done so, **must rebuild
+before quoting a typecheck**, or it quotes 18 phantom `TS2304` errors as a finding against the tree
+it inherited.
+
+**Silent in the dangerous direction both ways**: an unbuilt tree manufactures 18 errors in files no
+backend task touches, and a built tree hides the fact that it would have. Nothing in either command's
+output distinguishes them.
+
+Which makes it the third member of a set this wave has assembled: a **filter in a pipeline**, an
+**environment variable**, and now a **generated directory** — three premises that change a gate's
+answer, that no artefact records, and that a reader has no way to detect from the output. **A handover
+stamp names the commit and the porcelain, and neither of those sees any of the three.**
+
 ## A count built by describing the groups is a count nobody took
 
 T050's implementer told me **nineteen files**, twice, and I repeated it back. The commit is **22** —
