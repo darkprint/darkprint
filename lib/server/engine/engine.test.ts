@@ -31,6 +31,7 @@ import {
   validateDot,
   validateVocabularySource,
 } from "./index";
+import { measureSubmission, resolveLimits } from "./limits";
 
 const ARCHIVE = readContent();
 const EXTENSIONS = contentVocabulary()?.terms;
@@ -102,12 +103,19 @@ describe("AC5 — identical bytes, identical output", () => {
    * different claim and one this test cannot make. Labelled rather than left to be assumed,
    * because a green here reads as coverage of the sort and is not.
    *
-   * Measured: deleting the sort from `sortedByKey` reds **nothing**, and the reason is that
-   * `lib/core` does not currently depend on the record's order at all. Permuting it leaves
-   * `diagnostics`, `blueprint.nodes` order and `blueprint.digest` byte-identical, on the
-   * nine archive bundles and on a truncated bundle producing six diagnostics. So the
-   * mutation is an *equivalent* mutant rather than an unobserved behaviour, and those two
-   * produce the same zero.
+   * Measured: deleting the sort from `sortedByKey` reds **nothing**, twice, in two rounds.
+   * Permuting the record leaves `diagnostics`, `blueprint.nodes` order and
+   * `blueprint.digest` byte-identical, on the nine archive bundles and on a truncated bundle
+   * producing six diagnostics. So it is an *equivalent* mutant rather than an unobserved
+   * behaviour, and those two produce the same zero.
+   *
+   * The blind author reached the same classification independently, and its reason is better
+   * than this measurement because it says *why* rather than *that*: `loadBundle` returns
+   * every array through `sortDiagnostics`, and no two card diagnostics can tie, because
+   * `location.file` is the card's own key and is part of the sort key. So the order is
+   * pinned by the file names themselves, whatever order they arrived in. Two parties, two
+   * instruments, one conclusion — which is what makes it a fact about the contract's surface
+   * rather than a hole in either suite.
    *
    * The sort stays: the contract mandates it, and it is what keeps AC5 true of this module
    * rather than true of `lib/core`'s current internals. What it must not do is be reported
@@ -398,6 +406,191 @@ describe("AC4 — limits", () => {
         { maxCards: 1 },
       ),
     ).toThrow(LimitExceededError);
+  });
+});
+
+describe("every bound owes BOTH ends, and one of them was unheld", () => {
+  /**
+   * The round-2 finding: `maxBytes` was pinned at both ends and `maxCards`/`maxNodes` at
+   * neither, because every limits case breached exactly one bound with the others generous.
+   * A bound tested only from above holds "it refuses eventually" and says nothing about
+   * *where*, so an off-by-one in either direction is invisible.
+   */
+  function submissionOf(loaded: (typeof ARCHIVE)[number]) {
+    return {
+      manifest: loaded.bundle.manifest,
+      dot: loaded.bundle.dot,
+      cardFiles: { ...loaded.bundle.cardFiles },
+      ...(EXTENSIONS === undefined ? {} : { extensions: EXTENSIONS }),
+    };
+  }
+
+  it("accepts a submission of exactly maxBytes and refuses one byte less", () => {
+    const loaded = ARCHIVE[0];
+    const exact = measureSubmission("probe", submissionOf(loaded), resolveLimits({ maxBytes: 1e9 }));
+
+    expect(() => validateBundle(submissionOf(loaded), { maxBytes: exact })).not.toThrow();
+    expect(() => validateBundle(submissionOf(loaded), { maxBytes: exact - 1 })).toThrow(
+      LimitExceededError,
+    );
+  });
+
+  it("accepts exactly maxCards and refuses one more", () => {
+    const loaded = ARCHIVE[0];
+    const count = Object.keys(loaded.bundle.cardFiles).length;
+
+    expect(() => validateBundle(submissionOf(loaded), { maxCards: count })).not.toThrow();
+    expect(() => validateBundle(submissionOf(loaded), { maxCards: count - 1 })).toThrow(
+      LimitExceededError,
+    );
+  });
+
+  it("accepts exactly maxNodes and refuses one more", () => {
+    const loaded = ARCHIVE[0];
+    const nodes = loaded.blueprint.graph.ids.length;
+
+    expect(() => validateBundle(submissionOf(loaded), { maxNodes: nodes })).not.toThrow();
+    expect(() => validateBundle(submissionOf(loaded), { maxNodes: nodes - 1 })).toThrow(
+      LimitExceededError,
+    );
+  });
+
+  /**
+   * `resolveLimits` uses `??` and not `||`, and only a zero can tell them apart. Under `||`
+   * a caller asking for `maxBytes: 0` — refuse everything, which is a coherent thing for
+   * T230 to want — silently receives 2 MiB instead, and every other test still passes.
+   */
+  it("honours a bound of zero rather than treating it as absent", () => {
+    const loaded = ARCHIVE[0];
+    expect(() => validateBundle(submissionOf(loaded), { maxBytes: 0 })).toThrow(
+      LimitExceededError,
+    );
+    expect(() => validateBundle(submissionOf(loaded), { maxCards: 0 })).toThrow(
+      LimitExceededError,
+    );
+    expect(() => validateBundle(submissionOf(loaded), { maxNodes: 0 })).toThrow(
+      LimitExceededError,
+    );
+  });
+
+  /**
+   * D-40-A. Counting keys is O(1) in the values; measuring the submission reads every one of
+   * them. With the byte guard first, a *card-count* refusal opened every card file on the way
+   * to refusing — which is exactly what `guardCards`'s own docstring said it did not do.
+   *
+   * The discriminator is a getter per value: `Object.keys` does not invoke one and the
+   * measurement does. Nothing else in the suite could see this, because every limits case
+   * breached one bound with the others generous, so the two guards were never both live.
+   */
+  it("refuses on card count without reading a single card value", () => {
+    let reads = 0;
+    const cardFiles: Record<string, string> = {};
+    for (let i = 0; i < 6; i += 1) {
+      Object.defineProperty(cardFiles, `cards/probe-${i}@1.0.0.yaml`, {
+        enumerable: true,
+        get() {
+          reads += 1;
+          return "id: probe\nversion: 1.0.0\n";
+        },
+      });
+    }
+
+    expect(() =>
+      validateBundle(
+        {
+          manifest: { slug: "p", title: "P", summary: "s", tags: [], ontologyVersion: "0.1.0" },
+          dot: "digraph g { a }",
+          cardFiles,
+        },
+        { maxCards: 1 },
+      ),
+    ).toThrow(LimitExceededError);
+    expect(reads).toBe(0);
+
+    /* The control, so a zero above is a measurement and not a property of the fixture: an
+       accepted submission does read them. */
+    reads = 0;
+    validateBundle({
+      manifest: { slug: "p", title: "P", summary: "s", tags: [], ontologyVersion: "0.1.0" },
+      dot: "digraph g { a }",
+      cardFiles,
+    });
+    expect(reads).toBeGreaterThan(0);
+  });
+
+  /**
+   * `maxNodes` counts what the DOT **declares**, not what resolved. The two differ exactly
+   * when a bundle is partly carded, which is AC2's case — so a bound between the two numbers
+   * is what separates them, and nothing else in the suite has both numbers live at once.
+   */
+  it("counts declared nodes rather than resolved ones", () => {
+    const loaded = ARCHIVE.find((b) => Object.keys(b.bundle.cardFiles).length > 3);
+    expect(loaded).toBeDefined();
+    if (loaded === undefined) return;
+
+    const kept = Object.keys(loaded.bundle.cardFiles).slice(0, 3);
+    const partial: Record<string, string> = {};
+    for (const name of kept) partial[name] = loaded.bundle.cardFiles[name];
+
+    const declared = loaded.blueprint.graph.ids.length;
+    expect(declared).toBeGreaterThan(3);
+
+    /* A bound above the resolved count and below the declared one. Counting resolved nodes
+       would accept this; counting declared ones refuses it. */
+    expect(() =>
+      validateBundle({ ...submissionOf(loaded), cardFiles: partial }, { maxNodes: declared - 1 }),
+    ).toThrow(LimitExceededError);
+  });
+
+  /**
+   * D-40-17 binds all four entry points, and `documentBytes` is where the other three hold
+   * it. `.length` counts UTF-16 code units, so it under-reports every multi-byte document —
+   * and every ASCII fixture in this suite agrees with both readings.
+   */
+  it("measures a sibling document in bytes rather than in code units", () => {
+    const dot = 'digraph g { a [label="café ☕ 🚀"] }';
+    const codeUnits = dot.length;
+    const bytes = Buffer.byteLength(dot, "utf8");
+    expect(bytes).toBeGreaterThan(codeUnits);
+
+    /* A budget of exactly the code-unit count is below the true size, so a byte measure
+       refuses and a `.length` measure would accept. */
+    expect(() => validateDot(dot, { maxBytes: codeUnits })).toThrow(LimitExceededError);
+    expect(() => validateDot(dot, { maxBytes: bytes })).not.toThrow();
+  });
+});
+
+describe("the value half is OMITTED, not set to undefined", () => {
+  /**
+   * The barrel and the wire disagree about what an `undefined` property is, and only the
+   * barrel can see the difference: `JSON.stringify` drops it, so every route assertion
+   * passes either way, while an in-process caller writing `"card" in result` gets the
+   * opposite answer. T100, T263 and T270 are in-process callers.
+   */
+  it("omits card when the document has an error", () => {
+    const result = validateCardSource("id: 3\nnot: a card\n");
+    expect(result.diagnostics.some((d) => d.severity === "error")).toBe(true);
+    expect("card" in result).toBe(false);
+  });
+
+  it("omits graph when the DOT will not parse", () => {
+    const result = validateDot("digraph {{{ ->->");
+    expect("graph" in result).toBe(false);
+  });
+
+  it("omits terms when the vocabulary is structurally wrong", () => {
+    const result = validateVocabularySource(
+      [
+        "terms:",
+        "  - id: probe/orphan",
+        "    kind: risk-marker",
+        "    label: P",
+        "    description: d",
+        "    broader: probe/nothing",
+        "    since: 0.1.0",
+      ].join("\n"),
+    );
+    expect("terms" in result).toBe(false);
   });
 });
 

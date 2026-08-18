@@ -3557,7 +3557,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | — |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | reverted | — |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round-2 charges D-40-A/B/C fixed and falsified; the ruled byte number now computed by a bounded walk held equal to `JSON.stringify` over 22 serialiser shapes and all nine bundles; 14 mutations 13 CAUGHT 1 equivalent; typecheck/lint/build 0, targeted 79/79, repo guards 11/11 |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
@@ -7630,7 +7630,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
@@ -7777,6 +7777,73 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     `frontline-triage` ships `ontology/extensions.yaml`, so the nine-case sweep carries a ONE-case
     discriminator for `extensions`, and the saturation direction — a module layering the archive's own
     extensions in regardless of its argument — is caught by one test and by nothing in the sweep.
+  - 2026-08-18 implementer, **round 2, all four charges fixed and falsified.** Merged `backend` at
+    `ebe0544` rather than rebasing; both conflicts were `backend.md` and nothing else, resolved by
+    taking base's text everywhere and keeping both sides' Log entries. Diffed the result against
+    `backend:backend.md`: **zero lines present in base are missing here**, which is the check a
+    hand-resolve does not perform.
+  - 2026-08-18 implementer, **D-40-A fixed, and it was a real defect rather than a test gap.** The card
+    guard now runs before the measurement. Measuring a submission necessarily reads every card value,
+    so with the byte guard first a *card-count* refusal opened all six card files on its way to
+    refusing — the opposite of what `guardCards`' own docstring claimed. Falsified with a getter per
+    card value, since `Object.keys` does not invoke one and the walk does: the refusal now reads **0**
+    values, and the control — an accepted submission — reads more than zero, so the zero is a
+    measurement rather than a property of the fixture.
+  - 2026-08-18 implementer, **D-40-B fixed under D-40-20: the number is normative, the procedure is
+    not.** `Buffer.byteLength(JSON.stringify(input))` is replaced by a walk that accumulates and stops
+    the instant the running total passes `maxBytes`. Every step spends at least one byte, so the step
+    count is bounded by the limit rather than by the input graph. A depth-25 diamond — 33 554 432 paths
+    over 26 objects — now refuses as `LimitExceededError` in under 2 s where the formula threw a bare
+    `RangeError`, and depth 30 does the same. **No `seen` set for the size**, deliberately: memoising a
+    shared subtree counts it once where the formula counts it per path, which would change the number
+    for exactly the inputs this was written for.
+  - 2026-08-18 implementer, **the replacement is held by a differential property, not by a docstring.**
+    A different procedure computing a normative number is only safe if the two agree, so
+    `measure.test.ts` asserts equality with `Buffer.byteLength(JSON.stringify(x), "utf8")` over 22
+    shapes chosen for what the serialiser treats specially rather than for what I expected to matter —
+    non-finite numbers, `-0`, exponent form, `undefined` dropped in an object and `null` in an array,
+    functions in both positions, escapes, astral-plane text, multi-byte in a **key**, `toJSON`, an
+    object with no enumerable keys — plus all nine archive submissions. Mutating the object braces to
+    cost nothing reds **23**; dropping `toJSON`, mis-measuring non-finite numbers, and skipping
+    `undefined` in an array each red exactly the corpus case that names them.
+  - 2026-08-18 implementer, **D-40-C fixed, and the class name is OWED CONTRACT rather than settled.**
+    A cycle in `manifest` or in `extensions` now raises `CircularReferenceError` instead of a bare
+    `TypeError`. D-40-20 ruled that the refusal is typed and did not say what type, so the name, the
+    message form and the export are the implementer's proposal: `"<operation>: the submission contains
+    a circular reference."`, sealed like every other published class. **If the blind suite pins another
+    name this is one line.** The `open` set is path-scoped so legitimate sharing is not mistaken for a
+    cycle — mutating `open.delete` into a no-op reds 6, including the archive's own shared terms.
+  - 2026-08-18 implementer, **five of the nine GAPs closed, and three of them describe correct code
+    rather than defects.** `documentBytes` already used `Buffer.byteLength`, `guardNodes` already
+    counted `graph.ids` and `validateCardSource` already omitted its key — what was missing was
+    anything that would notice if they stopped. Each now has a test that reds under the named mutation:
+    a multi-byte DOT where code units and bytes differ, a partly-carded bundle with a bound between the
+    resolved and declared counts, and `"card" in result` rather than `result.card === undefined`, which
+    is the barrel/wire asymmetry — `JSON.stringify` drops an undefined key and `in` does not, so every
+    route assertion passed either way while an in-process caller got the opposite answer. **Every bound
+    now owes both ends**: exactly `maxBytes` is accepted and one byte less refuses, and the same for
+    cards and nodes; a bound of **zero** is honoured rather than read as absent, which is the only
+    input that separates `??` from `||`.
+  - 2026-08-18 implementer, **14 mutations, 13 CAUGHT, 1 equivalent, every prediction stated before the
+    run.** The one zero is `cardFiles` iterated in insertion order, and it is the **same** equivalent
+    mutant the blind author classified independently. Its reason is better than my measurement because
+    it says why rather than that: `loadBundle` returns every array through `sortDiagnostics`, and no two
+    card diagnostics can tie because `location.file` is the card's own key and is part of the sort key.
+    Two parties, two instruments, one conclusion — a fact about the contract's surface rather than a
+    hole in either suite. Adopted into the comment, credited.
+  - 2026-08-18 implementer, **gates.** `typecheck` 0, `lint` 0, `build` 0 leaving no `public/bundles`
+    diff. Targeted **79/79** over four files; the eight repo-wide guards **11/11**, and
+    `error-hygiene` was falsified two-axis rather than trusted — making the fields enumerable makes it
+    name `engine/LimitExceededError` with both renderings, restoring them makes it pass. No full-suite
+    run and no slot request: nothing here touches a database, and the count plus its reconciliation are
+    owed at the closing triple against a base line measured then rather than carried.
+  - 2026-08-18 implementer, **two reporting defects of the round, neither mine to fix.** The four
+    charged items and the nine GAPs reached me only in a message: `backend.md` carries **D-40-20 and
+    D-40-21 and nothing else** from that verdict, so a reader of this file cannot tell what T040 was
+    failed for. That is the same rule the orchestrator applied to my missing round-1 Log entry, one
+    level up. And `ebe0544`'s task-index row replaced the blind author's evidence string — *98 blind
+    tests, 96 red on the absent module, 33 mutations 32/0/1* — with `—`; it survives only on this
+    branch, because the test branch was merged here and never into base.
 
 ### T080, Registry read model and read API
 

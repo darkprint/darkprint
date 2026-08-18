@@ -41,11 +41,11 @@ import type {
 } from "@/lib/core";
 import { ONTOLOGY_EXTENSIONS_FILE, parseOntologyTerms } from "@/lib/content/ontology-file";
 import {
-  byteLengthOf,
   documentBytes,
   guardBytes,
   guardCards,
   guardNodes,
+  measureSubmission,
   resolveLimits,
   type EngineLimits,
 } from "./limits";
@@ -124,9 +124,15 @@ export function validateBundle(
 
   /* AC4, and the ordering is the criterion: both guards run before `loadBundle`, so a
      refusal here is a refusal that did no parsing. The discriminating test is that no parse
-     occurred, not that a refusal came back. */
-  guardBytes("validateBundle", byteLengthOf(submissionOf(input)), bounds);
+     occurred, not that a refusal came back.
+
+     The card guard runs FIRST, and that ordering is load-bearing rather than incidental
+     (D-40-A). Measuring the submission necessarily reads every card value, so with the byte
+     guard first a *card-count* refusal opened every card file on its way to being refused —
+     which is what the comment on `guardCards` claimed it did not do. Counting keys is O(1)
+     in the values, so the cheap total question is asked before the expensive one. */
   guardCards(Object.keys(input.cardFiles).length, bounds);
+  measureSubmission("validateBundle", submissionOf(input), bounds);
 
   const ontology = input.ontology ?? ontologyView(CORE_ONTOLOGY, input.extensions);
   const result = loadBundle(

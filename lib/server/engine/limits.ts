@@ -114,19 +114,139 @@ export function resolveLimits(limits?: EngineLimits): Required<EngineLimits> {
 }
 
 /**
- * The measured size of a whole submission (D-40-17).
+ * A submission carrying a reference cycle, which cannot be measured at all.
  *
- * `Buffer.byteLength(JSON.stringify(...), "utf8")` is the ruled formula, and it is ruled
- * because three readers measuring "the input" got three answers hundreds of bytes apart.
- * `lib/server/**` is not isomorphic, so `Buffer` is available here; `lib/core` remains the
- * place that may not use it.
+ * D-40-C: `JSON.stringify` answers this with a bare `TypeError`, from a module that
+ * publishes exactly one throw. A cycle is a fact about the caller's input and deserves a
+ * refusal that says so, so D-40-20 requires a typed one.
  *
- * The caller passes the submitted halves only. `ValidateBundleInput.ontology` is
- * deliberately not among them — see `submissionOf` in `validate.ts` for why measuring it
- * would charge a caller for the vocabulary it resolves against.
+ * **The class name and message form are the implementer's proposal, not published contract.**
+ * D-40-20 ruled that the refusal is typed and did not say what type. Reported as owed; if
+ * the blind suite pins another name this is the line that changes.
+ *
+ * Unreachable through every route — `request.json()` is `JSON.parse`, which cannot produce
+ * a cycle — and reachable through the barrel, which is what T100, T263 and T270 use.
  */
-export function byteLengthOf(submission: unknown): number {
-  return Buffer.byteLength(JSON.stringify(submission), "utf8");
+export class CircularReferenceError extends Error {
+  constructor(operation: string = "validate") {
+    super(`${operation}: the submission contains a circular reference.`);
+    define(this, "cause", undefined);
+  }
+}
+CircularReferenceError.prototype.name = "CircularReferenceError";
+
+/**
+ * The measured size of a whole submission, and its refusal, fused into one walk (D-40-20).
+ *
+ * `Buffer.byteLength(JSON.stringify(input), "utf8")` is normative as a **number** and not as
+ * a **procedure**: the criterion says which submissions are refused, not how the size is
+ * computed. Running the literal formula was the defect — it materialises the whole
+ * submission to decide it is too large, so a depth-25 diamond over 26 objects threw a bare
+ * `RangeError`, and below that it allocated up to 386 MB of transient heap to conclude that
+ * a submission exceeds 2 MB. The limit performed the exhaustion the limit exists to prevent.
+ *
+ * This walk accumulates and stops the instant the running total passes `maxBytes`. Every
+ * step adds at least one byte — a brace, a bracket, a comma, a quote — so the number of
+ * steps is bounded by the limit rather than by the shape of the input graph, and the cost
+ * becomes O(`maxBytes`) whatever the caller sends.
+ *
+ * **The number is preserved exactly for every submission that is accepted.** Past the bound
+ * only the comparison is ever needed, which is why bounding it costs the contract nothing;
+ * below the bound this returns the same integer the formula does, and
+ * `measure.test.ts` holds that as a differential property rather than as an assurance.
+ *
+ * **No `seen` set for the size**, deliberately: memoising a shared subtree would count it
+ * once where `JSON.stringify` counts it per path, and that changes the number for exactly
+ * the inputs this was written for. The `open` set below is path-scoped and detects a
+ * **cycle**, which is a different question and the one that has no answer at all.
+ */
+export function measureSubmission(
+  operation: string,
+  submission: unknown,
+  limits: Required<EngineLimits>,
+): number {
+  const budget = { total: 0 };
+  const spend = (bytes: number): void => {
+    budget.total += bytes;
+    if (budget.total > limits.maxBytes) {
+      refuse(operation, "the submission", limits.maxBytes, "bytes");
+    }
+  };
+  measure(submission, spend, new Set<object>(), operation);
+  return budget.total;
+}
+
+/** `JSON.stringify`'s own byte accounting, one value at a time. */
+function measure(
+  value: unknown,
+  spend: (bytes: number) => void,
+  open: Set<object>,
+  operation: string,
+): void {
+  /* `toJSON` first, exactly as `JSON.stringify` does, or a `Date` on a manifest would be
+     measured as an object with no keys where the formula measures a quoted string. */
+  const resolved = unwrap(value);
+
+  if (resolved === null) return spend(4);
+  const kind = typeof resolved;
+  if (kind === "string") return spend(Buffer.byteLength(JSON.stringify(resolved), "utf8"));
+  if (kind === "number") {
+    /* A non-finite number serialises as `null`, not as `NaN`. */
+    return spend(Number.isFinite(resolved) ? String(resolved).length : 4);
+  }
+  if (kind === "boolean") return spend(resolved === true ? 4 : 5);
+  if (kind !== "object") {
+    /* `bigint` throws out of `JSON.stringify` and still does; `undefined`, functions and
+       symbols never reach here, because both containers below handle them in the two
+       different ways the serialiser does. */
+    return spend(Buffer.byteLength(JSON.stringify(resolved) ?? "", "utf8"));
+  }
+
+  const container = resolved as object;
+  if (open.has(container)) throw new CircularReferenceError(operation);
+  open.add(container);
+  try {
+    if (Array.isArray(container)) {
+      spend(2);
+      for (let i = 0; i < container.length; i += 1) {
+        if (i > 0) spend(1);
+        const entry = container[i] as unknown;
+        /* In an array these three serialise as `null`; in an object they are dropped. */
+        if (entry === undefined || typeof entry === "function" || typeof entry === "symbol") {
+          spend(4);
+        } else {
+          measure(entry, spend, open, operation);
+        }
+      }
+      return;
+    }
+
+    spend(2);
+    let written = 0;
+    for (const key of Object.keys(container)) {
+      const entry = (container as Record<string, unknown>)[key];
+      if (entry === undefined || typeof entry === "function" || typeof entry === "symbol") {
+        continue;
+      }
+      if (written > 0) spend(1);
+      written += 1;
+      spend(Buffer.byteLength(JSON.stringify(key), "utf8") + 1);
+      measure(entry, spend, open, operation);
+    }
+  } finally {
+    /* Path-scoped: leaving the container makes it legal again on a different path, which is
+       what keeps legitimate shared substructure from reading as a cycle. */
+    open.delete(container);
+  }
+}
+
+/** `JSON.stringify` calls `toJSON` before looking at anything else. So does this. */
+function unwrap(value: unknown): unknown {
+  if (value === null || value === undefined) return value;
+  const candidate = (value as { toJSON?: unknown }).toJSON;
+  return typeof candidate === "function"
+    ? (candidate as () => unknown).call(value)
+    : value;
 }
 
 /** The measured size of one document, for the three siblings, which are handed bytes. */
