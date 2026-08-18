@@ -44,6 +44,13 @@
    ASSERTION and is to be treated as one.
    ============================================================ */
 
+import { readdirSync, type Dirent } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+import { getRouteMatcher } from "next/dist/shared/lib/router/utils/route-matcher.js";
+import { getRouteRegex } from "next/dist/shared/lib/router/utils/route-regex.js";
+
 import { sortDiagnostics, type Diagnostic, type Severity } from "@/lib/core";
 
 export type Namespace = Record<string, unknown>;
@@ -121,6 +128,24 @@ export const PUBLISHED_LIMIT_ERROR =
   "new LimitExceededError(operation: string, what: string, limit: number, units: string)   " +
   "// fields non-enumerable, every parameter optional at runtime (D-40-15)";
 
+/**
+ * D-40-22, the name D-40-20 left owed.
+ *
+ * `seen` is the right instrument for a cycle and the wrong one for the size, so the bounded walk
+ * that measures a submission meets a cycle and must refuse it as a TYPE rather than let
+ * `JSON.stringify` raise `TypeError: Converting circular structure to JSON`. A `TypeError` reaching
+ * a caller is untyped, unbranchable, and — as the adversary recorded — invisible to
+ * `tests/error-hygiene.test.ts`, whose domain is classes a barrel exports.
+ */
+export const PUBLISHED_CIRCULAR_ERROR =
+  "class CircularReferenceError extends Error   " +
+  '// "<operation>: the submission contains a circular reference."';
+
+/** Written out as a LITERAL, never built from anything the module exports. */
+export function circularMessage(operation: string): string {
+  return `${operation}: the submission contains a circular reference.`;
+}
+
 /** D-40-07: absent `limits` means the DEFAULT applies, not unlimited, and the default is published. */
 export const PUBLISHED_DEFAULT_LIMITS =
   "const DEFAULT_ENGINE_LIMITS: EngineLimits   // chosen so all nine archive bundles pass";
@@ -175,6 +200,25 @@ export async function bindLimitError(): Promise<new (...args: never[]) => Error>
       `${ENGINE}'s \`LimitExceededError.prototype\` is not an Error. The published form is a ` +
         `throw, and a caller that cannot \`instanceof\` it cannot tell this refusal from any ` +
         `other. Removal changes WHETHER the caller gets an error; only identity says WHICH.`,
+    );
+  }
+  return value as new (...args: never[]) => Error;
+}
+
+export async function bindCircularError(): Promise<new (...args: never[]) => Error> {
+  const mod = await loadEngine();
+  const value = requireFrom(mod, "CircularReferenceError", PUBLISHED_CIRCULAR_ERROR);
+  if (typeof value !== "function") {
+    throw new Error(
+      `${ENGINE} exports \`CircularReferenceError\` as ${describe_(value)}; D-40-22 publishes it ` +
+        `as a class: ${PUBLISHED_CIRCULAR_ERROR}`,
+    );
+  }
+  const proto = (value as { prototype?: unknown }).prototype;
+  if (!(proto instanceof Error)) {
+    throw new Error(
+      `${ENGINE}'s \`CircularReferenceError.prototype\` is not an Error. D-40-20 ruled the cycle ` +
+        `refusal TYPED; a caller that cannot \`instanceof\` it cannot tell a cycle from a limit.`,
     );
   }
   return value as new (...args: never[]) => Error;
@@ -301,6 +345,14 @@ export function siblingDiagnostics(
   const r = value as Record<string, unknown>;
   const diagnostics = asDiagnostics(r.diagnostics, `${where}.diagnostics`);
 
+  if (Object.prototype.hasOwnProperty.call(r, valueKey) && r[valueKey] === undefined) {
+    throw new Error(
+      `${where} carries \`${valueKey}\` as an own property whose value is \`undefined\`. The ` +
+        `published shape is \`{ ${valueKey}?, diagnostics }\`, and an absent optional is an ` +
+        `omitted key — the convention \`lib/core/diagnostics.ts\` states for exactly this reason. ` +
+        `\`JSON.stringify\` drops it, so no route test could ever see this one.`,
+    );
+  }
   const extra = Object.keys(r).filter((k) => k !== "diagnostics" && k !== valueKey);
   if (extra.length > 0) {
     throw new Error(
@@ -351,6 +403,23 @@ export function asLoadBundleResult(value: unknown, where: string): LoadBundleRes
   const r = value as Record<string, unknown>;
   asDiagnostics(r.diagnostics, `${where}.diagnostics`);
 
+  /* **An absent optional is an ABSENT KEY, not a key set to `undefined`.**
+     `lib/core/diagnostics.ts` states the convention and the reason in its own words: "Optional
+     keys are omitted rather than set to `undefined` so diagnostics compare and serialize
+     identically whether or not the caller passed `opts`." The two are indistinguishable through
+     `JSON.stringify`, which drops an `undefined` value — so a route payload cannot tell them
+     apart and only an in-process caller can. That is precisely why a blind suite has to: AC5's
+     "identical output" is read off `Object.keys` by anyone comparing two answers, and T100
+     consumes this module in-process. */
+  for (const key of ["blueprint", "analysis"]) {
+    if (Object.prototype.hasOwnProperty.call(r, key) && r[key] === undefined) {
+      throw new Error(
+        `${where} carries \`${key}\` as an own property whose value is \`undefined\`. An absent ` +
+          `optional is an omitted key — \`Object.keys\` and a spread both see the difference, and ` +
+          `\`JSON.stringify\` does not, so nothing at the wire would ever report this.`,
+      );
+    }
+  }
   const hasBlueprint = r.blueprint !== undefined;
   const hasAnalysis = r.analysis !== undefined;
   if (hasBlueprint !== hasAnalysis) {
@@ -606,4 +675,273 @@ export function codesOf(diagnostics: readonly Diagnostic[]): string[] {
 
 export function errorsOf(diagnostics: readonly Diagnostic[]): Diagnostic[] {
   return diagnostics.filter((d) => d.severity === "error");
+}
+
+/* ============================================================
+   The four published routes
+
+       POST /api/validate/bundle    { dot, cardFiles, manifest, vocabulary?: string }
+                                    -> 200 LoadBundleResult              | 400 413
+       POST /api/validate/dot       { dot }     -> 200 { graph?, diagnostics }   | 400 413
+       POST /api/validate/card      { source }  -> 200 { card?, diagnostics }    | 400 413
+       POST /api/validate/ontology  { source }  -> 200 { terms?, diagnostics }   | 400 413
+
+   ── discovered, never guessed ──
+   The route table is built by WALKING `app/api/validate/**` and
+   dispatched through Next's own matcher, so a red says "this URL is
+   unserved" rather than "a file is missing from where I looked".
+   The URL is the contract's; the file layout is the
+   implementation's, and a route shadowed by a sibling dispatches
+   here exactly as it would in production.
+
+   It also keeps the specifier out of `tsc`: nothing in this suite
+   names `@/app/api/validate/...`, so the routes' absence is a
+   failed criterion at runtime rather than a compile error that
+   would stop every other file being checked.
+   ============================================================ */
+
+export const ROUTES = {
+  bundle: { url: "POST /api/validate/bundle", path: "/api/validate/bundle" },
+  dot: { url: "POST /api/validate/dot", path: "/api/validate/dot" },
+  card: { url: "POST /api/validate/card", path: "/api/validate/card" },
+  ontology: { url: "POST /api/validate/ontology", path: "/api/validate/ontology" },
+} as const;
+
+export type RouteName = keyof typeof ROUTES;
+export const ROUTE_NAMES = Object.keys(ROUTES) as RouteName[];
+
+/** The one problem type the contract publishes by URI. */
+export const LIMIT_PROBLEM_TYPE = "https://darkprint.io/problems/limit-exceeded";
+export const PROBLEM_CONTENT_TYPE = "application/problem+json";
+
+interface DiscoveredRoute {
+  pattern: string;
+  file: string;
+}
+
+const ROUTE_FILE = /^route\.(ts|tsx|js|mjs)$/;
+const VALIDATE_ROOT = fileURLToPath(new URL("../../../app/api/validate/", import.meta.url));
+
+let table: DiscoveredRoute[] | undefined;
+
+function walk(dir: string, segments: string[], out: DiscoveredRoute[]): void {
+  let entries: Dirent[];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return; // a tree the implementation has not created yet
+  }
+  for (const entry of entries) {
+    if (entry.isDirectory()) walk(join(dir, entry.name), [...segments, entry.name], out);
+    else if (ROUTE_FILE.test(entry.name)) {
+      out.push({ pattern: `/api/validate/${segments.join("/")}`, file: join(dir, entry.name) });
+    }
+  }
+}
+
+export function routeTable(): DiscoveredRoute[] {
+  if (table !== undefined) return table;
+  const found: DiscoveredRoute[] = [];
+  walk(VALIDATE_ROOT, [], found);
+  if (found.length === 0) {
+    throw new Error(
+      `No route file exists under \`app/api/validate/\`.\n` +
+        `  The published block names four: ${ROUTE_NAMES.map((n) => ROUTES[n].url).join(", ")}.\n` +
+        `  \`app/api/validate/**\` is in T040's \`Owns\` set, so this is a failed acceptance ` +
+        `criterion rather than a test looking in the wrong place — the tree is walked, not guessed.`,
+    );
+  }
+  table = found;
+  return table;
+}
+
+function matchRoute(path: string): { route: DiscoveredRoute; params: Record<string, unknown> } {
+  const routes = routeTable();
+  for (const route of routes) {
+    const params = getRouteMatcher(getRouteRegex(route.pattern))(path);
+    if (params !== false) return { route, params };
+  }
+  throw new Error(
+    `No published route matches \`${path}\`.\n` +
+      `  Discovered patterns: ${routes.map((r) => r.pattern).join(", ")}\n` +
+      `  The contract publishes URLs and the file layout is the implementation's, so this says ` +
+      `the URL is unserved rather than that a file is missing from a guessed path.`,
+  );
+}
+
+/** Which published pattern serves a URL, asked without importing a module. */
+export function routePatternFor(path: string): string {
+  return matchRoute(path).route.pattern;
+}
+
+export interface RouteAnswer {
+  status: number;
+  contentType: string | null;
+  /** The raw text, not the parsed object: key order and an extra member are differences too. */
+  body: string;
+}
+
+/**
+ * Drive a published URL the way a caller does.
+ *
+ * `body` is sent as raw text so a body that is not JSON at all is a case this can express —
+ * which is the one the "swallows every throw" mutation is caught by.
+ */
+export async function callRoute(
+  name: RouteName,
+  body: string,
+  init?: { contentType?: string | null },
+): Promise<Response> {
+  const spec = ROUTES[name];
+  const { route, params } = matchRoute(spec.path);
+  let mod: Namespace;
+  try {
+    mod = (await import(/* @vite-ignore */ pathToFileURL(route.file).href)) as Namespace;
+  } catch (cause) {
+    throw new Error(
+      `\`${route.pattern}\` — the route serving \`${spec.path}\` — does not load.\n` +
+        `  Driving the published URL \`${spec.url}\`.`,
+      { cause },
+    );
+  }
+  const post = mod.POST;
+  if (typeof post !== "function") {
+    throw new Error(
+      `\`${route.pattern}\` exports no \`POST\` (it has: ` +
+        `${Object.keys(mod).sort().join(", ") || "(nothing)"}). The published block names the ` +
+        `method: ${spec.url}`,
+    );
+  }
+  const headers: Record<string, string> = {};
+  const contentType = init?.contentType === undefined ? "application/json" : init.contentType;
+  if (contentType !== null) headers["content-type"] = contentType;
+
+  const request = new Request(`https://darkprint.test${spec.path}`, {
+    method: "POST",
+    headers,
+    body,
+  });
+  const answered = await (post as UnknownFn)(request, { params: Promise.resolve(params) });
+  if (!(answered instanceof Response)) {
+    throw new Error(
+      `\`${spec.url}\` answered ${describe_(answered)}; a route handler returns a Response.`,
+    );
+  }
+  return answered;
+}
+
+export async function answerOf(
+  name: RouteName,
+  body: unknown,
+  init?: { raw?: string; contentType?: string | null },
+): Promise<RouteAnswer> {
+  const text = init?.raw ?? JSON.stringify(body);
+  const response = await callRoute(name, text, { contentType: init?.contentType });
+  return {
+    status: response.status,
+    contentType: response.headers.get("content-type"),
+    body: await response.text(),
+  };
+}
+
+/** The 200 payload, held to being JSON and to being what the module would have answered. */
+export function okPayloadOf(answer: RouteAnswer, where: string): unknown {
+  if (answer.status !== 200) {
+    throw new Error(
+      `${where} answered ${answer.status}.\n` +
+        `  B-03: "Responses carry data plus diagnostics at 200 — a bundle resolving with errors ` +
+        `is an answer, not a failure." A content diagnostic is never a transport status.\n` +
+        `  body: ${answer.body.slice(0, 400)}`,
+    );
+  }
+  if (answer.contentType === null || !answer.contentType.includes("application/json")) {
+    throw new Error(
+      `${where} answered 200 with content-type ${JSON.stringify(answer.contentType)}; a payload ` +
+        `is \`application/json\`, and \`${PROBLEM_CONTENT_TYPE}\` is for transport refusals only.`,
+    );
+  }
+  try {
+    return JSON.parse(answer.body) as unknown;
+  } catch (cause) {
+    throw new Error(`${where} answered a body that is not JSON: ${answer.body.slice(0, 200)}`, {
+      cause,
+    });
+  }
+}
+
+/**
+ * An RFC 9457 problem, checked as a whole rather than by status alone.
+ *
+ * `instance` is the member that has already been got wrong once in this repository — T000's
+ * D-02 was every caller being asked to remember an `instance` string and none doing so, which
+ * `Response.json` then dropped silently. A hand-rolled problem body reproduces it exactly.
+ */
+export function problemOf(
+  answer: RouteAnswer,
+  expected: { status: number; type?: string; path: string },
+  where: string,
+): Record<string, unknown> {
+  if (answer.status !== expected.status) {
+    throw new Error(
+      `${where} answered ${answer.status}, expected ${expected.status}.\n` +
+        `  body: ${answer.body.slice(0, 400)}`,
+    );
+  }
+  if (answer.contentType === null || !answer.contentType.includes(PROBLEM_CONTENT_TYPE)) {
+    throw new Error(
+      `${where} answered ${answer.status} with content-type ${JSON.stringify(answer.contentType)}; ` +
+        `B-03 makes transport failures \`${PROBLEM_CONTENT_TYPE}\`. A problem body served as ` +
+        `\`application/json\` is one a caller's error handling will not recognise.`,
+    );
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(answer.body) as unknown;
+  } catch (cause) {
+    throw new Error(`${where} answered a body that is not JSON: ${answer.body.slice(0, 200)}`, {
+      cause,
+    });
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error(`${where} answered ${describe_(parsed)} where a problem object is required.`);
+  }
+  const p = parsed as Record<string, unknown>;
+
+  for (const [member, kind] of [
+    ["type", "string"],
+    ["title", "string"],
+    ["status", "number"],
+    ["detail", "string"],
+    ["instance", "string"],
+  ] as const) {
+    if (typeof p[member] !== kind || (kind === "string" && p[member] === "")) {
+      throw new Error(
+        `${where}: \`${member}\` is ${JSON.stringify(p[member])}. T000's contract publishes the ` +
+          `five RFC 9457 members — \`type\`, \`title\`, \`status\`, \`detail\`, \`instance\` — and ` +
+          `a member that is absent or empty is one a caller reads as nothing went wrong there.`,
+      );
+    }
+  }
+  if (p.status !== expected.status) {
+    throw new Error(
+      `${where}: the body says \`status\` ${JSON.stringify(p.status)} while the response is ` +
+        `${answer.status}. RFC 9457 §3.1: the member and the status code are the same fact.`,
+    );
+  }
+  if (p.instance !== expected.path) {
+    throw new Error(
+      `${where}: \`instance\` is ${JSON.stringify(p.instance)}, expected ${JSON.stringify(expected.path)}. ` +
+        `RFC 9457 §3.1 makes it the identifier of THIS occurrence, and T000's \`problem()\` derives ` +
+        `it from the request path for exactly the reason D-02 records — every caller asked to ` +
+        `remember one, none doing so, and \`Response.json\` dropping \`undefined\` in silence.`,
+    );
+  }
+  if (expected.type !== undefined && p.type !== expected.type) {
+    throw new Error(
+      `${where}: \`type\` is ${JSON.stringify(p.type)}, expected ${JSON.stringify(expected.type)}. ` +
+        `The URI is what a caller branches on; a status code alone cannot separate two refusals ` +
+        `that share one.`,
+    );
+  }
+  return p;
 }

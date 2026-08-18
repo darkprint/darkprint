@@ -8386,7 +8386,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **D-40-17, `input` byte length is `Buffer.byteLength(JSON.stringify(input), "utf8")`.** Three readings differed by hundreds of bytes on a real bundle. `lib/server/**` is not isomorphic, so `Buffer` is available here; `lib/core` remains the place that may not use it.
 
-  **`DEFAULT_ENGINE_LIMITS` is asserted as a PROPERTY, not as three numbers** — every archive bundle passes with `limits` omitted, and each default exceeds the archive's maximum. Measured by T040's blind author: largest submission **17 963 bytes**, most cards **9**, most nodes **9**. A test pinning the constant moves with the constant and stops being a bound, which is D-70-17's note about `MAX_NAME_LENGTH` applied here.
+  **`DEFAULT_ENGINE_LIMITS` is asserted as a PROPERTY, not as three numbers** — every archive bundle passes with `limits` omitted, and each default exceeds the archive's maximum. Measured by T040's blind author: largest submission **17 947 bytes** (`grounded-research-desk`), most cards **9**, most nodes **9** (both `checkpoint-resume-runner`). **The 17 963 first published here was wrong by 16 bytes and the cause is reproducible** — see the Log entry of 2026-08-18 correcting it. A test pinning the constant moves with the constant and stops being a bound, which is D-70-17's note about `MAX_NAME_LENGTH` applied here.
 
 - **Acceptance criteria:** (1) the nine archive bundles return the diagnostics, autonomy class and security level the build computes today; (2) **D-40-01, ruled (a): the verdict stays the caller's.** `bundleProgress` lives in `components/upload/progress.ts (**D-40-01(a): Forbidden to T040; the verdict stays the caller's and no T040 return type carries one**)`, which is Forbidden to T040 and re-exported from nowhere, and `LoadBundleResult` has no field that can carry a verdict. Reimplementing it would be the second opinion `progress.ts`'s own header exists to prevent. So the criterion is a property of what **is** returned: a bundle with three of eight nodes carded returns an **analysis over the three** — `blueprint.nodes.length === 3`, `blueprint.graph.ids.length === 8`, every error in `AWAITING_CARD` or a shadow of it, and an autonomy class that differs from the whole bundle's, not an error; (3) a DOT that fails to parse returns a diagnostic carrying line and column; (4) an oversized submission is refused before parsing, with the limit named; (5) identical bytes return identical output including diagnostic order; (6) a card naming a term the supplied vocabulary lacks returns `card/unknown-term`, never silence.
 - **Out of scope:** persistence, publishing, the archive's own re-validation sweep.
@@ -8530,6 +8530,89 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     skipped and the rest failed on a missing connection string: no connection was opened and no scratch
     database can exist. No contention was possible either, at 10 s of import-time failures. Recorded
     because the rule is about what I ran, not about what it happened to cost.
+  - 2026-08-18 test author, **round 2: the route half, which round 1 named and did not close.**
+    Every one of round 1's 98 tests bound the module — no `Response`, no `POST`, no status code
+    anywhere under `tests/server/t040/**`. I reported the gap in my own handback and offered the
+    round; the round closed without it, and four paths, four request shapes and three status codes
+    were left held by the implementer's colocated file alone. `routes.test.ts` is 35 tests over the
+    four published URLs. Suite is now **133**: in this worktree `127 failed | 6 passed`, every red
+    either `@/lib/server/engine does not load` or ``No route file exists under `app/api/validate/` ``,
+    both naming the failed criterion. **All 6 green are module-independent by construction** — the
+    README oracle's own parse, the one-bundle-carries-a-vocabulary count, and four floor assertions
+    over this suite's own bad-body case list — and are reported as such rather than as coverage.
+    `lint` 0; `tsc --noEmit` still exactly 2, both the absent module.
+  - 2026-08-18 test author: **the routes are DISCOVERED, not guessed.** `app/api/validate/**` is
+    walked and dispatched through Next's own matcher, following T070's idiom, so a red says "this
+    URL is unserved" rather than "a file is missing from where I looked" — the file layout is the
+    implementation's and the URL is the contract's. It also keeps `@/app/api/validate/...` out of
+    `tsc` entirely, so the routes' absence is a runtime criterion rather than a compile error that
+    would stop every other file being checked.
+  - 2026-08-18 test author: **21 route mutations against a reference carrying all four routes:
+    18 CAUGHT, 0 MISS, 3 GAP.** The adversary's six were taken as the specification and not as its
+    answers — tests written from the contract, scored against the list afterwards. Five of the six
+    are CAUGHT. **The sixth, `withLimits` swallowing every throw, reds nothing and is an equivalent
+    mutant against a CONFORMING route**, measured rather than assumed: a body that fails a shape
+    check is refused *by return* and not by a throw, and `lib/core`'s `loadBundle` is documented
+    "Never throws", so nothing but a limit ever reaches the catch. It is a real defect only in
+    combination with a route that does not validate — so that half is now driven directly: a route
+    stripped of all three body checks reds **7**, and a body that is both malformed and oversized
+    must answer 400 rather than 413, which is the ordering a request can actually exercise.
+    The other two GAPs are the same species and are classified, not counted: removing the
+    array guard on the body itself, and treating an unparseable body as `{}`, both still end in 400
+    through the per-field checks, so neither is distinguishable through the published surface.
+  - 2026-08-18 test author, **correction to round 1's GAP argument, from T040's adversary and
+    accepted.** I wrote that no two card diagnostics *can* tie because `location.file` is in the
+    sort key. Too strong: `cmpDiagnostic` sorts on severity, file, line, column and code —
+    **`message` is not in the key** — and `sortDiagnostics` falls back to input order on a full
+    tie. The tie is ruled out only while every card-derived diagnostic carries a location, which is
+    a property of today's `lib/core` and not a theorem. A witness was hunted across the nine
+    bundles, an under-carded bundle, unparseable files, duplicate ids, empty documents and unknown
+    terms and none was found. **Equivalent through the published surface, sampled rather than
+    proved** — and the verdict stands while the reason is weaker than I claimed. The comment in
+    `determinism.test.ts` carries the corrected argument; labelling it a theorem is what would have
+    retired the next sweep.
+  - 2026-08-18 test author, **correcting a number of mine that the adversary could not reproduce, and
+    it is reproducible now.** It charged *"the blind author's 17 963 reproduces under no reading and is
+    unresolved."* It was right and the cause is mine: my throwaway probe assembled each bundle as
+    `{ ...bundle, vocabulary: terms }` and stringified **that**, so every bundle carrying no extensions
+    still gained the sixteen bytes of `,"vocabulary":[]` — a key no submission has. **17 947 + 16 =
+    17 963**, measured both ways just now. The archive maximum is **17 947** (`grounded-research-desk`),
+    which is the adversary's figure exactly. The published block is corrected above.
+    **The shipped fixture was never wrong**: `archiveMaxima()` recomputes from `archiveCases()`, whose
+    inputs carry `extensions` only for the one bundle that ships it, and it returns
+    `{"bytes":17947,"cards":9,"nodes":9}` today. So only the number I *reported* was false — a false
+    figure supporting a true conclusion, corroborated by everything around it, which is the shape this
+    file says is hardest to catch. It reached a committed report and this document, and what caught it
+    was a second party recomputing rather than any re-reading of mine.
+  - 2026-08-18 test author, **round 3, on D-40-22 and the three unclaimed GAPs.** 14 tests, suite now
+    **147**. `CircularReferenceError` is reachable **through the barrel and not through the wire** —
+    `request.json()` cannot produce a cycle — so a round scoped to routes would have left the class
+    D-40-20 ruled owed with no blind witness at all, on a surface T100, T263 and T270 consume
+    in-process. Held on both fields the adversary charged, `manifest` and `extensions`, because a guard
+    installed on one is the narrow-worked-example shape; pinned by class, by the published message
+    literal, and against `TypeError`, which satisfies every hygiene clause and is therefore invisible to
+    `tests/error-hygiene.test.ts` by construction. **And the pair that keeps the guard honest**: shared
+    substructure must still be ACCEPTED, since D-40-20 forbids a `seen` set for the size — a global set
+    reds that test and nothing else.
+    The three GAPs that described correct code are now held blind: UTF-8 bytes rather than code units
+    (`é` × 20 is 20 units and 40 bytes, refused at 30 and accepted at 50, on all three siblings);
+    `maxNodes` counting declared rather than resolved nodes (an uncarded eight-node bundle, where a
+    resolved count is 0 and admits it); and an absent optional being an **omitted key** rather than one
+    set to `undefined` — which `JSON.stringify` drops, so no route test could ever see it and only an
+    in-process caller can. Two more from the FAIL's GAP list: `maxCards`/`maxNodes` pinned at both ends,
+    and `0` on each axis being a real limit rather than the `||`-shaped fallback.
+  - 2026-08-18 test author: **33 mutations across the routes and the new material: 29 CAUGHT, 0 MISS,
+    4 GAP**, every prediction named before the run. All four GAPs are equivalents and are classified
+    rather than counted — `withLimits` widened to a catch-all (unreachable against a route that refuses
+    by *return*), the body-level array guard and the unparseable-body guard (both still 400 through the
+    per-field checks), and `submissionOf` including `ontology`, **which was predicted GAP in advance
+    because D-40-21 states it**: no route can set that field, so every wire call gives the same number
+    under either reading. A predicted zero is the only kind worth reporting.
+    One process note against myself: six route anchors came back `PATCH-MISS` on the first sweep because
+    I had re-emitted the reference's `wire.ts` in a different shape after losing the worktree. A
+    PATCH-MISS is not a measurement, so the shape was restored and **the whole sweep re-run from one
+    tree** rather than the six results being carried over from the previous one. The reference is now
+    archived beside the harness so it cannot be lost a second time.
 
 ### T080, Registry read model and read API
 

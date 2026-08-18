@@ -64,9 +64,12 @@ import {
   LEAK_SENTINEL,
   asLoadBundleResult,
   bind,
+  bindCircularError,
   bindDefaultLimits,
   bindLimitError,
+  circularMessage,
   expectLimitRefusal,
+  expectSealedError,
   returning,
 } from "./contract";
 import {
@@ -74,6 +77,7 @@ import {
   archiveCases,
   archiveMaxima,
   caseFor,
+  keepCards,
   sentinelInput,
   type EngineInput,
 } from "./fixtures";
@@ -497,4 +501,248 @@ describe("D-40-17: the byte measure is Buffer.byteLength(JSON.stringify(input))"
       "500 bytes added to the manifest push the same bundle over the same limit",
     ).toBeDefined();
   });
+});
+
+/* ============================================================
+   D-40-22 — the cycle refusal, which no route test can reach
+
+   `request.json()` cannot produce a circular structure, so this
+   class is reachable **through the barrel and not through the
+   wire** — and T100, T263 and T270 all consume the barrel
+   in-process. A round scoped to routes would have left it with no
+   blind witness at all.
+
+   D-40-20 ruled the refusal typed and did not say what type;
+   D-40-22 names it, taking the implementer's proposal verbatim.
+   The implementer flagged in its module, its Log and its handback
+   that the name was its own rather than contract — a published
+   surface with two holders where only one had it — which is what
+   stopped it being something I had to guess.
+   ============================================================ */
+
+describe("D-40-22: a circular submission is a CircularReferenceError, not a TypeError", () => {
+  /* Both fields the adversary charged, because they reach the walk by different routes:
+     `manifest` is walked as part of the submission, `extensions` as the caller-built array the
+     published block says this module walks. A guard installed on one and not the other is the
+     "ruling implemented as narrowly as its worked example" shape, three times charged in this run. */
+  for (const field of ["manifest", "extensions"] as const) {
+    it(`refuses a circular \`${field}\` with the published message`, async () => {
+      const validateBundle = await bind("validateBundle");
+      const CircularReferenceError = await bindCircularError();
+      const { input } = caseFor(EIGHT_NODE_BUNDLE);
+
+      const cyclic: Record<string, unknown> = { name: "loop" };
+      cyclic.self = cyclic;
+      const submission =
+        field === "manifest"
+          ? { ...input, manifest: { ...input.manifest, extra: cyclic } as never }
+          : { ...input, extensions: [cyclic] as never };
+
+      const err = thrownBy(() => validateBundle(submission));
+      expect(err, `a circular \`${field}\` is refused rather than answered`).toBeDefined();
+
+      /* Identity first. `TypeError: Converting circular structure to JSON` is what an unguarded
+         `JSON.stringify` raises, and it satisfies every hygiene clause — `Object.keys` empty,
+         `JSON.stringify` `"{}"`, `stack` retained — so `tests/error-hygiene.test.ts` is blind to
+         it by construction. Nothing but a class pin separates the two. */
+      expect(err).toBeInstanceOf(CircularReferenceError);
+      expect(err).not.toBeInstanceOf(TypeError);
+      expect((err as Error).message).toBe(circularMessage("validateBundle"));
+      expectSealedError(err, `validateBundle(circular ${field})`);
+    });
+  }
+
+  /* A cycle is not a limit, and the two throws must stay tellable apart: a caller shown 413 for a
+     circular structure is told to send less of something whose size was never the problem. */
+  it("is a different class from a limit refusal", async () => {
+    const validateBundle = await bind("validateBundle");
+    const CircularReferenceError = await bindCircularError();
+    const LimitExceededError = await bindLimitError();
+    const { input } = caseFor(EIGHT_NODE_BUNDLE);
+
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = cyclic;
+
+    const circular = thrownBy(() =>
+      validateBundle({ ...input, manifest: { ...input.manifest, extra: cyclic } as never }),
+    );
+    const oversized = thrownBy(() => validateBundle(input, { ...GENEROUS, maxBytes: 8 }));
+
+    expect(circular).not.toBeInstanceOf(LimitExceededError);
+    expect(oversized).not.toBeInstanceOf(CircularReferenceError);
+  });
+
+  /* **Shared substructure is not a cycle**, and this is the pair that keeps the guard from being
+     "refuse anything the walk sees twice". D-40-20 is explicit that a `seen` set must NOT be used
+     for the size, because it would change the number for shared substructure — so a submission
+     whose manifest holds one object under two keys is legal, is measured with that object counted
+     twice, and must be ANSWERED. A guard that refused it would be conforming to nothing. */
+  it("accepts shared substructure, which a `seen` set would refuse", async () => {
+    const validateBundle = await bind("validateBundle");
+    const { input } = caseFor(EIGHT_NODE_BUNDLE);
+
+    const shared = { note: "reached by two paths" };
+    asLoadBundleResult(
+      returning(
+        () => validateBundle({ ...input, manifest: { ...input.manifest, a: shared, b: shared } as never }),
+        "validateBundle(shared substructure)",
+      ),
+      "validateBundle(shared substructure)",
+    );
+  });
+});
+
+/* ============================================================
+   The three GAPs that described correct code
+
+   Each is a behaviour the adversary found already right and held
+   by nothing — so a regression in any of them would have shipped
+   silently. They were offered to this round as unclaimed and are
+   taken here; the implementer's own tests for them are colocated,
+   and the whole warrant of this arrangement is that a behaviour
+   held only by the author's tests was written and checked by one
+   party from one reading.
+   ============================================================ */
+
+describe("a document's size is measured in BYTES, not in code units", () => {
+  /* D-40-17 measures `Buffer.byteLength(..., "utf8")` and the refusal says "bytes". The two
+     readings diverge the moment a submission is not ASCII, and every fixture in this suite was
+     ASCII — so `.length` and the byte count agreed everywhere and the distinction was untested.
+
+     `é` is one UTF-16 code unit and two UTF-8 bytes, so 20 of them are 20 units and 40 bytes.
+     A limit of 30 sits between the readings: bytes refuse, code units accept. The pair is what
+     makes it a measurement rather than an assertion that something was refused. */
+  for (const name of ["validateDot", "validateCardSource", "validateVocabularySource"] as const) {
+    it(`${name} counts UTF-8 bytes`, async () => {
+      const fn = await bind(name);
+      const source = "é".repeat(20);
+      expect(source.length, "20 code units").toBe(20);
+      expect(Buffer.byteLength(source, "utf8"), "40 bytes").toBe(40);
+
+      const err = thrownBy(() => fn(source, { ...GENEROUS, maxBytes: 30 }));
+      expect(
+        err,
+        `${name} must refuse a 40-byte document against a 30-byte limit; accepting it means the ` +
+          `count is code units and the message's word "bytes" is false`,
+      ).toBeDefined();
+      expectLimitRefusal(
+        err,
+        { limit: 30, units: "bytes", operation: name },
+        `${name}(utf-8)`,
+        await bindLimitError(),
+      );
+
+      /* The other side: the same document under a limit above its BYTE length is accepted, so
+         this is not simply "long strings are refused". */
+      returning(() => fn(source, { ...GENEROUS, maxBytes: 50 }), `${name}(50 bytes)`);
+    });
+  }
+});
+
+describe("maxNodes counts the nodes the DOT declares, not the ones that resolved", () => {
+  /* The limit exists to bound the work, and the work is proportional to the graph rather than to
+     how much of it happened to carry a card. Counting resolved nodes lets a submission with five
+     thousand nodes and no cards through the guard that exists to stop it.
+
+     The fixture is an archive DOT with every node declared by its own statement and NO card files
+     at all, so `blueprint.nodes` is empty while the graph is eight. It is also chosen so the third
+     reading nobody has ruled — declared statements versus ids implied only by an edge — cannot
+     change the answer: all eight are declared, so both of those agree. */
+  it("refuses eight declared nodes against a limit of seven, with no cards present", async () => {
+    const validateBundle = await bind("validateBundle");
+    const LimitExceededError = await bindLimitError();
+    const uncarded = keepCards(caseFor(EIGHT_NODE_BUNDLE).input, 0);
+
+    const err = thrownBy(() => validateBundle(uncarded, { ...GENEROUS, maxNodes: 7 }));
+    expect(
+      err,
+      "no card resolves, so a resolved-node count is 0 and admits this submission; the DOT still " +
+        "declares eight and the limit is seven",
+    ).toBeDefined();
+    expectLimitRefusal(
+      err,
+      { limit: 7, units: "nodes" },
+      "validateBundle(uncarded, maxNodes: 7)",
+      LimitExceededError,
+    );
+  });
+
+  it("accepts the same uncarded submission at a limit of eight", async () => {
+    const validateBundle = await bind("validateBundle");
+    const uncarded = keepCards(caseFor(EIGHT_NODE_BUNDLE).input, 0);
+    asLoadBundleResult(
+      returning(
+        () => validateBundle(uncarded, { ...GENEROUS, maxNodes: 8 }),
+        "validateBundle(uncarded, maxNodes: 8)",
+      ),
+      "validateBundle(uncarded, maxNodes: 8)",
+    );
+  });
+});
+
+describe("maxCards and maxNodes are pinned at both ends, as maxBytes already was", () => {
+  /* Charged as a GAP against round 1 and correctly: every limits case there breached one bound
+     with the other two generous, so an off-by-one in either was invisible. A boundary is two
+     assertions or it is one number somebody chose. */
+  it("maxCards accepts at exactly the count and refuses one below", async () => {
+    const validateBundle = await bind("validateBundle");
+    const { input } = caseFor(EIGHT_NODE_BUNDLE);
+    const count = Object.keys(input.cardFiles).length;
+
+    asLoadBundleResult(
+      returning(
+        () => validateBundle(input, { ...GENEROUS, maxCards: count }),
+        `validateBundle(maxCards: ${count})`,
+      ),
+      "validateBundle(at the card limit)",
+    );
+    expectLimitRefusal(
+      thrownBy(() => validateBundle(input, { ...GENEROUS, maxCards: count - 1 })),
+      { limit: count - 1, units: "cards" },
+      `validateBundle(maxCards: ${count - 1})`,
+      await bindLimitError(),
+    );
+  });
+
+  it("maxNodes accepts at exactly the count and refuses one below", async () => {
+    const validateBundle = await bind("validateBundle");
+    const { input } = caseFor(EIGHT_NODE_BUNDLE);
+    const nodes = 8;
+
+    asLoadBundleResult(
+      returning(
+        () => validateBundle(input, { ...GENEROUS, maxNodes: nodes }),
+        `validateBundle(maxNodes: ${nodes})`,
+      ),
+      "validateBundle(at the node limit)",
+    );
+    expectLimitRefusal(
+      thrownBy(() => validateBundle(input, { ...GENEROUS, maxNodes: nodes - 1 })),
+      { limit: nodes - 1, units: "nodes" },
+      `validateBundle(maxNodes: ${nodes - 1})`,
+      await bindLimitError(),
+    );
+  });
+
+  /* **Zero is a limit, not an absence.** `??` and `||` differ on exactly one value, and a
+     `resolveLimits` written with `||` reads `maxBytes: 0` as "unset" and silently substitutes the
+     default — so the strictest limit a caller can state becomes the most permissive one. Charged
+     as a GAP; held here on all three axes because the defect is one character and lands wherever
+     it was typed. */
+  for (const axis of ["maxBytes", "maxCards", "maxNodes"] as const) {
+    it(`${axis}: 0 refuses everything rather than falling back to the default`, async () => {
+      const validateBundle = await bind("validateBundle");
+      const { input } = caseFor(EIGHT_NODE_BUNDLE);
+
+      const err = thrownBy(() => validateBundle(input, { ...GENEROUS, [axis]: 0 }));
+      expect(
+        err,
+        `\`${axis}: 0\` is a caller stating the strictest limit there is. Answering means \`0\` was ` +
+          `read as "unset" — the one value \`??\` and \`||\` disagree on — and the strictest limit ` +
+          `became the most permissive.`,
+      ).toBeDefined();
+      expect(err).toBeInstanceOf(await bindLimitError());
+      expect((err as Error).message).toContain("limit of 0 ");
+    });
+  }
 });
