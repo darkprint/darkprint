@@ -355,6 +355,61 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A ruling about a notation belongs in the notation's legend
+
+D-05-08 ruled that an unmarked column in T005's published block is `NOT NULL`. It landed **in prose,
+three lines below the block's own legend** — the sentence that states the other three conventions —
+and the legend was left unchanged. `api_key … label text,` was byte-identical to what it was when two
+people read it two ways.
+
+**T005's adversary sent this ahead of its verdict because the holder was about to act on it**, and the
+reasoning is why it is worth a rule rather than an edit. D-05-08's named holder is the blind author,
+what it owes is one cell, and to fix that cell it has to answer *which columns must a raw `INSERT`
+supply?* **It will go to the legend, because that is where the other three conventions live** — and
+find the legend silent and the answer thirty lines below, inside a paragraph explaining a disagreement
+it was half of.
+
+**The shape: a ruling ABOUT a notation is the single most likely kind to be missed if it is not in the
+notation's legend**, because the legend is the one place a reader goes to resolve notation. Fixed as
+one clause in the legend rather than a fourth paragraph.
+
+**And it is a different failure from D-05-07, which is why my displacement rule does not catch it.**
+There the block **contradicted** the criteria and something had to be displaced. Here the block was
+**silent**, and this run's own line is that *silence makes an author ask* — **it did**: the blind
+author asked by writing a two-column insert, and got no answer because there was nothing there to
+answer with.
+
+**`tests/rulings-bind.test.ts` is green over it**, correctly and uselessly: `D-05-08` appears in the
+section, so the id-presence check passes. Its docblock already names this as its limit — *a citation
+is not a semantic check* — and this is the cleanest instance yet: **the guard cannot distinguish a
+ruling that landed in the binding surface from one that landed three lines above it in prose.**
+
+## A derived assertion can still carry an assumption about a moment
+
+The same session, on the file T005 gained by grant. `lib/db/migrate.test.ts` now derives its migration
+ids and table names instead of listing them — stronger, and right. The rewrite also added:
+
+```
+expect(await publicTableNames(pool)).not.toEqual([]);
+expect(await publicTableNames(pool)).not.toEqual(declaredTableNames());
+```
+
+**Those two negatives encode the assumption the derivation removed everywhere else**: that the *last*
+migration on disk changes the *table set*. True today, because `0002_community` creates six tables.
+**False against a correct implementation the moment the last migration is column-only, index-only or
+constraint-only** — one step down then leaves the table set equal to what `schema.ts` declares, and the
+second negative reds.
+
+Not hypothetical: the `0003_probe` it wrote to demonstrate AC6's stepwise gap is exactly that shape, so
+**one artefact reds two files for unrelated reasons and neither is a defect in anything shipped.**
+
+**Same class as the ten-name list it replaced — a claim about a moment — moved one level down and made
+harder to see because everything around it is derived.** Deriving a domain does not derive the
+assumptions in the assertions over it, and the surrounding derivation is what lends them credibility.
+
+It labelled the whole finding **reasoned from source, measurement owed**, because the confirmation is
+DB-touching and the slot is not its. That is the disposal, not a hedge.
+
 ## I have been exempting myself from the gate slot without ever saying so
 
 T005's adversary sampled during its batch, kept the line, and reported a foreign process group
@@ -4329,7 +4384,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   | `run_report` | T180 | keyed by **release digest**, carrying model, provider, hardware, input size, harness version, cost units, duration, timestamp |
   | `api_key` | T230 | account + a revocation state that is immediate |
 
-- **Published signatures** (D-05-03 — column names, because this task has no exported functions and its acceptance surface *is* the identifiers a raw-SQL test must type). Every table carries `id uuid primary key default gen_random_uuid()` unless stated. `account_id`/`bundle_id`/`release_id`/`note_id` are `uuid NOT NULL` with a foreign key to the named table's `id`. Timestamps are `timestamptz`.
+- **Published signatures** (D-05-03 — column names, because this task has no exported functions and its acceptance surface *is* the identifiers a raw-SQL test must type). Every table carries `id uuid primary key default gen_random_uuid()` unless stated. `account_id`/`bundle_id`/`release_id`/`note_id` are `uuid NOT NULL` with a foreign key to the named table's `id`. Timestamps are `timestamptz`. **A column is `NOT NULL` unless written `NULL`** (D-05-08) — this clause belongs in the legend rather than in prose below it, because a rule about the block's own notation is the one a reader comes to the legend to resolve.
 
         save          account_id, target_kind, target_id text, created_at
                       unique (account_id, target_kind, target_id)              -- AC1
