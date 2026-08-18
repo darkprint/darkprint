@@ -2367,6 +2367,48 @@ lock. **So the conclusion holds on both, one case wider than it was claimed.**
 caveat stated precisely is a hook somebody else can extend; **a caveat stated vaguely is a claim the next
 party has to re-derive from scratch**, and usually will not.
 
+## A guard I wrote committed the scope defect it was written for, and only a worktree behind base could see it
+
+**`tests/store-modules-seal-their-faults.test.ts` builds its domain from `git ls-tree backend` — the
+SHIPPED tree — and then read each file with `readFileSync` from the WORKING tree.** Two different trees,
+which is this file's own scope rule committed inside the guard written for it.
+
+**The moment T050 merged, `lib/server/accounts/errors.ts` existed on `backend` and did not exist in any
+worktree that had not merged.** The guard died with `ENOENT` — **and an error is not a red about the
+subject**, so it reported **nothing at all** about whether any module seals its faults, in every
+worktree at once, silently.
+
+**Measured in the worktree where it fires**, rather than argued: on `backend` the path resolves; in
+T081's worktree it does not; the old read throws `ENOENT` and `git show backend:<path>` returns 117
+lines. Both loops now read from `backend`.
+
+**The part that is about me rather than about the guard: I only ever run these guards in base, and base
+is never behind itself.** So the defect was invisible from the only position I occupy and visible from
+every other one. **A guard whose failure mode depends on the reader's checkout cannot be validated by
+the reader who wrote it** — T081's implementer found it in the first worktree to be behind base since
+the merge, which is the earliest anyone could have.
+
+**Third instance today of the same shape at three altitudes**: T040's corpus generator declaring
+droppability inside the fix for declared droppability, T050's dirty-tree guard losing its own mutation
+inside the fix for losing another writer's, and now a scope guard reading two trees. **The correction is
+where the defect lands, every time, because writing the fix is the moment you are thinking hardest about
+the thing and least about the instrument.**
+
+## Read which assertion fired, not how many tests did
+
+**T081's implementer named a mutation *anti-vacuity* and was wrong about its own label.** Probing `card()`
+with an unparseable ref **reds** — but the message is *"card: rejected with nothing at all"*, the
+**mislabelled** list, not `unreached`. **So the mutation does not falsify the anti-vacuity check and the
+name over-claimed.**
+
+The mutation that does falsify it is a reader **refusing before any query**: *"card: the cause chain
+carries no statement … so this case measured nothing"*. **`unreached` now has a witness instead of being
+a guard nothing reaches.**
+
+**Caught by reading which assertion fired.** A red confirms *a* guard fired; it does not confirm the one
+you named. **Same family as *the identity of the reds separates a mutation that mutated from one that did
+not*, one level in: there, which TEST reddened; here, which ASSERTION inside it.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
