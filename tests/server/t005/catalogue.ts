@@ -27,6 +27,9 @@ export interface ColumnInfo {
   nullable: boolean;
   hasDefault: boolean;
   default: string | null;
+  /** Null where the type is unqualified — which is the whole of D-05-09. */
+  numericPrecision: number | null;
+  numericScale: number | null;
 }
 
 export interface UniqueObject {
@@ -67,7 +70,8 @@ export interface Catalogue {
 export async function readCatalogue(query: Query): Promise<Catalogue> {
   const columns = (
     await query(`
-      select table_name, column_name, data_type, udt_name, is_nullable, column_default
+      select table_name, column_name, data_type, udt_name, is_nullable, column_default,
+             numeric_precision, numeric_scale
       from information_schema.columns
       where table_schema = 'public'
       order by table_name, ordinal_position
@@ -81,6 +85,8 @@ export async function readCatalogue(query: Query): Promise<Catalogue> {
       nullable: String(r.is_nullable) === "YES",
       hasDefault: r.column_default !== null,
       default: r.column_default === null ? null : String(r.column_default),
+      numericPrecision: r.numeric_precision === null ? null : Number(r.numeric_precision),
+      numericScale: r.numeric_scale === null ? null : Number(r.numeric_scale),
     }),
   );
 
