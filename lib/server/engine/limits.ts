@@ -36,10 +36,12 @@ export interface EngineLimits {
  *
  * Chosen against the archive rather than picked: absent limits must let all nine bundles
  * through, or AC1 (the nine reproduce the build) and AC4 (an oversized submission is
- * refused) contradict each other at the default. The archive's maxima, measured through
- * this module's own entry point rather than off the filesystem, are 17 963 bytes, 9 card
- * files and 9 nodes. Every bound below clears its maximum by at least fifty times, which
- * is headroom for a submission far larger than anything the archive holds while still
+ * refused) contradict each other at the default. The archive's maxima, measured through this
+ * module's own entry point, which is what `measure.test.ts` computes: largest submission
+ * 17 947 bytes with each bundle's own extensions, 18 195 with the shared vocabulary applied
+ * to all nine; most cards 9, most nodes 9. The 17 963 that stood here reproduces under no
+ * reading and is WITHDRAWN. Every bound below clears its maximum by at least fifty times,
+ * which is headroom for a submission far larger than anything the archive holds while still
  * refusing the pathological one.
  *
  * The criterion these satisfy is a **property, not three numbers**: every archive bundle
