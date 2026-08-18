@@ -355,6 +355,97 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## Publishing a ruling that was granted in a reply owes the recipient its new number
+
+T050's adversary found that **twelve `D-50-xx` ids cited in the blind suite do not resolve to what they
+name in `backend.md`** — seven swapped, three carrying two meanings inside the suite itself, and one,
+`D-50-14`, published nowhere at all. **The content is right in every case**; it checked each against the
+published text and the suite binds the correct ruling every time.
+
+**The mechanism is the second-order cost of a rule I already wrote.** *A ruling granted in a reply is a
+ruling published nowhere* — I fixed the **publication**. What travelled with the reply and was never
+fixed is its **numbering**: the blind author bound to the ids as I gave them in the reply, I renumbered
+them when I published, and now **both artefacts are internally consistent and mutually contradictory.**
+
+So the rule needs its second half: **publishing a ruling that was granted in a reply owes the reply's
+recipient the new number**, or the durable artefact keeps the dead one. Nothing about this reds, and
+twelve tasks will read that suite.
+
+**And `D-50-14` is the sharper instance: its content landed and its id never did.** AC3 carries the
+scoped form; the preamble still quotes the old wording; no `##` heading names it. **`rulings-bind`
+cannot see this by construction** — it triggers on a heading that opens with an id, and **a ruling with
+no heading cannot be missing from a section, because nothing knows to look for it.** Verbatim the T070
+instance already recorded, recurring on the next task. The id is now published.
+
+## D-50-18: a recognised, sanitized fault answers `problem+json`, it does not re-throw
+
+Two merged-and-adversary-passed readings of one decision, both argued in their own comments.
+
+T050's `withAccountErrors` **re-throws** `AccountStoreError`: *the store being unable to answer is a
+500, not an answer.* T090's `serve.ts` does the opposite and says why: *a 500 is a transport failure and
+B-03 makes those `problem+json`* — throwing produces a 500 too, but **Next's own generic one, outside
+the envelope every other failure on that route uses and unobservable to anything driving the handler
+directly.**
+
+**Ruled for T090's reading**, and the deciding detail is what T090 reserves the re-throw arm *for*: what
+it does **not** recognise — *a bug, and a bug dressed up as a known condition is how one stops being
+noticed.* T050 put its own **published, recognised, sanitized** class in that arm, which inverts the
+distinction rather than applying it.
+
+**Note the shape rather than the outcome.** B-03 settled this and neither task's contract quoted it at
+the point of decision, so two implementers reasoned from first principles and got opposite answers,
+each defensibly. **A cross-task divergence on a merged precedent is invisible to every instrument this
+run has**: both suites are green, both adversaries passed, and only a session reading two modules side
+by side could see it. T050's adversary was the first to hold both.
+
+**And it is unobservable from T050's blind suite by construction** — no blind test can reach a store
+fault, because the door refuses every input that would reach the driver *before a connection opens*. So
+whichever way this was ruled, nothing currently observes it.
+
+## The blind suite reaches no route, and the routes were published a round ago
+
+T040's adversary charged this as second only to its red, and it is right. **All 81 of T040's blind
+tests bind the module.** `tests/server/t040/**` contains no `Response`, no `POST`, no status code —
+one incidental occurrence across ten files, verified here. Six route mutations reddened **zero** blind
+tests; four were caught by the implementer's own colocated file and **two by nothing at all**.
+
+**D-40-01 and D-40-02 published four paths, four request shapes and three status codes**, and every one
+of them is held by the implementer's own ten tests. That is D-70-12's shape exactly, in a task where
+the surface was published **during** the round rather than before it.
+
+**And the blind author said so at handback**: *"No route tests… I would rather hand back a suite whose
+every number I have measured than one with a file I have not. Say the word and I will add them in a
+second round; the route half is currently held by nothing, which is D-70-12's shape and yours to
+weigh."* **I did not weigh it.** It named the gap, offered the round, and I acknowledged the message
+without answering the question in it.
+
+So the rule this run keeps arriving at has a new instance and a new location: **an offer to close a gap
+is a question, and acknowledging the message it arrived in is not an answer.** The gap was reported by
+the party who could not close it alone, in the words that named its own shape, and it survived to be
+found by an adversary a round later.
+
+## Two rulings on T040's byte guard, and the fix costs the contract nothing
+
+**D-40-B is a real defect and it is the sharp end of D-40-18.** `byteLengthOf` materialises the
+caller's input to measure it. Measured through the published surface: a depth-25 diamond — **26
+objects** — makes the guard throw a bare `RangeError` where a `LimitExceededError` is contractually
+owed, and below that it allocates up to **386 MB of transient heap to decide that a submission exceeds
+2 MB.** The limit performs the resource exhaustion the limit exists to prevent.
+
+**D-40-20, ruled: `Buffer.byteLength(JSON.stringify(input), "utf8")` is normative as a NUMBER, not as
+a PROCEDURE.** The criterion says which submissions are refused, not how the size is computed. A
+bounded walk that short-circuits past `maxBytes` is conforming — and required. **The number is
+preserved exactly for every submission that is accepted**, because past the bound only the comparison
+is ever needed, which is why this costs the ruling nothing. A `seen` set must not be used for the
+**size**, since it would change the number for shared substructure; it is the right instrument for the
+**cycle**.
+
+**D-40-21, ruled: `submissionOf` excluding `input.ontology` is correct and is now published.** An
+`OntologyView` carries the whole of `CORE_ONTOLOGY`, so measuring it charges a caller the curated
+vocabulary against its own upload's budget. No route can set `ontology`, so every wire call gives the
+same number either way — and the implementer reported the deviation rather than taking it quietly,
+which is the only reason it was available to rule.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -639,7 +730,7 @@ half-edited claim.
 **Actionable for every worktree in this run, and it has now bitten four sessions.** `.next/types`
 holds a Next-generated global, `tsconfig.json` includes that path, and a worktree that has only ever
 run `npm ci` has no `.next` at all — so its first `npm run typecheck` reports **18 `TS2304: Cannot
-find name 'PageProps'`** across eight `app/**` page files that belong to nobody.
+find name 'PageProps'`** across **nine** `app/**` page files that belong to nobody.
 
 This file already says a new worktree runs `npm ci` before its first gate. **`npm run build` goes in
 the same sentence, before typecheck**, or the first typecheck in every fresh worktree is 18 red and
@@ -3513,7 +3604,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | — |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | claimed | — |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | reverted | — |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
@@ -7573,6 +7664,20 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   It carries the operation alone — no statement, no bound parameter, no SQLSTATE. **AC2 is the argument, not hygiene:** on `setEmail` the bound parameter **is** the email, so *"no `email` value appears in any rejection, including one about the email"* is false the moment a driver fault leaves unwrapped. It also closes `upsertFromGitHub`, which had no door: an **empty-string `githubId` is storable today** (`NOT NULL` is satisfied by `""`) and two would collide on `account_github_id_key` as one identity, which is AC6 read backwards — unreachable through the OAuth callback, reachable through the barrel by any later caller.
 
+  **D-50-18, ruled — a store fault answers `problem+json` 500, it is NOT re-thrown.** `withAccountErrors` re-throws `AccountStoreError` on the reasoning that *the store being unable to answer is a 500, not an answer* — defensible, written down, and **wrong against B-03 and against T090's merged precedent.** `app/api/files/serve.ts` argues it in as many words: *a 500 is a transport failure and B-03 makes those `problem+json`*, which is why it answers a `Response` rather than throwing — throwing produces a 500 too, but **Next's own generic one, outside the envelope every other failure on the route uses and unobservable to anything driving the handler directly.** T050 puts its own **published, recognised, sanitized** class in the re-throw arm, which is the one case T090 explicitly reserves for what it does **not** recognise — *a bug, and a bug dressed up as a known condition is how one stops being noticed.*
+
+  So: `AccountStoreError` → **500 `problem+json`**, `type` `https://darkprint.io/problems/store-failed`, body carrying the published form and nothing else. Only an unrecognised throw re-throws. The route block's status lists gain **500**.
+
+  **D-50-14, given the id its content never had.** AC3's scoping — *a GitHub rename leaves the handle and the `account` row untouched* — was ruled, applied to the criterion, and **numbered nowhere**, so `tests/rulings-bind.test.ts` could not miss it: it triggers on a preamble heading that opens with an id, and a ruling with no heading cannot be missing from a section because nothing knows to look for it.
+
+  **Citation concordance — `test/t050-accounts`'s suite at `22be078` cites ids from my replies, which I renumbered when publishing.** The suite's content binds the correct ruling every time; only the numbers diverge. A reader following a citation from that suite should map:
+
+        suite D-50-01 -> published D-50-03   (the problem base is .io)
+        suite D-50-03 -> published D-50-01/02 (the five routes are published)
+        suite D-50-07 -> published D-50-13   ("non-owner" means NOT AUTHORIZED)
+        suite D-50-09 -> published D-50-10   (validatorWeight is a number)
+        suite D-50-14 -> published D-50-14   (AC3 scoped; the id exists as of this line)
+
   **Email has no predicate beyond non-empty** (D-50-12) and is **unverified** — nothing sends a verification, so no validity claim is made or tested.
 
   **D-50-09, ruled:** an **optional** field means the key is **omitted**, and the wire and the object agree. `Response.json` drops a key whose value is `undefined`, so a record built as `{ …, bio: undefined }` has the key in the object a unit test inspects and **not** on the wire — build it absent, so an object-level and a wire-level key-set assertion cannot disagree.
@@ -7586,7 +7691,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** claimed
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
@@ -7674,6 +7779,10 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         "validateBundle: the node count exceeds the limit of <n> nodes."
 
   `<operation>` is the function's own name. **`maxCards` and `maxNodes` are `validateBundle`'s alone** — a sibling takes one document, so a card count is meaningless and `validateDot` does not enforce `maxNodes` even though it parses a graph, because a limit enforced in two places is two limits.
+
+  **D-40-17 is normative as a NUMBER, not as a PROCEDURE (D-40-20, ruled on T040's adversary's question).** The criterion says which submissions are refused; it does not say how the size is computed. **So a bounded walk that accumulates and short-circuits the moment the running total exceeds `maxBytes` is CONFORMING**, and it is required — see D-40-B. Cost becomes O(`maxBytes`), bounded by the limit rather than by the input graph, and the number is preserved exactly for every submission that is **accepted**, because past the bound only the comparison is ever needed. A `seen` set must **not** be used for the size — it would change the number for shared substructure — and is the right instrument for the **cycle**, which becomes a typed refusal instead of a `TypeError`.
+
+  **D-40-21: `submissionOf` excludes `input.ontology`, and that is now published rather than a deviation.** An `OntologyView` carries the whole of `CORE_ONTOLOGY`, so measuring it would charge a caller the entire curated vocabulary against its own upload's budget — refusing a small bundle for the size of something it did not send and cannot make smaller. No route can set `ontology`, so **every wire call gives the same number under either reading**. Reported by the implementer rather than taken quietly, and confirmed by the adversary.
 
   **D-40-17, `input` byte length is `Buffer.byteLength(JSON.stringify(input), "utf8")`.** Three readings differed by hundreds of bytes on a real bundle. `lib/server/**` is not isomorphic, so `Buffer` is available here; `lib/core` remains the place that may not use it.
 
@@ -8342,6 +8451,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Acceptance criteria:** (1) blueprints, cards and namespaced terms are counted from the stores, not stored; (2) an owner's card count includes private rows and a visitor's does not; (3) a pin at a deleted target is omitted; (4) a follow toggles and the watcher count equals the follower count; (5) an unknown handle returns 404.
 - **Open:** pinning has no control anywhere in the UI — is there a write path, or is the pinned pair operator-curated?
 - **Out of scope:** the account's own fields (T050), signal arithmetic (T150, T160, T180).
+- **D-50-19, handed here rather than ruled in T050 (open, PENDING-OWNER-REVIEW):** `/u/Mara` — 404, or 301 to `/u/mara`? T070's grammar admits `[a-z0-9-]` only, so **exactly one casing of any handle is storable** and case-insensitive comparison, case-folding and a lower-case unique index are all answers to a collision the alphabet already prevents. T050's two doors are total and agree — `changeHandle(…, "Mara")` is a 400 and `getPublicAuthor(db, "Mara")` is `undefined` → 404, both with the store untouched — so **T050 needs no ruling and has no surface to hold one.** What is left is a **redirect policy**, and it belongs to whoever owns `app/u/[username]/**`. Raised by T050's adversary, which declined to pick and pointed out that ruling it in T050 would be the D-70-06 shape: a ruling landing in the section of the task that raised it rather than the section it governs.
 - **Log:**
   - 2026-08-13 orchestrator: created.
 
@@ -8822,6 +8932,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Contract:** the owner view is currently a *page*, not a state, and both variants ship in the build (`components/profile/load.ts:34-41`) — that is the assumption a session breaks, so these routes go per-request. `/settings`' honesty strip and every `disabled` attribute come off in the same change that makes them false, and not before (`app/settings/page.tsx:41-58`, D-78). `FavoriteStar` moves from `localStorage` to the saves API with a one-time migration (T140). `lib/data/**` is deleted here, which is why this task owns it.
 - **Acceptance criteria:** (1) a signed-out visitor sees the visitor view and a signed-in owner sees the owner view at the same URL; (2) no control on `/settings` is both enabled and inert, or disabled and functional; (3) the honesty strip is gone exactly where persistence now works; (4) starring on a card page appears in the owner's Saved tab, which is the disjointness the code currently apologises for three times; (5) `nav.test.ts` and `tabs.test.ts` pass unchanged; (6) no import of `lib/data/**` remains anywhere.
 - **Out of scope:** detail pages (T261), the seed import (T250).
+- **D-50-19, handed here rather than ruled in T050 (open, PENDING-OWNER-REVIEW):** `/u/Mara` — 404, or 301 to `/u/mara`? T070's grammar admits `[a-z0-9-]` only, so **exactly one casing of any handle is storable** and case-insensitive comparison, case-folding and a lower-case unique index are all answers to a collision the alphabet already prevents. T050's two doors are total and agree — `changeHandle(…, "Mara")` is a 400 and `getPublicAuthor(db, "Mara")` is `undefined` → 404, both with the store untouched — so **T050 needs no ruling and has no surface to hold one.** What is left is a **redirect policy**, and it belongs to whoever owns `app/u/[username]/**`. Raised by T050's adversary, which declined to pick and pointed out that ruling it in T050 would be the D-70-06 shape: a ruling landing in the section of the task that raised it rather than the section it governs.
 - **Log:**
   - 2026-08-13 orchestrator: created from B-15.
 
