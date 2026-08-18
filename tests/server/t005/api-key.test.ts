@@ -3,14 +3,15 @@ import { afterAll, beforeAll, describe as suite, expect, it } from "vitest";
 import {
   CONTRACT,
   PUBLISHED,
-  SQLSTATE,
+  PUBLISHED_UNIQUES,
   dropScratchDatabases,
   requireT005Shipped,
   scratchDatabase,
   type Scratch,
 } from "./harness.ts";
-import { columnsOf, foreignKeysOf, readCatalogue, uniqueLabel, type Catalogue } from "./catalogue.ts";
-import { attemptToDriverError, existing, fixtures, insertLiteral, marker, type Fixtures } from "./rows.ts";
+import { columnsOf, foreignKeysOf, readCatalogue, type Catalogue } from "./catalogue.ts";
+import { attemptToDriverError, existing, fixtures, insertRow, type Fixtures } from "./rows.ts";
+import { falsifyUnique, soleUnique } from "./falsify.ts";
 
 /* ============================================================
    T005 — the `api_key` table
@@ -93,41 +94,51 @@ suite("T005 — the `api_key` table", () => {
 
   it("`api_key.token_hash` is unique at the database, so two keys cannot resolve to one hash", async () => {
     requireT005Shipped(scratch);
-    const unique = cat.uniques.filter(
-      (u) => u.table === "api_key" && !u.primary && u.columns.join(",") === "token_hash",
-    );
+    const unique = soleUnique(cat, "api_key");
     expect(
-      unique.map(uniqueLabel),
+      "error" in unique ? unique.error : null,
       `${PUBLISHED.apiKey}\n  \`resolveKey(db, secret)\` reads a key back by its hash. Two rows ` +
         `at one hash makes that read ambiguous in the one place a wrong answer is an ` +
-        `authentication decision.\n  unique objects on api_key: ` +
-        `${cat.uniques.filter((u) => u.table === "api_key").map(uniqueLabel).join("; ") || "(none)"}`,
-    ).toHaveLength(1);
-    if (unique.length !== 1) return;
-
-    const account = await existing(f, "account");
-    const hash = marker("hash");
-    await insertLiteral(scratch.query, "api_key", { account_id: account.id, token_hash: hash });
-
-    const attempt = await attemptToDriverError(() =>
-      insertLiteral(scratch.query, "api_key", { account_id: account.id, token_hash: hash }),
-    );
-    expect(
-      attempt.raised ? (attempt.driver?.code ?? "(no sqlstate)") : "(accepted)",
-      `${PUBLISHED.apiKey}\n  A second row at the same \`token_hash\` was accepted.`,
-    ).toBe(SQLSTATE.unique_violation);
-
-    /* A distinct hash for the same account must still land: a key per account is not the
-       constraint, and a unique that reached account_id would make T230's "issue a second key"
-       impossible while passing the assertion above. */
-    const second = await attemptToDriverError(() =>
-      insertLiteral(scratch.query, "api_key", { account_id: account.id, token_hash: marker("hash") }),
-    );
-    expect(
-      second.raised ? `${second.driver?.code}: ${second.driver?.message}` : null,
-      `${PUBLISHED.apiKey}\n  One account may hold more than one key; the uniqueness is on the ` +
-        `hash alone.`,
+        `authentication decision.`,
     ).toBeNull();
+    if ("error" in unique) return;
+
+    /* Through `falsifyUnique` rather than a hand-built pair, which is the correction D-05-08
+       forced. The two-column literal that used to be here was the one place in this suite
+       that did not derive its required columns from the catalogue — so when the block and
+       the schema disagreed at nine columns, this was the only one that reddened, and the
+       other eight passed by luck. It also meant `api_key` never reached the partial-index
+       assertion, so a `WHERE`-qualified unique on `token_hash` was unobservable here while
+       being caught on all three tables an acceptance criterion names. The untested region
+       was the table with no criterion pointing at it. */
+    await falsifyUnique(
+      scratch.query,
+      cat,
+      f,
+      "api_key",
+      unique,
+      PUBLISHED_UNIQUES.api_key,
+      `${PUBLISHED.apiKey}\n  ${CONTRACT.apiKeyShape}`,
+    );
+  }, 120_000);
+
+  it("one account may hold more than one key, so the uniqueness is on the hash and not on the owner", async () => {
+    requireT005Shipped(scratch);
+
+    /* `falsifyUnique` varies only the constrained columns, and `account_id` is not one of
+       them — so nothing above this line would notice a unique that reached the owner. T230
+       issues keys per account and expects to issue a second; a constraint that forbade it
+       would pass every assertion in this file except this one. */
+    const account = await existing(f, "account");
+    const first = await attemptToDriverError(() => insertRow(f, "api_key", { account_id: account.id }));
+    const second = await attemptToDriverError(() => insertRow(f, "api_key", { account_id: account.id }));
+
+    expect(
+      [first, second]
+        .filter((a) => a.raised)
+        .map((a) => `${a.driver?.code ?? "(no sqlstate)"}: ${a.driver?.message ?? String(a.cause)}`),
+      `${PUBLISHED.apiKey}\n  Two keys for one account, with distinct hashes, both have to land.`,
+    ).toEqual([]);
   }, 120_000);
 
   it("`api_key.account_id` is NOT NULL and points at `account`", () => {
