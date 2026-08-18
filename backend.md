@@ -3436,7 +3436,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | — |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | claimed | — |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | tests-written | 98 blind tests on `test/t040-engine`, 96 red on the absent module and 2 module-independent; 98/98 against a throwaway correct reference on three identical runs; 33 mutations, 32 CAUGHT / 0 MISS / 1 equivalent-through-the-sort |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
@@ -7509,7 +7509,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** claimed
+- **State:** tests-written
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
@@ -7606,6 +7606,52 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Out of scope:** persistence, publishing, the archive's own re-validation sweep.
 - **Log:**
   - 2026-08-13 orchestrator: created. Contract was already derivable; unchanged by the decisions.
+  - 2026-08-18 test author: `tests-written`. 98 tests in eight files under `tests/server/t040/**`, plus
+    `contract.ts` and `fixtures.ts`, which are helpers and not collected. In this worktree: **96 failed |
+    2 passed (98)**, every red `@/lib/server/engine does not load` or `ERR_MODULE_NOT_FOUND` and none a
+    syntax error or a bad path. The 2 green are module-independent by construction — the README oracle's
+    own parse and the one-bundle-carries-a-vocabulary count — and are reported as such rather than as
+    coverage: a set that can only be empty is not a measurement. `npm run lint` 0. `tsc --noEmit` is
+    **exactly two errors**, both `Cannot find module '@/lib/server/engine'`, after `npm run build` once
+    to generate `.next/types`' `PageProps` globals (18 phantom errors before it, 0 after, no source
+    change between — the fresh-worktree artefact this file records).
+  - 2026-08-18 test author: **evidence the suite discriminates.** Run against a throwaway correct
+    reference in a scratch git worktree outside this tree, never written into it: **98/98 on three
+    identical runs**. Then 33 mutations of that reference: **32 CAUGHT, 0 MISS, 1 GAP**, each with the
+    test it was predicted to red named before the run. The single GAP is classified rather than counted —
+    iterating `cardFiles` in insertion order is an **equivalent mutant through the published surface**,
+    because `loadBundle` returns every array through `sortDiagnostics` and no two card diagnostics can
+    tie: `location.file` is the card's own key and is part of the sort. So AC5's "`cardFiles` is rebuilt
+    in sorted key order" is defence-in-depth that nothing downstream can observe, and that is a fact
+    about the contract's surface rather than a hole in this suite.
+  - 2026-08-18 test author: **three assertions were wrong against a correct reference and were fixed as
+    test defects, which is what running one first is for.** (1) A `process.env` read counter measured
+    **1885** reads on a clean module: `node_modules/yaml/dist/parse/parser.js` reads `LOG_TOKENS` once per
+    token and `lib/core/card/parse.ts` parses every card through it. A name whitelist would have been the
+    blacklist-predicate move; the boundary moved instead — the zero is asserted on the paths that reach
+    no YAML parser, and the paths that do are held by an invariance test under two environments, which is
+    the property AC5 states rather than a proxy for it. (2) A bound of one card-read per card on the
+    byte-refusal path became **unsatisfiable** when D-40-17 ruled the measure to be
+    `Buffer.byteLength(JSON.stringify(input))` and AC5 required `cardFiles` rebuilt before `loadBundle`:
+    a correct module now reads each card twice. Replaced by a comparison — the refusal path reads the DOT
+    strictly fewer times than the accepted path — which survives that class of change. (3) The
+    determinism fixture for "the input is not mutated" handed over an already-sorted record, so an
+    in-place sort was a no-op against it: an equivalent mutant manufactured by the fixture. Reversed.
+  - 2026-08-18 test author: **four gaps found by mutating behaviours chosen for NOT being on the list
+    this suite was built from**, all closed and all re-measured as CAUGHT: the manifest is on
+    `blueprint.manifest` and nothing looked at it; `validateCardSource` could drop every non-error
+    diagnostic unobserved; `validateVocabularySource` has a **second** refusal path — a document that
+    parses as YAML and is not a vocabulary — which the malformed-YAML fixture returns before ever
+    reaching; and `validateDot` could drop its parse diagnostics on the path where a graph IS produced,
+    which no fixture reached because the unparseable ones return early and the archive ones parse clean.
+  - 2026-08-18 test author: AC1's oracle is `public/bundles/<slug>/README.md`, written by `prebuild` and
+    carrying the digest, autonomy class, security level and security rationale verbatim. All nine were
+    reproduced from the shipped folder bytes before it was adopted, and it reds on a dropped `extensions`,
+    a mangled `cardFiles` key, a withheld analysis and any re-scoring — a reference that can register the
+    quantity rather than one immune to it. **Its coverage is stated beside its greens**: only
+    `frontline-triage` ships `ontology/extensions.yaml`, so the nine-case sweep carries a ONE-case
+    discriminator for `extensions`, and the saturation direction — a module layering the archive's own
+    extensions in regardless of its argument — is caught by one test and by nothing in the sweep.
 
 ### T080, Registry read model and read API
 
