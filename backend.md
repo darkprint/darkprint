@@ -355,6 +355,40 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## Audit a claim-shape LEXICALLY, because a grep does not know where you have been looking
+
+T005's blind author took the line *every `unobservable`, `unreachable` and `by construction` shares the
+property that nothing reds when they are wrong*, applied it to its **own** files, and found one of eight
+false.
+
+**The method is the finding.** It searched for the **words**, not for places it thought a claim might be
+weak. Its own note: had it asked *where are my unobservability claims shaky*, it would have reviewed the
+one I had just corrected and stopped — **because that is where its attention was.**
+
+That is *the region with no prior defects is the region still holding them* with an instrument attached.
+A semantic audit inherits the auditor's model of where the risk is, which is the same model that
+produced the claims. **A lexical sweep over a claim-shape does not know where anyone has been looking**,
+and that is the whole of why it reaches the seven nobody was worried about.
+
+## A quantifier defect is supported by the same green as the claim it over-states
+
+The one that failed: *"the discriminating cell is unreachable through **any writer**"*, backed entirely
+by an `INSERT`.
+
+**That is the gap AC4's own criterion names one file over** — *a trigger on INSERT alone checks a row
+once and lets it be moved anywhere afterwards* — and it had written that sentence **about the
+implementer's trigger** and not applied it to its own claim. The quantifier said *any writer*; the
+evidence covered **one verb**.
+
+**`unreachable through any writer` and `unreachable through an INSERT` are different claims that the
+same green supports, and nothing distinguishes them from inside a passing run.** That is the
+value-versus-presence rule applied to **the scope of a sentence** — the third altitude this run has
+found it at, after a **field** and a **partition**.
+
+And the added `UPDATE` assertion is expected to **pass** on a correct schema, which is exactly why it is
+worth having: it is not a second way for the criterion to fail, it is the measurement the claim was
+missing. **T050 renames handles and is the writer most likely to reach the verb nobody tested.**
+
 ## A claim of unobservability is itself a measurement, and it is the easiest one to fake
 
 T005's blind author labelled the migration-only mirror **unobservable** — *no published accessor gives
