@@ -355,6 +355,47 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## A brief that names a base is a claim about a tree the reader has to reach
+
+All six wave-6 worktrees were created at `d37fdc9`. I then committed twice — `47b2731` and `73e769f` —
+and briefed every session with *"base is `73e769f`"*. **Four of the six independently found their tree
+two commits behind and merged before reading anything.** One said it plainly: *a session that took your
+line on trust would have gated a different tree from the one you named.*
+
+This is *a stamp whose purpose is to say where the tree is must be read, not recalled*, one level up at
+the **dispatch**. A handover sha describes a tree the sender holds; a dispatch sha describes a tree the
+**receiver** holds, and the sender cannot see it. The claim was true of `backend` and false of every
+worktree it was sent to.
+
+**Corrected form: a dispatch says "merge `backend` and report the sha you reach", never "base is X".**
+The reader's tree is the only one that matters and only the reader can read it. Nothing rested on it
+here because four sessions checked — which is the point: the rule this run keeps arriving at is that a
+premise handed to you is the thing to re-examine, and they did.
+
+## The fourth route block, and a guard that binds a ruling to the wrong task
+
+**D-50-03 and D-40-01 are the fourth and fifth instances of an owned route tree with nothing
+published.** T050 owns five route files, T040 owns a tree, and neither had a path, a method, a request
+shape or a status code. `backend.md` already calls this "third instance of this defect in one wave".
+
+**And T050's blind author found something worse than silence: `docs/architecture/seams.md` published a
+contradicting second reading.** Seven seams give methods, paths and response shapes for T050's routes
+that disagree with its signature block in every row — `{ ok, verificationSent }` against
+`AccountRecord`, `DELETE /api/account` against T120's ownership, `GET /api/auth/me` against a tree that
+has no such route. `CLAUDE.md` makes that document binding, so a blind author had a published surface
+to bind to and it was the wrong one. **Silence makes an author ask; a contradiction lets them proceed.**
+
+**The related guard failure is mine and `tests/rulings-bind.test.ts` cannot see it.** T050's AC4 still
+carried *"permanently unclaimable"* — the absolute D-70-06 withdrew — three days after that ruling
+landed. The guard checks a ruling reaches **its own** task's section. D-70-06 is cited in T070's
+section, so the guard is green, and the task the ruling actually governs downstream never got it. Twice
+in D-70-06's own text I wrote that T050 was the named reader who would hit it, and it did.
+
+**A ruling binds in every section it governs, not only the one it is numbered under**, and I have no
+derivation for "which other tasks does this govern" that is not a list. Recorded as a limit of the
+guard rather than papered over: it prevents the ruling that never lands, and cannot see the ruling that
+lands in one place and is owed in two.
+
 ## D-05-01: a foreign key needs an identity, and a content digest is not one
 
 T005's blind author refused to write AC4's assertion and was right. AC4 asked for a foreign key to
@@ -3343,7 +3384,7 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
 - **Worktree:** `../darkprint-wt-t005-schema` (impl), `../darkprint-wt-t005-schema-tests` (blind)
 - **Branch:** `feat/t005-schema` (impl), `test/t005-schema` (blind)
 - **Depends on:** T000 (merged)
-- **Owns:** `lib/db/schema.ts` (**extension only** — no existing table may be altered or dropped), `lib/db/migrations/**`
+- **Owns:** `lib/db/schema.ts` (**extension only** — no existing table may be altered or dropped, save AC7a), `lib/db/migrations/**`, and — **D-05-03/D-05-04, granted, same structural argument that created this task** — `lib/db/migrate.test.ts` and `tests/support/db.ts`. Both are T000's, T000 is merged, and both break the moment a second migration and six tables exist: `migrate.test.ts` asserts `EXPECTED_TABLES` of ten and `applied == ["0001_init"]`, and `resetTestDb`'s `TABLES_CHILDREN_FIRST` is a hand list that would silently stop truncating the new tables — surviving rows in a `beforeEach` that T140, T160, T170, T180 and T230 all believe cleared them. **Make the truncation list DERIVED** from the exported `pgTable`s rather than adding six names, so it never needs an edit per table again
 - **Forbidden:** every `lib/server/**` module, every `app/**` route. This task ships tables and migrations and consumes none of them.
 - **Contract:** six tables that five already-written contracts require and `lib/db/schema.ts` does not have. T000 owned that file and has merged, so the need belongs to no existing task and every consumer has it Forbidden — which is why this exists rather than being folded into T050 or T140.
 
@@ -3384,9 +3425,14 @@ independent tasks with disjoint `Owns` sets, so no slot idles for want of ready 
   (2) **D-05-02, ruled: one row per `(account_id, bundle_id)` with a column per writable metric**, not a row per metric. B-11 says *one ballot per account per blueprint*, singular, and the deciding argument is the blind author's own: this design satisfies AC5 **by construction** — `autonomy` and `security` are unwritable because the columns do not exist — where a `metric` column needs a check constraint or an enum to say the same thing, and a constraint can be dropped. So the unique is `(account_id, bundle_id)`, measured by raw SQL: two inserts for one pair, the second fails at the driver.
   **Consequence, stated because it reaches T160 rather than staying here:** the three metric columns are **nullable**, so a caller may vote on one metric and not the others, and an aggregate's sample size is therefore **per metric** rather than per ballot. T160's AC3 — *every aggregate response carries the sample size* — and AC4's five-vote threshold both read per metric under this design.
   (3) **T170 AC4 — "a vote from one account counts once"** is a unique constraint on `(account, note)`.
-  (4) **D-05-01, restated: T180 AC1 cannot be a foreign key to the digest, and here is what replaces it.** `release.digest` carries **no unique constraint** — `release_digest_idx` is a plain `index(...)`, and the only unique on `release` is `release_bundle_version_key` on `(bundle_id, version)` — so `REFERENCES release(digest)` fails at DDL time. Making it unique would **assert something false**: the digest is `bundleDigest(dot, sortedCardDigests)`, content-addressed, so a fork that changes nothing collides with its upstream and a republish of byte-identical content under a new version collides with itself. T100 and T110 would both hit it.
-  What the driver enforces instead: **`run_report.release_id` is `NOT NULL` with a foreign key to `release(id)`**, so no report can exist without a real release, and that half is measured by inserting a row naming a nonexistent release and requiring it to fail at the driver. The submitted `digest` is stored **as submitted**, denormalised, so the report records what the CLI claimed.
-  What moves to T180 rather than being lost: resolving digest → release, and — because the digest is genuinely not an identity — **a submission whose digest matches more than one release is refused as ambiguous rather than attributed arbitrarily.** That is a T180 criterion and is recorded against it, not here. The pre-check AC4 originally forbade is unavoidable; what it was really protecting against — a report floating free of any release — is still enforced by the database.
+  (4) **D-05-01, RULED — and this reverses the ruling I made two hours ago on the blind author's framing, because the implementer measured the thing that decides it.** A foreign key to `release(digest)` is impossible: `release_digest_idx` is a plain `index(...)`, the only unique on `release` is `release_bundle_version_key`, and Postgres refuses the reference. Confirmed on a scratch database.
+
+  My first ruling was `run_report.release_id` FK to `release(id)` with the digest denormalised. **That is wrong, and `reportedCost(db, actor, releaseDigest)` is why** — T180's own published read takes a **digest**, not a release id. Storing `release_id` forces a join that can return **two** releases, so the read would be ambiguous at exactly the point B-16 says it is keyed. And a digest shared by two releases is **correct rather than a collision**: `bundleDigest` takes `{ dot, cardDigests }` and neither owner, slug nor version, so an unchanged fork produces the identical digest — measured through the real function, `sha256:0400893b…` for both — and a unique constraint would make `forkBundle` of an unmodified bundle unpublishable, which is T110's first case.
+
+  **Ruled: `run_report.release_digest text NOT NULL`, existence enforced by a trigger raising SQLSTATE 23503** — the same code a foreign key raises, so a consumer branching on it cannot tell the difference, and the criterion's own stated measurement (*must fail at the driver*, by raw SQL) is satisfied exactly. AC7 is untouched and T110 stays buildable.
+
+  **The gap, stated here rather than discovered later:** the trigger fires on insert and update only, so deleting the last `release` at a digest orphans its reports where a real FK would refuse. Guarding that needs a trigger on `release`, which is an alteration AC7 forbids. **It belongs to T120**, which is the task that first deletes a release, and is recorded against it.
+
   (5) **T160 AC1 — "a ballot cannot write `autonomy` or `security`"** is satisfied **by the column shape** under D-05-02: those columns do not exist, so there is nothing to constrain and nothing to drop. The 0..100 range on the three that do exist is a check constraint, measured by raw SQL at `-1` and `101`.
   (6) Every migration is **paired up/down and reversible against a scratch database**: apply, roll back, apply again, and the schema is identical at both applications — compared structurally, not by the migration file.
   (7) **No existing table is altered, renamed or dropped — with exactly one named exception**, and the ten tables T000 shipped are otherwise byte-identical in the schema after this task. Eight tasks have merged against them.
@@ -6761,7 +6807,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **AC1 needs a ruling and here it is: a session with `handle: null` is signed in and incomplete.** `account.handle` is nullable and T000's `SessionPayload` already publishes `handle: string | null`, so first sign-in mints a real session before a handle exists — that is settled by the schema, not open. What was open is what a handle-requiring route does with it. **It refuses with `problem+json` 403 and `type` `https://darkprint.dev/problems/handle-required`**, which is distinguishable from 401 (no session at all) and from 404 (a resource you may not see). Every route that writes anything owned by an account checks it. Allocation itself is T070's; this task calls it.
 
-  **`upsertFromGitHub` is keyed on `github_id`, never on `github_login`.** AC3 — "a GitHub rename leaves the handle and every attribution untouched" — is exactly this: the login is a display value that moves, the id does not. And AC6 — "two GitHub identities cannot map to one account" — is `account_github_id_key`, enforced by the index and tested with concurrent callers for the same reason as T070's AC5.
+  **`upsertFromGitHub` is keyed on `github_id`, never on `github_login`.** AC3 — "**D-50-14, scoped:** a GitHub rename leaves the handle and the `account` row untouched. **Attribution lives in the bytes of published cards** (T020/T100), which T050 neither writes nor reads, so "every attribution" named an assertion belonging to a task that has not run" — is exactly this: the login is a display value that moves, the id does not. And AC6 — "two GitHub identities cannot map to one account" — is `account_github_id_key`, enforced by the index and tested with concurrent callers for the same reason as T070's AC5.
 
   **Admissible message forms:**
 
@@ -6775,6 +6821,36 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 - **Goal:** sign in through GitHub, hold one account per handle, and serve and mutate the account's own fields.
 - **Contract:** GitHub OAuth establishes credentials; the handle is chosen at sign-up and stored independently (B-02, B-05), so the OAuth subject and the handle are separate columns and a GitHub rename moves neither. The record is `Account { author: Author, email, joinedAt, validatorSince?, validatorWeight, defaultVisibility, notifications[] }` (`lib/data/account.ts:51-73`) with `Author { username, displayName, avatarHue, validator, bio? }`. `email` never appears on a public surface. The three profile fields the settings form edits live are `displayName`, `bio`, `avatarHue`. A handle change reserves the old one through `T070`.
+- **Published routes** (D-50-03/D-50-02 — fourth instance of an owned route tree with nothing published; and `docs/architecture/seams.md` published a *contradicting* second reading, which is worse than silence because a blind author can bind to it. **The contract wins; §8 is being rewritten to match, by me, in the same commit as this line.**)
+
+        GET   /api/account                     -> 200 AccountRecord            | 401
+        PATCH /api/account/profile             { displayName?, bio?, avatarHue? }
+                                               -> 200 AccountRecord            | 400 401 403
+        PATCH /api/account/handle              { handle }
+                                               -> 200 AccountRecord            | 400 401 409
+        PATCH /api/account/email               { email }
+                                               -> 200 AccountRecord            | 400 401 403
+        PATCH /api/account/default-visibility  { visibility }
+                                               -> 200 AccountRecord            | 400 401 403
+
+  Every route answers `AccountRecord`, not seams.md's `{ ok, … }` shapes: the module already returns it, and a second mapping is a second thing to drift. Specifically **dropped**: `reservedOldHandle` (derivable — it is the previous `author.handle`) and `verificationSent` (**nobody sends**, so the field would be a lie D-50-12 makes permanent).
+
+  **`PATCH /api/account/handle` is the ONE write route that accepts a `handle: null` session** (D-50-05). It is the route that allocates the first handle, so requiring a handle to reach it makes AC1 unreachable. Every *other* write route 403s a handle-less session.
+
+  **On success it MUST append a fresh session cookie** — `sessionCookieHeader({ accountId, handle })` (D-50-06). `handle` lives **inside the signed token**, `withSession` never reads the database, and `Max-Age` is 30 days: without a re-mint an account that just allocated its first handle stays 403'd out of every route it just qualified for, for a month, and every downstream reader of `session.handle` (T100, T130, T262) sees the stale value. This is the *other* consequence of a stateless token, and T000 recorded only the no-revocation one.
+
+  **`DELETE /api/account` is NOT T050's** (seams.md SEAM-50 is wrong): deletion is `app/api/account/delete/**`, T120's. §8 is corrected with the rest.
+
+  **The problem type base is `https://darkprint.io/problems`** (D-50-01/D-50-03). The contract said `darkprint.dev`; it occurs **once in the whole repository**, in that line, while six live responses carry `.io` and `lib/server/http/problem.ts:8` defines it. **The code wins and the divergence is reported** — CLAUDE.md's own rule. `handle-required` is `https://darkprint.io/problems/handle-required`, 403.
+
+  **T070's errors cross the barrel and T050 maps them** (D-50-08): `HandleTakenError` → **409** via `conflict()`, `InvalidNameError` → **400** via `badRequest()`. Neither is re-rendered into a T050 form — the whitelist admits T070's two forms **passing through unaltered**, which keeps one author for each message.
+
+  **`changeHandle` MUST NOT pre-check with `checkHandle`** (D-50-07). `checkHandle` takes no actor, so it answers `reserved` for the caller's **own** released handle while `allocateHandle` succeeds on it. A `changeHandle` that gates on the check bypasses D-70-06's `WHERE` entirely and the reclaim fails through T050's path while T070's own path allows it. Call `allocateHandle` and let the statement arbitrate.
+
+  **Types, measured against the columns** (D-50-09/D-50-10/D-50-11): `PublicAuthor.handle` is `string | null`, matching `SessionPayload.handle` and the column, because AC1 rules a handle-less account legal and `getAccount` must be able to describe one. `validatorWeight` is published `number` over a `numeric(6,3)` column that drizzle types **`string`** and `pg` returns as `"1.000"` — the module converts, and `1.005` is representable so an integer reading is wrong. `avatarHue` is bounded **0–360** and refused outside it with `InvalidProfileError`: the column is `smallint`, so `40000` reaches the driver as SQLSTATE 22003 inside a `DrizzleQueryError` **whose message carries the statement and every bound parameter** (D-13). `displayName` ≤ 80 and `bio` ≤ 400 characters.
+
+  **Email has no predicate beyond non-empty** (D-50-12) and is **unverified** — nothing sends a verification, so no validity claim is made or tested.
+
 - **Acceptance criteria:** (1) a first sign-in with no handle cannot complete until one is chosen and allocated; (2) `email` is absent from every response a non-owner can obtain; (3) a GitHub rename leaves the handle and every attribution untouched; (4) a handle change makes the old handle permanently unclaimable; (5) reading the account without a session returns `problem+json` 401, never a fixture; (6) two GitHub identities cannot map to one account.
 - **Out of scope:** notification preferences (T190), saves (T140), deletion (T120), API keys (T230), the validator grant workflow.
 - **Log:**
@@ -6815,11 +6891,39 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   The operation, the measured quantity, and the limit. Never the input, never a fragment of it — an oversized submission's own bytes are the last thing a refusal about size should carry.
 
-  **Inherited hazards.** T-02 applies **fully and is not closed by anyone else**: `vocabulary` and `cardFiles` are caller-built objects, this module walks them, and the depth ceiling recorded at `81a4642` sits at the driver for the storage tasks but at `canonicalJson` here. T-01 applies. T-03 and T-04 do not — no database, no driver error.
+  **Inherited hazards.** T-02 (**D-40-09: reported as unreachable through this task's published surface — no in-process object graph reaches a walk here, and `canonicalJson` is reachable only through cards parsed from `cardFiles`, which is the closed parsed front door. MEASURE it before writing any guard; a guard nothing reaches is what this file charges most often.**) T-02 applies **fully and is not closed by anyone else**: `vocabulary` and `cardFiles` are caller-built objects, this module walks them, and the depth ceiling recorded at `81a4642` sits at the driver for the storage tasks but at `canonicalJson` here. T-01 applies. T-03 and T-04 do not — no database, no driver error.
 
 - **Goal:** run the engine's parse-resolve-analyze pass authoritatively over submitted bytes, returning the same diagnostics and readings the browser already produces.
 - **Contract:** accepts `{ manifest, dot, cardFiles: Record<string,string>, vocabulary? }`, returns `LoadBundleResult` — `{ blueprint?, analysis?, diagnostics: Diagnostic[] }` — at 200 (B-03), because a bundle that resolves with errors is an answer. Resolution **degrades**: a bundle whose DOT parsed returns an analysis over the nodes that resolved, and the three verdicts stay distinct — `resolves`, `unfinished` (n of m nodes carded), `rejected` (`components/upload/progress.ts`). Vocabulary defects are reported separately from bundle defects. Sibling endpoints validate a lone DOT buffer, a lone card and a lone vocabulary. Nothing is persisted. Limits are enforced here and stated in the refusal (T230 owns the numbers).
-- **Acceptance criteria:** (1) the nine archive bundles return the diagnostics, autonomy class and security level the build computes today; (2) a bundle with three of eight nodes carded returns `unfinished` with an analysis over the three, not an error; (3) a DOT that fails to parse returns a diagnostic carrying line and column; (4) an oversized submission is refused before parsing, with the limit named; (5) identical bytes return identical output including diagnostic order; (6) a card naming a term the supplied vocabulary lacks returns `card/unknown-term`, never silence.
+- **Published routes** (D-40-01/D-40-02). `seams.md` proposes five paths against these four functions and its request/response shapes cannot be joined to the module's signatures — SEAM-30 sends `vocabulary?: string` where `validateBundle` takes parsed terms, and the three siblings return `Diagnostic[]` where the seams return `{ card?, diagnostics }`. **Ruled: the siblings return a value beside their diagnostics, mirroring `lib/core`'s own `CardValidation`/`LoadBundleResult`, and the routes parse source into the module's arguments.**
+
+        POST /api/validate/bundle   { dot, cardFiles, manifest, vocabulary?: string }
+                                    -> 200 LoadBundleResult                    | 400 413
+        POST /api/validate/dot      { dot }        -> 200 { graph?, diagnostics }   | 400 413
+        POST /api/validate/card     { source }     -> 200 { card?, diagnostics }    | 400 413
+        POST /api/validate/ontology { source }     -> 200 { terms?, diagnostics }   | 400 413
+
+  **Diagnostics are a 200, not a failure.** `problem+json` is only for transport-level refusal: a malformed request body is **400**, an over-limit submission is **413** with `type` `https://darkprint.io/problems/limit-exceeded`. There is no 413 helper in `lib/server/http`, so the generic `problem()` is the route.
+
+  **`validateDot` is `parseDot` + `lintAttractor`** (D-40-13) — the two checks `scripts/generate-bundles.ts` calls "the two checks Attractor runs before it will execute a pipeline". `lintAttractor`'s nine codes are all warnings, so they never turn a 200 into a refusal.
+
+  **`vocabulary` is renamed `extensions`, and an `ontology?: OntologyView` is added** (D-40-03). `readonly OntologyTerm[]` fits the *extensions* slot of `ontologyView(base, extensions)` and nothing else, so the old name invited the reading that it was the whole vocabulary — under which `analysis.ontologyVersion` is always the shipped core's and B-08's re-score against a **stored** version is undrivable. `ontology` defaults to `ontologyView(CORE_ONTOLOGY, extensions)`, which is exactly what `lib/content/read.ts:146` does, so AC1 stays reproducible and T040 stays `Db`-free.
+
+  **`LimitExceededError` is exported from `@/lib/server/engine`** (D-40-06/D-40-11) with `{ limit: number; units: string }`, so a blind suite can pin identity by `instanceof` and not only arrival. Its admissible forms, filled rather than templated (D-40-05):
+
+        "validateBundle: the submission exceeds the limit of <n> bytes."
+        "validateBundle: the card count exceeds the limit of <n> cards."
+        "validateBundle: the node count exceeds the limit of <n> nodes."
+
+  **`limits` is optional and `DEFAULT_ENGINE_LIMITS` is exported** (D-40-07). Absent `limits` means **the default applies**, not unlimited — and the default is chosen so **all nine archive bundles pass**, which is what keeps AC1 and AC4 from contradicting each other. T230 later moves one constant.
+
+  **`maxNodes` is a POST-parse refusal** (D-40-06 blind / D-40-04 impl). Node count is a property of the parsed DOT, so AC4's "before parsing" binds `maxBytes` and `maxCards` only, and the no-parse-occurred discriminator applies to those two. Stated rather than dropped, because a limit that cannot be enforced before the work is still worth enforcing after it.
+
+  **`card/parse-error` is admissible for a non-card document** (D-40-08). `parseDocument` is `lib/core`'s only parser and is Forbidden to edit; adding `ontology/parse-error` is a core change nobody owns. The namespace names the **parser**, not the document.
+
+  **Vocabulary defects are not folded into `validateBundle`'s diagnostics** (D-40-04/D-40-08) — `loadBundle` deliberately does not, and `validateVocabularySource` is where they surface. **The product consequence is real and is recorded as a known gap**: a bundle submitted with a structurally broken vocabulary is scored against a view nobody checked and the caller is not told, which is the state `lib/content/read.ts` fails the whole build over. A route accepting both halves in one request should call both and return both; that is stated here and owed to whoever builds the upload cutover.
+
+- **Acceptance criteria:** (1) the nine archive bundles return the diagnostics, autonomy class and security level the build computes today; (2) **D-40-01, ruled (a): the verdict stays the caller's.** `bundleProgress` lives in `components/upload/progress.ts`, which is Forbidden to T040 and re-exported from nowhere, and `LoadBundleResult` has no field that can carry a verdict. Reimplementing it would be the second opinion `progress.ts`'s own header exists to prevent. So the criterion is a property of what **is** returned: a bundle with three of eight nodes carded returns an **analysis over the three** — `blueprint.nodes.length === 3`, `blueprint.graph.ids.length === 8`, every error in `AWAITING_CARD` or a shadow of it, and an autonomy class that differs from the whole bundle's, not an error; (3) a DOT that fails to parse returns a diagnostic carrying line and column; (4) an oversized submission is refused before parsing, with the limit named; (5) identical bytes return identical output including diagnostic order; (6) a card naming a term the supplied vocabulary lacks returns `card/unknown-term`, never silence.
 - **Out of scope:** persistence, publishing, the archive's own re-validation sweep.
 - **Log:**
   - 2026-08-13 orchestrator: created. Contract was already derivable; unchanged by the decisions.
