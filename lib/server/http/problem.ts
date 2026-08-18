@@ -5,7 +5,17 @@
    (a bundle that resolves with errors) are not this — see ok.ts.
    ============================================================ */
 
-const PROBLEM_TYPE_BASE = "https://darkprint.io/problems";
+/**
+ * The one definition of the problem-type namespace.
+ *
+ * Exported by ruling (T050, D-50-03), and the ruling is about the mechanism rather
+ * than the convenience: T050's contract published a `handle-required` type under
+ * `darkprint.dev`, a host occurring nowhere else in the repository, and it was
+ * reachable only because a task needing a type this module does not construct had to
+ * retype the base as a literal. A second copy of a constant that can drift is what
+ * produced that defect, so the copy is removed rather than the typo corrected.
+ */
+export const PROBLEM_TYPE_BASE = "https://darkprint.io/problems";
 const CONTENT_TYPE = "application/problem+json";
 
 export interface ProblemDetails {

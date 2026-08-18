@@ -7,13 +7,28 @@
    verification, the account upsert keyed by GitHub id, and the
    session cookie it sets on success.
 
-   Upserts a bare `account` row (github_id, github_login only) —
-   not full account creation. `handle` stays null until T070/T050
-   allocate one; that is why `SessionPayload.handle` is nullable
-   at all, not a shortcut taken here.
+   The upsert now goes through `upsertFromGitHub` rather than
+   being a statement in this file (T050). Same statement, same
+   `ON CONFLICT` on `github_id`, moved so the four other routes
+   that reach an account row and this one reach it the same way —
+   and so AC6's "two GitHub identities cannot map to one account"
+   is testable without driving a route.
+
+   `handle` still stays null here: T050 AC1 rules a session with
+   `handle: null` signed in and INCOMPLETE, which is why
+   `SessionPayload.handle` is nullable at all. `PATCH
+   /api/account/handle` is the one route that accepts such a
+   session, and it is where sign-up finishes.
+
+   The redirect stays `/`, recorded as a known gap: AC1 reads as
+   though sign-in should land somewhere that asks for a handle,
+   and no such page exists — `app/**` pages are T262's cutover,
+   not this task's, so inventing one here would be worse than
+   naming the gap.
    ============================================================ */
 
-import { getSharedDbClient, schema } from "@/lib/db";
+import { getSharedDbClient } from "@/lib/db";
+import { upsertFromGitHub } from "@/lib/server/accounts";
 import {
   clearOAuthStateCookieHeader,
   readOAuthStateCookie,
@@ -21,7 +36,7 @@ import {
   sessionCookieHeader,
   verifyOAuthState,
 } from "@/lib/server/auth";
-import { badRequest, problem } from "@/lib/server/http";
+import { PROBLEM_TYPE_BASE, badRequest, problem } from "@/lib/server/http";
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -51,7 +66,10 @@ export async function GET(request: Request): Promise<Response> {
     // (missing config vs. a genuine GitHub-side failure) is for server logs, not this
     // public body.
     return problem(request, {
-      type: "https://darkprint.io/problems/github-oauth-failed",
+      /* Built from the exported base rather than from a literal: the second copy of
+         this string is what produced D-50-03, a `darkprint.dev` type in a contract
+         that occurs nowhere else in the repository. */
+      type: `${PROBLEM_TYPE_BASE}/github-oauth-failed`,
       title: "GitHub sign-in failed",
       status: 502,
       detail: "GitHub sign-in failed. Try again.",
@@ -59,17 +77,16 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const { db } = getSharedDbClient();
-  const [account] = await db
-    .insert(schema.account)
-    .values({ githubId: identity.githubId, githubLogin: identity.login })
-    .onConflictDoUpdate({
-      target: schema.account.githubId,
-      set: { githubLogin: identity.login, updatedAt: new Date() },
-    })
-    .returning({ id: schema.account.id, handle: schema.account.handle });
+  const account = await upsertFromGitHub(db, {
+    githubId: identity.githubId,
+    githubLogin: identity.login,
+  });
 
   const headers = new Headers({ location: new URL("/", request.url).toString() });
-  headers.append("set-cookie", sessionCookieHeader({ accountId: account.id, handle: account.handle }));
+  headers.append(
+    "set-cookie",
+    sessionCookieHeader({ accountId: account.accountId, handle: account.handle }),
+  );
   headers.append("set-cookie", clearOAuthStateCookieHeader());
   return new Response(null, { status: 302, headers });
 }
