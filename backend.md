@@ -1318,8 +1318,20 @@ imports is ritual, and here the ritual is paid for by somebody else's numbers.
 
 **I granted the gate slot to T005's implementer by name, told three other sessions separately that I
 was off the host, and never told any of them that somebody else was ON it.** Three worktrees ran
-`vitest` inside its slot: T040's adversary, T050's implementer, T050's blind author. **None of them
-did anything wrong.** A released slot does not propagate, and neither does a held one.
+`vitest` inside its slot. A released slot does not propagate, and neither does a held one.
+
+**But T050's implementer refused the generous attribution and it was right to, because the two
+readings point at different fixes.** The rule as dispatched was *the three consecutive full-suite runs,
+**and every DB-touching targeted run** — in-process probes and reading stay free*. Its scoped runs were
+**DB-free by construction**, so they were **inside the rule as written**, and it would make them again
+on that wording.
+
+**The rule's domain and every detector's domain have never matched.** The rule governs *DB-touching*
+runs; the samplers count ***`vitest`* process groups**. So **a session obeying the rule perfectly still
+appears in every sample**, and the gap is exactly the set of DB-free scoped runs the rule explicitly
+permitted. **That is why this happened while three careful sessions were each being careful.** The fix
+is to the rule's **scope** — *any `vitest` invocation is slot-gated* — which finally makes the rule and
+the instrument describe the same set. The announcement fix is real and **separate**.
 
 **It cost a real measurement.** The triple came back non-identical — `1 failed`, then `3 failed`
 twice — with both extras being **20-second timeouts in tests that run at 1 263 ms and 1 694 ms in
@@ -1358,6 +1370,46 @@ check changed what the file says.** The zero means **unreachable *given D-50-20 
 make the arm reachable — and the two would go uncaught together.** That is the new shape: not a gap in
 one guard, but **a pair of guards each resting on the other's subject, with no observer over the
 composition.** Each is individually honest. The conjunction is what nothing measures.
+
+## A permission's scope is a claim about a deliverable, not about a session
+
+**T050's blind author, unprompted, from its own artefacts.** My brief said its cells *need no database
+— only a closed port — so this is off-slot work you can do now*. **That was true of the cells and it
+stayed true: the committed file touches no database.** What needed one was the **verification method
+it added on top** — the whole suite against a reference tree, then seven mutations. **Nine DB-touching
+invocations in an eight-minute window, roughly 63 scratch create/drop cycles against the shared
+Postgres, concurrent with T005's triple.**
+
+**The scope of a permission goes stale exactly like the scope of a check.** I scoped it to a property
+of the **deliverable**; it extended the work and carried the permission across unexamined.
+
+**And the disconfirming evidence was in its own prose.** Its file header reads *"no database is used
+anywhere in this file … so it runs off-slot while another session holds the gate."* It had written
+down that the off-slot property belonged to **that file** — and then ran nine suites that did not have
+it. **A distinction stated in your own words is not a distinction you are applying.**
+
+**The check is one question and it is cheap: does THIS COMMAND have the property the permission was
+granted for — not does the round.**
+
+## A path-matching detector cannot see a throwaway tree, and this run builds throwaway trees
+
+**The attribution was inverted and the direction matters.** T005's sampler named
+`darkprint-wt-t050-accounts-tests`. **The runs in that directory were the two that touch no database at
+all.** The nine heavy ones ran from a scratchpad reference tree, on a command line carrying nothing
+identifying. **The instrument named the harmless pair and could not see the costly nine.**
+
+**So the load T005 measured is under-attributed, not over** — and under-attribution reads as *absence*,
+which is the direction that makes a contended host look like a defect in the code.
+
+**The instrument and the practice were introduced separately and do not compose.** This run now asks
+blind authors to build **throwaway sighted reference trees** — that is how a blind suite gets measured
+against a correct module — and every contention detector identifies foreign work **by worktree path**.
+Counting `node`-with-`vitest` by process tree has the same hole for a different reason: **it identifies
+your own runs correctly and everyone else's only as a count.**
+
+**A detector that matches on a path or a command substring sees only the processes that happen to
+carry the string.** Same defect as `23505` in a different costume and as the `cardFiles` grep, at the
+level of a **process** rather than a token or a read.
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
