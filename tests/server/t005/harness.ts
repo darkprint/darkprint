@@ -464,7 +464,8 @@ export const PUBLISHED = {
     "run_report  release_digest text NOT NULL (AC4, D-05-01), account_id (the submitter, " +
     "uuid NOT NULL, FK to account.id), model, provider, hardware text, input_size int, " +
     "harness_version text, cost_units numeric, duration_ms int, reported_at, created_at",
-  apiKey: "api_key  account_id, token_hash text NOT NULL unique, label text, created_at, revoked_at NULL",
+  apiKey: "api_key  account_id, token_hash text NOT NULL unique, label text, created_at, revoked_at " +
+    "NULL — and under D-05-08 `label` is NOT NULL, since only NULL is ever written explicitly",
   targetKind:
     "`target_kind` reuses the existing target_kind enum (blueprint | card | term); any " +
     "narrowing is the consuming task's, not a check constraint here",
@@ -474,6 +475,12 @@ export const PUBLISHED = {
     "AC4, ruled: run_report.release_digest text NOT NULL, existence enforced by a trigger " +
     "raising SQLSTATE 23503 — the same code a foreign key raises, so a consumer branching on " +
     "it cannot tell the difference",
+  d0508:
+    "D-05-08, ruled: a column in the published block is `NOT NULL` unless written `NULL`. " +
+    "Only NULL is ever written explicitly — deleted_at NULL, revoked_at NULL, edited_at NULL " +
+    "and the three smallint NULL metrics. Required wins on the consumers rather than on " +
+    "preference: T230 publishes issueKey(..., label: string) and ApiKeyRecord.label: string, " +
+    "and T180's RunReport has all nine fields required",
   d0507:
     "D-05-07, RULED: the Published signatures block now reads `release_digest text NOT NULL`, " +
     "NOT `release_id`, and NO foreign key into `release` — the digest is the key because " +
@@ -482,12 +489,91 @@ export const PUBLISHED = {
     "needs and which the block had not carried",
 } as const;
 
-/** The unique constraints the published block declares, as (table, columns). */
+/**
+ * The unique constraints the published block declares, as (table, columns).
+ *
+ * `api_key` is here even though no acceptance criterion names it, and that is the point.
+ * It was the one published unique this table left out, and leaving it out cost two
+ * instruments at once: `falsifyUnique`'s partial-index assertion never reached it, so a
+ * `WHERE`-qualified unique on `token_hash` would have gone unseen; and `ac8-names` iterates
+ * exactly this object, so a `schema.ts`-only rename of its index was a D-14 defect nothing
+ * observed. The untested region was the one table with no criterion pointing at it, which
+ * is where the rule says to look.
+ */
 export const PUBLISHED_UNIQUES = {
   save: ["account_id", "target_kind", "target_id"],
   ballot: ["account_id", "bundle_id"],
   note_vote: ["note_id", "account_id"],
+  api_key: ["token_hash"],
 } as const;
+
+/**
+ * D-05-08, ruled: **a column in the published block is `NOT NULL` unless written `NULL`.**
+ *
+ * This object is the whole block read under that clause, and it exists because the one cell
+ * it was created to fix was never the interesting part. The block wrote `token_hash text NOT
+ * NULL` and `label text` on one line and said nothing about what an absent marker meant;
+ * T005's implementer read unmarked as required and this author read it as nullable, and both
+ * are defensible against the text. **Nine columns were divergent and exactly one reddened** —
+ * `api_key`'s, because it was the single place this suite hardcoded an `INSERT` instead of
+ * deriving the required set from the catalogue. The other eight agreed by luck.
+ *
+ * A green that rests on luck at eight of nine cells is a green with one measurement in it.
+ * So the convention itself is asserted here, at every published column of every table,
+ * rather than the one cell being patched: if the block and the schema disagree again the
+ * suite reds at the column that disagrees, not wherever a hardcoded literal happens to sit.
+ */
+export const PUBLISHED_COLUMNS: Readonly<Record<string, readonly [string, boolean][]>> = {
+  /* [column, nullable] — nullable is true only where the block writes NULL. */
+  save: [
+    ["account_id", false],
+    ["target_kind", false],
+    ["target_id", false],
+    ["created_at", false],
+  ],
+  ballot: [
+    ["account_id", false],
+    ["bundle_id", false],
+    ["efficacy", true],
+    ["reliability", true],
+    ["transparency", true],
+    ["updated_at", false],
+  ],
+  note: [
+    ["account_id", false],
+    ["target_kind", false],
+    ["target_id", false],
+    ["body", false],
+    ["created_at", false],
+    ["edited_at", true],
+    ["deleted_at", true],
+  ],
+  note_vote: [
+    ["note_id", false],
+    ["account_id", false],
+    ["created_at", false],
+  ],
+  run_report: [
+    ["release_digest", false],
+    ["account_id", false],
+    ["model", false],
+    ["provider", false],
+    ["hardware", false],
+    ["input_size", false],
+    ["harness_version", false],
+    ["cost_units", false],
+    ["duration_ms", false],
+    ["reported_at", false],
+    ["created_at", false],
+  ],
+  api_key: [
+    ["account_id", false],
+    ["token_hash", false],
+    ["label", false],
+    ["created_at", false],
+    ["revoked_at", true],
+  ],
+};
 
 /** The three writable metrics, and the two a ballot may never carry. */
 export const WRITABLE_METRICS = ["efficacy", "reliability", "transparency"] as const;
