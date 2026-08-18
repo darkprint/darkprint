@@ -1697,6 +1697,43 @@ worked example**, and the worked example was `NamingStoreError` because that is 
 in. **The fix for a presence check is not "assert the specific value I was looking at"; it is find the
 value property that is actually universal.**
 
+## The slot gates host CPU, not the string `vitest` — third rule I wrote narrower than its own property
+
+**T050's blind author had a `typecheck` owed on its post-merge tree and did not take it, while holding
+a rule that permits it.** *Any `vitest` invocation is slot-gated* — `tsc` is not `vitest`, so the letter
+was on its side. Its reasoning: **a seven-minute full-project compile on a shared host has exactly the
+property the permission exists to protect, and the property is host load, not a string.**
+
+**That is the check it said it would carry — *does THIS COMMAND have the property the permission was
+granted for* — applied to the RULE'S wording rather than only to its own round.** And it applied it in
+the direction that cost it something, which is the only version of that test that means anything.
+
+**Amended, and this binds everyone: the slot gates any command that takes meaningful host CPU.** Full
+suites, targeted `vitest`, `tsc`, `npm run build`, `eslint`. **Reading, `git`, editing and in-process
+probes stay free.** Ask by name for anything else.
+
+**This is the third rule I have written narrower than the property I had just identified**, in one
+evening:
+
+* I found that `tsc` and `eslint` are invisible to every contention sampler, said so, and then wrote the
+  rule as *any `vitest` invocation* — **naming the instrument's blind spot and then codifying the blind
+  spot.**
+* D-50-21's predicate: I found *answers a `Response`* too weak and strengthened it to *the `store-failed`
+  500*, **which is false for two of the three classes** — the worked example promoted to a universal.
+* The original slot rule governed *DB-touching* runs while every detector counted `vitest` groups, so a
+  session obeying it perfectly still appeared in every sample.
+
+**The pattern is mine and it is one move: I identify a property, then write the rule against the
+instance in front of me instead of against the property.** The instance is what I have just been
+looking at; the property is what the rule is for. **A rule written against an instance is a rule that
+will need this correction later, from whoever hits the case the instance did not cover.**
+
+**And it corrected its own note to defer to the better instrument rather than leaving a wrong headline
+above a correction** — its sampler counted descendants of its own pid, T050's implementer diagnosed it
+from the outside, and it rewrote the note rather than appending to it. **Same lesson as striking a
+retracted figure from the surface it is read from, applied by its author to their own file without
+being asked.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
