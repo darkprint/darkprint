@@ -1172,7 +1172,14 @@ The construction that tests the relation instead:
   off **the module the class lives in**, not off an import line.
 * **Relation, driven**: for each such class, if `withStore` passes an instance through **unwrapped** —
   which *is* `isDecision` saying yes, **observed rather than read** — then `withAccountErrors` must
-  answer a `Response`. Red if it throws.
+  answer **the `store-failed` `problem+json` 500**, not merely *a* `Response`. Red if it throws, and red
+  if it answers something else.
+
+  **The identity clause is T050's adversary's, and my wording lacked it.** *Answers a `Response`* is
+  satisfied by **any** `Response` — an arm returning `badRequest` for a store fault passes a guard that
+  only checks presence. **That is value-versus-presence at a fourth altitude**: a field, a partition,
+  the scope of a sentence, and now **the object a guard accepts as its answer.** A guard built on the
+  weaker clause holds that an arm *exists* and nothing about what it *does*.
 
 So a `lib/server/policy` fault class enters the domain **from the barrel walk**, the day it exists,
 with nobody touching the guard.
@@ -1410,6 +1417,53 @@ your own runs correctly and everyone else's only as a count.**
 **A detector that matches on a path or a command substring sees only the processes that happen to
 carry the string.** Same defect as `23505` in a different costume and as the `cardFiles` grep, at the
 level of a **process** rather than a token or a read.
+
+## A contention detector must filter on activity, never on a name
+
+**T050's adversary, on its own instrument, twice in one evening.**
+
+**v1 under-reported** — it counted foreign `vitest` by process group, so my `tsc` and `eslint` were
+invisible while I ran them against three sessions' measurements all evening.
+
+**v2 over-reported, and that failure was committed inside the fix for the first.** It widened the
+process list; **in the same file it wrote *"the fix is not only a longer list"*, and then shipped a
+longer list.** First real use: **41 foreign processes.** Read rather than counted — 10 were T005's real
+`vitest` group, 1 was ChatGPT.app matching on `--experimental`, and **30 were idle MCP servers
+belonging to other projects: 8 days of uptime, under 2 seconds of CPU each, 0.0%.** **Thirty processes
+that have used two seconds of CPU in a week, reported as contention.** That is T070's adversary's
+manufactured-contention detector, rebuilt by the session charging list-based predicates in the same
+breath.
+
+**The rule: the predicate was never supposed to be a name.** The question is not *is this named like a
+build tool* but **is this taking CPU from my run.** v3 filters on **activity** — `%CPU` over a floor,
+across every process on the host — and the name is only a **label**. An idle MCP server is invisible
+**because it is idle**, not because nobody listed it. Ownership by pgid unchanged and still measured.
+
+## The slot serialises peers; the host is not peers
+
+**v4 splits the count, and the split changes how every triple in this run should be read.**
+
+```
+peers=0  host=23  load=141.47
+  159.9%  com.apple.Virtualization.VirtualMachine.xpc
+   35.9%  claude --session-id …          <- the orchestrator
+   33.9%  WindowServer
+   18.2%  cmux
+```
+
+**A Virtualization VM at 159.9% is the dominant load source on this host and no gate slot can
+serialise it.** Docker, WindowServer, Spotlight and XprotectService share that channel. So the
+adversary's round-1 line — *foreign vitest 0, load 56 to 110* — was **true and far narrower than it
+sounded**: it had no idea what the load was, and now the load has a name and the name is not an agent.
+
+**Three identical runs at load 141 are a stronger determinism claim than three at load 20**, and three
+non-identical ones become **diagnosable** rather than ambiguous, because the channel that moved can be
+named.
+
+**And the split has a stated limitation that lands on me: the orchestrator's own CPU classifies as
+`host`**, because the split asks whether a process names a darkprint path and `claude`'s args do not.
+**So `peers=0` means *no peer build or test*, not *no peer working*.** Reported to me rather than left
+for me to discover, which is the standard.
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
@@ -8688,7 +8742,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **D-50-20, ruled: `changeHandle` takes `SELECT … FOR UPDATE` on the account row, and does NOT retry.** Its implementer's proposal, taken with its reasoning. The measured `40P01` is contention on **one row** — the control is decisive, eight *different* accounts renaming concurrently give 8 fulfilled and 0 rejected — and the cause is a lock-order inversion: a plain `SELECT`, then the reservation insert, then the account update. **Locking the account row first removes the inversion rather than recovering from it**, and every rename of that account then queues on one lock in a consistent order. **Prevention over retry**: a retry loop needs a bound, a backoff and a claim that the whole transaction is safe to replay — three things to get wrong where one line removes the condition.
 
-  **D-50-21, ruled and owed in round 2's fix rather than deferred: `withAccountErrors` answers every class `isDecision` recognises.** `NamingStoreError` is on that list and has no arm, so it leaves through the fallback reserved for what the wrapper does **not** recognise — outside `problem+json`, which is the exact divergence D-50-18 was ruled on. Same `store-failed` 500 as `AccountStoreError`, and **not re-wrapped**: the original travels on `cause` so the operation named in a rendering stays the one that failed. Separating the envelope decision from the wrapping decision is the fix; they were taken as one. **Guard, behavioural and constructed: the domain is every error class exported from every `lib/server/<module>/index.ts` MINUS accounts' own — provenance read off the module a class lives in — and the relation is driven: if `withStore` passes an instance through unwrapped (which is `isDecision` saying yes, observed rather than read), `withAccountErrors` must answer a `Response`.** Not a comparison of import lines against `instanceof` identifiers: that guards the **spelling** of the relation and goes green on an arm that is present and wrong. Not *every member owes an arm* — that construction is withdrawn: it reds on `AccountError`, whose arm would swallow the four distinct mappings this ruling protects, and the subtype-aware variant reds on `NotAccountOwnerError`, deliberately unmapped. Provenance excludes `AccountError` **structurally, by the import it arrives on**, with no exemption for anyone to maintain, and states the actual property: the wrapper owes an envelope for faults **this module did not author**. Unlike D-50-20 this is the same failure mode and the same remedy one class name apart, so it is not scope creep: a fix that closes a defect for one class has closed an instance.
+  **D-50-21, ruled and owed in round 2's fix rather than deferred: `withAccountErrors` answers every class `isDecision` recognises.** `NamingStoreError` is on that list and has no arm, so it leaves through the fallback reserved for what the wrapper does **not** recognise — outside `problem+json`, which is the exact divergence D-50-18 was ruled on. Same `store-failed` 500 as `AccountStoreError`, and **not re-wrapped**: the original travels on `cause` so the operation named in a rendering stays the one that failed. Separating the envelope decision from the wrapping decision is the fix; they were taken as one. **Guard, behavioural and constructed: the domain is every error class exported from every `lib/server/<module>/index.ts` MINUS accounts' own — provenance read off the module a class lives in — and the relation is driven: if `withStore` passes an instance through unwrapped (which is `isDecision` saying yes, observed rather than read), `withAccountErrors` must answer the `store-failed` `problem+json` 500 — not merely *a* `Response`, which any arm satisfies including one returning `badRequest`.** Not a comparison of import lines against `instanceof` identifiers: that guards the **spelling** of the relation and goes green on an arm that is present and wrong. Not *every member owes an arm* — that construction is withdrawn: it reds on `AccountError`, whose arm would swallow the four distinct mappings this ruling protects, and the subtype-aware variant reds on `NotAccountOwnerError`, deliberately unmapped. Provenance excludes `AccountError` **structurally, by the import it arrives on**, with no exemption for anyone to maintain, and states the actual property: the wrapper owes an envelope for faults **this module did not author**. Unlike D-50-20 this is the same failure mode and the same remedy one class name apart, so it is not scope creep: a fix that closes a defect for one class has closed an instance.
 
   **Its own two caveats are kept rather than smoothed.** It orders same-account renames only; cross-account inversion was not measured and is not thought reachable, since each transaction touches its own account row plus its own target and old reservation rows. **And the witness is a disappearance, not an assertion** — inducing `40P01` deterministically is its own problem, so the strongest available evidence is the adversary's sixteen-way repro returning **0 rejected** after the change. That is weaker than a test and it is what is available; **it is recorded as such rather than dressed up.** Owed in its own round, after the D-50-18 fix lands, with that repro as its measurement.
 
