@@ -53,7 +53,7 @@ CREATE TABLE "run_report" (
 	"hardware" text NOT NULL,
 	"input_size" integer NOT NULL,
 	"harness_version" text NOT NULL,
-	"cost_units" numeric(18, 6) NOT NULL,
+	"cost_units" numeric NOT NULL,
 	"duration_ms" integer NOT NULL,
 	"reported_at" timestamp with time zone NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL

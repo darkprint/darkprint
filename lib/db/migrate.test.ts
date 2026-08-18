@@ -64,6 +64,44 @@ async function publicTableNames(pool: Pool): Promise<string[]> {
   return result.rows.map((row) => row.table_name);
 }
 
+/**
+ * The schema as the database reports it: columns with type, nullability and default,
+ * every index, every constraint. `publicTableNames` cannot express AC2's "the prior
+ * state" — a rollback that drops a table and rebuilds it without its foreign key
+ * passes a table-name check — and it cannot express a migration that changes no table
+ * set at all, which is the case the assertions below used to get wrong.
+ */
+async function schemaSnapshot(pool: Pool): Promise<string> {
+  /* Ordered BY `ordinal_position` and deliberately not selecting it. The number is a
+     physical-layout artefact: Postgres keeps a dropped column's slot, so a column
+     dropped and re-added by a correct down/up round trip comes back at 8 where it left
+     at 7, and asserting it reds a migration that did nothing wrong. Measured on a
+     one-column probe migration — the only difference across the round trip was that
+     field. Row ORDER still carries the property worth holding, which is that the
+     columns come back in the same sequence. */
+  const columns = await pool.query(
+    `select table_name, column_name, data_type, is_nullable,
+            column_default, numeric_precision, numeric_scale, udt_name
+     from information_schema.columns where table_schema = 'public'
+     order by table_name, ordinal_position`,
+  );
+  const indexes = await pool.query(
+    `select tablename, indexname, indexdef from pg_indexes
+     where schemaname = 'public' order by tablename, indexname`,
+  );
+  const constraints = await pool.query(
+    `select conrelid::regclass::text as tbl, conname, contype,
+            pg_get_constraintdef(oid) as def
+     from pg_constraint where connamespace = 'public'::regnamespace
+     order by conrelid::regclass::text, conname`,
+  );
+  return JSON.stringify(
+    { columns: columns.rows, indexes: indexes.rows, constraints: constraints.rows },
+    null,
+    1,
+  );
+}
+
 describe.skipIf(!hasDb)("lib/db/migrate", () => {
   it("AC1/AC2: applies to an empty database, is idempotent, and rolls back to the prior state", async () => {
     const baseUrl = process.env.DATABASE_URL as string;
@@ -80,24 +118,35 @@ describe.skipIf(!hasDb)("lib/db/migrate", () => {
       const applied = await migrateUp(pool);
       expect(applied).toEqual(migrationIds());
       expect(await publicTableNames(pool)).toEqual(declaredTableNames());
+      const full = await schemaSnapshot(pool);
 
       // AC1: re-running is a no-op, not a re-apply.
       expect(await migrateUp(pool)).toEqual([]);
       expect(await publicTableNames(pool)).toEqual(declaredTableNames());
+      expect(await schemaSnapshot(pool)).toEqual(full);
 
-      /* AC2: rollback returns the schema to the prior state. With a second migration
-         on disk the "prior state" is no longer the empty one, and that is a stronger
-         assertion than this test could make when rolling back the only migration
-         there was — one step must land on the *intermediate* schema, not on nothing.
-         A down script that over-drops passes an is-it-empty check and fails here. */
+      /* AC2: rollback returns the schema to the prior state — asserted as a round trip
+         rather than as a claim about what one step looks like.
+
+         This previously read `not.toEqual([])` and `not.toEqual(declaredTableNames())`,
+         which encoded an assumption nobody had stated: that the LAST migration changes
+         the TABLE SET. That is true of every migration on disk today and false of the
+         first column-only one anybody writes, which would red both lines while being
+         entirely correct. Measured, not reasoned: a probe migration adding one column
+         reds them here.
+
+         The round trip is immune to the shape of the change. Down one, up one, and the
+         schema must be structurally identical — which holds whether the migration added
+         six tables or widened one column, and still catches a down script that
+         over-drops or one that rebuilds a table without its foreign key. */
       const ids = migrationIds();
       const reverted = await migrateDown(pool, 1);
       expect(reverted).toEqual(ids.slice(-1));
-      expect(await publicTableNames(pool)).not.toEqual([]);
-      expect(await publicTableNames(pool)).not.toEqual(declaredTableNames());
+      expect(await migrateUp(pool)).toEqual(ids.slice(-1));
+      expect(await schemaSnapshot(pool)).toEqual(full);
 
-      // The rest of the way down is empty, one step at a time.
-      expect(await migrateDown(pool, ids.length - 1)).toEqual(ids.slice(0, -1).reverse());
+      // And all the way down is empty, one step at a time.
+      expect(await migrateDown(pool, ids.length)).toEqual(ids.slice().reverse());
       expect(await publicTableNames(pool)).toEqual([]);
 
       // Rolling back with nothing applied is also a no-op, not an error.

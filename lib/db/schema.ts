@@ -466,6 +466,18 @@ export const noteVote = pgTable("note_vote", {
  * supplied by a caller and B-16's promise is that the registry stores what it was
  * given; `double precision` cannot round-trip every decimal the CLI can send.
  *
+ * **Unqualified, with no precision or scale, and D-05-09 is why.** It shipped as
+ * `numeric(18, 6)` — which reintroduces the exact failure the paragraph above rejects
+ * `double precision` for, and does it silently: `0.0000001` stores as `0.000000` and
+ * `0.1234567` as `0.123457`. A submitted cost can become **no cost at all**, with no
+ * error, and it then feeds T180's median and p10/p90 where nothing can see it.
+ *
+ * The general form, because it is not about this column: **a bound that truncates
+ * rather than refuses converts a rejectable input into a wrong number.** A refusal is
+ * loud and the caller can recover; a truncation is silent and lands in an aggregate.
+ * Bounding caller-supplied numeric is defensible — but then the bound is published and
+ * it refuses explicitly, rather than being a rounding rule nobody stated.
+ *
  * `account_id` is the submitting account, for T180's AC5 — a report on one's own
  * blueprint is accepted and aggregated but must not count toward T130's `validated`,
  * which needs an account to filter on. It is **not** in T005's Published signatures
@@ -496,7 +508,7 @@ export const runReport = pgTable("run_report", {
   hardware: text("hardware").notNull(),
   inputSize: integer("input_size").notNull(),
   harnessVersion: text("harness_version").notNull(),
-  costUnits: numeric("cost_units", { precision: 18, scale: 6 }).notNull(),
+  costUnits: numeric("cost_units").notNull(),
   durationMs: integer("duration_ms").notNull(),
   reportedAt: timestamp("reported_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
