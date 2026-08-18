@@ -355,6 +355,63 @@ The owner ruled it 2026-08-17: **the original holder may reclaim.** Folded into 
 in two halves, because an implementation satisfying either alone is wrong in a different direction —
 the lesson AC6 already taught, applied before it could cost a round.
 
+## Classify a zero from the space the guard covers, not from the inputs one suite happens to send
+
+T050's adversary re-ran all ten of its zero-red mutations against the **implementer's colocated
+suite** — a second axis — and **one of its own classifications was wrong.**
+
+It had called `getPublicAuthor` dropping its grammar check an **equivalent mutant**: an illegal handle
+reaching the query matches no row, so `undefined` either way. **True for every input the blind suite
+sends** — padded, uppercase, two-segment. The colocated suite sends a NUL inside a handle, which
+**reaches the driver, raises 22021, and returns a thrown `AccountStoreError` instead of `undefined`.**
+The guard is load-bearing for exactly one input class.
+
+Its own account is the rule: **it classified from the inputs one suite happens to use rather than from
+the space the guard covers.** *The scope of a check is itself a claim* — arriving inside its own
+classification of somebody else's coverage, which is the hardest place to see it.
+
+**The two-axis method is the transferable part.** A zero has six readings and a count separates none
+of them; running every zero against a *second* suite separates **held-elsewhere** from
+**unobserved-anywhere** without any argument. Eight of its ten were held colocated. Two were zero on
+both axes, and only those two are candidates for the harder readings.
+
+## D-50-18 makes a property nothing observes load-bearing
+
+`AccountStoreError`'s **class identity** is observed by nothing in the tree — no test can tell it from
+a bare `Error` carrying the same message. The blind author reported it unpinnable and was right.
+
+**The ruling changes its standing rather than its observability.** A route must branch on that class to
+produce the 500, so the property nothing witnesses becomes the one the new criterion rests on. Until a
+witness exists, **"the route answers 500" and "the route answers 500 *for this class*" are the same
+green.**
+
+Worth generalising: **a ruling can promote an unobserved property into a load-bearing one without
+making it observable**, and the promotion is invisible at the moment it happens because the ruling is
+about something else. Whoever implements D-50-18 owes a witness for the class, not only for the status.
+
+## A refuted candidate, and the deadlock the instrument found instead
+
+Its candidate finding — concurrent renames by one account leaving an orphaned `active` reservation —
+is **refuted**. Reported as a result rather than dropped: the mechanism was wrong and Postgres does not
+permit the interleaving.
+
+**What the probe found instead is a deadlock**, read from the cause chain because the module's own
+error surface cannot answer it by design: `40P01` on `update "account"`. **Its control is what makes
+it a finding rather than a story** — eight *different* accounts renaming concurrently give 8 fulfilled
+and 0 rejected, so it is contention on **one account row**, not concurrency.
+
+**Data integrity is better than predicted**: the transaction aborts and rolls back cleanly, which is
+exactly why no orphan survives. What a caller gets is a **500 for a transient, retryable condition** —
+and unlike the `?? null` defect this **is reachable through the wire**, by a double-submitted form.
+**Reported, not charged**: no ruling forbids it, and whether `changeHandle` retries on `40P01` is a
+decision rather than a defect.
+
+**And the sanitizer earned its keep on a real driver fault rather than a synthetic one.** Every
+deadlock rejection rendered as exactly `"changeHandle: the account store failed."` with `JSON.stringify`
+`"{}"`, from a genuine `DrizzleQueryError` carrying the full statement. **Stronger evidence for AC2's
+fault path than the closed-port probe, because the error was real** — a probe proves the wrapper
+catches what you hand it; a live fault proves it catches what the driver produces.
+
 ## A derived fill answers "what must I supply?" and never "is that what was published?"
 
 T005's blind author declined to patch the one cell and gave the accounting: **nine columns diverged
@@ -3865,7 +3922,7 @@ it does not decide differently inside a worktree.
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
-| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | — |
+| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | reverted | — |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | blind suite 98 tests, 96 red on the absent module, 33 mutations 32 caught / 0 MISS / 1 equivalent; adversary round 1 FAIL at `cf1f7a1` on D-40-A/B/C plus nine GAPs; round 2 `impl-done` at `e1ca2e4` |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | todo | — |
@@ -7839,7 +7896,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T050, Accounts and sessions
 
-- **State:** impl-done
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t050-accounts` (impl), `../darkprint-wt-t050-accounts-tests` (blind)
 - **Branch:** `feat/t050-accounts` (impl), `test/t050-accounts` (blind)
 - **Depends on:** T000 (contract: session), T070 (contract: handle allocation)
