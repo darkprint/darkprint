@@ -25,7 +25,7 @@
    ============================================================ */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getSharedDbClient, schema, type Db, type DbClient } from "@/lib/db";
 import { decodeSession, encodeSession, SESSION_COOKIE_NAME } from "@/lib/server/auth";
 import { HandleTakenError, InvalidNameError } from "@/lib/server/naming";
@@ -411,6 +411,59 @@ describe.skipIf(!hasDb)("lib/server/accounts against Postgres", () => {
         }),
       );
       expect(response.status).toBe(400);
+    });
+  });
+
+  describe("D-50-21 at the transport: a naming fault the closed port cannot reach", () => {
+    /* **Scratch coverage, not verification** (docs/ORCHESTRATION.md, Agent A).
+
+       The blind axis could not write this cell and the reason is structural rather
+       than an omission: `changeHandle` reads the account row BEFORE it calls
+       `allocateHandle`, so a closed port fails at the first call and yields
+       `AccountStoreError` every time. The naming arm is unreachable from the transport
+       by any input — today, and more so once D-50-20 locks that row first.
+
+       It IS reachable with a live database whose `handle_reservation` is missing: the
+       account read succeeds, `allocateHandle` raises 42P01 through the real driver,
+       the real `lib/server/naming` wraps it into a genuine `NamingStoreError`, and the
+       wrapper must answer the envelope with `allocateHandle` still named. One
+       expectation carries both the envelope clause and the not-re-wrapped clause.
+
+       A RENAME rather than a DROP, and the difference is reversibility: a dropped
+       table has to be re-created from DDL restated here, which is a second copy of
+       `lib/db/schema.ts` that can drift. A rename is undone by its inverse, in a
+       `finally`, so the table is back whatever the assertions do.
+
+       It does NOT close the composition gap: nothing observes D-50-20's ordering, so
+       an implementation that reached naming FIRST would break that ruling and make
+       this cell transport-reachable, and this test passes under both orderings. */
+    it("answers problem+json 500 naming allocateHandle, from a real 42P01", async () => {
+      const id = await seedAccount("gh-42p01", null);
+      await db.execute(sql`alter table handle_reservation rename to handle_reservation_hidden`);
+      try {
+        const response = await patchHandleRoute(
+          signedRequest("https://darkprint.io/api/account/handle", { accountId: id, handle: null }, {
+            method: "PATCH",
+            body: JSON.stringify({ handle: "mara-veil" }),
+          }),
+        );
+        expect(response.status).toBe(500);
+        expect(response.headers.get("content-type")).toBe("application/problem+json");
+        const body = (await response.json()) as { type: string; detail: string };
+        expect(body.type).toBe("https://darkprint.io/problems/store-failed");
+        expect(body.detail).toBe("allocateHandle: the database call failed.");
+        /* The account read got past, which is what makes this the NAMING arm rather
+           than the account one — the discriminator between the two 500s. */
+        expect(body.detail).not.toContain("changeHandle");
+        expect(body.detail).not.toContain("getAccount");
+        /* And a real driver error carries the statement; none of it may render. */
+        const raw = JSON.stringify(body);
+        for (const tell of ["42P01", "handle_reservation", "insert into", "relation"]) {
+          expect(raw).not.toContain(tell);
+        }
+      } finally {
+        await db.execute(sql`alter table handle_reservation_hidden rename to handle_reservation`);
+      }
     });
   });
 

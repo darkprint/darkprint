@@ -50,7 +50,7 @@ import {
   conflict,
   problem,
 } from "@/lib/server/http";
-import { HandleTakenError, InvalidNameError } from "@/lib/server/naming";
+import { HandleTakenError, InvalidNameError, NamingStoreError } from "@/lib/server/naming";
 import type { Actor } from "@/lib/server/policy";
 import { AccountStoreError, HandleRequiredError, InvalidProfileError } from "./errors";
 
@@ -118,11 +118,63 @@ export async function withAccountErrors(
     if (err instanceof InvalidProfileError) return badRequest(request, err.message);
     if (err instanceof HandleTakenError) return conflict(request, err.message);
     if (err instanceof InvalidNameError) return badRequest(request, err.message);
-    /* Last, and deliberately after the four decisions: a store fault is the fallback
-       among things this wrapper recognises, never the first thing it tries. */
+    /* Store faults last. **Order is inert here and that is checked, not asserted** —
+       the classes are pairwise disjoint, so no value can match two arms and no
+       reordering can change an answer. `assertArmsDisjoint` below is what makes that a
+       measured property rather than a preference; the adversary moved this arm first
+       and got 0 red, 0 green, correctly classified as an equivalent mutant.
+
+       Last is kept as the right default for the day someone makes one class a subtype
+       of another — which is the day order silently starts mattering and this comment
+       silently starts lying. The check reds on that day. The previous wording said
+       "deliberately", which read as a property the code depended on while nothing did:
+       release-last's shape, and this task's own lesson. */
     if (err instanceof AccountStoreError) return storeFailed(request, err.message);
+    /* D-50-21. `NamingStoreError` is on `isDecision`'s list and is raised at two sites
+       inside `changeHandle`'s transaction, so without this arm it left through the
+       re-throw below — the arm this header reserves for what is NOT recognised. Same
+       500 as `AccountStoreError` and **not re-wrapped**: its message already names
+       `allocateHandle`, and re-wrapping would replace it with one naming
+       `changeHandle`, moving the named operation away from the one that failed. The
+       original travels on `cause`. Not enveloping and not re-wrapping were one decision
+       in this file and are two. */
+    if (err instanceof NamingStoreError) return storeFailed(request, err.message);
     throw err;
   }
+}
+
+/**
+ * Every class this wrapper maps, in arm order. Data rather than a chain of `instanceof`
+ * so the disjointness below can be measured over it instead of restated by hand.
+ */
+const MAPPED_CLASSES = [
+  HandleRequiredError,
+  InvalidProfileError,
+  HandleTakenError,
+  InvalidNameError,
+  AccountStoreError,
+  NamingStoreError,
+] as const;
+
+/**
+ * The arms match pairwise-disjoint classes, so arm order cannot change an answer.
+ *
+ * Four lines, beside the wrapper rather than in a test file, because it is a claim
+ * *this* code makes about *itself*: the comment on the last arm says order is inert,
+ * and this is what stops that sentence from being a preference that reads as a
+ * guarantee. It reds the day someone makes one class a subtype of another, which is
+ * the day order starts mattering and the comment starts lying.
+ *
+ * Returns the offending pairs rather than throwing, so its own test can name them.
+ */
+export function armsNotDisjoint(): readonly string[] {
+  const bad: string[] = [];
+  for (const A of MAPPED_CLASSES) {
+    for (const B of MAPPED_CLASSES) {
+      if (A !== B && A.prototype instanceof B) bad.push(`${A.name} is a subtype of ${B.name}`);
+    }
+  }
+  return bad;
 }
 
 /**

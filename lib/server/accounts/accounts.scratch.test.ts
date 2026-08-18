@@ -333,6 +333,23 @@ describe("D-50-18: a recognised, sanitized fault answers problem+json 500", () =
     await expect(withAccountErrors(request, raise(new Error(message)))).rejects.toThrow(message);
   });
 
+  it("D-50-21: NamingStoreError gets the same 500, with allocateHandle still named", async () => {
+    /* Status is asserted per class HERE rather than in the quantified guard, because
+       500 is false of the other two foreign classes: `HandleTakenError` is 409 and
+       `InvalidNameError` is 400. A guard quantifying 500 over foreign classes would red
+       two correct arms. */
+    const message = "allocateHandle: the database call failed.";
+    const response = await withAccountErrors(request, raise(new NamingStoreError(message)));
+    expect(response.status).toBe(500);
+    const body = (await response.json()) as { type: string; detail: string };
+    expect(body.type).toBe("https://darkprint.io/problems/store-failed");
+    /* Not re-wrapped: its message already names the operation that failed, and
+       re-wrapping would replace it with one naming `changeHandle`. */
+    expect(body.detail).toBe(message);
+    expect(body.detail).toContain("allocateHandle");
+    expect(body.detail).not.toContain("changeHandle");
+  });
+
   it("still re-throws what it does not recognise, which is what that arm is FOR", async () => {
     await expect(withAccountErrors(request, raise(new TypeError("a bug")))).rejects.toThrow(TypeError);
   });
