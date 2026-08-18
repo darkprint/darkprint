@@ -1088,10 +1088,27 @@ itself.
 
 **What this does to the two guards owed at D-40-21, which is still good news.** The behavioural
 equality covers the **number** — `JSON.stringify` drops a view's methods and keeps its `ontology`
-property, so the literal includes the whole curated vocabulary that `submissionOf` excludes, and the
-two diverge by kilobytes rather than by an amount a tolerance could hide (`core.ts` is 15 802 bytes
-of source for 49 terms; the serialised property is that order, which is what the claim needs). The
-structural check covers the **fifth route**. **Neither covers the cost**, and that gap is one gap
+property, so the literal includes the whole curated vocabulary that `submissionOf` excludes.
+
+**The divergence, measured, after two of us quoted adjacent quantities instead:** `CORE_ONTOLOGY`
+serialises to **8 359 bytes** over 49 terms, **8 372** as a view's data property. The implementer's
+*tens of kilobytes at minimum* was asserted; my `core.ts` **15 802** was the **source**, which carries
+comments and TypeScript syntax that serialisation drops and lacks the JSON quoting it gains — a
+**1.9x over-statement** used as a proxy, flagged as a proxy, and still wrong. **It measured one
+adjacent quantity, I measured a different adjacent quantity, and the one that mattered was named by
+neither until somebody ran it.**
+
+**And 8 359 is a FLOOR, not a value** — the distinction that matters more than the correction. It is
+the divergence when the view is built on the curated core. **The case the guard exists for is a
+caller supplying its own vocabulary, where the divergence is that caller's serialised vocabulary:
+unbounded, and precisely the quantity nothing measures.** A number written without the word *floor*
+reads as *the* answer, and this one would have made the guard look like it protects against 8 KB.
+
+Why the magnitude is not load-bearing anyway: the guard is **exact equality between two integers**, so
+any non-zero divergence reds. The size only decides whether anyone would be tempted to write a
+tolerance, and 8 359 against a 2 MiB default is not a rounding difference that invites one.
+
+The structural check covers the **fifth route**. **Neither covers the cost**, and that gap is one gap
 rather than two: it lands with whoever writes the first route that builds a view from caller bytes,
 in the same place T-02's note already puts a materialised-size cap.
 
