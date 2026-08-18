@@ -5382,7 +5382,7 @@ it does not decide differently inside a worktree.
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | D-50-21 verified at `0325022`, 21 ahead, verification changed no lines. Triple identical `1 failed, 5427 passed, 0 skipped` of 5428; reconciliation `5428 - 219 = 5209`, agreeing with the adversary's `5424 - 215 = 5209` from a different tree. **F1 1 red** (guard alone, via `ArchiveConflictError` from a barrel the guard never names), **F2 1** (module red, guard green, as pre-registered), **F3' 3**, **F4 3 ⊃ F1 with 2 unique**. Four-site pairing: sites pairwise disjoint, mechanism a superset of the sites it serves. Gates 0 unfiltered. Adversary round 4 pending |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 3 at `c3aa441`: **D-40-D** iterative frame stack, `MAX_NESTING_DEPTH = 10 000` refusing as a typed error, asserted over **outcome kind across four orders of magnitude** with thresholds as witnesses under it. **D-40-E** 50 classes x 9 positions over `SerializeJSONProperty`'s own branches plus 500 composed values, generator asserted before its results, `normalise` ordering making the three charged classes unreachable. Gates `tsc` 0, `lint` 0, scoped `vitest` 69/69, peak foreign 0 over 22 samples. Sweep 10 mutations, 9 CAUGHT, 1 equivalent (S10, third round running). Count 79 -> 69 reconciled exactly. **Full suite not claimed** |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
-| T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | todo | — |
+| T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | claimed | — |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | — | — | todo | — |
@@ -9806,12 +9806,32 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   - 2026-08-15 implementer, round 2: **three defects addressed, two falsified, and the gate block cleared by implementation rather than by a suite rewrite.** Took the adversary's tree at `a2cac88` rather than re-merging, then merged `backend` at `110dd6b`.
 ### T081, Registry store wrapper: D-13 for the read model
 
-- **State:** todo
+- **State:** claimed
 - **Depends on:** T080 (merged)
 - **Owns:** `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**`
 - **Contract:** D-13 says no rejection may carry the failed statement or its bound parameters. **T080 ships no error class and no store wrapper**, so a driver failure escapes a merged, tagged route as a raw `DrizzleQueryError` **whose message opens with the full query**. Measured by T050's adversary against a closed port: `GET /api/cards` and `GET /api/blueprints` both threw `Failed query: select "id", "owner_id", "slug", … from "bundle"`. `params:` was empty only because that query is unparameterised — a parameterised one carries the bound values, which is D-13's clause verbatim.
 
   Five of six server modules ship an `errors.ts`; `lib/server/registry/` has one `catch`, in `snapshot.ts`, for `canonicalJson`. **This is not an envelope defect like T050's D-50-18** — there the class is recognised, sanitized and published and only the wrapper is missing. **Here there is nothing to wrap.** The store wrapper comes first and the envelope second.
+
+- **Published signatures** (barrel: `@/lib/server/registry`. Measured against `backend` at `8e97192` before dispatch — see the note below.)
+
+        class RegistryStoreError extends Error {
+          constructor(operation: string, cause: unknown)   // `message` is the OPERATION alone
+        }
+
+        withRegistryStore<T>(operation: string, work: () => Promise<T>): Promise<T>
+        withRegistryErrors(request: Request, work: () => Promise<Response>): Promise<Response>
+
+  **`withRegistryErrors` mirrors T050's `withAccountErrors` deliberately, and `problem()` is consumed from `@/lib/server/http` rather than edited** — that barrel is T000's and T050 is modifying it right now, so touching it is a partition breach. Verified before dispatch: `problem`, `badRequest`, `conflict`, `notFound`, `unauthorized` are all exported from `lib/server/http/index.ts`.
+
+  **OPEN, and to be answered by measurement rather than by analogy:** T050's `withStore` passes **decisions** through unwrapped and sanitizes the rest. **Whether this read model has any decisions at all is not established** — it may be that every fault here is a store fault, in which case `isDecision`'s shape is not owed and inventing one is D-50-21's *ruling implemented as narrowly as its worked example* running the other way. **Measure what the published reads can throw before deciding.** If there are none, say so in the module and say how it was established.
+
+**Measured before dispatch, and it is worse than this section said.** `app/api/blueprints/route.ts` is:
+
+        const { db } = getSharedDbClient();
+        return ok({ blueprints: await blueprints(db, actorFrom(request)) });
+
+  **No `try`, no `catch`, no wrapper — there is no fault path at all**, so this is not "a sanitizer is missing" but "nothing on this route has ever considered failure". `lib/server/registry/` has exactly one `catch` in the whole module, in `snapshot.ts` around `canonicalJson`, and it is not on a query. **Five of six server modules ship an `errors.ts`; this one ships none**, and eleven routes import the barrel.
 
 - **Acceptance criteria:** (1) `RegistryStoreError` is exported from `@/lib/server/registry`, sealed to D-13's four-part clause, carrying **the operation alone** — no statement, no bound parameter, no SQLSTATE — with the driver error on `cause`; (2) every published read wraps, measured by pointing `DATABASE_URL` at a **closed port** and driving each one, so the check needs no live database and no gate slot; (3) **no rejection from any published function contains a substring of the SQL it ran**, quantified over the whole surface with a floor so an empty case list reds; (4) **D-50-18 applies here**: a store fault answers `problem+json` **500** with `type` `https://darkprint.io/problems/store-failed`, not Next's generic 500, on all eleven routes; (5) `tests/error-hygiene.test.ts` measures the new class at both arities — it could measure nothing before, because the barrel exported no error class at all.
 - **Out of scope:** any change to what the reads return. This is the fault path only.
