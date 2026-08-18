@@ -68,11 +68,23 @@ export async function createTestDb(): Promise<TestDb> {
  * Every table `lib/db/schema.ts` declares, derived rather than listed.
  *
  * It was a hand-written list in child-before-parent order, and T005 is the reason it
- * is not any more: six tables arrived and the list would have gone on truncating ten
- * of them. Nothing reds at that — the six are simply never emptied — so the failure
- * would have surfaced as rows surviving a `beforeEach` in T140, T160, T170, T180 and
- * T230, five suites that each believe this function cleared them. A list that has to
- * be edited per table is a list that stops being edited.
+ * is not any more: six tables arrived and the list named ten. A list that has to be
+ * edited per table is a list that stops being edited.
+ *
+ * How that fails is worth stating exactly, because the obvious guess is wrong and it
+ * was measured rather than reasoned about. The guess is silent contamination — rows
+ * surviving a `beforeEach` that reported success. What actually happens is louder and
+ * narrower: every one of the six carries a foreign key to `account`, so the old
+ * `delete from "account"` at the end of the list raises 23503 the moment any suite
+ * writes to one of them. Measured against the real prior implementation with a single
+ * `save` row present: `Failed query: delete from "account"`.
+ *
+ * Louder is not the same as visible, which is why deriving it still matters. That
+ * throw lands in `beforeEach`, and a failing hook runs no test — so it reports as a
+ * failed *file* with nothing added to the failed *test* count, the trap `backend.md`
+ * already records at `Tests 3954 passed` beside two failed files. And the silent
+ * reading does become true for any future table with no foreign-key path into the
+ * set, which a hand list and a cascade would both miss.
  *
  * Deriving it also removes the ordering, which was the other thing that could be
  * wrong: a single `TRUNCATE` over the whole set is order-independent, where N deletes
@@ -83,9 +95,9 @@ function allTables(): PgTable[] {
      is narrower than `PgTable`, so a predicate against it cannot typecheck. */
   const exported: unknown[] = Object.values(schema);
   const tables = exported.filter((value): value is PgTable => is(value, PgTable));
-  /* A derivation that finds nothing would make this function a silent no-op, which is
-     strictly worse than the hand list it replaces: every suite would run against the
-     previous test's rows while its `beforeEach` reported success. Fail closed. */
+  /* A derivation that finds nothing WOULD be the silent no-op described above — every
+     suite running against the previous test's rows while its `beforeEach` reports
+     success, with no throw anywhere to give it away. Fail closed. */
   if (tables.length === 0) {
     throw new Error(
       "resetTestDb: no tables found in the `@/lib/db` schema export — the derivation is broken, " +
