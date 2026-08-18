@@ -9967,11 +9967,22 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Published signatures** (barrel: `@/lib/server/registry`. Measured against `backend` at `8e97192` before dispatch — see the note below.)
 
         class RegistryStoreError extends Error {
-          constructor(operation: string, cause: unknown)   // `message` is the OPERATION alone
+          constructor(operation: string, cause: unknown)
         }
+        // D-81-01: message is EXACTLY `${operation}: the registry store failed.`
 
         withRegistryStore<T>(operation: string, work: () => Promise<T>): Promise<T>
         withRegistryErrors(request: Request, work: () => Promise<Response>): Promise<Response>
+
+  **D-81-01, ruled, closing a contradiction I published in adjacent paragraphs.** This block said `message` is *the operation alone* and the paragraph below said the module *mirrors T050's `withAccountErrors`*, whose form is `changeHandle: the account store failed.` **Two different strings, each satisfying one sentence and violating the other**, and a blind author cannot write the exact-match pin this run asks for without choosing — which reds a correct implementation that chose the other way. Charged by T081's blind author, which **refused to choose** and asserted the property instead.
+
+  **Ruled: `` `${operation}: the registry store failed.` ``, exactly.** It matches the convention already shipped twice — `archive/errors.ts:74` is `` `${operation}: the write failed.` `` and T050's is `` `${operation}: the account store failed.` `` — so this is the run's existing form rather than a third one. **The exact-match cell is now writable and is owed.**
+
+  **Its three invariances are kept ALONGSIDE the pin, not replaced by it**, because they test properties a literal cannot: one reader with two different argument lists gives a byte-identical message (D-13's clause verbatim); **two unreachable servers differing in user, password, port and database give a byte-identical message** (no driver value); and the thirteen readers' messages are **pairwise distinct**, without which a constant string satisfies both invariances perfectly and names nothing.
+
+  **D-81-02, ruled: `detail` is the instance's own `message`, byte for byte, and `title` is the problem type's own.** T081's blind author declined to inherit D-50-21 on the correct ground that it is numbered under T050 and **this file has no derivation for which tasks a ruling governs.** That is a real structural gap and the fix is not a citation: **a ruling that should govern more than one task is given a number in each task, because the task section is what binds.** So the predicate is republished here under its own id rather than pointed at.
+
+  **Its weaker assertion stands as well**: driving one route twice with different path segments must give a problem document identical apart from `instance`. A `detail` interpolating a handle, slug, id or phase diverges there, and that catches a leak the byte-equality pin would also catch — **two instruments, different failure modes, neither complete.**
 
   **`withRegistryErrors` mirrors T050's `withAccountErrors` deliberately, and `problem()` is consumed from `@/lib/server/http` rather than edited** — that barrel is T000's and T050 is modifying it right now, so touching it is a partition breach. Verified before dispatch: `problem`, `badRequest`, `conflict`, `notFound`, `unauthorized` are all exported from `lib/server/http/index.ts`.
 
