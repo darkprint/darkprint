@@ -2083,6 +2083,51 @@ objections are answered, and stopped. *A read of a file I am about to mutate is 
 preview.* And its dry-check is **void** because it matched uncommitted state — **a readiness claim gets
 a sha, including yours, including the second time.**
 
+## The oracle should be the thing being agreed with, not a second opinion about it
+
+**T040's implementer built a generator to replace D-40-E's hand-written corpus, and the generator
+carried a hand-set `droppable` flag per class.** So the cells excluded from the top position were those
+whose **raw** value is droppable — and `JSON.stringify({ toJSON: () => undefined })` is `undefined`
+too. `Buffer.byteLength` threw and the run died **inside the corpus**.
+
+**That is *droppability declared instead of derived* — the charge it was closing — committed inside the
+fix for it.** Third time today a session has reproduced the defect it was correcting, in the
+correction.
+
+**The repair is the general rule.** The partition now asks **`JSON.stringify` itself** whether the
+value has one, **which cannot make the same mistake because it IS the thing being agreed with.** A
+corpus establishing that two procedures agree must not carry a third party's opinion about what the
+answer is: **the oracle and the standard have to be the same object, or the corpus is testing the
+opinion.** And the excluded half is **asserted rather than skipped** — non-empty, every member
+genuinely undefined, two named `toJSON` cells required to be in it.
+
+## A millisecond bound is a host-dependent threshold; a ratio cancels the host
+
+**It wrote `< 2000 ms` into a test and it failed at 2 187 ms on a quiet host while holding the slot —
+and deserved to.** That is the **same defect D-40-D charged** — a boundary that moves with the machine —
+written into the test for the fix for it.
+
+**Replaced by the property the ruling actually states: hold `maxBytes` fixed and vary the DEPTH.** An
+exponential walk costs 2^15 times more at depth 40 than at 25; a bounded one costs the same. **The
+ratio cancels the host.** Any assertion about cost should be a ratio between two runs on the same
+machine, never a number.
+
+## A harness reports a failing set; whether the patch did what its name says is a question about the patch
+
+**Its first S1 was an equivalent mutant of its own making** — meant to reproduce D-40-E's array half, it
+reddened nothing, because it kept the post-normalise droppable check so the mutated code still computed
+the right number. The real defect costs 0; the patch cost 4. Rewritten to touch only the raw value, it
+reds **3** independently.
+
+**Third time in that task a mutation has not done what its name said, and the harness structurally
+cannot tell.** It reports which tests failed. **Whether the edit expresses the defect it is named for is
+a question about the edit**, and no failing set answers it. The half it *can* do it does: it refused
+S1's first pattern outright when the pattern did not match.
+
+**So a zero from a mutation that did not mutate is indistinguishable from a zero from an unobservable
+defect**, and only reading the patched file separates them. **That is a seventh reading of a zero and it
+is the only one the harness cannot classify.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -5241,7 +5286,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | D-50-21 built at `ac6064d`, 20 ahead, **labelled UNVERIFIED in the commit**: `typecheck 0`, `lint 0` unfiltered, **no `vitest` of any kind** — slot held elsewhere. The `NamingStoreError` arm not re-wrapped, the disjointness clause plus `armsNotDisjoint()`, the behavioural provenance guard failing closed twice, and an `ALTER TABLE … RENAME` transport witness. Adversary round 3 at `1192181` measured the D-50-18 tree: blind axis **0 red on all six, pre-registered**, triple identical `1 failed, 5423 passed, 0 skipped` of 5424, reconciliation exact. Verdict waits on F1/F2/F3'/F4 against `ac6064d` |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | reverted | adversary round 2 **FAIL** at `a7f0a88`: **D-40-D** wire-reachable — the recursive bounded walk throws a bare `RangeError` on a 6 134-byte body, 0.3% of the limit, where the ruled formula answers to depth 1 000 000; **D-40-E** the 22-shape corpus misses nine divergences in three classes, array case under-counts ~5x, barrel-only. 42 mutations two passes: 31 CAUGHT / 6 MISS / 11 GAP / 0 SILENT GREEN / 0 equivalent. All four claimed equivalents have discriminators. C1's pre-registered green branch hit: `resolve.ts:191` is NOT the mechanism, warrant reverts to sampled. D-40-21's two guards in and falsified. No full suite, owed at a slot |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 3 at `c3aa441`: **D-40-D** iterative frame stack, `MAX_NESTING_DEPTH = 10 000` refusing as a typed error, asserted over **outcome kind across four orders of magnitude** with thresholds as witnesses under it. **D-40-E** 50 classes x 9 positions over `SerializeJSONProperty`'s own branches plus 500 composed values, generator asserted before its results, `normalise` ordering making the three charged classes unreachable. Gates `tsc` 0, `lint` 0, scoped `vitest` 69/69, peak foreign 0 over 22 samples. Sweep 10 mutations, 9 CAUGHT, 1 equivalent (S10, third round running). Count 79 -> 69 reconciled exactly. **Full suite not claimed** |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | todo | — |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -9397,7 +9442,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
