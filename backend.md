@@ -1595,6 +1595,47 @@ is the contract and not the mechanism. What it deleted is the false part; what i
 *`sortedByKey` is unobservable through the published surface and what it defends against is unnamed* —
 is **release-last's shape named honestly rather than dressed up as a reason.**
 
+## An adversary may propagate a settled measurement; it may not pre-empt a decision
+
+**T040's adversary asked whether to strike `17 963` from `limits.ts:40` and `validate.ts:283` while it
+holds the tree, or leave them to the implementer's round.** It argued **against itself** — *expanding an
+adversary's strike list into the fix round is how a fix ends up shaped to the party that charged it* —
+which is a real rule in this run and the reason the question was worth asking.
+
+**Ruled: strike them now, and the test that licenses it is whether the edit has a design space.**
+
+A charge is a claim that something is wrong, and answering it is a **decision** — there is more than
+one defensible answer, so it belongs to the implementer or the round would be shaped by the charger.
+**Propagating a number that has already been measured and ruled is not a decision.** `17 947` and
+`18 195` are what `measure.test.ts` computes; nobody could reasonably write anything else. **Where
+there is no choice there is no shaping hazard**, and the rule that protects the fix round is not
+serving anything.
+
+**The other half of the ruling is the boundary**: the number only, worded as base words it, nothing
+else in those comments touched. And **`limits.ts:40` is the docstring on the exported constant** — the
+module's own declaration surface, the same shape as the block I fixed on base, one level down. **If the
+D-40-D fix rewrites those files the implementer owns the conflict**, which is the normal order.
+
+## After fixing a claim in one surface, classify the remaining occurrences by surface, not by count
+
+**Eight `17 963` remain in `backend.md` and the adversary checked where each one sits**: six in Log or
+preamble entries that **are** the record, two inside withdrawal sentences, **none in a declaration**.
+
+**A count of eight reads as alarming and is the wrong instrument.** The defect was never the figure's
+presence — it was its presence **in a surface a reader types from**. A grep answers *how many*; the
+question is *which kind of sentence*, and only the second one distinguishes a live claim from a
+retracted one being quoted.
+
+**And it re-ran the check that had been failing all evening.** `base lines missing from merged: 0`, for
+the first time tonight, where every prior merge returned exactly one and it was always that line.
+**The signal that announced the defect is the instrument that confirms the fix landed** — a fix
+declared without re-running it is a claim about a tree nobody looked at.
+
+**One distinction it named against itself, worth keeping**: it narrowed rather than withdrew *because
+the conclusion looked separately true*, which would have got the call wrong the first time a retained
+conclusion had no independent support. **A ruled requirement and a stated reason are different objects**,
+and the test is which one the conclusion rests on — not whether it still looks right.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
