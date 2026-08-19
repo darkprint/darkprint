@@ -2452,6 +2452,35 @@ replacing a literal it had written before the constant existed — **D-50-03's o
 copy of a constant is what produced `darkprint.dev`.** With the suite still writing the whole URL as a
 literal, deliberately: **an expectation built from the subject asserts the subject agrees with itself.**
 
+## Pre-register the red you are about to cause
+
+**T081's implementer yielded the slot and, in the same message, registered the failure its own next run
+will produce:**
+
+> *When I next report gate numbers from this worktree, `tests/error-hygiene.test.ts` will be red with
+> `expected 18 to be 17`, and it is the ONLY red I expect outside base's own known failing set. Any
+> other red, or that one carrying a different number, is a finding and stops my round.*
+
+**It is right, and the mechanism is worth stating: `error-hygiene` builds its domain from the WORKING
+tree** — `readdirSync(lib/server)` plus a dynamic import of each barrel — **not from `backend`.** So a
+worktree carrying an unmerged error class discovers one more than base does, and the new equality reds.
+**That is the arriving-class case firing exactly as designed, in the only place it can fire before a
+merge.**
+
+**Its reason for registering it is the general rule: a red you predict in advance is evidence; the same
+red diagnosed afterwards is a repair.** Nobody can tell them apart from the failing set, and the author
+of the explanation is the party who most wants it to be the first kind.
+
+**And it names the consequence it cannot avoid rather than working around it:** its run cannot produce a
+clean full-suite line while base says 17 and its tree contains 18. **Not a defect in either tree** — the
+same shape as base's one deliberate red — and it resolves in the merge commit where `toBe(18)` and
+`KNOWN_UNSEALED = []` land together.
+
+**Its note on the partition is the sharper statement of what I conceded:** *the edit being two
+characters is what makes it feel like it does not need permission, and that feeling is the whole
+mechanism.* **The cheapness of an act is not authority to perform it** — which is the same sentence as
+its refusal to commit on a peer's word, pointed at a different boundary.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -5609,7 +5638,7 @@ it does not decide differently inside a worktree.
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
-| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, tagged `t050-verified`. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
+| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 3 at `c3aa441`: **D-40-D** iterative frame stack, `MAX_NESTING_DEPTH = 10 000` refusing as a typed error, asserted over **outcome kind across four orders of magnitude** with thresholds as witnesses under it. **D-40-E** 50 classes x 9 positions over `SerializeJSONProperty`'s own branches plus 500 composed values, generator asserted before its results, `normalise` ordering making the three charged classes unreachable. Gates `tsc` 0, `lint` 0, scoped `vitest` 69/69, peak foreign 0 over 22 samples. Sweep 10 mutations, 9 CAUGHT, 1 equivalent (S10, third round running). Count 79 -> 69 reconciled exactly. **Full suite not claimed** |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | claimed | — |
