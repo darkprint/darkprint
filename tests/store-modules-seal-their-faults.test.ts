@@ -57,7 +57,15 @@ function shippedServerFiles(): readonly string[] {
  * acceptable: T081 exists, it is a raw `DrizzleQueryError` escaping a merged tagged route with the
  * full query in its message, and D-13 is the clause it violates.
  */
-const KNOWN_UNSEALED: readonly string[] = ["registry"]; // T081
+/*
+ * Empty since T081 merged (`752721d`), and the emptying is the exemption expiring exactly as designed:
+ * `lib/server/registry/errors.ts` is now on `backend`, so the second test below RED and forced this
+ * line to be looked at. Note the axis that decides WHEN it fires — both loops read from `backend`, so
+ * the guard could not red in any worktree carrying an unmerged class, only in the merge commit itself.
+ * T081's adversary measured that distinction against a prediction of mine that had treated this guard
+ * and `error-hygiene` as one; they differ in exactly the scope axis this file's own fix was about.
+ */
+const KNOWN_UNSEALED: readonly string[] = [];
 
 describe("a lib/server module that reaches Postgres seals its faults", () => {
   it("every module importing @/lib/db exports at least one error class", () => {
