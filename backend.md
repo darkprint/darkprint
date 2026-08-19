@@ -2747,6 +2747,36 @@ had credited, three times running. **M3's extra red is the good news inside it**
 fired through its two-factor half, because with nothing unboxing, `onBoxed` is 0 and **the probe reports
 itself dead.**
 
+## A suite cannot catch the deletion of its own inline assertion
+
+**T040's blind author mutated four of its own controls and caught three.** The fourth **deletes an
+inline two-factor assertion** — and **a suite cannot catch the deletion of one of its own assertions.**
+An inline control is held by **review**, not by the suite.
+
+**So *aim a mutation at the control* has a floor, and it is worth knowing where.** A control that is a
+separate test can be deleted and the count moves. A control that is a line inside another test **leaves
+nothing behind when it goes.**
+
+**And it reported 3-of-4 with the reason rather than 4-of-4 with a mutation reshaped until it passed.**
+That choice is the entry: **a falsification suite's own score is the easiest number in this run to
+improve by changing the question.**
+
+## The reference reproduced D-40-D by accident, which is the strongest corroboration it could get
+
+**T040's blind author's reference still took its byte count through `JSON.stringify`.** At depth
+**9 000** — *below* the ceiling, inside a manifest, under vitest — that threw `RangeError: Maximum call
+stack size exceeded`, **and its own depth test caught it.**
+
+**That is D-40-D reproduced independently, on a different code path, by a party who was not looking for
+it and could not see the implementation.** The charge was raised by an adversary against a recursive
+walk; this is the same defect arriving in a hand-written reference, which makes it a property of the
+**approach** rather than of anyone's code. **The recursive serialiser is not usable as the number's
+source at the depths the ceiling admits.**
+
+Its replacement — an iterative walk with an explicit stack — **agrees with
+`Buffer.byteLength(JSON.stringify(input), "utf8")` exactly on a real archive bundle**, which is D-40-17's
+boundary passing **and a genuine second route to the number rather than a restatement of the first.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -10094,6 +10124,8 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         LimitExceededError  "<operation>: <what> exceeds the limit of <n> <units>."
         LimitExceededError  "validateBundle: the nesting depth exceeds the limit of 10000 levels."
         CircularReferenceError  (D-40-22, exported from `@/lib/server/engine`)
+        UnserializableValueError  "<operation>: the submission contains a value JSON cannot serialise."
+                                  (D-40-23, exported from `@/lib/server/engine`)
 
   The operation, the measured quantity, and the limit. Never the input, never a fragment of it — an oversized submission's own bytes are the last thing a refusal about size should carry.
 
@@ -10167,6 +10199,14 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **D-40-D, ruled (adversary round 2, charged and accepted): the bounded walk must be ITERATIVE, with an explicit stack and a frame ceiling that refuses as a typed error.** The recursive walk throws a bare `RangeError` on a **6 134-byte** body whose `manifest` nests — **0.3% of the 2 MiB default** — where D-40-17's literal answers that same input at 6 134 and keeps answering to depth 1 000 000. **D-40-20's substitution was paid for by *the number is preserved exactly for every submission that is accepted*, and here that clause is SILENT rather than violated**: the input is neither accepted nor refused and no number is produced. The boundary is host-dependent, not input-dependent — depth 7 000 direct, 3 000 under the route — which makes it untestable as a threshold and unacceptable as a behaviour. Precedent is T010/T020's `isWellFormedDeep`: one mutable `open` set, explicit enter/leave frames, O(1) per visit. **A ceiling is required as well as a shape**, because an iterative walk over a 100 MB nested body still runs.
 
   **D-40-E, ruled (same round): the 22-shape corpus backing the walk's equivalence with D-40-17 is a LIST, and what is owed is a construction over the serialiser's equivalence classes.** Nine divergences measured in three classes it does not reach — `toJSON` returning a droppable, `toJSON` reading its key argument, and boxed primitives — with the array case **under-counting ~5x**, a `maxBytes` bypass through the barrel. All barrel-only, so the charge is against the warrant rather than a live wire defect. **Three more rows reproduces the defect one size larger.**
+
+  **D-40-23, ruled on T040's blind author's question, and it is D-40-22's situation one ruling later.** The published block names a type for *too large* and for *a cycle* and **names none for a value the serialiser REFUSES**. A bigint is neither. Measured on the branch: `limits.ts:263` lets `JSON.stringify(value)` **throw naturally** — the comment calls it *the serialiser's own behaviour rather than a decision taken here* — so **a bare `TypeError` escapes a module whose every other rejection is typed and sealed.** That is **D-40-C's shape, unfixed**: a circular `manifest` gave `TypeError` and was ruled into `CircularReferenceError` for the same reason, and *hygiene intact, so `error-hygiene` cannot see it* applies here identically.
+
+  **Ruled: `UnserializableValueError`, exported from `@/lib/server/engine`, sealed like every other published class**, with the admissible form
+
+        UnserializableValueError  "<operation>: the submission contains a value JSON cannot serialise."
+
+  **The value is never named** — an unserialisable input's own content is the last thing a refusal about it should carry, which is the same clause the size refusal carries. **Barrel-only, and that is not a reason to leave it untyped**: D-40-C was barrel-only too, and T100/T263/T270 consume this barrel in-process. **Raised by the blind author rather than guessed at — which is exactly what the implementer did for the cycle at D-40-22, and the reason that ruling exists.**
 
   **D-40-F, ruled (adversary round 3, charged and accepted): `unbox` must not decide a question by throwing.** It tested for a boxed primitive by calling `String/Number/Boolean.prototype.valueOf` and **catching**, so every **non-boxed** object — essentially every object in every real submission — cost **three thrown-and-caught `TypeError`s**, roughly 75% of that being stack capture. Measured by the adversary at **9 140 ns** per non-boxed object and reproduced independently by round 4's implementer at **25 993 ns** on a different host with a `tsx` loader: **same conclusion, figures 1.5–1.8x apart, and neither party quoted the other's numbers as its own.** End to end, a **1.2 MB submission — 57% of the 2 MiB default, conforming and owed an answer** — cost **8 281 ms** to measure against the ruled formula's **6 ms**. **D-40-B's clause for the third time: the limit performs the resource exhaustion the limit exists to prevent.** And the framing that makes it a distinct defect rather than a repeat: **the module's claim is about the exponent (`O(maxBytes)`) and the defect is in the constant** — 9 µs per container makes an O(`maxBytes`) bound a nine-second bound at `maxBytes`. The depth ceiling does not touch it; that payload is depth 3 and `MAX_NESTING_DEPTH` bounds nesting, not count. **Ruled: `node:util`'s `types.is{String,Number,Boolean,BigInt}Object`** — the internal-slot predicate itself, 8 281 ms → **68 ms**. `Object.prototype.toString` dispatch is faster still (40 ms) and is **rejected**: it invokes **user code the old version did not** — a `@@toStringTag` getter, a proxy `has` trap — so an input the walk used to measure could start throwing, which is D-40-D's own clause. `util.types` runs no user code at all.
 
