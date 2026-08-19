@@ -2814,6 +2814,40 @@ separately and explicitly not conflated with it**: *a load average is not a fore
 the two answer different questions.* **The identical triple under a load that tripled is the more useful
 of them.**
 
+## I carried a stale base line INTO A DISPATCH and labelled it with a present-tense noun
+
+**I gave T040's adversary `1 failed | 5563 passed | 0 skipped` of 5564 as *base's measured line*. It was
+measured at `752721d`, and base was six commits past that — two of them touching test files**
+(`error-hygiene`, `store-modules-seal-their-faults`, verified against its list).
+
+**I named the sha, so it was checkable. I then attached a present-tense noun to it**, and *base's line*
+reads as *base's line now*. **The sha made it falsifiable and the noun made it unlikely anyone would
+bother.**
+
+**This file's rule is *a reconciliation is only valid against the base line it was computed from*, and I
+wrote it after an adversary carried a stale one.** I then carried a stale one **into a dispatch** — the
+surface that reads as authoritative and that a recipient works from rather than re-deriving. **Second
+defect this week whose whole mechanism is that a dispatch is not treated as a claim.**
+
+**A measurement quoted to someone else owes its sha AND its tense.** *Measured at X* is a fact; *base's
+line* is a claim about now, and only one of those two is checkable by reading.
+
+## A ruling made after a round closes is unimplemented contract, and the attribution is the ruler's
+
+**`UnserializableValueError` occurs zero times in the tree.** D-40-23 is in two binding surfaces on base
+and pinned by the blind suite — **and I ruled it at `2caee9d`, after T040's round 4 closed at
+`dfc71e1`.**
+
+**T040's adversary refused to charge it against the implementer and said exactly why: the implementer
+could not have built a ruling that did not exist.** It is measuring the reds instead, **named per
+assertion so they separate from the D-40-F and D-40-G reds the blind suite has also never seen** —
+three distinct populations in one failing set, and only identity can split them.
+
+**Ruled: T040 does not merge on that verdict.** The tree returns to its implementer for
+`UnserializableValueError` alone, then a short re-verify. **The adversary does not implement it** — a fix
+shaped by the charger is the hazard, and this one has a design space: the class, its placement, and what
+`limits.ts:263` becomes.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
