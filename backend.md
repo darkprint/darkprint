@@ -5861,7 +5861,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 4 at HEAD, **gates NOT taken — the slot is T081's adversary's**, so every figure below is an in-process probe. **D-40-F** the boxed-primitive test no longer decides by throwing: on a conforming 1 200 141-byte submission of 400 005 containers, 57% of the default, `measureSubmission` goes **8 281 ms to 68 ms** against the ruled formula's 6 ms, same number. Witness is the mechanism rather than a clock — a counter on the four prototypes' `valueOf`, **0 across 2 000 plain objects against 2005 each pre-fix**, two-factor with 1 on a boxed string. Cost held by a **ratio of ratios** at 9.7 and 8.8 against 976 and 580, with a byte-equal 15 001x-container-count control. **D-40-G** the fourth internal slot, and the corpus gains a third partition for the cells the formula **refuses** rather than drops: 486 cells as 454 plus 5 plus 27, reverse mutation reds **9 and 58**. D-40-B's depth ratio **re-derived not re-tuned** — min-of-5 and an asserted denominator, since the fix moved shallow from 115 ms to 2.1 ms and the old floor would have become a millisecond bound. **S10 closed after three rounds**: round 2's replacement conclusion is falsified, `resolve.ts:191` IS the mechanism, and the 2x2 reds in the predicted cell once the input is a bundle with two files claiming one id and version. **D-40-F and D-40-G are published in no surface of this file** and reached me only in a dispatch, which is reported in the Log rather than fixed by me |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 4, gates taken on the slot granted by name. **D-40-F** the boxed-primitive test no longer decides by throwing: on a conforming 1 200 141-byte submission of 400 005 containers, 57% of the default, `measureSubmission` goes **8 281 ms to 68 ms** against the ruled formula's 6 ms, same number. `util.types` chosen over the faster tag dispatch because the tag invokes user code the old version did not. Witness is the mechanism rather than a clock: a counter on the four prototypes' `valueOf`, **0 across 2 000 plain objects against 2005 each pre-fix**, two-factor with 1 on a boxed string. Cost held by a **ratio of ratios** at 9.7 and 8.8 against 976 and 580. **D-40-G** the fourth internal slot, and a third corpus partition for cells the formula **refuses** rather than drops: 486 cells as 454 plus 5 plus 27, reverse mutation reds **9 and 58**. D-40-B's depth ratio re-derived, min-of-5 with an asserted denominator. **S10 closed after three rounds**: round 2's conclusion falsified, `resolve.ts:191` IS the mechanism, and the 2x2 reds in the predicted cell once the input is a bundle with two files claiming one id and version. Gates `tsc` **0 unfiltered**, `lint` **0 errors 0 warnings read in full**, `build` **0 with clean porcelain**, targeted **73 of 73 over 5 files**. **Triple identical at `0fc6809`: 1 failed, 5783 passed, 0 skipped of 5784**, the one red T090's known AC6, reconciled **5784 minus 220 equals 5564** with both sides measured. Residue 0, peak foreign darkprint processes 0 across three runs. Sweep **7 mutations, 4 HIT 3 MISS, 0 newly green**, all three MISSes one diagnosis, and it found **two defects in its own anti-vacuity controls**, each closed with acceptance number 0 to 1 |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -10277,6 +10277,24 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     sort unobservable: the conclusion holds and the stated cause does not, which is this file's own
     sixth reading of a zero — **a mechanism claim that is false about code that is correct** —
     arriving in the entry that upgraded *sampled* to *proved*.
+    **WITHDRAWN 2026-08-19 by T040's implementer, round 4, falsified by measurement. The
+    struck sentence is quoted above rather than deleted, because a retraction with nothing to
+    retract is not a record and a reader who half-remembers this has nothing to check against.**
+    What is struck is *"So `resolve.ts:191` is not what makes the module's sort unobservable"*
+    and *"What normalises the order instead is not established"* two paragraphs below. **The four
+    cells held the INPUT constant and the input is the variable.** `resolve.ts:191` sits inside
+    the branch its own comment calls order-dependent — *"the first file wins"*, reached only when
+    two files claim one `id@version` with **different content** — and no archive bundle and none
+    of those 226 tests carries such a pair, so **no arrangement of the two sorts could have been
+    observed by any of them**. The green was a zero from a probe that could not reach. Re-run
+    through `validateBundle` on an `adversarial-consensus-line` submission with one card
+    duplicated under two filenames and one field changed, each patch state verified by grep:
+    intact/intact same, module removed/core intact same, module intact/core removed same, **both
+    removed DIFFERS** — forward resolves `AAA COPY`, reversed `ZZZ COPY`, and the diagnostics move
+    with them. So `resolve.ts:191` **is** the mechanism, S10 is an equivalent mutant **conditional
+    on that line**, and what the clause defends against is nameable rather than unnamed. The
+    preamble copy of the same sentence is struck on base at `b1aad18`; this entry is a Log entry,
+    Log entries merge, so it is marked in place.
     **The warrant reverts to the blind author's `sortDiagnostics` reading and stays SAMPLED**, with
     its own caveat intact: `message` is not in `cmpDiagnostic`'s key, so a tie is ruled out only while
     every card-derived diagnostic carries a location, which is a property of today's `lib/core` and
@@ -10764,6 +10782,107 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     property that sentence exists for — synchronous, pure, no `Db`, no I/O, no clock, no
     randomness — is untouched, and `types` is a pure predicate namespace. Reported rather than
     edited, because the block is base's.
+  - 2026-08-19 implementer, **round 4 on the gate slot, granted by name.** Merged `backend` three
+    times as it moved — `b35b4d8`, `b1aad18`, `6f2439d` — reaching `0fc6809`, then `53948b5`;
+    every sha from `git rev-parse HEAD`, porcelain empty at each, and **one base line missing from
+    the merged `backend.md` at every step, which is my own round-4 T040 row replacing base's
+    round-3 one.** `ls .next/types` present before any typecheck was quoted.
+  - 2026-08-19 implementer, **a base guard no implementer worktree could satisfy, found by running
+    the triple rather than by reading.** `tests/error-hygiene.test.ts` had become an equality at
+    `toBe(18)` while its domain was still `readdirSync(SERVER_DIR)` — **the working tree**, where
+    the number is a property of the **shipped** tree. This worktree publishes **20**: base's 18
+    plus `engine/LimitExceededError` and `engine/CircularReferenceError`. Reported rather than
+    fixed (`tests/**` is in no task's `Owns`) and reported **before** spending the triple, because
+    a defensible report of a contaminated measurement is still a contaminated measurement. Fixed
+    on base at `6f2439d` by moving the domain to `git ls-tree -d backend lib/server/`. The triple
+    already taken at `169403f` is **superseded and not offered**: three identical runs,
+    `2 failed | 5782 passed | 0 skipped` of 5784, the second red being that guard.
+  - 2026-08-19 implementer, **gates at `0fc6809`, each read the way this file requires.**
+    `npx tsc --noEmit` to a file, read **unfiltered: 0 lines, exit 0**. `npm run lint` read in
+    **full**, four lines all npm banner, with **`warning` 0, `problems` 0, `error` 0** asserted by
+    grep rather than inferred from a `tail`. `npm run build` exit 0 and **porcelain clean
+    afterwards**, no `public/bundles` diff. Targeted `lib/server/engine app/api/validate`
+    **5 files, 73 passed, 0 failed, 0 skipped** — the pre-registered 69 → 73 hit exactly, +3 in
+    `measure.test.ts` and +1 in `engine.test.ts`.
+  - 2026-08-19 implementer, **the triple, with the reconciliation measured on both sides.** Three
+    consecutive full suites at `0fc6809`, stamps identical and porcelain empty at both ends of
+    each: **`1 failed | 5783 passed | 0 skipped (5784)`**, three times, with **identical sorted
+    failing sets** whose single member is T090's known AC6. Reconciled by measuring rather than by
+    subtracting a carried number: `tests/server/t040` alone **147 over 9 files**,
+    `lib/server/engine app/api/validate` alone **73 over 5**, and **5784 − 220 = 5564**, base's
+    line at `752721d` exactly. Residue **0**: `darkprint%` databases 4 before and 4 after,
+    connections 1 and 1, counted with the corrected `darkprint%` pattern.
+  - 2026-08-19 implementer, **contention read as lines, and the honest statement is narrower than
+    a zero.** Sampled every 2 s across all three runs, filtering on **activity** (≥5% CPU) over
+    every process on the host, ownership by pgid, keeping the matching lines. **Zero foreign
+    processes named a darkprint path in any of the three**, so no peer build or test ran inside my
+    slot. Load peaked at 34, 38 and 45, carried by browsers, Spotify, Docker Desktop and `claude`
+    sessions — including pgid `41150`, the orchestrator's, at 13.2% during run 3, and **including
+    my own agent process at 7–11%, which classifies as foreign because it sits in a different
+    process group from the run.** So `peers=0` here means *no peer build or test*, not *no peer
+    working*. The sampler was falsified before it was trusted: a deliberate six-second burner
+    registered.
+  - 2026-08-19 implementer, **the sweep: 7 mutations, every prediction written before the run, 4
+    HIT and 3 MISS, 0 newly green anywhere.** Scope `lib/server/engine app/api/validate
+    tests/server/t040`, **220 tests over 14 files**, baseline green, run from one tree at
+    `53948b5`, each patch verified applied by a harness that re-reads the file and refuses a
+    `PATCH-NOOP` or a `PATCH-NOT-TAKEN`.
+
+        M1  unbox decides by throwing again      4 red   MISS  the three predicted, plus the cost ratio
+        M2  drop only the [[BigIntData]] slot    2 red   HIT   D-40-G alone, and NOT the valueOf witness
+        M3  never unbox anything                 5 red   MISS  the three predicted, plus composed and the witness
+        M4b the cost ratio's own control         1 red   HIT   expected 1 to be greater than 1000
+        M5  sortedByKey removed                  0 red   HIT   predicted zero
+        M6b the S10 witness's own control        1 red   HIT   digest-mismatch absent
+        M7  toJSON stops receiving its key       3 red   MISS  the two predicted, plus composed
+
+  - 2026-08-19 implementer, **the three MISSes are one diagnosis rather than three lapses, and it
+    is against me.** Every one is the **composed-values** assertion redding where I had named only
+    the cell-level tests. The 500 composed values draw from the same class list, so any
+    class-level defect reaches them — a broader instrument than I credited, three times running,
+    and I kept predicting the narrow half. A MISS whose diagnosis is *the suite was right and I
+    was wrong* is still a MISS and is the more useful kind. **M3's extra red is the better news
+    inside it**: the valueOf witness fired through its **two-factor half** — with nothing
+    unboxing, `onBoxed` is 0 and the probe reports itself dead — which is what that half exists
+    for and is not something I would have thought to predict.
+  - 2026-08-19 implementer, **and the sweep found two defects in my own instruments, both by
+    aiming a mutation at the CONTROL rather than at the code.** The cost ratio's control asserted
+    `dense.containers / flat.containers > 1000` over two numbers computed from the loop bound:
+    making both payloads the same object reddened **nothing**, because a declared count does not
+    move with the thing it describes. The S10 witness's control asserted that one of the two
+    planted card names resolves — which **planting a single copy satisfies exactly as well**, so
+    it passed over an input with nothing to order. **Same class both times, and it is this round's
+    own class**: a property declared beside the fixture instead of derived from it, and *an
+    anti-vacuity control measuring an adjacent quantity is the defect it was written to prevent*.
+    Fixed at `53948b5` — containers counted by **walking the payload**, and the branch's
+    **precondition** asserted through the `bundle/digest-mismatch` diagnostic `resolve.ts` emits
+    for exactly that pair, present with two copies and absent with one. **Acceptance number for
+    each is the reverse mutation: 0 → 1**, with the control itself as the assertion that fires.
+  - 2026-08-19 implementer, **M5 is the round's only zero and it is classified by reading the
+    patch rather than the failing set.** The anchor is the single call to `sortedByKey` in
+    `validate.ts`, verified present before and absent after, so the mutation does what its name
+    says. The zero means **equivalent conditional on `lib/core`'s `resolve.ts:191`**, which this
+    tree is Forbidden to edit and which the 2x2 above measures as the mechanism. Narrower than
+    three rounds of "equivalent, sampled", and the first version of the claim with a warrant that
+    names what would make the mutation observable.
+  - 2026-08-19 implementer, **a zero I nearly reported, and the instrument that caught it.** The
+    first sweep returned **seven zeros in a row** — and its baseline line was **empty**, because
+    `SCOPE="a b c"` expanded to a single argument: **zsh does not word-split an unquoted
+    parameter**, so `vitest` received one filter matching nothing and printed `No test files
+    found` seven times. Seven mutations, seven zeros, from an instrument that ran no test. The
+    same trap had fired once already tonight in the S10 patch matrix, where the grep-verified
+    patch counts caught it. **Both times what caught it was a check on the instrument rather than
+    on the result**, and a sweep that reports counts without a baseline line cannot tell "nothing
+    observes this" from "nothing ran".
+  - 2026-08-19 implementer, **and the harness reverted my own uncommitted work, which is the
+    hazard this file already records against somebody else's.** The sweep restores with
+    `git checkout -- lib/server/engine app/api/validate`; the two control fixes were uncommitted
+    in exactly that scope, so the first restore of the re-run silently deleted them and both
+    controls measured **0** again. Caught by reading the mutated file rather than the count — the
+    line still carried the old assertion. **A snapshot-restore harness must refuse a dirty tree**,
+    which it now does, and the controls were committed before the sweep was re-run. The cost here
+    was a measurement rather than somebody's edits, and only because the writer it reverted was
+    me.
 
 ### T080, Registry read model and read API
 
