@@ -2703,6 +2703,50 @@ checkout is the eleven base barrels, `engine` excluded.
 about a domain that was already describing the wrong set.** Both of my previous fixes on this axis were
 domain fixes; **I generalised the lesson to the file and not to the property.**
 
+## Aim a mutation at the CONTROL, not only at the code
+
+**T040's implementer found two of its own anti-vacuity controls measuring an adjacent quantity — by
+mutating the controls.** Both reddened **0** where a control that works must red.
+
+* **The cost ratio's control** asserted `dense.containers / flat.containers > 1000` over two numbers
+  **computed from the loop bound**. Making both payloads the same object reddened nothing: **a declared
+  count does not move with the thing it describes.**
+* **The S10 witness's control** asserted that one of two planted card names resolves. **Planting a single
+  copy satisfies that exactly as well**, so it passed over an input with nothing to order.
+
+**Same class both times, and it is this round's own class: declared beside the fixture instead of derived
+from it.** Fixed by walking the payload to count containers, and by asserting the branch's
+**precondition** through the `bundle/digest-mismatch` diagnostic `resolve.ts` emits for exactly that pair
+— present with two copies, absent with one. **Acceptance number 0 → 1 each, with the control itself as
+the assertion that fires.**
+
+**The technique is the entry: a control is a guard, and every rule this file has about guards applies to
+it.** Nobody mutates a control, because a control is what you reach for *when* you are worried about
+vacuity — **so it arrives already feeling like the answer to that question.**
+
+## Two zeros that were not results, both caught on the instrument rather than the result
+
+**Seven mutations returned zero from a sweep whose baseline was empty.** `SCOPE="a b c"` expanded to
+**one** argument — **zsh does not word-split an unquoted parameter** — so `vitest` got a single filter
+matching nothing and printed `No test files found` seven times. **Seven zeros from an instrument that ran
+no test.**
+
+**The same trap had already fired once in the S10 patch matrix, where grep-verified patch counts caught
+it. Both times what caught it was a check on the instrument, not on the result.** Fourth zsh-versus-bash
+instance in this run.
+
+**And its own sweep harness reverted its uncommitted work** — the hazard recorded against T050's
+adversary, **arriving with its author as the writer it reverted.** `git checkout -- lib/server/engine
+app/api/validate` deleted the two control fixes sitting uncommitted in exactly that scope, so both
+controls measured 0 again. **Caught by reading the mutated file, where the line still carried the old
+assertion.** Cost was a measurement rather than somebody's edits, **and only because it was its own**.
+
+**All three of its MISSes were one diagnosis and it made it against itself**: the 500 composed values
+draw from the same class list, so **any class-level defect reaches them** — a broader instrument than it
+had credited, three times running. **M3's extra red is the good news inside it**: the `valueOf` witness
+fired through its two-factor half, because with nothing unboxing, `onBoxed` is 0 and **the probe reports
+itself dead.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -5861,7 +5905,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 3 at `c3aa441`: **D-40-D** iterative frame stack, `MAX_NESTING_DEPTH = 10 000` refusing as a typed error, asserted over **outcome kind across four orders of magnitude** with thresholds as witnesses under it. **D-40-E** 50 classes x 9 positions over `SerializeJSONProperty`'s own branches plus 500 composed values, generator asserted before its results, `normalise` ordering making the three charged classes unreachable. Gates `tsc` 0, `lint` 0, scoped `vitest` 69/69, peak foreign 0 over 22 samples. Sweep 10 mutations, 9 CAUGHT, 1 equivalent (S10, third round running). Count 79 -> 69 reconciled exactly. **Full suite not claimed** |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 4 at `dfc71e1`, 40 ahead. **D-40-F** closed with `node:util`'s slot predicates — 8 281 ms → 68 ms on a 1.2 MB submission — `Object.prototype.toString` dispatch rejected though faster, because it **invokes user code the old version did not**. **D-40-G** closed with the fourth slot; acceptance is the reverse mutation, 9 + 58. **S10 closed after three rounds by changing the INPUT**: `resolve.ts:191` is the mechanism, observable only on a bundle where two files claim one `id@version`. Gates 0 unfiltered; targeted 73/0/0 hitting the pre-registered 69→73; triple `1 failed, 5783 passed, 0 skipped` of 5784 identical; reconciliation measured both sides, `5784 − 220 = 5564` = base at `752721d`. 7 mutations, 4 HIT / 3 MISS / 0 newly green, **all three MISSes one diagnosis against itself**. **Blind suite has seen NONE of round 4** — last joined `a3b90de` |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
