@@ -45,14 +45,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  LEAK_SENTINEL,
   NESTING_MESSAGE,
   asLoadBundleResult,
   bind,
   bindCircularError,
   bindLimitError,
   bindMaxNestingDepth,
+  bindUnserializableError,
   expectSealedError,
   returning,
+  unserializableMessage,
 } from "./contract";
 import {
   DROPPED_BY_SERIALISER,
@@ -297,20 +300,54 @@ describe("D-40-G: a value the serialiser REFUSES is refused, not measured", () =
             `serialiser would not have applied.`,
         ).toBeDefined();
 
-        /* **The class is NOT pinned, and that is a reported gap rather than a choice.** The
-           published block lists exactly two throws — `LimitExceededError` in two forms and
-           `CircularReferenceError` — and names no type for this one. D-40-20 left the cycle's type
-           owed in exactly this way and it became D-40-22; asking rather than inventing is what
-           produced that ruling. What IS asserted is what the block already decides: it is an
-           Error, it is sealed like every published refusal, and it is neither of the two classes
-           that mean something else. */
-        expect(err).toBeInstanceOf(Error);
+        /* **The class is pinned now, and round 4's refusal to invent it is why it exists.** The
+           block named a type for *too large* and for *a cycle* and none for this, so round 4
+           asserted only what the block already decided and asked. D-40-23 answered: the branch was
+           letting `JSON.stringify` throw naturally, so a bare `TypeError` escaped a module whose
+           every other rejection is typed and sealed — and `tests/error-hygiene.test.ts` cannot see
+           that, because a `TypeError`'s own hygiene is intact. Only a class pin separates them. */
+        expect(err).toBeInstanceOf(await bindUnserializableError());
+        expect((err as Error).message).toBe(unserializableMessage("validateBundle"));
         expect(err).not.toBeInstanceOf(await bindLimitError());
         expect(err).not.toBeInstanceOf(await bindCircularError());
         expectSealedError(err, `validateBundle(${label} in ${where})`);
       });
     }
   }
+
+  /* **"The value is never named."** The same clause the size refusal carries, and it needs three
+     axes because a refusal can quote its input from three places: the value itself, the key it sat
+     under, and the submission's own identity. The bigint is minted with a distinctive digit string
+     so its VALUE can be sentinelled at all — a bigint cannot carry a string sentinel, and a test
+     that only planted one in the key would have left the value's own content unchecked, which is
+     the half the clause is actually about. */
+  it("names neither the value, nor its key, nor the submission it came from", async () => {
+    const validateBundle = await bind("validateBundle");
+    const { input } = caseFor(EIGHT_NODE_BUNDLE);
+    const digits = "9007199254740993123456789";
+
+    const submission = {
+      ...input,
+      manifest: {
+        ...input.manifest,
+        slug: LEAK_SENTINEL,
+        [`${LEAK_SENTINEL}-key`]: BigInt(digits),
+      } as never,
+    };
+
+    const err = thrownBy(() => validateBundle(submission, GENEROUS));
+    expect(err).toBeInstanceOf(await bindUnserializableError());
+
+    const message = (err as Error).message;
+    expect(message, "the value's own content").not.toContain(digits);
+    expect(message, "the key it sat under, and the submission's slug").not.toContain(LEAK_SENTINEL);
+    expect(message).toBe(unserializableMessage("validateBundle"));
+
+    /* The control, beside its use: the sentinel and the digits really are in the submission, so a
+       clean message is about the refusal and not about an input that carried nothing to leak. */
+    expect(JSON.stringify(Object.keys(submission.manifest))).toContain(LEAK_SENTINEL);
+    expect(String(BigInt(digits))).toBe(digits);
+  });
 
   for (const [label, build] of Object.entries(DROPPED_BY_SERIALISER)) {
     it(`answers a submission carrying ${label}, which the serialiser drops`, async () => {

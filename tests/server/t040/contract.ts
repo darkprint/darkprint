@@ -147,6 +147,46 @@ export function circularMessage(operation: string): string {
 }
 
 /**
+ * D-40-23, ruled on this suite's own question and it is D-40-22's situation one ruling later.
+ *
+ * The block named a type for *too large* and for *a cycle* and none for a value the serialiser
+ * REFUSES — and the branch let `JSON.stringify` throw naturally, so a bare `TypeError` escaped a
+ * module whose every other rejection is typed and sealed. `tests/error-hygiene.test.ts` cannot
+ * see that: a `TypeError`'s hygiene is intact, which is the same reason D-40-C needed a ruling.
+ *
+ * Round 4 asserted only what the block already decided and declined to invent the class. This is
+ * the pin that replaces it.
+ */
+export const PUBLISHED_UNSERIALIZABLE_ERROR =
+  "class UnserializableValueError extends Error   " +
+  '// "<operation>: the submission contains a value JSON cannot serialise."';
+
+/** Written out as a LITERAL, never built from anything the module exports. */
+export function unserializableMessage(operation: string): string {
+  return `${operation}: the submission contains a value JSON cannot serialise.`;
+}
+
+export async function bindUnserializableError(): Promise<new (...args: never[]) => Error> {
+  const mod = await loadEngine();
+  const value = requireFrom(mod, "UnserializableValueError", PUBLISHED_UNSERIALIZABLE_ERROR);
+  if (typeof value !== "function") {
+    throw new Error(
+      `${ENGINE} exports \`UnserializableValueError\` as ${describe_(value)}; D-40-23 publishes ` +
+        `it as a class: ${PUBLISHED_UNSERIALIZABLE_ERROR}`,
+    );
+  }
+  const proto = (value as { prototype?: unknown }).prototype;
+  if (!(proto instanceof Error)) {
+    throw new Error(
+      `${ENGINE}'s \`UnserializableValueError.prototype\` is not an Error. D-40-23 exists because ` +
+        `a bare \`TypeError\` escaping is invisible to \`tests/error-hygiene.test.ts\` — its ` +
+        `hygiene is intact — so only a class pin separates the typed refusal from the untyped one.`,
+    );
+  }
+  return value as new (...args: never[]) => Error;
+}
+
+/**
  * D-40-D's ceiling, published at last in both binding surfaces after standing in neither.
  *
  * A NEW REFUSAL CRITERION rather than an implementation detail: a submission the ruled formula

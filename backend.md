@@ -10409,6 +10409,23 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     with `Buffer.byteLength(JSON.stringify(input), "utf8")` **exactly** on a real archive bundle —
     which is the D-40-17 boundary test passing, and a second route to the same number rather than
     a restatement of the first.
+  - 2026-08-19 test author, **D-40-23 pinned; round 4's refusal to invent the class is why it
+    exists.** 1 test added and 8 assertions tightened; suite **173**. The class, the message as a
+    written-out literal, and `expectSealedError` replace round 4's *"it is an Error, it is sealed,
+    and it is neither of the two published classes"* — which was the right handling of an
+    unanswered contract and is now superseded by the answer. **"The value is never named" is held
+    on three axes**, because a refusal can quote its input from three places: the value's own
+    content, the key it sat under, and the submission's identity. The bigint is minted from a
+    distinctive digit string so the VALUE can be sentinelled at all — a bigint cannot carry a
+    string sentinel, and a test planting one only in the key would have left unchecked exactly the
+    half the clause is about.
+  - 2026-08-19 test author: **5 mutations on the D-40-23 cells, 5 CAUGHT** — a bare `TypeError`
+    escaping (9 red), the refusal naming the value it refused (9), a different message (9), the
+    CIRCULAR class substituted for it (9), and **a control**: a fixture where the sentinel never
+    reaches the submission reds 1. That control IS catchable, unlike round 4's fourth, and the
+    difference is the general form — **a control that asserts a property of the FIXTURE can be
+    mutated and caught; one that is an inline two-factor assertion can only be deleted, and a
+    suite cannot catch the deletion of its own assertion.**
 
 ### T080, Registry read model and read API
 
