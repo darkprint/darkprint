@@ -4,4 +4,4 @@
 
 export { ok } from "./ok";
 export type { ProblemDetails } from "./problem";
-export { badRequest, conflict, notFound, problem, unauthorized } from "./problem";
+export { PROBLEM_TYPE_BASE, badRequest, conflict, notFound, problem, unauthorized } from "./problem";

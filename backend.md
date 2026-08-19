@@ -2290,6 +2290,276 @@ delivering after that.** The join has a date and nothing marks it.
 suite cannot see it, or **the suite that can see it was not in the tree.** Those are the same number.
 **Re-join before measuring the blind axis, and report the blind branch's tip sha next to it.**
 
+## `npm run lint | tail -1` prints a blank line, and I have called that a gate all night
+
+**T050's adversary found `npm run lint` at exit 0 with two warnings, and noted that every `lint 0` in
+this run has meant clean output while from that commit it means an exit code.** That is correct and it
+is worse for me than for the tree.
+
+**My own gate line has been `npm run lint 2>&1 | tail -1` in every commit tonight. Measured just now on
+a clean base: it prints a BLANK LINE.** Not the banner, not a summary — nothing. **So my lint gate has
+been reporting an empty string and I have been reading it as a pass**, and it would have reported the
+same empty string with two warnings, or twenty, above it.
+
+**A gate whose reading is a blank line is not a gate**, and this one has been in the gate stanza of
+roughly twenty commits. **The reading has to be the output**, not a tail of it: `npm run lint 2>&1` in
+full, and the absence of `warning` and `problems` asserted rather than assumed.
+
+**Same defect as the six others tonight, in the instrument I use most.** `tail -1` was chosen because it
+is short, and short is exactly why it escaped being checked.
+
+## A construction over an author's transcription of a spec is a list one level up
+
+**T040's adversary, on the fix for D-40-E.** `SerializeJSONProperty` steps 4-6 name **four** internal
+slots — `[[StringData]]`, `[[NumberData]]`, `[[BooleanData]]`, `[[BigIntData]]`. **`unbox` implements
+three, and `VALUE_CLASSES` has no bigint entry either.**
+
+**So the domain is a construction over the serialiser's own branches, as ruled — except it is a
+construction over the AUTHOR'S TRANSCRIPTION of those branches**, and the transcription dropped the same
+branch in the code and in the domain **simultaneously**, which is why nothing could see it.
+
+**And it names precisely which half of the two-demonstration rule was discharged:** *nothing listed is
+dead* holds — every listed class is asserted to reach a cell. ***Nothing live is missing* does not**, and
+cannot, because the enumeration is the thing being trusted. **The fix for a maintained list is a
+construction; the construction's own enumeration is then a maintained list, one level up.**
+
+## A ruling can settle who may make an edit and never who may commit it
+
+**I told T050's adversary the two-warning fix was its to make under the design-space test, and asked for
+the sha. It made the edit, verified it, and refused to commit — citing a precedent from this same task,
+which I had written.**
+
+*Its instructions are to commit when its user asks; I am a peer, not its user, and a peer's request is
+not that authorisation however routine the protocol makes it.*
+
+**My ruling settles the partition — whether the edit is that session's to make. It cannot settle the
+commit, because that authorisation is not mine to give.** The two feel like one decision because across
+ten tasks they have always travelled together, **which is the same shape this file keeps charging: a rule
+that covers the instance and not the property, found by the party it binds rather than the party who
+wrote it.**
+
+**The resolution is that the act moves, not that the authority does.** The tree is released, I take it,
+and **I commit it under my own authorisation** — the boundary is about *who performs the act*, not about
+whether the act happens. **What I lack is not the ability to make the change; it is the power to hand
+somebody an authorisation they do not have.**
+
+## Falsify a tidy-up, because housekeeping is the disguise nobody checks
+
+**Deleting two unused parameters is the smallest possible edit — and the parameters carried a planted
+secret.** T050's adversary re-ran the leak mutation after making it, and confirmed the secret still
+reaches the module and still reds exactly that one cell.
+
+**That is T-04 arriving as housekeeping**: a change that could sever an assertion's path and turn a real
+guard into one that cannot fail, wearing the clothes of a cleanup. **Nobody falsifies a two-character
+edit**, which is precisely why it is the shape that gets through.
+
+## A caveat stated precisely is what lets somebody else extend the claim
+
+**T050's blind author settled the naming arm's unreachability on D-50-20 — a ruling that is NOT
+implemented — and measured its zero against a reference that followed it.** Its own labelling was exact:
+*unreachable given D-50-20 is honoured, not unreachable.*
+
+**The adversary then measured the same zero against the SHIPPED implementation, where D-50-20 is absent,
+and got 0 as well** — because `changeHandle` already reads the account row first, merely without the
+lock. **So the conclusion holds on both, one case wider than it was claimed.**
+
+**That comparison was only possible because the conditional was labelled rather than asserted flat.** A
+caveat stated precisely is a hook somebody else can extend; **a caveat stated vaguely is a claim the next
+party has to re-derive from scratch**, and usually will not.
+
+## A guard I wrote committed the scope defect it was written for, and only a worktree behind base could see it
+
+**`tests/store-modules-seal-their-faults.test.ts` builds its domain from `git ls-tree backend` — the
+SHIPPED tree — and then read each file with `readFileSync` from the WORKING tree.** Two different trees,
+which is this file's own scope rule committed inside the guard written for it.
+
+**The moment T050 merged, `lib/server/accounts/errors.ts` existed on `backend` and did not exist in any
+worktree that had not merged.** The guard died with `ENOENT` — **and an error is not a red about the
+subject**, so it reported **nothing at all** about whether any module seals its faults, in every
+worktree at once, silently.
+
+**Measured in the worktree where it fires**, rather than argued: on `backend` the path resolves; in
+T081's worktree it does not; the old read throws `ENOENT` and `git show backend:<path>` returns 117
+lines. Both loops now read from `backend`.
+
+**The part that is about me rather than about the guard: I only ever run these guards in base, and base
+is never behind itself.** So the defect was invisible from the only position I occupy and visible from
+every other one. **A guard whose failure mode depends on the reader's checkout cannot be validated by
+the reader who wrote it** — T081's implementer found it in the first worktree to be behind base since
+the merge, which is the earliest anyone could have.
+
+**Third instance today of the same shape at three altitudes**: T040's corpus generator declaring
+droppability inside the fix for declared droppability, T050's dirty-tree guard losing its own mutation
+inside the fix for losing another writer's, and now a scope guard reading two trees. **The correction is
+where the defect lands, every time, because writing the fix is the moment you are thinking hardest about
+the thing and least about the instrument.**
+
+## Read which assertion fired, not how many tests did
+
+**T081's implementer named a mutation *anti-vacuity* and was wrong about its own label.** Probing `card()`
+with an unparseable ref **reds** — but the message is *"card: rejected with nothing at all"*, the
+**mislabelled** list, not `unreached`. **So the mutation does not falsify the anti-vacuity check and the
+name over-claimed.**
+
+The mutation that does falsify it is a reader **refusing before any query**: *"card: the cause chain
+carries no statement … so this case measured nothing"*. **`unreached` now has a witness instead of being
+a guard nothing reaches.**
+
+**Caught by reading which assertion fired.** A red confirms *a* guard fired; it does not confirm the one
+you named. **Same family as *the identity of the reds separates a mutation that mutated from one that did
+not*, one level in: there, which TEST reddened; here, which ASSERTION inside it.**
+
+## A floor absorbs additions silently and then stops detecting removals
+
+**`error-hygiene`'s domain floor was `>= 8`, with its own comment saying *if one was added, raise it* —
+and nothing reds when the raise is skipped. Measured at `d7ee3ca`: the walk discovers 17.**
+
+**So the floor sat at 8 across T070's three naming classes, T030's six ontology classes and T050's four
+accounts classes.** It detected none of them. **And it would no longer have detected any of those nine
+going missing either** — a guard written to catch *one* class the walk stops reaching could, after three
+merges, only have caught **nine disappearing at once.**
+
+**The number was mine to maintain at every one of those merges and I maintained it at none.** The
+comment predicted exactly this and predicting it changed nothing, which is the argument for the
+instrument over the note, again.
+
+**Now an equality.** It reds in **both** directions, so a merge that adds a class cannot land without
+somebody looking at the line, and a class that quietly stops being exported reds immediately instead of
+being absorbed. **The maintenance cost is identical — one number — and the difference is that skipping
+it is impossible rather than invisible.** Falsified: `18` reds with the right message, `17` passes.
+
+**The general form, and this file has now paid for it twice tonight in two directions:** a **floor**
+absorbs growth and loses sensitivity as the domain grows; a **list** stops covering what nobody
+remembered. **Both fail by staying green, and both were introduced as the careful option.**
+
+## Declining a partition exception is worth more than the two edits it would have saved
+
+**T081's implementer declined to make two `tests/**` edits I offered it**, on the ground that it had
+already declined `docs/ARCHITECTURE.md` on the same rule, and **taking these while declining that one
+would be it choosing which partition rule applies.**
+
+**That is the correct reading and it is stricter than mine.** I had ruled the design-space test — an edit
+with no design space may be propagated by whoever holds the tree — and it is right that the test governs
+**who may make an edit inside their own partition**, not whether a partition boundary can be crossed
+because the crossing is small. **A rule about the size of an edit cannot license an edit in someone
+else's directory**, and I had been about to let it.
+
+It gave both edits verbatim so they can be applied without re-derivation, and **measured rather than
+reasoned** that the walk prints `registry/RegistryStoreError` at both arities.
+
+**And it took `PROBLEM_TYPE_BASE` from `@/lib/server/http` the moment T050's merge made it importable**,
+replacing a literal it had written before the constant existed — **D-50-03's own argument, that a second
+copy of a constant is what produced `darkprint.dev`.** With the suite still writing the whole URL as a
+literal, deliberately: **an expectation built from the subject asserts the subject agrees with itself.**
+
+## Pre-register the red you are about to cause
+
+**T081's implementer yielded the slot and, in the same message, registered the failure its own next run
+will produce:**
+
+> *When I next report gate numbers from this worktree, `tests/error-hygiene.test.ts` will be red with
+> `expected 18 to be 17`, and it is the ONLY red I expect outside base's own known failing set. Any
+> other red, or that one carrying a different number, is a finding and stops my round.*
+
+**It is right, and the mechanism is worth stating: `error-hygiene` builds its domain from the WORKING
+tree** — `readdirSync(lib/server)` plus a dynamic import of each barrel — **not from `backend`.** So a
+worktree carrying an unmerged error class discovers one more than base does, and the new equality reds.
+**That is the arriving-class case firing exactly as designed, in the only place it can fire before a
+merge.**
+
+**Its reason for registering it is the general rule: a red you predict in advance is evidence; the same
+red diagnosed afterwards is a repair.** Nobody can tell them apart from the failing set, and the author
+of the explanation is the party who most wants it to be the first kind.
+
+**And it names the consequence it cannot avoid rather than working around it:** its run cannot produce a
+clean full-suite line while base says 17 and its tree contains 18. **Not a defect in either tree** — the
+same shape as base's one deliberate red — and it resolves in the merge commit where `toBe(18)` and
+`KNOWN_UNSEALED = []` land together.
+
+**Its note on the partition is the sharper statement of what I conceded:** *the edit being two
+characters is what makes it feel like it does not need permission, and that feeling is the whole
+mechanism.* **The cheapness of an act is not authority to perform it** — which is the same sentence as
+its refusal to commit on a peer's word, pointed at a different boundary.
+
+## A stronger instrument can make a weaker one unreachable, and only asking finds it
+
+**T081's implementer added D-81-02's byte-equality pin per route — `detail === `${operation}: the
+registry store failed.`` — and that made the derived deny-word scan a guard nothing could reach.** With
+`type`, `title` and `detail` all pinned, every leak the scan was written for is caught by a pin first.
+
+**It asked what could still pass every pin, and the answer is an RFC 9457 §3.2 EXTENSION MEMBER.**
+`sqlstate: err.cause.code` is a completely realistic leak, it passes `type`, `title` and `detail`
+untouched, **and it fires the scan and nothing else.** So the scan has a witness instead of decoration.
+
+**The new shape: adding a stronger assertion can silently retire a weaker one.** This file has charged
+guards that never reached, guards that could not fail, and exemptions that outlived their defect —
+**this is the first case of a guard that was reachable when written and became unreachable because
+something better landed beside it.** Nothing reds when that happens. **The question that finds it is
+*what passes every other instrument here*, asked after each one is added.**
+
+**And it corrected the scan's own failure message rather than leaving it**: the message said *the
+`detail` is a fixed string*, which **D-81-02 made false**. *A stale claim in the message a reader meets
+while failing is worse than none* — that reader is by construction someone who has just made a mistake.
+
+## The lint rule caught its author within hours, and caught the author rather than the tree
+
+**T081's implementer's first `npm run lint` after the rule came back exit 0 with 2 problems** —
+`'_a' is assigned a value but never used`, twice, **in its own new D-81-02 assertion**, where it
+destructured `instance` out with a rename. `ignoreRestSiblings` does not cover a renamed binding.
+
+**`tail -1` there prints a blank line and it would have written `lint 0`.** Same instrument, same blind
+spot, a different author, within hours of the rule being written — which is the evidence that the rule
+was about the instrument and not about me.
+
+**Two more things it did that are the standard.** Its reconciliation says **which half is whose**:
+5459 − 15 = 5444, with the +15 measured by it in isolation and **5444 acknowledged as mine and not
+offered as its own** — the agreement is worth something only because neither side derived the other by
+arithmetic. And **it left its own mislabelled mutation name wrong in its spec and said so**, rather than
+quietly renaming it, so the record shows the name over-claimed rather than showing a name that always
+fitted.
+
+## An anti-vacuity control that measures an adjacent quantity is the defect it was written to prevent
+
+**T081's blind author deleted thirteen of its own cells because they could not fail.**
+
+The axis drove each reader against **two unreachable servers** and asserted one message, as evidence
+that no **driver value** reached the rendering. **They passed blind with the module absent, and reddened
+under zero of seven mutations — including M3, which leaks the driver outright.**
+
+Measured: a `DrizzleQueryError`'s **own message** is the statement plus its params; the connection
+detail lives on **`cause.cause`**. **Two servers running one statement produce a byte-identical driver
+message.** The equality held between two things already equal, whatever the module did.
+
+**And the anti-vacuity control I forwarded to it did not catch this.** The control was *the two closed
+ports produce different driver errors* — implemented by comparing the whole cause **chain**, where the
+port genuinely differs. **True, and about a quantity ADJACENT to the one the axis rested on.** The axis
+needed the driver's **own message** to differ; the control measured the **chain**, one link too
+generous.
+
+**A control measuring a nearby quantity, committed inside the control written to prevent exactly that.**
+Same family as the `core.ts` source-size proxy and the loop-construct grep — **third altitude: not a
+claim resting on a proxy, but the INSTRUMENT THAT CHECKS FOR PROXIES resting on one.**
+
+**Deleted rather than left green, and the property is not lost** — `surface.test.ts`'s *the message is a
+function of the operation and of nothing else* holds it with two causes whose own messages differ, and
+reds under M3 where all thirteen stayed green. Re-measured after deletion, **M3 still reds 53**: those
+cells contributed nothing. **118 → 105 — a smaller number and a larger measurement.**
+
+## A deny set derived from the statement cannot see a value the statement does not contain
+
+**T081's AC3 scan stayed GREEN on a document verifiably carrying `"sqlstate":"ECONNREFUSED"`.** Its deny
+set is derived from the statement and its bound parameters — **and a SQLSTATE is in neither.**
+
+**Both halves of T081 had this hole independently**, and neither found it by reviewing the scan: the
+implementer by asking *what passes every pin*, the blind author by writing the mutation. **A derived
+deny set is only as wide as the thing it is derived from**, and that thing was deliberately narrow.
+
+**And M7's first run reddened 0, nearly banked.** The patch set `sqlstate: err.cause?.code` — but
+`RegistryStoreError.cause` is the `DrizzleQueryError`, whose own `code` is `undefined`; the SQLSTATE is
+**one link further down**, so the key was dropped and the document never carried it. **The patch did not
+express its name** — third session today, and the one reading a failing set structurally cannot
+classify.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -5447,10 +5717,10 @@ it does not decide differently inside a worktree.
 | T240 | Observability and audit log | T000 | `lib/server/observability/**` | — | — | todo | — |
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
-| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | impl-done | D-50-21 verified at `0325022`, 21 ahead, verification changed no lines. Triple identical `1 failed, 5427 passed, 0 skipped` of 5428; reconciliation `5428 - 219 = 5209`, agreeing with the adversary's `5424 - 215 = 5209` from a different tree. **F1 1 red** (guard alone, via `ArchiveConflictError` from a barrel the guard never names), **F2 1** (module red, guard green, as pre-registered), **F3' 3**, **F4 3 ⊃ F1 with 2 unique**. Four-site pairing: sites pairwise disjoint, mechanism a superset of the sites it serves. Gates 0 unfiltered. Adversary round 4 pending |
+| T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 3 at `c3aa441`: **D-40-D** iterative frame stack, `MAX_NESTING_DEPTH = 10 000` refusing as a typed error, asserted over **outcome kind across four orders of magnitude** with thresholds as witnesses under it. **D-40-E** 50 classes x 9 positions over `SerializeJSONProperty`'s own branches plus 500 composed values, generator asserted before its results, `normalise` ordering making the three charged classes unreachable. Gates `tsc` 0, `lint` 0, scoped `vitest` 69/69, peak foreign 0 over 22 samples. Sweep 10 mutations, 9 CAUGHT, 1 equivalent (S10, third round running). Count 79 -> 69 reconciled exactly. **Full suite not claimed** |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
-| T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | claimed | — |
+| T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | tests-written | implementation `0c1cd48` (committed by the orchestrator; its author's user did not answer): typecheck 0, lint 0 read in full, build 0, triple `2 failed, 5457 passed, 0 skipped` with both reds named in advance, 44 mutations all discriminating, 0 newly-green. Blind suite `f0d9b25`: **93 failed / 12 passed** against no implementation, **105/105 against a correct reference**, 7 mutations predicted first. **Thirteen cells deleted for being unfalsifiable**, 118 → 105. Adversary round owed |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | — | — | todo | — |
@@ -9472,7 +9742,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T050, Accounts and sessions
 
-- **State:** impl-done
+- **State:** merged
 - **Worktree:** `../darkprint-wt-t050-accounts` (impl), `../darkprint-wt-t050-accounts-tests` (blind)
 - **Branch:** `feat/t050-accounts` (impl), `test/t050-accounts` (blind)
 - **Depends on:** T000 (contract: session), T070 (contract: handle allocation)
@@ -9635,8 +9905,14 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **Admissible message forms.** This module returns diagnostics rather than throwing, so the whitelist applies to the one place it does throw:
 
         LimitExceededError  "<operation>: <what> exceeds the limit of <n> <units>."
+        LimitExceededError  "validateBundle: the nesting depth exceeds the limit of 10000 levels."
+        CircularReferenceError  (D-40-22, exported from `@/lib/server/engine`)
 
   The operation, the measured quantity, and the limit. Never the input, never a fragment of it — an oversized submission's own bytes are the last thing a refusal about size should carry.
+
+  **D-40-D's depth ceiling is published HERE and in the block below, and its absence from both was my defect rather than the implementer's.** I ruled it, it was built, it went into the barrel and into a Log entry, and **it reached neither binding surface** — the same failure this file records as its worst instance and wrote a guard for. Charged by T040's adversary.
+
+  **`MAX_NESTING_DEPTH = 10 000` is exported from `@/lib/server/engine`, and the ceiling is a NEW REFUSAL CRITERION rather than an implementation detail.** D-40-17 is explicitly normative about *which submissions are refused*, and a submission the ruled formula **accepts** is now **refused** if it nests past 10 000. That is a change to the contract, not to the walk. It is admissible because the recursive alternative did not refuse it either — it threw a bare `RangeError` at a host-dependent depth between 3 000 and 7 000 — so **every input that previously produced a number still produces one**, and the inputs that previously produced nothing now produce a typed refusal. **The blind suite could hold neither clause while both were unpublished.**
 
   **Inherited hazards.** T-02 (**D-40-09: reported as unreachable through this task's published surface — no in-process object graph reaches a walk here, and `canonicalJson` is reachable only through cards parsed from `cardFiles`, which is the closed parsed front door. MEASURE it before writing any guard; a guard nothing reaches is what this file charges most often.**) T-02 is **reported unreachable through this task's published surface** (D-40-09) and **must be measured before any guard is written**. T-01 applies. T-03 and T-04 do not — no database, no driver error.
 
@@ -10353,7 +10629,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   - 2026-08-15 implementer, round 2: **three defects addressed, two falsified, and the gate block cleared by implementation rather than by a suite rewrite.** Took the adversary's tree at `a2cac88` rather than re-merging, then merged `backend` at `110dd6b`.
 ### T081, Registry store wrapper: D-13 for the read model
 
-- **State:** claimed
+- **State:** tests-written
 - **Depends on:** T080 (merged)
 - **Owns:** `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**`
 - **Contract:** D-13 says no rejection may carry the failed statement or its bound parameters. **T080 ships no error class and no store wrapper**, so a driver failure escapes a merged, tagged route as a raw `DrizzleQueryError` **whose message opens with the full query**. Measured by T050's adversary against a closed port: `GET /api/cards` and `GET /api/blueprints` both threw `Failed query: select "id", "owner_id", "slug", … from "bundle"`. `params:` was empty only because that query is unparameterised — a parameterised one carries the bound values, which is D-13's clause verbatim.
@@ -10363,11 +10639,22 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Published signatures** (barrel: `@/lib/server/registry`. Measured against `backend` at `8e97192` before dispatch — see the note below.)
 
         class RegistryStoreError extends Error {
-          constructor(operation: string, cause: unknown)   // `message` is the OPERATION alone
+          constructor(operation: string, cause: unknown)
         }
+        // D-81-01: message is EXACTLY `${operation}: the registry store failed.`
 
         withRegistryStore<T>(operation: string, work: () => Promise<T>): Promise<T>
         withRegistryErrors(request: Request, work: () => Promise<Response>): Promise<Response>
+
+  **D-81-01, ruled, closing a contradiction I published in adjacent paragraphs.** This block said `message` is *the operation alone* and the paragraph below said the module *mirrors T050's `withAccountErrors`*, whose form is `changeHandle: the account store failed.` **Two different strings, each satisfying one sentence and violating the other**, and a blind author cannot write the exact-match pin this run asks for without choosing — which reds a correct implementation that chose the other way. Charged by T081's blind author, which **refused to choose** and asserted the property instead.
+
+  **Ruled: `` `${operation}: the registry store failed.` ``, exactly.** It matches the convention already shipped twice — `archive/errors.ts:74` is `` `${operation}: the write failed.` `` and T050's is `` `${operation}: the account store failed.` `` — so this is the run's existing form rather than a third one. **The exact-match cell is now writable and is owed.**
+
+  **Its three invariances are kept ALONGSIDE the pin, not replaced by it**, because they test properties a literal cannot: one reader with two different argument lists gives a byte-identical message (D-13's clause verbatim); **two unreachable servers differing in user, password, port and database give a byte-identical message** (no driver value); and the thirteen readers' messages are **pairwise distinct**, without which a constant string satisfies both invariances perfectly and names nothing.
+
+  **D-81-02, ruled: `detail` is the instance's own `message`, byte for byte, and `title` is the problem type's own.** T081's blind author declined to inherit D-50-21 on the correct ground that it is numbered under T050 and **this file has no derivation for which tasks a ruling governs.** That is a real structural gap and the fix is not a citation: **a ruling that should govern more than one task is given a number in each task, because the task section is what binds.** So the predicate is republished here under its own id rather than pointed at.
+
+  **Its weaker assertion stands as well**: driving one route twice with different path segments must give a problem document identical apart from `instance`. A `detail` interpolating a handle, slug, id or phase diverges there, and that catches a leak the byte-equality pin would also catch — **two instruments, different failure modes, neither complete.**
 
   **`withRegistryErrors` mirrors T050's `withAccountErrors` deliberately, and `problem()` is consumed from `@/lib/server/http` rather than edited** — that barrel is T000's and T050 is modifying it right now, so touching it is a partition breach. Verified before dispatch: `problem`, `badRequest`, `conflict`, `notFound`, `unauthorized` are all exported from `lib/server/http/index.ts`.
 
