@@ -471,8 +471,8 @@ describe("D-40-E — the walk agrees with the formula over the serialiser's clas
  * quantity it names.
  */
 function samePayloadTwoShapes(objects: number): {
-  readonly dense: { value: unknown; containers: number };
-  readonly flat: { value: unknown; containers: number };
+  readonly dense: unknown;
+  readonly flat: unknown;
 } {
   const wrap = (extra: unknown) => ({
     manifest: { slug: "p", title: "P", summary: "s", tags: [], ontologyVersion: "0.1.0", extra },
@@ -484,18 +484,33 @@ function samePayloadTwoShapes(objects: number): {
   for (let i = 0; i < objects; i += 1) empties.push({});
   const dense = wrap(empties);
 
-  /* `manifest`, `tags`, `cardFiles`, the submission itself, and the array of empties, plus
-     the empties themselves. The exact figure does not matter to the assertion; the ratio
-     between the two does, and both are counted the same way. */
-  const structural = 5;
   const target = Buffer.byteLength(JSON.stringify(dense), "utf8");
   const empty = Buffer.byteLength(JSON.stringify(wrap("")), "utf8");
   const flat = wrap("x".repeat(target - empty));
 
-  return {
-    dense: { value: dense, containers: structural + objects },
-    flat: { value: flat, containers: structural - 1 },
-  };
+  return { dense, flat };
+}
+
+/**
+ * Containers counted by **walking the payload**, never declared beside it.
+ *
+ * The first version returned the count as a number computed from the loop bound, which is a
+ * control over the fixture's *description* rather than over the fixture. Measured by
+ * mutation: making both payloads the same object reddened **nothing**, because two declared
+ * numbers do not move with the thing they describe. That is *declared instead of derived*
+ * one level up, in the control written to stop the ratio going vacuous, and it is the second
+ * time this task has produced the defect it was closing inside the closure.
+ */
+function containerCount(value: unknown): number {
+  let containers = 0;
+  const stack: unknown[] = [value];
+  while (stack.length > 0) {
+    const next = stack.pop();
+    if (next === null || typeof next !== "object") continue;
+    containers += 1;
+    for (const child of Array.isArray(next) ? next : Object.values(next)) stack.push(child);
+  }
+  return containers;
 }
 
 describe("D-40-F — deciding whether a value is boxed costs no thrown exceptions", () => {
@@ -563,7 +578,7 @@ describe("D-40-F — deciding whether a value is boxed costs no thrown exception
     let onPlain: Record<string, number> = { "the walk did not run": 1 };
     let onBoxed = -1;
     try {
-      measureSubmission("validateBundle", dense.value, GENEROUS);
+      measureSubmission("validateBundle", dense, GENEROUS);
       onPlain = spy.byName();
 
       /* **Two-factor, and this is the half that makes the zero a measurement.** A counter
@@ -618,10 +633,10 @@ describe("D-40-F — deciding whether a value is boxed costs no thrown exception
        it: equal bytes, and container counts three orders of magnitude apart. Without it a
        fixture that made both payloads flat would satisfy the assertion by having nothing to
        compare — a ratio holding between two things that were already equal. */
-    expect(Buffer.byteLength(JSON.stringify(flat.value), "utf8")).toBe(
-      Buffer.byteLength(JSON.stringify(dense.value), "utf8"),
+    expect(Buffer.byteLength(JSON.stringify(flat), "utf8")).toBe(
+      Buffer.byteLength(JSON.stringify(dense), "utf8"),
     );
-    expect(dense.containers / flat.containers).toBeGreaterThan(1_000);
+    expect(containerCount(dense) / containerCount(flat)).toBeGreaterThan(1_000);
 
     const fastest = (run: () => void): number => {
       let best = Infinity;
@@ -638,9 +653,9 @@ describe("D-40-F — deciding whether a value is boxed costs no thrown exception
 
     /* Warm both paths before either is timed, so the first call's compilation lands in
        neither numerator nor denominator. */
-    void overhead(dense.value);
+    void overhead(dense);
 
-    expect(overhead(dense.value) / overhead(flat.value)).toBeLessThan(100);
+    expect(overhead(dense) / overhead(flat)).toBeLessThan(100);
   });
 });
 

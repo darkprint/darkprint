@@ -231,13 +231,28 @@ describe("AC5 — identical bytes, identical output", () => {
 
     const answer = revalidate(loaded, forward);
 
-    /* The control the assertion needs: the duplicate pair has to REACH the resolution, or
-       this is permutation-independence over an input that carries no decision. One of the
-       two copies is resolved onto a node, and it is one of the two names planted here. */
+    /**
+     * The control, and it asserts the branch's **precondition** rather than a consequence of
+     * it. `resolve.ts` emits `bundle/digest-mismatch` when two files claim one `id@version`
+     * with different content, and that diagnostic is present with two copies and absent with
+     * one, so it is the thing that makes this input carry a decision at all.
+     *
+     * **The first version asserted that one of the two planted names resolves, and that is
+     * one link too generous**: planting a single copy satisfies it exactly as well, so the
+     * control passed over an input with nothing to order. Measured by mutation — dropping the
+     * second copy reddened **nothing** — which is a ratio holding between two things that
+     * were already equal, in the assertion whose whole job is to rule that out.
+     */
+    expect(
+      answer.diagnostics.map((diagnostic) => diagnostic.code),
+      "two files must claim one id and version, or the record's order decides nothing",
+    ).toContain("bundle/digest-mismatch");
+
+    /* And the pair collapses onto one node rather than adding a second, which is what makes
+       WHICH of them wins the observable thing. */
     const resolvedNames = (answer.blueprint?.nodes ?? []).map((node) => node.card.name);
     expect(
       resolvedNames.filter((name) => name === "AAA COPY" || name === "ZZZ COPY").length,
-      "the planted duplicate reaches the resolution",
     ).toBe(1);
 
     expect(JSON.stringify(revalidate(loaded, reversed))).toBe(JSON.stringify(answer));
