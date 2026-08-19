@@ -1616,6 +1616,35 @@ is the contract and not the mechanism. What it deleted is the false part; what i
 *`sortedByKey` is unobservable through the published surface and what it defends against is unnamed* —
 is **release-last's shape named honestly rather than dressed up as a reason.**
 
+**WITHDRAWN at round 4, and the withdrawal is the more interesting result.** *What it defends against is
+unnamed* is **false**: it defends against a change to `resolve.ts:191`, on an input class nothing in the
+tree carried. **C1 held the INPUT constant and varied the patch — and the input was the variable.**
+`resolve.ts:191` sits inside the branch its own comment calls order-dependent (*"the first file wins"*),
+reached only when **two files claim one `id@version` with different content**, and **no archive bundle and
+none of the 226 tests carries such a pair.** So no arrangement of the two sorts could have been observed
+by any of them: **C1's green was a zero from a probe that could not reach**, and retracting *proved* was
+right for the wrong reason.
+
+Re-measured through `validateBundle` on a throwaway worktree, each patch state grep-verified, with a
+**duplicate-ref bundle** added to the inputs:
+
+```
+module sortedByKey   core .sort(cmpString)   archive bundle   duplicate-ref bundle
+INTACT               INTACT                  same             same
+REMOVED              INTACT                  same             same
+INTACT               REMOVED                 same             same
+REMOVED              REMOVED                 same             DIFFERS
+```
+
+Forward resolves `AAA COPY`, reversed `ZZZ COPY`. **`resolve.ts:191` is the mechanism after all**, and
+S10 is an equivalent mutant **conditional on that line** — narrower than three rounds of *equivalent,
+sampled* and stronger than *cause unknown*. **The clause now has a witness that can fail**, falsified on
+row 4, with a control asserting the planted duplicate actually reaches the resolution.
+
+**Three rounds of a zero, closed by changing the INPUT rather than the instrument.** Every previous round
+attacked the patch, the mechanism or the warrant. **The eighth reading of a zero: a probe whose input
+carries no decision for the code to make.**
+
 ## An adversary may propagate a settled measurement; it may not pre-empt a decision
 
 **T040's adversary asked whether to strike `17 963` from `limits.ts:40` and `validate.ts:283` while it
@@ -9974,7 +10003,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         validateCardSource(yaml: string, limits?: EngineLimits): { value?: unknown; diagnostics: Diagnostic[] }  /* see the route block: graph? | card? | terms? */
         validateVocabularySource(yaml: string, limits?: EngineLimits): { value?: unknown; diagnostics: Diagnostic[] }  /* see the route block: graph? | card? | terms? */
 
-  **Every function is synchronous and pure.** No `Db`, no I/O, no clock, no randomness — the same bytes give the same answer in the same process and in the next one. That is what makes AC5 testable at all, and it is structural rather than a promise: this module's only import is `@/lib/core`.
+  **Every function is synchronous and pure.** No `Db`, no I/O, no clock, no randomness — the same bytes give the same answer in the same process and in the next one. That is what makes AC5 testable at all, and it is structural rather than a promise: this module's only import from the application is `@/lib/core` (D-40-F adds `node:util`'s `types`, a predicate namespace: precedented by `node:crypto` in `lib/server/auth/**` and by `Buffer` in this same file, and the property the sentence exists for — synchronous, pure, no `Db`, no I/O, no clock, no randomness — is untouched).
 
   **AC5 is a determinism criterion and it names diagnostic ORDER, which is the part an implementation will get wrong.** "Identical bytes return identical output including diagnostic order" fails the moment anything iterates a `Record` whose key order depends on insertion, or merges results from `Object.entries(cardFiles)` without sorting. **Diagnostics are returned in `sortDiagnostics` order, **unmodified** (D-40-05); `cardFiles` is rebuilt in sorted key order before `loadBundle` sees it. Stated because "identical output" reads as satisfied by any correct implementation and is not.
 
@@ -10060,6 +10089,12 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **D-40-D, ruled (adversary round 2, charged and accepted): the bounded walk must be ITERATIVE, with an explicit stack and a frame ceiling that refuses as a typed error.** The recursive walk throws a bare `RangeError` on a **6 134-byte** body whose `manifest` nests — **0.3% of the 2 MiB default** — where D-40-17's literal answers that same input at 6 134 and keeps answering to depth 1 000 000. **D-40-20's substitution was paid for by *the number is preserved exactly for every submission that is accepted*, and here that clause is SILENT rather than violated**: the input is neither accepted nor refused and no number is produced. The boundary is host-dependent, not input-dependent — depth 7 000 direct, 3 000 under the route — which makes it untestable as a threshold and unacceptable as a behaviour. Precedent is T010/T020's `isWellFormedDeep`: one mutable `open` set, explicit enter/leave frames, O(1) per visit. **A ceiling is required as well as a shape**, because an iterative walk over a 100 MB nested body still runs.
 
   **D-40-E, ruled (same round): the 22-shape corpus backing the walk's equivalence with D-40-17 is a LIST, and what is owed is a construction over the serialiser's equivalence classes.** Nine divergences measured in three classes it does not reach — `toJSON` returning a droppable, `toJSON` reading its key argument, and boxed primitives — with the array case **under-counting ~5x**, a `maxBytes` bypass through the barrel. All barrel-only, so the charge is against the warrant rather than a live wire defect. **Three more rows reproduces the defect one size larger.**
+
+  **D-40-F, ruled (adversary round 3, charged and accepted): `unbox` must not decide a question by throwing.** It tested for a boxed primitive by calling `String/Number/Boolean.prototype.valueOf` and **catching**, so every **non-boxed** object — essentially every object in every real submission — cost **three thrown-and-caught `TypeError`s**, roughly 75% of that being stack capture. Measured by the adversary at **9 140 ns** per non-boxed object and reproduced independently by round 4's implementer at **25 993 ns** on a different host with a `tsx` loader: **same conclusion, figures 1.5–1.8x apart, and neither party quoted the other's numbers as its own.** End to end, a **1.2 MB submission — 57% of the 2 MiB default, conforming and owed an answer** — cost **8 281 ms** to measure against the ruled formula's **6 ms**. **D-40-B's clause for the third time: the limit performs the resource exhaustion the limit exists to prevent.** And the framing that makes it a distinct defect rather than a repeat: **the module's claim is about the exponent (`O(maxBytes)`) and the defect is in the constant** — 9 µs per container makes an O(`maxBytes`) bound a nine-second bound at `maxBytes`. The depth ceiling does not touch it; that payload is depth 3 and `MAX_NESTING_DEPTH` bounds nesting, not count. **Ruled: `node:util`'s `types.is{String,Number,Boolean,BigInt}Object`** — the internal-slot predicate itself, 8 281 ms → **68 ms**. `Object.prototype.toString` dispatch is faster still (40 ms) and is **rejected**: it invokes **user code the old version did not** — a `@@toStringTag` getter, a proxy `has` trap — so an input the walk used to measure could start throwing, which is D-40-D's own clause. `util.types` runs no user code at all.
+
+  **D-40-G, ruled (same round): `unbox` implements three of `SerializeJSONProperty`'s four internal slots.** Steps 4–6 name `[[StringData]]`, `[[NumberData]]`, `[[BooleanData]]` and **`[[BigIntData]]`**; `{ k: Object(BigInt(1)) }` measured **8** where `JSON.stringify` **throws**. **And `VALUE_CLASSES` had no bigint entry either, so the corpus could not see it: the transcription dropped the same branch in the code and in the domain simultaneously.** D-40-E ruled *a construction over the serialiser's own branches*; **a construction over an author's transcription of those branches is a maintained list one level up.** The acceptance number is the **reverse mutation**, not a green: restoring three-slot `unbox` reds **9** — all nine positions of `bigint/boxed` — and **58** among composed values, independently.
+
+  **PUBLISHED LATE, AND THE LATENESS IS MINE.** Both were charged, accepted and ruled in dispatches, and **neither appeared anywhere in this file** until round 4's implementer grepped for them and found **zero occurrences** — after I had told it in writing that both were *"in the contract section"*. **That sentence was false and I wrote it with confidence.** This is *a ruling granted in a reply is a ruling published nowhere*, with the reply being a **dispatch**, and it is the **third** time on this task alone. The exposure is the one that rule already names: **the module now satisfies both, so nothing the implementer does reveals the gap, and the whole cost falls on the blind author — which binds the published block and never sees a dispatch.**
 
   **D-40-21: `submissionOf` excludes `input.ontology`, and that is now published rather than a deviation.** An `OntologyView` carries the whole of `CORE_ONTOLOGY`, so measuring it would charge a caller the entire curated vocabulary against its own upload's budget — refusing a small bundle for the size of something it did not send and cannot make smaller. **`ontology` is not caller-supplied, and that is a premise rather than a remark** — an exclusion from a measured set is a bypass of the bound the moment the excluded field becomes caller-reachable, so a route that ever accepted a caller's `ontology` would turn this ruling into an unbounded hole in `maxBytes` with nothing redding in between. The earlier wording here (*every wire call gives the same number under either reading*) framed it as a convenience and is withdrawn. **Guard owed, adversary's round**, two instruments: the wire number must equal the literal `Buffer.byteLength(JSON.stringify(input))` for a payload through a route, and no route file may pass `ontology` into the engine. Reported by the implementer rather than taken quietly, confirmed by the adversary, and the premise charged by the implementer against itself a round later.
 
