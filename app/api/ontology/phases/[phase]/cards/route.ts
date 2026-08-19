@@ -9,13 +9,15 @@
 
 import { getSharedDbClient } from "@/lib/db";
 import { ok } from "@/lib/server/http";
-import { actorFrom, cardsByPhase } from "@/lib/server/registry";
+import { actorFrom, cardsByPhase, withRegistryErrors } from "@/lib/server/registry";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ phase: string }> },
 ): Promise<Response> {
-  const { phase } = await params;
-  const { db } = getSharedDbClient();
-  return ok({ cards: await cardsByPhase(db, actorFrom(request), phase) });
+  return withRegistryErrors(request, async () => {
+    const { phase } = await params;
+    const { db } = getSharedDbClient();
+    return ok({ cards: await cardsByPhase(db, actorFrom(request), phase) });
+  });
 }
