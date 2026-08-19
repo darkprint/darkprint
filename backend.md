@@ -2703,6 +2703,117 @@ checkout is the eleven base barrels, `engine` excluded.
 about a domain that was already describing the wrong set.** Both of my previous fixes on this axis were
 domain fixes; **I generalised the lesson to the file and not to the property.**
 
+## Aim a mutation at the CONTROL, not only at the code
+
+**T040's implementer found two of its own anti-vacuity controls measuring an adjacent quantity — by
+mutating the controls.** Both reddened **0** where a control that works must red.
+
+* **The cost ratio's control** asserted `dense.containers / flat.containers > 1000` over two numbers
+  **computed from the loop bound**. Making both payloads the same object reddened nothing: **a declared
+  count does not move with the thing it describes.**
+* **The S10 witness's control** asserted that one of two planted card names resolves. **Planting a single
+  copy satisfies that exactly as well**, so it passed over an input with nothing to order.
+
+**Same class both times, and it is this round's own class: declared beside the fixture instead of derived
+from it.** Fixed by walking the payload to count containers, and by asserting the branch's
+**precondition** through the `bundle/digest-mismatch` diagnostic `resolve.ts` emits for exactly that pair
+— present with two copies, absent with one. **Acceptance number 0 → 1 each, with the control itself as
+the assertion that fires.**
+
+**The technique is the entry: a control is a guard, and every rule this file has about guards applies to
+it.** Nobody mutates a control, because a control is what you reach for *when* you are worried about
+vacuity — **so it arrives already feeling like the answer to that question.**
+
+## Two zeros that were not results, both caught on the instrument rather than the result
+
+**Seven mutations returned zero from a sweep whose baseline was empty.** `SCOPE="a b c"` expanded to
+**one** argument — **zsh does not word-split an unquoted parameter** — so `vitest` got a single filter
+matching nothing and printed `No test files found` seven times. **Seven zeros from an instrument that ran
+no test.**
+
+**The same trap had already fired once in the S10 patch matrix, where grep-verified patch counts caught
+it. Both times what caught it was a check on the instrument, not on the result.** Fourth zsh-versus-bash
+instance in this run.
+
+**And its own sweep harness reverted its uncommitted work** — the hazard recorded against T050's
+adversary, **arriving with its author as the writer it reverted.** `git checkout -- lib/server/engine
+app/api/validate` deleted the two control fixes sitting uncommitted in exactly that scope, so both
+controls measured 0 again. **Caught by reading the mutated file, where the line still carried the old
+assertion.** Cost was a measurement rather than somebody's edits, **and only because it was its own**.
+
+**All three of its MISSes were one diagnosis and it made it against itself**: the 500 composed values
+draw from the same class list, so **any class-level defect reaches them** — a broader instrument than it
+had credited, three times running. **M3's extra red is the good news inside it**: the `valueOf` witness
+fired through its two-factor half, because with nothing unboxing, `onBoxed` is 0 and **the probe reports
+itself dead.**
+
+## A suite cannot catch the deletion of its own inline assertion
+
+**T040's blind author mutated four of its own controls and caught three.** The fourth **deletes an
+inline two-factor assertion** — and **a suite cannot catch the deletion of one of its own assertions.**
+An inline control is held by **review**, not by the suite.
+
+**So *aim a mutation at the control* has a floor, and it is worth knowing where.** A control that is a
+separate test can be deleted and the count moves. A control that is a line inside another test **leaves
+nothing behind when it goes.**
+
+**And it reported 3-of-4 with the reason rather than 4-of-4 with a mutation reshaped until it passed.**
+That choice is the entry: **a falsification suite's own score is the easiest number in this run to
+improve by changing the question.**
+
+## The reference reproduced D-40-D by accident, which is the strongest corroboration it could get
+
+**T040's blind author's reference still took its byte count through `JSON.stringify`.** At depth
+**9 000** — *below* the ceiling, inside a manifest, under vitest — that threw `RangeError: Maximum call
+stack size exceeded`, **and its own depth test caught it.**
+
+**That is D-40-D reproduced independently, on a different code path, by a party who was not looking for
+it and could not see the implementation.** The charge was raised by an adversary against a recursive
+walk; this is the same defect arriving in a hand-written reference, which makes it a property of the
+**approach** rather than of anyone's code. **The recursive serialiser is not usable as the number's
+source at the depths the ceiling admits.**
+
+Its replacement — an iterative walk with an explicit stack — **agrees with
+`Buffer.byteLength(JSON.stringify(input), "utf8")` exactly on a real archive bundle**, which is D-40-17's
+boundary passing **and a genuine second route to the number rather than a restatement of the first.**
+
+## The floor on mutating a control is the boundary between a fixture property and an inline assertion
+
+**T040's blind author handed back the boundary rather than the policy.** Last round it reported 3-of-4
+control mutations caught and named the fourth structurally uncatchable. This round it caught **5 of 5**,
+and explained why both are true:
+
+**A control that asserts a property of the FIXTURE can be mutated and caught** — a fixture where the
+sentinel never reaches the submission reds 1. **A control that is an INLINE two-factor assertion can
+only be deleted, and a suite cannot catch the deletion of its own assertion.**
+
+**So *aim a mutation at the control* is not absolute and not useless; it holds up to a boundary, and the
+boundary is between those two kinds.** *I would rather hand that over than a policy that reads as
+absolute* — which is the correct handling of a rule the file was about to state one size too large.
+
+**And *the value is never named* was held on three axes because a refusal can quote its input from three
+places**: the value's own content, the key it sat under, and the submission's identity. **A bigint cannot
+carry a string sentinel**, so the value had to be minted from a distinctive digit string — **and a test
+planting a sentinel only in the key would have left unchecked precisely the half the clause is about.**
+
+## Pre-register the explanation you would otherwise reach for
+
+**Its pre-registration hit on all four figures — `166 failed | 5571 passed | 0 skipped of 5737` — and it
+had also pre-committed to an explanation it did not need.** It flagged in advance that its merge base was
+five commits past the sha base's line was measured at, **so a total other than 5737 should be blamed on
+those five before anything else.** It came out 5737, and it said so: those five added no test.
+
+**That is the discipline one level past pre-registering a number.** The number stops a rescue; **naming
+the explanation you would reach for stops the rescue you would have reached for first**, and reporting
+that it was not needed is what makes the next one credible.
+
+**Its contention reading is the matching restraint**: peak foreign `vitest` **0** across all three runs
+with no command line captured, reported as **"no foreign process group was observed", not "you ran
+nothing"** — with the sampling interval given so the reader can judge the window. And **load reported
+separately and explicitly not conflated with it**: *a load average is not a foreign-`vitest` count, and
+the two answer different questions.* **The identical triple under a load that tripled is the more useful
+of them.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -5861,7 +5972,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 4, gates taken on the slot granted by name. **D-40-F** the boxed-primitive test no longer decides by throwing: on a conforming 1 200 141-byte submission of 400 005 containers, 57% of the default, `measureSubmission` goes **8 281 ms to 68 ms** against the ruled formula's 6 ms, same number. `util.types` chosen over the faster tag dispatch because the tag invokes user code the old version did not. Witness is the mechanism rather than a clock: a counter on the four prototypes' `valueOf`, **0 across 2 000 plain objects against 2005 each pre-fix**, two-factor with 1 on a boxed string. Cost held by a **ratio of ratios** at 9.7 and 8.8 against 976 and 580. **D-40-G** the fourth internal slot, and a third corpus partition for cells the formula **refuses** rather than drops: 486 cells as 454 plus 5 plus 27, reverse mutation reds **9 and 58**. D-40-B's depth ratio re-derived, min-of-5 with an asserted denominator. **S10 closed after three rounds**: round 2's conclusion falsified, `resolve.ts:191` IS the mechanism, and the 2x2 reds in the predicted cell once the input is a bundle with two files claiming one id and version. Gates `tsc` **0 unfiltered**, `lint` **0 errors 0 warnings read in full**, `build` **0 with clean porcelain**, targeted **73 of 73 over 5 files**. **Triple identical, re-taken at `86c34ab`: 1 failed, 5783 passed, 0 skipped of 5784**, the one red T090's known AC6, reconciled **5784 minus 220 equals 5564** with both sides measured. Residue 0, peak foreign darkprint processes 0 across three runs. Sweep **7 mutations, 4 HIT 3 MISS, 0 newly green**, all three MISSes one diagnosis, and it found **two defects in its own anti-vacuity controls**, each closed with acceptance number 0 to 1 |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 4 at `dfc71e1`, 40 ahead. **D-40-F** closed with `node:util`'s slot predicates — 8 281 ms → 68 ms on a 1.2 MB submission — `Object.prototype.toString` dispatch rejected though faster, because it **invokes user code the old version did not**. **D-40-G** closed with the fourth slot; acceptance is the reverse mutation, 9 + 58. **S10 closed after three rounds by changing the INPUT**: `resolve.ts:191` is the mechanism, observable only on a bundle where two files claim one `id@version`. Gates 0 unfiltered; targeted 73/0/0 hitting the pre-registered 69→73; triple `1 failed, 5783 passed, 0 skipped` of 5784 identical; reconciliation measured both sides, `5784 − 220 = 5564` = base at `752721d`. 7 mutations, 4 HIT / 3 MISS / 0 newly green, **all three MISSes one diagnosis against itself**. Blind round **re-opened and closed** at `759881e`: **173 tests**, triple `166 failed, 5571 passed, 0 skipped` of 5737 identical, pre-registration exact on all four figures, D-40-23 pinned with the value-never-named clause held on **three** axes, 5 mutations on the new cells all CAUGHT. **Adversary round owed — all three of T040's earlier sessions are gone** |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -10050,6 +10161,8 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         LimitExceededError  "<operation>: <what> exceeds the limit of <n> <units>."
         LimitExceededError  "validateBundle: the nesting depth exceeds the limit of 10000 levels."
         CircularReferenceError  (D-40-22, exported from `@/lib/server/engine`)
+        UnserializableValueError  "<operation>: the submission contains a value JSON cannot serialise."
+                                  (D-40-23, exported from `@/lib/server/engine`)
 
   The operation, the measured quantity, and the limit. Never the input, never a fragment of it — an oversized submission's own bytes are the last thing a refusal about size should carry.
 
@@ -10123,6 +10236,14 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **D-40-D, ruled (adversary round 2, charged and accepted): the bounded walk must be ITERATIVE, with an explicit stack and a frame ceiling that refuses as a typed error.** The recursive walk throws a bare `RangeError` on a **6 134-byte** body whose `manifest` nests — **0.3% of the 2 MiB default** — where D-40-17's literal answers that same input at 6 134 and keeps answering to depth 1 000 000. **D-40-20's substitution was paid for by *the number is preserved exactly for every submission that is accepted*, and here that clause is SILENT rather than violated**: the input is neither accepted nor refused and no number is produced. The boundary is host-dependent, not input-dependent — depth 7 000 direct, 3 000 under the route — which makes it untestable as a threshold and unacceptable as a behaviour. Precedent is T010/T020's `isWellFormedDeep`: one mutable `open` set, explicit enter/leave frames, O(1) per visit. **A ceiling is required as well as a shape**, because an iterative walk over a 100 MB nested body still runs.
 
   **D-40-E, ruled (same round): the 22-shape corpus backing the walk's equivalence with D-40-17 is a LIST, and what is owed is a construction over the serialiser's equivalence classes.** Nine divergences measured in three classes it does not reach — `toJSON` returning a droppable, `toJSON` reading its key argument, and boxed primitives — with the array case **under-counting ~5x**, a `maxBytes` bypass through the barrel. All barrel-only, so the charge is against the warrant rather than a live wire defect. **Three more rows reproduces the defect one size larger.**
+
+  **D-40-23, ruled on T040's blind author's question, and it is D-40-22's situation one ruling later.** The published block names a type for *too large* and for *a cycle* and **names none for a value the serialiser REFUSES**. A bigint is neither. Measured on the branch: `limits.ts:263` lets `JSON.stringify(value)` **throw naturally** — the comment calls it *the serialiser's own behaviour rather than a decision taken here* — so **a bare `TypeError` escapes a module whose every other rejection is typed and sealed.** That is **D-40-C's shape, unfixed**: a circular `manifest` gave `TypeError` and was ruled into `CircularReferenceError` for the same reason, and *hygiene intact, so `error-hygiene` cannot see it* applies here identically.
+
+  **Ruled: `UnserializableValueError`, exported from `@/lib/server/engine`, sealed like every other published class**, with the admissible form
+
+        UnserializableValueError  "<operation>: the submission contains a value JSON cannot serialise."
+
+  **The value is never named** — an unserialisable input's own content is the last thing a refusal about it should carry, which is the same clause the size refusal carries. **Barrel-only, and that is not a reason to leave it untyped**: D-40-C was barrel-only too, and T100/T263/T270 consume this barrel in-process. **Raised by the blind author rather than guessed at — which is exactly what the implementer did for the cycle at D-40-22, and the reason that ruling exists.**
 
   **D-40-F, ruled (adversary round 3, charged and accepted): `unbox` must not decide a question by throwing.** It tested for a boxed primitive by calling `String/Number/Boolean.prototype.valueOf` and **catching**, so every **non-boxed** object — essentially every object in every real submission — cost **three thrown-and-caught `TypeError`s**, roughly 75% of that being stack capture. Measured by the adversary at **9 140 ns** per non-boxed object and reproduced independently by round 4's implementer at **25 993 ns** on a different host with a `tsx` loader: **same conclusion, figures 1.5–1.8x apart, and neither party quoted the other's numbers as its own.** End to end, a **1.2 MB submission — 57% of the 2 MiB default, conforming and owed an answer** — cost **8 281 ms** to measure against the ruled formula's **6 ms**. **D-40-B's clause for the third time: the limit performs the resource exhaustion the limit exists to prevent.** And the framing that makes it a distinct defect rather than a repeat: **the module's claim is about the exponent (`O(maxBytes)`) and the defect is in the constant** — 9 µs per container makes an O(`maxBytes`) bound a nine-second bound at `maxBytes`. The depth ceiling does not touch it; that payload is depth 3 and `MAX_NESTING_DEPTH` bounds nesting, not count. **Ruled: `node:util`'s `types.is{String,Number,Boolean,BigInt}Object`** — the internal-slot predicate itself, 8 281 ms → **68 ms**. `Object.prototype.toString` dispatch is faster still (40 ms) and is **rejected**: it invokes **user code the old version did not** — a `@@toStringTag` getter, a proxy `has` trap — so an input the walk used to measure could start throwing, which is D-40-D's own clause. `util.types` runs no user code at all.
 
