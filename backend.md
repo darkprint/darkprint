@@ -10531,6 +10531,78 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     PATCH-MISS is not a measurement, so the shape was restored and **the whole sweep re-run from one
     tree** rather than the six results being carried over from the previous one. The reference is now
     archived beside the harness so it cannot be lost a second time.
+  - 2026-08-19 test author, **round 4: D-40-D, D-40-F and D-40-G, which the implementer flagged as
+    held by colocated tests alone rather than shipping past.** 25 tests in `measure.test.ts`; suite
+    **172**. Branch tip `test/t040-engine` at the sha in the handback. In this worktree
+    **164 failed | 8 passed | 0 skipped (172)**, every red `@/lib/server/engine does not load`
+    or ``No route file exists under `app/api/validate/` ``. `npx eslint .` prints **zero bytes**,
+    exit 0 — read in full rather than tailed, since `tail -1` on an empty report prints a blank
+    line and reads like a pass either way. `tsc --noEmit` still exactly 2, both the absent module.
+    **All 8 green are module-independent by construction and are named rather than counted**: the
+    README oracle's two, four bad-body floor assertions, and round 4's two new controls — the
+    user-code counter's own two-factor and the serialiser-partition oracle.
+  - 2026-08-19 test author: **the witness for D-40-F is the mechanism and the claim is INVARIANCE.**
+    Every timing figure either party has is one host and the two independent measurements of that
+    defect came out 1.5–1.8x apart, so a wall-clock threshold would be a number about a laptop.
+    Asserted instead: the count of user-code invocations **does not grow with the number of plain
+    containers** — 20 containers against 2 000, same count, and 0 for a submission with nothing
+    boxed in it. Container counts are taken by **walking the built objects**, never from the loop
+    bounds that made them, which is the shape that made one of the implementer's own controls
+    unable to move with the thing it described. A second axis is aimed at the alternative the
+    ruling REJECTED rather than at the one it chose: a planted `@@toStringTag` **getter** must be
+    read **0** times, which is what "invokes user code the old version did not" means, and it is
+    what an implementation that quietly switched to `Object.prototype.toString` would fail.
+  - 2026-08-19 test author: **D-40-G is held as a three-way partition re-derived at run time.**
+    Refused, dropped and unboxed are three different obligations, and which half a value falls in
+    is decided by **asking `JSON.stringify` inside the test** rather than by the labels in
+    `fixtures.ts` — a construction over an author's transcription of the serialiser's branches is
+    a maintained list one level up, which is D-40-G's own charge, and it applies to a blind
+    suite's fixtures exactly as it applied to `VALUE_CLASSES`. The number for a **dropped** value
+    is deliberately not asserted: the ruling grants that freedom and a test pinning it would be
+    pinning a freedom. What is asserted is that a dropped value is **answered** — collapsing the
+    partition in that direction rejects a legal submission and no refusal test would notice.
+  - 2026-08-19 test author: **16 mutations, 15 CAUGHT, 0 MISS, 1 GAP — and four of them were aimed
+    at this suite's OWN controls**, which is the practice T040's round-4 implementer arrived at by
+    finding two of its controls reddening 0. Three of my four are caught: a `countContainers` that
+    stops counting the artefact, a user-code counter that never installs itself, and a partition
+    oracle that answers `true` for everything. **The fourth is structurally uncatchable and that is
+    the finding**: it deletes an inline two-factor assertion, and a suite cannot catch the deletion
+    of one of its own assertions. An inline control is held by review, not by the suite — so
+    "mutate your controls" has a floor, and it is worth knowing where the floor is rather than
+    reporting 4/4.
+  - 2026-08-19 test author: **two of my own mutations were defective and were fixed rather than
+    reported as gaps.** One swapped `stack.length` for `open.size` to simulate a count-based
+    ceiling — but `open` is the path set, so the two are the same number and the patch was a no-op.
+    The other needed two edits the harness applies one at a time, so its second half alone reddened
+    87 and the harness correctly called BREAKAGE rather than a result. *Check the instrument, not
+    the result* — a zero from a patch that did not express what it meant is not a measurement, and
+    both were re-run as single contiguous patches.
+  - 2026-08-19 test author, **and the reference had to be rebuilt to be conforming, which is itself
+    a measurement.** Its byte count still went through `JSON.stringify`, and at depth **9 000** —
+    below the ceiling, inside a manifest, under vitest — that threw **`RangeError: Maximum call
+    stack size exceeded`**. That is D-40-D's own defect, reproduced independently and by accident:
+    the recursive serialiser is not usable as the number's source at the depths the ceiling admits.
+    The reference now carries a hand-written iterative walk with an explicit stack, and it agrees
+    with `Buffer.byteLength(JSON.stringify(input), "utf8")` **exactly** on a real archive bundle —
+    which is the D-40-17 boundary test passing, and a second route to the same number rather than
+    a restatement of the first.
+  - 2026-08-19 test author, **D-40-23 pinned; round 4's refusal to invent the class is why it
+    exists.** 1 test added and 8 assertions tightened; suite **173**. The class, the message as a
+    written-out literal, and `expectSealedError` replace round 4's *"it is an Error, it is sealed,
+    and it is neither of the two published classes"* — which was the right handling of an
+    unanswered contract and is now superseded by the answer. **"The value is never named" is held
+    on three axes**, because a refusal can quote its input from three places: the value's own
+    content, the key it sat under, and the submission's identity. The bigint is minted from a
+    distinctive digit string so the VALUE can be sentinelled at all — a bigint cannot carry a
+    string sentinel, and a test planting one only in the key would have left unchecked exactly the
+    half the clause is about.
+  - 2026-08-19 test author: **5 mutations on the D-40-23 cells, 5 CAUGHT** — a bare `TypeError`
+    escaping (9 red), the refusal naming the value it refused (9), a different message (9), the
+    CIRCULAR class substituted for it (9), and **a control**: a fixture where the sentinel never
+    reaches the submission reds 1. That control IS catchable, unlike round 4's fourth, and the
+    difference is the general form — **a control that asserts a property of the FIXTURE can be
+    mutated and caught; one that is an inline two-factor assertion can only be deleted, and a
+    suite cannot catch the deletion of its own assertion.**
 
   - **2026-08-18 adversary round 2, FAIL.** Two charges, both about the D-40-B replacement, and the
     first is reachable through the wire where D-40-B and D-40-C were not. Measured on

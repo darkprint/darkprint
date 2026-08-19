@@ -146,6 +146,73 @@ export function circularMessage(operation: string): string {
   return `${operation}: the submission contains a circular reference.`;
 }
 
+/**
+ * D-40-23, ruled on this suite's own question and it is D-40-22's situation one ruling later.
+ *
+ * The block named a type for *too large* and for *a cycle* and none for a value the serialiser
+ * REFUSES — and the branch let `JSON.stringify` throw naturally, so a bare `TypeError` escaped a
+ * module whose every other rejection is typed and sealed. `tests/error-hygiene.test.ts` cannot
+ * see that: a `TypeError`'s hygiene is intact, which is the same reason D-40-C needed a ruling.
+ *
+ * Round 4 asserted only what the block already decided and declined to invent the class. This is
+ * the pin that replaces it.
+ */
+export const PUBLISHED_UNSERIALIZABLE_ERROR =
+  "class UnserializableValueError extends Error   " +
+  '// "<operation>: the submission contains a value JSON cannot serialise."';
+
+/** Written out as a LITERAL, never built from anything the module exports. */
+export function unserializableMessage(operation: string): string {
+  return `${operation}: the submission contains a value JSON cannot serialise.`;
+}
+
+export async function bindUnserializableError(): Promise<new (...args: never[]) => Error> {
+  const mod = await loadEngine();
+  const value = requireFrom(mod, "UnserializableValueError", PUBLISHED_UNSERIALIZABLE_ERROR);
+  if (typeof value !== "function") {
+    throw new Error(
+      `${ENGINE} exports \`UnserializableValueError\` as ${describe_(value)}; D-40-23 publishes ` +
+        `it as a class: ${PUBLISHED_UNSERIALIZABLE_ERROR}`,
+    );
+  }
+  const proto = (value as { prototype?: unknown }).prototype;
+  if (!(proto instanceof Error)) {
+    throw new Error(
+      `${ENGINE}'s \`UnserializableValueError.prototype\` is not an Error. D-40-23 exists because ` +
+        `a bare \`TypeError\` escaping is invisible to \`tests/error-hygiene.test.ts\` — its ` +
+        `hygiene is intact — so only a class pin separates the typed refusal from the untyped one.`,
+    );
+  }
+  return value as new (...args: never[]) => Error;
+}
+
+/**
+ * D-40-D's ceiling, published at last in both binding surfaces after standing in neither.
+ *
+ * A NEW REFUSAL CRITERION rather than an implementation detail: a submission the ruled formula
+ * accepts is refused past 10 000 levels. Admissible because the recursive alternative refused it
+ * either — it threw a bare `RangeError` at a host-dependent depth — so every input that produced
+ * a number still produces one, and the inputs that produced nothing now produce a typed refusal.
+ */
+export const PUBLISHED_MAX_NESTING_DEPTH =
+  "const MAX_NESTING_DEPTH = 10_000   // D-40-D, exported from @/lib/server/engine";
+
+/**
+ * The nesting refusal's message, written out as a LITERAL.
+ *
+ * This is also what pins the CONSTANT's value without importing it: the number is in the
+ * sentence. A boundary test that read `MAX_NESTING_DEPTH` and bounded against it would move with
+ * the constant and stop being a bound — D-70-17's note about `MAX_NAME_LENGTH` — so the two jobs
+ * are split: the literal below pins the value, and `measure.test.ts` brackets the behaviour.
+ */
+export const NESTING_MESSAGE =
+  "validateBundle: the nesting depth exceeds the limit of 10000 levels.";
+
+export async function bindMaxNestingDepth(): Promise<unknown> {
+  const mod = await loadEngine();
+  return requireFrom(mod, "MAX_NESTING_DEPTH", PUBLISHED_MAX_NESTING_DEPTH);
+}
+
 /** D-40-07: absent `limits` means the DEFAULT applies, not unlimited, and the default is published. */
 export const PUBLISHED_DEFAULT_LIMITS =
   "const DEFAULT_ENGINE_LIMITS: EngineLimits   // chosen so all nine archive bundles pass";
