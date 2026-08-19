@@ -2669,6 +2669,40 @@ existing `return` — dead code, a mutation that did not mutate, redding 0. Re-r
 that throws `HEADER-SET-DID-NOT-TAKE` if the write is refused. **It did not throw, which is what makes
 M6b's zero a measurement.**
 
+## Third file, same axis: I fixed two and made the third stricter without checking it
+
+**`error-hygiene`'s domain was `readdirSync(lib/server)` — the WORKING tree — while its count is a
+property of the SHIPPED tree.** Two different sets by construction, and replacing the floor with an
+equality turned that from a weakness into an **unsatisfiable** assertion.
+
+**Measured by T040's implementer: its worktree discovers 20** — base's 18 plus
+`engine/LimitExceededError` and `engine/CircularReferenceError` — and reports `expected 20 to be 18`.
+**There is no value of that constant correct in both trees while the domain is the working tree**:
+raising it to 20 reds on base until T040 merges. **And `tests/**` is in no task's `Owns`, so the session
+it reds at cannot fix it** — which is `## A guard must not demand what its own reader is forbidden to
+write`, verbatim.
+
+**Its framing is the correction I would not have reached: the floor it replaced was too weak; the
+equality was not too strong, it was counting a different set from the one it was measuring.** I had
+diagnosed the floor's failure correctly and then fixed the wrong axis — **strength, when the defect was
+domain.**
+
+**This is the THIRD file with this shape and I had already fixed the other two.**
+`architecture-current` — working-tree domain, red in every implementer worktree, unfixable by whoever
+hit it. `store-modules-seal-their-faults` — `backend` domain read through the working filesystem.
+**Here I made it stricter without checking the axis both of those had already been charged on**, two
+commits after writing the entry about the second one.
+
+**The fix keeps the import local and moves only the domain**, because a class must be **constructed** to
+be measured and `git show` yields text. **Sound as long as every shipped barrel exists locally, which is
+why the missing case is an error naming the merge rather than an ENOENT** — the failure mode
+`seal-their-faults` had. Falsified from the worktree where it fired: the shipped set seen from T040's
+checkout is the eleven base barrels, `engine` excluded.
+
+**The general form: a guard has a domain and a criterion, and tightening the criterion does nothing
+about a domain that was already describing the wrong set.** Both of my previous fixes on this axis were
+domain fixes; **I generalised the lesson to the file and not to the property.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it

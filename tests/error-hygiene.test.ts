@@ -38,6 +38,7 @@
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
+import { execFileSync } from "node:child_process";
 import { readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -58,10 +59,55 @@ interface Published {
 }
 
 async function publishedErrorClasses(): Promise<readonly Published[]> {
-  const barrels = readdirSync(SERVER_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
+  /*
+   * The domain is what has SHIPPED, not what is in this checkout, and the count below is a property
+   * of the shipped tree — so reading `readdirSync` here made the two describe different sets by
+   * construction.
+   *
+   * Measured cost of that: with the floor replaced by an equality, T040's worktree discovered 20
+   * (base's 18 plus `engine/LimitExceededError` and `engine/CircularReferenceError`) and reported
+   * `expected 20 to be 18`. **There is no value of that constant correct in both trees while the
+   * domain is the working tree**: raising it to 20 reds on base until T040 merges. The floor it
+   * replaced was too weak; the equality was not too strong, it was counting a different set from the
+   * one it was measuring.
+   *
+   * This is the third file with this shape and I fixed the other two. `architecture-current` had a
+   * working-tree domain that made it red in every implementer worktree and unfixable by the session
+   * hitting it — `tests/**` is in no task's `Owns`. `store-modules-seal-their-faults` had a `backend`
+   * domain read through the working filesystem. Here I made it STRICTER without checking the axis
+   * both of those had already been charged on. Found by T040's implementer, one file over from where
+   * it was fixed.
+   *
+   * The import still comes from the working tree, because a class must be CONSTRUCTED to be measured
+   * and `git show` yields text. That is sound as long as every shipped barrel exists locally, which
+   * is why the missing case below is an error rather than a skip: a worktree behind base gets a
+   * message naming the merge, not an ENOENT.
+   */
+  const shipped = execFileSync("git", ["ls-tree", "-d", "--name-only", "backend", "lib/server/"], {
+    cwd: fileURLToPath(new URL("..", import.meta.url)),
+    encoding: "utf8",
+  })
+    .split("\n")
+    .flatMap((line) => {
+      const m = /^lib\/server\/([^/]+)\/?$/.exec(line.trim());
+      return m ? [m[1]!] : [];
+    })
     .sort();
+
+  const present = new Set(
+    readdirSync(SERVER_DIR, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name),
+  );
+  const absent = shipped.filter((name) => !present.has(name));
+  if (absent.length > 0) {
+    throw new Error(
+      `These modules are on \`backend\` and absent from this checkout: ${absent.join(", ")}. ` +
+        `This guard measures what has shipped, so it cannot run against a tree that is behind base. ` +
+        `Merge \`backend\` and re-run.`,
+    );
+  }
+  const barrels = shipped;
 
   const found: Published[] = [];
   for (const barrel of barrels) {
