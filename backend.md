@@ -2518,6 +2518,48 @@ arithmetic. And **it left its own mislabelled mutation name wrong in its spec an
 quietly renaming it, so the record shows the name over-claimed rather than showing a name that always
 fitted.
 
+## An anti-vacuity control that measures an adjacent quantity is the defect it was written to prevent
+
+**T081's blind author deleted thirteen of its own cells because they could not fail.**
+
+The axis drove each reader against **two unreachable servers** and asserted one message, as evidence
+that no **driver value** reached the rendering. **They passed blind with the module absent, and reddened
+under zero of seven mutations — including M3, which leaks the driver outright.**
+
+Measured: a `DrizzleQueryError`'s **own message** is the statement plus its params; the connection
+detail lives on **`cause.cause`**. **Two servers running one statement produce a byte-identical driver
+message.** The equality held between two things already equal, whatever the module did.
+
+**And the anti-vacuity control I forwarded to it did not catch this.** The control was *the two closed
+ports produce different driver errors* — implemented by comparing the whole cause **chain**, where the
+port genuinely differs. **True, and about a quantity ADJACENT to the one the axis rested on.** The axis
+needed the driver's **own message** to differ; the control measured the **chain**, one link too
+generous.
+
+**A control measuring a nearby quantity, committed inside the control written to prevent exactly that.**
+Same family as the `core.ts` source-size proxy and the loop-construct grep — **third altitude: not a
+claim resting on a proxy, but the INSTRUMENT THAT CHECKS FOR PROXIES resting on one.**
+
+**Deleted rather than left green, and the property is not lost** — `surface.test.ts`'s *the message is a
+function of the operation and of nothing else* holds it with two causes whose own messages differ, and
+reds under M3 where all thirteen stayed green. Re-measured after deletion, **M3 still reds 53**: those
+cells contributed nothing. **118 → 105 — a smaller number and a larger measurement.**
+
+## A deny set derived from the statement cannot see a value the statement does not contain
+
+**T081's AC3 scan stayed GREEN on a document verifiably carrying `"sqlstate":"ECONNREFUSED"`.** Its deny
+set is derived from the statement and its bound parameters — **and a SQLSTATE is in neither.**
+
+**Both halves of T081 had this hole independently**, and neither found it by reviewing the scan: the
+implementer by asking *what passes every pin*, the blind author by writing the mutation. **A derived
+deny set is only as wide as the thing it is derived from**, and that thing was deliberately narrow.
+
+**And M7's first run reddened 0, nearly banked.** The patch set `sqlstate: err.cause?.code` — but
+`RegistryStoreError.cause` is the `DrizzleQueryError`, whose own `code` is `undefined`; the SQLSTATE is
+**one link further down**, so the key was dropped and the document never carried it. **The patch did not
+express its name** — third session today, and the one reading a failing set structurally cannot
+classify.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -5678,7 +5720,7 @@ it does not decide differently inside a worktree.
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 3 at `c3aa441`: **D-40-D** iterative frame stack, `MAX_NESTING_DEPTH = 10 000` refusing as a typed error, asserted over **outcome kind across four orders of magnitude** with thresholds as witnesses under it. **D-40-E** 50 classes x 9 positions over `SerializeJSONProperty`'s own branches plus 500 composed values, generator asserted before its results, `normalise` ordering making the three charged classes unreachable. Gates `tsc` 0, `lint` 0, scoped `vitest` 69/69, peak foreign 0 over 22 samples. Sweep 10 mutations, 9 CAUGHT, 1 equivalent (S10, third round running). Count 79 -> 69 reconciled exactly. **Full suite not claimed** |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
-| T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | — | — | claimed | — |
+| T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | tests-written | implementation `0c1cd48` (committed by the orchestrator; its author's user did not answer): typecheck 0, lint 0 read in full, build 0, triple `2 failed, 5457 passed, 0 skipped` with both reds named in advance, 44 mutations all discriminating, 0 newly-green. Blind suite `f0d9b25`: **93 failed / 12 passed** against no implementation, **105/105 against a correct reference**, 7 mutations predicted first. **Thirteen cells deleted for being unfalsifiable**, 118 → 105. Adversary round owed |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | — | — | todo | — |
@@ -10108,7 +10150,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   - 2026-08-15 implementer, round 2: **three defects addressed, two falsified, and the gate block cleared by implementation rather than by a suite rewrite.** Took the adversary's tree at `a2cac88` rather than re-merging, then merged `backend` at `110dd6b`.
 ### T081, Registry store wrapper: D-13 for the read model
 
-- **State:** claimed
+- **State:** tests-written
 - **Depends on:** T080 (merged)
 - **Owns:** `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**`
 - **Contract:** D-13 says no rejection may carry the failed statement or its bound parameters. **T080 ships no error class and no store wrapper**, so a driver failure escapes a merged, tagged route as a raw `DrizzleQueryError` **whose message opens with the full query**. Measured by T050's adversary against a closed port: `GET /api/cards` and `GET /api/blueprints` both threw `Failed query: select "id", "owner_id", "slug", … from "bundle"`. `params:` was empty only because that query is unparameterised — a parameterised one carries the bound values, which is D-13's clause verbatim.
