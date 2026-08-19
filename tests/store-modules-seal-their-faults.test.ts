@@ -29,7 +29,6 @@
 
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -73,7 +72,25 @@ describe("a lib/server module that reaches Postgres seals its faults", () => {
     for (const file of files) {
       const name = /^lib\/server\/([^/]+)\//.exec(file)?.[1];
       if (name === undefined) continue;
-      const source = readFileSync(`${REPO_ROOT}${file}`, "utf8");
+      /*
+       * Read from `backend`, NOT from the working tree, and this is the whole correctness of the
+       * check rather than a detail.
+       *
+       * The domain above is `git ls-tree backend` — the SHIPPED tree — and the first version of this
+       * loop then read each path with `readFileSync` from the WORKING tree. Those are two different
+       * trees, which is this file's own scope rule committed inside the guard written for it. The
+       * moment T050 merged, `lib/server/accounts/errors.ts` existed on `backend` and did not exist
+       * in any worktree that had not merged, so the guard died with ENOENT and reported NOTHING
+       * about whether any module seals its faults — in every worktree at once, silently, because an
+       * error is not a red about the subject.
+       *
+       * Found by T081's implementer, in a worktree behind base, which is exactly where it fires.
+       */
+      const source = execFileSync("git", ["show", `backend:${file}`], {
+        cwd: REPO_ROOT,
+        encoding: "utf8",
+        maxBuffer: 32 * 1024 * 1024,
+      });
       /* `@/lib/db` is the only way to a connection; a module that never names it cannot raise a
          driver error and owes no wrapper. */
       if (/from\s+["']@\/lib\/db/.test(source)) reachesDb.add(name);
@@ -101,7 +118,13 @@ describe("a lib/server module that reaches Postgres seals its faults", () => {
     for (const name of KNOWN_UNSEALED) {
       const sealed = files
         .filter((f) => f.startsWith(`lib/server/${name}/`))
-        .some((f) => /export\s+class\s+\w*Error\b/.test(readFileSync(`${REPO_ROOT}${f}`, "utf8")));
+        /* `git show`, not `readFileSync` — same reason as the loop above: the domain is `backend`
+           and reading the working tree makes the two disagree the moment a merge lands. */
+        .some((f) =>
+          /export\s+class\s+\w*Error\b/.test(
+            execFileSync("git", ["show", `backend:${f}`], { cwd: REPO_ROOT, encoding: "utf8" }),
+          ),
+        );
       if (sealed) stale.push(name);
     }
     expect(
